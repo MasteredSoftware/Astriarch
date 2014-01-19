@@ -1,0 +1,12 @@
+{
+	"loglevel":"ALL",
+	"mongodb":{
+		"gamedb_name":"astriarch",
+		"sessiondb_name":"sessions",
+		"host":"127.0.0.1",
+		"port":"27017"
+	},
+	"cookie":{
+		"secret":"astriarch-node"
+	}
+}

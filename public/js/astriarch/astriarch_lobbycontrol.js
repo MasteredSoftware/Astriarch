@@ -1,0 +1,152 @@
+Astriarch.LobbyControl = {
+	GamesAvailableListBox: null,
+	init: function(){
+		$("#NewSkirmishGameButton").button();
+		$("#NewSkirmishGameButton").click(
+			function() {
+				//Send a create game message
+				Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CREATE_GAME, payload:{name:"TODO: make this configurable"}});
+			}
+		);
+
+		this.GamesAvailableListBox = new JSListBox({'containerSelector':'GamesAvailableListBox', 'stylemap':{'border':'none','background':'none'}});
+
+		$("#GameSelectedPanel").hide();
+
+		$("#JoinGameButton").button();
+		$("#JoinGameButton").click(
+			function() {
+
+				var selectedGameLBI = Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem;
+				if(selectedGameLBI){
+					Astriarch.GameId = selectedGameLBI.GameInfo["_id"];
+					if(selectedGameLBI.GameInfo.started){
+						//Send a resume game message
+						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME});
+					} else {
+						//Send a join game message
+						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME});
+					}
+				}
+			}
+		);
+
+	},
+
+	OnGameResumeMessageResponse: function(message){
+
+		$('#mainMenu').hide();
+
+		Astriarch.GameController.ResetView(message.payload);
+	},
+
+	OnGameJoinMessageResponse: function(message){
+		Astriarch.GameId = message.payload["_id"];
+		Astriarch.NewGameControl.joinGame(message);
+
+		$('#mainMenu').hide();
+
+		Astriarch.View.ShowNewGameOptions();
+	},
+
+	OnGameCreateMessageResponse: function(message){
+		Astriarch.GameId = message.payload;
+		$('#mainMenu').hide();
+		Astriarch.View.ShowNewGameOptions();
+	},
+
+	refreshGameList: function(message){
+		Astriarch.LobbyControl.GamesAvailableListBox.clear();
+		var listBoxItems = [];
+
+		if(message.payload && message.payload.length){
+			for(var i in message.payload){
+				var galbi = new Astriarch.LobbyControl.GamesAvailableListBoxItem(message.payload[i]);
+				listBoxItems.push(galbi);
+			}
+		}
+
+		Astriarch.LobbyControl.GamesAvailableListBox.addItems(listBoxItems);
+	},
+
+	GamesAvailableSelectionChanged: function(){
+		if(Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem){
+			$("#GameSelectedPanel").show();
+
+			//refresh Selected Game Details:
+			var gameInfo = Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem.GameInfo;
+			var gameOptions = gameInfo.gameOptions;
+
+			$("#GameSelectedName").text(gameInfo.name);
+			$("#GameSelectedHostName").text("Host: " + gameOptions.mainPlayerName);
+			$("#GameSelectedPlayerSummary").text(gameInfo.players.length + "/" + gameOptions.systemsToGenerate + " Players");
+			$("#GameSelectedPlayer2Details").text(Astriarch.LobbyControl.GetOpponentSummaryText(gameOptions.opponentOptions[0]));
+			$("#GameSelectedPlayer3Details").text(Astriarch.LobbyControl.GetOpponentSummaryText(gameOptions.opponentOptions[1]));
+			$("#GameSelectedPlayer4Details").text(Astriarch.LobbyControl.GetOpponentSummaryText(gameOptions.opponentOptions[2]));
+			$("#GameSelectedNumberOfSystems").text(gameOptions.systemsToGenerate + " Systems");
+			$("#GameSelectedPlanetsPerSystem").text(gameOptions.planetsPerSystem + " Planets per System");
+			$("#GameSelectedDateCreated").text("Created At: " + gameInfo.dateCreated);
+
+			//$("#GameSelectedDetails").text(JSON.stringify(Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem.GameInfo));
+			if(gameInfo.started){
+				$("#JoinGameButton").button("option", "label", "Resume Game");
+			} else {
+				$("#JoinGameButton").button("option", "label", "Join Game");
+			}
+		} else {
+			$("#GameSelectedPanel").hide();
+		}
+
+	},
+
+	GetOpponentSummaryText: function(opponentOption){
+		var playerType = Astriarch.GameTools.PlayerTypeToFriendlyName(opponentOption.type);
+		if(opponentOption.type == Astriarch.Player.PlayerType.Human){
+			playerType = opponentOption.name;
+		}
+		return playerType;
+	}
+
+};
+
+
+/**
+ * A GamesAvailableListBoxItem is one of the items shown in the lobby of current games
+ * @constructor
+ */
+Astriarch.LobbyControl.GamesAvailableListBoxItem = JSListBox.Item.extend({
+	/**
+	 * initializes the GamesAvailableListBoxItem
+	 * @this {Astriarch.GameController.GamesAvailableListBoxItem}
+	 */
+	init: function(/* GameInfo */ gameInfo) {
+		this.value = gameInfo.name; //what is shown in the item
+		this.Foreground = null;
+		this.GameInfo = gameInfo;
+	},
+
+	/**
+	 * renders the GamesAvailableListBoxItem
+	 * @this {Astriarch.GameController.GamesAvailableListBoxItem}
+	 * @return {string}
+	 */
+	render: function() {
+		return '<a href="#" style="color:' + this.Foreground + '">' + this.value + '</a>'; //this allows painting to be overridden in classes which extend JSListBox.Item
+	},
+
+	/**
+	 * fires the GamesAvailableListBoxItem click event
+	 * @this {Astriarch.GameController.GamesAvailableListBoxItem}
+	 */
+	onClick: function() {
+		Astriarch.LobbyControl.GamesAvailableSelectionChanged();
+	},
+
+	/**
+	 * fires the GamesAvailableListBoxItem double click event
+	 * @this {Astriarch.GameController.GamesAvailableListBoxItem}
+	 */
+	onDblClick: function() {
+
+	}
+});

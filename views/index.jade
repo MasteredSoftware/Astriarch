@@ -1,0 +1,22 @@
+extends layout
+
+block content
+	h1= title
+	p Welcome to #{title}
+	div#messages
+	input(type="button", value="send noop", onclick="sendMessage(Astriarch.shared.MESSAGE_TYPE.NOOP)")
+	input(type="button", value="send list games", onclick="sendMessage(Astriarch.shared.MESSAGE_TYPE.LIST_GAMES)")
+
+	script
+		function renderMessage(message) {
+			document.getElementById('messages').innerHTML = JSON.stringify(message);
+		}
+		Astriarch.server_comm.init();
+		Astriarch.server_comm.register(Astriarch.shared.MESSAGE_TYPE.NOOP, renderMessage);
+		Astriarch.server_comm.register(Astriarch.shared.MESSAGE_TYPE.LIST_GAMES, renderMessage);
+
+
+		function sendMessage(type){
+			var message = {type:type, data:{}};
+			Astriarch.server_comm.sendMessage(message);
+		}
