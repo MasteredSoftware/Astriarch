@@ -27,4 +27,4 @@ Astriarch - Ruler of the Stars, space strategy game designed and developed by <a
 
 License
 =======
-The Silverlight version of Astriarch - Ruler of the Stars is released under the MIT License.
+This version of Astriarch - Ruler of the Stars is released under the MIT License.
