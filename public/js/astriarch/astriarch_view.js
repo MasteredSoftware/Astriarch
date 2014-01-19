@@ -21,7 +21,7 @@ Astriarch.View = {jCanvasDraw:null,
 				  
 
 
-$(document).ready(function() {
+Astriarch.View.PageLoadInit = function(serverConfig){
 
 	Astriarch.View.SetupGraphicalDOMElements();
 
@@ -66,7 +66,7 @@ $(document).ready(function() {
 		Astriarch.PlayerGameOptions = new Astriarch.Player.PlayerGameOptions();
 
 		//setup websocket communication
-		Astriarch.server_comm.init();
+		Astriarch.server_comm.init(serverConfig.port);
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, function(message){console.log("NOOP: ", message)});
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, Astriarch.LobbyControl.refreshGameList);
 
@@ -83,7 +83,7 @@ $(document).ready(function() {
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, payload:{}});
 	}
-});
+};
 
 Astriarch.View.CanvasNotSupported = function() {
 	$('#startGameOptionsContainer').hide();

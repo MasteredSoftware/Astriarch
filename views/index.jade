@@ -11,7 +11,7 @@ block content
 		function renderMessage(message) {
 			document.getElementById('messages').innerHTML = JSON.stringify(message);
 		}
-		Astriarch.server_comm.init();
+		Astriarch.server_comm.init(3000);
 		Astriarch.server_comm.register(Astriarch.shared.MESSAGE_TYPE.NOOP, renderMessage);
 		Astriarch.server_comm.register(Astriarch.shared.MESSAGE_TYPE.LIST_GAMES, renderMessage);
 

@@ -23,7 +23,8 @@ var gameController = require("./controllers/game_controller");
 var app = express();
 
 // all environments
-app.set('port', process.env.PORT || 3000);
+app.set('host', process.env.OPENSHIFT_NODEJS_IP || 'localhost');
+app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || 3000);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.use(express.favicon());
@@ -37,8 +38,10 @@ app.use(parseCookie);
 var MongoStore = require('connect-mongo')(express);
 var sessionStore = new MongoStore({
 	db: config.mongodb.sessiondb_name,
-	host: config.mongodb.host,
-	port: config.mongodb.port
+	host: process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host,
+	port: process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port,
+	username: process.env.OPENSHIFT_MONGODB_DB_USERNAME || config.mongodb.username,
+	password: process.env.OPENSHIFT_MONGODB_DB_PASSWORD || config.mongodb.password
 });
 
 app.use(express.session({
@@ -56,10 +59,10 @@ if ('development' == app.get('env')) {
 
 app.get('/', routes.index);
 app.get('/astriarch', function(req, res){
-	res.render("astriarch");
+	res.render("astriarch", {"port":app.get('port')});
 });
 
-var server = http.createServer(app).listen(app.get('port'), function(){
+var server = http.createServer(app).listen(app.get('port'), app.get('host'), function(){
   console.log('Express server listening on port ' + app.get('port'));
 });
 

@@ -4,9 +4,10 @@ Astriarch.server_comm = {
 	ws:null,
 	registeredListeners:{},//key is messagetype, value is array of callbacks
 
-	init: function(){
+	init: function(port){
 		var host = window.document.location.host.replace(/:.*/, '');
-		this.ws = new WebSocket('ws://' + host + ':3000');
+		var portString = !port  ? "" : ":" + port;
+		this.ws = new WebSocket('ws://' + host + portString);
 		this.ws.onmessage = this.receivedMessage;
 
 		for(var mt in Astriarch.Shared.MESSAGE_TYPE){

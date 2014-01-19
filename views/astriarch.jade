@@ -892,6 +892,14 @@ head
 								p
 									a(href='http://www.astriarch.com/', target='_blank') Official Astriarch Site
 		// <span id='imageData' />
+
+		script(type='text/javascript').
+			$(document).ready(function() {
+				var serverConfig = {"port":#{port}};
+
+				Astriarch.View.PageLoadInit(serverConfig);
+			});
+
 		script(type='text/javascript').
 			var _gaq = _gaq || [];
 			_gaq.push(['_setAccount', 'UA-7797548-5']);

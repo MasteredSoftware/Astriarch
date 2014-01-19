@@ -5,7 +5,7 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
 //connect to database
-var db = mongoose.connect('mongodb://'+ config.mongodb.host +':'+ config.mongodb.port +'/'+ config.mongodb.gamedb_name);
+var db = mongoose.connect('mongodb://'+ (process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host) +':'+ (process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port) +'/'+ config.mongodb.gamedb_name);
 
 //create schema for a game
 var GameSchema = new mongoose.Schema({
