@@ -2,7 +2,7 @@
 	"loglevel":"ALL",
 	"mongodb":{
 		"gamedb_name":"astriarch",
-		"sessiondb_name":"sessions",
+		"sessiondb_name":"astriarch",
 		"host":"127.0.0.1",
 		"port":"27017",
 		"username":null,
