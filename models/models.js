@@ -5,7 +5,12 @@ var ObjectId = mongoose.Schema.Types.ObjectId;
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
 //connect to database
-var db = mongoose.connect('mongodb://'+ (process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host) +':'+ (process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port) +'/'+ config.mongodb.gamedb_name);
+//add username:password@ to url
+var un_pw = "";
+if(config.mongodb.username && config.mongodb.password){
+	un_pw = config.mongodb.username + ":" + config.mongodb.password + "@"
+}
+var db = mongoose.connect('mongodb://' + un_pw + (process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host) + ':' + (process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port) + '/' + config.mongodb.gamedb_name);
 
 //create schema for a game
 var GameSchema = new mongoose.Schema({

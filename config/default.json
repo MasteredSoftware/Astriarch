@@ -10,5 +10,6 @@
 	},
 	"cookie":{
 		"secret":"astriarch-node"
-	}
+	},
+	"ws_port":8000
 }
