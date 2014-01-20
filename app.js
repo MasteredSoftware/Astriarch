@@ -24,7 +24,7 @@ var app = express();
 
 // all environments
 app.set('host', process.env.OPENSHIFT_NODEJS_IP || 'localhost');
-app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || 3000);
+app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.ws_port || 8000);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.use(express.favicon());
@@ -354,7 +354,6 @@ wss.broadcast = function(playersBySessionKey, message) {
 		var client = this.clients[i];
 		var clientSessionId = client.upgradeReq.signedCookies['connect.sid'];
 		if(clientSessionId in playersBySessionKey){
-			console.log("Broadcasting to: ", clientSessionId);
 			client.send(data);
 		}
 	}
@@ -366,7 +365,6 @@ wss.broadcastToSession = function(playerSessionKey, message) {
 		var client = this.clients[i];
 		var clientSessionId = client.upgradeReq.signedCookies['connect.sid'];
 		if(clientSessionId == playerSessionKey){
-			console.log("Broadcasting to Player: ", clientSessionId, data);
 			client.send(data);
 		}
 	}

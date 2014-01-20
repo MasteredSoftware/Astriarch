@@ -293,7 +293,6 @@ Astriarch.ServerController = {
 
 		}
 
-		console.log("RESOLVING PLANETARY CONFLICTS: ", endOfTurnMessagesByPlayerId);
 		return endOfTurnMessagesByPlayerId;
 	},
 

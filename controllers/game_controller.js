@@ -215,7 +215,7 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 				allPlayersFinished = false;
 			}
 		}
-		console.log("Doc.players: ", doc.players);
+
 		var data = {"allPlayersFinished": allPlayersFinished, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc, "gameModel":null};
 		if(allPlayersFinished){
 			//set all players back to currentTurnEnded = false for next turn;
