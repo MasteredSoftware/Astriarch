@@ -294,8 +294,6 @@ var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, ca
 				planet.BuildQueue.push(Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(pvwd.workingBuildQueue[i]));
 			}
 
-			console.log("planet.BuildQueue:", planet.BuildQueue);
-
 			//now spend our resources and in case we issued a refund, add remainders to this planets resources and accumulate
 			var originalResources = new Astriarch.Model.WorkingPlayerResources(planet.Owner);
 			var goldCost = originalResources.GoldAmount - pvwd.workingResources.GoldAmount;

@@ -7,8 +7,10 @@ var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 //connect to database
 //add username:password@ to url
 var un_pw = "";
-if(config.mongodb.username && config.mongodb.password){
-	un_pw = config.mongodb.username + ":" + config.mongodb.password + "@"
+var un = (process.env.OPENSHIFT_MONGODB_DB_USERNAME || config.mongodb.username);
+var pw = (process.env.OPENSHIFT_MONGODB_DB_PASSWORD || config.mongodb.password);
+if(un && pw){
+	un_pw = un + ":" + pw + "@"
 }
 var db = mongoose.connect('mongodb://' + un_pw + (process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host) + ':' + (process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port) + '/' + config.mongodb.gamedb_name);
 
