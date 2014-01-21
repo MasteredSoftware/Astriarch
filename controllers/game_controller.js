@@ -78,7 +78,7 @@ exports.ListLobbyGames = function(options, callback){
 };
 
 exports.UpdateGameOptions = function(payload, callback){
-	updateGameById(payload.gameId, {gameOptions: payload.gameOptions }, callback);
+	updateGameById(payload.gameId, {gameOptions: payload.gameOptions, name: payload.name }, callback);
 };
 
 exports.ChangePlayerName = function(options, callback){
@@ -107,7 +107,7 @@ exports.ChangePlayerName = function(options, callback){
 };
 
 exports.JoinGame = function(options, callback){
-	var playerName = options.playerName || "New Player";
+	var playerName = options.playerName || "Player";
 	FindGameById(options.gameId, function(err, doc){
 		var playerPosition = doc.players.length - 1;
 		doc.players.push({name:playerName, sessionId:options.sessionId, position:playerPosition + 1});
@@ -159,7 +159,7 @@ exports.StartGame = function(options, callback){
 		var players = []; //List<Player>
 		var playerName = gameOptions.mainPlayerName;
 		if(!playerName)
-			playerName = "Player1";
+			playerName = "Player";
 		var hostPlayer = new Astriarch.Player(Astriarch.Player.PlayerType.Human, playerName);
 		doc.players[0].Id = hostPlayer.Id;//the hosting player is always at position zero
 		players.push(hostPlayer);
@@ -238,6 +238,18 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 					for(var ip in destroyedPlayers){
 						var p = destroyedPlayers[ip];
 						data.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color));
+					}
+
+					//check to see if the game is ended (either no more human players or only one player left)
+					var humansLeft = false;
+					for(var ip in data.gameModel.Players){
+						if(data.gameModel.Players[ip].Type == Astriarch.Player.PlayerType.Human){
+							humansLeft = true;
+							break;
+						}
+					}
+					if(!humansLeft || data.gameModel.Players.length <= 1){
+						doc.ended = true;
 					}
 				}
 

@@ -34,6 +34,7 @@ head
 	script(type='text/javascript', src='js/astriarch/astriarch_planetaryconflictcontrol.js')
 	script(type='text/javascript', src='js/astriarch/astriarch_gameovercontrol.js')
 	script(type='text/javascript', src='js/astriarch/astriarch_alert.js')
+	script(type='text/javascript', src='js/astriarch/astriarch_localstorageinterface.js')
 	script(type='text/javascript', src='js/astriarch/astriarch_savedgameinterface.js')
 
 	script(type='text/javascript', src='js/astriarch/astriarch_lobbycontrol.js')
@@ -133,6 +134,13 @@ head
 		}
 		td > span, td > img {
 			display: block;
+		}
+		#GameNameTextBox
+		{
+			background-color:#595959;
+			color:white;
+			border: 1px solid #333;
+			font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
 		}
 		#PlayerNameTextBox
 		{
@@ -379,9 +387,15 @@ head
 						#startGameOptionsContainer(style='position: absolute; width: 640px; height: 400px; left: 80px; top: 120px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2000;')
 							table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 3000;')
 								tr(height='50')
-									td(width='630', colspan='2')
+									td(width='630', colspan='3')
 										div(style='text-align: center;') New Skirmish Game
 										div(style='text-align: center;') Please enter your name and choose the desired game settings.
+								tr(height='30')
+									td(width='210')
+										label(style='width: 75px;')
+											| Game Name:
+									td(width='420', colspan='2')
+										input#GameNameTextBox(type='text', value='New Game', style='width: 207px;')
 								tr(height='30')
 									td(width='210')
 										label(style='width: 75px;')
@@ -408,7 +422,7 @@ head
 											option(value='6') 6
 											option(value='7') 7
 											option(value='8') 8
-								tr(height='50')
+								tr(height='40')
 									td(width='210')
 										label
 											| Player 1:
@@ -417,7 +431,7 @@ head
 											| You
 									td(width='215', rowspan='4')
 										img(src='img/starfield3.png', width='200', height='170')
-								tr(height='50')
+								tr(height='40')
 									td(width='210')
 										div.Player2Panel
 											label
@@ -426,7 +440,7 @@ head
 										div.Player2Panel
 											span#Player2NamePanel
 											div#Player2OptionsBox
-								tr(height='50')
+								tr(height='40')
 									td(width='210')
 										div.Player3Panel
 											label
@@ -435,7 +449,7 @@ head
 										div.Player3Panel
 											span#Player3NamePanel
 											div#Player3OptionsBox
-								tr(height='50')
+								tr(height='40')
 									td(width='210')
 										div.Player4Panel
 											label

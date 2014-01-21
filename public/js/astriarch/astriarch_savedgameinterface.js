@@ -5,73 +5,12 @@ var require = require || (function(){});
 var extend = typeof(jQuery) != "undefined" ? jQuery.extend : require('extend');
 
 /**
- * Saved Game uses the model and HTML5 localStorage to load and save games
+ * Saved Game allows serialization and deserialization of the models
  */
 Astriarch.SavedGameInterface = {
 
-	Key:"astriarch_save"
 };
 
-/**
- * Checks to see if a saved game exists
- */
-Astriarch.SavedGameInterface.savedGameExists = function(){
-
-	var savedGameExists=false;
-	if(localStorage)
-	{
-		var savedGame = localStorage.getItem(Astriarch.SavedGameInterface.Key);
-		if(savedGame != null)
-		{
-			//TODO:check for proper version number (for now we need to do this because the google closure compiler will mess up the members of the saved game interface)
-			
-			savedGameExists = true;
-		}
-	}
-	return savedGameExists;
-};
-
-/**
- * Saves a game to the localStorage
- */
-Astriarch.SavedGameInterface.saveGame = function(){
-
-	if(localStorage)
-	{
-		var newModel = new Astriarch.SerializableModel(Astriarch.GameModel);
-		var savedGameJSON = JSON.stringify(newModel);
-		if(savedGameJSON != null)
-		{
-			localStorage.setItem(Astriarch.SavedGameInterface.Key, savedGameJSON);
-		}
-	}
-};
-
-/**
- * Loads a game from the localStorage
- */
-Astriarch.SavedGameInterface.loadGame = function(){
-	var returnVal = false;
-	if(localStorage)
-	{
-		var savedGameJSON = localStorage.getItem(Astriarch.SavedGameInterface.Key);
-		if(savedGameJSON != null)
-		{
-			try {
-				var serializedModel = JSON.parse(savedGameJSON);
-				var newModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(serializedModel);
-				if(newModel) {
-					Astriarch.GameModel = newModel;
-					returnVal = true;
-				}
-			} catch(e)
-			{
-				returnVal = false;
-			}
-		}
-	}
-	return returnVal;
-};
 
 Astriarch.SavedGameInterface.findCircularReferences = function(obj, keyName, parentKeyName, hash){
 	if(!hash)

@@ -1,8 +1,22 @@
 Astriarch.NewGameControl = {
 	GameCreator: true, //if the player created the game
 	init: function(){
+
+		$("#GameNameTextBox").val(Astriarch.LocalStorageInterface.Prefs.gameName);
+		$("#GameNameTextBox").change(function(){
+			var name = $("#GameNameTextBox").val();
+			Astriarch.LocalStorageInterface.Prefs.gameName = name;
+			Astriarch.LocalStorageInterface.savePrefs();
+			Astriarch.NewGameControl.changedGameOptions();
+		});
+
+
+		$("#PlayerNameTextBox").val(Astriarch.LocalStorageInterface.Prefs.playerName);
 		$("#PlayerNameTextBox").change(function(){
-			var payload = {playerName:$( this ).val()};
+			var playerName = $( this ).val();
+			Astriarch.LocalStorageInterface.Prefs.playerName = playerName;
+			Astriarch.LocalStorageInterface.savePrefs();
+			var payload = {playerName: playerName};
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_PLAYER_NAME, payload:payload});
 		});
 
@@ -70,8 +84,9 @@ Astriarch.NewGameControl = {
 
 	changedGameOptions: function() {
 		var gameOptions = this.getSelectedGameOptions();
+		var name = $("#GameNameTextBox").val();
 
-		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload:{gameOptions: gameOptions}});
+		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload:{gameOptions: gameOptions, name:name}});
 	},
 
 	OnGameOptionsChanged: function(message){
@@ -82,9 +97,9 @@ Astriarch.NewGameControl = {
 			$("#PlanetsPerSystemValue").text(gameOptions.planetsPerSystem);
 
 			$("#Player1NamePanel").text(gameOptions.mainPlayerName);
-			$("#Player2NamePanel").text(this.opponentOptionToFriendlyString(gameOptions.opponentOptions[0]));
-			$("#Player3NamePanel").text(this.opponentOptionToFriendlyString(gameOptions.opponentOptions[1]));
-			$("#Player4NamePanel").text(this.opponentOptionToFriendlyString(gameOptions.opponentOptions[2]));
+			$("#Player2NamePanel").text(Astriarch.GameTools.OpponentOptionToFriendlyString(gameOptions.opponentOptions[0]));
+			$("#Player3NamePanel").text(Astriarch.GameTools.OpponentOptionToFriendlyString(gameOptions.opponentOptions[1]));
+			$("#Player4NamePanel").text(Astriarch.GameTools.OpponentOptionToFriendlyString(gameOptions.opponentOptions[2]));
 		} else {
 			Astriarch.NewGameControl.buildPlayerComboBoxes(gameOptions);
 			//we get this message for player name changes and joins also
@@ -102,39 +117,11 @@ Astriarch.NewGameControl = {
 
 	},
 
-	opponentOptionToFriendlyString: function(opponentOption){
-		var friendlyString = "";
-		switch(opponentOption.type){
-			case -2:
-				friendlyString = "Closed";
-				break;
-			case -1:
-				friendlyString = "Open";
-				break;
-			case 0:
-				friendlyString = "Player name: " + opponentOption.name;
-				break;
-			case 1:
-				friendlyString = "Easy Computer";
-				break;
-			case 2:
-				friendlyString = "Normal Computer";
-				break;
-			case 3:
-				friendlyString = "Hard Computer";
-				break;
-			case 4:
-				friendlyString = "Expert Computer";
-				break;
-		}
-		return friendlyString;
-	},
-
 	getSelectedGameOptions: function(){
 		var opponentOptions = [];
 		var playerName = $('#PlayerNameTextBox').val();
 		if(playerName == null || $.trim(playerName) == "")
-			playerName = "Player1";
+			playerName = "Player";
 
 		//NOTE: difficulty Combobox values correspond to Astriarch.Player.PlayerType 'enum' values (with -1 meaning closed)
 		opponentOptions.push({name: $("#Player2NamePanel").text(), type: Number($('select#Player2ComboBox').selectmenu("value"))});

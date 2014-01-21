@@ -35,20 +35,32 @@ Number.prototype.compareTo = function(num) {
 
 Astriarch.GameTools = {
 
-	PlayerTypeToFriendlyName: function(/*Astriarch.Player.PlayerType*/ t){//returns string
-		var typeName = "Empty";
-		if (t == Astriarch.Player.PlayerType.Human)
-			typeName = "Human";
-		else if (t ==  Astriarch.Player.PlayerType.Computer_Easy)
-			typeName = "Easy Computer";
-		else if (t ==  Astriarch.Player.PlayerType.Computer_Normal)
-			typeName = "Normal Computer";
-		else if (t ==  Astriarch.Player.PlayerType.Computer_Hard)
-			typeName = "Hard Computer";
-		else if (t ==  Astriarch.Player.PlayerType.Computer_Expert)
-			typeName = "Expert Computer";
-
-		return typeName;
+	OpponentOptionToFriendlyString: function(opponentOption){
+		var friendlyString = "";
+		switch(opponentOption.type){
+			case -2:
+				friendlyString = "Closed";
+				break;
+			case -1:
+				friendlyString = "Open";
+				break;
+			case Astriarch.Player.PlayerType.Human:
+				friendlyString = "Human Player: " + opponentOption.name;
+				break;
+			case Astriarch.Player.PlayerType.Computer_Easy:
+				friendlyString = "Easy Computer";
+				break;
+			case Astriarch.Player.PlayerType.Computer_Normal:
+				friendlyString = "Normal Computer";
+				break;
+			case Astriarch.Player.PlayerType.Computer_Hard:
+				friendlyString = "Hard Computer";
+				break;
+			case Astriarch.Player.PlayerType.Computer_Expert:
+				friendlyString = "Expert Computer";
+				break;
+		}
+		return friendlyString;
 	},
 
 	PlanetOwnerToFriendlyName: function(/*Astriarch.Planet.PlanetType*/ type, /*ClientPlayer*/ planetOwner){//returns string

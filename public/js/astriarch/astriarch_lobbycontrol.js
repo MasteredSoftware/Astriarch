@@ -5,7 +5,8 @@ Astriarch.LobbyControl = {
 		$("#NewSkirmishGameButton").click(
 			function() {
 				//Send a create game message
-				Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CREATE_GAME, payload:{name:"TODO: make this configurable"}});
+				//every time the game name is changed we save it to local storage so we can use it next time?
+				Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CREATE_GAME, payload:{name:Astriarch.LocalStorageInterface.Prefs.gameName, playerName:Astriarch.LocalStorageInterface.Prefs.playerName}});
 			}
 		);
 
@@ -25,7 +26,7 @@ Astriarch.LobbyControl = {
 						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME});
 					} else {
 						//Send a join game message
-						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME});
+						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME, payload:{playerName:Astriarch.LocalStorageInterface.Prefs.playerName}});
 					}
 				}
 			}
@@ -100,10 +101,7 @@ Astriarch.LobbyControl = {
 	},
 
 	GetOpponentSummaryText: function(opponentOption){
-		var playerType = Astriarch.GameTools.PlayerTypeToFriendlyName(opponentOption.type);
-		if(opponentOption.type == Astriarch.Player.PlayerType.Human){
-			playerType = opponentOption.name;
-		}
+		var playerType = Astriarch.GameTools.OpponentOptionToFriendlyString(opponentOption);
 		return playerType;
 	}
 

@@ -12,7 +12,6 @@ consoleTEN.init(console, consoleTEN.LEVELS[config.loglevel]);
 var WebSocketServer = require('ws').Server;
 
 var express = require('express')
-  , routes = require('./routes')
   , http = require('http')
   , path = require('path');
 
@@ -57,8 +56,10 @@ if ('development' == app.get('env')) {
   app.use(express.errorHandler());
 }
 
-app.get('/', routes.index);
-app.get('/astriarch', function(req, res){
+app.get('/test', function(req, res){
+	res.render('test', { title: 'Astriarch' });
+});
+app.get('/', function(req, res){
 	res.render("astriarch", {"port":config.ws_port});
 });
 
@@ -126,13 +127,13 @@ wss.on('connection', function(ws) {
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.CREATE_GAME:
 					//create a default game for now, later we'll do this based on the message
-					gameController.CreateGame({name:message.payload.name, players:[{name:"Player1", sessionId:sessionId, position:0}]}, function(err, doc){
+					gameController.CreateGame({name:message.payload.name, players:[{name:message.payload.playerName, sessionId:sessionId, position:0}]}, function(err, doc){
 						message.payload = doc["_id"];
 						ws.send(JSON.stringify(message));
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME:
-					gameController.JoinGame({gameId:message.payload.gameId, sessionId:sessionId}, function(err, game){
+					gameController.JoinGame({gameId:message.payload.gameId, sessionId:sessionId, playerName:message.payload.playerName}, function(err, game){
 						console.log("Player Joined, sessionId: ", sessionId);
 						message.payload = {gameOptions:game.gameOptions};
 						message.payload["_id"] = game["_id"];
