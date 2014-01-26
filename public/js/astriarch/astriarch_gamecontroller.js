@@ -55,6 +55,7 @@ Astriarch.GameController.NextTurn = function() {
 Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 	//message will know if we need to wait for other players to finish their turns
 	if(message.payload.allPlayersFinished){
+		$("#NextTurnButton").button('enable');
 		Astriarch.EndTurnControl.hide();
 		Astriarch.GameController.OnStartTurn(message);
 	} else {

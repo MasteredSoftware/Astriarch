@@ -188,9 +188,12 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 		this.drawFleetRectangle = false;
 		this.drawSpacePlatformRectangle = false
 
+		var lastKnownFleet = null;
 		var lastKnownOwner = null;//ClientPlayer
-		if (player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id])
-			lastKnownOwner = player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id].LastKnownOwner;
+		if (this.ClientPlanet.Id in player.LastKnownPlanetFleetStrength){
+			lastKnownFleet = player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id];
+			lastKnownOwner = lastKnownFleet.LastKnownOwner;
+		}
 
 		var planet = player.GetPlanetIfOwnedByPlayer(this.ClientPlanet);
 		if (planet) {
@@ -211,25 +214,25 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 			
 			this.textBlockStrengthText = planet.PlanetaryFleet.DetermineFleetStrength() + "";
 
-		} else if (this.knownPlanetType && lastKnownOwner !== null) {
+		} else if (this.knownPlanetType && lastKnownFleet && lastKnownOwner) {
 
 			this.textBlockForeground = lastKnownOwner.Color.toString();
 			this.textBlockStrengthForeground = lastKnownOwner.Color.toString();
 			
 			//if we know the enemy has a space platform and mobile fleet, we should draw those as well
 
-			if (player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id].Fleet.GetPlanetaryFleetMobileStarshipCount() > 0) {
+			if (lastKnownFleet.Fleet.GetPlanetaryFleetMobileStarshipCount() > 0) {
 				this.drawFleetRectangle = true;
 				this.fleetRectangleImageData = Astriarch.Util.GetImageData(lastKnownOwner.Color).starshipImageData;
 			}
 
-			if (player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id].Fleet.HasSpacePlatform)
+			if (lastKnownFleet.Fleet.HasSpacePlatform)
 			{
 				this.drawSpacePlatformRectangle = true;
 				this.spacePlatformRectangleImageData = Astriarch.Util.GetImageData(lastKnownOwner.Color).spaceplatformImageData;
 			}
 			
-			this.textBlockStrengthText = player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id].Fleet.DetermineFleetStrength() + "";
+			this.textBlockStrengthText = lastKnownFleet.Fleet.DetermineFleetStrength() + "";
 
 		} else {
 
@@ -240,8 +243,8 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 			
 			this.textBlockStrengthForeground = "yellow";
 			
-			if(this.knownPlanetType && this.ClientPlanet.Id in player.LastKnownPlanetFleetStrength)
-                this.textBlockStrengthText = player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id].Fleet.DetermineFleetStrength() + "";
+			if(this.knownPlanetType && lastKnownFleet)
+                this.textBlockStrengthText = lastKnownFleet.Fleet.DetermineFleetStrength() + "";
             else	
 				this.textBlockStrengthText = "";
 		}

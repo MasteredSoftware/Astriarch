@@ -146,6 +146,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	);
 	
 	$( "#NextTurnButton" ).click(function() {
+			$("#NextTurnButton").button('disable');
 			Astriarch.GameController.NextTurn();
 		}
 	);

@@ -13,7 +13,7 @@ AudioInterface = function() {
 	this.mediaEnd = this.createAudioElement('audio/game-over', true, false);
 	
 	this.fadingPlayer = null;
-}
+};
 
 AudioInterface.prototype.toggleMute = function() {
 	this.muted = !this.muted;
