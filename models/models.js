@@ -16,6 +16,7 @@ var db = mongoose.connect('mongodb://' + un_pw + (process.env.OPENSHIFT_MONGODB_
 
 //create schema for a game
 var GameSchema = new mongoose.Schema({
+	nonce: ObjectId, //this is used for protecting against concurrent edits: http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/
 	name:  String,
 	players: [{name:String, sessionId:{ type: String, index: true }, Id: Number, position:Number, currentTurnEnded:{type: Boolean, default:false}}],
 	started:  {type: Boolean, default:false},

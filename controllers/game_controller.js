@@ -1,3 +1,5 @@
+var mongoose = require("mongoose");
+
 var models = require("./../models/models");
 
 var async = require("async");
@@ -7,6 +9,7 @@ var extend = require("extend");
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
 exports.CreateGame = function(options, callback){
+	options.nonce = new mongoose.Types.ObjectId;
 	var game = new models.GameModel(options);
 	//save model to MongoDB
 	game.save(function (err, doc) {
@@ -108,18 +111,57 @@ exports.ChangePlayerName = function(options, callback){
 
 exports.JoinGame = function(options, callback){
 	var playerName = options.playerName || "Player";
-	FindGameById(options.gameId, function(err, doc){
+
+	saveGameByIdWithConcurrencyProtection(options.gameId, function(doc, cb){
 		var playerPosition = doc.players.length - 1;
 		doc.players.push({name:playerName, sessionId:options.sessionId, position:playerPosition + 1});
-		doc.gameOptions.opponentOptions[playerPosition] = {name:playerName, type:0};
-		doc.markModified('gameOptions');
-		doc.save(function(err){
+		var data = {gameOptions: doc.gameOptions, players:doc.players};
+		data.gameOptions.opponentOptions[playerPosition] = {name:playerName, type:0};
+		cb(null, data);
+	}, 0, callback);
+
+};
+
+/*
+This method uses the nonce field in the document to protect against concurrent edits on the game document
+ http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/
+ transformFunction will be given the game doc and should callback the data to update:
+ transformFunction(doc, callback)
+ */
+var saveGameByIdWithConcurrencyProtection = function(gameId, transformFunction, retries, callback){
+	FindGameById(gameId, function(err, doc){
+		if(err){
+			callback(err);
+			return;
+		}
+		transformFunction(doc, function(err, data){
 			if(err){
-				console.error("JoinGame", err);
+				callback(err);
+				return;
 			}
-			callback(err, doc);
+			data.nonce = new mongoose.Types.ObjectId;
+			//setTimeout(function(){ //setTimeout for testing concurrent edits
+			models.GameModel.update({"_id":gameId, "nonce":doc.nonce}, data, function(err, numberAffected, raw){
+				if(err){
+					callback(err);
+					return;
+				}
+				console.log("updateGameByIdWithConcurrencyProtection: ", numberAffected, raw);
+				if(!numberAffected && retries < 5){
+					//we weren't able to update the doc because someone else modified it first, retry
+					console.log("Unable to saveGameByIdWithConcurrencyProtection, retrying ", retries);
+					saveGameByIdWithConcurrencyProtection(gameId, transformFunction, (retries + 1), callback);
+				} else if(retries >= 5){
+					//there is probably something wrong, just return an error
+					callback("Couldn't update document after 5 retries in saveGameByIdWithConcurrencyProtection");
+				} else {
+					FindGameById(gameId, callback);
+				}
+			});
+			//}, 5000);
 		});
 	});
+
 };
 
 exports.ResumeGame = function(options, callback){
@@ -200,11 +242,8 @@ exports.StartGame = function(options, callback){
 };
 
 exports.EndPlayerTurn = function(sessionId, payload, callback){
-	FindGameById(payload.gameId, function(err, doc){
-		if(err){
-			callback(err);
-			return;
-		}
+
+	var setCurrentTurnEndedReturnAllPlayersFinished = function(sessionId, doc){
 		//Check to see if all other players have finished their turns
 		var allPlayersFinished = true;
 		for(var i = 0; i < doc.players.length; i++){
@@ -215,66 +254,70 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 				allPlayersFinished = false;
 			}
 		}
+		return allPlayersFinished;
+	};
 
-		var data = {"allPlayersFinished": allPlayersFinished, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc, "gameModel":null};
-		if(allPlayersFinished){
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		setCurrentTurnEndedReturnAllPlayersFinished(sessionId, doc);
+		var data = {players:doc.players};
+		//update players current turn ended
+		cb(null, data);
+	}, 0, function(err, doc){
+		//now that we ensured only one player ended their turn at a time, let's check again
+		var returnData = {"allPlayersFinished": false, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc, "gameModel":null};
+		returnData.allPlayersFinished = setCurrentTurnEndedReturnAllPlayersFinished(sessionId, doc);
+		if(returnData.allPlayersFinished){
 			//set all players back to currentTurnEnded = false for next turn;
 			for(var i = 0; i < doc.players.length; i++){
 				doc.players[i].currentTurnEnded = false;
 			}
 
-			data.gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
+			returnData.gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
 
 			//finalize all planetViewWorkingData objects for players
-			finalizePlanetViewWorkingDataObjectsForGame(doc._id, data.gameModel, function(err){
+			finalizePlanetViewWorkingDataObjectsForGame(doc._id, returnData.gameModel, function(err){
 				if(err){
 					callback(err);
 					return;
 				}
-				data.endOfTurnMessagesByPlayerId = Astriarch.ServerController.EndTurns(data.gameModel);
-				var destroyedPlayers = Astriarch.ServerController.CheckPlayersDestroyed(data.gameModel);
+				returnData.endOfTurnMessagesByPlayerId = Astriarch.ServerController.EndTurns(returnData.gameModel);
+				var destroyedPlayers = Astriarch.ServerController.CheckPlayersDestroyed(returnData.gameModel);
 				if(destroyedPlayers.length > 0){
-					data.destroyedClientPlayers = [];
+					returnData.destroyedClientPlayers = [];
 					for(var ip in destroyedPlayers){
 						var p = destroyedPlayers[ip];
-						data.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color));
+						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color));
 					}
 
 					//check to see if the game is ended (either no more human players or only one player left)
 					var humansLeft = false;
-					for(var ip in data.gameModel.Players){
-						if(data.gameModel.Players[ip].Type == Astriarch.Player.PlayerType.Human){
+					for(var ip in returnData.gameModel.Players){
+						if(returnData.gameModel.Players[ip].Type == Astriarch.Player.PlayerType.Human){
 							humansLeft = true;
 							break;
 						}
 					}
-					if(!humansLeft || data.gameModel.Players.length <= 1){
+					if(!humansLeft || returnData.gameModel.Players.length <= 1){
 						doc.ended = true;
 					}
 				}
 
-				doc.gameData = new Astriarch.SerializableModel(data.gameModel);
+				doc.gameData = new Astriarch.SerializableModel(returnData.gameModel);
 				doc.markModified('gameData');
 				doc.save(function(err){
 					if(err){
 						console.error("EndPlayerTurn: ", err);
 					}
 
-					callback(err, data);
+					callback(err, returnData);
 				});
 			});
 		} else {
-			//TODO: update instead of save? if two people end turns at the same time will the data be out of sync?
-			doc.save(function(err){
-				if(err){
-					console.error("EndPlayerTurn: ", err);
-				}
-
-				callback(err, data);
-			});
+			callback(null, returnData);
 		}
-
 	});
+
 };
 
 var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, callback){
@@ -443,11 +486,7 @@ exports.FinishUpdatePlanet = function(options, payload, callback){
 };
 
 exports.SendShips = function(sessionId, payload, callback){
-	FindGameById(payload.gameId, function(err, doc){
-		if(err){
-			callback(err);
-			return;
-		}
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
 		//payload: {"planetIdSource":1, "planetIdDest":1, "data":{"scouts":1, "destroyers":1, "cruisers":1, "battleships":1}}
 		getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetIdSource, function(err, player, planetSource, gameModel){
 			if(err){
@@ -470,17 +509,10 @@ exports.SendShips = function(sessionId, payload, callback){
 
 			planetSource.OutgoingFleets.push(createdFleet);
 
-			//TODO: we should queue up these fleet movements like we do for the planet working build queue so that we don't have conflicts
-			doc.gameData = new Astriarch.SerializableModel(gameModel);
-			doc.markModified('gameData');
-			doc.save(function(err){
-				if(err){
-					console.error("SendShips error saving doc: ", err);
-				}
-				callback(err);
-			});
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
 		});
-	});
+	}, 0, callback);
 };
 
 exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
