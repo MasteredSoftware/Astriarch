@@ -147,8 +147,11 @@ Astriarch.SendShipsControl = {
 		Astriarch.View.SendShipsDialogWindowClosed(true);
 	},
 
-	CancelClose: function()
-	{
+	CancelClose: function() {
 		Astriarch.View.SendShipsDialogWindowClosed(false);
+	},
+
+	Close: function() {
+		Astriarch.SendShipsControl.dialog.dlg.dialog('close');
 	}
 };

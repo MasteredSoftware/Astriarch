@@ -49,6 +49,7 @@ app.use(express.session({
 }));
 
 app.use(app.router);
+app.use(express.compress());
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: 30 * 24 * 60 * 60 }));
 
 // development only
@@ -135,7 +136,7 @@ wss.on('connection', function(ws) {
 				case Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME:
 					gameController.JoinGame({gameId:message.payload.gameId, sessionId:sessionId, playerName:message.payload.playerName}, function(err, game){
 						console.log("Player Joined, sessionId: ", sessionId);
-						message.payload = {gameOptions:game.gameOptions};
+						message.payload = {gameOptions:game.gameOptions, name:game.name};
 						message.payload["_id"] = game["_id"];
 						ws.send(JSON.stringify(message));
 

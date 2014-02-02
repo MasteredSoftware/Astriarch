@@ -71,6 +71,8 @@ Astriarch.NewGameControl = {
 	joinGame: function(message){
 		Astriarch.NewGameControl.GameCreator = false;
 
+		$("#GameNameTextBox").parent().html('<span id="GameNameValue"></span>');
+
 		$('select#NumberOfSystemsComboBox').parent().html('<span id="NumberOfSystemsValue"></span>');
 		$('select#PlanetsPerSystemComboBox').parent().html('<span id="PlanetsPerSystemValue"></span>');
 
@@ -93,6 +95,8 @@ Astriarch.NewGameControl = {
 		var gameOptions = message.payload.gameOptions;
 		//refresh view with new game options
 		if(!Astriarch.NewGameControl.GameCreator){
+			$("#GameNameValue").text(message.payload.name);
+
 			$("#NumberOfSystemsValue").text(gameOptions.systemsToGenerate);
 			$("#PlanetsPerSystemValue").text(gameOptions.planetsPerSystem);
 

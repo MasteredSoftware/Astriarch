@@ -57,6 +57,10 @@ Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 	if(message.payload.allPlayersFinished){
 		$("#NextTurnButton").button('enable');
 		Astriarch.EndTurnControl.hide();
+		//hide other controls as well in case they are open
+		Astriarch.PlanetView.Close();
+		Astriarch.SendShipsControl.Close();
+
 		Astriarch.GameController.OnStartTurn(message);
 	} else {
 		//TODO: update GUI to reflect waiting for player(s)

@@ -401,7 +401,6 @@ exports.StartUpdatePlanet = function(options, payload, callback){
 				}
 				if(!pvwdExisting){
 					var pvwdOptions = {planetViewWorkingData: new models.PlanetViewWorkingData(player, planet), gameId:doc._id, planetId:planet.Id, sessionId:sessionId};
-					console.log("Created pvwdOptions:", pvwdOptions);
 					var pvwd = new models.PlanetViewWorkingDataModel(pvwdOptions);
 					//save model to MongoDB
 					pvwd.save(function (err) {

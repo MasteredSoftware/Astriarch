@@ -935,6 +935,10 @@ Astriarch.PlanetView = {
 		self.planetMain.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_FINISH, payload:{"OkClose": false, "planetId": self.planetMain.Id}});
+	},
+
+	Close: function() {
+		Astriarch.PlanetView.dialog.dlg.dialog('close');
 	}
 };
 
