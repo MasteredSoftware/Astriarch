@@ -49,7 +49,7 @@ app.use(express.session({
 }));
 
 app.use(app.router);
-app.use(express.compress());
+//app.use(express.compress());//NOTE: this ended up being slower on OPENSHIFT (probably because of increased cpu usage)
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: 30 * 24 * 60 * 60 }));
 
 // development only
