@@ -15,6 +15,7 @@ Astriarch.LobbyControl = {
 		$("#GameSelectedPanel").hide();
 
 		$("#JoinGameButton").button();
+		$("#JoinGameButton").button('disable');
 		$("#JoinGameButton").click(
 			function() {
 
@@ -72,6 +73,7 @@ Astriarch.LobbyControl = {
 
 	GamesAvailableSelectionChanged: function(){
 		if(Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem){
+			$("#JoinGameButton").button('enable');
 			$("#GameSelectedPanel").show();
 
 			//refresh Selected Game Details:
@@ -96,6 +98,7 @@ Astriarch.LobbyControl = {
 			}
 		} else {
 			$("#GameSelectedPanel").hide();
+			$("#JoinGameButton").button('disable');
 		}
 
 	},

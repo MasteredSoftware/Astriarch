@@ -836,7 +836,7 @@ Astriarch.AI = {
 				//TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
 
 				//generate this fleet just to ensure strength > destination fleet strength
-				var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
+				var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
 				if (newFleet.DetermineFleetStrength() > (fleetStrength * additionalStrengthMultiplierNeededToAttack))
 				{
 					newFleet = pFriendly.PlanetaryFleet.SplitFleet(scouts, destroyers, cruisers, battleships);
@@ -891,7 +891,7 @@ Astriarch.AI = {
 
 					//TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
 
-					var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
+					var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
 
 					newFleet = pFriendly.PlanetaryFleet.SplitFleet(scouts, destroyers, cruisers, battleships);
 

@@ -97,15 +97,16 @@ Astriarch.SavedGameInterface.setPlayerLastKnownPlanetFleetStrength = function(/*
 	for(var j in sp.LastKnownPlanetSerializableFleetStrength)
 	{
 		var sLKF = sp.LastKnownPlanetSerializableFleetStrength[j];
-
-		//get Fleet from serializable fleet
-		var fleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(sLKF.SerializableFleet, gameGrid);
-		var lastKnownFleet = new Astriarch.Fleet.LastKnownFleet(/*Fleet*/ fleet, /*ClientPlayer*/ null);
-		lastKnownFleet.TurnLastExplored = sLKF.TurnLastExplored;
+		var lastKnownOwner = null;
 		if(sLKF.LastKnownOwnerId)
 		{
-			lastKnownFleet.LastKnownOwner = clientPlayersById[sLKF.LastKnownOwnerId];
+			lastKnownOwner = clientPlayersById[sLKF.LastKnownOwnerId];
 		}
+
+		//get Fleet from serializable fleet
+		var fleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(lastKnownOwner, sLKF.SerializableFleet, gameGrid);
+		var lastKnownFleet = new Astriarch.Fleet.LastKnownFleet(/*Fleet*/ fleet, /*ClientPlayer*/ lastKnownOwner);
+		lastKnownFleet.TurnLastExplored = sLKF.TurnLastExplored;
 		p.LastKnownPlanetFleetStrength[j] = lastKnownFleet;
 	}
 };
@@ -135,12 +136,12 @@ Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet = function(sp, gameGr
 	//populate Owner later in planets.SetPlanetOwner
 	//this.Owner = null;//Player//null means it is ruled by natives or nobody in the case of an asteroid belt
 
-	p.PlanetaryFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(sp.PlanetarySerializableFleet, gameGrid);
+	p.PlanetaryFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(null, sp.PlanetarySerializableFleet, gameGrid);
 
 	//populate outgoingFleets
 	for(var j in sp.OutgoingSerializableFleets)
 	{
-		p.OutgoingFleets.push(Astriarch.SavedGameInterface.getFleetFromSerializableFleet(sp.OutgoingSerializableFleets[j], gameGrid));
+		p.OutgoingFleets.push(Astriarch.SavedGameInterface.getFleetFromSerializableFleet(null, sp.OutgoingSerializableFleets[j], gameGrid));
 	}
 
 	p.PlanetHappiness = sp.PlanetHappiness;//PlanetHappinessType
@@ -179,6 +180,10 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 	{
 		var planet = planetsById[sp.OwnedPlanetIds[j]];
 		planet.SetPlanetOwner(p);
+		planet.PlanetaryFleet.Owner = p;
+		for(var k in planet.OutgoingFleets){
+			planet.OutgoingFleets[k].Owner = p;
+		}
 	}
 	
 	//player model has KnownClientPlanets:Dictionary<int, Planet>
@@ -209,7 +214,7 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 
 	for(var j in sp.SerializableFleetsInTransit)
 	{
-		p.FleetsInTransit.push(Astriarch.SavedGameInterface.getFleetFromSerializableFleet(sp.SerializableFleetsInTransit[j], gameGrid));
+		p.FleetsInTransit.push(Astriarch.SavedGameInterface.getFleetFromSerializableFleet(p, sp.SerializableFleetsInTransit[j], gameGrid));
 	}
 	
 	return p;
@@ -237,8 +242,8 @@ Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProducti
 	return extend(true, ppi, sppi);
 };
 
-Astriarch.SavedGameInterface.getFleetFromSerializableFleet = function(/*Astriarch.SerializableFleet*/ serializedFleet, gameGrid) {
-	var f = new Astriarch.Fleet();
+Astriarch.SavedGameInterface.getFleetFromSerializableFleet = function(/*ClientPlayer*/cp, /*Astriarch.SerializableFleet*/ serializedFleet, gameGrid) {
+	var f = new Astriarch.Fleet(cp);
 		
 	f.HasSpacePlatform = serializedFleet.HasSpacePlatform;
 	f.SpacePlatformDamage = serializedFleet.SpacePlatformDamage;
@@ -420,6 +425,9 @@ Astriarch.SerializableFleet = function(/*Astriarch.Fleet*/ fleet) {
 		
 		//NOTE: not serialized
 		//this.DrawnFleet = null;//backreference if we are drawing this fleet
+
+		//NOTE: not serialized
+		//this.Owner = p;//backreference to player
 		
 		//if this is a fleet in transit, we need to serialize where it's going and coming from
 		if(fleet.travelingFromHex && fleet.DestinationHex)

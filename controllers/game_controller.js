@@ -147,13 +147,16 @@ var saveGameByIdWithConcurrencyProtection = function(gameId, transformFunction, 
 					return;
 				}
 				console.log("updateGameByIdWithConcurrencyProtection: ", numberAffected, raw);
-				if(!numberAffected && retries < 5){
+				if(!numberAffected && retries < 10){
 					//we weren't able to update the doc because someone else modified it first, retry
 					console.log("Unable to saveGameByIdWithConcurrencyProtection, retrying ", retries);
-					saveGameByIdWithConcurrencyProtection(gameId, transformFunction, (retries + 1), callback);
-				} else if(retries >= 5){
+					//retry with a little delay
+					setTimeout(function(){
+						saveGameByIdWithConcurrencyProtection(gameId, transformFunction, (retries + 1), callback);
+					}, 20);
+				} else if(retries >= 10){
 					//there is probably something wrong, just return an error
-					callback("Couldn't update document after 5 retries in saveGameByIdWithConcurrencyProtection");
+					callback("Couldn't update document after 10 retries in saveGameByIdWithConcurrencyProtection");
 				} else {
 					FindGameById(gameId, callback);
 				}
@@ -182,9 +185,29 @@ exports.ResumeGame = function(options, callback){
 		if(!player){
 			console.error("Could not find player in game for ResumeGame!");
 		}
-		//TODO: for now we'll just resume the game, later we'll want to have a UI for waiting for the rest of the original players to join
-		//  and give the host an option to substitute them with computer players
-		callback(err, doc, player);
+
+		//find all working planet view data objects for player to apply to the model for that player
+		models.PlanetViewWorkingDataModel.find({"gameId":options.gameId,"sessionId":options.sessionId}, function(err, planetViewWorkingDataModels){
+			if(err){
+				console.error("ResumeGame => models.PlanetViewWorkingDataModel.find:", err);
+				callback(err);
+				return;
+			}
+			if(planetViewWorkingDataModels.length > 0){
+				console.log("Found PlanetViewWorkingDataModels:", planetViewWorkingDataModels.length, "gameId:", options.gameId);
+
+				var gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
+
+				applyPlanetViewWorkingDataObjectsToModel(planetViewWorkingDataModels, gameModel);
+
+				//reserialize
+				doc.gameData = new Astriarch.SerializableModel(gameModel);
+			}
+
+			//TODO: for now we'll just resume the game, later we'll want to have a UI for waiting for the rest of the original players to join
+			//  and give the host an option to substitute them with computer players
+			callback(err, doc, player);
+		});
 
 	});
 };
@@ -270,7 +293,9 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 		if(returnData.allPlayersFinished){
 			//set all players back to currentTurnEnded = false for next turn;
 			for(var i = 0; i < doc.players.length; i++){
-				doc.players[i].currentTurnEnded = false;
+				if(!doc.players[i].destroyed){
+					doc.players[i].currentTurnEnded = false;
+				}
 			}
 
 			returnData.gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
@@ -288,6 +313,14 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 					for(var ip in destroyedPlayers){
 						var p = destroyedPlayers[ip];
 						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color));
+
+						//set destroyed players
+						for(var i = 0; i < doc.players.length; i++){
+							if(p.Id == doc.players[i].Id) {
+								doc.players[i].currentTurnEnded = true;
+								doc.players[i].destroyed = true;
+							}
+						}
 					}
 
 					//check to see if the game is ended (either no more human players or only one player left)
@@ -320,6 +353,43 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 
 };
 
+var applyPlanetViewWorkingDataObjectsToModel = function(planetViewWorkingDataModels, gameModel){
+	var planet = null;
+	var planetsById = {};//id:planet
+	for(var p in gameModel.Planets){
+		planet = gameModel.Planets[p];
+		planetsById[planet.Id] = planet;
+	}
+
+	for(var i in planetViewWorkingDataModels){
+		var planetViewWorkingDataModel = planetViewWorkingDataModels[i];
+		var pvwd = planetViewWorkingDataModel.planetViewWorkingData;
+		planet = planetsById[planetViewWorkingDataModel.planetId];
+
+		planet.UpdatePopulationWorkerTypes(pvwd.farmers, pvwd.miners, pvwd.workers);
+		planet.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
+
+		planet.BuildQueue = [];
+		for (var i in pvwd.workingBuildQueue){
+			planet.BuildQueue.push(Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(pvwd.workingBuildQueue[i]));
+		}
+
+		//now spend our resources and in case we issued a refund, add remainders to this planets resources and accumulate
+		var originalResources = new Astriarch.Model.WorkingPlayerResources(planet.Owner);
+		var goldCost = originalResources.GoldAmount - pvwd.workingResources.GoldAmount;
+		var oreCost = originalResources.OreAmount - pvwd.workingResources.OreAmount;
+		var iridiumCost = originalResources.IridiumAmount - pvwd.workingResources.IridiumAmount;
+		planet.SpendResources(gameModel, goldCost, oreCost, iridiumCost, planet.Owner);
+		//add the remainders to the planets resources and accumulate
+		planet.Owner.Resources.GoldRemainder = pvwd.workingResources.GoldRemainder;
+		planet.Owner.Resources.OreRemainder = pvwd.workingResources.OreRemainder;
+		planet.Owner.Resources.IridiumRemainder = pvwd.workingResources.IridiumRemainder;
+		planet.Owner.Resources.AccumulateResourceRemainders();
+
+		planet.BuildLastStarShip = (pvwd.BuildLastStarShip ? true : false);
+	}
+};
+
 var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, callback){
 	//find all working data objects
 	models.PlanetViewWorkingDataModel.find({"gameId":gameId}, function(err, planetViewWorkingDataModels){
@@ -329,46 +399,14 @@ var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, ca
 			return;
 		}
 		console.log("Found PlanetViewWorkingDataModels:", planetViewWorkingDataModels.length, "gameId:", gameId);
-		var planet = null;
-		var planetsById = {};//id:planet
-		for(var p in gameModel.Planets){
-			planet = gameModel.Planets[p];
-			planetsById[planet.Id] = planet;
-		}
+
+		applyPlanetViewWorkingDataObjectsToModel(planetViewWorkingDataModels, gameModel);
 
 		for(var i in planetViewWorkingDataModels){
 			var planetViewWorkingDataModel = planetViewWorkingDataModels[i];
-			var pvwd = planetViewWorkingDataModel.planetViewWorkingData;
-			planet = planetsById[planetViewWorkingDataModel.planetId];
-
-			planet.UpdatePopulationWorkerTypes(pvwd.farmers, pvwd.miners, pvwd.workers);
-			planet.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
-
-			planet.BuildQueue = [];
-			for (var i in pvwd.workingBuildQueue){
-				planet.BuildQueue.push(Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(pvwd.workingBuildQueue[i]));
-			}
-
-			//now spend our resources and in case we issued a refund, add remainders to this planets resources and accumulate
-			var originalResources = new Astriarch.Model.WorkingPlayerResources(planet.Owner);
-			var goldCost = originalResources.GoldAmount - pvwd.workingResources.GoldAmount;
-			var oreCost = originalResources.OreAmount - pvwd.workingResources.OreAmount;
-			var iridiumCost = originalResources.IridiumAmount - pvwd.workingResources.IridiumAmount;
-			planet.SpendResources(gameModel, goldCost, oreCost, iridiumCost, planet.Owner);
-			//add the remainders to the planets resources and accumulate
-			planet.Owner.Resources.GoldRemainder = pvwd.workingResources.GoldRemainder;
-			planet.Owner.Resources.OreRemainder = pvwd.workingResources.OreRemainder;
-			planet.Owner.Resources.IridiumRemainder = pvwd.workingResources.IridiumRemainder;
-			planet.Owner.Resources.AccumulateResourceRemainders();
-
-			planet.BuildLastStarShip = (pvwd.BuildLastStarShip ? true : false);
-
 			//now delete processed PlanetViewWorkingDataModel
 			planetViewWorkingDataModel.remove();
 		}
-
-
-
 
 		callback();
 	});

@@ -54,12 +54,12 @@ Astriarch.ClientModelInterface = {
 			if(stem.Data.DefendingSerializableClientPlayer){
 				defendingCP = Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(stem.Data.DefendingSerializableClientPlayer);
 			}
-			var defendingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(stem.Data.DefendingSerializableFleet, gameGrid);
+			var defendingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(defendingCP, stem.Data.DefendingSerializableFleet, gameGrid);
 			var attackingCP = Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(stem.Data.AttackingSerializableClientPlayer);
-			var attackingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(stem.Data.AttackingSerializableFleet, gameGrid);
+			var attackingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(attackingCP, stem.Data.AttackingSerializableFleet, gameGrid);
 			tem.Data = new Astriarch.TurnEventMessage.PlanetaryConflictData(defendingCP, defendingFleet, attackingCP, attackingFleet);
 			//copy other properties not in constructor
-			tem.Data.WinningFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(stem.Data.WinningSerializableFleet, gameGrid);
+			tem.Data.WinningFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(null, stem.Data.WinningSerializableFleet, gameGrid);
 			tem.Data.AttackingFleetChances = stem.Data.AttackingFleetChances;//percentage chance the attacking fleet will win
 			tem.Data.GoldAmountLooted = stem.Data.GoldAmountLooted;//if there was gold looted from the planet
 			tem.Data.OreAmountLooted = stem.Data.OreAmountLooted;//if there was ore looted from the planet

@@ -75,19 +75,19 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	{
 		case Astriarch.Planet.PlanetType.AsteroidBelt:
 			this.MaxImprovements = 3;
-			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(Astriarch.Fleet.StarShipType.SystemDefense, 0, this.BoundingHex);
+			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, 0, this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.DeadPlanet:
 			this.MaxImprovements = 4;
-			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(2, 5), this.BoundingHex);
+			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(2, 5), this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass1:
 			this.MaxImprovements = 6;
-			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(5, 10), this.BoundingHex);
+			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(5, 10), this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass2:
 			this.MaxImprovements = 9;
-			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(10, 15), this.BoundingHex);
+			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(10, 15), this.BoundingHex);
 			break;
 		default:
 			throw new NotImplementedException("Planet type " + this.Type + "not supported by planet constructor.");
@@ -495,7 +495,7 @@ Astriarch.Planet.prototype.SetPlanetExplored = function(gameModel, /*Player*/ p)
  */
 Astriarch.Planet.prototype.SetPlayerLastKnownPlanetFleetStrength = function(gameModel, /*Player*/ p){
 	//Fleet
-	var lastKnownFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].length,
+	var lastKnownFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(p, this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].length,
 																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length,
 																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length,
 																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length,

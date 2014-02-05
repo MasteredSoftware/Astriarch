@@ -52,20 +52,41 @@ Astriarch.GameController.NextTurn = function() {
 	Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.END_TURN, payload:{}});
 };
 
+Astriarch.GameController.HideControlsForTurnStart = function(){
+	Astriarch.EndTurnControl.hide();
+	//hide other controls as well in case they are open
+	Astriarch.PlanetView.Close();
+	Astriarch.SendShipsControl.Close();
+};
+
 Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 	//message will know if we need to wait for other players to finish their turns
 	if(message.payload.allPlayersFinished){
 		$("#NextTurnButton").button('enable');
-		Astriarch.EndTurnControl.hide();
-		//hide other controls as well in case they are open
-		Astriarch.PlanetView.Close();
-		Astriarch.SendShipsControl.Close();
+		Astriarch.GameController.HideControlsForTurnStart();
 
 		Astriarch.GameController.OnStartTurn(message);
 	} else {
-		//TODO: update GUI to reflect waiting for player(s)
+		//TODO: update GUI to reflect which player(s) we're waiting on, also eventually we want to add turn time limits
 		Astriarch.EndTurnControl.show();
 	}
+};
+
+Astriarch.GameController.OnPlayerDestroyed = function(/*ClientPlayer)*/ clientPlayer) {
+	var a = new Astriarch.Alert(clientPlayer.Name + " Destroyed", "Player: <span style=\"color:"+clientPlayer.Color.toString()+"\">" + clientPlayer.Name + "</span> destroyed.");
+};
+
+//payload = {"winningSerializablePlayer": winningSerializablePlayer, "playerWon": playerWon, "score":score};
+Astriarch.GameController.OnGameOverMessageResponse = function(message) {
+	Astriarch.View.audioInterface.EndGame();
+
+	Astriarch.GameController.HideControlsForTurnStart();
+
+	Astriarch.GameController.UpdateUIForEndTurnMessage(message);
+
+	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').hide();
+
+	Astriarch.GameOverControl.show(message.payload.winningSerializablePlayer, message.payload.playerWon, message.payload.score);
 };
 
 Astriarch.GameController.RefreshTurnDisplay = function(){
@@ -75,9 +96,9 @@ Astriarch.GameController.RefreshTurnDisplay = function(){
 
 Astriarch.GameController.OnStartTurn = function(message) {
 
-	if(message.destroyedClientPlayers){
-		for(var i in message.destroyedClientPlayers){
-			Astriarch.GameController.OnPlayerDestroyed(message.destroyedClientPlayers[i]);
+	if(message.payload.destroyedClientPlayers){
+		for(var i in message.payload.destroyedClientPlayers){
+			Astriarch.GameController.OnPlayerDestroyed(message.payload.destroyedClientPlayers[i]);
 		}
 	}
 
@@ -179,21 +200,6 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 		Astriarch.View.TurnSummaryItemsListBox.addItems(listBoxItems);
 
 	}
-};
-
-Astriarch.GameController.OnPlayerDestroyed = function(/*ClientPlayer)*/ clientPlayer) {
-	var a = new Astriarch.Alert(clientPlayer.Name + " Destroyed", "Player: <span style=\"color:"+clientPlayer.Color.toString()+"\">" + clientPlayer.Name + "</span> destroyed.");
-};
-
-//payload = {"winningSerializablePlayer": winningSerializablePlayer, "playerWon": playerWon, "score":score};
-Astriarch.GameController.OnGameOverMessageResponse = function(message) {
-	Astriarch.View.audioInterface.EndGame();
-
-	Astriarch.GameController.UpdateUIForEndTurnMessage(message);
-
-	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').hide();
-
-	Astriarch.GameOverControl.show(message.payload.winningSerializablePlayer, message.payload.playerWon, message.payload.score);
 };
 
 Astriarch.GameController.processNextEndOfTurnPlanetaryConflictMessage = function() {

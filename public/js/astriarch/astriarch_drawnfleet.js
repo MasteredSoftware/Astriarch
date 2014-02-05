@@ -20,8 +20,8 @@ Astriarch.DrawnFleet = jCanvas.DrawnObject.extend({ // drawn object class
 		
 		//setup visual elements
 		this.TravelFleetRect = new Astriarch.Rectangle();
-		this.TravelFleetRect.Height = 10;
-		this.TravelFleetRect.Width = 10;
+		this.TravelFleetRect.Height = 11;
+		this.TravelFleetRect.Width = 11;
 
 		this.TravelLine = new Astriarch.Line();
 
@@ -34,8 +34,14 @@ Astriarch.DrawnFleet = jCanvas.DrawnObject.extend({ // drawn object class
 	draw: function(ctx) {
 		if(this.Fleet.totalTravelDistance > 0)
 		{
+			var color = "green";
+			var fleetRectangleImageData = Astriarch.Util.starshipImageData;
+			if(this.Fleet.Owner){
+				color = this.Fleet.Owner.Color.toString();
+				fleetRectangleImageData = Astriarch.Util.GetImageData(this.Fleet.Owner.Color).starshipImageData;
+			}
 			//draw travel line
-			ctx.strokeStyle = "green";
+			ctx.strokeStyle = color;
 			ctx.lineWidth = 1.5;
 			ctx.beginPath();
 			ctx.moveTo(this.TravelLine.X1, this.TravelLine.Y1);
@@ -44,18 +50,13 @@ Astriarch.DrawnFleet = jCanvas.DrawnObject.extend({ // drawn object class
 			ctx.stroke();
 			
 			//draw fleet image
-			//TODO: should we cache these images?
-			var image = new Image();
-			var x = this.TravelFleetRect.X;//images sizes are 32px (TODO: shouldn't be hard-coded?) (also not sure why it needs to be off by 1 (7 instead of 8)
-			var y = this.TravelFleetRect.Y;
-			image.onload = function() {
-				//planetImageLoaded
-				ctx.drawImage(image, x, y);
-			};
-			image.src = "img/starship.png";
-			
+			var fleetImg = ctx.createImageData(this.TravelFleetRect.Width, this.TravelFleetRect.Height);
+			for(var i in fleetRectangleImageData)
+				fleetImg.data[i] = fleetRectangleImageData[i];
+			ctx.putImageData(fleetImg, this.TravelFleetRect.X, this.TravelFleetRect.Y);
+
 			//draw ETA text
-			ctx.fillStyle = "green";
+			ctx.fillStyle = color;
 			ctx.font = "bold 8px sans-serif";
 			ctx.textAlign = "left";
 			ctx.textBaseline = 'alphabetic';

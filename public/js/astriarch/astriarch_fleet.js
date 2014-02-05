@@ -4,7 +4,7 @@ var Astriarch = Astriarch || require('./astriarch_base');
  * A Fleet is a collection of starships with a space platform
  * @constructor
  */
-Astriarch.Fleet = function() {
+Astriarch.Fleet = function(/*Player*/ p) {
         this.StarShips = {};//Dictionary<StarShipType, List<StarShip>>
 		this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense] = [];
 		this.StarShips[Astriarch.Fleet.StarShipType.Scout] = [];
@@ -29,6 +29,8 @@ Astriarch.Fleet = function() {
 		this.SetFleetHasSpacePlatform();
 		
 		this.DrawnFleet = null;//backreference if we are drawing this fleet
+
+		this.Owner = p;//backreference to player (or ClientPlayer on client)
 };
 
 Astriarch.Fleet.Static = {SPACE_PLATFORM_STRENGTH: 64};//TODO: twice the strength of a battleship, is this good?
@@ -259,7 +261,7 @@ Astriarch.Fleet.prototype.DetermineFleetStrength = function(includeSpacePlatform
  */
 Astriarch.Fleet.prototype.SplitFleet = function(scoutCount, destoyerCount, cruiserCount, battleshipCount) {//returns Fleet
 
-	var newFleet = new Astriarch.Fleet();
+	var newFleet = new Astriarch.Fleet(this.Owner);
 	newFleet.LocationHex = this.LocationHex;
 
 	if (scoutCount > this.StarShips[Astriarch.Fleet.StarShipType.Scout].length ||
@@ -344,7 +346,7 @@ Astriarch.Fleet.prototype.GetPlanetaryFleetMobileStarshipCount = function(){
  * @return {Astriarch.Fleet} the new fleet
  */
 Astriarch.Fleet.prototype.CloneFleet = function(){//returns Fleet
-	var f = new Astriarch.Fleet();
+	var f = new Astriarch.Fleet(this.Owner);
 
 	f.LocationHex = this.LocationHex;
 	f.HasSpacePlatform = this.HasSpacePlatform;
@@ -585,17 +587,17 @@ Astriarch.Fleet.StarShipAdvantageStrengthComparer.prototype.getStarShipAdvantage
  */
 Astriarch.Fleet.StarShipFactoryHelper = {
 
-	GenerateShips: function(/*StarShipType*/ type, /*int*/ number, /*Hexagon*/ locationHex)//returns Fleet
+	GenerateShips: function(/*Player*/p, /*StarShipType*/ type, /*int*/ number, /*Hexagon*/ locationHex)//returns Fleet
 	{
-		var f = new Astriarch.Fleet();
+		var f = new Astriarch.Fleet(p);
 		f.LocationHex = locationHex;
 		for (var i = 0; i < number; i++)
 			f.StarShips[type].push(new Astriarch.Fleet.StarShip(type));
 		return f;
 	},
 
-	GenerateFleetWithShipCount: function(defenders, scouts, destroyers, cruisers, battleships, /*Hexagon*/ locationHex){//returns Fleet
-		var f = new Astriarch.Fleet();
+	GenerateFleetWithShipCount: function(/*Player*/p, defenders, scouts, destroyers, cruisers, battleships, /*Hexagon*/ locationHex){//returns Fleet
+		var f = new Astriarch.Fleet(p);
 		f.LocationHex = locationHex;
 
 		for (var i = 0; i < defenders; i++)

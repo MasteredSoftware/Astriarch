@@ -211,7 +211,7 @@ wss.on('connection', function(ws) {
 							return;
 						}
 						// data = {"allPlayersFinished": true|false, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc};
-						var payload = {"allPlayersFinished":data.allPlayersFinished, "endOfTurnMessages":null, "destroyedClientPlayers":data.destroyedClientPlayers};
+						var payloadOrig = {"allPlayersFinished":data.allPlayersFinished, "endOfTurnMessages":null, "destroyedClientPlayers":data.destroyedClientPlayers};
 						if(data.allPlayersFinished){
 
 							var winningSerializablePlayer = null;
@@ -236,6 +236,7 @@ wss.on('connection', function(ws) {
 							var playersBySessionKey = getOtherPlayersBySessionKeyFromGame(data.game, null);//pass null as second arg to get all players
 							for(var sk in playersBySessionKey){
 								var player = playersBySessionKey[sk];
+								var payload = JSON.parse(JSON.stringify(payloadOrig));//poor man's clone
 								payload.endOfTurnMessages = [];
 								if(player.Id in data.endOfTurnMessagesByPlayerId){
 									payload.endOfTurnMessages = data.endOfTurnMessagesByPlayerId[player.Id];
@@ -261,8 +262,7 @@ wss.on('connection', function(ws) {
 								}
 							}
 						} else {
-							console.log("Not all players done.");
-							message.payload = payload;
+							message.payload = payloadOrig;
 							ws.send(JSON.stringify(message));
 						}
 

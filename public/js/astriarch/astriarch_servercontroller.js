@@ -257,7 +257,7 @@ Astriarch.ServerController = {
 				planetaryConflictData.FoodAmountLooted = destinationPlanet.Resources.FoodAmount;
 
 				//create a new fleet, we'll land and merge in a sec
-				destinationPlanet.PlanetaryFleet = new Astriarch.Fleet();
+				destinationPlanet.PlanetaryFleet = new Astriarch.Fleet(player);
 				//merge/land fleet
 				destinationPlanet.PlanetaryFleet.LandFleet(playerFleet, playerFleet.DestinationHex);
 

@@ -523,19 +523,28 @@ Astriarch.View.updateSelectedItemPopulationAssignmentsPanel = function() {
 };
 
 Astriarch.View.updateCanvasForPlayer = function() {
+	var mainPlayer = Astriarch.ClientGameModel.MainPlayer;
+
 	for (var i in Astriarch.View.DrawnPlanets)
 	{
-		Astriarch.View.DrawnPlanets[i].UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel.MainPlayer);
+		Astriarch.View.DrawnPlanets[i].UpdatePlanetDrawingForPlayer(mainPlayer);
 	}
 	Astriarch.View.CanvasPlayfieldLayer.needsDisplay = true;
 
 	//clear fleets and remake drawn fleets from fleets in transit (if this causes flickering perhaps we should instead update existing drawn fleets?)
 	Astriarch.View.DrawnFleets = [];
 	Astriarch.View.CanvasFleetsLayer.children = [];
-	for(var i in Astriarch.ClientGameModel.MainPlayer.FleetsInTransit){
-		var fleet = Astriarch.ClientGameModel.MainPlayer.FleetsInTransit[i];
-		fleet.CreateDrawnFleet();
+	for(var i in mainPlayer.FleetsInTransit){
+		mainPlayer.FleetsInTransit[i].CreateDrawnFleet();
 	}
+
+	for (var pi in mainPlayer.OwnedPlanets){
+		var p = mainPlayer.OwnedPlanets[pi];
+		for (var i in p.OutgoingFleets){
+			p.OutgoingFleets[i].CreateDrawnFleet();
+		}
+	}
+
 	Astriarch.View.CanvasFleetsLayer.needsDisplay = true;
 };
 
