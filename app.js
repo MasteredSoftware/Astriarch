@@ -19,6 +19,8 @@ var express = require('express')
 var models = require("./models/models");
 var gameController = require("./controllers/game_controller");
 
+var clientFiles = require('./client_file_registry.js');
+
 var app = express();
 
 // all environments
@@ -60,8 +62,9 @@ if ('development' == app.get('env')) {
 app.get('/test', function(req, res){
 	res.render('test', { title: 'Astriarch' });
 });
+
 app.get('/', function(req, res){
-	res.render("astriarch", {"port":config.ws_port});
+	res.render("astriarch", {"port":config.ws_port, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal});
 });
 
 var server = http.createServer(app).listen(app.get('port'), app.get('host'), function(){
