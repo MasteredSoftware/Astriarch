@@ -3,6 +3,7 @@ html(lang='en')
 head
 	meta(charset='UTF-8')
 	title Astriarch - Ruler of the Stars, space strategy game
+	link(type='text/css', href='css/theme.css', rel='stylesheet')
 	link(type='text/css', href='css/custom-theme/jquery-ui-1.8.16.custom.css', rel='stylesheet')
 	link(type='text/css', href='css/js-listbox-style.css', rel='stylesheet')
 	link(type='text/css', href='css/jquery.ui.selectmenu.css', rel='stylesheet')
@@ -28,7 +29,7 @@ head
 		body {
 			height: 100%;
 			width: 100%;
-			background: #000 url("site/tile-bg.png") repeat top center;
+			background: #000 url("img/tile-bg.png") repeat top center;
 			/*  Webkit */
 			display: -webkit-box;
 			-webkit-box-orient: horizontal;
@@ -49,6 +50,8 @@ head
 			-moz-box-sizing: border-box;
 			-ms-box-sizing: border-box;
 			*/
+			margin:0;
+			padding:0;
 		}
 		img {
 			border: 0px;
@@ -163,6 +166,14 @@ head
 		{
 			color: green;
 			font-family: "Courier New";
+		}
+		.playerSummaryStatusText
+		{
+			text-align:left;
+			font-weight:bold;
+			font-size:14pt;
+			padding-left:5px;
+			min-width:32px;
 		}
 		.playerStatusText
 		{
@@ -280,7 +291,29 @@ head
 			vertical-align:top;
 			font-size:11px;
 		}
+		.wrapper {
+			position: relative;
+			margin: 0 auto;
+		}
+		#mainnav {
+			clear: both;
+		}
+
+		.cf:after {
+			display:block;
+			clear:both;
+			height:0;
+			visibility:hidden;
+			content:" ";
+			font-size:0;
+		}
 	script(type='text/javascript').
+
+		function openWin(url) {
+			window.open (url,"aboutastriarch","scrollbars=1,width=800,height=600");
+			return false;
+		}
+
 		$(document).ready(function() {
 			window.name = "astriarch-home";
 
@@ -312,569 +345,572 @@ head
 			<canvas id="canvasAstriarchPlayfield" width="615" height="480"></canvas>
 			</div>
 
-		table
-			tr
-				td(colspan='3')
-			tr
-				td
-					// left sidebar
-				td
-					#gameElementsContainer(style='position: relative; width: 800px; height: 600px;')
-						#canvasContainer(style='position: relative;')
-						#loadingSpinner(style='position: absolute; width: 160px; height: 100px; left: 320px; top: 270px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2002;')
-							table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 30012;')
-								tr(height='25')
-									td(width='150', align='center')
-										span(style='text-align: center;') Loading...
-								tr(height='75')
-									td(width='150', align='center')
-										img(src='img/spinner-green.gif')
-						#mainMenu(style='position: absolute; width: 640px; height: 400px; left: 80px; top: 120px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2001;')
-							table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 3001;')
-								tr(height='25')
-									td(width='630', align='center', colspan='2')
-										span(style='text-align: center;') Welcome to Astriarch - Ruler of the Stars
-								tr(height='315')
-									td(width='315', align='center')
-										#GamesAvailableListBox(style='height: 310px;')
-									td(width='315', align='center')
-										#GameSelectedPanel(style='height: 310px;')
-											#GameSelectedDetails(style='height: 290px;')
-												#GameSelectedName(style='height: 30px;')
-												#GameSelectedHostName(style='height: 30px;')
-												#GameSelectedPlayerSummary(style='height: 30px;')
-												#GameSelectedPlayer2Details(style='height: 30px;')
-												#GameSelectedPlayer3Details(style='height: 30px;')
-												#GameSelectedPlayer4Details(style='height: 30px;')
-												#GameSelectedNumberOfSystems(style='height: 30px;')
-												#GameSelectedPlanetsPerSystem(style='height: 30px;')
-												#GameSelectedDateCreated(style='height: 30px;')
-								tr(height='50')
-									td(width='315', align='center')
-										button#NewSkirmishGameButton(style='font-size: 12px;', width='100') New Game
-									td(width='315', align='center')
-										button#JoinGameButton(style='font-size: 12px;', width='100') Join Game
-						#startGameOptionsContainer(style='position: absolute; width: 640px; height: 400px; left: 80px; top: 120px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2000;')
-							table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 3000;')
-								tr(height='50')
-									td(width='630', colspan='3')
-										div(style='text-align: center;') New Skirmish Game
-										div(style='text-align: center;') Please enter your name and choose the desired game settings.
-								tr(height='30')
-									td(width='210')
-										label(style='width: 75px;')
-											| Game Name:
-									td(width='420', colspan='2')
-										input#GameNameTextBox(type='text', value='New Game', style='width: 207px;')
-								tr(height='30')
-									td(width='210')
-										label(style='width: 75px;')
-											| Your Name:
-									td(width='420', colspan='2')
-											input#PlayerNameTextBox(type='text', value='Player1', style='width: 207px;')
-								tr(height='30')
-									td(width='210')
-										label#NumberOfSystemsPanel
-											| Number of Systems:
-									td(width='420', colspan='2')
-										select#NumberOfSystemsComboBox
-											option(value='2') 2
-											option(value='3') 3
-											option(value='4', selected='true') 4
-								tr(height='30')
-									td(width='210')
-										label#PlanetsPerSystemPanel
-											| Planets Per System:
-									td(width='420', colspan='2')
-										select#PlanetsPerSystemComboBox
-											option(value='4') 4
-											option(value='5') 5
-											option(value='6') 6
-											option(value='7') 7
-											option(value='8') 8
-								tr(height='40')
-									td(width='210')
-										label
-											| Player 1:
-									td(width='210')
-										label#Player1NamePanel
-											| You
-									td(width='215', rowspan='4')
-										img(src='img/starfield3.png', width='200', height='170')
-								tr(height='40')
-									td(width='210')
-										div.Player2Panel
+		.wrapper
+			#mainnav.cf
+				img(src='img/SystemMasterLogo.png', style="float:left;")
+				ul
+					li
+						a(href='#', onclick="openWin('help.html');") help
+					li
+						a(href='#', onclick="openWin('news.html');") news
+					li
+						a(href='#', onclick="openWin('about.html');") about
+			#main.cf
+				// left sidebar
+				aside#left-sidebar(style='width: 160px; height: 600px;float:left;')
+
+				#main-right(style='float:right')
+					#main-middle(style='float:left')
+						#gameElementsContainer(style='position: relative; width: 800px; height: 600px;')
+							#canvasContainer(style='position: relative;')
+							#loadingSpinner(style='position: absolute; width: 160px; height: 100px; left: 320px; top: 270px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2002;')
+								table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 30012;')
+									tr(height='25')
+										td(width='150', align='center')
+											span(style='text-align: center;') Loading...
+									tr(height='75')
+										td(width='150', align='center')
+											img(src='img/spinner-green.gif')
+							#mainMenu(style='position: absolute; width: 640px; height: 400px; left: 80px; top: 120px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2001;')
+								table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 3001;')
+									tr(height='25')
+										td(width='630', align='center', colspan='2')
+											span(style='text-align: center;') Welcome to Astriarch - Ruler of the Stars
+									tr(height='315')
+										td(width='315', align='center')
+											#GamesAvailableListBox(style='height: 310px;')
+										td(width='315', align='center')
+											#GameSelectedPanel(style='height: 310px;')
+												#GameSelectedDetails(style='height: 290px;')
+													#GameSelectedName(style='height: 30px;')
+													#GameSelectedHostName(style='height: 30px;')
+													#GameSelectedPlayerSummary(style='height: 30px;')
+													#GameSelectedPlayer2Details(style='height: 30px;')
+													#GameSelectedPlayer3Details(style='height: 30px;')
+													#GameSelectedPlayer4Details(style='height: 30px;')
+													#GameSelectedNumberOfSystems(style='height: 30px;')
+													#GameSelectedPlanetsPerSystem(style='height: 30px;')
+													#GameSelectedDateCreated(style='height: 30px;')
+									tr(height='50')
+										td(width='315', align='center')
+											button#NewSkirmishGameButton(style='font-size: 12px;', width='100') New Game
+										td(width='315', align='center')
+											button#JoinGameButton(style='font-size: 12px;', width='100') Join Game
+							#startGameOptionsContainer(style='position: absolute; width: 640px; height: 400px; left: 80px; top: 120px; color: white; font-size: 12px; background-color: gray; opacity: 0.8; z-index: 2000;')
+								table(cellpadding='0', cellspacing='0', style='position: absolute; left: 5px; right: 5px; top: 5px; bottom: 5px; z-index: 3000;')
+									tr(height='50')
+										td(width='630', colspan='3')
+											div(style='text-align: center;') New Skirmish Game
+											div(style='text-align: center;') Please enter your name and choose the desired game settings.
+									tr(height='30')
+										td(width='210')
+											label(style='width: 75px;')
+												| Game Name:
+										td(width='420', colspan='2')
+											input#GameNameTextBox(type='text', value='New Game', style='width: 207px;')
+									tr(height='30')
+										td(width='210')
+											label(style='width: 75px;')
+												| Your Name:
+										td(width='420', colspan='2')
+												input#PlayerNameTextBox(type='text', value='Player1', style='width: 207px;')
+									tr(height='30')
+										td(width='210')
+											label#NumberOfSystemsPanel
+												| Number of Systems:
+										td(width='420', colspan='2')
+											select#NumberOfSystemsComboBox
+												option(value='2') 2
+												option(value='3') 3
+												option(value='4', selected='true') 4
+									tr(height='30')
+										td(width='210')
+											label#PlanetsPerSystemPanel
+												| Planets Per System:
+										td(width='420', colspan='2')
+											select#PlanetsPerSystemComboBox
+												option(value='4') 4
+												option(value='5') 5
+												option(value='6') 6
+												option(value='7') 7
+												option(value='8') 8
+									tr(height='40')
+										td(width='210')
 											label
-												| Player 2:
-									td(width='210')
-										div.Player2Panel
-											span#Player2NamePanel
-											div#Player2OptionsBox
-								tr(height='40')
-									td(width='210')
-										div.Player3Panel
-											label
-												| Player 3:
-									td(width='210')
-										div.Player3Panel
-											span#Player3NamePanel
-											div#Player3OptionsBox
-								tr(height='40')
-									td(width='210')
-										div.Player4Panel
-											label
-												| Player 4:
-									td(width='210')
-										div.Player4Panel
-											span#Player4NamePanel
-											div#Player4OptionsBox
-								tr(height='40')
-									td(width='630', colspan='3', align='center')
-										button#StartGameOptionsOkButton(width='150', style='font-size: 12px;') Start Game
-						#SliderVolume
-						#AstriarchAlertBox(style='display: none; height: 100px;')
-						#gameControlsContainer(style='position: relative; background-color: blue;')
-							#gameControls
-								table#gameGrid(cellpadding='0', cellspacing='0', style='position: absolute; left: 8px; right: 8px; top: 5px; bottom: 5px; z-index: 1001;')
-									tr(height='590')
-										td(width='169', valign='top')
-											// left hand status panel
-											table.greenText(cellpadding='0', cellspacing='0')
-												tr
-													td
-														img(src='img/SystemMasterLogo.png')
-												tr(height='16')
-													td
-														span#TurnDisplay.smallStatusText Turn 1, Year 3001
-												tr
-													td
-														table#OverallPlayerStatusGrid(cellpadding='0', cellspacing='0', style='text-align: right;')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/PopulationLarge.png', title='Total Population')
-																td(width='128')
-																	span#TextBlockPopulationAmount.playerStatusText(title='Total Population')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/FoodLarge.png', title='Food Amount')
-																td(width='128')
-																	span#TextBlockFoodAmount.playerStatusText(title='Food Amount')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/GoldLarge.png', title='Gold Amount')
-																td(width='128')
-																	span#TextBlockGoldAmount.playerStatusText(title='Gold Amount')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/OreLarge.png', title='Ore Amount')
-																td(width='128')
-																	span#TextBlockOreAmount.playerStatusText(title='Ore Amount')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/IridiumLarge.png', title='Iridium Amount')
-																td(width='128')
-																	span#TextBlockIridiumAmount.playerStatusText(title='Iridium Amount')
-												tr(height='64')
-													td
-														span#SelectedItemStatus.smallStatusText(style='height: 64px;')
-												tr(height='16')
-													td
-														table#SelectedItemPopulationPanel(cellpadding='0', cellspacing='0')
-															tr
-																td(width='10')
-																	#PopulationImage1.popImg
-																td(width='10')
-																	#PopulationImage2.popImg
-																td(width='10')
-																	#PopulationImage3.popImg
-																td(width='10')
-																	#PopulationImage4.popImg
-																td(width='10')
-																	#PopulationImage5.popImg
-																td(width='10')
-																	#PopulationImage6.popImg
-																td(width='10')
-																	#PopulationImage7.popImg
-																td(width='10')
-																	#PopulationImage8.popImg
-																td(width='10')
-																	#PopulationImage9.popImg
-																td(width='10')
-																	#PopulationImage10.popImg
-																td(width='10')
-																	#PopulationImage11.popImg
-																td(width='10')
-																	#PopulationImage12.popImg
-																td(width='10')
-																	#PopulationImage13.popImg
-																td(width='10')
-																	#PopulationImage14.popImg
-																td(width='10')
-																	#PopulationImage15.popImg
-																td(width='10')
-																	#PopulationImage16.popImg
-												tr(height='16')
-													td
-														table#SelectedItemImprovementSlotsPanel(cellpadding='0', cellspacing='0')
-															tr
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage1.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage2.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage3.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage4.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage5.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage6.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage7.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage8.impImg
-																td(width='16')
-																	#PlanetaryImprovementSlotsImage9.impImg
-												tr(height='16')
-													td
-														table#SelectedItemPopulationAssignmentsPanel(cellpadding='0', cellspacing='0')
-															tr
-																td(width='10')
-																	#PopulationAssignmentImage1.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage2.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage3.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage4.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage5.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage6.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage7.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage8.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage9.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage10.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage11.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage12.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage13.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage14.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage15.asnImg
-																td(width='10')
-																	#PopulationAssignmentImage16.asnImg
-												tr
-													td
-														table#SelectedItemBuiltImprovementsGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/FarmLarge.png', title='Farm Count')
-																td(width='32')
-																	img(src='img/MineLarge.png', title='Mine Count')
-																td(width='32')
-																	img(src='img/FactoryLarge.png', title='Factory Count')
-																td(width='32')
-																	img(src='img/ColonyLarge.png', title='Colony Count')
-																td(width='32')
-																	img(src='img/SpaceplatformLarge.png', title='Space Platform Count')
-															tr(height='32')
-																td(width='32')
-																	span#TextBlockFarmCount.planetStatusTextCentered(title='Farm Count')
-																td(width='32')
-																	span#TextBlockMineCount.planetStatusTextCentered(title='Mine Count')
-																td(width='32')
-																	span#TextBlockFactoryCount.planetStatusTextCentered(title='Factory Count')
-																td(width='32')
-																	span#TextBlockColonyCount.planetStatusTextCentered(title='Colony Count')
-																td(width='32')
-																	span#TextBlockSpacePlatformCount.planetStatusTextCentered(title='Space Platform Count')
-												tr
-													td
-														table#SelectedItemPlanetaryFleetGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
-															tr(height='32')
-																td(width='32')
-																	img(src='img/DefenderLarge.png', title='Defender Count')
-																td(width='32')
-																	img(src='img/ScoutLarge.png', title='Scout Count')
-																td(width='32')
-																	img(src='img/DestroyerLarge.png', title='Destroyer Count')
-																td(width='32')
-																	img(src='img/CruiserLarge.png', title='Cruiser Count')
-																td(width='32')
-																	img(src='img/BattleshipLarge.png', title='Battleship Count')
-															tr(height='32')
-																td(width='32')
-																	span#TextBlockDefenderCount.planetStatusTextSmallCentered(title='Defender Count')
-																td(width='32')
-																	span#TextBlockScoutCount.planetStatusTextSmallCentered(title='Scout Count')
-																td(width='32')
-																	span#TextBlockDestroyerCount.planetStatusTextSmallCentered(title='Destroyer Count')
-																td(width='32')
-																	span#TextBlockCruiserCount.planetStatusTextSmallCentered(title='Cruiser Count')
-																td(width='32')
-																	span#TextBlockBattleshipCount.planetStatusTextSmallCentered(title='Battleship Count')
-												tr
-													td
-														table#BottomStatusGrid(cellpadding='0', cellspacing='0')
-															tr(height='14')
-																td(colspan='2')  
-															tr(height='32')
-																td(width='32')
-																	span#MainMenuIcon(title='Main Menu')
-																	button#MainMenuButton(width='24', height='24', title='Main Menu', style='display: none;') Main Menu
-																td(width='32')
-																	span#SpeakerIcon(title='Mute Audio')
-																	button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
-																td
-																	span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 5px;')
-										// end left hand status panel
-										td(width='615')
-											table(cellpadding='0', cellspacing='0')
-												tr(height='480')
-													td(width='615')
-														#canvasMouseHitDetector(style='width: 615px; height: 480px; background-color: black; opacity: 0;')
-												tr(height='80')
-													td
-														#TurnSummaryItemsListBox(style='height: 80px;')
-												tr(height='30')
-													td
-														#ButtonPanel
-															button#PlanetViewButton(width='100') Planet View
-															button#SendShipsButton(width='100') Send Ships
-															button#NextTurnButton(width='100') Next Turn
-															span#SendShipsStatus.defaultFont(style='color: yellow; font-size: 14px;')
-															button#CancelSendButton(width='100') Cancel Send Ships
-															button#MainMenuButtonGameOver(width='75') Main Menu
-					#planetViewDialog(style='width: 560px; height: 360px; display: none;')
-						table#planetViewGrid(cellpadding='0', cellspacing='0')
-							tr(height='360')
-								td(width='160', valign='top')
-									table#PlanetStatsGrid.greenText(cellpadding='0', cellspacing='0', style='background-color: black; height: 360px; width: 144px;')
-										tr(height='32')
-											td(width='32')
-												#PlanetImage(style='width: 32px; height: 32px;', title='')
-											td(colspan='3', width='110')
-												span#TextBlockPlanetType(title='', style='text-align: center;')
-										tr(height='20')
-											td(colspan='4')  
-										tr(height='32')
-											td(width='32')
-												img(src='img/FoodLarge.png', title='Food Per Turn')
-											td(width='64')
-												span#TextBlockFoodPerTurn.playerStatusTextRight(title='Food Per Turn')
-											td(width='48', colspan='2')  
-										tr(height='32')
-											td(width='32')
-												img(src='img/OreLarge.png', title='Ore Per Turn')
-											td(width='64')
-												span#TextBlockOrePerTurn.playerStatusTextRight(title='Ore Per Turn')
-											td(width='48', colspan='2')  
-										tr(height='32')
-											td(width='32')
-												img(src='img/IridiumLarge.png', title='Iridium Per Turn')
-											td(width='64')
-												span#TextBlockIridiumPerTurn.playerStatusTextRight(title='Iridium Per Turn')
-											td(width='48', colspan='2')  
-										tr(height='32')
-											td(width='32')
-												img(src='img/ProductionLarge.png', title='Production Per Turn')
-											td(width='64')
-												span#TextBlockProductionPerTurn.playerStatusTextRight(title='Production Per Turn')
-											td(width='48', colspan='2')  
-										tr(height='20')
-											td(colspan='4') Planetary Improvements:
-										tr(height='32')
-											td(width='32')
-												img(src='img/FarmLarge.png', title='Farm Count')
-											td(width='64')
-												span#PlanetViewFarmCount.playerStatusTextRight(title='Farm Count')
-											td(width='16')  
-											td(width='32')
-												button#ButtonDemolishFarm(width='24', height='24', title='Demolish one Farm') DF
-										tr(height='32')
-											td(width='32')
-												img(src='img/MineLarge.png', title='Mine Count')
-											td(width='64')
-												span#PlanetViewMineCount.playerStatusTextRight(title='Mine Count')
-											td(width='16')  
-											td(width='32')
-												button#ButtonDemolishMine(width='24', height='24', title='Demolish one Mine') DM
-										tr(height='32')
-											td(width='32')
-												img(src='img/FactoryLarge.png', title='Factory Count')
-											td(width='64')
-												span#PlanetViewFactoryCount.playerStatusTextRight(title='Factory Count')
-											td(width='16')  
-											td(width='32')
-												button#ButtonDemolishFactory(width='24', height='24', title='Demolish one Factory') DF
-										tr(height='32')
-											td(width='32')
-												img(src='img/ColonyLarge.png', title='Colony Count')
-											td(width='64')
-												span#PlanetViewColonyCount.playerStatusTextRight(title='Colony Count')
-											td(width='16')  
-											td(width='32')
-												button#ButtonDemolishColony(width='24', height='24', title='Demolish one Colony') DC
-										tr(height='32')
-											td(width='32')
-												img(src='img/SpaceplatformLarge.png', title='Space Platform Count')
-											td(width='64')
-												span#PlanetViewSpacePlatformCount.playerStatusTextRight(title='Space Platform Count')
-											td(width='48', colspan='2')  
-								td(width='400')
-									table(cellpadding='0', cellspacing='0', style='height: 360px; width: 400px;')
-										tr
+												| Player 1:
+										td(width='210')
+											label#Player1NamePanel
+												| You
+										td(width='215', rowspan='4')
+											img(src='img/starfield3.png', width='200', height='170')
+									tr(height='40')
+										td(width='210')
+											div.Player2Panel
+												label
+													| Player 2:
+										td(width='210')
+											div.Player2Panel
+												span#Player2NamePanel
+												div#Player2OptionsBox
+									tr(height='40')
+										td(width='210')
+											div.Player3Panel
+												label
+													| Player 3:
+										td(width='210')
+											div.Player3Panel
+												span#Player3NamePanel
+												div#Player3OptionsBox
+									tr(height='40')
+										td(width='210')
+											div.Player4Panel
+												label
+													| Player 4:
+										td(width='210')
+											div.Player4Panel
+												span#Player4NamePanel
+												div#Player4OptionsBox
+									tr(height='40')
+										td(width='630', colspan='3', align='center')
+											button#StartGameOptionsOkButton(width='150', style='font-size: 12px;') Start Game
+							#SliderVolume
+							#AstriarchAlertBox(style='display: none; height: 100px;')
+							#gameControlsContainer(style='position: relative; background-color: blue;')
+								#gameControls
+									table#OverallPlayerStatusGrid.greenText(cellpadding='0', cellspacing='0', style='position: absolute; left: 0px; right: 0px; top: 0px; left:0px; z-index: 10001; width:100%')
+										tr(height='16')
+											td(width='169', valign='top')
+												span#TurnDisplay.smallStatusText(style='text-align:left;padding-left:5px') Turn 1, Year 3001
+											td(width='16')
+												img(src='img/ico_population-16x16.png', title='Total Population')
 											td
-												table#PopulationAssignments(cellpadding='0', cellspacing='0', style='height: 90px; width: 400px;')
-													tr(height='30')
-														td(width='55') Farmers:
-														td(width='25')
-															span#TextBoxFarmers(style='border: 1px;')
-														td(width='200')
-															#SliderFarmers
-													tr(height='30')
-														td(width='55') Miners:
-														td(width='25')
-															span#TextBoxMiners(style='border: 1px;')
-														td(width='200')
-															#SliderMiners
-													tr(height='30')
-														td(width='55') Workers:
-														td(width='25')
-															span#TextBoxWorkers(style='border: 1px;')
-														td(width='200')
-															#SliderWorkers
-										tr
+												span#TextBlockPopulationAmount.playerSummaryStatusText(title='Total Population')
+											td(width='16')
+												img(src='img/ico_credits-16x16.png', title='Gold Amount')
 											td
-												table#BuildQueue(cellpadding='0', cellspacing='0', style='height: 270px; width: 400px;')
-													tr(height='15')
-														td(width='180')
-															span#ItemsAvailableTextBlock Available Items to Build
-														td(width='200')
-															span#BuildQueueTextBlock Items in Build Queue
+												span#TextBlockGoldAmount.playerSummaryStatusText(title='Gold Amount')
+											td(width='16')
+												img(src='img/ico_food-16x16.png', title='Food Amount')
+											td
+												span#TextBlockFoodAmount.playerSummaryStatusText(title='Food Amount')
+											td(width='16')
+												img(src='img/ico_ore-16x16.png', title='Ore Amount')
+											td
+												span#TextBlockOreAmount.playerSummaryStatusText(title='Ore Amount')
+											td(width='16')
+												img(src='img/ico_iridium-16x16.png', title='Iridium Amount')
+											td
+												span#TextBlockIridiumAmount.playerSummaryStatusText(title='Iridium Amount')
+
+									table#gameGrid(cellpadding='0', cellspacing='0', style='position: absolute; left: 8px; right: 8px; top: 21px; bottom: 0px; z-index: 1001;')
+										tr(height='576')
+											td(width='169', valign='top')
+												// left hand status panel
+												table.greenText(cellpadding='0', cellspacing='0')
+													tr(height='64')
+														td
+															span#SelectedItemStatus.smallStatusText(style='height: 64px;')
+													tr(height='16')
+														td
+															table#SelectedItemPopulationPanel(cellpadding='0', cellspacing='0')
+																tr
+																	td(width='10')
+																		#PopulationImage1.popImg
+																	td(width='10')
+																		#PopulationImage2.popImg
+																	td(width='10')
+																		#PopulationImage3.popImg
+																	td(width='10')
+																		#PopulationImage4.popImg
+																	td(width='10')
+																		#PopulationImage5.popImg
+																	td(width='10')
+																		#PopulationImage6.popImg
+																	td(width='10')
+																		#PopulationImage7.popImg
+																	td(width='10')
+																		#PopulationImage8.popImg
+																	td(width='10')
+																		#PopulationImage9.popImg
+																	td(width='10')
+																		#PopulationImage10.popImg
+																	td(width='10')
+																		#PopulationImage11.popImg
+																	td(width='10')
+																		#PopulationImage12.popImg
+																	td(width='10')
+																		#PopulationImage13.popImg
+																	td(width='10')
+																		#PopulationImage14.popImg
+																	td(width='10')
+																		#PopulationImage15.popImg
+																	td(width='10')
+																		#PopulationImage16.popImg
+													tr(height='16')
+														td
+															table#SelectedItemImprovementSlotsPanel(cellpadding='0', cellspacing='0')
+																tr
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage1.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage2.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage3.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage4.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage5.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage6.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage7.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage8.impImg
+																	td(width='16')
+																		#PlanetaryImprovementSlotsImage9.impImg
+													tr(height='16')
+														td
+															table#SelectedItemPopulationAssignmentsPanel(cellpadding='0', cellspacing='0')
+																tr
+																	td(width='10')
+																		#PopulationAssignmentImage1.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage2.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage3.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage4.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage5.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage6.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage7.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage8.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage9.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage10.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage11.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage12.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage13.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage14.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage15.asnImg
+																	td(width='10')
+																		#PopulationAssignmentImage16.asnImg
 													tr
 														td
-															table(cellpadding='0', cellspacing='0', style='height: 30px; width: 180px;')
-																tr(height='12')
-																	td(width='52')
-																		span(style='text-align: right;') (Gold
-																	td(width='52')
-																		span(style='text-align: center;') /  Ore  /
-																	td(width='52')
-																		span(style='text-align: left;') Iridium)
-																	td(width='24', rowspan='2')
-																		button#ButtonBuildQueueAddSelectedItem(width='24', height='24', title='Add Selected Item to Build Queue') BQA
-																tr(height='12')
-																	td(width='52')
-																		span#TextBlockCurrentGoldAmount(style='text-align: right;')
-																	td(width='52')
-																		span#TextBlockCurrentOreAmount(style='text-align: center;')
-																	td(width='52')
-																		span#TextBlockCurrentIridiumAmount(style='text-align: left;')
+															table#SelectedItemBuiltImprovementsGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
+																tr(height='32')
+																	td(width='32')
+																		img(src='img/FarmLarge.png', title='Farm Count')
+																	td(width='32')
+																		img(src='img/MineLarge.png', title='Mine Count')
+																	td(width='32')
+																		img(src='img/FactoryLarge.png', title='Factory Count')
+																	td(width='32')
+																		img(src='img/ColonyLarge.png', title='Colony Count')
+																	td(width='32')
+																		img(src='img/SpaceplatformLarge.png', title='Space Platform Count')
+																tr(height='32')
+																	td(width='32')
+																		span#TextBlockFarmCount.planetStatusTextCentered(title='Farm Count')
+																	td(width='32')
+																		span#TextBlockMineCount.planetStatusTextCentered(title='Mine Count')
+																	td(width='32')
+																		span#TextBlockFactoryCount.planetStatusTextCentered(title='Factory Count')
+																	td(width='32')
+																		span#TextBlockColonyCount.planetStatusTextCentered(title='Colony Count')
+																	td(width='32')
+																		span#TextBlockSpacePlatformCount.planetStatusTextCentered(title='Space Platform Count')
+													tr
 														td
-															table(cellpadding='0', cellspacing='0', style='width: 200px;')
-																tr
-																	td(width='200')
-																		table(cellpadding='0', cellspacing='0', style='display: inline; width: 200px;')
-																			tr(height='16')
-																				td(rowspan='2', width='28')
-																					button#ButtonBuildQueueRemoveSelectedItem(width='24', height='24', title='Remove Selected Item from Build Queue') BQR
-																				td(rowspan='2', width='28')
-																					button#ButtonBuildQueueMoveSelectedItemDown(width='24', height='24', title='Move Selected Item Down') BQD
-																				td(rowspan='2', width='28')
-																					button#ButtonBuildQueueMoveSelectedItemUp(width='24', height='24', title='Move Selected Item Up') BQU
-																				td
-																					input#BuildLastShipCheckBox(type='checkbox', name='BuildLastShipCheckBox')
-																					label#BuildLastShipCheckBoxLabel(for='BuildLastShipCheckBox', style='display: inline;') Build Last Ship
-																			tr(height='10')
-																				td
-																					span#LastShipBuiltTextBlock(style='height: 12px; font-size: 10px; display: inline;')
-													tr(height='225')
-														td(width='180')
-															#ItemsAvailableListBox(style='height: 225px;')
-														td(width='200')
-															#BuildQueueListBox(style='height: 225px;')
-					#sendShipsDialog(style='width: 380px; height: 240px; display: none;')
-						table(cellpadding='0', cellspacing='0')
-							tr(height='25')
-								td(colspan='3', width='380', valign='top')
-									table(cellpadding='0', cellspacing='0')
-										tr(height='25')
-											td(width='180')
-												span#SendShipsDialogStatus
-											td(width='100')
-												button#ButtonSendNoShips(width='75', height='24', title='Send no ships from the Planet') Send None
-											td(width='100')
-												button#ButtonSendAllShips(width='75', height='24', title='Send all ships on the Planet') Send All
-							tr(height='50')
-								td(width='140')
-									span Scouts:
-								td(width='40')
-									span#TextBoxScouts 0
-								td(width='200')
-									#SliderScouts
-							tr(height='50')
-								td(width='140')
-									span Destroyers:
-								td(width='40')
-									span#TextBoxDestroyers 0
-								td(width='200')
-									#SliderDestroyers
-							tr(height='50')
-								td(width='140')
-									span Cruisers:
-								td(width='40')
-									span#TextBoxCruisers 0
-								td(width='200')
-									#SliderCruisers
-							tr(height='50')
-								td(width='140')
-									span Battleships:
-								td(width='40')
-									span#TextBoxBattleships 0
-								td(width='200')
-									#SliderBattleships
-					#planetaryConflictDialog(style='width: 380px; height: 220px; display: none;')
-						table
-							tr(height='200')
-								td
-									#PlanetaryConflictSummary(style='width: 380px; height: 200px;')
-							tr(height='20')
-								td
-									label
-										input#NeverShowPlanetaryConflictPopupsCheckbox(type='checkbox', name='NeverShowPlanetaryConflictPopupsCheckbox')
-										| Don't automatically show planetary conflict summaries
-					#gameOverDialog(style='width: 380px; height: 210px; display: none;')
-						table
-							tr(height='210')
-								td
-									#GameOverSummary(style='width: 380px; height: 210px;')
-					#endTurnDialog(style='width: 380px; height: 210px; display: none;')
-						table
-							tr(height='210')
-								td
-									#EndTurnSummary(style='width: 380px; height: 210px;')
-					td
-						// right sidebar
-					tr
-						td(colspan='3')
-							#footer(style='color: white;')
-								p
-									| Astriarch - Ruler of the Stars html5 version 1.2.1 Copyright 2010
-									a(href='http://www.masteredsoftware.com/', target='_blank') Mastered Software
-									| , Music by Resonant.
-								p
-									a(href='astriarch-help.html', target='_blank') Astriarch Help and Tutorial Videos
-								p
-									a(href='http://www.astriarch.com/', target='_blank') Official Astriarch Site
+															table#SelectedItemPlanetaryFleetGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
+																tr(height='32')
+																	td(width='32')
+																		img(src='img/DefenderLarge.png', title='Defender Count')
+																	td(width='32')
+																		img(src='img/ScoutLarge.png', title='Scout Count')
+																	td(width='32')
+																		img(src='img/DestroyerLarge.png', title='Destroyer Count')
+																	td(width='32')
+																		img(src='img/CruiserLarge.png', title='Cruiser Count')
+																	td(width='32')
+																		img(src='img/BattleshipLarge.png', title='Battleship Count')
+																tr(height='32')
+																	td(width='32')
+																		span#TextBlockDefenderCount.planetStatusTextSmallCentered(title='Defender Count')
+																	td(width='32')
+																		span#TextBlockScoutCount.planetStatusTextSmallCentered(title='Scout Count')
+																	td(width='32')
+																		span#TextBlockDestroyerCount.planetStatusTextSmallCentered(title='Destroyer Count')
+																	td(width='32')
+																		span#TextBlockCruiserCount.planetStatusTextSmallCentered(title='Cruiser Count')
+																	td(width='32')
+																		span#TextBlockBattleshipCount.planetStatusTextSmallCentered(title='Battleship Count')
+													tr
+														td
+															span#SelectedItemStatusDetails.smallStatusText(style='height: 288px;')
+													tr
+														td
+															table#BottomStatusGrid(cellpadding='0', cellspacing='0')
+																tr(height='14')
+																	td(colspan='3')  
+																tr(height='32')
+																	td(width='32')
+																		span#MainMenuIcon(title='Main Menu')
+																		button#MainMenuButton(width='24', height='24', title='Main Menu', style='display: none;') Main Menu
+																	td(width='32')
+																		span#SpeakerIcon(title='Mute Audio')
+																		button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
+																	td
+																		span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 5px;')
+											// end left hand status panel
+											td(width='615')
+												table(cellpadding='0', cellspacing='0')
+													tr(height='480')
+														td(width='615')
+															#canvasMouseHitDetector(style='width: 615px; height: 480px; background-color: black; opacity: 0;')
+													tr(height='66')
+														td
+															#TurnSummaryItemsListBox(style='height: 66px;')
+													tr(height='30')
+														td
+															#ButtonPanel
+																button#PlanetViewButton(width='100') Planet View
+																button#SendShipsButton(width='100') Send Ships
+																button#NextTurnButton(width='100') Next Turn
+																span#SendShipsStatus.defaultFont(style='color: yellow; font-size: 14px;')
+																button#CancelSendButton(width='100') Cancel Send Ships
+																button#MainMenuButtonGameOver(width='75') Main Menu
+							#planetViewDialog(style='width: 560px; height: 360px; display: none;')
+								table#planetViewGrid(cellpadding='0', cellspacing='0')
+									tr(height='360')
+										td(width='160', valign='top')
+											table#PlanetStatsGrid.greenText(cellpadding='0', cellspacing='0', style='background-color: black; height: 360px; width: 144px;')
+												tr(height='32')
+													td(width='32')
+														#PlanetImage(style='width: 32px; height: 32px;', title='')
+													td(colspan='3', width='110')
+														span#TextBlockPlanetType(title='', style='text-align: center;')
+												tr(height='20')
+													td(colspan='4')  
+												tr(height='32')
+													td(width='32')
+														img(src='img/FoodLarge.png', title='Food Per Turn')
+													td(width='64')
+														span#TextBlockFoodPerTurn.playerStatusTextRight(title='Food Per Turn')
+													td(width='48', colspan='2')  
+												tr(height='32')
+													td(width='32')
+														img(src='img/OreLarge.png', title='Ore Per Turn')
+													td(width='64')
+														span#TextBlockOrePerTurn.playerStatusTextRight(title='Ore Per Turn')
+													td(width='48', colspan='2')  
+												tr(height='32')
+													td(width='32')
+														img(src='img/IridiumLarge.png', title='Iridium Per Turn')
+													td(width='64')
+														span#TextBlockIridiumPerTurn.playerStatusTextRight(title='Iridium Per Turn')
+													td(width='48', colspan='2')  
+												tr(height='32')
+													td(width='32')
+														img(src='img/ProductionLarge.png', title='Production Per Turn')
+													td(width='64')
+														span#TextBlockProductionPerTurn.playerStatusTextRight(title='Production Per Turn')
+													td(width='48', colspan='2')  
+												tr(height='20')
+													td(colspan='4') Planetary Improvements:
+												tr(height='32')
+													td(width='32')
+														img(src='img/FarmLarge.png', title='Farm Count')
+													td(width='64')
+														span#PlanetViewFarmCount.playerStatusTextRight(title='Farm Count')
+													td(width='16')  
+													td(width='32')
+														button#ButtonDemolishFarm(width='24', height='24', title='Demolish one Farm') DF
+												tr(height='32')
+													td(width='32')
+														img(src='img/MineLarge.png', title='Mine Count')
+													td(width='64')
+														span#PlanetViewMineCount.playerStatusTextRight(title='Mine Count')
+													td(width='16')  
+													td(width='32')
+														button#ButtonDemolishMine(width='24', height='24', title='Demolish one Mine') DM
+												tr(height='32')
+													td(width='32')
+														img(src='img/FactoryLarge.png', title='Factory Count')
+													td(width='64')
+														span#PlanetViewFactoryCount.playerStatusTextRight(title='Factory Count')
+													td(width='16')  
+													td(width='32')
+														button#ButtonDemolishFactory(width='24', height='24', title='Demolish one Factory') DF
+												tr(height='32')
+													td(width='32')
+														img(src='img/ColonyLarge.png', title='Colony Count')
+													td(width='64')
+														span#PlanetViewColonyCount.playerStatusTextRight(title='Colony Count')
+													td(width='16')  
+													td(width='32')
+														button#ButtonDemolishColony(width='24', height='24', title='Demolish one Colony') DC
+												tr(height='32')
+													td(width='32')
+														img(src='img/SpaceplatformLarge.png', title='Space Platform Count')
+													td(width='64')
+														span#PlanetViewSpacePlatformCount.playerStatusTextRight(title='Space Platform Count')
+													td(width='48', colspan='2')  
+										td(width='400')
+											table(cellpadding='0', cellspacing='0', style='height: 360px; width: 400px;')
+												tr
+													td
+														table#PopulationAssignments(cellpadding='0', cellspacing='0', style='height: 90px; width: 400px;')
+															tr(height='30')
+																td(width='55') Farmers:
+																td(width='25')
+																	span#TextBoxFarmers(style='border: 1px;')
+																td(width='200')
+																	#SliderFarmers
+															tr(height='30')
+																td(width='55') Miners:
+																td(width='25')
+																	span#TextBoxMiners(style='border: 1px;')
+																td(width='200')
+																	#SliderMiners
+															tr(height='30')
+																td(width='55') Workers:
+																td(width='25')
+																	span#TextBoxWorkers(style='border: 1px;')
+																td(width='200')
+																	#SliderWorkers
+												tr
+													td
+														table#BuildQueue(cellpadding='0', cellspacing='0', style='height: 270px; width: 400px;')
+															tr(height='15')
+																td(width='180')
+																	span#ItemsAvailableTextBlock Available Items to Build
+																td(width='200')
+																	span#BuildQueueTextBlock Items in Build Queue
+															tr
+																td
+																	table(cellpadding='0', cellspacing='0', style='height: 30px; width: 180px;')
+																		tr(height='12')
+																			td(width='52')
+																				span(style='text-align: right;') (Gold
+																			td(width='52')
+																				span(style='text-align: center;') /  Ore  /
+																			td(width='52')
+																				span(style='text-align: left;') Iridium)
+																			td(width='24', rowspan='2')
+																				button#ButtonBuildQueueAddSelectedItem(width='24', height='24', title='Add Selected Item to Build Queue') BQA
+																		tr(height='12')
+																			td(width='52')
+																				span#TextBlockCurrentGoldAmount(style='text-align: right;')
+																			td(width='52')
+																				span#TextBlockCurrentOreAmount(style='text-align: center;')
+																			td(width='52')
+																				span#TextBlockCurrentIridiumAmount(style='text-align: left;')
+																td
+																	table(cellpadding='0', cellspacing='0', style='width: 200px;')
+																		tr
+																			td(width='200')
+																				table(cellpadding='0', cellspacing='0', style='display: inline; width: 200px;')
+																					tr(height='16')
+																						td(rowspan='2', width='28')
+																							button#ButtonBuildQueueRemoveSelectedItem(width='24', height='24', title='Remove Selected Item from Build Queue') BQR
+																						td(rowspan='2', width='28')
+																							button#ButtonBuildQueueMoveSelectedItemDown(width='24', height='24', title='Move Selected Item Down') BQD
+																						td(rowspan='2', width='28')
+																							button#ButtonBuildQueueMoveSelectedItemUp(width='24', height='24', title='Move Selected Item Up') BQU
+																						td
+																							input#BuildLastShipCheckBox(type='checkbox', name='BuildLastShipCheckBox')
+																							label#BuildLastShipCheckBoxLabel(for='BuildLastShipCheckBox', style='display: inline;') Build Last Ship
+																					tr(height='10')
+																						td
+																							span#LastShipBuiltTextBlock(style='height: 12px; font-size: 10px; display: inline;')
+															tr(height='225')
+																td(width='180')
+																	#ItemsAvailableListBox(style='height: 225px;')
+																td(width='200')
+																	#BuildQueueListBox(style='height: 225px;')
+							#sendShipsDialog(style='width: 380px; height: 240px; display: none;')
+								table(cellpadding='0', cellspacing='0')
+									tr(height='25')
+										td(colspan='3', width='380', valign='top')
+											table(cellpadding='0', cellspacing='0')
+												tr(height='25')
+													td(width='180')
+														span#SendShipsDialogStatus
+													td(width='100')
+														button#ButtonSendNoShips(width='75', height='24', title='Send no ships from the Planet') Send None
+													td(width='100')
+														button#ButtonSendAllShips(width='75', height='24', title='Send all ships on the Planet') Send All
+									tr(height='50')
+										td(width='140')
+											span Scouts:
+										td(width='40')
+											span#TextBoxScouts 0
+										td(width='200')
+											#SliderScouts
+									tr(height='50')
+										td(width='140')
+											span Destroyers:
+										td(width='40')
+											span#TextBoxDestroyers 0
+										td(width='200')
+											#SliderDestroyers
+									tr(height='50')
+										td(width='140')
+											span Cruisers:
+										td(width='40')
+											span#TextBoxCruisers 0
+										td(width='200')
+											#SliderCruisers
+									tr(height='50')
+										td(width='140')
+											span Battleships:
+										td(width='40')
+											span#TextBoxBattleships 0
+										td(width='200')
+											#SliderBattleships
+							#planetaryConflictDialog(style='width: 380px; height: 220px; display: none;')
+								table
+									tr(height='200')
+										td
+											#PlanetaryConflictSummary(style='width: 380px; height: 200px;')
+									tr(height='20')
+										td
+											label
+												input#NeverShowPlanetaryConflictPopupsCheckbox(type='checkbox', name='NeverShowPlanetaryConflictPopupsCheckbox')
+												| Don't automatically show planetary conflict summaries
+							#gameOverDialog(style='width: 380px; height: 210px; display: none;')
+								table
+									tr(height='210')
+										td
+											#GameOverSummary(style='width: 380px; height: 210px;')
+							#endTurnDialog(style='width: 380px; height: 210px; display: none;')
+								table
+									tr(height='210')
+										td
+											#EndTurnSummary(style='width: 380px; height: 210px;')
+
+					// right sidebar
+					#right-sidebar(style='width: 120px; height: 600px;float:right;')
+
+			#footer.cf(style='color: white;')
+				p
+					| Astriarch - Ruler of the Stars html5 version 1.2.1 Copyright 2010
+					a(href='http://www.masteredsoftware.com/', target='_blank') Mastered Software
+					| , Music by Resonant.
+				p
+					a(href='astriarch-help.html', target='_blank') Astriarch Help and Tutorial Videos
+				p
+					a(href='http://www.astriarch.com/', target='_blank') Official Astriarch Site
 		// <span id='imageData' />
 
 		script(type='text/javascript').
@@ -886,7 +922,7 @@ head
 
 		script(type='text/javascript').
 			var _gaq = _gaq || [];
-			_gaq.push(['_setAccount', 'UA-7797548-5']);
+			_gaq.push(['_setAccount', 'UA-7797548-2']);
 			_gaq.push(['_trackPageview']);
 
 			(function() {

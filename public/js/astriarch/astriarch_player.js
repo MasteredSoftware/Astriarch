@@ -87,6 +87,21 @@ Astriarch.Player.prototype.TotalOreAmount = function()	{
 };
 
 /**
+ * the total ore on all owned planets for this player
+ * @this {Astriarch.Player}
+ * @return {number}
+ */
+Astriarch.Player.prototype.ExactTotalOreAmount = function()	{
+	var oreAmt = 0;
+	for (var i in this.OwnedPlanets)
+	{
+		oreAmt += this.OwnedPlanets[i].Resources.OreRemainder;
+		oreAmt += this.OwnedPlanets[i].Resources.OreAmount;
+	}
+	return oreAmt;
+};
+
+/**
  * the total Iridium on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}
@@ -95,6 +110,21 @@ Astriarch.Player.prototype.TotalIridiumAmount = function()	{
 	var iridiumAmt = 0;
 	for (var i in this.OwnedPlanets)
 	{
+		iridiumAmt += this.OwnedPlanets[i].Resources.IridiumAmount;
+	}
+	return iridiumAmt;
+};
+
+/**
+ * the total Iridium on all owned planets for this player
+ * @this {Astriarch.Player}
+ * @return {number}
+ */
+Astriarch.Player.prototype.ExactTotalIridiumAmount = function()	{
+	var iridiumAmt = 0;
+	for (var i in this.OwnedPlanets)
+	{
+		iridiumAmt += this.OwnedPlanets[i].Resources.IridiumRemainder;
 		iridiumAmt += this.OwnedPlanets[i].Resources.IridiumAmount;
 	}
 	return iridiumAmt;
@@ -191,19 +221,21 @@ Astriarch.Player.prototype.GetTotalPopulation = function() {
 };
 
 /**
- * returns the total food production of the players owned planets
+ * returns the total resource production of the players owned planets
  * @this {Astriarch.Player}
- * @return {number} 
+ * @return {Object}
  */
-Astriarch.Player.prototype.GetTotalFoodProductionPerTurn = function() {
-	var totalFoodProduction = 0;
+Astriarch.Player.prototype.GetTotalResourceProductionPerTurn = function() {
+	var totalResourceProduction = {"food":0, "ore":0, "iridium":0};
 
 	for (var i in this.OwnedPlanets)
 	{
-		totalFoodProduction += this.OwnedPlanets[i].ResourcesPerTurn.FoodAmountPerTurn;
+		totalResourceProduction.food += this.OwnedPlanets[i].ResourcesPerTurn.FoodAmountPerTurn;
+		totalResourceProduction.ore += this.OwnedPlanets[i].ResourcesPerTurn.OreAmountPerTurn;
+		totalResourceProduction.iridium += this.OwnedPlanets[i].ResourcesPerTurn.IridiumAmountPerTurn;
 	}
 
-	return totalFoodProduction;
+	return totalResourceProduction;
 };
 
 Astriarch.Player.PlayerType = { 

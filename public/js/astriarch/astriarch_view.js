@@ -29,8 +29,8 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 								'canvasNotSupportedCallback':Astriarch.View.CanvasNotSupported,
 								'layers':[
 									{'name':'canvasAstriarchBackground', x:0, y:0, width:800, height:600,'zIndex':1, 'backgroundColor':'black'},
-									{'name':'canvasAstriarchPlayfield', x:177, y:5, width:615, height:480,'zIndex':2, 'clickCallback':Astriarch.View.PlayfieldClicked, 'dblclickCallback':Astriarch.View.PlayfieldDoubleClicked, 'mouseHitSelector':'#canvasMouseHitDetector'},
-									{'name':'canvasAstriarchFleets', x:177, y:5, width:615, height:480,'zIndex':3, 'clickCallback':Astriarch.View.FleetsClicked, 'mouseHitSelector':'#canvasMouseHitDetector'}
+									{'name':'canvasAstriarchPlayfield', x:177, y:21, width:615, height:480,'zIndex':2, 'clickCallback':Astriarch.View.PlayfieldClicked, 'dblclickCallback':Astriarch.View.PlayfieldDoubleClicked, 'mouseHitSelector':'#canvasMouseHitDetector'},
+									{'name':'canvasAstriarchFleets', x:177, y:21, width:615, height:480,'zIndex':3, 'clickCallback':Astriarch.View.FleetsClicked, 'mouseHitSelector':'#canvasMouseHitDetector'}
 								]
 							});
 	//if the canvas isn't supported by the browser, don't do anything else
@@ -105,7 +105,7 @@ Astriarch.View.ShowNewGameOptions = function() {
 	$('#startGameOptionsContainer').show();
 	//also hide everything but the starfield so if we just finished a game those controls aren't still shown
 	Astriarch.View.ClearPlanetsAndFleets();
-	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').hide();
+	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').hide();
 	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').hide();
 };
 
@@ -307,9 +307,10 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 
 		$('#TextBlockPopulationAmount').text(totalPopulation);
 
+		var totalResourceProduction = mainPlayer.GetTotalResourceProductionPerTurn();
+
 		var totalFoodAmount = mainPlayer.TotalFoodAmount();
-		var totalFoodProduction = mainPlayer.GetTotalFoodProductionPerTurn();
-		var foodDiffPerTurn = totalFoodProduction - totalPopulation;
+		var foodDiffPerTurn = totalResourceProduction.food - totalPopulation;
 		var foodDiffPositiveIndicator = "";
 		if (foodDiffPerTurn >= 0)
 			foodDiffPositiveIndicator = "+";
@@ -317,20 +318,21 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 		var foodAmountColor = "green";
 		if (foodDiffPerTurn < 0)
 		{
-			if (foodDiffPerTurn + totalFoodAmount < totalPopulation)
+			if (foodDiffPerTurn + totalFoodAmount < totalPopulation) {
 				foodAmountColor = "red";
-			else//we're not going to starve
+			} else {//we're not going to starve
 				foodAmountColor = "yellow";
-		}
-		else if(foodDiffPerTurn + totalFoodAmount < totalPopulation)
+			}
+		} else if(foodDiffPerTurn + totalFoodAmount < totalPopulation) {
 			foodAmountColor = "orange";//we're still gaining food but we'll still starve
+		}
 
 		$('#TextBlockFoodAmount').css("color", foodAmountColor);
 		$('#TextBlockFoodAmount').text(totalFoodAmount + " " + foodDiffPositiveIndicator + foodDiffPerTurn);
 
 		$('#TextBlockGoldAmount').text(mainPlayer.Resources.GoldAmount);
-		$('#TextBlockOreAmount').text(mainPlayer.TotalOreAmount());
-		$('#TextBlockIridiumAmount').text(mainPlayer.TotalIridiumAmount());
+		$('#TextBlockOreAmount').text(mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
+		$('#TextBlockIridiumAmount').text(mainPlayer.TotalIridiumAmount() + " +" + totalResourceProduction.iridium);
 	}
 };
 
@@ -351,8 +353,8 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 		$('#SelectedItemPopulationPanel').css({"visibility":"hidden"});
 		$('#SelectedItemPopulationAssignmentsPanel').css({"visibility":"hidden"});
 		$('#SelectedItemImprovementSlotsPanel').css({"visibility":"hidden"});
+		$('#SelectedItemStatusDetails').css({"visibility":"hidden"});
 
-		//for now only one player, change this for multiplayer
 		var planetTypeIfKnownByPlayer = mainPlayer.PlanetTypeIfKnownByPlayer(cp);
 
 		if (!planetTypeIfKnownByPlayer)//this planet is unexplored
@@ -369,7 +371,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				lastKnownOwner = lastKnownFleet.LastKnownOwner;
 			}
 				
-			sb += Astriarch.GameTools.PlanetTypeToFriendlyName(cp.Type) + "<br />";
+			sb += Astriarch.GameTools.PlanetTypeToFriendlyName(planetTypeIfKnownByPlayer) + "<br />";
 
 			var p = mainPlayer.GetPlanetIfOwnedByPlayer(cp);
 			//TODO: make work with Astriarch.ClientGameModel.ShowUnexploredPlanetsAndEnemyPlayerStats option at the end of game
@@ -385,6 +387,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				$('#SelectedItemPopulationPanel').css({"visibility":"visible"});
 				$('#SelectedItemPopulationAssignmentsPanel').css({"visibility":"visible"});
 				$('#SelectedItemImprovementSlotsPanel').css({"visibility":"visible"});
+				$('#SelectedItemStatusDetails').css({"visibility":"visible"});
 
 				Astriarch.View.updateSelectedItemPopulationPanel(p.Population.length, p.MaxPopulation());
 
@@ -427,6 +430,29 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 					if (scoutCount != 0 || destroyerCount != 0 || cruiserCount != 0 || battleshipCount != 0)
 						$('#SendShipsButton').button('enable');
 				}
+
+				//populate SelectedItemStatusDetails panel
+				var sisdText = "";
+
+				sisdText += "<br />--- Stockpile ---<br />";
+				sisdText += "Food: " + (p.Resources.FoodAmount + p.Resources.FoodRemainder) + "<br />";
+				sisdText += "Ore: " + (p.Resources.OreAmount + p.Resources.OreRemainder) + "<br />";
+				sisdText += "Iridium: " + (p.Resources.IridiumAmount + p.Resources.IridiumRemainder) + "<br />";
+
+				sisdText += "<br />--- Per Turn ---<br />";
+				sisdText += "Production: " + (p.ResourcesPerTurn.ProductionAmountPerTurn + p.ResourcesPerTurn.RemainderProductionPerTurn) + "<br />";
+				sisdText += "Food: " + (p.ResourcesPerTurn.FoodAmountPerTurn + p.ResourcesPerTurn.RemainderFoodPerTurn) + "<br />";
+				sisdText += "Ore: " + (p.ResourcesPerTurn.OreAmountPerTurn + p.ResourcesPerTurn.RemainderOrePerTurn) + "<br />";
+				sisdText += "Iridium: " + (p.ResourcesPerTurn.IridiumAmountPerTurn + p.ResourcesPerTurn.RemainderIridiumPerTurn) + "<br />";
+
+				sisdText += "<br />--- Per Worker ---<br />";
+				sisdText += "Production: " + p.ResourcesPerTurn.GetExactProductionAmountPerWorkerPerTurn()+ "<br />";
+				sisdText += "Food: " + p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn()+ "<br />";
+				sisdText += "Ore: " + p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn()+ "<br />";
+				sisdText += "Iridium: " + p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn()+ "<br />";
+
+				$("#SelectedItemStatusDetails").html(sisdText);
+
 			}//if owned by main player
 			else if (lastKnownFleet != null)
 			{
@@ -750,8 +776,7 @@ Astriarch.View.drawBorder = function() {
 	*/
 	Astriarch.View.ContextBackground.lineWidth   = 2;
 	Astriarch.View.ContextBackground.strokeStyle = 'rgba(0, 128, 0, 255)';
-	Astriarch.View.ContextBackground.strokeRect(4, 3, 792, 594);
-
+	Astriarch.View.ContextBackground.strokeRect(0, 0, 800, 600);
 };
 
 Astriarch.View.mainMenuIconMouseEnter = function() {

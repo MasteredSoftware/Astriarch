@@ -11,6 +11,7 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	this.Type = type;
 	this.Population = [];//List<Citizen>
 	this.RemainderProduction = 0;//if we finished building something we may have remainder to apply to the next item
+	this.RemainderProductionFraction = 0;//if we have RemainderProductionPerTurn it is accumulated here
 	this.BuildQueue = [];//Queue<PlanetProductionItem>
 	this.BuiltImprovements = {};//Dictionary<PlanetImprovementType, List<PlanetImprovement>>
 
@@ -348,6 +349,13 @@ Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//
 			divisor = 8.0;
 
 		var planetProductionPerTurn = Math.round(this.ResourcesPerTurn.ProductionAmountPerTurn / divisor);
+
+		//accumulate RemainderProductionPerTurn to RemainderProductionFraction
+		this.RemainderProductionFraction += (this.ResourcesPerTurn.RemainderProductionPerTurn / divisor);
+		if(this.RemainderProductionFraction >= 1.0){
+			this.RemainderProduction += Math.floor(this.RemainderProductionFraction / 1.0);
+			this.RemainderProductionFraction = this.RemainderProductionFraction % 1;
+		}
 
 		nextItem.ProductionCostComplete += planetProductionPerTurn + this.RemainderProduction;
 		this.RemainderProduction = 0;
@@ -948,31 +956,27 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration = function(/*Planet*/ p, /*Plan
 
 	//this is the initial/base planet resource production
 	//base values by planet type:
-	//Class2 (home):2 food, 1 ore, 0.5 crystal
-	//Class1: 1 food, 1 ore, 1 crystal
-	//Dead: 0.5 food, 0.5 ore, 0 crystal
-	//Asteroid: 0 food, 2 ore, 2 crystal
 	switch (type)
 	{
 		case Astriarch.Planet.PlanetType.AsteroidBelt:
-			this.BaseFoodAmountPerWorkerPerTurn = 0.5;//formerly 0.25
+			this.BaseFoodAmountPerWorkerPerTurn = 0.5;
 			this.BaseOreAmountPerWorkerPerTurn = 2.0;
-			this.BaseIridiumAmountPerWorkerPerTurn = 2.0;//formerly 4.0
+			this.BaseIridiumAmountPerWorkerPerTurn = 1.0;
 			break;
 		case Astriarch.Planet.PlanetType.DeadPlanet:
 			this.BaseFoodAmountPerWorkerPerTurn = 1.0;
-			this.BaseOreAmountPerWorkerPerTurn = 1.5;//formerly 0.5
-			this.BaseIridiumAmountPerWorkerPerTurn = 0.5;//formerly 0.25
+			this.BaseOreAmountPerWorkerPerTurn = 1.25;
+			this.BaseIridiumAmountPerWorkerPerTurn = 0.5;
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass1:
 			this.BaseFoodAmountPerWorkerPerTurn = 1.5;
-			this.BaseOreAmountPerWorkerPerTurn = 0.75;//formerly 1.5
-			this.BaseIridiumAmountPerWorkerPerTurn = 0.75;
+			this.BaseOreAmountPerWorkerPerTurn = 0.5;
+			this.BaseIridiumAmountPerWorkerPerTurn = 0.375;
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass2:
 			this.BaseFoodAmountPerWorkerPerTurn = 2.0;
-			this.BaseOreAmountPerWorkerPerTurn = 0.5;//formerly 1.0
-			this.BaseIridiumAmountPerWorkerPerTurn = 0.25;//formerly 0.5
+			this.BaseOreAmountPerWorkerPerTurn = 0.25;
+			this.BaseIridiumAmountPerWorkerPerTurn = 0.125;
 			break;
 		default:
 			throw new NotImplementedException("Planet type " + type + "not supported by PlanetPerTurnResourceGeneration constructor.");
@@ -1015,24 +1019,24 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 		if (farmCount > 0)
 		{
 			var foodRemainder = (baseFoodAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * farmCount;
-			this.FoodAmountPerTurn = Math.floor(baseFoodAmountPerTurn + (foodRemainder / 1.0));
-			this.RemainderFoodPerTurn = foodRemainder % 1;
+			this.FoodAmountPerTurn = Math.floor(baseFoodAmountPerTurn + foodRemainder);
+			this.RemainderFoodPerTurn = (baseFoodAmountPerTurn + foodRemainder) % 1;
 		}
 		if (mineCount > 0)
 		{
 			var oreRemainder = (baseOreAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
-			this.OreAmountPerTurn = Math.floor(baseOreAmountPerTurn + (oreRemainder / 1.0));
-			this.RemainderOrePerTurn = oreRemainder % 1;
+			this.OreAmountPerTurn = Math.floor(baseOreAmountPerTurn + oreRemainder);
+			this.RemainderOrePerTurn = (baseOreAmountPerTurn + oreRemainder) % 1;
 
 			var iridiumRemainder = (baseIridiumAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
-			this.IridiumAmountPerTurn = Math.floor(baseIridiumAmountPerTurn + (iridiumRemainder / 1.0));
-			this.RemainderIridiumPerTurn = iridiumRemainder % 1;
+			this.IridiumAmountPerTurn = Math.floor(baseIridiumAmountPerTurn + iridiumRemainder);
+			this.RemainderIridiumPerTurn = (baseIridiumAmountPerTurn + iridiumRemainder) % 1;
 		}
 		if (factoryCount > 0)
 		{
 			var prodRemainder = (baseProductionAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * factoryCount;
-			this.ProductionAmountPerTurn = Math.floor(baseProductionAmountPerTurn + (prodRemainder / 1.0));
-			this.RemainderProductionPerTurn = prodRemainder % 1;
+			this.ProductionAmountPerTurn = Math.floor(baseProductionAmountPerTurn + prodRemainder);
+			this.RemainderProductionPerTurn = (baseProductionAmountPerTurn + prodRemainder) % 1;
 		}
 	}
 };
@@ -1047,7 +1051,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.FoodAmountPerWorkerPerTurn = function() {
 	return Math.round(this.GetExactFoodAmountPerWorkerPerTurn());   
-}
+};
 
 /**
  * returns how much ore each worker produces per turn
@@ -1056,7 +1060,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.FoodAmountPerWorkerPe
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.OreAmountPerWorkerPerTurn = function() {
 	return Math.round(this.GetExactOreAmountPerWorkerPerTurn());   
-}
+};
 
 /**
  * returns how much iridium each worker produces per turn
@@ -1065,7 +1069,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.OreAmountPerWorkerPer
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.IridiumAmountPerWorkerPerTurn = function() {
 	return Math.round(this.GetExactIridiumAmountPerWorkerPerTurn());   
-}
+};
 
 /**
  * returns how much production each worker produces per turn
@@ -1074,7 +1078,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.IridiumAmountPerWorke
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.ProductionAmountPerWorkerPerTurn = function() {
 	return Math.round(this.GetExactProductionAmountPerWorkerPerTurn());   
-}
+};
 
 /**
  * returns how much food each worker produces per turn without rounding
@@ -1084,7 +1088,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.ProductionAmountPerWo
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountPerWorkerPerTurn = function() {
 	var farmCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm].length;
 	return this.BaseFoodAmountPerWorkerPerTurn + (this.BaseFoodAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * farmCount));
-}
+};
 
 /**
  * returns how much ore each worker produces per turn without rounding
@@ -1094,7 +1098,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountPer
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountPerWorkerPerTurn = function() {
 	var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
 	return this.BaseOreAmountPerWorkerPerTurn + (this.BaseOreAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * mineCount));
-}
+};
 
 /**
  * returns how much iridium each worker produces per turn without rounding
@@ -1104,7 +1108,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountPerW
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmountPerWorkerPerTurn = function() {
 	var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
 	return this.BaseIridiumAmountPerWorkerPerTurn + (this.BaseIridiumAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * mineCount));
-}
+};
 
 /**
  * returns how much production each worker produces per turn without rounding
@@ -1114,7 +1118,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmount
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactProductionAmountPerWorkerPerTurn = function() {
 	var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 	return this.BaseProductionPerWorkerPerTurn + (this.BaseProductionPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * factoryCount));
-}
+};
 
 /**
  * PlanetResources is how much food a planet has on it, gold, ore and iridium are stored globaly at the player level
@@ -1202,7 +1206,7 @@ Astriarch.Planet.ProductionResources = function(gold, ore, iridium) {
 	this.Gold = gold;
 	this.Ore = ore;
 	this.Iridium = iridium;
-}
+};
 
 //the PopulationAssignments class is not in the Silverlight version, it is so we can pass an object into certain functions which take in/out parms of farmers, miners and workers
 /**
@@ -1213,7 +1217,7 @@ Astriarch.Planet.PopulationAssignments = function(farmers, miners, workers) {
 	this.Farmers = farmers;
 	this.Miners = miners;
 	this.Workers = workers;
-}
+};
 
 /**
  * PlanetProductionItem is an abstract class for either starships or improvements
@@ -1333,10 +1337,10 @@ Astriarch.Planet.PlanetImprovement = Astriarch.Planet.PlanetProductionItem.exten
 				this.GoldCost = 2;
 				break;
 			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
-				this.BaseProductionCost = 90;//space platforms should be expensive
-				this.OreCost = 8;
-				this.IridiumCost = 4;
-				this.GoldCost = 12;
+				this.BaseProductionCost = 162;//space platforms should be expensive
+				this.OreCost = 30;
+				this.IridiumCost = 12;
+				this.GoldCost = 50;
 				break;
 		}
 	},
@@ -1370,30 +1374,32 @@ Astriarch.Planet.StarShipInProduction = Astriarch.Planet.PlanetProductionItem.ex
 		switch (this.Type)
 		{
 			case Astriarch.Fleet.StarShipType.Battleship:
-				this.BaseProductionCost = 90;
-				this.OreCost = 8;
-				this.IridiumCost = 4;
-				this.GoldCost = 12;
+				this.BaseProductionCost = 162;
+				this.OreCost = 30;
+				this.IridiumCost = 12;
+				this.GoldCost = 50;
 				break;
 			case Astriarch.Fleet.StarShipType.Cruiser:
-				this.BaseProductionCost = 42;
-				this.OreCost = 4;
-				this.IridiumCost = 2;
-				this.GoldCost = 6;
+				this.BaseProductionCost = 54;
+				this.OreCost = 12;
+				this.IridiumCost = 5;
+				this.GoldCost = 20;
 				break;
 			case Astriarch.Fleet.StarShipType.Destroyer:
 				this.BaseProductionCost = 18;
+				this.OreCost = 5;
+				this.IridiumCost = 2;
+				this.GoldCost = 8;
+				break;
+			case Astriarch.Fleet.StarShipType.Scout:
+				this.BaseProductionCost = 6;
 				this.OreCost = 2;
 				this.IridiumCost = 1;
 				this.GoldCost = 3;
 				break;
-			case Astriarch.Fleet.StarShipType.Scout:
-				this.BaseProductionCost = 6;
-				this.OreCost = 1;
-				this.GoldCost = 1;
-				break;
 			case Astriarch.Fleet.StarShipType.SystemDefense:
 				this.BaseProductionCost = 2;
+				this.OreCost = 1;
 				this.GoldCost = 1;
 				break;
 		}

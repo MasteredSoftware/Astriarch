@@ -6,7 +6,7 @@ Astriarch.GameController = {
 
 
 Astriarch.GameController.ResetView = function(clientGameModel) {
-	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').show();
+	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').show();
 	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').show();
 
 	var gameGrid = new Astriarch.Grid(615.0, 480.0);//TODO: externalize later

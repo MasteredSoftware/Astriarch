@@ -91,12 +91,12 @@ Astriarch.Grid.prototype.GetHexAt = function(/*Point*/ p) {
 Astriarch.Grid.prototype.ShowHexGrid = function() {
 	//TODO: Implement
 	//turn on the Stroke Brush for each Polygon
-	/*
-	foreach (Hexagon h in this.Hexes)
+
+	for(var h in this.Hexes)
 	{
-		h.PolyBase.Stroke = new SolidColorBrush(Colors.LightGray);
+		this.Hexes[h].Select();
 	}
-	*/
+
 };
 
 Astriarch.Grid.prototype.HideHexGrid = function() {

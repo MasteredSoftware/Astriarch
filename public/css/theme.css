@@ -1,0 +1,132 @@
+* {
+	margin: 0px;
+	padding: 0px;
+}
+
+body {
+	background: #000 url("/img/tile-bg.png") repeat top center;
+	padding: 50px 100px;
+	margin:0;
+}
+img {
+	border: 0px;
+}
+
+a:focus, a:hover, a:active { outline:none } 
+
+:focus {outline:none;}
+::-moz-focus-inner {border:0;}
+
+body, .defaultFont
+{
+	/*font-family: Lucida Sans Unicode,Veranda,Lucida Grande,Lucida Sans;*/
+	font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
+
+	/*disable text selection*/
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+
+	outline:none;
+}
+
+td > span, td > img {
+	display: block;
+}
+
+#about-astriarch * {
+	margin: 3px;
+	padding: 3px;
+}
+
+#news-item {
+	padding: 5px;
+}
+
+/* main navigation */
+
+#mainnav {
+
+	margin: 2px 16px 20px 11px;
+	min-height: 30px;
+	background:inherit;
+}
+
+#mainnav ul {
+	height: 100%;
+	margin: 0;
+	padding: 0 0 0 10px;
+}
+
+#mainnav li {
+	list-style-type: none;
+	float: left;
+	width: auto;
+	margin: 7px 5px 0 5px;
+
+}
+
+#mainnav a:link, #mainnav a:visited {
+	display: block;
+	color: #aaa;
+	text-transform:uppercase;
+	font-weight: bold;
+	text-decoration: none;
+	padding: 1px 10px 2px 12px;
+	background:inherit;
+	border-bottom: 2px solid #008000;
+}
+
+#mainnav a:hover, #mainnav a:visited:hover {
+	color: #FFFFFF;
+	text-decoration: none;
+	padding: 1px 10px 2px 12px;
+	border-bottom: 2px solid #00AA00;
+	background:#212121;
+}
+
+#about-astriarch {
+	font: 1em;
+	line-height: 125%;
+	font-family: "Lucida Grande","Lucida Sans Unicode",sans-serif;
+	color: white;
+	font-size:small;
+	margin-top:10px;
+	padding:10px;
+}
+
+#about-astriarch ul li {
+    list-style: disc outside url("../img/li.gif");
+}
+
+#about-astriarch a {
+	margin: 0;
+	padding: 0;
+}
+
+.heading-title
+{
+	background: url("../img/h2.gif") repeat-x scroll left bottom #7B95A1;
+    border-bottom: medium none;
+    font: bold 1.1em "Lucida Grande","Lucida Sans Unicode",sans-serif;
+    margin: 0;
+    padding: 5px 8px;
+}
+
+.news-item {
+	border-bottom: 1px solid #3E4D53;
+}
+
+.timestamp {
+	color: #7B95A1;
+}
+
+#social-links a img {
+    background-color: #282F33;
+    border-color: #A1B6BD #000000 #000000 #A1B6BD;
+    border-style: solid;
+    border-width: 1px;
+    padding: 7px;
+}
