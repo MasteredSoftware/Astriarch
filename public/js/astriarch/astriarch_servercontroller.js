@@ -530,7 +530,7 @@ Astriarch.ServerController = {
 			totalMiners += pop.Miners;
 		}
 
-		player.Resources.GoldRemainder += (totalWorkers + totalMiners + totalfarmers) / 1.0;
+		player.Resources.GoldRemainder += (totalWorkers + totalMiners + totalfarmers) / 1.75;
 		player.Resources.AccumulateResourceRemainders();
 
 		//generate planet resources
