@@ -306,6 +306,7 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 		var totalPopulation = mainPlayer.GetTotalPopulation();
 
 		$('#TextBlockPopulationAmount').text(totalPopulation);
+		$('#TextBlockPopulationAmount').prop("title", "Total Population: " + totalPopulation);
 
 		var totalResourceProduction = mainPlayer.GetTotalResourceProductionPerTurn();
 
@@ -323,16 +324,22 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 			} else {//we're not going to starve
 				foodAmountColor = "yellow";
 			}
-		} else if(foodDiffPerTurn + totalFoodAmount < totalPopulation) {
+		} else if(totalFoodAmount < totalPopulation || foodDiffPerTurn + totalFoodAmount < totalPopulation) {
 			foodAmountColor = "orange";//we're still gaining food but we'll still starve
 		}
 
 		$('#TextBlockFoodAmount').css("color", foodAmountColor);
 		$('#TextBlockFoodAmount').text(totalFoodAmount + " " + foodDiffPositiveIndicator + foodDiffPerTurn);
+		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.ExactTotalFoodAmount() + " +" + totalResourceProduction.food_exact + " -" + totalPopulation);
 
 		$('#TextBlockGoldAmount').text(mainPlayer.Resources.GoldAmount);
+		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + (mainPlayer.Resources.GoldAmount + mainPlayer.Resources.GoldRemainder));
+
 		$('#TextBlockOreAmount').text(mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
+		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.ExactTotalOreAmount() + " +" + totalResourceProduction.ore_exact);
+
 		$('#TextBlockIridiumAmount').text(mainPlayer.TotalIridiumAmount() + " +" + totalResourceProduction.iridium);
+		$('#TextBlockIridiumAmount').prop("title", "Iridium Amount: " + mainPlayer.ExactTotalIridiumAmount() + " +" + totalResourceProduction.iridium_exact);
 	}
 };
 

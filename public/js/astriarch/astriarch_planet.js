@@ -257,8 +257,7 @@ Astriarch.Planet.prototype.EnqueueProductionItemAndSpendResources = function(gam
  * reduces the players resources based on the cost
  * @this {Astriarch.Planet}
  */
-Astriarch.Planet.prototype.SpendResources = function(gameModel, goldCost, oreCost, iridiumCost, /*Player*/ player)
-{
+Astriarch.Planet.prototype.SpendResources = function(gameModel, goldCost, oreCost, iridiumCost, /*Player*/ player) {
 	
 	player.Resources.GoldAmount -= goldCost;
 	
@@ -278,18 +277,20 @@ Astriarch.Planet.prototype.SpendResources = function(gameModel, goldCost, oreCos
 		var planetDistanceComparer = new Astriarch.Planet.PlanetDistanceComparer(gameModel, this);
 		ownedPlanets.sort(planetDistanceComparer.sortFunction);
 		
-		for(var i in ownedPlanets)
-		{
+		for(var i in ownedPlanets) {
 			if(oreNeeded != 0)
-				oreNeeded -= this.Resources.SpendOreAsPossible(oreNeeded);
+				oreNeeded -= ownedPlanets[i].Resources.SpendOreAsPossible(oreNeeded);
 			if(iridiumNeeded != 0)
-				iridiumNeeded -= this.Resources.SpendIridiumAsPossible(iridiumNeeded);
+				iridiumNeeded -= ownedPlanets[i].Resources.SpendIridiumAsPossible(iridiumNeeded);
 			
 			if(oreNeeded == 0 && iridiumNeeded == 0)
 				break;
 		}
+		if(oreNeeded != 0 || iridiumNeeded != 0){
+			console.warn("Problem spending ore and iridium as necessary! Player:", player.Name, this.Name, oreNeeded, iridiumNeeded);
+		}
 	}
-}
+};
 
 /**
  * Sets the orgin point of the planet based on the bounding hex

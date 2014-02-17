@@ -42,11 +42,58 @@ Astriarch.ServerController = {
 			}
 		}
 
-		//TODO: could eventually only allow repairs if the planet has a certain improvement (i.e. space platform and colony)
-		//and/or only repair slowly and/or charge gold for repairing damange (i.e. 1 gold per 4 damage
+		var resourcesAutoSpentByPlayerId = {};
+
 		//repair fleets on planets
 		for (var i in gameModel.Planets) {
-			gameModel.Planets[i].PlanetaryFleet.RepairFleet();
+			var p = gameModel.Planets[i];
+			//Require a colony to even consider repairing a fleet
+			if(p.Owner && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length > 0){
+				//charge the user a bit for repairing the fleets
+				//i.e. 2 gold per 3 damage, 1 ore per 2 damage, 1 iridium per 4 damage
+				var goldAmount = p.Owner.Resources.GoldAmount;
+				var oreAmount = p.Owner.TotalOreAmount();
+				var iridiumAmount = p.Owner.TotalIridiumAmount();
+				var maxStrengthToRepair = Math.min(Math.floor(goldAmount / 2 * 3), Math.floor(oreAmount * 2), Math.floor(iridiumAmount * 4));
+
+				var totalStrengthRepaired = p.PlanetaryFleet.RepairFleet(maxStrengthToRepair);
+				if(totalStrengthRepaired > 0){
+					var goldCost = Math.floor(totalStrengthRepaired * 2 / 3);
+					var oreCost = Math.floor(totalStrengthRepaired / 2);
+					var iridiumCost = Math.floor(totalStrengthRepaired / 4);
+					if(goldCost || oreCost || iridiumCost){
+						p.SpendResources(gameModel, goldCost, oreCost, iridiumCost, p.Owner);
+						if(!(p.Owner.Id in resourcesAutoSpentByPlayerId)){
+							resourcesAutoSpentByPlayerId[p.Owner.Id] = {"gold":0, "ore":0, "iridium":0};
+						}
+						resourcesAutoSpentByPlayerId[p.Owner.Id].gold += goldCost;
+						resourcesAutoSpentByPlayerId[p.Owner.Id].ore += oreCost;
+						resourcesAutoSpentByPlayerId[p.Owner.Id].iridium += iridiumCost;
+					}
+				}
+			}
+		}
+
+		//collect resourcesAutoSpentByPlayerId and merge with existing ResourcesAutoSpent messages for spending gold for shipping food
+		for(var playerId in resourcesAutoSpentByPlayerId){
+			if(!(playerId in endOfTurnMessagesByPlayerId)){
+				continue;//this is a computer player
+			}
+			//check for existing ResourcesAutoSpent message for this player
+			var resourcesSpent = resourcesAutoSpentByPlayerId[playerId];
+			var text = resourcesSpent.gold + " Gold, " + resourcesSpent.ore + " Ore, " + resourcesSpent.iridium + " Iridium spent repairing fleets.";
+			var messageFound = false;
+			for(var a in endOfTurnMessagesByPlayerId[playerId]){
+				var message = endOfTurnMessagesByPlayerId[playerId][a];
+				if(message.Type == Astriarch.TurnEventMessage.TurnEventMessageType.ResourcesAutoSpent){
+					message.Message = message.Message + " and " + text;
+					messageFound = true;
+					break;
+				}
+			}
+			if(!messageFound){
+				endOfTurnMessagesByPlayerId[playerId].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResourcesAutoSpent, null, text));
+			}
 		}
 
 		//resolve planetary conflicts
@@ -460,7 +507,7 @@ Astriarch.ServerController = {
 
 
 		if(totalFoodShipped != 0) {
-			eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.FoodShipped, null, "You spent " + totalFoodShipped + " Gold shipping Food."));
+			eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResourcesAutoSpent, null, totalFoodShipped + " Gold spent shipping Food"));
 		}
 
 		//TODO: food shortages should further reduce other production, and pop reproduction amt?
@@ -470,7 +517,6 @@ Astriarch.ServerController = {
 
 	generatePlayerResources: function(/*Player*/ player) {
 		//determine tax revenue (gold)
-		//for now we generate 1/2 gold for each worker, farmer, or miner
 		//TODO: later we may want to allow the user to control taxes vs. research
 
 		var totalWorkers = 0, totalfarmers=0, totalMiners=0;
@@ -484,7 +530,7 @@ Astriarch.ServerController = {
 			totalMiners += pop.Miners;
 		}
 
-		player.Resources.GoldRemainder += (totalWorkers + totalMiners + totalfarmers) / 2.0;
+		player.Resources.GoldRemainder += (totalWorkers + totalMiners + totalfarmers) / 1.0;
 		player.Resources.AccumulateResourceRemainders();
 
 		//generate planet resources

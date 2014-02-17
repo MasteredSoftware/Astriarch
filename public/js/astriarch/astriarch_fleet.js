@@ -106,7 +106,7 @@ Astriarch.Fleet.prototype.MoveFleet = function() {
 	{
 		this.OnFleetMoved(this);
 	}
-}
+};
 
 /**
  * Lands a fleet on a planet
@@ -379,28 +379,40 @@ Astriarch.Fleet.prototype.CloneFleet = function(){//returns Fleet
  * Repairs this fleet
  * @this {Astriarch.Fleet}
  */
-Astriarch.Fleet.prototype.RepairFleet = function(){
-	this.SpacePlatformDamage = 0;
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense])
-	{
-		this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense][i].DamageAmount = 0;
+Astriarch.Fleet.prototype.RepairFleet = function(maxStrengthToRepair){
+	var totalStrengthRepaired = 0;
+	var amountRepaired = 0;
+	var allEligibleStarShips = [];
+
+	if(this.LocationHex.PlanetContainedInHex.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0){
+
+		//space platforms, cruisers and battleships all need a factory and a spaceplatform for repairs
+		if(this.LocationHex.PlanetContainedInHex.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0){
+			amountRepaired = Math.min(maxStrengthToRepair, this.SpacePlatformDamage);
+			this.SpacePlatformDamage -= amountRepaired;
+			maxStrengthToRepair -= amountRepaired;
+			totalStrengthRepaired += amountRepaired;
+
+			allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
+			allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
+		}
+		allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
 	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Scout])
+	allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Scout]);
+	allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
+
+	for (var e in allEligibleStarShips)
 	{
-		this.StarShips[Astriarch.Fleet.StarShipType.Scout][i].DamageAmount = 0;
+		amountRepaired = allEligibleStarShips[e].RepairStarShip(maxStrengthToRepair);
+		totalStrengthRepaired += amountRepaired;
+		maxStrengthToRepair -= amountRepaired;
+		if(maxStrengthToRepair <= 0){
+			break;
+		}
 	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Destroyer])
-	{
-		this.StarShips[Astriarch.Fleet.StarShipType.Destroyer][i].DamageAmount = 0;
-	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Cruiser])
-	{
-		this.StarShips[Astriarch.Fleet.StarShipType.Cruiser][i].DamageAmount = 0;
-	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Battleship])
-	{
-		this.StarShips[Astriarch.Fleet.StarShipType.Battleship][i].DamageAmount = 0;
-	}
+
+
+	return totalStrengthRepaired;
 };
 
 /**
@@ -533,6 +545,17 @@ Astriarch.Fleet.StarShip.prototype.CloneStarShip = function(){//returns StarShip
 	var s = new Astriarch.Fleet.StarShip(this.Type);
 	s.DamageAmount = this.DamageAmount;
 	return s;
+};
+
+/**
+ * Repairs this starship up to max strength to repair
+ * @this {Astriarch.Fleet.StarShip}
+ * @return {Number} the amount repaired
+ */
+Astriarch.Fleet.StarShip.prototype.RepairStarShip = function(maxStrengthToRepair){//returns Number
+	var amountRepaired = Math.min(maxStrengthToRepair, this.DamageAmount);
+	this.DamageAmount -= amountRepaired;
+	return amountRepaired;
 };
 
 /**

@@ -73,6 +73,21 @@ Astriarch.Player.prototype.TotalFoodAmount = function()	{
 };
 
 /**
+ * the exact total food on all owned planets for this player
+ * @this {Astriarch.Player}
+ * @return {number}
+ */
+Astriarch.Player.prototype.ExactTotalFoodAmount = function()	{
+	var foodAmt = 0;
+	for (var i in this.OwnedPlanets)
+	{
+		foodAmt += this.OwnedPlanets[i].Resources.FoodRemainder;
+		foodAmt += this.OwnedPlanets[i].Resources.FoodAmount;
+	}
+	return foodAmt;
+};
+
+/**
  * the total ore on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}
@@ -87,7 +102,7 @@ Astriarch.Player.prototype.TotalOreAmount = function()	{
 };
 
 /**
- * the total ore on all owned planets for this player
+ * the exact total ore on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}
  */
@@ -116,7 +131,7 @@ Astriarch.Player.prototype.TotalIridiumAmount = function()	{
 };
 
 /**
- * the total Iridium on all owned planets for this player
+ * the exact total Iridium on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}
  */
@@ -226,13 +241,19 @@ Astriarch.Player.prototype.GetTotalPopulation = function() {
  * @return {Object}
  */
 Astriarch.Player.prototype.GetTotalResourceProductionPerTurn = function() {
-	var totalResourceProduction = {"food":0, "ore":0, "iridium":0};
+	var totalResourceProduction = {"food":0, "food_exact":0, "ore":0, "ore_exact": 0, "iridium":0, "iridium_exact":0};
 
 	for (var i in this.OwnedPlanets)
 	{
-		totalResourceProduction.food += this.OwnedPlanets[i].ResourcesPerTurn.FoodAmountPerTurn;
-		totalResourceProduction.ore += this.OwnedPlanets[i].ResourcesPerTurn.OreAmountPerTurn;
-		totalResourceProduction.iridium += this.OwnedPlanets[i].ResourcesPerTurn.IridiumAmountPerTurn;
+		var p = this.OwnedPlanets[i];
+		totalResourceProduction.food += p.ResourcesPerTurn.FoodAmountPerTurn;
+		totalResourceProduction.food_exact += p.ResourcesPerTurn.FoodAmountPerTurn + p.ResourcesPerTurn.RemainderFoodPerTurn;
+
+		totalResourceProduction.ore += p.ResourcesPerTurn.OreAmountPerTurn;
+		totalResourceProduction.ore_exact += p.ResourcesPerTurn.OreAmountPerTurn + p.ResourcesPerTurn.RemainderOrePerTurn;
+
+		totalResourceProduction.iridium += p.ResourcesPerTurn.IridiumAmountPerTurn;
+		totalResourceProduction.iridium_exact += p.ResourcesPerTurn.IridiumAmountPerTurn + p.ResourcesPerTurn.RemainderIridiumPerTurn;
 	}
 
 	return totalResourceProduction;

@@ -150,7 +150,7 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 	if (endOfTurnMessages.length > 0)
 	{
 		/*
-		 FoodShipped = 0,
+		 ResourcesAutoSpent = 0,
 		 PopulationGrowth = 1,
 		 ImprovementBuilt = 2,
 		 ShipBuilt= 3,
@@ -170,7 +170,7 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 			var tsmlbi = new Astriarch.GameController.TurnSummaryMessageListBoxItem(tem);
 			switch (tsmlbi.EventMessage.Type)
 			{
-				case Astriarch.TurnEventMessage.TurnEventMessageType.FoodShipped:
+				case Astriarch.TurnEventMessage.TurnEventMessageType.ResourcesAutoSpent:
 				case Astriarch.TurnEventMessage.TurnEventMessageType.PopulationGrowth:
 					tsmlbi.Foreground = "blue";
 					break;

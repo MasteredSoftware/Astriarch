@@ -25,7 +25,7 @@ Astriarch.TurnEventMessage.TurnEventMessageComparerSortFunction = function(a, b)
 };
 
 Astriarch.TurnEventMessage.TurnEventMessageType = {
-	FoodShipped: 0,
+	ResourcesAutoSpent: 0,
 	PopulationGrowth: 1,
 	ImprovementBuilt: 2,
 	ShipBuilt: 3,
