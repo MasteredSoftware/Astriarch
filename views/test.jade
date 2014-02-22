@@ -3,6 +3,8 @@ extends layout
 block content
 	h1= title
 	p Welcome to #{title}
+	canvas#imgCanvasTest(style="background-color:black;")
+	div#imageData
 	div#messages
 	input(type="button", value="send noop", onclick="sendMessage(Astriarch.Shared.MESSAGE_TYPE.NOOP)")
 	input(type="button", value="send list games", onclick="sendMessage(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES)")
@@ -21,4 +23,38 @@ block content
 			Astriarch.server_comm.init(8000);
 			Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, renderMessage);
 			Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, renderMessage);
+
+			var canvas1 = $('#imgCanvasTest')[0];
+			var ctx1    = canvas1.getContext('2d');
+			getImageData(ctx1, "img/PopulationSmallFilled.png");
 		});
+
+		function getImageData(ctx, imgLoc) {
+			var img = new Image();
+			img.onload = function(){
+				ctx.drawImage( this, 0, 0);
+				// 3) Read your image data
+				var w = this.width, h=this.height;
+				var imgdata = ctx.getImageData(0,0,w,h);
+				var rgba = imgdata.data;
+				var arr = [];for(var i in rgba){arr.push(rgba[i])}
+				$('#imageData').html(JSON.stringify(arr));
+				/*
+				// 4) Read or manipulate the rgba as you wish
+				for (var px=0,ct=w*h;px<ct;px+=4){
+					var r = rgba[px  ];
+					var g = rgba[px+1];
+					var b = rgba[px+2];
+					var a = rgba[px+3];
+				}
+				*/
+				//var canvasOther = $('#otherImgCanvas')[0];
+				//var ctxOther = canvasOther.getContext('2d');
+				// 5) Update the context with newly-modified data
+				//ctxOther.putImageData(imgdata,0,0);
+
+				// 6) Draw the image data elsewhere, if you wish
+				//someOtherContext.drawImage( ctx, 0, 0 );
+			};
+			img.src = imgLoc; // set this *after* onload
+		}

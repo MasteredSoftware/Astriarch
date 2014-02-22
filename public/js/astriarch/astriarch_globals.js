@@ -16,6 +16,10 @@ Astriarch.NextRandom = function(lowInclusive, highExclusive) {
 	return Math.floor(Math.random()*highExclusive) + lowInclusive;
 };
 
+Astriarch.NextRandomFloat = function(lowInclusive, highExclusive) {
+	return Math.random() * (highExclusive - lowInclusive) + lowInclusive;
+};
+
 //could add as prototype to object but that may cause problems:
 //http://stackoverflow.com/questions/5223/length-of-javascript-associative-array
 Astriarch.CountObjectKeys = function(obj) {
@@ -209,8 +213,7 @@ Astriarch.Util = {
 		return Astriarch.Util.imageDataByColorRGBA[key];
 	},
 	
-	ChangeImageColor: function(/*Image bitmap array*/ bmpArr, /*ColorRGBA*/ colorNew)
-	{
+	ChangeImageColor: function(/*Image bitmap array*/ bmpArr, /*ColorRGBA*/ colorNew) {
 		var retBmpArr = new Array(bmpArr.length);
 		for (var i = 0; i < bmpArr.length; i+=4)
 		{

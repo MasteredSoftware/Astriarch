@@ -396,7 +396,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				$('#SelectedItemImprovementSlotsPanel').css({"visibility":"visible"});
 				$('#SelectedItemStatusDetails').css({"visibility":"visible"});
 
-				Astriarch.View.updateSelectedItemPopulationPanel(p.Population.length, p.MaxPopulation());
+				Astriarch.View.updateSelectedItemPopulationPanel(p.Population, p.MaxPopulation());
 
 				var farmCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm].length;
 				var mineCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
@@ -490,21 +490,34 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 	$('#SelectedItemStatus').html(sb);
 };
 
-Astriarch.View.updateSelectedItemPopulationPanel = function(populationCount, maxPopulation) {
-	$('#SelectedItemPopulationPanel').attr("Title", "Planet Population: " + populationCount + " / " + maxPopulation);
+Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopulation) {
             
 	//clear out the appropriate ones
-	for (var i = maxPopulation + 1; i <= 16; i++)
-	{
+	for (var i = maxPopulation + 1; i <= 16; i++) {
 		$("#PopulationImage" + i).css("background-image", '');
+		$("#PopulationImage" + i).prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 	}
 
-	for (var i = 1; i <= maxPopulation; i++)
-	{
-		if (i <= populationCount)
-			$("#PopulationImage" + i).css("background-image", 'url(img/PopulationSmallFilled.png)');
-		else
+	for (var i = 1; i <= maxPopulation; i++) {
+		if (i <= population.length){
+			//check protest level of citizen, over 50% should show red, 0% show green, otherwise orange
+			var citizen = population[i - 1];
+			var element = $("#PopulationImage" + i);
+			if(citizen.ProtestLevel == 0){
+				element.css("background-image", 'url(img/PopulationSmallFilled.png)');
+				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
+			} else if(citizen.ProtestLevel > 0.5){
+				element.css("background-image", 'url(img/PopulationSmallFilled_red.png)');
+				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
+			} else {
+				element.css("background-image", 'url(img/PopulationSmallFilled_orange.png)');
+				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
+			}
+
+		}
+		else {
 			$("#PopulationImage" + i).css("background-image", 'url(img/PopulationSmallEmpty.png)');
+		}
 	}
 };
 

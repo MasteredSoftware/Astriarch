@@ -61,8 +61,8 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	{
 		//initialize home planet
 		//add an aditional citizen
-		this.Population.push(new Astriarch.Planet.Citizen(this.Type));
-		this.Population.push(new Astriarch.Planet.Citizen(this.Type));
+		this.Population.push(new Astriarch.Planet.Citizen(this.Type, initialOwner.Id));
+		this.Population.push(new Astriarch.Planet.Citizen(this.Type, initialOwner.Id));
 
 		//setup resources
 		this.Resources.FoodAmount = 4;
@@ -100,6 +100,24 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 };
 
 Astriarch.Planet.Static = {NEXT_PLANET_ID:1, PLANET_SIZE: 20.0};
+
+/**
+ * Gets all population by wether they have a ProtestLevel or not
+ * @returns {{protesting: Array, content: Array}}
+ * @constructor
+ */
+Astriarch.Planet.prototype.GetPopulationByContentment = function(){
+	var citizens = {protesting:[], content:[]};
+	for(var c in this.Population){
+		var citizen = this.Population[c];
+		if(citizen.ProtestLevel > 0){
+			citizens.protesting.push(citizen);
+		} else {
+			citizens.content.push(citizen);
+		}
+	}
+	return citizens;
+};
 
 /**
  * Gets the max population of the planet taking into account the number of colonies built
@@ -343,13 +361,8 @@ Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//
 	{
 		var nextItem = this.BuildQueue.slice(0, 1)[0];//PlanetProductionItem
 
-		var divisor = 1.0;
-		if (this.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest causes 1/4 development
-			divisor = 4.0;
-		else if (this.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Riots)//riots cause 1/8 development
-			divisor = 8.0;
-
-		var planetProductionPerTurn = Math.round(this.ResourcesPerTurn.ProductionAmountPerTurn / divisor);
+		var divisor = this.ResourcesPerTurn.GetProductionDivisor();
+		var planetProductionPerTurn = this.ResourcesPerTurn.GetProductionAmountPerTurn();
 
 		//accumulate RemainderProductionPerTurn to RemainderProductionFraction
 		this.RemainderProductionFraction += (this.ResourcesPerTurn.RemainderProductionPerTurn / divisor);
@@ -452,12 +465,20 @@ Astriarch.Planet.prototype.GetClientPlanet = function(){
 Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 	var goldRefunded = 0;//this is so we can use this to loot gold when the planet changes hands
 
+	var newOwnerPlayerId = null;
+	if (p) {
+		newOwnerPlayerId = p.Id;
+	}
+
 	//remove current planet owner
-	if (this.Owner !== null)
-	{
+	if (this.Owner !== null) {
 		//if this planet has items in the build queue we should remove them now
-		for (var i = this.BuildQueue.length - 1; i >= 0; i--)
+		for (var i = this.BuildQueue.length - 1; i >= 0; i--){
 			goldRefunded += this.RemoveBuildQueueItemForRefund(i);
+		}
+		//Also clear out any remainder production
+		this.RemainderProduction = 0;
+		this.RemainderProductionFraction = 0;
 
 		//also remove space platforms because they were destroyed in combat (used for defense)
 		this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform] = [];
@@ -466,11 +487,33 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 			delete this.Owner.PlanetBuildGoals[this.Id];
 
 		delete this.Owner.OwnedPlanets[this.Id];
+
+
+		//set Protest Levels for citizens
+		for(var c = 0; c < this.Population.length; c++){
+			var citizen = this.Population[c];
+			if(c == this.Population.length - 1){
+				//ensure we have at least one loyal, non-protesting citizen (they were in awe of the new leadership's ability to take the planet)
+				citizen.ProtestLevel = 0;
+				citizen.LoyalToPlayerId = newOwnerPlayerId;
+				continue;
+			}
+			if(citizen.LoyalToPlayerId && citizen.LoyalToPlayerId == newOwnerPlayerId){
+				//they were loyal to this player before, they won't be protesting now
+				citizen.ProtestLevel = 0;
+				continue;
+			}
+			var minProtestLevel = citizen.LoyalToPlayerId ? 0.5 : 0;//if the planet was run by natives they won't be protesting as much
+			var maxProtestLevel = citizen.LoyalToPlayerId ? 1 : 0.5;//if the planet was run by natives they won't be protesting as much
+			citizen.ProtestLevel = Astriarch.NextRandomFloat(minProtestLevel, maxProtestLevel);
+		}
+
+		//when a planet changes hands it should initially be in unrest
+		this.PlanetHappiness = Astriarch.Planet.PlanetHappinessType.Riots;
 	}
 
 	this.Owner = p;
-	if (this.Owner !== null)
-	{
+	if (this.Owner) {
 		p.KnownClientPlanets[this.Id] = this.GetClientPlanet();
 		if (Astriarch.CountObjectKeys(p.OwnedPlanets) == 0)
 		{
@@ -479,9 +522,8 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 		p.OwnedPlanets[this.Id] = this;
 	}
 
-	if (this.Population.length == 0)
-	{
-		this.Population.push(new Astriarch.Planet.Citizen(this.Type));
+	if (this.Population.length == 0) {
+		this.Population.push(new Astriarch.Planet.Citizen(this.Type, newOwnerPlayerId));
 	}
 	
 	return goldRefunded;
@@ -527,9 +569,10 @@ Astriarch.Planet.prototype.SetPlayerLastKnownPlanetFleetStrength = function(game
 Astriarch.Planet.prototype.CountPopulationWorkerTypes = function(populationWorkerTypesObject)
 {
 	farmers = 0; miners = 0; workers = 0;
-	for (var i in this.Population)
+	var citizens = this.GetPopulationByContentment();
+	for (var i in citizens.content)
 	{
-		var c = this.Population[i];//Citizen
+		var c = citizens.content[i];//Citizen
 		switch (c.WorkerType)
 		{
 			case Astriarch.Planet.CitizenWorkerType.Farmer:
@@ -734,15 +777,15 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypes = function(targetFarmers,
  * @this {Astriarch.Planet}
  * @return {Astriarch.Planet.Citizen}
  */
-Astriarch.Planet.prototype.getCitizenType = function(/*CitizenWorkerType*/ desiredType)
-{
-	for (var i in this.Population)
+Astriarch.Planet.prototype.getCitizenType = function(/*CitizenWorkerType*/ desiredType) {
+	var citizens = this.GetPopulationByContentment();
+	for (var i in citizens.content)
 	{	
-		if (this.Population[i].WorkerType == desiredType)
-			return this.Population[i];
+		if (citizens.content[i].WorkerType == desiredType)
+			return citizens.content[i];
 	}
 	throw new Error("Couldn't find: " + desiredType + " in Planet.getCitizenType!");
-}
+};
 
 /**
  * A sort function to prefer planets with higher pop and number of improvements
@@ -984,6 +1027,28 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration = function(/*Planet*/ p, /*Plan
 	}
 	//update our stats
 	this.UpdateResourcesPerTurnBasedOnPlanetStats();
+};
+
+/**
+ * gets divisor to adjust production based on planet happiness
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionDivisor = function() {
+	var divisor = 1.0;
+	if (this.Planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest causes 1/4 development
+		divisor = 4.0;
+	else if (this.Planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Riots)//riots cause 1/8 development
+		divisor = 8.0;
+
+	return divisor;
+};
+
+/**
+ * gets adjusted production per turn based on planet happiness
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionAmountPerTurn = function() {
+	return Math.round(this.Planet.ResourcesPerTurn.ProductionAmountPerTurn / this.GetProductionDivisor());
 };
 
 /**
@@ -1246,13 +1311,12 @@ Astriarch.Planet.PlanetProductionItem = Class.extend({ //abstract class
 	 * @this {Astriarch.Planet.PlanetProductionItem}
 	 */
 	EstimateTurnsToComplete: function(/*int*/ planetProductionPerTurn) {
-		if (planetProductionPerTurn !== 0)
-		{
+		if (planetProductionPerTurn !== 0) {
 			var productionCostLeft = this.BaseProductionCost - this.ProductionCostComplete;
 			this.TurnsToComplete = Math.ceil(productionCostLeft / planetProductionPerTurn);
+		} else {
+			this.TurnsToComplete = 999;//if there are no workers
 		}
-		else
-			this.TurnsToComplete = 99;//if there are no workers
 	},
 
 	/**
@@ -1447,9 +1511,11 @@ Astriarch.Planet.CitizenWorkerType = {
  * Citizen is an single population (maybe a billion people)
  * @constructor
  */
-Astriarch.Planet.Citizen = function(/*PlanetType*/ type)
-{
+Astriarch.Planet.Citizen = function(/*PlanetType*/ type, loyalToPlayerId) {
 	this.PopulationChange = 0;//between -1 and 1, when this gets >= -1 then we loose one pop, > 1 we gain one pop
+
+	this.LoyalToPlayerId = loyalToPlayerId; //this allows us to remove the protest level when ownership of the planet reverts to this player, after protest level hits 0, this should be reset to the current owner
+	this.ProtestLevel = 0;//between 0 and 1, 0 means they are able to work, anything above this means they are busy protesting the government rule
 
 	this.WorkerType = Astriarch.Planet.CitizenWorkerType.Farmer;
 

@@ -30,15 +30,16 @@ Astriarch.TurnEventMessage.TurnEventMessageType = {
 	ImprovementBuilt: 2,
 	ShipBuilt: 3,
 	ImprovementDemolished: 4,
-	InsufficientFood: 5,//either general food shortage or couldn't ship becuase of lack of gold, leads to population unrest
-	BuildQueueEmpty: 6,
-	DefendedAgainstAttackingFleet: 7,
-	AttackingFleetLost: 8,
-	PlanetCaptured: 9,
-	PopulationStarvation: 10,
-	FoodShortageRiots: 11,
-	PlanetLostDueToStarvation: 12,//this is bad but you probably know it's bad
-	PlanetLost: 13
+	BuildQueueEmpty: 5,
+	CitizensProtesting: 6,
+	InsufficientFood: 7,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
+	DefendedAgainstAttackingFleet: 8,
+	AttackingFleetLost: 9,
+	PlanetCaptured: 10,
+	PopulationStarvation: 11,
+	FoodShortageRiots: 12,
+	PlanetLostDueToStarvation: 13,//this is bad but you probably know it's bad
+	PlanetLost: 14
 };
 
 /**

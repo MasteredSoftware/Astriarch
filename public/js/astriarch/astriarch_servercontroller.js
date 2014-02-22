@@ -123,6 +123,8 @@ Astriarch.ServerController = {
 			Astriarch.ServerController.addLastStarShipToQueueOnPlanets(gameModel, player);
 		}
 
+		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.adjustPlayerPlanetProtestLevels(player));
+
 		Astriarch.ServerController.generatePlayerResources(player);
 
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.buildPlayerPlanetImprovements(player));
@@ -479,6 +481,15 @@ Astriarch.ServerController = {
 					}
 				}
 
+				//citizens will further protest depending on the amount of food shortages
+				for(var c in planet.Population){
+					var citizen = planet.Population[c];
+					citizen.ProtestLevel += Astriarch.NextRandomFloat(0, foodShortageRatio);
+					if(citizen.ProtestLevel > 1){
+						citizen.ProtestLevel = 1;
+					}
+				}
+
 				//have to check to see if we removed the last pop and loose this planet from owned planets if so
 				if (planet.Population.length == 0)
 				{
@@ -509,8 +520,6 @@ Astriarch.ServerController = {
 		if(totalFoodShipped != 0) {
 			eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResourcesAutoSpent, null, totalFoodShipped + " Gold spent shipping Food"));
 		}
-
-		//TODO: food shortages should further reduce other production, and pop reproduction amt?
 
 		return eotMessages;
 	},
@@ -581,6 +590,49 @@ Astriarch.ServerController = {
 		return endOfTurnMessages;
 	},
 
+	adjustPlayerPlanetProtestLevels: function(/*Player*/ player){
+		var eotMessages = []; //List<SerializableTurnEventMessage>
+		//if we have a normal PlanetHappiness (meaning we didn't cause unrest from starvation)
+		//	we'll slowly reduce the amount of protest on the planet
+
+		//if half the population or more is protesting, we'll set the planet happiness to unrest
+		for(var i in player.OwnedPlanets){
+			var p = player.OwnedPlanets[i];
+			if(p.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Normal){
+
+				var citizens = p.GetPopulationByContentment();
+				var protestingCitizenCount = 0;
+				var contentCitizenRatio = citizens.content.length / p.Population.length;
+
+				for(var c in citizens.protesting){
+					var citizen = citizens.protesting[c];
+
+					//protest reduction algorithm:
+					//	each turn reduce a random amount of protest for each citizen
+					//  the amount of reduction is based on the percentage of the total population protesting (to a limit)
+					//   (the more people protesting the more likely others will keep protesting)
+					citizen.ProtestLevel -= Astriarch.NextRandomFloat(0, Math.max(0.25, contentCitizenRatio));
+
+					if(citizen.ProtestLevel <= 0){
+						citizen.ProtestLevel = 0;
+						citizen.LoyalToPlayerId = player.Id;
+					} else {
+						protestingCitizenCount++;
+						//console.log("Planet: ", p.Name, "citizen["+c+"]", citizen);
+					}
+				}
+				var citizenText = protestingCitizenCount > 1 ? " Citizens" : " Citizen";
+				if(protestingCitizenCount >= p.Population.length / 2) {
+					p.PlanetHappiness = Astriarch.Planet.PlanetHappinessType.Unrest;
+					eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.CitizensProtesting, p, "Population unrest on " + p.Name + " due to " + protestingCitizenCount + citizenText + " protesting"));
+				} else if(protestingCitizenCount > 0){
+					eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.CitizensProtesting, p, protestingCitizenCount + citizenText + " protesting the new ruler on " + p.Name));
+				}
+			}
+		}
+		return eotMessages;
+	},
+
 	growPlayerPlanetPopulation: function(/*Player*/ player){//returns List<SerializableTurnEventMessage>
 		var endOfTurnMessages = [];// List<SerializableTurnEventMessage>
 		//population growth rate is based on available space at the planet and the amount currently there
@@ -603,7 +655,7 @@ Astriarch.ServerController = {
 					endOfTurnMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.PopulationGrowth, p, "Population growth on planet: " + p.Name));
 					//grow
 					lastCitizen.PopulationChange = 0;
-					p.Population.push(new Astriarch.Planet.Citizen(p.Type));
+					p.Population.push(new Astriarch.Planet.Citizen(p.Type, player.Id));
 					p.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 				}
 			}

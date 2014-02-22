@@ -488,8 +488,9 @@ exports.FinishUpdatePlanet = function(options, payload, callback){
 
 					//ensure farmers + miners + workers == population count
 					var totalWorkerCount = payload.farmers + payload.miners + payload.workers;
-					if(totalWorkerCount != planet.Population.length){
-						callback("Total workers sent in payload does not match Population total in UpdatePlanetForPlayer!");
+					var citizens = planet.GetPopulationByContentment();
+					if(totalWorkerCount != citizens.content.length){
+						callback("Total workers sent in payload does not match content Population total in UpdatePlanetForPlayer!");
 						return;
 					}
 

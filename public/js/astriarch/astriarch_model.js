@@ -163,9 +163,9 @@ Astriarch.Model.prototype.populatePlanets = function(){
 			var assignPlayer = false;
 			var assignedPlayerIndex = 0;
 			var assignedPlayerColor = new Array(4); //Color[4];
-			assignedPlayerColor[0] = new Astriarch.Util.ColorRGBA(0, 128, 0, 255);//"rgba(0, 128, 0, 255)";//Light Green
+			assignedPlayerColor[0] = new Astriarch.Util.ColorRGBA(0, 255, 0, 255);//"rgba(0, 128, 0, 255)";//Light Green
 			assignedPlayerColor[1] = new Astriarch.Util.ColorRGBA(200, 0, 200, 255);//"rgba(200, 0, 200, 255)";//Light Purple
-			assignedPlayerColor[2] = new Astriarch.Util.ColorRGBA(0, 0, 255, 255);//"rgba(0, 0, 255, 255)";//Light Blue
+			assignedPlayerColor[2] = new Astriarch.Util.ColorRGBA(0, 128, 255, 255);//"rgba(0, 0, 255, 255)";//Light Blue
 			assignedPlayerColor[3] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//"rgba(255, 0, 0, 255)";//Light Red?
 			//it's a home planet, we'll see if we should assign a player
 			if (pt == Astriarch.Planet.PlanetType.PlanetClass2)
@@ -194,8 +194,7 @@ Astriarch.Model.prototype.populatePlanets = function(){
 			if (assignPlayer)
 			{
 				initialPlanetOwner = this.Players[assignedPlayerIndex];
-				if(assignedPlayerIndex != 0)//for our main player the default green colors are fine
-					initialPlanetOwner.SetColor(assignedPlayerColor[assignedPlayerIndex]);
+				initialPlanetOwner.SetColor(assignedPlayerColor[assignedPlayerIndex]);
 			}
 
 			var p = new Astriarch.Planet(pt, planetBoundingHex.Id, planetBoundingHex, initialPlanetOwner);

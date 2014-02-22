@@ -178,6 +178,9 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 					tsmlbi.Foreground = "purple";
 					break;
 				case Astriarch.TurnEventMessage.TurnEventMessageType.BuildQueueEmpty:
+					tsmlbi.Foreground = "grey";
+					break;
+				case Astriarch.TurnEventMessage.TurnEventMessageType.CitizensProtesting:
 				case Astriarch.TurnEventMessage.TurnEventMessageType.InsufficientFood:
 					tsmlbi.Foreground = "yellow";
 					break;

@@ -166,6 +166,7 @@ head
 		{
 			color: green;
 			font-family: "Courier New";
+
 		}
 		.playerSummaryStatusText
 		{
@@ -174,6 +175,7 @@ head
 			font-size:14pt;
 			padding-left:5px;
 			min-width:32px;
+			cursor: help;
 		}
 		.playerStatusText
 		{
@@ -186,12 +188,14 @@ head
 			text-align:center;
 			font-weight:bold;
 			font-size:20pt;
+			cursor: help;
 		}
 		.planetStatusTextSmallCentered
 		{
 			text-align:center;
 			font-weight:bold;
 			font-size:14pt;
+			cursor: help;
 		}
 		.playerStatusTextRight{
 			text-align:right;
@@ -202,16 +206,19 @@ head
 		{
 			font-size:10pt;
 			font-weight:bold;
+			cursor: default;
 		}
 		.popImg, .asnImg
 		{
 			width: 10px;
 			height: 16px;
+			cursor: help;
 		}
 		.impImg
 		{
 			width: 16px;
 			height: 16px;
+			cursor: help;
 		}
 		.icon_demolish
 		{
@@ -484,7 +491,7 @@ head
 											td(width='16')
 												img(src='img/ico_population-16x16.png', title='Total Population')
 											td
-												span#TextBlockPopulationAmount.playerSummaryStatusText(title='Total Population')
+												span#TextBlockPopulationAmount.playerSummaryStatusText
 											td(width='16')
 												img(src='img/ico_credits-16x16.png', title='Gold Amount')
 											td
@@ -911,7 +918,6 @@ head
 					a(href='astriarch-help.html', target='_blank') Astriarch Help and Tutorial Videos
 				p
 					a(href='http://www.astriarch.com/', target='_blank') Official Astriarch Site
-		// <span id='imageData' />
 
 		script(type='text/javascript').
 			$(document).ready(function() {

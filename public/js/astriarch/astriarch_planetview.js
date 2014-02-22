@@ -186,7 +186,8 @@ Astriarch.PlanetView = {
 
 		Astriarch.PlanetView.updatePlanetStatsToolTip();
 
-		Astriarch.PlanetView.population = p.Population.length;
+		var citizens = p.GetPopulationByContentment();
+		Astriarch.PlanetView.population = citizens.content.length;
 		$('#SliderFarmers').slider("option", "max", Astriarch.PlanetView.population);
 		$('#SliderMiners').slider("option", "max", Astriarch.PlanetView.population);
 		$('#SliderWorkers').slider("option", "max", Astriarch.PlanetView.population);
@@ -289,7 +290,7 @@ Astriarch.PlanetView = {
 		for ( var i in self.BuildQueueListBox.items)
 		{
 			var queueItem = self.BuildQueueListBox.items[i];//BuildQueueListBoxItem
-			queueItem.ProductionItem.EstimateTurnsToComplete(self.planetMain.ResourcesPerTurn.ProductionAmountPerTurn + workingProdRemainder);
+			queueItem.ProductionItem.EstimateTurnsToComplete(self.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn() + workingProdRemainder);
 			workingProdRemainder = 0;
 		}
 		self.BuildQueueListBox.refresh();
@@ -299,7 +300,7 @@ Astriarch.PlanetView = {
 		$('#TextBlockFoodPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.FoodAmountPerTurn);
         $('#TextBlockOrePerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.OreAmountPerTurn);
         $('#TextBlockIridiumPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.IridiumAmountPerTurn);
-        $('#TextBlockProductionPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.ProductionAmountPerTurn);
+        $('#TextBlockProductionPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn());
 	},
 	
 	updatePlanetStatsToolTip: function() {
@@ -452,7 +453,7 @@ Astriarch.PlanetView = {
 		for (var i in Astriarch.PlanetView.workingBuildQueue)
 		{
 			var ppi = Astriarch.PlanetView.workingBuildQueue[i];//PlanetProductionItem
-			ppi.EstimateTurnsToComplete(Astriarch.PlanetView.planetMain.ResourcesPerTurn.ProductionAmountPerTurn + workingProdRemainder);
+			ppi.EstimateTurnsToComplete(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn() + workingProdRemainder);
 			workingProdRemainder = 0;
 			var queueItem = new Astriarch.PlanetView.BuildQueueListBoxItem(ppi);
 			Astriarch.PlanetView.BuildQueueListBox.addItem(queueItem);
