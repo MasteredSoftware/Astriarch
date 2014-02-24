@@ -104,7 +104,17 @@ wss.on('connection', function(ws) {
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.PING:
 					break;
-				case Astriarch.Shared.MESSAGE_TYPE.LOGIN:
+				case Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM:
+					//we need to join the user to the lobby chat room
+					var gameId = message.payload.gameId ? message.payload.gameId : null;
+					var session = {sessionId:sessionId, playerName:message.payload.playerName, playerNumber: message.payload.playerNumber, gameId:gameId};
+					gameController.JoinChatRoom(gameId, session, function(err, newChatRoomWithSessions, oldChatRoomWithSessions){
+						//broadcast to all other sessions in the chat room that a player just logged in
+						sendChatRoomSessionListUpdates(ws, sessionId, newChatRoomWithSessions);
+						if(oldChatRoomWithSessions) {
+							sendChatRoomSessionListUpdates(ws, sessionId, oldChatRoomWithSessions);
+						}
+					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.LOGOUT:
 					break;
@@ -137,9 +147,9 @@ wss.on('connection', function(ws) {
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME:
-					gameController.JoinGame({gameId:message.payload.gameId, sessionId:sessionId, playerName:message.payload.playerName}, function(err, game){
-						console.log("Player Joined, sessionId: ", sessionId);
-						message.payload = {gameOptions:game.gameOptions, name:game.name};
+					gameController.JoinGame({gameId:message.payload.gameId, sessionId:sessionId, playerName:message.payload.playerName}, function(err, game, playerPosition){
+						console.log("Player" + playerPosition + " Joined, sessionId: ", sessionId);
+						message.payload = {gameOptions:game.gameOptions, name:game.name, playerPosition: playerPosition};
 						message.payload["_id"] = game["_id"];
 						ws.send(JSON.stringify(message));
 
@@ -272,6 +282,21 @@ wss.on('connection', function(ws) {
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE:
+					//TODO: get the player name and player number from the existing chatRoom so they can't as easily spoof that
+					message.payload.text = (message.payload.text || "").trim();
+					if(message.payload.text){
+						var chatLogMessage = {text: message.payload.text, sentByPlayerName: message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.sentByPlayerNumber, sentBySessionId: sessionId};
+						gameController.AddMessageToChatRoom(message.payload.gameId, chatLogMessage, function(err, doc){
+							//broadcast to all other sessions in the chat room
+							var messageForPlayers = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE,{text: message.payload.text, sentByPlayerName: message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.sentByPlayerNumber, dateSent:new Date().getTime()});
+							for(var s = 0; s < doc.sessions.length; s++){
+								var session = doc.sessions[s];
+								if(session.sessionId != sessionId){
+									wss.broadcastToSession(session.sessionId, messageForPlayers);
+								}
+							}
+						});
+					}
 					break;
 				default:
 					console.error("Unhandled Message Type: ", message.type);
@@ -286,6 +311,23 @@ wss.on('connection', function(ws) {
 	});
 
 });
+
+var sendChatRoomSessionListUpdates = function(ws, sessionId, chatRoomWithSessions){
+	var cleanSessions = [], session = null;//This doesn't include other player session ids for security
+	for(var s = 0; s < chatRoomWithSessions.sessions.length; s++){
+		session = chatRoomWithSessions.sessions[s];
+		cleanSessions.push({playerName:session.playerName, playerNumber: session.playerNumber, dateJoined: session.dateJoined});
+	}
+	var messageForPlayers = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM,{sessions:cleanSessions});
+	for(var s = 0; s < chatRoomWithSessions.sessions.length; s++){
+		session = chatRoomWithSessions.sessions[s];
+		if(session.sessionId != sessionId){
+			wss.broadcastToSession(session.sessionId, messageForPlayers);
+		} else {
+			ws.send(JSON.stringify(messageForPlayers));
+		}
+	}
+};
 
 var getSerializableClientModelFromSerializableModelForPlayer = function(serializableModel, targetPlayer){
 

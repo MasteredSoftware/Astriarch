@@ -6,7 +6,7 @@ Astriarch.Shared = {
 		"ERROR":-1,
 		"NOOP":0,
 		"PING":1,
-		"LOGIN":2,
+		"JOIN_CHAT_ROOM":2, //client and server bound message
 		"LOGOUT":3,
 		"LIST_GAMES":4, //client and server bound message
 		"CHANGE_GAME_OPTIONS":5, //client and server bound message

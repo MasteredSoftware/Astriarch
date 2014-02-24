@@ -14,6 +14,21 @@ if(un && pw){
 }
 var db = mongoose.connect('mongodb://' + un_pw + (process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host) + ':' + (process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port) + '/' + config.mongodb.gamedb_name);
 
+var ChatRoomSchema = new mongoose.Schema({
+	messages:[{text:String, sentByPlayerName:String, sentByPlayerNumber: Number, sentBySessionId:String, dateSent:{ type: Date, default: Date.now } }],
+	gameId: {type:ObjectId, index:true, unique: true}//if this is null it is the lobby chat room
+});
+exports.ChatRoomModel = db.model('chatRooms', ChatRoomSchema);
+
+var ChatRoomSessionSchema = new mongoose.Schema({
+	sessionId:{type:String, index:true, unique: true},
+	playerName:String,
+	playerNumber: Number,
+	dateJoined:{ type: Date, default: Date.now },
+	gameId: {type:ObjectId, index:true}//if this is null it is the lobby chat room
+});
+exports.ChatRoomSessionModel = db.model('chatRoomSessions', ChatRoomSessionSchema);
+
 //create schema for a game
 var GameSchema = new mongoose.Schema({
 	nonce: ObjectId, //this is used for protecting against concurrent edits: http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/

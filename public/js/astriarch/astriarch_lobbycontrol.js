@@ -53,6 +53,8 @@ Astriarch.LobbyControl = {
 
 	OnGameCreateMessageResponse: function(message){
 		Astriarch.GameId = message.payload;
+		Astriarch.NewGameControl.newGame();
+
 		$('#mainMenu').hide();
 		Astriarch.View.ShowNewGameOptions();
 	},

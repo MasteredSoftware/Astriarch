@@ -108,19 +108,36 @@ head
 		td > span, td > img {
 			display: block;
 		}
-		#GameNameTextBox
-		{
+		#chatArea, #chatLogChoosePlayerNameArea {
+			display: none;
+			color: white;
+			font-size: 12px;
+		}
+		#chatRoomInfo, #chatLog {
+			width:260px;
+			overflow:auto;
+			background-color: rgba(128,128,128,0.4);
+		}
+		#GameNameTextBox, #PlayerNameTextBox, #chatInputTextBox, #chatPlayerNameTextBox {
 			background-color:#595959;
 			color:white;
 			border: 1px solid #333;
 			font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
 		}
-		#PlayerNameTextBox
-		{
-			background-color:#595959;
+		.messagePlayerLobby {
 			color:white;
-			border: 1px solid #333;
-			font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
+		}
+		.messagePlayer1 {
+			color: #00FF00;
+		}
+		.messagePlayer2 {
+			color: #C800C8;
+		}
+		.messagePlayer3 {
+			color: #0080FF;
+		}
+		.messagePlayer4 {
+			color: #FF0000;
 		}
 		#canvasAstriarchBackground
 		{
@@ -364,7 +381,15 @@ head
 						a(href='#', onclick="openWin('about.html');") about
 			#main.cf
 				// left sidebar
-				aside#left-sidebar(style='width: 160px; height: 600px;float:left;')
+				aside#left-sidebar(style='width: 260px; height: 600px;float:left;margin-right:5px;')
+					div#chatLogChoosePlayerNameArea
+						div Choose a Player Name to Chat:
+						input#chatPlayerNameTextBox(type='text', value='', style='width: 258px;')
+					div#chatArea
+						div#chatRoomInfo(style='height:98px;margin-bottom:4px;')
+						div#chatLog(style='height:478px;')
+						div#chatInputArea
+							input#chatInputTextBox(type='text', value='', style='width: 258px;')
 
 				#main-right(style='float:right')
 					#main-middle(style='float:left')
@@ -907,7 +932,7 @@ head
 											#EndTurnSummary(style='width: 380px; height: 210px;')
 
 					// right sidebar
-					#right-sidebar(style='width: 120px; height: 600px;float:right;')
+					aside#right-sidebar(style='width: 20px; height: 600px;float:right;')
 
 			#footer.cf(style='color: white;')
 				p

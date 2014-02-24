@@ -8,6 +8,102 @@ var extend = require("extend");
 
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
+var GetChatRoomWithSessions = function(gameId, callback){
+	models.ChatRoomModel.findOne({"gameId":gameId}, function(err, doc){
+		if(err){
+			callback(err);
+			return;
+		}
+		var chatRoom = doc;
+		models.ChatRoomSessionModel.find({"gameId":gameId}, function(err, sessions){
+			if(err){
+				callback(err);
+				return;
+			}
+			chatRoom.sessions = sessions || [];
+			callback(null, chatRoom);
+		});
+	});
+};
+
+/**
+ *
+ * @param gameId
+ * @param session
+ * @param callback (err, newChatRoomWithSessions, oldChatRoomWithSessions)
+ * @constructor
+ */
+var JoinChatRoom = function(gameId, session, callback){
+	//This will create a new chat room if one doesn't exist
+	models.ChatRoomModel.findOneAndUpdate({"gameId":gameId},{}, { upsert: true, new: true }, function(err, doc){
+		if(err){
+			callback(err);
+			return;
+		}
+		var newChatRoomWithSessions = null;
+		var oldChatRoomWithSessions = null;
+
+		async.series([
+			function(cb){
+				console.log("Upsert session: ", session);
+				models.ChatRoomSessionModel.findOneAndUpdate({"sessionId":session.sessionId}, session, { upsert: true, new: false }, function(err, doc){
+					if(err){
+						cb(err);
+						return;
+					}
+					var oldSession = doc;
+					//check to see if we're leaving an existing room
+					if(oldSession && oldSession.gameId != gameId){
+						//we'll want to update the sessions for the old chat room with the new session list so we need to return it
+						GetChatRoomWithSessions(oldSession.gameId, function(err, chatRoom){
+							if(err){
+								cb(err);
+							} else {
+								oldChatRoomWithSessions = chatRoom;
+								cb(null);
+							}
+						});
+					} else {
+						cb(null);
+					}
+				});
+			},
+			function(cb){
+				GetChatRoomWithSessions(gameId, function(err, chatRoom){
+					if(err){
+						cb(err);
+					} else {
+						newChatRoomWithSessions = chatRoom;
+						cb(null);
+					}
+				});
+			}
+		], function(err, results){
+			callback(err, newChatRoomWithSessions, oldChatRoomWithSessions);
+		});
+	});
+
+};
+exports.JoinChatRoom = JoinChatRoom;
+
+exports.AddMessageToChatRoom = function(gameId, message, callback){
+	models.ChatRoomModel.findOneAndUpdate({"gameId":gameId}, {$push:{messages:message}}, { upsert: true, new: true }, function(err, doc){
+		if(err){
+			callback(err);
+			return;
+		}
+		var chatRoom = doc;
+		models.ChatRoomSessionModel.find({"gameId":gameId}, function(err, sessions){
+			if(err){
+				callback(err);
+				return;
+			}
+			chatRoom.sessions = sessions;
+			callback(null, chatRoom);
+		});
+	});
+};
+
 exports.CreateGame = function(options, callback){
 	options.nonce = new mongoose.Types.ObjectId;
 	var game = new models.GameModel(options);
@@ -111,14 +207,25 @@ exports.ChangePlayerName = function(options, callback){
 
 exports.JoinGame = function(options, callback){
 	var playerName = options.playerName || "Player";
-
+	var playerPosition = null;
 	saveGameByIdWithConcurrencyProtection(options.gameId, function(doc, cb){
-		var playerPosition = doc.players.length - 1;
-		doc.players.push({name:playerName, sessionId:options.sessionId, position:playerPosition + 1});
+		for(var i = 0; i < doc.players.length; i++){
+			if(doc.players[i].sessionId == options.sessionId){
+				playerPosition = i;
+				break;
+			}
+		}
+		if(!playerPosition){
+			playerPosition = doc.players.length;
+			doc.players.push({name:playerName, sessionId:options.sessionId, position:playerPosition});
+		}
+
 		var data = {gameOptions: doc.gameOptions, players:doc.players};
-		data.gameOptions.opponentOptions[playerPosition] = {name:playerName, type:0};
+		data.gameOptions.opponentOptions[playerPosition - 1] = {name:playerName, type:0};
 		cb(null, data);
-	}, 0, callback);
+	}, 0, function(err, doc){
+		callback(err, doc, playerPosition);
+	});
 
 };
 

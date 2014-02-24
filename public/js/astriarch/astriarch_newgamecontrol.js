@@ -68,6 +68,11 @@ Astriarch.NewGameControl = {
 		}
 	},
 
+	newGame: function(){
+		//join the chat room for this game
+		Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, 1);
+	},
+
 	joinGame: function(message){
 		Astriarch.NewGameControl.GameCreator = false;
 
@@ -82,6 +87,9 @@ Astriarch.NewGameControl = {
 		$("#StartGameOptionsOkButton").remove();
 
 		Astriarch.NewGameControl.OnGameOptionsChanged(message);
+
+		//join the chat room for this game
+		Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, (message.payload.playerPosition + 1));
 	},
 
 	changedGameOptions: function() {
