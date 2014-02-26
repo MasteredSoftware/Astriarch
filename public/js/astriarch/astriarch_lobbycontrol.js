@@ -44,7 +44,13 @@ Astriarch.LobbyControl = {
 
 	OnGameJoinMessageResponse: function(message){
 		Astriarch.GameId = message.payload["_id"];
-		Astriarch.NewGameControl.joinGame(message);
+		if(message.payload["playerPosition"]){
+			Astriarch.NewGameControl.joinGame(message);
+		} else {
+			//this was the game creator re-joining
+			Astriarch.NewGameControl.newGame();
+		}
+
 
 		$('#mainMenu').hide();
 

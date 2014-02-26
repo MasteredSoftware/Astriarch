@@ -69,6 +69,14 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.server_comm.init(serverConfig.port);
 
 		//register message type listeners
+		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.ERROR, function(message){
+			var text = message.payload;
+			if(typeof(message.payload) != "string"){
+				text = JSON.stringify(message.payload);
+			}
+			new Astriarch.Alert("Error", "<span style=\"color:red\">" + text + "</span>");
+		});
+
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, function(message){console.log("NOOP: ", message)});
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, function(message){Astriarch.CommControl.refreshPlayerList(message.payload.sessions)});

@@ -215,13 +215,15 @@ exports.JoinGame = function(options, callback){
 				break;
 			}
 		}
-		if(!playerPosition){
+		if(playerPosition === null){
 			playerPosition = doc.players.length;
 			doc.players.push({name:playerName, sessionId:options.sessionId, position:playerPosition});
 		}
 
 		var data = {gameOptions: doc.gameOptions, players:doc.players};
-		data.gameOptions.opponentOptions[playerPosition - 1] = {name:playerName, type:0};
+		if(playerPosition > 0){
+			data.gameOptions.opponentOptions[playerPosition - 1] = {name:playerName, type:0};
+		}
 		cb(null, data);
 	}, 0, function(err, doc){
 		callback(err, doc, playerPosition);
@@ -301,7 +303,7 @@ exports.ResumeGame = function(options, callback){
 				return;
 			}
 			if(planetViewWorkingDataModels.length > 0){
-				console.log("Found PlanetViewWorkingDataModels:", planetViewWorkingDataModels.length, "gameId:", options.gameId);
+				console.debug("Found PlanetViewWorkingDataModels:", planetViewWorkingDataModels.length, "gameId:", options.gameId);
 
 				var gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
 
@@ -354,6 +356,12 @@ exports.StartGame = function(options, callback){
 			} else if(playerType > 0){
 				players.push(new Astriarch.Player(playerType, "Computer " + (computerNumber++)));
 			}
+		}
+
+		if(players.length <= 1){
+			//there is a problem, we can't create a proper game for the user by him/her self
+			callback({type:Astriarch.Shared.ERROR_TYPE.INVALID_GAME_OPTIONS});
+			return;
 		}
 
 		var gameModel = new Astriarch.Model(players, gameOptions.systemsToGenerate, gameOptions.planetsPerSystem);
@@ -505,7 +513,7 @@ var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, ca
 			callback(err);
 			return;
 		}
-		console.log("Found PlanetViewWorkingDataModels:", planetViewWorkingDataModels.length, "gameId:", gameId);
+		console.debug("Found PlanetViewWorkingDataModels:", planetViewWorkingDataModels.length, "gameId:", gameId);
 
 		applyPlanetViewWorkingDataObjectsToModel(planetViewWorkingDataModels, gameModel);
 

@@ -87,7 +87,7 @@ wss.on('connection', function(ws) {
 		*/
 
 		ws.on('message', function(data, flags) {
-			console.log("Message received:", data, sessionId);
+			console.debug("Message received:", data, sessionId);
 
 
 			var message = new Astriarch.Shared.Message();
@@ -167,15 +167,24 @@ wss.on('connection', function(ws) {
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.START_GAME:
 					gameController.StartGame({sessionId:sessionId, gameOptions:message.payload}, function(err, serializableModel, game){
-
-						//for each player we need to create a client model and send that model to the player
-						console.log("gameController.StartGame players: ", game.players);
-						for(var p = 0; p < game.players.length; p++){
-							var player = game.players[p];
-							var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(serializableModel, player);
-							//player.sessionId
-							message.payload = serializableClientModel;
-							wss.broadcastToSession(player.sessionId, message);
+						if(err){
+							console.error("gameController.StartGame:", err);
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							if(err.type == Astriarch.Shared.ERROR_TYPE.INVALID_GAME_OPTIONS){
+								message.payload = "Invalid Game Options!";
+							}
+							ws.send(JSON.stringify(message));
+						} else {
+							//for each player we need to create a client model and send that model to the player
+							console.log("gameController.StartGame players: ", game.players);
+							for(var p = 0; p < game.players.length; p++){
+								var player = game.players[p];
+								var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(serializableModel, player);
+								//player.sessionId
+								message.payload = serializableClientModel;
+								wss.broadcastToSession(player.sessionId, message);
+							}
 						}
 					});
 					break;

@@ -24,6 +24,11 @@ Astriarch.Shared = {
 		"TEXT_MESSAGE":17 //client and server bound message
 	},
 
+	ERROR_TYPE: {
+		"UNKNOWN":0,
+		"INVALID_GAME_OPTIONS": 1
+	},
+
 	PLANET_BUILD_QUEUE_ACTION_TYPE: {
 		"ADD_IMPROVEMENT": 1,
 		"ADD_STARSHIP":2,
