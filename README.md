@@ -4,8 +4,11 @@ Astriarch
 Astriarch Ruler of the Stars, Space Strategy Game
 http://www.astriarch.com/
 
-View the Silverlight branch for the latest Open Source Silverlight version:
-https://github.com/mpalmerlee/Astriarch/tree/Silverlight
+Single Player Open Source Versions:
+
+HTML5: https://github.com/mpalmerlee/Astriarch/tree/HTML5
+
+Silverlight: https://github.com/mpalmerlee/Astriarch/tree/Silverlight
 
 Overview
 ========
