@@ -4,6 +4,10 @@ Astriarch
 Astriarch Ruler of the Stars, Space Strategy Game
 http://www.astriarch.com/
 
+This is the Open Source Multiplayer version of Astriarch.
+
+It uses NodeJS and MongoDB on the server and leverages WebSockets for communication to the client
+
 Single Player Open Source Versions:
 
 HTML5: https://github.com/mpalmerlee/Astriarch/tree/HTML5
