@@ -36,10 +36,11 @@ Astriarch.LobbyControl = {
 	},
 
 	OnGameResumeMessageResponse: function(message){
+		Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, (message.payload.playerPosition + 1));
 
 		$('#mainMenu').hide();
 
-		Astriarch.GameController.ResetView(message.payload);
+		Astriarch.GameController.ResetView(message.payload.gameData);
 	},
 
 	OnGameJoinMessageResponse: function(message){

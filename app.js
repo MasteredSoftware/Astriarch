@@ -161,7 +161,7 @@ wss.on('connection', function(ws) {
 				case Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME:
 					gameController.ResumeGame({sessionId: sessionId, gameId: message.payload.gameId}, function(err, doc, player){
 						var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(doc.gameData, player);
-						message.payload = serializableClientModel;
+						message.payload = {gameData: serializableClientModel, playerPosition: player.position};
 						ws.send(JSON.stringify(message));
 					});
 					break;
