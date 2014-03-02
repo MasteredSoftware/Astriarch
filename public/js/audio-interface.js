@@ -28,13 +28,11 @@ AudioInterface.prototype.toggleMute = function() {
 
 AudioInterface.prototype.setVolume = function(volume) {
 	this.Volume = volume;
-	
-	this.mediaStart.volume = this.Volume;
-	this.mediaInGame1.volume = this.Volume;
-	this.mediaInGame2.volume = this.Volume;
-	this.mediaInGame3.volume = this.Volume;
-	this.mediaInGame4.volume = this.Volume;
-	this.mediaEnd.volume = this.Volume;
+
+	var meCurrent = this.getMediaElementForCurrentPhase();
+	if (meCurrent != null) {
+		meCurrent.volume = this.Volume;
+	}
 };
 
 AudioInterface.prototype.mediaEnded = function() {
@@ -52,6 +50,7 @@ AudioInterface.prototype.mediaEnded = function() {
 		//loop the track
 		meCurrent.currentTime = 0;
 		meCurrent.play();
+		meCurrent.volume = this.Volume;
 	}
 };
 
@@ -123,7 +122,6 @@ AudioInterface.prototype.fadeOutTick = function() {
 		this.fadingPlayer.volume = 0;
 		this.fadingPlayer.pause();
 		this.fadingPlayer.currentTime = 0;
-		this.fadingPlayer.volume = this.Volume;
 	}
 	else
 	{
@@ -147,6 +145,7 @@ AudioInterface.prototype.StartMenu = function() {
 
 	this.mediaStart.currentTime = 0;
 	this.mediaStart.play();
+	this.mediaStart.volume = this.Volume;
 };
 
 AudioInterface.prototype.BeginGame = function() {
@@ -155,7 +154,8 @@ AudioInterface.prototype.BeginGame = function() {
 	this.phase = 'InGame';
 	this.currentInGameTrack = 0;
 
-	this.mediaInGame1.play();   
+	this.mediaInGame1.play();
+	this.mediaInGame1.volume = this.Volume;
 };
 
 AudioInterface.prototype.EndGame = function() {
@@ -164,4 +164,5 @@ AudioInterface.prototype.EndGame = function() {
 	this.phase = 'GameOver';
 
 	this.mediaEnd.play();
+	this.mediaEnd.volume = this.Volume;
 };

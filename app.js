@@ -220,7 +220,6 @@ wss.on('connection', function(ws) {
 							console.error("gameController.SendShips: ", err);
 							message.payload = {"error":err};
 							ws.send(JSON.stringify(message));
-							return;
 						}
 					});
 					break;
@@ -382,7 +381,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 		}
 	}
 
-	var serializableClientModel = new Astriarch.SerializableClientModel(serializableModel.Turn.Number, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets);
+	var serializableClientModel = new Astriarch.SerializableClientModel(serializableModel.Turn.Number, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, {"TurnTimeLimitSeconds":serializableModel.TurnTimeLimitSeconds});
 
 	return serializableClientModel;
 };

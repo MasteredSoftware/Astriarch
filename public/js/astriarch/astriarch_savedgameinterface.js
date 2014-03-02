@@ -36,7 +36,11 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	
 	var players = [];
 	//first generate a 'stub' model so we have a grid
-	var newModel = new Astriarch.Model(/*List<Player>*/ players, /*int*/ serializedModel.SystemsToGenerate, /*PlanetsPerSystemOption*/ serializedModel.PlanetsPerSystem, true);
+	var options = {systemsToGenerate: serializedModel.SystemsToGenerate,
+			planetsPerSystem: serializedModel.PlanetsPerSystem,
+			distributePlanetsEvenly: serializedModel.DistributePlanetsEvenly,
+			turnTimeLimitSeconds: serializedModel.TurnTimeLimitSeconds};
+	var newModel = new Astriarch.Model(/*List<Player>*/ players, options, true);
 	newModel.ShowUnexploredPlanetsAndEnemyPlayerStats = serializedModel.ShowUnexploredPlanetsAndEnemyPlayerStats;
 	newModel.Turn = extend(true, newModel.Turn, serializedModel.Turn);
 	
@@ -311,6 +315,10 @@ Astriarch.SerializableModel = function(/*Astriarch.Model*/ model) {
     this.SystemsToGenerate = model.SystemsToGenerate;
 
     this.PlanetsPerSystem = model.PlanetsPerSystem;//Astriarch.Model.PlanetsPerSystemOption.FOUR;
+
+	this.DistributePlanetsEvenly = model.DistributePlanetsEvenly;
+
+	this.TurnTimeLimitSeconds = model.TurnTimeLimitSeconds;
     //public bool EnsureEachSystemContainsAllPlanetTypes = true;//TODO: implement if false every planet type (except home) will be randomly selected
 
 	this.Turn = model.Turn;

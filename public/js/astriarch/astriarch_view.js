@@ -148,7 +148,6 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	Astriarch.SendShipsControl.init();
 	Astriarch.PlanetaryConflictControl.init();
 	Astriarch.GameOverControl.init();
-	Astriarch.EndTurnControl.init();
 	
 	$( "#PlanetViewButton" ).click(
 		function() {
@@ -163,8 +162,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	);
 	
 	$( "#NextTurnButton" ).click(function() {
-			$("#NextTurnButton").button('disable');
-			Astriarch.GameController.NextTurn();
+			Astriarch.View.NextTurn();
 		}
 	);
 	
@@ -203,6 +201,14 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	);
 	
 	$("#SliderVolume").slider({value:1, step:0.1, min:0, max:1, orientation: 'vertical', slide: Astriarch.View.volumeSliderValueChanged});
+};
+
+Astriarch.View.NextTurn = function() {
+	if(Astriarch.GameController.turnTimerTimeoutId){
+		clearTimeout(Astriarch.GameController.turnTimerTimeoutId);
+	}
+	$("#NextTurnButton").button('disable');
+	Astriarch.GameController.NextTurn();
 };
 
 Astriarch.View.ShowMainMenu = function() {
@@ -459,6 +465,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				var sisdText = "";
 
 				sisdText += "<br />--- Stockpile ---<br />";
+				sisdText += "Production: " + (p.RemainderProduction + p.RemainderProductionFraction) + "<br />";
 				sisdText += "Food: " + (p.Resources.FoodAmount + p.Resources.FoodRemainder) + "<br />";
 				sisdText += "Ore: " + (p.Resources.OreAmount + p.Resources.OreRemainder) + "<br />";
 				sisdText += "Iridium: " + (p.Resources.IridiumAmount + p.Resources.IridiumRemainder) + "<br />";
@@ -559,7 +566,7 @@ Astriarch.View.updateSelectedItemImprovementSlotsPanel = function(improvementCou
 Astriarch.View.updateSelectedItemPopulationAssignmentsPanel = function() {
 	var farmerString = farmers == 1 ? " Farmer, " : " Farmers, ";
 	var minerString = miners == 1 ? " Miner, " : " Miners, ";
-	var workerString = workers == 1 ? " Workers" : " Workers";
+	var workerString = workers == 1 ? " Builder" : " Builders";
 	var tooltip = farmers + farmerString + miners + minerString + workers + workerString;
 	$('#SelectedItemPopulationAssignmentsPanel').attr("Title", tooltip);
 

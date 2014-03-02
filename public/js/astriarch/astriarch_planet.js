@@ -441,10 +441,6 @@ Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//
 	else//notify user of empty build queue
 	{
 		buildQueueEmptyObject.buildQueueEmpty = true;
-		var goldProduced = "";
-		if(this.ResourcesPerTurn.ProductionAmountPerTurn > 0)
-			goldProduced = ", Gold generated";
-		eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.BuildQueueEmpty, this, "Build queue empty on planet: " + this.Name + goldProduced));
 	}
 
 	return eotMessages;
@@ -490,22 +486,30 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 
 
 		//set Protest Levels for citizens
+		var contentCitizenCount = 0;
+		var citizen = null;
 		for(var c = 0; c < this.Population.length; c++){
-			var citizen = this.Population[c];
-			if(c == this.Population.length - 1){
-				//ensure we have at least one loyal, non-protesting citizen (they were in awe of the new leadership's ability to take the planet)
+			citizen = this.Population[c];
+			//they were loyal to this player before, they won't be protesting now
+			//there is a 1 in 3 chance that a citizen won't protest the new ruler
+			if((citizen.LoyalToPlayerId && citizen.LoyalToPlayerId == newOwnerPlayerId) ||
+				Astriarch.NextRandom(0, 3) == 0){
 				citizen.ProtestLevel = 0;
 				citizen.LoyalToPlayerId = newOwnerPlayerId;
+				contentCitizenCount++;
 				continue;
 			}
-			if(citizen.LoyalToPlayerId && citizen.LoyalToPlayerId == newOwnerPlayerId){
-				//they were loyal to this player before, they won't be protesting now
-				citizen.ProtestLevel = 0;
-				continue;
-			}
+
 			var minProtestLevel = citizen.LoyalToPlayerId ? 0.5 : 0;//if the planet was run by natives they won't be protesting as much
 			var maxProtestLevel = citizen.LoyalToPlayerId ? 1 : 0.5;//if the planet was run by natives they won't be protesting as much
 			citizen.ProtestLevel = Astriarch.NextRandomFloat(minProtestLevel, maxProtestLevel);
+		}
+
+		if(contentCitizenCount == 0 && this.Population.length > 0){
+			//ensure we have at least one loyal, non-protesting citizen (they were in awe of the new leadership's ability to take the planet)
+			citizen = this.Population[0];
+			citizen.ProtestLevel = 0;
+			citizen.LoyalToPlayerId = newOwnerPlayerId;
 		}
 
 		//when a planet changes hands it should initially be in unrest
@@ -1238,7 +1242,7 @@ Astriarch.Planet.PlanetResources.prototype.SpendOreAsPossible = function(/*int*/
 	}
 	else
 	{
-		var spent = amountToSpend - this.OreAmount;
+		var spent = this.OreAmount;
 		this.OreAmount = 0;
 		return spent;
 	}
@@ -1257,7 +1261,7 @@ Astriarch.Planet.PlanetResources.prototype.SpendIridiumAsPossible = function(/*i
 	}
 	else
 	{
-		var spent = amountToSpend - this.IridiumAmount;
+		var spent = this.IridiumAmount;
 		this.IridiumAmount = 0;
 		return spent;
 	}

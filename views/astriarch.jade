@@ -323,6 +323,10 @@ head
 			clear: both;
 		}
 
+		input[type=checkbox] {
+			vertical-align: sub;
+		}
+
 		.cf:after {
 			display:block;
 			clear:both;
@@ -450,22 +454,33 @@ head
 										td(width='210')
 											label#NumberOfSystemsPanel
 												| Number of Systems:
-										td(width='420', colspan='2')
+										td(width='210')
 											select#NumberOfSystemsComboBox
 												option(value='2') 2
 												option(value='3') 3
 												option(value='4', selected='true') 4
+										td(width='210')
+											input#DistributePlanetsEvenlyCheckBox(type='checkbox', name='DistributePlanetsEvenlyCheckBox', checked="true")
+											label#DistributePlanetsEvenlyCheckBoxLabel(for='DistributePlanetsEvenlyCheckBox', style='display: inline;') Distribute Planets Evenly
 									tr(height='30')
 										td(width='210')
 											label#PlanetsPerSystemPanel
 												| Planets Per System:
-										td(width='420', colspan='2')
+										td(width='210')
 											select#PlanetsPerSystemComboBox
 												option(value='4') 4
 												option(value='5') 5
 												option(value='6') 6
 												option(value='7') 7
 												option(value='8') 8
+										td(width='210')
+											span Turn Time Limit:
+											select#TurnTimeLimitComboBox
+												option(value='0', selected='true') None
+												option(value='60') 1 Minute
+												option(value='120') 2 Minutes
+												option(value='180') 3 Minutes
+												option(value='300') 5 Minutes
 									tr(height='40')
 										td(width='210')
 											label
@@ -512,7 +527,9 @@ head
 									table#OverallPlayerStatusGrid.greenText(cellpadding='0', cellspacing='0', style='position: absolute; left: 0px; right: 0px; top: 0px; left:0px; z-index: 201; width:100%')
 										tr(height='16')
 											td(width='169', valign='top')
-												span#TurnDisplay.smallStatusText(style='text-align:left;padding-left:5px') Turn 1, Year 3001
+												div#TurnContainer(style="position:relative;overflow:hidden;margin-right:10px")
+													div#TurnTimer(style="z-index:202;position:absolute;background:blue;width:100%;height:2px;left:1px;top:16px;")
+													span#TurnDisplay.smallStatusText(style='text-align:left;padding-left:5px;position:relative') Turn 1, Year 3001
 											td(width='16')
 												img(src='img/ico_population-16x16.png', title='Total Population')
 											td
@@ -815,7 +832,7 @@ head
 																td(width='200')
 																	#SliderMiners
 															tr(height='30')
-																td(width='55') Workers:
+																td(width='55') Builders:
 																td(width='25')
 																	span#TextBoxWorkers(style='border: 1px;')
 																td(width='200')

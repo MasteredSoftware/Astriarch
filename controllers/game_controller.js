@@ -255,7 +255,7 @@ var saveGameByIdWithConcurrencyProtection = function(gameId, transformFunction, 
 					callback(err);
 					return;
 				}
-				console.log("updateGameByIdWithConcurrencyProtection: ", numberAffected, raw);
+				//console.log("updateGameByIdWithConcurrencyProtection: ", numberAffected, raw);
 				if(!numberAffected && retries < 10){
 					//we weren't able to update the doc because someone else modified it first, retry
 					console.log("Unable to saveGameByIdWithConcurrencyProtection, retrying ", retries);
@@ -364,7 +364,7 @@ exports.StartGame = function(options, callback){
 			return;
 		}
 
-		var gameModel = new Astriarch.Model(players, gameOptions.systemsToGenerate, gameOptions.planetsPerSystem);
+		var gameModel = new Astriarch.Model(players, gameOptions);
 		doc.gameData = new Astriarch.SerializableModel(gameModel);
 		doc.started = true;
 
@@ -530,6 +530,7 @@ var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, ca
 /**
  * Simply create the PlanetViewWorkingDataModel for us to update later
  * @param options
+ * @param payload
  * @param callback
  * @constructor
  */
@@ -683,7 +684,7 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 			}
 			getExistingPlanetViewWorkingDataModel(doc._id, sessionId, payload.planetId, function(err, pvwdmExisting){
 				if(err){
-					cb(err);
+					callback(err);
 					return;
 				}
 				if(!pvwdmExisting){

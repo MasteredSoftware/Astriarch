@@ -27,7 +27,6 @@ exports.clientFilesInternal = [
 	'js/astriarch/astriarch_commcontrol.js',
 	'js/astriarch/astriarch_lobbycontrol.js',
 	'js/astriarch/astriarch_newgamecontrol.js',
-	'js/astriarch/astriarch_endturncontrol.js',
 	'js/astriarch/astriarch_clientmodel.js',
 	'js/astriarch/astriarch_shared.js'
 ];

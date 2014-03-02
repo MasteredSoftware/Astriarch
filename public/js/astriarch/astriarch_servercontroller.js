@@ -116,16 +116,16 @@ Astriarch.ServerController = {
 
 		var totalPop = player.GetTotalPopulation();
 
-		//this could all be done at the start of the turn also.
-		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.eatAndStarve(gameModel, player, totalPop));
-
 		if(player.Type == Astriarch.Player.PlayerType.Human) {
 			Astriarch.ServerController.addLastStarShipToQueueOnPlanets(gameModel, player);
 		}
 
-		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.adjustPlayerPlanetProtestLevels(player));
-
 		Astriarch.ServerController.generatePlayerResources(player);
+
+		//this could all be done at the start of the turn also.
+		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.eatAndStarve(gameModel, player, totalPop));
+
+		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.adjustPlayerPlanetProtestLevels(player));
 
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.buildPlayerPlanetImprovements(player));
 
@@ -482,11 +482,14 @@ Astriarch.ServerController = {
 				}
 
 				//citizens will further protest depending on the amount of food shortages
-				for(var c in planet.Population){
-					var citizen = planet.Population[c];
-					citizen.ProtestLevel += Astriarch.NextRandomFloat(0, foodShortageRatio);
-					if(citizen.ProtestLevel > 1){
-						citizen.ProtestLevel = 1;
+				for(var c = 0; c < planet.Population.length; c++){
+
+					if(Astriarch.NextRandom(0, 2) == 0){//only have 1/2 the population protest so the planet it's totally screwed
+						var citizen = planet.Population[c];
+						citizen.ProtestLevel += Astriarch.NextRandomFloat(0, foodShortageRatio);
+						if(citizen.ProtestLevel > 1){
+							citizen.ProtestLevel = 1;
+						}
 					}
 				}
 
@@ -573,6 +576,9 @@ Astriarch.ServerController = {
 	buildPlayerPlanetImprovements: function(/*Player*/ player){//returns List<TurnEventMessage>
 		var endOfTurnMessages = []; //List<TurnEventMessage>
 		//build planet improvements
+		var planetNameBuildQueueEmptyList = [];
+		var goldProducedAmount = 0;
+		var buildQueueEmptyPlanetTarget = null;
 		for (var i in player.OwnedPlanets)
 		{
 			var p = player.OwnedPlanets[i];//Planet
@@ -580,13 +586,25 @@ Astriarch.ServerController = {
 			endOfTurnMessages = endOfTurnMessages.concat(p.BuildImprovements(buildQueueEmptyObject));
 			if (buildQueueEmptyObject['buildQueueEmpty'])//if the build queue was empty we'll increase gold based on planet production
 			{
+				buildQueueEmptyPlanetTarget = p;
+				planetNameBuildQueueEmptyList.push(p.Name);
 				if (p.ResourcesPerTurn.ProductionAmountPerTurn > 0)
 				{
-					player.Resources.GoldRemainder += p.ResourcesPerTurn.ProductionAmountPerTurn / 4.0;
-					player.Resources.AccumulateResourceRemainders();
+					goldProducedAmount += p.ResourcesPerTurn.ProductionAmountPerTurn / 4.0;
 				}
 			}
 		}
+		player.Resources.GoldRemainder += goldProducedAmount;
+		player.Resources.AccumulateResourceRemainders();
+
+		var goldProducedMessage = "";
+		if(goldProducedAmount){
+			goldProducedMessage = ", " + Math.floor(goldProducedAmount) + " Gold generated";
+		}
+		if(planetNameBuildQueueEmptyList.length > 0){
+			endOfTurnMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.BuildQueueEmpty, buildQueueEmptyPlanetTarget, "Build queue empty on " + (planetNameBuildQueueEmptyList.length == 1 ? "planet" : "planets") + ": " + planetNameBuildQueueEmptyList.join(", ") + goldProducedMessage));
+		}
+
 		return endOfTurnMessages;
 	},
 
@@ -626,7 +644,7 @@ Astriarch.ServerController = {
 					p.PlanetHappiness = Astriarch.Planet.PlanetHappinessType.Unrest;
 					eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.CitizensProtesting, p, "Population unrest on " + p.Name + " due to " + protestingCitizenCount + citizenText + " protesting"));
 				} else if(protestingCitizenCount > 0){
-					eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.CitizensProtesting, p, protestingCitizenCount + citizenText + " protesting the new ruler on " + p.Name));
+					eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.CitizensProtesting, p, protestingCitizenCount + citizenText + " protesting your rule on " + p.Name));
 				}
 			}
 		}

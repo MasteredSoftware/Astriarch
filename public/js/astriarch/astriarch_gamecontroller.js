@@ -1,7 +1,8 @@
 //provides the glue between the html controls, Astriarch.View and the Game Model
 
 Astriarch.GameController = {
-	planetaryConflictMessages: []
+	planetaryConflictMessages: [],
+	turnTimerTimeoutId: null
 };
 
 
@@ -53,7 +54,6 @@ Astriarch.GameController.NextTurn = function() {
 };
 
 Astriarch.GameController.HideControlsForTurnStart = function(){
-	Astriarch.EndTurnControl.hide();
 	//hide other controls as well in case they are open
 	Astriarch.PlanetView.Close();
 	Astriarch.SendShipsControl.Close();
@@ -68,7 +68,6 @@ Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 		Astriarch.GameController.OnStartTurn(message);
 	} else {
 		//TODO: update GUI to reflect which player(s) we're waiting on, also eventually we want to add turn time limits
-		Astriarch.EndTurnControl.show();
 	}
 };
 
@@ -92,6 +91,18 @@ Astriarch.GameController.OnGameOverMessageResponse = function(message) {
 Astriarch.GameController.RefreshTurnDisplay = function(){
 	var year = Astriarch.ClientGameModel.Turn.Number + 3000;
 	$('#TurnDisplay').text("Turn " + Astriarch.ClientGameModel.Turn.Number + ", Year " + year);
+
+	var turnTimer = $('#TurnTimer');
+	if(Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds) {
+		turnTimer.show();
+
+		turnTimer.stop(true).animate({ width: '100%' }, 500, "linear", function(){
+			turnTimer.animate({ width: '0px' }, Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds * 1000, "linear");
+			Astriarch.GameController.turnTimerTimeoutId = setTimeout(function(){Astriarch.View.NextTurn();}, Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds * 1000);
+		});
+	} else {
+		turnTimer.hide();
+	}
 };
 
 Astriarch.GameController.OnStartTurn = function(message) {

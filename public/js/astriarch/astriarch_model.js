@@ -4,13 +4,17 @@ var Astriarch = Astriarch || require('./astriarch_base');
  * Model is our global game structure
  * @constructor
  */
-Astriarch.Model = function(/*List<Player>*/ players, /*int*/ systemsToGenerate, /*PlanetsPerSystemOption*/ planetsPerSystem, dontPopulatePlanets) {
+Astriarch.Model = function(/*List<Player>*/ players, /*{systemsToGenerate:4, planetsPerSystem:4, distributePlanetsEvenly: true, "turnTimeLimitSeconds":0}*/ options, dontPopulatePlanets) {
 
 	this.ShowUnexploredPlanetsAndEnemyPlayerStats = false;//for debugging for now, could eventually be used once a scanner is researched?
 
-    this.SystemsToGenerate = systemsToGenerate;
+    this.SystemsToGenerate = options.systemsToGenerate;
 
-    this.PlanetsPerSystem = planetsPerSystem;//Astriarch.Model.PlanetsPerSystemOption.FOUR;
+    this.PlanetsPerSystem = options.planetsPerSystem;
+
+	this.DistributePlanetsEvenly = options.distributePlanetsEvenly;
+
+	this.TurnTimeLimitSeconds = options.turnTimeLimitSeconds;
     //public bool EnsureEachSystemContainsAllPlanetTypes = true;//TODO: implement if false every planet type (except home) will be randomly selected
 
 	this.Turn = new Astriarch.Model.Turn();
@@ -125,7 +129,7 @@ Astriarch.Model.prototype.populatePlanets = function(){
 				}
 				else if (sub.Contains(h.TopLeftPoint) && sub.Contains(h.BottomRightPoint))
 				{
-					//the hex is inside the quadrand and possibly an outlier on the edge
+					//the hex is inside the quadrant and possibly an outlier on the edge
 					subQuadrantBoundedHexes[iSQ].push(h);
 				}
 			}
@@ -139,12 +143,24 @@ Astriarch.Model.prototype.populatePlanets = function(){
 		possiblePlanetTypes.push(Astriarch.Planet.PlanetType.DeadPlanet);
 		possiblePlanetTypes.push(Astriarch.Planet.PlanetType.AsteroidBelt);
 
+		var assignedPlayerColor = new Array(4); //Color[4];
+		assignedPlayerColor[0] = new Astriarch.Util.ColorRGBA(0, 255, 0, 255);//Light Green
+		assignedPlayerColor[1] = new Astriarch.Util.ColorRGBA(200, 0, 200, 255);//Light Purple
+		assignedPlayerColor[2] = new Astriarch.Util.ColorRGBA(0, 128, 255, 255);//Light Blue
+		assignedPlayerColor[3] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//Light Red
+
 		for (var iSQ = 0; iSQ < subQuadrants.length; iSQ++)
 		{
-			
-			//pick a planet bounding hex at random from the sub-quadrant (at lest for now)
-			var hexPos = Astriarch.NextRandom(0, subQuadrantHexes[iSQ].length);
-			var planetBoundingHex = subQuadrantHexes[iSQ][hexPos];//Hexagon
+			var chosenPlanetSubQuadrant = iSQ;
+			if(!this.DistributePlanetsEvenly){
+				do {
+					chosenPlanetSubQuadrant = Astriarch.NextRandom(0, subQuadrants.length);
+				} while (subQuadrantHexes[chosenPlanetSubQuadrant].length == 0)
+			}
+			//pick a planet bounding hex at random from the sub-quadrant (at least for now)
+			var hexPos = Astriarch.NextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
+			var planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos];//Hexagon
+			subQuadrantHexes[chosenPlanetSubQuadrant].splice(hexPos, 1);//remove this hex as an option
 
 
 			//get at least one planet of each type, prefer the highest class planet
@@ -162,11 +178,7 @@ Astriarch.Model.prototype.populatePlanets = function(){
 
 			var assignPlayer = false;
 			var assignedPlayerIndex = 0;
-			var assignedPlayerColor = new Array(4); //Color[4];
-			assignedPlayerColor[0] = new Astriarch.Util.ColorRGBA(0, 255, 0, 255);//"rgba(0, 128, 0, 255)";//Light Green
-			assignedPlayerColor[1] = new Astriarch.Util.ColorRGBA(200, 0, 200, 255);//"rgba(200, 0, 200, 255)";//Light Purple
-			assignedPlayerColor[2] = new Astriarch.Util.ColorRGBA(0, 128, 255, 255);//"rgba(0, 0, 255, 255)";//Light Blue
-			assignedPlayerColor[3] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//"rgba(255, 0, 0, 255)";//Light Red?
+
 			//it's a home planet, we'll see if we should assign a player
 			if (pt == Astriarch.Planet.PlanetType.PlanetClass2)
 			{
@@ -247,6 +259,7 @@ Astriarch.Model.prototype.populatePlanets = function(){
 					//pick a planet bounding hex at random from the sub-quadrant (at lest for now)
 					var hexPos = Astriarch.NextRandom(0, subQuadrantBoundedHexes[iSQ].length);
 					var planetBoundingHex = subQuadrantBoundedHexes[iSQ][hexPos];//Hexagon
+					subQuadrantHexes[iSQ].splice(hexPos, 1);//remove this hex as an option
 
 					if (planetBoundingHex.PlanetContainedInHex != null)
 						continue;
@@ -286,8 +299,6 @@ Astriarch.Model.prototype.populatePlanets = function(){
 					}
 					else
 						chanceToGetClass1 -= 15;
-
-					var type = Astriarch.NextRandom(0, 3);
 
 					var p = new Astriarch.Planet(pt, planetBoundingHex.Id, planetBoundingHex, null);//Planet
 
