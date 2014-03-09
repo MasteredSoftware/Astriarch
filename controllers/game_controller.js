@@ -8,6 +8,30 @@ var extend = require("extend");
 
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
+var GetHighScoreBoard = function(maxResults, callback){
+	maxResults = maxResults || 10;
+
+	models.GameHighScoreBoardModel.find({}, null, {"$maxScan":maxResults, "$orderby": { playerPoints : -1 }}, function(err, results){
+		console.log("GetHighScoreBoard:", err, results);
+		callback(err, results);
+	});
+};
+exports.GetHighScoreBoard = GetHighScoreBoard;
+
+var AddHighScoreBoardEntry = function(highScoreBoardSession, callback){
+	//Maybe this should not add an entry if the entry isn't in the top x players?
+	var highScore = new models.GameHighScoreBoardModel(highScoreBoardSession);
+	highScore.save(function(err, results){
+		if(err){
+			console.error("Problem saving HighScoreBoardEntry:", err);
+		}
+		if(callback){
+			callback(err, results);
+		}
+	});
+};
+exports.AddHighScoreBoardEntry = AddHighScoreBoardEntry;
+
 var GetChatRoomWithSessions = function(gameId, callback){
 	models.ChatRoomModel.findOne({"gameId":gameId}, function(err, doc){
 		if(err){
@@ -183,6 +207,10 @@ exports.UpdateGameOptions = function(payload, callback){
 exports.ChangePlayerName = function(options, callback){
 	var playerName = options.playerName || "UNKNOWN";
 	FindGameById(options.gameId, function(err, doc){
+		if(err){
+			callback(err);
+			return;
+		}
 		for(var i = 0; i < doc.players.length; i++){
 			var player = doc.players[i];
 			if(player.sessionId == options.sessionId){
@@ -239,8 +267,8 @@ This method uses the nonce field in the document to protect against concurrent e
  */
 var saveGameByIdWithConcurrencyProtection = function(gameId, transformFunction, retries, callback){
 	FindGameById(gameId, function(err, doc){
-		if(err){
-			callback(err);
+		if(err || !doc){
+			callback(err || "Unable to find game in saveGameByIdWithConcurrencyProtection");
 			return;
 		}
 		transformFunction(doc, function(err, data){
@@ -427,7 +455,7 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 					returnData.destroyedClientPlayers = [];
 					for(var ip in destroyedPlayers){
 						var p = destroyedPlayers[ip];
-						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color));
+						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color, p.Points));
 
 						//set destroyed players
 						for(var i = 0; i < doc.players.length; i++){

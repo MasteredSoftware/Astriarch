@@ -68,7 +68,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	{
 		var player = players[i];
 		playersById[player.Id] = player;
-		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color);
+		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points);
 	}
 	
 	//look for serializable destroyed players
@@ -78,7 +78,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 		var player = Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer(newModel.GameGrid, sp, planetsById);
 		newModel.PlayersDestroyed.push(player);
 		playersById[player.Id] = player;
-		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color);
+		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points);
 	}
 
 	//second pass serializable players
@@ -215,6 +215,8 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 	if(sp.HomePlanetId){
 		p.HomePlanet = planetsById[sp.HomePlanetId];
 	}
+
+	p.Points = sp.Points;
 
 	for(var j in sp.SerializableFleetsInTransit)
 	{
@@ -397,6 +399,8 @@ Astriarch.SerializablePlayer = function(/*Astriarch.Player*/ player) {
 	if(player.HomePlanet){
 		this.HomePlanetId = player.HomePlanet.Id;//Player has HomePlanet:Planet
 	}
+
+	this.Points = player.Points;
 
 	this.SerializableFleetsInTransit = [];//Player has FleetsInTransit:List<Fleet>
 	for(var i in player.FleetsInTransit)

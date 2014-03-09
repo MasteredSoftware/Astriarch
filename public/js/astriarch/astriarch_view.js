@@ -79,7 +79,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, function(message){console.log("NOOP: ", message)});
 
-		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, function(message){Astriarch.CommControl.refreshPlayerList(message.payload.sessions)});
+		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, function(message){Astriarch.CommControl.setPlayerSessions(message.payload.sessions)});
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, Astriarch.LobbyControl.refreshGameList);
 
@@ -119,6 +119,10 @@ Astriarch.View.ClearPlanetsAndFleets = function() {
 Astriarch.View.ShowNewGameOptions = function() {
 	$('#startGameOptionsContainer').show();
 	//also hide everything but the starfield so if we just finished a game those controls aren't still shown
+	Astriarch.View.ClearGameBackgroundControls();
+};
+
+Astriarch.View.ClearGameBackgroundControls = function() {
 	Astriarch.View.ClearPlanetsAndFleets();
 	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').hide();
 	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').hide();
@@ -212,6 +216,8 @@ Astriarch.View.NextTurn = function() {
 };
 
 Astriarch.View.ShowMainMenu = function() {
+	Astriarch.GameId = null;
+
 	Astriarch.View.audioInterface.StartMenu();
 			
 	$('#MainMenuButtonGameOver').hide();
@@ -219,6 +225,11 @@ Astriarch.View.ShowMainMenu = function() {
 	
 	//show the main menu
 	$('#mainMenu').show();
+
+	Astriarch.View.ClearGameBackgroundControls();
+
+	//join the game lobby chat room
+	Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, null);
 };
 
 Astriarch.View.ShowPlanetView = function() {

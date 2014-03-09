@@ -29,6 +29,15 @@ var ChatRoomSessionSchema = new mongoose.Schema({
 });
 exports.ChatRoomSessionModel = db.model('chatRoomSessions', ChatRoomSessionSchema);
 
+var GameHighScoreBoardSchema = new mongoose.Schema({
+	sessionId:String,
+	playerName:String,
+	playerNumber: Number,
+	playerPoints: {type:Number, index:true},
+	gameId: {type:ObjectId}
+});
+exports.GameHighScoreBoardModel = db.model('gameHighScoreBoard', GameHighScoreBoardSchema);
+
 //create schema for a game
 var GameSchema = new mongoose.Schema({
 	nonce: ObjectId, //this is used for protecting against concurrent edits: http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/

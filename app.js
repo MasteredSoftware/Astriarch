@@ -64,7 +64,10 @@ app.get('/test', function(req, res){
 });
 
 app.get('/', function(req, res){
-	res.render("astriarch", {"port":config.ws_port, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal});
+	gameController.GetHighScoreBoard(100, function(err, results){
+		results = results || [];
+		res.render("astriarch", {"port":config.ws_port, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
+	});
 });
 
 var server = http.createServer(app).listen(app.get('port'), app.get('host'), function(){
@@ -270,6 +273,11 @@ wss.on('connection', function(ws) {
 									var playerWon = (winningSerializablePlayer && winningSerializablePlayer.Id == player.Id);
 									//calculate end of game score
 									var score = Astriarch.ServerController.CalculateEndGamePoints(data.gameModel, player.Id, data.game.gameOptions.opponentOptions, playerWon);
+
+									//add high score entry
+									var highScoreBoardSession = {sessionId:sessionId, playerName:player.name, playerNumber: player.position, playerPoints:score, gameId:gameId};
+									gameController.AddHighScoreBoardEntry(highScoreBoardSession);
+
 									payload = {"winningSerializablePlayer": winningSerializablePlayer, "playerWon": playerWon, "score":score, "endOfTurnMessages":payload.endOfTurnMessages, "gameData":payload.gameData};
 									playerMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.GAME_OVER, payload);
 								} else {
@@ -344,7 +352,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 	var serializableMainPlayer = null;
 	for(var p in serializableModel.SerializablePlayers){
 		var player = serializableModel.SerializablePlayers[p];
-		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color));
+		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points));
 		if(player.Id == targetPlayer.Id){
 			serializableMainPlayer = player;
 		}

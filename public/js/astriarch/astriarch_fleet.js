@@ -186,8 +186,9 @@ Astriarch.Fleet.prototype.ReduceFleet = function(spacePlatformDamage)
 		var typeArray = this.StarShips[key];//StarShipType
 		for (var i = typeArray.length - 1; i >= 0; i--)
 		{
-			if (typeArray[i].Strength() <= 0)
+			if (typeArray[i].Strength() <= 0){
 				typeArray.splice(i, 1);
+			}
 		}
 	}
 

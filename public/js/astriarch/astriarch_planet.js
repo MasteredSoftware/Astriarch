@@ -380,6 +380,11 @@ Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//
 			nextItem = this.BuildQueue.shift();
 			nextItem.TurnsToComplete = 0;
 
+			//assign points
+			if(this.Owner){
+				this.Owner.Points += Astriarch.ServerController.POINTS_PER_PRODUCTION_UNIT_BUILT * nextItem.BaseProductionCost;
+			}
+
 			var nextItemInQueueName = "Nothing";
 			if (this.BuildQueue.length > 0)
 			{
@@ -514,6 +519,11 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 
 		//when a planet changes hands it should initially be in unrest
 		this.PlanetHappiness = Astriarch.Planet.PlanetHappinessType.Riots;
+
+		//assign points
+		if(p){
+			p.Points += Astriarch.ServerController.POINTS_PER_CITIZEN_ON_CAPTURED_PLANET * this.Population.length;
+		}
 	}
 
 	this.Owner = p;

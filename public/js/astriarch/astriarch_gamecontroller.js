@@ -16,6 +16,8 @@ Astriarch.GameController.ResetView = function(clientGameModel) {
 	Astriarch.GameController.RefreshTurnDisplay();
 
 	Astriarch.GameController.SetupViewFromGameModel();
+
+	Astriarch.CommControl.refreshPlayerList();
 };
 
 Astriarch.GameController.SetupViewFromGameModel = function() {
@@ -98,6 +100,10 @@ Astriarch.GameController.RefreshTurnDisplay = function(){
 
 		turnTimer.stop(true).animate({ width: '100%' }, 500, "linear", function(){
 			turnTimer.animate({ width: '0px' }, Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds * 1000, "linear");
+			//I had problems with this not clearing out correctly in the view, so I'm calling it here too
+			if(Astriarch.GameController.turnTimerTimeoutId){
+				clearTimeout(Astriarch.GameController.turnTimerTimeoutId);
+			}
 			Astriarch.GameController.turnTimerTimeoutId = setTimeout(function(){Astriarch.View.NextTurn();}, Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds * 1000);
 		});
 	} else {
@@ -124,6 +130,9 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 	Astriarch.ClientGameModel = Astriarch.ClientModelInterface.GetClientModelFromSerializableClientModel(message.payload.gameData, Astriarch.ClientGameModel.GameGrid);
 
 	Astriarch.GameController.RefreshTurnDisplay();
+
+	//update the players points show in the player list
+	Astriarch.CommControl.refreshPlayerList();
 
 	var serializableEndOfTurnMessages = message.payload.endOfTurnMessages;
 	var endOfTurnMessages = [];

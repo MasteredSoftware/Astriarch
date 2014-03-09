@@ -73,10 +73,10 @@ Astriarch.SerializableTurnEventMessage = function(/*TurnEventMessageType*/ type,
 Astriarch.TurnEventMessage.SerializablePlanetaryConflictData = function(/*PlanetaryConflictData*/ pcd){
 	this.DefendingSerializableClientPlayer = null;
 	if(pcd.DefendingPlayer){
-		this.DefendingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.DefendingPlayer.Id, pcd.DefendingPlayer.Type, pcd.DefendingPlayer.Name, pcd.DefendingPlayer.Color);
+		this.DefendingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.DefendingPlayer.Id, pcd.DefendingPlayer.Type, pcd.DefendingPlayer.Name, pcd.DefendingPlayer.Color, pcd.DefendingPlayer.Points);
 	}
 	this.DefendingSerializableFleet = new Astriarch.SerializableFleet(pcd.DefendingFleet, false);
-	this.AttackingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.AttackingPlayer.Id, pcd.AttackingPlayer.Type, pcd.AttackingPlayer.Name, pcd.AttackingPlayer.Color);
+	this.AttackingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.AttackingPlayer.Id, pcd.AttackingPlayer.Type, pcd.AttackingPlayer.Name, pcd.AttackingPlayer.Color, pcd.AttackingPlayer.Points);
 	this.AttackingSerializableFleet = new Astriarch.SerializableFleet(pcd.AttackingFleet, false);
 	this.WinningSerializableFleet = null;
 	if(pcd.WinningFleet){

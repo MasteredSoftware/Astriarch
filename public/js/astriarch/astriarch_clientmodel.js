@@ -34,7 +34,7 @@ Astriarch.ClientModelInterface = {
 
 	GetClientPlayerFromSerializableClientPlayer: function(scp){
 		var color = new Astriarch.Util.ColorRGBA(scp.Color.r, scp.Color.g, scp.Color.b, scp.Color.a);
-		return new Astriarch.ClientPlayer(scp.Id, scp.Type, scp.Name, color);
+		return new Astriarch.ClientPlayer(scp.Id, scp.Type, scp.Name, color, scp.Points);
 	},
 
 	GetClientPlanetFromSerializableClientPlanet: function(scp, gameGrid){
@@ -83,11 +83,12 @@ Astriarch.ClientModel = function(turnNumber, mainPlayer, clientPlayers, clientPl
 	this.Options = options || {"TurnTimeLimitSeconds":0};
 };
 
-Astriarch.ClientPlayer = function(id, playerType, name, color){
+Astriarch.ClientPlayer = function(id, playerType, name, color, points){
 	this.Id = id;
 	this.Type = playerType;//PlayerType
 	this.Name = name;
 	this.Color = color;
+	this.Points = points;
 };
 
 Astriarch.ClientPlanet = function(id, name, originPoint, gameGrid, boundingHex, type){
@@ -117,11 +118,12 @@ Astriarch.SerializableClientModel = function(turnNumber, serializableMainPlayer,
 	this.Options = options || {"TurnTimeLimitSeconds":0};
 };
 
-Astriarch.SerializableClientPlayer = function(id, playerType, name, color){
+Astriarch.SerializableClientPlayer = function(id, playerType, name, color, points){
 	this.Id = id;
 	this.Type = playerType;//PlayerType
 	this.Name = name;
 	this.Color = color;
+	this.Points = points;
 };
 
 Astriarch.SerializableClientPlanet = function(id, name, originPoint, type){

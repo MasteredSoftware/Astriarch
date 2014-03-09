@@ -26,10 +26,11 @@ Astriarch.Player = function(/*PlayerType*/ playerType, /*string*/ name) {
 
 	this.HomePlanet = null;//Planet
 
+	this.Points = 0;
+
 	this.FleetsInTransit = [];//List<Fleet>
 
 	this.fleetsArrivingOnUnownedPlanets = {};//Dictionary<int, Fleet>//indexed by planet id
-
 };
 
 Astriarch.Player.Static = {NEXT_PLAYER_ID:1};

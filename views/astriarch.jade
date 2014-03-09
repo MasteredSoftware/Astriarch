@@ -118,6 +118,13 @@ head
 			overflow:auto;
 			background-color: rgba(128,128,128,0.4);
 		}
+		#topRulersList{
+			height:600px;
+			overflow:auto;
+			background-color: rgba(128,128,128,0.4);
+			color: white;
+			font-size: 12px;
+		}
 		#GameNameTextBox, #PlayerNameTextBox, #chatInputTextBox, #chatPlayerNameTextBox {
 			background-color:#595959;
 			color:white;
@@ -352,20 +359,21 @@ head
 
 		AstriarchExtern.OnGameStart = function(data) {
 			//{'Players':#, 'PlanetsPerSystem':#, 'Systems':#}
-			_gaq.push(['_trackEvent', 'Astriarch', 'Game Started', 'Players', data.Players]);
-			_gaq.push(['_trackEvent', 'Astriarch', 'Game Started', 'Planets Per System', data.PlanetsPerSystem]);
-			_gaq.push(['_trackEvent', 'Astriarch', 'Game Started', 'Systems', data.Systems]);
-			};
+			ga('send', 'event', 'Astriarch', 'Game Started', 'Players', data.Players);
+			ga('send', 'event', 'Astriarch', 'Game Started', 'Planets Per System', data.PlanetsPerSystem);
+			ga('send', 'event', 'Astriarch', 'Game Started', 'Systems', data.Systems);
+		};
 
-			AstriarchExtern.OnGameOver = function(data) {
+		AstriarchExtern.OnGameOver = function(data) {
 			//{'PlayerWon':true|false, 'Turns':#, 'Score':#}
-			if(data.PlayerWon)
-			_gaq.push(['_trackEvent', 'Astriarch', 'Game Over', 'Player Won', data.Score]);
-			else
-			_gaq.push(['_trackEvent', 'Astriarch', 'Game Over', 'Player Lost', data.Score]);
-
-			_gaq.push(['_trackEvent', 'Astriarch', 'Game Over', 'Turns Played', data.Turns]);
-			};
+			if(data.PlayerWon){
+				ga('send', 'event', 'Astriarch', 'Game Over', 'Player Won', data.Score);
+			}
+			else {
+				ga('send', 'event', 'Astriarch', 'Game Over', 'Player Lost', data.Score);
+			}
+			ga('send', 'event', 'Astriarch', 'Game Over', 'Turns Played', data.Turns);
+		};
 	body
 		//
 			<div style="position: relative;">
@@ -949,15 +957,19 @@ head
 											#EndTurnSummary(style='width: 380px; height: 210px;')
 
 					// right sidebar
-					aside#right-sidebar(style='width: 20px; height: 600px;float:right;')
-
+					aside#right-sidebar(style='width: 160px; height: 600px;float:right;margin-left:5px')
+						div#topRulersList
+							div(style="color:#0A0") Top Rulers:
+								hr(style="background-color:#0A0;color:#0A0;height:2px;border:0")
+							ol(style="margin-left:20px")
+								each ruler in top_rulers
+									li #{ruler.playerName} (#{ruler.playerPoints})
 			#footer.cf(style='color: white;')
+				br
 				p
-					| Astriarch - Ruler of the Stars html5 version 1.2.1 Copyright 2010
+					| Astriarch - Ruler of the Stars multiplayer beta version Copyright 2010
 					a(href='http://www.masteredsoftware.com/', target='_blank') Mastered Software
 					| , Music by Resonant.
-				p
-					a(href='astriarch-help.html', target='_blank') Astriarch Help and Tutorial Videos
 				p
 					a(href='http://www.astriarch.com/', target='_blank') Official Astriarch Site
 
@@ -969,12 +981,9 @@ head
 			});
 
 		script(type='text/javascript').
-			var _gaq = _gaq || [];
-			_gaq.push(['_setAccount', 'UA-7797548-2']);
-			_gaq.push(['_trackPageview']);
-
-			(function() {
-				var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-				ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-				var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-			})();
+			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+			ga('create', 'UA-7797548-2', 'astriarch.com');
+			ga('send', 'pageview');

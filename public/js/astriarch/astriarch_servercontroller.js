@@ -4,6 +4,12 @@ Astriarch.ServerController = {
 
 	BATTLE_RANDOMNESS_FACTOR: 4.0,//the amount randomness (chance) when determining fleet conflict outcomes, it is the strength multiplyer where the winner is guaranteed to win
 
+	POINTS_PER_POPULATION_GROWTH: 4,
+	POINTS_PER_PRODUCTION_UNIT_BUILT: 0.25,
+	POINTS_PER_REPAIRED_STARSHIP_STRENGTH: 0.25,
+	POINTS_PER_DAMAGED_STARSHIP_STRENGTH: 0.5,
+	POINTS_PER_CITIZEN_ON_CAPTURED_PLANET: 10,
+
 	/// <summary>
 	/// Finishes (takes) the turns for all AI opponents and builds resources for everyone
 	/// </summary>
@@ -70,6 +76,9 @@ Astriarch.ServerController = {
 						resourcesAutoSpentByPlayerId[p.Owner.Id].ore += oreCost;
 						resourcesAutoSpentByPlayerId[p.Owner.Id].iridium += iridiumCost;
 					}
+					//assign points
+					p.Owner.Points += Astriarch.ServerController.POINTS_PER_REPAIRED_STARSHIP_STRENGTH * totalStrengthRepaired;
+
 				}
 			}
 		}
@@ -675,6 +684,9 @@ Astriarch.ServerController = {
 					lastCitizen.PopulationChange = 0;
 					p.Population.push(new Astriarch.Planet.Citizen(p.Type, player.Id));
 					p.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
+
+					//assign points
+					player.Points += Astriarch.ServerController.POINTS_PER_POPULATION_GROWTH * 1;
 				}
 			}
 		}
@@ -733,7 +745,7 @@ Astriarch.ServerController = {
 			}
 		}
 
-		var points = 0;
+		var points = player.Points;
 
 		var turnsTaken = gameModel.Turn.Number;
 		if (turnsTaken > 1000)//some max, nobody should play this long?
@@ -777,9 +789,9 @@ Astriarch.ServerController = {
 		if (totalPopulation == 0)
 			totalPopulation = 1;//so that we have points for loosers too
 
-		points = Math.round(((speedFactor * difficultyRating * ownedPlanets) + (totalPopulation * totalSystems)) * (playerWon ? 2 : 0.25) );
+		points += Math.round(((speedFactor * difficultyRating * ownedPlanets) + (totalPopulation * totalSystems)) * (playerWon ? 2 : 0.25) );
 
-		return points;
+		return Math.floor(points);
 	}
 
 

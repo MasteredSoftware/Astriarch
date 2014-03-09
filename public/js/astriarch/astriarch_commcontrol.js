@@ -4,6 +4,7 @@ Astriarch.CommControl = {
 	inputTextBox: null,
 	playerName: null,
 	playerNumber: null,
+	playerSessions: null,
 	init: function(){
 		this.chatLog = $("#chatLog");
 		this.chatRoomInfo = $("#chatRoomInfo");
@@ -51,13 +52,30 @@ Astriarch.CommControl = {
 		Astriarch.CommControl.enableChatGUI();
 	},
 
-	refreshPlayerList: function(sessions){
+	setPlayerSessions: function(sessions){
+		Astriarch.CommControl.playerSessions = sessions;
+		Astriarch.CommControl.refreshPlayerList();
+	},
+
+	refreshPlayerList: function(){
 		var html = "";
-		for(var i = 0; i < sessions.length; i++){
-			var session = sessions[i];
-			var sessionClass = session.playerNumber ? "messagePlayer" + session.playerNumber : "messagePlayerLobby";
-			html += "<div class=\"" + sessionClass + "\">" + session.playerName + "</div>";
+
+		if(Astriarch.GameId && Astriarch.ClientGameModel && Astriarch.ClientGameModel.ClientPlayers){
+			//we are in a game and we should base the player list on the client game model players
+			for(var i = 0; i < Astriarch.ClientGameModel.ClientPlayers.length; i++){
+				var player = Astriarch.ClientGameModel.ClientPlayers[i];
+				var sessionClass = "messagePlayer" + (i + 1);
+				var points = player.Points != null ? " (" + Math.floor(player.Points) + ")" : "";
+				html += "<div class=\"" + sessionClass + "\">" + player.Name + points + "</div>";
+			}
+		} else {
+			for(var i = 0; i < Astriarch.CommControl.playerSessions.length; i++){
+				var session = Astriarch.CommControl.playerSessions[i];
+				var sessionClass = session.playerNumber ? "messagePlayer" + session.playerNumber : "messagePlayerLobby";
+				html += "<div class=\"" + sessionClass + "\">" + session.playerName + "</div>";
+			}
 		}
+
 		this.chatRoomInfo.html(html);
 	},
 
