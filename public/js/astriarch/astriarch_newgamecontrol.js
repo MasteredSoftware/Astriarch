@@ -138,6 +138,12 @@ Astriarch.NewGameControl = {
 				}
 			}
 		}
+		var playerSessions = [{playerName:gameOptions.mainPlayerName, playerNumber: 1, dateJoined: new Date()}];
+		for(var i = 0; i < gameOptions.opponentOptions.length; i++){
+			playerSessions.push({playerName:gameOptions.opponentOptions[i].name, playerNumber: i+2, dateJoined: new Date()});
+		}
+
+		Astriarch.CommControl.setPlayerSessions(playerSessions);
 
 	},
 

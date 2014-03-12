@@ -54,13 +54,13 @@ td > span, td > img {
 	background:inherit;
 }
 
-#mainnav ul {
+#mainnavMenu ul {
 	height: 100%;
 	margin: 0;
 	padding: 0 0 0 10px;
 }
 
-#mainnav li {
+#mainnavMenu li {
 	list-style-type: none;
 	float: left;
 	width: auto;
@@ -68,7 +68,7 @@ td > span, td > img {
 
 }
 
-#mainnav a:link, #mainnav a:visited {
+#mainnavMenu a:link, #mainnavMenu a:visited {
 	display: block;
 	color: #aaa;
 	text-transform:uppercase;
@@ -79,7 +79,7 @@ td > span, td > img {
 	border-bottom: 2px solid #008000;
 }
 
-#mainnav a:hover, #mainnav a:visited:hover {
+#mainnavMenu a:hover, #mainnavMenu a:visited:hover {
 	color: #FFFFFF;
 	text-decoration: none;
 	padding: 1px 10px 2px 12px;

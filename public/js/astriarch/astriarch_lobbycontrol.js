@@ -80,6 +80,23 @@ Astriarch.LobbyControl = {
 		Astriarch.LobbyControl.GamesAvailableListBox.addItems(listBoxItems);
 	},
 
+	updateGameList: function(message){
+		var itemFound = false;
+		for(var i = 0; i < Astriarch.LobbyControl.GamesAvailableListBox.items.length; i++){
+			var item = Astriarch.LobbyControl.GamesAvailableListBox.items[i];
+			if(item.GameInfo["_id"] == message.payload["_id"]){
+				item.GameInfo = message.payload;
+				item.value = message.payload.name;
+				Astriarch.LobbyControl.GamesAvailableListBox.refresh();
+				itemFound = true;
+				break;
+			}
+		}
+		if(!itemFound){
+			Astriarch.LobbyControl.GamesAvailableListBox.addItem(new Astriarch.LobbyControl.GamesAvailableListBoxItem(message.payload));
+		}
+	},
+
 	GamesAvailableSelectionChanged: function(){
 		if(Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem){
 			$("#JoinGameButton").button('enable');

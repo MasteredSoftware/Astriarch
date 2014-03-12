@@ -12,7 +12,7 @@ var GetHighScoreBoard = function(maxResults, callback){
 	maxResults = maxResults || 10;
 
 	models.GameHighScoreBoardModel.find({}, null, {"$maxScan":maxResults, "$orderby": { playerPoints : -1 }}, function(err, results){
-		console.log("GetHighScoreBoard:", err, results);
+		//console.log("GetHighScoreBoard:", err, results);
 		callback(err, results);
 	});
 };
@@ -49,6 +49,7 @@ var GetChatRoomWithSessions = function(gameId, callback){
 		});
 	});
 };
+exports.GetChatRoomWithSessions = GetChatRoomWithSessions;
 
 /**
  *
@@ -69,22 +70,20 @@ var JoinChatRoom = function(gameId, session, callback){
 
 		async.series([
 			function(cb){
-				console.log("Upsert session: ", session);
 				models.ChatRoomSessionModel.findOneAndUpdate({"sessionId":session.sessionId}, session, { upsert: true, new: false }, function(err, doc){
 					if(err){
-						cb(err);
+						callback(err);
 						return;
 					}
-					var oldSession = doc;
 					//check to see if we're leaving an existing room
-					if(oldSession && oldSession.gameId != gameId){
+					if(doc && doc.gameId != gameId){
 						//we'll want to update the sessions for the old chat room with the new session list so we need to return it
-						GetChatRoomWithSessions(oldSession.gameId, function(err, chatRoom){
+						GetChatRoomWithSessions(doc.gameId, function(err, chatRoom){
 							if(err){
 								cb(err);
 							} else {
 								oldChatRoomWithSessions = chatRoom;
-								cb(null);
+								cb(null, chatRoom);
 							}
 						});
 					} else {
@@ -109,6 +108,29 @@ var JoinChatRoom = function(gameId, session, callback){
 
 };
 exports.JoinChatRoom = JoinChatRoom;
+
+var LeaveChatRoom = function(sessionId, callback){
+	models.ChatRoomSessionModel.findOneAndRemove({"sessionId":sessionId}, function(err, doc){
+		if(err){
+			callback(err);
+			return;
+		}
+		//check to see if we're leaving an existing room
+		console.log("LeaveChatRoom:", doc);
+		if(doc){
+			GetChatRoomWithSessions(doc.gameId, function(err, chatRoom){
+				if(err){
+					callback(err);
+				} else {
+					callback(null, chatRoom);
+				}
+			});
+		} else {
+			callback(null, null);
+		}
+	});
+};
+exports.LeaveChatRoom = LeaveChatRoom;
 
 exports.AddMessageToChatRoom = function(gameId, message, callback){
 	models.ChatRoomModel.findOneAndUpdate({"gameId":gameId}, {$push:{messages:message}}, { upsert: true, new: true }, function(err, doc){
@@ -179,15 +201,7 @@ exports.ListLobbyGames = function(options, callback){
 
 			for(var i in docs){
 				var doc = docs[i];
-				var lobbyGameSummary = {"_id":doc["_id"],
-					"name":doc.name,
-					"gameOptions":doc.gameOptions,
-					"dateLastPlayed":doc.dateLastPlayed,
-					"dateCreated":doc.dateCreated,
-					"ended":doc.ended,
-					"started":doc.started,
-					"players":[]
-				};
+				var lobbyGameSummary = GetGameSummaryFromGameDoc(doc);
 				for(var p = 0; p < doc.players.length; p++){
 					var player = doc.players[p];
 					lobbyGameSummary.players.push({"name":player.name, "position":player.position});
@@ -199,6 +213,19 @@ exports.ListLobbyGames = function(options, callback){
 		callback(err, lobbyGameSummaries);
 	});
 };
+
+var GetGameSummaryFromGameDoc = function(doc){
+	return {"_id":doc["_id"],
+		"name":doc.name,
+		"gameOptions":doc.gameOptions,
+		"dateLastPlayed":doc.dateLastPlayed,
+		"dateCreated":doc.dateCreated,
+		"ended":doc.ended,
+		"started":doc.started,
+		"players":[]
+	};
+};
+exports.GetGameSummaryFromGameDoc = GetGameSummaryFromGameDoc;
 
 exports.UpdateGameOptions = function(payload, callback){
 	updateGameById(payload.gameId, {gameOptions: payload.gameOptions, name: payload.name }, callback);

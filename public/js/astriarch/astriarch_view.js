@@ -82,6 +82,8 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, function(message){Astriarch.CommControl.setPlayerSessions(message.payload.sessions)});
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, Astriarch.LobbyControl.refreshGameList);
+		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.GAME_LIST_UPDATED, Astriarch.LobbyControl.updateGameList);
+
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, function(message){Astriarch.NewGameControl.OnGameOptionsChanged(message)});
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME, function(message){Astriarch.LobbyControl.OnGameJoinMessageResponse(message)});
@@ -95,6 +97,8 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.GAME_OVER, function(message){Astriarch.GameController.OnGameOverMessageResponse(message)});
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE, function(message){Astriarch.CommControl.appendMessages([message.payload])});
+
+		Astriarch.CommControl.init();
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, payload:{}});
 	}
@@ -129,8 +133,6 @@ Astriarch.View.ClearGameBackgroundControls = function() {
 };
 
 Astriarch.View.SetupGraphicalDOMElements = function() {
-
-	Astriarch.CommControl.init();
 
 	Astriarch.LobbyControl.init();
 
@@ -344,7 +346,7 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 
 		var totalResourceProduction = mainPlayer.GetTotalResourceProductionPerTurn();
 
-		var totalFoodAmount = mainPlayer.TotalFoodAmount();
+		var totalFoodAmount = mainPlayer.TotalFoodAmount() + totalResourceProduction.food;
 		var foodDiffPerTurn = totalResourceProduction.food - totalPopulation;
 		var foodDiffPositiveIndicator = "";
 		if (foodDiffPerTurn >= 0)

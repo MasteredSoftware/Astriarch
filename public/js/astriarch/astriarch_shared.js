@@ -9,19 +9,20 @@ Astriarch.Shared = {
 		"JOIN_CHAT_ROOM":2, //client and server bound message
 		"LOGOUT":3,
 		"LIST_GAMES":4, //client and server bound message
-		"CHANGE_GAME_OPTIONS":5, //client and server bound message
-		"CHANGE_PLAYER_NAME":6, //client and server bound message
-		"CREATE_GAME":7,
-		"JOIN_GAME":8,
-		"RESUME_GAME":9,
-		"START_GAME":10,
-		"END_TURN":11,
-		"UPDATE_PLANET_START":12,
-		"UPDATE_PLANET_FINISH":13,
-		"UPDATE_PLANET_BUILD_QUEUE":14,
-		"SEND_SHIPS":15,
-		"GAME_OVER":16,
-		"TEXT_MESSAGE":17 //client and server bound message
+		"GAME_LIST_UPDATED":5, //after a new game is created or updated, update lobby game list
+		"CHANGE_GAME_OPTIONS":6, //client and server bound message
+		"CHANGE_PLAYER_NAME":7, //client and server bound message
+		"CREATE_GAME":8,
+		"JOIN_GAME":9,
+		"RESUME_GAME":10,
+		"START_GAME":11,
+		"END_TURN":12,
+		"UPDATE_PLANET_START":13,
+		"UPDATE_PLANET_FINISH":14,
+		"UPDATE_PLANET_BUILD_QUEUE":15,
+		"SEND_SHIPS":16,
+		"GAME_OVER":17,
+		"TEXT_MESSAGE":18 //client and server bound message
 	},
 
 	ERROR_TYPE: {

@@ -2,6 +2,9 @@ Astriarch.CommControl = {
 	chatLog: null,
 	chatRoomInfo: null,
 	inputTextBox: null,
+	playerNameTextBox: null,
+	chatLogPlayerNameDiv: null,
+
 	playerName: null,
 	playerNumber: null,
 	playerSessions: null,
@@ -15,22 +18,43 @@ Astriarch.CommControl = {
 			}
 		});
 
-		var playerNameTextBox = $("#chatPlayerNameTextBox");
-		playerNameTextBox.val(Astriarch.LocalStorageInterface.Prefs.playerName);
-		playerNameTextBox.keyup(function (e) {
+		this.playerNameTextBox = $("#chatPlayerNameTextBox");
+		this.playerNameTextBox.keyup(function (e) {
 			if (e.keyCode == 13) {
-				var playerName = playerNameTextBox.val();
-				Astriarch.LocalStorageInterface.Prefs.playerName = playerName;
-				Astriarch.LocalStorageInterface.savePrefs();
-				Astriarch.CommControl.joinChatRoom(playerName, null);
+				Astriarch.CommControl.submitPlayerNameChange();
 			}
 		});
-		$("#chatLogChoosePlayerNameArea").show();
+		this.playerNameTextBox.change(function () {
+			Astriarch.CommControl.submitPlayerNameChange();
+		});
+
+
+		this.chatLogPlayerNameDiv = $("#chatLogPlayerName");
+		this.chatLogPlayerNameDiv.text(Astriarch.LocalStorageInterface.Prefs.playerName);
+		this.chatLogPlayerNameDiv.click(function(e){
+			//Only let them change their name from here when they are in the lobby
+			//TODO: make this more secure
+			if(!Astriarch.CommControl.playerNumber){
+				Astriarch.CommControl.playerNameTextBox.val(Astriarch.LocalStorageInterface.Prefs.playerName);
+
+				Astriarch.CommControl.chatLogPlayerNameDiv.hide();
+				Astriarch.CommControl.playerNameTextBox.show();
+				Astriarch.CommControl.playerNameTextBox.select();
+			}
+		});
+
+		Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, null);
+		$("#chatArea").show();
 	},
 
-	enableChatGUI: function(){
-		$("#chatLogChoosePlayerNameArea").hide();
-		$("#chatArea").show();
+	submitPlayerNameChange: function(){
+		Astriarch.CommControl.playerName = Astriarch.CommControl.playerNameTextBox.val();
+		Astriarch.LocalStorageInterface.Prefs.playerName = Astriarch.CommControl.playerName;
+		Astriarch.LocalStorageInterface.savePrefs();
+		Astriarch.CommControl.joinChatRoom(Astriarch.CommControl.playerName, Astriarch.CommControl.playerNumber);
+		Astriarch.CommControl.chatLogPlayerNameDiv.text(Astriarch.CommControl.playerName);
+		Astriarch.CommControl.playerNameTextBox.hide();
+		Astriarch.CommControl.chatLogPlayerNameDiv.show();
 	},
 
 	sendTextMessage: function(){
@@ -49,7 +73,6 @@ Astriarch.CommControl = {
 		this.playerNumber = playerNumber;
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, payload:{playerName:playerName, playerNumber:playerNumber}});
 		this.chatLog.html("");
-		Astriarch.CommControl.enableChatGUI();
 	},
 
 	setPlayerSessions: function(sessions){

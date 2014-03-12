@@ -108,18 +108,21 @@ head
 		td > span, td > img {
 			display: block;
 		}
-		#chatArea, #chatLogChoosePlayerNameArea {
+		#chatArea {
 			display: none;
 			color: white;
 			font-size: 12px;
 		}
-		#chatRoomInfo, #chatLog {
+		#chatRoomInfo, #chatLog, #chatLogPlayerNameArea {
 			width:260px;
 			overflow:auto;
 			background-color: rgba(128,128,128,0.4);
 		}
 		#topRulersList{
-			height:600px;
+			float:left;
+			margin-left:20px;
+			width:300px;
+			height:120px;
 			overflow:auto;
 			background-color: rgba(128,128,128,0.4);
 			color: white;
@@ -384,22 +387,29 @@ head
 		.wrapper
 			#mainnav.cf
 				img(src='img/SystemMasterLogo.png', style="float:left;")
-				ul
-					li
-						a(href='#', onclick="openWin('help.html');") help
-					li
-						a(href='#', onclick="openWin('news.html');") news
-					li
-						a(href='#', onclick="openWin('about.html');") about
+				div#mainnavMenu
+					ul
+						li
+							a(href='#', onclick="openWin('help.html');") help
+						li
+							a(href='#', onclick="openWin('news.html');") news
+						li
+							a(href='#', onclick="openWin('about.html');") about
+				div#topRulersList
+					div(style="color:#0A0") Top Rulers:
+						hr(style="background-color:#0A0;color:#0A0;height:2px;border:0")
+					ol(style="margin-left:20px")
+						each ruler in top_rulers
+							li #{ruler.playerName} (#{ruler.playerPoints})
 			#main.cf
 				// left sidebar
 				aside#left-sidebar(style='width: 260px; height: 600px;float:left;margin-right:5px;')
-					div#chatLogChoosePlayerNameArea
-						div Choose a Player Name to Chat:
-						input#chatPlayerNameTextBox(type='text', value='', style='width: 258px;')
 					div#chatArea
-						div#chatRoomInfo(style='height:98px;margin-bottom:4px;')
-						div#chatLog(style='height:478px;')
+						div#chatRoomInfo(style='height:94px;margin-bottom:4px;')
+						div#chatLog(style='height:458px;')
+						div#chatLogPlayerNameArea(style='margin-top:4px;')
+							div#chatLogPlayerName(style='height:20px;')
+							input#chatPlayerNameTextBox(type='text', value='', style='width: 258px; display:none')
 						div#chatInputArea
 							input#chatInputTextBox(type='text', value='', style='width: 258px;')
 
@@ -957,13 +967,8 @@ head
 											#EndTurnSummary(style='width: 380px; height: 210px;')
 
 					// right sidebar
-					aside#right-sidebar(style='width: 160px; height: 600px;float:right;margin-left:5px')
-						div#topRulersList
-							div(style="color:#0A0") Top Rulers:
-								hr(style="background-color:#0A0;color:#0A0;height:2px;border:0")
-							ol(style="margin-left:20px")
-								each ruler in top_rulers
-									li #{ruler.playerName} (#{ruler.playerPoints})
+					aside#right-sidebar(style='height: 600px;float:right;margin-left:5px')
+
 			#footer.cf(style='color: white;')
 				br
 				p

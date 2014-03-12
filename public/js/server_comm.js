@@ -3,6 +3,7 @@ var Astriarch = Astriarch || {};
 Astriarch.server_comm = {
 	ws:null,
 	registeredListeners:{},//key is messagetype, value is array of callbacks
+	messageQueue: [],
 
 	init: function(port){
 		var host = window.document.location.host.replace(/:.*/, '');
@@ -20,10 +21,13 @@ Astriarch.server_comm = {
 		message.payload.gameId = Astriarch.GameId;
 		if(this.ws.readyState == 1){
 			this.ws.send(JSON.stringify(message));
-		}
-		else{
+		} else {
+			this.messageQueue.push(message);
 			this.ws.onopen = function(e){
-				Astriarch.server_comm.ws.send(JSON.stringify(message));
+				for(var i = 0; i < Astriarch.server_comm.messageQueue.length; i++){
+					Astriarch.server_comm.ws.send(JSON.stringify(Astriarch.server_comm.messageQueue[i]));
+				}
+				Astriarch.server_comm.messageQueue = [];
 			}
 		}
 	},
