@@ -468,6 +468,8 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 				}
 			}
 
+			doc.dateLastPlayed = new Date();
+
 			returnData.gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
 
 			//finalize all planetViewWorkingData objects for players
@@ -971,6 +973,86 @@ var getPlayerFromGameModelById = function(gameModel, playerId){
 		}
 	}
 	return retPlayer;
+};
+
+var cleanupOldGames = function(callback){
+	//find ended games, or games that haven't started and were created awhile ago
+	// TODO: eventually we may want to cleanup old games that were started yet never finished
+	var expirationDateStarted = new Date();
+	expirationDateStarted.setDate(expirationDateStarted.getDate()-1);
+	var expirationDateEnded = new Date();
+	expirationDateEnded.setMinutes(expirationDateEnded.getMinutes()-60);
+	models.GameModel.find({$or:[{ended:true, "dateLastPlayed":{$lt:expirationDateEnded}},{started:false,"dateCreated":{$lt:expirationDateStarted}}]}, function(err, docs){
+		if(err){
+			console.error("Problem in cleanupOldGames:", err);
+		} else if(docs && docs.length > 0) {
+			console.log("cleanupOldGames found:", docs.length, "expired games to delete.");
+			async.eachSeries(docs, deleteGameById, callback);
+		} else {
+			console.log("cleanupOldGames did not find any expired games to delete.");
+			callback();
+		}
+	});
+};
+exports.cleanupOldGames = cleanupOldGames;
+
+var deleteGameById = function(gameDoc, callback){
+	//dependent models to remove:
+	//ChatRoomModel
+	//ChatRoomSessionModel
+	//PlanetViewWorkingDataModel
+	//GameModel
+	var gameId = gameDoc._id;
+	async.series([
+		function(cb){
+			models.ChatRoomSessionModel.find({"gameId":gameId}, function(err, chatRoomSessionModels){
+				if(err){
+					console.error("Problem in deleteGameById => ChatRoomSessionModel:", err);
+				} else {
+					for(var i in chatRoomSessionModels){
+						chatRoomSessionModels[i].remove();
+					}
+				}
+				cb(err);
+			});
+		},
+		function(cb){
+			models.ChatRoomModel.find({"gameId":gameId}, function(err, chatRoomModel){
+				if(err){
+					console.error("Problem in deleteGameById => ChatRoomSessionModel:", err);
+				} else {
+					for(var i in chatRoomModel){
+						chatRoomModel[i].remove();
+					}
+				}
+				cb(err);
+			});
+		},
+		function(cb){
+			models.PlanetViewWorkingDataModel.find({"gameId":gameId}, function(err, planetViewWorkingDataModels){
+				if(err){
+					console.error("Problem in deleteGameById => PlanetViewWorkingDataModel:", err);
+				} else {
+					for(var i in planetViewWorkingDataModels){
+						planetViewWorkingDataModels[i].remove();
+					}
+				}
+				cb(err);
+			});
+		},
+		function(cb){
+			models.GameModel.findByIdAndRemove(gameId, function(err){
+				if(err){
+					console.error("Problem removing game: ", err);
+				}
+				cb(err);
+			});
+		}
+	], function(err, results){
+		console.log("Removed Game and dependent Docs: ", gameId, ":", gameDoc.name);
+		callback(err, results);
+	});
+
 };
 
 

@@ -221,6 +221,9 @@ Astriarch.View.ShowMainMenu = function() {
 	Astriarch.GameId = null;
 
 	Astriarch.View.audioInterface.StartMenu();
+
+	//clear out the lobby control, once we get the response back from the LIST_GAMES message, it will populate
+	Astriarch.LobbyControl.refreshGameList({});
 			
 	$('#MainMenuButtonGameOver').hide();
 	$('#MainMenuButton').hide();
@@ -232,6 +235,8 @@ Astriarch.View.ShowMainMenu = function() {
 
 	//join the game lobby chat room
 	Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, null);
+
+	Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, payload:{}});
 };
 
 Astriarch.View.ShowPlanetView = function() {

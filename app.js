@@ -71,8 +71,18 @@ app.get('/', function(req, res){
 });
 
 var server = http.createServer(app).listen(app.get('port'), app.get('host'), function(){
-  console.log('Express server listening on port ' + app.get('port'));
+	console.log('Express server listening on port ' + app.get('port'));
+	if(config.cleanup_old_games.enabled){
+		cleanupOldGames();
+	}
 });
+
+var cleanupOldGames = function(){
+	gameController.cleanupOldGames(function(err){
+		setTimeout(function(){cleanupOldGames()}, config.cleanup_old_games.check_interval_seconds * 1000);
+	});
+};
+
 
 var Astriarch = require("./public/js/astriarch/astriarch_loader");
 

@@ -114,7 +114,8 @@ Astriarch.LobbyControl = {
 			$("#GameSelectedPlayer4Details").text(Astriarch.LobbyControl.GetOpponentSummaryText(gameOptions.opponentOptions[2]));
 			$("#GameSelectedNumberOfSystems").text(gameOptions.systemsToGenerate + " Systems");
 			$("#GameSelectedPlanetsPerSystem").text(gameOptions.planetsPerSystem + " Planets per System");
-			$("#GameSelectedDateCreated").text("Created At: " + gameInfo.dateCreated);
+			$("#GameSelectedDateCreated").text("Created At: " + new Date(gameInfo.dateCreated).toLocaleString());
+			$("#GameSelectedDateLastPlayed").text("Last Played: " + new Date(gameInfo.dateLastPlayed).toLocaleString());
 
 			//$("#GameSelectedDetails").text(JSON.stringify(Astriarch.LobbyControl.GamesAvailableListBox.SelectedItem.GameInfo));
 			if(gameInfo.started){
