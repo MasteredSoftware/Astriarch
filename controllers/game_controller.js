@@ -191,7 +191,7 @@ var updateGameById = function(gameId, data, callback){
 
 exports.ListLobbyGames = function(options, callback){
 	//find any game that is not started
-	models.GameModel.find({$or:[{started:false},{ended:false,"players.sessionId":options.sessionId}]}, function(err, docs){
+	models.GameModel.find({$or:[{started:false},{ended:false,"players.sessionId":options.sessionId}]}, null, {"sort": { dateLastPlayed : -1 }}, function(err, docs){
 		var lobbyGameSummaries = [];
 		if(err){
 			console.error("ListLobbyGames", err);
@@ -979,7 +979,7 @@ var cleanupOldGames = function(callback){
 	//find ended games, or games that haven't started and were created awhile ago
 	// TODO: eventually we may want to cleanup old games that were started yet never finished
 	var expirationDateStarted = new Date();
-	expirationDateStarted.setDate(expirationDateStarted.getDate()-1);
+	expirationDateStarted.setHours(expirationDateStarted.getHours()-2);
 	var expirationDateEnded = new Date();
 	expirationDateEnded.setMinutes(expirationDateEnded.getMinutes()-60);
 	models.GameModel.find({$or:[{ended:true, "dateLastPlayed":{$lt:expirationDateEnded}},{started:false,"dateCreated":{$lt:expirationDateStarted}}]}, function(err, docs){
