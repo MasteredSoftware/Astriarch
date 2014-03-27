@@ -11,7 +11,7 @@ var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 var GetHighScoreBoard = function(maxResults, callback){
 	maxResults = maxResults || 10;
 
-	models.GameHighScoreBoardModel.find({}, null, {"$maxScan":maxResults, "$orderby": { playerPoints : -1 }}, function(err, results){
+	models.GameHighScoreBoardModel.find({}, null, {"skip":0, "limit":maxResults, "sort": { playerPoints : -1 }}, function(err, results){
 		//console.log("GetHighScoreBoard:", err, results);
 		callback(err, results);
 	});
