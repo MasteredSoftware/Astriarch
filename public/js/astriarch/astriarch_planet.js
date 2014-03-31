@@ -690,7 +690,7 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypesByDiff = function(currentF
 		minerDiff !== 0 ||
 		workerDiff !== 0 )
 	{
-		throw new Error("Couldn't move workers in Planet.UpdatePopulationWorkerTypesByDiff!");
+		console.error("Couldn't move workers in Planet.UpdatePopulationWorkerTypesByDiff!", farmerDiff, minerDiff, workerDiff);
 	}
 };
 
@@ -782,7 +782,7 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypes = function(targetFarmers,
 		currentMiners != targetMiners ||
 		currentWorkers != targetWorkers)
 	{
-		throw new Error("Couldn't move workers in Planet.UpdatePopulationWorkerTypes!");
+		console.error("Couldn't move workers in Planet.UpdatePopulationWorkerTypes! targets: ", targetFarmers, targetMiners, targetWorkers, "currents:", currentFarmers, currentMiners, currentWorkers);
 	}
 };
 
@@ -798,7 +798,25 @@ Astriarch.Planet.prototype.getCitizenType = function(/*CitizenWorkerType*/ desir
 		if (citizens.content[i].WorkerType == desiredType)
 			return citizens.content[i];
 	}
-	throw new Error("Couldn't find: " + desiredType + " in Planet.getCitizenType!");
+    if(citizens.content.length > 0){
+        console.error("Couldn't find: " + desiredType + " in Planet.getCitizenType!");
+        //just return someone so that we don't get a null reference?
+        return citizens.content[0];
+    } else if(citizens.protesting.length > 0){
+        for (var p in citizens.protesting)
+        {
+            if (citizens.protesting[p].WorkerType == desiredType) {
+                console.error("No content citizens found in Planet.getCitizenType! Returning protesting citizen.");
+                return citizens.protesting[p];
+            }
+        }
+        console.error("Couldn't find: " + desiredType + " in Planet.getCitizenType for protesting citizens!");
+        //just return someone so that we don't get a null reference?
+        return citizens.protesting[0];
+    } else {
+        console.error("No citizens found in Planet.getCitizenType!");
+        return null;
+    }
 };
 
 /**

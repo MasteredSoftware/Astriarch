@@ -271,7 +271,10 @@ Astriarch.Fleet.prototype.SplitFleet = function(scoutCount, destoyerCount, cruis
 		battleshipCount > this.StarShips[Astriarch.Fleet.StarShipType.Battleship].length)
 	{
 		console.error("Cannot send more ships than in the fleet!", scoutCount, destoyerCount, cruiserCount, battleshipCount, this.StarShips);
-		throw new Error("Cannot send more ships than in the fleet!");
+        scoutCount = Math.min(scoutCount, this.StarShips[Astriarch.Fleet.StarShipType.Scout].length);
+        destoyerCount = Math.min(destoyerCount, this.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length);
+        cruiserCount = Math.min(cruiserCount, this.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length);
+        battleshipCount = Math.min(battleshipCount, this.StarShips[Astriarch.Fleet.StarShipType.Battleship].length);
 	}
 
 	for (var i = 0; i < scoutCount; i++)

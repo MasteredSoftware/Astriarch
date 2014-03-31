@@ -722,7 +722,7 @@ Astriarch.PlanetView = {
 					self.lastChanged = Astriarch.PlanetView.SliderValueClicked.Workers;
 					break;
 				default:
-					throw new Error("Unable to determine slider to change in PlanetViewControl!");
+					console.error("Unable to determine slider to change in PlanetViewControl!");
 					break;
 			}
 			
