@@ -61,7 +61,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.View.ColorsRGBA["red"] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//#ff0000
 		Astriarch.View.ColorsRGBA["purple"] = new Astriarch.Util.ColorRGBA(128, 0, 128, 255);//#800080
 		
-		Astriarch.View.audioInterface = new AudioInterface(false);
+		Astriarch.View.audioInterface = new AudioInterface(true);//if you have a slow connection maybe we should disable music downloads?
 
 		Astriarch.PlayerGameOptions = new Astriarch.Player.PlayerGameOptions();
 
