@@ -61,7 +61,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.View.ColorsRGBA["red"] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//#ff0000
 		Astriarch.View.ColorsRGBA["purple"] = new Astriarch.Util.ColorRGBA(128, 0, 128, 255);//#800080
 		
-		Astriarch.View.audioInterface = new AudioInterface();
+		Astriarch.View.audioInterface = new AudioInterface(false);
 
 		Astriarch.PlayerGameOptions = new Astriarch.Player.PlayerGameOptions();
 
@@ -533,18 +533,19 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 };
 
 Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopulation) {
-            
+    var element = null;
 	//clear out the appropriate ones
 	for (var i = maxPopulation + 1; i <= 16; i++) {
-		$("#PopulationImage" + i).css("background-image", '');
-		$("#PopulationImage" + i).prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
+        element = $("#PopulationImage" + i);
+        element.css("background-image", '');
+        element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 	}
 
 	for (var i = 1; i <= maxPopulation; i++) {
+        element = $("#PopulationImage" + i);
 		if (i <= population.length){
 			//check protest level of citizen, over 50% should show red, 0% show green, otherwise orange
 			var citizen = population[i - 1];
-			var element = $("#PopulationImage" + i);
 			if(citizen.ProtestLevel == 0){
 				element.css("background-image", 'url(img/PopulationSmallFilled.png)');
 				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
@@ -558,7 +559,8 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopul
 
 		}
 		else {
-			$("#PopulationImage" + i).css("background-image", 'url(img/PopulationSmallEmpty.png)');
+            element.css("background-image", 'url(img/PopulationSmallEmpty.png)');
+            element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 		}
 	}
 };

@@ -492,8 +492,9 @@ Astriarch.ServerController = {
 
 				//citizens will further protest depending on the amount of food shortages
 				for(var c = 0; c < planet.Population.length; c++){
-
-					if(Astriarch.NextRandom(0, 2) == 0){//only have 1/2 the population protest so the planet it's totally screwed
+                    //citizens on the home planet are more forgiving
+                    var protestDenominator = (planet == player.HomePlanet ? 4 : 2);
+					if(Astriarch.NextRandom(0, protestDenominator) == 0){//only have 1/2 the population protest so the planet isn't totally screwed
 						var citizen = planet.Population[c];
 						citizen.ProtestLevel += Astriarch.NextRandomFloat(0, foodShortageRatio);
 						if(citizen.ProtestLevel > 1){
@@ -501,6 +502,8 @@ Astriarch.ServerController = {
 						}
 					}
 				}
+
+
 
 				//have to check to see if we removed the last pop and loose this planet from owned planets if so
 				if (planet.Population.length == 0)
@@ -512,7 +515,13 @@ Astriarch.ServerController = {
 
 					//set last known fleet strength
 					planet.SetPlayerLastKnownPlanetFleetStrength(gameModel, player);
-				}
+				} else if(planet == player.HomePlanet){
+                    //if this planet is the player's home planet we need to ensure that there is at least one non-protesting citizen because otherwise there is no way to get out of starvation spiral
+                    var citizens = planet.GetPopulationByContentment();
+                    if(citizens.content.length == 0){
+                        planet.Population[0].ProtestLevel = 0;
+                    }
+                }
 			}
 		}
 
