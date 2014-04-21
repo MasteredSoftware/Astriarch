@@ -46,16 +46,16 @@ Astriarch.PlanetView = {
 	
 	init: function() {
 	
-		$( "#ButtonDemolishFarm, #ButtonDemolishMine, #ButtonDemolishFactory, #ButtonDemolishColony").button({ icons: {primary:'icon_demolish'}, text: false });
+		$( "#ButtonDemolishFarm, #ButtonDemolishMine, #ButtonDemolishFactory, #ButtonDemolishColony").button({ icons: {primary:'icon-16x16-demolish'}, text: false });
  
 		$('#SliderFarmers').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderFarmersValueChanged});
 		$('#SliderMiners').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderMinersValueChanged});
 		$('#SliderWorkers').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderWorkersValueChanged});
 	 
-		$("#ButtonBuildQueueAddSelectedItem").button({ icons: {primary:'icon_build_queue_add'}, text: false });
-		$("#ButtonBuildQueueRemoveSelectedItem").button({ icons: {primary:'icon_build_queue_remove'}, text: false });
-		$("#ButtonBuildQueueMoveSelectedItemDown").button({ icons: {primary:'icon_build_queue_down'}, text: false });
-		$("#ButtonBuildQueueMoveSelectedItemUp").button({ icons: {primary:'icon_build_queue_up'}, text: false });
+		$("#ButtonBuildQueueAddSelectedItem").button({ icons: {primary:'icon-16x16-build-queue-add'}, text: false });
+		$("#ButtonBuildQueueRemoveSelectedItem").button({ icons: {primary:'icon-16x16-build-queue-remove'}, text: false });
+		$("#ButtonBuildQueueMoveSelectedItemDown").button({ icons: {primary:'icon-16x16-build-queue-down'}, text: false });
+		$("#ButtonBuildQueueMoveSelectedItemUp").button({ icons: {primary:'icon-16x16-build-queue-up'}, text: false });
 		
 		$( "#ButtonBuildQueueAddSelectedItem" ).click(
 			function() {
@@ -151,23 +151,9 @@ Astriarch.PlanetView = {
 
 		Astriarch.PlanetView.planetMain = p;
 		
-		var planetImagePath = "";
-		switch (p.Type)
-		{
-			case Astriarch.Planet.PlanetType.PlanetClass2:
-				planetImagePath = "img/PlanetClass2.png";
-				break;
-			case Astriarch.Planet.PlanetType.PlanetClass1:
-				planetImagePath = "img/PlanetClass1.png";
-				break;
-			case Astriarch.Planet.PlanetType.DeadPlanet:
-				planetImagePath = "img/PlanetDead.png";
-				break;
-			case Astriarch.Planet.PlanetType.AsteroidBelt:
-				planetImagePath = "img/PlanetAsteroid.png";
-				break;
-		}
-		$('#PlanetImage').css("background-image", 'url(' + planetImagePath + ')');
+		var planetImageClass = Astriarch.GameTools.PlanetTypeToClassName(p.Type);
+
+		$('#PlanetImage').attr("class",planetImageClass);
 		
 		$('#TextBlockPlanetType').text(Astriarch.GameTools.PlanetTypeToFriendlyName(p.Type));
 		

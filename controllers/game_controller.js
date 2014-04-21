@@ -158,7 +158,7 @@ exports.CreateGame = function(options, callback){
 		if (err) {
 			callback(err);
 		} else {
-			console.log("Game saved: ", options, doc);
+			console.debug("Game saved: ", options, doc);
 			callback(null, doc);
 		}
 	});
@@ -184,7 +184,7 @@ var updateGameById = function(gameId, data, callback){
 			callback(err);
 			return;
 		}
-		console.log("updateGameById: ", numberAffected, raw);
+		console.debug("updateGameById: ", numberAffected, raw);
 		FindGameById(gameId, callback);
 	});
 };
@@ -208,7 +208,7 @@ exports.ListLobbyGames = function(options, callback){
 				}
 				lobbyGameSummaries.push(lobbyGameSummary);
 			}
-			console.log("Found lobby game docs: ", lobbyGameSummaries);
+			console.debug("Found lobby game docs: ", lobbyGameSummaries);
 		}
 		callback(err, lobbyGameSummaries);
 	});

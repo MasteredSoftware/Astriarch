@@ -235,57 +235,12 @@ head
 			font-weight:bold;
 			cursor: default;
 		}
-		.popImg, .asnImg
+		.popImg, .asnImg, .impImg
 		{
-			width: 10px;
-			height: 16px;
 			cursor: help;
-		}
-		.impImg
-		{
-			width: 16px;
-			height: 16px;
-			cursor: help;
-		}
-		.icon_demolish
-		{
-			background-image: url("img/ico_delete.png") !important;
-			width: 16px;
-			height: 16px;
-		}
-		.icon_build_queue_add
-		{
-			background-image: url("img/ico_add.png") !important;
-			width: 16px;
-			height: 16px;
-		}
-		.icon_build_queue_remove
-		{
-			background-image: url("img/ico_remove.png") !important;
-			width: 16px;
-			height: 16px;
-		}
-		.icon_build_queue_down
-		{
-			background-image: url("img/ico_down.png") !important;
-			width: 16px;
-			height: 16px;
-		}
-		.icon_build_queue_up
-		{
-			background-image: url("img/ico_up.png") !important;
-			width: 16px;
-			height: 16px;
-		}
-		.MainMenuButton
-		{
-			background-image: url("img/ico_main_menu.png") !important;
-			width: 16px;
-			height: 16px;
 		}
 		#MainMenuIcon
 		{
-			background-image: url("img/ico_main_menu.png") !important;
 			width: 16px;
 			height: 16px;
 			margin-left: 6px;
@@ -293,23 +248,10 @@ head
 		}
 		#SpeakerIcon
 		{
-			background-image: url("img/ico_speaker_on.png");
 			width: 16px;
 			height: 16px;
 			margin-left: 6px;
 			margin-bottom: 4px;
-		}
-		.SpeakerImgOn
-		{
-			background-image: url("img/ico_speaker_on.png") !important;
-			width: 16px;
-			height: 16px;
-		}
-		.SpeakerImgOff
-		{
-			background-image: url("img/ico_speaker_off.png") !important;
-			width: 16px;
-			height: 16px;
 		}
 		#SliderVolume
 		{
@@ -345,6 +287,7 @@ head
 			content:" ";
 			font-size:0;
 		}
+	link(rel="stylesheet", type="text/css", href="/css/main.css")
 	script(type='text/javascript').
 
 		function openWin(url) {
@@ -508,7 +451,7 @@ head
 											label#Player1NamePanel
 												| You
 										td(width='215', rowspan='4')
-											img(src='img/starfield3.png', width='200', height='170')
+											canvas#newGameControlStarfieldCanvas(style='background-color:#000', width='200', height='170')
 									tr(height='40')
 										td(width='210')
 											div.Player2Panel
@@ -550,23 +493,23 @@ head
 													div#TurnTimer(style="z-index:202;position:absolute;background:blue;width:100%;height:2px;left:1px;top:16px;")
 													span#TurnDisplay.smallStatusText(style='text-align:left;padding-left:5px;position:relative') Turn 1, Year 3001
 											td(width='16')
-												img(src='img/ico_population-16x16.png', title='Total Population')
+												span.icon-16x16-population(title='Total Population')
 											td
 												span#TextBlockPopulationAmount.playerSummaryStatusText
 											td(width='16')
-												img(src='img/ico_credits-16x16.png', title='Gold Amount')
+												span.icon-16x16-credits(title='Gold Amount')
 											td
 												span#TextBlockGoldAmount.playerSummaryStatusText
 											td(width='16')
-												img(src='img/ico_food-16x16.png', title='Food Amount')
+												span.icon-16x16-food(title='Food Amount')
 											td
 												span#TextBlockFoodAmount.playerSummaryStatusText
 											td(width='16')
-												img(src='img/ico_ore-16x16.png', title='Ore Amount')
+												span.icon-16x16-ore(title='Ore Amount')
 											td
 												span#TextBlockOreAmount.playerSummaryStatusText
 											td(width='16')
-												img(src='img/ico_iridium-16x16.png', title='Iridium Amount')
+												span.icon-16x16-iridium(title='Iridium Amount')
 											td
 												span#TextBlockIridiumAmount.playerSummaryStatusText
 
@@ -677,15 +620,15 @@ head
 															table#SelectedItemBuiltImprovementsGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
 																tr(height='32')
 																	td(width='32')
-																		img(src='img/FarmLarge.png', title='Farm Count')
+																		span.icon-32x32-FarmLarge(title='Farm Count')
 																	td(width='32')
-																		img(src='img/MineLarge.png', title='Mine Count')
+																		span.icon-32x32-MineLarge(title='Mine Count')
 																	td(width='32')
-																		img(src='img/FactoryLarge.png', title='Factory Count')
+																		span.icon-32x32-FactoryLarge(title='Factory Count')
 																	td(width='32')
-																		img(src='img/ColonyLarge.png', title='Colony Count')
+																		span.icon-32x32-ColonyLarge(title='Colony Count')
 																	td(width='32')
-																		img(src='img/SpaceplatformLarge.png', title='Space Platform Count')
+																		span.icon-32x32-SpaceplatformLarge(title='Space Platform Count')
 																tr(height='32')
 																	td(width='32')
 																		span#TextBlockFarmCount.planetStatusTextCentered(title='Farm Count')
@@ -702,15 +645,15 @@ head
 															table#SelectedItemPlanetaryFleetGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
 																tr(height='32')
 																	td(width='32')
-																		img(src='img/DefenderLarge.png', title='Defender Count')
+																		span.icon-32x32-DefenderLarge(title='Defender Count')
 																	td(width='32')
-																		img(src='img/ScoutLarge.png', title='Scout Count')
+																		span.icon-32x32-ScoutLarge(title='Scout Count')
 																	td(width='32')
-																		img(src='img/DestroyerLarge.png', title='Destroyer Count')
+																		span.icon-32x32-DestroyerLarge(title='Destroyer Count')
 																	td(width='32')
-																		img(src='img/CruiserLarge.png', title='Cruiser Count')
+																		span.icon-32x32-CruiserLarge(title='Cruiser Count')
 																	td(width='32')
-																		img(src='img/BattleshipLarge.png', title='Battleship Count')
+																		span.icon-32x32-BattleshipLarge(title='Battleship Count')
 																tr(height='32')
 																	td(width='32')
 																		span#TextBlockDefenderCount.planetStatusTextSmallCentered(title='Defender Count')
@@ -732,10 +675,10 @@ head
 																	td(colspan='3')  
 																tr(height='32')
 																	td(width='32')
-																		span#MainMenuIcon(title='Main Menu')
+																		span#MainMenuIcon.icon-16x16-main-menu(title='Main Menu')
 																		button#MainMenuButton(width='24', height='24', title='Main Menu', style='display: none;') Main Menu
 																	td(width='32')
-																		span#SpeakerIcon(title='Mute Audio')
+																		span#SpeakerIcon.icon-16x16-speaker-on(title='Mute Audio')
 																		button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
 																	td
 																		span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 5px;')
@@ -771,25 +714,25 @@ head
 													td(colspan='4')  
 												tr(height='32')
 													td(width='32')
-														img(src='img/FoodLarge.png', title='Food Per Turn')
+														span.icon-32x32-FoodLarge(title='Food Per Turn')
 													td(width='64')
 														span#TextBlockFoodPerTurn.playerStatusTextRight(title='Food Per Turn')
 													td(width='48', colspan='2')  
 												tr(height='32')
 													td(width='32')
-														img(src='img/OreLarge.png', title='Ore Per Turn')
+														span.icon-32x32-OreLarge(title='Ore Per Turn')
 													td(width='64')
 														span#TextBlockOrePerTurn.playerStatusTextRight(title='Ore Per Turn')
 													td(width='48', colspan='2')  
 												tr(height='32')
 													td(width='32')
-														img(src='img/IridiumLarge.png', title='Iridium Per Turn')
+														span.icon-32x32-IridiumLarge(title='Iridium Per Turn')
 													td(width='64')
 														span#TextBlockIridiumPerTurn.playerStatusTextRight(title='Iridium Per Turn')
 													td(width='48', colspan='2')  
 												tr(height='32')
 													td(width='32')
-														img(src='img/ProductionLarge.png', title='Production Per Turn')
+														span.icon-32x32-ProductionLarge(title='Production Per Turn')
 													td(width='64')
 														span#TextBlockProductionPerTurn.playerStatusTextRight(title='Production Per Turn')
 													td(width='48', colspan='2')  
@@ -797,7 +740,7 @@ head
 													td(colspan='4') Planetary Improvements:
 												tr(height='32')
 													td(width='32')
-														img(src='img/FarmLarge.png', title='Farm Count')
+														span.icon-32x32-FarmLarge(title='Farm Count')
 													td(width='64')
 														span#PlanetViewFarmCount.playerStatusTextRight(title='Farm Count')
 													td(width='16')  
@@ -805,7 +748,7 @@ head
 														button#ButtonDemolishFarm(width='24', height='24', title='Demolish one Farm') DF
 												tr(height='32')
 													td(width='32')
-														img(src='img/MineLarge.png', title='Mine Count')
+														span.icon-32x32-MineLarge(title='Mine Count')
 													td(width='64')
 														span#PlanetViewMineCount.playerStatusTextRight(title='Mine Count')
 													td(width='16')  
@@ -813,7 +756,7 @@ head
 														button#ButtonDemolishMine(width='24', height='24', title='Demolish one Mine') DM
 												tr(height='32')
 													td(width='32')
-														img(src='img/FactoryLarge.png', title='Factory Count')
+														span.icon-32x32-FactoryLarge(title='Factory Count')
 													td(width='64')
 														span#PlanetViewFactoryCount.playerStatusTextRight(title='Factory Count')
 													td(width='16')  
@@ -821,7 +764,7 @@ head
 														button#ButtonDemolishFactory(width='24', height='24', title='Demolish one Factory') DF
 												tr(height='32')
 													td(width='32')
-														img(src='img/ColonyLarge.png', title='Colony Count')
+														span.icon-32x32-ColonyLarge(title='Colony Count')
 													td(width='64')
 														span#PlanetViewColonyCount.playerStatusTextRight(title='Colony Count')
 													td(width='16')  
@@ -829,7 +772,7 @@ head
 														button#ButtonDemolishColony(width='24', height='24', title='Demolish one Colony') DC
 												tr(height='32')
 													td(width='32')
-														img(src='img/SpaceplatformLarge.png', title='Space Platform Count')
+														span.icon-32x32-SpaceplatformLarge(title='Space Platform Count')
 													td(width='64')
 														span#PlanetViewSpacePlatformCount.playerStatusTextRight(title='Space Platform Count')
 													td(width='48', colspan='2')  

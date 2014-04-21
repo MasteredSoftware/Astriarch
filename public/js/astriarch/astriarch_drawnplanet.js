@@ -14,7 +14,7 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 		
 		this.knownPlanetType = null;
 
-		this.planetImage = null;
+		this.planetImageBackgroundPosition = null;
 		
 		this.textBlockForeground = "yellow";
 		this.textBlockStrengthForeground = "yellow";
@@ -59,8 +59,7 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 		var centerX = this.ClientPlanet.OriginPoint.X + width/2;
 		var centerY = this.ClientPlanet.OriginPoint.Y + height/2;
 		
-		if(!this.planetImage)
-		{
+		if(this.planetImageBackgroundPosition === null) {
 			var controlRectWidth = width * 1.33;
 		 
 			ctx.beginPath();
@@ -83,33 +82,34 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 			ctx.closePath();
 			
 			this.drawText(ctx, centerX, centerY);
-		}
-		else//draw planet image
-		{
+		} else {//draw planet image
 			//TODO: should we cache these images?
 			var image = new Image();
 			var x = this.ClientPlanet.OriginPoint.X - 6;//images sizes are 32px (TODO: shouldn't be hard-coded?) (also not sure why it needs to be off by 1 (7 instead of 8)
 			var y = this.ClientPlanet.OriginPoint.Y - 7;
-			if(this.knownPlanetType == Astriarch.Planet.PlanetType.AsteroidBelt)
+			if(this.knownPlanetType == Astriarch.Planet.PlanetType.AsteroidBelt) {
 				x += 1;
+			}
 			var thisDrawnPlanet = this;
+			var tileSize = 32;
 			image.onload = function() {
 				//planetImageLoaded
-				ctx.drawImage(image, x, y);
+				//use spritesheet co-ordinates:
+				ctx.drawImage(image, 0, thisDrawnPlanet.planetImageBackgroundPosition, tileSize, tileSize, x, y, tileSize, tileSize);
+
 				thisDrawnPlanet.drawText(ctx, centerX, centerY);
 			};
-			image.src = this.planetImage;
+			image.src = Astriarch.View.SpriteSheetInfo.filename;
 			
 			//draw space platform and fleet rectangles
-			if(this.drawFleetRectangle)
-			{
+			if(this.drawFleetRectangle) {
 				var starshipImg = ctx.createImageData(this.fleetRectangle.Width, this.fleetRectangle.Height);
 				for(var i in this.fleetRectangleImageData)
 					starshipImg.data[i] = this.fleetRectangleImageData[i];
 				ctx.putImageData(starshipImg, this.fleetRectangle.X, this.fleetRectangle.Y);
 			}
-			if(this.drawSpacePlatformRectangle)
-			{
+
+			if(this.drawSpacePlatformRectangle) {
 				var platformImg = ctx.createImageData(this.spacePlatformRectangle.Width, this.spacePlatformRectangle.Height);
 				for(var i in this.spacePlatformRectangleImageData)
 					platformImg.data[i] = this.spacePlatformRectangleImageData[i];
@@ -151,29 +151,26 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 	 * Updates the DrawnPlanet's properties based on what the player knows about the planet
 	 * @this {Astriarch.DrawnPlanet}
 	 */
-	UpdatePlanetDrawingForPlayer: function(/*Player*/ player)
-	{	
-		this.planetImage = null;
+	UpdatePlanetDrawingForPlayer: function(/*Player*/ player) {
+		this.planetImageBackgroundPosition = null;
 		this.knownPlanetType = player.PlanetTypeIfKnownByPlayer(this.ClientPlanet);
 
-		if (this.knownPlanetType)
-		{
+		if (this.knownPlanetType) {
 			//if (this.ClientPlanet.Type == Astriarch.Planet.PlanetType.AsteroidBelt)
 			//	this.ClientPlanet.Width = Astriarch.Planet.Static.PLANET_SIZE * 1.5;
 
-			switch (this.knownPlanetType)
-			{
+			switch (this.knownPlanetType) {
 				case Astriarch.Planet.PlanetType.PlanetClass2:
-					this.planetImage = "img/PlanetClass2.png";
+					this.planetImageBackgroundPosition = Astriarch.View.SpriteSheetInfo.planetClass2Y;
 					break;
 				case Astriarch.Planet.PlanetType.PlanetClass1:
-					this.planetImage = "img/PlanetClass1.png";
+					this.planetImageBackgroundPosition = Astriarch.View.SpriteSheetInfo.planetClass1Y;
 					break;
 				case Astriarch.Planet.PlanetType.DeadPlanet:
-					this.planetImage = "img/PlanetDead.png";
+					this.planetImageBackgroundPosition = Astriarch.View.SpriteSheetInfo.planetDeadY;
 					break;
 				case Astriarch.Planet.PlanetType.AsteroidBelt:
-					this.planetImage = "img/PlanetAsteroid.png";
+					this.planetImageBackgroundPosition = Astriarch.View.SpriteSheetInfo.planetAsteroidY;
 					break;
 			}
 

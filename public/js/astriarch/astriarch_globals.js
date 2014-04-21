@@ -190,6 +190,25 @@ Astriarch.GameTools = {
 		}
 
 		return helpText;
+	},
+
+	PlanetTypeToClassName: function(/*Astriarch.Planet.PlanetType*/planetType){
+		var planetImageClass = null;
+		switch (planetType) {
+			case Astriarch.Planet.PlanetType.PlanetClass2:
+				planetImageClass = "icon-32x32-PlanetClass2";
+				break;
+			case Astriarch.Planet.PlanetType.PlanetClass1:
+				planetImageClass = "icon-32x32-PlanetClass1";
+				break;
+			case Astriarch.Planet.PlanetType.DeadPlanet:
+				planetImageClass = "icon-32x32-PlanetDead";
+				break;
+			case Astriarch.Planet.PlanetType.AsteroidBelt:
+				planetImageClass = "icon-32x32-PlanetAsteroid";
+				break;
+		}
+		return planetImageClass;
 	}
 
 };//Astriarch.GameTools

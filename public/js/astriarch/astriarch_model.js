@@ -143,12 +143,6 @@ Astriarch.Model.prototype.populatePlanets = function(){
 		possiblePlanetTypes.push(Astriarch.Planet.PlanetType.DeadPlanet);
 		possiblePlanetTypes.push(Astriarch.Planet.PlanetType.AsteroidBelt);
 
-		var assignedPlayerColor = new Array(4); //Color[4];
-		assignedPlayerColor[0] = new Astriarch.Util.ColorRGBA(0, 255, 0, 255);//Light Green
-		assignedPlayerColor[1] = new Astriarch.Util.ColorRGBA(200, 0, 200, 255);//Light Purple
-		assignedPlayerColor[2] = new Astriarch.Util.ColorRGBA(0, 128, 255, 255);//Light Blue
-		assignedPlayerColor[3] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//Light Red
-
 		for (var iSQ = 0; iSQ < subQuadrants.length; iSQ++)
 		{
 			var chosenPlanetSubQuadrant = iSQ;
@@ -206,7 +200,7 @@ Astriarch.Model.prototype.populatePlanets = function(){
 			if (assignPlayer)
 			{
 				initialPlanetOwner = this.Players[assignedPlayerIndex];
-				initialPlanetOwner.SetColor(assignedPlayerColor[assignedPlayerIndex]);
+				initialPlanetOwner.SetColor(Astriarch.Model.PlayerColors[assignedPlayerIndex]);
 			}
 
 			var p = new Astriarch.Planet(pt, planetBoundingHex.Id, planetBoundingHex, initialPlanetOwner);
@@ -312,6 +306,13 @@ Astriarch.Model.prototype.populatePlanets = function(){
 	}//foreach quadrant
 
 };//populate planets
+
+Astriarch.Model.PlayerColors = [
+	new Astriarch.Util.ColorRGBA(0, 255, 0, 255),//Light Green
+	new Astriarch.Util.ColorRGBA(200, 0, 200, 255),//Light Purple
+	new Astriarch.Util.ColorRGBA(0, 128, 255, 255),//Light Blue
+	new Astriarch.Util.ColorRGBA(255, 0, 0, 255)//Light Red
+];
 
 /**
  * Rect is another rectangle

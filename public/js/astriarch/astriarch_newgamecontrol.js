@@ -1,6 +1,12 @@
 Astriarch.NewGameControl = {
 	GameCreator: true, //if the player created the game
+	StarfieldCanvas: null,
+	StarfieldCanvasContext: null,
+	StarfieldCanvasSize: {w:200, h:170},
 	init: function(){
+
+		this.StarfieldCanvas = document.getElementById("newGameControlStarfieldCanvas");
+		this.StarfieldCanvasContext = this.StarfieldCanvas.getContext("2d");
 
 		$("#GameNameTextBox").val(Astriarch.LocalStorageInterface.Prefs.gameName);
 		$("#GameNameTextBox").change(function(){
@@ -38,6 +44,10 @@ Astriarch.NewGameControl = {
 				Astriarch.NewGameControl.SetupNewGame();
 			}
 		);
+
+		//Display the canvas representation
+		var gameOptions = this.getSelectedGameOptions();
+		this.drawGameOptionsRepresentationOnCanvas(gameOptions);
 	},
 
 	buildPlayerComboBoxes: function(gameOptions){
@@ -104,12 +114,14 @@ Astriarch.NewGameControl = {
 	changedGameOptions: function() {
 		var gameOptions = this.getSelectedGameOptions();
 		var name = $("#GameNameTextBox").val();
+		this.drawGameOptionsRepresentationOnCanvas(gameOptions);
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload:{gameOptions: gameOptions, name:name}});
 	},
 
 	OnGameOptionsChanged: function(message){
 		var gameOptions = message.payload.gameOptions;
+		this.drawGameOptionsRepresentationOnCanvas(gameOptions);
 		//refresh view with new game options
 		if(!Astriarch.NewGameControl.GameCreator){
 			$("#GameNameValue").text(message.payload.name);
@@ -196,5 +208,49 @@ Astriarch.NewGameControl = {
 		$('#startGameOptionsContainer').hide();
 
 		Astriarch.GameController.ResetView(message.payload);
+	},
+
+	drawGameOptionsRepresentationOnCanvas: function(gameOptions) {
+		var width = this.StarfieldCanvasSize.w;
+		var halfWidth = width/2;
+		var height = this.StarfieldCanvasSize.h;
+		var halfHeight = height/2;
+		this.StarfieldCanvasContext.clearRect(0, 0, width, height);
+
+		for(var i = 0; i < gameOptions.systemsToGenerate; i++){
+
+			var x = 0;
+			var y = 0;
+			if((gameOptions.systemsToGenerate == 2 && i == 1) || (gameOptions.systemsToGenerate == 4 && i == 3)) {
+				x = halfWidth;
+				y = halfHeight;
+			} else if ((gameOptions.systemsToGenerate == 3 || gameOptions.systemsToGenerate == 4) && i == 1) {
+				x = halfWidth;
+			} else if (gameOptions.systemsToGenerate == 3 && i == 2) {
+				x = width / 4;
+				y = halfHeight;
+			} else if (gameOptions.systemsToGenerate == 4 && i == 2) {
+				y = halfHeight;
+			}
+
+			// set up gradient
+			var radialGradient = this.StarfieldCanvasContext.createRadialGradient(
+				x + halfWidth/2, y + halfHeight/2, 0,
+				x + halfWidth/2, y + halfHeight/2, this.StarfieldCanvasSize.h/4);
+
+			var color = Astriarch.View.Colors[0];//white
+			if(i == 0 || gameOptions.opponentOptions[i - 1].type >= 0) {
+				color = Astriarch.Model.PlayerColors[i];
+			}
+
+			radialGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+			radialGradient.addColorStop(0.9, color);
+			radialGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+			// draw gradient
+			this.StarfieldCanvasContext.fillStyle = radialGradient;
+			this.StarfieldCanvasContext.fillRect(x, y, halfWidth, halfHeight);
+		}
+
 	}
 };

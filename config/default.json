@@ -1,5 +1,5 @@
 {
-	"loglevel":"ALL",
+	"loglevel":"INFO",
 	"use_compressed_js":true,
 	"mongodb":{
 		"gamedb_name":"astriarch",

@@ -354,7 +354,7 @@ wss.on('connection', function(ws) {
 });
 
 var sendUpdatedGameListToLobbyPlayers = function(gameDoc){
-	console.log("sendUpdatedGameListToLobbyPlayers:", gameDoc);
+	console.debug("sendUpdatedGameListToLobbyPlayers:", gameDoc);
 	var gameSummary = gameController.GetGameSummaryFromGameDoc(gameDoc);
 	var messageForPlayers = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.GAME_LIST_UPDATED, gameSummary);
 	gameController.GetChatRoomWithSessions(null, function(err, chatRoom){

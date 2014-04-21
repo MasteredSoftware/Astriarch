@@ -1,0 +1,67 @@
+@import "compass/utilities/sprites";
+@import "icon-10x16/*.png";
+@import "icon-16x16/*.png";
+@import "icon-32x32/*.png";
+
+@include all-icon-10x16-sprites;
+@include all-icon-16x16-sprites;
+@include all-icon-32x32-sprites;
+
+.icon-10x16-sprite {
+	width:10px;
+	height:16px;
+}
+
+.icon-10x16-Builder, .icon-10x16-Farmer, .icon-10x16-Miner, .icon-10x16-PopulationSmallEmpty, .icon-10x16-PopulationSmallFilled, .icon-10x16-PopulationSmallFilled_orange, .icon-10x16-PopulationSmallFilled_red {
+	@extend .icon-10x16-sprite
+}
+
+.icon-16x16-sprite {
+	width:16px;
+	height:16px;
+}
+
+.icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, .icon-16x16-food, .icon-16x16-iridium, .icon-16x16-main-menu, .icon-16x16-ore, .icon-16x16-population, .icon-16x16-speaker-off, .icon-16x16-speaker-on {
+	@extend .icon-16x16-sprite
+}
+
+.icon-32x32-sprite {
+	width:32px;
+	height:32px;
+}
+
+.icon-32x32-BattleshipLarge, .icon-32x32-ColonyLarge, .icon-32x32-CruiserLarge, .icon-32x32-DefenderLarge, .icon-32x32-DestroyerLarge, .icon-32x32-FactoryLarge, .icon-32x32-FarmLarge, .icon-32x32-FoodLarge, .icon-32x32-IridiumLarge, .icon-32x32-MineLarge, .icon-32x32-OreLarge, .icon-32x32-PlanetAsteroid, .icon-32x32-PlanetClass1, .icon-32x32-PlanetClass2, .icon-32x32-PlanetDead, .icon-32x32-ProductionLarge, .icon-32x32-ScoutLarge, .icon-32x32-SpaceplatformLarge {
+	@extend .icon-32x32-sprite
+}
+
+#ButtonSpeakerToggleMute > .icon-16x16-speaker-off {
+  	@extend .icon-16x16-speaker-off
+}
+
+#ButtonSpeakerToggleMute > .icon-16x16-speaker-on {
+	@extend .icon-16x16-speaker-on
+}
+
+#MainMenuButton > .icon-16x16-main-menu {
+	@extend .icon-16x16-main-menu
+}
+
+#ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add {
+	@extend .icon-16x16-build-queue-add
+}
+
+#ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove {
+  @extend .icon-16x16-build-queue-remove
+}
+
+#ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down {
+  @extend .icon-16x16-build-queue-down
+}
+
+#ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up {
+  @extend .icon-16x16-build-queue-up
+}
+
+#ButtonDemolishFarm > .icon-16x16-demolish {
+  @extend .icon-16x16-demolish
+}

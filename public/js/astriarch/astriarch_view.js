@@ -6,8 +6,7 @@ Astriarch.View = {jCanvasDraw:null,
 				  ContextBackground:null,
 				  CanvasPlayfieldLayer:null,
 				  CanvasFleetsLayer:null,
-				  BackgroundImages:[],
-				  BackgroundImagesLoaded:0,
+				  BackgroundSpriteSheetImage:null,
 				  BACKGROUND_COUNT:7,
 				  BACKGROUND_DARKNESS:30,
 				  DrawnPlanets:{},
@@ -16,7 +15,8 @@ Astriarch.View = {jCanvasDraw:null,
 				  ColorsRGBA: {"white":null ,"yellow":null ,"orange":null ,"blue":null ,"green":null ,"red":null ,"purple":null},
 				  sendingShipsTo:false,
 				  sendShipsFromHex: null,
-				  TurnSummaryItemsListBox:null
+				  TurnSummaryItemsListBox:null,
+				  SpriteSheetInfo:{filename:null, planetAsteroidY:null, planetDeadY:null, planetClass1Y:null, planetClass2Y:null}
 				};
 				  
 
@@ -46,7 +46,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.View.CanvasPlayfieldLayer.canvas.dblclick(function() {});
 		
 		//todo: maybe the load background images could be done in new html5 (background) thread?
-		setTimeout(function() { Astriarch.View.loadBackgroundImages(); }, 10);//give the browser a bit to render everything before loading and drawing
+		setTimeout(function() { Astriarch.View.loadBackgroundSpriteSheetImage(); }, 10);//give the browser a bit to render everything before loading and drawing
 		
 		Astriarch.View.ContextBackground.globalAlpha = 1.0;
 		
@@ -182,7 +182,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 		}
 	);
 	
-	$("#MainMenuButton").button({ icons: {primary:'MainMenuButton'}, text: false });
+	$("#MainMenuButton").button({ icons: {primary:'icon-16x16-main-menu'}, text: false });
 	
 	$( "#MainMenuButton" ).click(function() {
 			Astriarch.View.ShowMainMenu();
@@ -198,7 +198,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	$("#SliderVolume").mouseenter(function() { Astriarch.View.volumeSliderMouseEnter(); });
 	$("#SliderVolume").mouseleave(function() { Astriarch.View.volumeSliderMouseLeave(); });
 	
-	$("#ButtonSpeakerToggleMute").button({ icons: {primary:'SpeakerImgOn'}, text: false });
+	$("#ButtonSpeakerToggleMute").button({ icons: {primary:'icon-16x16-speaker-on'}, text: false });
 		
 	$( "#ButtonSpeakerToggleMute" ).click(
 		function() {
@@ -207,6 +207,28 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	);
 	
 	$("#SliderVolume").slider({value:1, step:0.1, min:0, max:1, orientation: 'vertical', slide: Astriarch.View.volumeSliderValueChanged});
+
+	//parse out css rules from spritesheets
+	var getPropertyValueFromCssClass = function(cssClassName, cssPropertyName){
+		var $dummy = $('<div class="'+cssClassName+'"></div>').hide().appendTo("body");
+		var propertyValue = $dummy.css(cssPropertyName);
+		if(cssPropertyName == "background-image"){
+			// strip url("...")
+			propertyValue = propertyValue.replace(/"/g,"").replace(/url\(|\)$/ig, "");
+		} else if(cssPropertyName == "background-position"){
+			// propertyValue = "0px -384px";
+			propertyValue = parseFloat(propertyValue.split(' ')[1].replace(/[^0-9-]/g, ''));
+		}
+
+		$dummy.remove();
+		return propertyValue;
+	};
+
+	Astriarch.View.SpriteSheetInfo.filename = getPropertyValueFromCssClass("icon-32x32-sprite", "background-image");
+	Astriarch.View.SpriteSheetInfo.planetAsteroidY = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetAsteroid", "background-position");
+	Astriarch.View.SpriteSheetInfo.planetDeadY = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetDead", "background-position");
+	Astriarch.View.SpriteSheetInfo.planetClass1Y = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetClass1", "background-position");
+	Astriarch.View.SpriteSheetInfo.planetClass2Y = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetClass2", "background-position");
 };
 
 Astriarch.View.NextTurn = function() {
@@ -537,7 +559,7 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopul
 	//clear out the appropriate ones
 	for (var i = maxPopulation + 1; i <= 16; i++) {
         element = $("#PopulationImage" + i);
-        element.css("background-image", '');
+		element.attr("class","popImg");
         element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 	}
 
@@ -547,19 +569,19 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopul
 			//check protest level of citizen, over 50% should show red, 0% show green, otherwise orange
 			var citizen = population[i - 1];
 			if(citizen.ProtestLevel == 0){
-				element.css("background-image", 'url(img/PopulationSmallFilled.png)');
+				element.addClass("icon-10x16-PopulationSmallFilled");
 				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 			} else if(citizen.ProtestLevel > 0.5){
-				element.css("background-image", 'url(img/PopulationSmallFilled_red.png)');
+				element.addClass("icon-10x16-PopulationSmallFilled_red");
 				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
 			} else {
-				element.css("background-image", 'url(img/PopulationSmallFilled_orange.png)');
+				element.addClass("icon-10x16-PopulationSmallFilled_orange");
 				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
 			}
 
 		}
 		else {
-            element.css("background-image", 'url(img/PopulationSmallEmpty.png)');
+			element.addClass("icon-10x16-PopulationSmallEmpty");
             element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 		}
 	}
@@ -571,15 +593,15 @@ Astriarch.View.updateSelectedItemImprovementSlotsPanel = function(improvementCou
 	//clear out the appropriate ones
 	for (var i = maxImprovements + 1; i <= 9; i++)
 	{
-		$("#PlanetaryImprovementSlotsImage" + i).css("background-image", '');
+		$("#PlanetaryImprovementSlotsImage" + i).attr("class","impImg");
 	}
 
 	for (var i = 1; i <= maxImprovements; i++)
 	{
 		if (i <= improvementCount)
-			$("#PlanetaryImprovementSlotsImage" + i).css("background-image", 'url(img/PlanetaryImprovementSlotFilled.png)');
+			$("#PlanetaryImprovementSlotsImage" + i).addClass("icon-16x16-PlanetaryImprovementSlotFilled");
 		else
-			$("#PlanetaryImprovementSlotsImage" + i).css("background-image", 'url(img/PlanetaryImprovementSlotEmpty.png)');
+			$("#PlanetaryImprovementSlotsImage" + i).addClass("icon-16x16-PlanetaryImprovementSlotEmpty");
 	}
 };
 
@@ -593,22 +615,22 @@ Astriarch.View.updateSelectedItemPopulationAssignmentsPanel = function() {
 	//clear out the appropriate ones
 	for (var i = farmers + miners + workers + 1; i <= 16; i++)
 	{
-		$("#PopulationAssignmentImage" + i).css("background-image", '');
+		$("#PopulationAssignmentImage" + i).attr("class","asnImg");
 	}
 
 	for (var i = 1; i <= farmers; i++)
 	{
-		$("#PopulationAssignmentImage" + i).css("background-image", 'url(img/Farmer.png)');
+		$("#PopulationAssignmentImage" + i).addClass("icon-10x16-Farmer");
 	}
 
 	for (var i = farmers + 1; i <= farmers + miners; i++)
 	{
-		$("#PopulationAssignmentImage" + i).css("background-image", 'url(img/Miner.png)');
+		$("#PopulationAssignmentImage" + i).addClass("icon-10x16-Miner");
 	}
 
 	for (var i = farmers + miners + 1; i <= farmers + miners + workers; i++)
 	{
-		$("#PopulationAssignmentImage" + i).css("background-image", 'url(img/Builder.png)');
+		$("#PopulationAssignmentImage" + i).addClass("icon-10x16-Builder");
 	}
 };
 
@@ -638,25 +660,17 @@ Astriarch.View.updateCanvasForPlayer = function() {
 	Astriarch.View.CanvasFleetsLayer.needsDisplay = true;
 };
 
-Astriarch.View.loadBackgroundImages = function() {
-	
-	for(var i = 0; i < Astriarch.View.BACKGROUND_COUNT; i++)
-	{
-		var image = new Image();
-		image.onload = function() {
-			//backgroundImageLoaded
-			Astriarch.View.BackgroundImagesLoaded++;
-			if(Astriarch.View.BackgroundImagesLoaded >= Astriarch.View.BACKGROUND_COUNT)
-			{
-				Astriarch.View.allBackgroundImagesLoaded();
-			}
-		};
-		image.src = "img/backgrounds/" + i + ".jpg";
-		Astriarch.View.BackgroundImages.push(image);
-	}
+Astriarch.View.loadBackgroundSpriteSheetImage = function() {
+
+	var image = new Image();
+	image.onload = function() {
+		Astriarch.View.backgroundSpriteSheetImageLoaded();
+	};
+	image.src = "img/background-sprites.jpg";
+	Astriarch.View.BackgroundSpriteSheetImage = image;
 };
 
-Astriarch.View.allBackgroundImagesLoaded = function() {
+Astriarch.View.backgroundSpriteSheetImageLoaded = function() {
 	var largeStars = Astriarch.View.populateStars();
 	Astriarch.View.populateBackgroundImages();
 	Astriarch.View.paintLargeStars(largeStars);
@@ -672,28 +686,24 @@ Astriarch.View.populateBackgroundImages = function() {
     var RECT_HEIGHT = 60.0;
 	
 	var chanceTable = {};
-	for(var i = 0; i < Astriarch.View.BACKGROUND_COUNT; i++)
-	{
+	for(var i = 0; i < Astriarch.View.BACKGROUND_COUNT; i++) {
 		chanceTable[i] = 100;
 	}
 
 	var rows = Math.floor(Astriarch.View.CanvasBackground[0].height / RECT_HEIGHT);
 	var cols = Math.floor(Astriarch.View.CanvasBackground[0].width / RECT_WIDTH);
 
-	for(var row = 0; row < rows; row += 2)
-	{
-		for(var col = 0; col < cols; col+=2)
-		{
-			if (Astriarch.NextRandom(0, 2) == 0)
-			{
+	for(var row = 0; row < rows; row += 2) {
+		for(var col = 0; col < cols; col+=2) {
+			if (Astriarch.NextRandom(0, 2) == 0) {
 				var offsetY = Astriarch.NextRandom(0, Math.floor(RECT_HEIGHT));
 				var offsetX = Astriarch.NextRandom(0, Math.floor(RECT_WIDTH));
 				var imageIndex = Astriarch.View.pickRandomTile(chanceTable);
 				
 				//set image opacity
 				Astriarch.View.ContextBackground.globalAlpha = Astriarch.NextRandom(70 - Astriarch.View.BACKGROUND_DARKNESS, 101 - Astriarch.View.BACKGROUND_DARKNESS) / 100.0;
-				
-				Astriarch.View.ContextBackground.drawImage(Astriarch.View.BackgroundImages[imageIndex], (col * RECT_WIDTH) + offsetX, (row * RECT_HEIGHT) + offsetY);
+				//use spritesheet co-ordinates:
+				Astriarch.View.ContextBackground.drawImage(Astriarch.View.BackgroundSpriteSheetImage, 0, imageIndex * RECT_HEIGHT, RECT_WIDTH, RECT_HEIGHT, (col * RECT_WIDTH) + offsetX, (row * RECT_HEIGHT) + offsetY, RECT_WIDTH, RECT_HEIGHT);
 			}
 		}
 	}
@@ -703,19 +713,18 @@ Astriarch.View.populateBackgroundImages = function() {
 Astriarch.View.pickRandomTile = function(chanceTable) {
 	
 	var chanceSum = 1;
-	for(var i in chanceTable)
+	for(var i in chanceTable) {
 		chanceSum += chanceTable[i];
+	}
 
 	var pickedNumber = Astriarch.NextRandom(0, chanceSum);
 
 	var currRangeLow = 0;
 
 	var imageIndex = 0;
-	for (var index in chanceTable)
-	{
+	for (var index in chanceTable) {
 		var thisChance = chanceTable[index];
-		if (pickedNumber < (thisChance + currRangeLow))
-		{
+		if (pickedNumber < (thisChance + currRangeLow))	{
 			imageIndex = index;
 			chanceTable[index] = Math.floor(thisChance / 2.0);
 			break;
@@ -891,11 +900,11 @@ Astriarch.View.toggleAudioMute = function() {
 	Astriarch.View.audioInterface.toggleMute();
 	
 	if(Astriarch.View.audioInterface.muted) {
-		$("#SpeakerIcon").css("background-image", 'url("img/ico_speaker_off.png")');
-		$("#ButtonSpeakerToggleMute > .ui-icon").removeClass("SpeakerImgOn").addClass("SpeakerImgOff");
+		$("#SpeakerIcon").removeClass("icon-16x16-speaker-on").addClass("icon-16x16-speaker-off");
+		$("#ButtonSpeakerToggleMute > .ui-icon").removeClass("icon-16x16-speaker-on").addClass("icon-16x16-speaker-off");
 	} else {
-		$("#SpeakerIcon").css("background-image", 'url("img/ico_speaker_on.png")');
-		$("#ButtonSpeakerToggleMute > .ui-icon").removeClass("SpeakerImgOff").addClass("SpeakerImgOn");
+		$("#SpeakerIcon").removeClass("icon-16x16-speaker-off").addClass("icon-16x16-speaker-on");
+		$("#ButtonSpeakerToggleMute > .ui-icon").removeClass("icon-16x16-speaker-off").addClass("icon-16x16-speaker-on");
 	}
 	
 };
