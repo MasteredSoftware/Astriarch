@@ -25,7 +25,7 @@ Astriarch.TradingControl = {
 		$("#TradeResourceRadioFood").button( { icons: {primary:'icon-16x16-food'} } );
 		$("#TradeResourceRadioOre").button( { icons: {primary:'icon-16x16-ore'} } );
 		$("#TradeResourceRadioIridium").button( { icons: {primary:'icon-16x16-iridium'} } );
-		//$( "#TradeResourceRadio" ).buttonset();
+		$( "#TradeResourceRadio" ).buttonset();
 
 		Astriarch.TradingControl.jqElm.buttonSubmitTrade.button();
 		Astriarch.TradingControl.jqElm.buttonSubmitTrade.button('disable');
