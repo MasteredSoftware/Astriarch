@@ -112,7 +112,7 @@ wss.on('connection', function(ws) {
 			switch(message.type){
 				case Astriarch.Shared.MESSAGE_TYPE.NOOP:
 					message.payload.message = "Hello From the Server";
-					message.payload.counter = message.payload.counter + 1 || 0;
+					message.payload.counter = (message.payload.counter || 0) + 1 ;
 					ws.send(JSON.stringify(message));
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.PING:
@@ -313,6 +313,24 @@ wss.on('connection', function(ws) {
 
 					});
 					break;
+				case Astriarch.Shared.MESSAGE_TYPE.SUBMIT_TRADE:
+					gameController.SubmitTrade(sessionId, message.payload, function(err, data) {
+						if (err) {
+							console.error("gameController.SubmitTrade: ", err);
+							message.payload = {"error": err};
+							ws.send(JSON.stringify(message));
+						}
+					});
+					break;
+				case Astriarch.Shared.MESSAGE_TYPE.CANCEL_TRADE:
+					gameController.CancelTrade(sessionId, message.payload, function(err, data) {
+						if (err) {
+							console.error("gameController.CancelTrade: ", err);
+							message.payload = {"error": err};
+							ws.send(JSON.stringify(message));
+						}
+					});
+					break;
 				case Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE:
 					//TODO: get the player name and player number from the existing chatRoom so they can't as easily spoof that
 					message.payload.text = (message.payload.text || "").trim();
@@ -429,7 +447,19 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 		}
 	}
 
-	var serializableClientModel = new Astriarch.SerializableClientModel(serializableModel.Turn.Number, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, {"TurnTimeLimitSeconds":serializableModel.TurnTimeLimitSeconds});
+	var tc = serializableModel.TradingCenter;
+	var clientPlayerTrades = [];
+	//collect trades for targetPlayer
+	for(var t in tc.currentTrades){
+		var trade = tc.currentTrades[t];
+		if(trade.playerId == targetPlayer.Id){
+			clientPlayerTrades.push(trade);
+		}
+	}
+
+	var clientTradingCenter = new Astriarch.ClientTradingCenter(tc.goldAmount, tc.foodResource, tc.oreResource, tc.iridiumResource, clientPlayerTrades);
+
+	var serializableClientModel = new Astriarch.SerializableClientModel(serializableModel.Turn.Number, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, clientTradingCenter, {"TurnTimeLimitSeconds":serializableModel.TurnTimeLimitSeconds});
 
 	return serializableClientModel;
 };

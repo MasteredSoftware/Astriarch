@@ -129,7 +129,7 @@ Astriarch.View.ShowNewGameOptions = function() {
 Astriarch.View.ClearGameBackgroundControls = function() {
 	Astriarch.View.ClearPlanetsAndFleets();
 	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').hide();
-	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').hide();
+	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton,#ButtonOpenTradingCenter').hide();
 };
 
 Astriarch.View.SetupGraphicalDOMElements = function() {
@@ -154,6 +154,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	Astriarch.SendShipsControl.init();
 	Astriarch.PlanetaryConflictControl.init();
 	Astriarch.GameOverControl.init();
+	Astriarch.TradingControl.init();
 	
 	$( "#PlanetViewButton" ).click(
 		function() {
@@ -199,12 +200,22 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	$("#SliderVolume").mouseleave(function() { Astriarch.View.volumeSliderMouseLeave(); });
 	
 	$("#ButtonSpeakerToggleMute").button({ icons: {primary:'icon-16x16-speaker-on'}, text: false });
-		
+
 	$( "#ButtonSpeakerToggleMute" ).click(
 		function() {
 			Astriarch.View.toggleAudioMute();
 		}
 	);
+
+	$("#ButtonOpenTradingCenter").button({ icons: {primary:'icon-16x16-trading'}, text: false });
+
+	$( "#ButtonOpenTradingCenter" ).click(
+		function() {
+			Astriarch.View.openTradingCenter();
+		}
+	);
+
+
 	
 	$("#SliderVolume").slider({value:1, step:0.1, min:0, max:1, orientation: 'vertical', slide: Astriarch.View.volumeSliderValueChanged});
 
@@ -409,6 +420,7 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 	$('#PlanetViewButton').button('disable');
 	$('#SendShipsButton').button('disable');
+	$('#ButtonOpenTradingCenter').button('disable');
 
 	var sb = "";
 
@@ -497,8 +509,11 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				{
 					$('#PlanetViewButton').button('enable');
 					
-					if (scoutCount != 0 || destroyerCount != 0 || cruiserCount != 0 || battleshipCount != 0)
+					if (scoutCount != 0 || destroyerCount != 0 || cruiserCount != 0 || battleshipCount != 0) {
 						$('#SendShipsButton').button('enable');
+					}
+
+					$('#ButtonOpenTradingCenter').button('enable');
 				}
 
 				//populate SelectedItemStatusDetails panel
@@ -911,4 +926,12 @@ Astriarch.View.toggleAudioMute = function() {
 
 Astriarch.View.volumeSliderValueChanged = function(event, ui) {
 	Astriarch.View.audioInterface.setVolume(ui.value);
+};
+
+Astriarch.View.openTradingCenter = function() {
+	var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//ClientPlanet
+	var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp);
+	if(p){
+		Astriarch.TradingControl.show(p);
+	}
 };

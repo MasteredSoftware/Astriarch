@@ -268,22 +268,23 @@ Astriarch.Planet.prototype.EnqueueProductionItemAndSpendResources = function(gam
 {
 	this.BuildQueue.push(item);
 	
-	this.SpendResources(gameModel, item.GoldCost, item.OreCost, item.IridiumCost, player);
+	this.SpendResources(gameModel, item.GoldCost, 0, item.OreCost, item.IridiumCost, player);
 };
 
 /**
  * reduces the players resources based on the cost
  * @this {Astriarch.Planet}
  */
-Astriarch.Planet.prototype.SpendResources = function(gameModel, goldCost, oreCost, iridiumCost, /*Player*/ player) {
+Astriarch.Planet.prototype.SpendResources = function(gameModel, goldCost, foodCost, oreCost, iridiumCost, /*Player*/ player) {
 	
 	player.Resources.GoldAmount -= goldCost;
 	
-	//first check for required ore and iridium on this planet
+	//first check for required food, ore and iridium on this planet
+	var foodNeeded = foodCost - this.Resources.SpendFoodAsPossible(foodCost);
 	var oreNeeded = oreCost - this.Resources.SpendOreAsPossible(oreCost);
 	var iridiumNeeded = iridiumCost - this.Resources.SpendIridiumAsPossible(iridiumCost);
 	
-	if(oreNeeded != 0 || iridiumNeeded != 0)
+	if(foodNeeded != 0 || oreNeeded != 0 || iridiumNeeded != 0)
 	{
 		var ownedPlanets = [];
 		for(var i in player.OwnedPlanets)
@@ -296,16 +297,18 @@ Astriarch.Planet.prototype.SpendResources = function(gameModel, goldCost, oreCos
 		ownedPlanets.sort(planetDistanceComparer.sortFunction);
 		
 		for(var i in ownedPlanets) {
+			if(foodNeeded != 0)
+				foodNeeded -= ownedPlanets[i].Resources.SpendFoodAsPossible(oreNeeded);
 			if(oreNeeded != 0)
 				oreNeeded -= ownedPlanets[i].Resources.SpendOreAsPossible(oreNeeded);
 			if(iridiumNeeded != 0)
 				iridiumNeeded -= ownedPlanets[i].Resources.SpendIridiumAsPossible(iridiumNeeded);
 			
-			if(oreNeeded == 0 && iridiumNeeded == 0)
+			if(foodNeeded == 0 && oreNeeded == 0 && iridiumNeeded == 0)
 				break;
 		}
-		if(oreNeeded != 0 || iridiumNeeded != 0){
-			console.warn("Problem spending ore and iridium as necessary! Player:", player.Name, this.Name, oreNeeded, iridiumNeeded);
+		if(foodNeeded != 0 || oreNeeded != 0 || iridiumNeeded != 0){
+			console.warn("Problem spending food, ore and iridium as necessary! Player:", player.Name, this.Name, foodNeeded, oreNeeded, iridiumNeeded);
 		}
 	}
 };
@@ -1254,6 +1257,25 @@ Astriarch.Planet.PlanetResources.prototype.AccumulateResourceRemainders = functi
 	{
 		this.IridiumAmount += Math.floor(this.IridiumRemainder / 1.0);
 		this.IridiumRemainder = this.IridiumRemainder % 1;
+	}
+};
+
+/**
+ * if amount to spend is higher than total food, subtracts food to zero, and returns how much was spent
+ * @this {Astriarch.Planet.PlanetResources}
+ * @return {number} the amount of food actually spent
+ */
+Astriarch.Planet.PlanetResources.prototype.SpendFoodAsPossible = function(/*int*/ amountToSpend) {
+	if (this.FoodAmount >= amountToSpend)
+	{
+		this.FoodAmount = this.FoodAmount - amountToSpend;
+		return amountToSpend;
+	}
+	else
+	{
+		var spent = this.FoodAmount;
+		this.FoodAmount = 0;
+		return spent;
 	}
 };
 

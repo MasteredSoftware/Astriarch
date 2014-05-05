@@ -283,9 +283,9 @@ Astriarch.Player.PlayerResources = function() {
  * @this {Astriarch.Player.PlayerResources}
  */
 Astriarch.Player.PlayerResources.prototype.AccumulateResourceRemainders = function() {
-	if (this.GoldRemainder >= 1.0)
+	if (this.GoldRemainder >= 1.0 || this.GoldRemainder <= -1.0)
 	{
-		this.GoldAmount += Math.floor(this.GoldRemainder / 1.0);
+		this.GoldAmount += this.GoldRemainder >= 1.0 ? Math.floor(this.GoldRemainder / 1.0) : Math.ceil(this.GoldRemainder / 1.0);
 		this.GoldRemainder = this.GoldRemainder % 1;
 	}
 };

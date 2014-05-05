@@ -21,7 +21,7 @@
 	height:16px;
 }
 
-.icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, .icon-16x16-food, .icon-16x16-iridium, .icon-16x16-main-menu, .icon-16x16-ore, .icon-16x16-population, .icon-16x16-speaker-off, .icon-16x16-speaker-on {
+.icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, .icon-16x16-food, .icon-16x16-iridium, .icon-16x16-main-menu, .icon-16x16-ore, .icon-16x16-population, .icon-16x16-speaker-off, .icon-16x16-speaker-on, .icon-16x16-trading {
 	@extend .icon-16x16-sprite
 }
 
@@ -42,6 +42,10 @@
 	@extend .icon-16x16-speaker-on
 }
 
+#ButtonOpenTradingCenter > .icon-16x16-trading {
+  @extend .icon-16x16-trading
+}
+
 #MainMenuButton > .icon-16x16-main-menu {
 	@extend .icon-16x16-main-menu
 }
@@ -50,7 +54,7 @@
 	@extend .icon-16x16-build-queue-add
 }
 
-#ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove {
+#ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove {
   @extend .icon-16x16-build-queue-remove
 }
 
@@ -63,5 +67,17 @@
 }
 
 #ButtonDemolishFarm > .icon-16x16-demolish {
+  @extend .icon-16x16-demolish
+}
+
+#ButtonDemolishMine > .icon-16x16-demolish {
+  @extend .icon-16x16-demolish
+}
+
+#ButtonDemolishFactory > .icon-16x16-demolish {
+  @extend .icon-16x16-demolish
+}
+
+#ButtonDemolishColony > .icon-16x16-demolish {
   @extend .icon-16x16-demolish
 }

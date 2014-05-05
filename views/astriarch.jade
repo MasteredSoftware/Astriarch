@@ -195,13 +195,16 @@ head
 			font-family: "Courier New";
 
 		}
-		.playerSummaryStatusText
+		.playerSummaryStatusText, .tradingCenterStatusText
 		{
 			text-align:left;
 			font-weight:bold;
 			font-size:14pt;
 			padding-left:5px;
 			min-width:32px;
+
+		}
+		.playerSummaryStatusText {
 			cursor: help;
 		}
 		.playerStatusText
@@ -267,6 +270,17 @@ head
 			vertical-align:top;
 			font-size:11px;
 		}
+
+		#ButtonTradesSubmittedRetractSelectedTrade {
+			margin-left:10px;
+		}
+
+		.radioButtonTrade {
+			padding-left: 20px;
+			width:80px;
+			display:inline-block;
+		}
+
 		.wrapper {
 			position: relative;
 			margin: 0 auto;
@@ -680,8 +694,10 @@ head
 																	td(width='32')
 																		span#SpeakerIcon.icon-16x16-speaker-on(title='Mute Audio')
 																		button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
-																	td
+																	td(width='64')
 																		span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 5px;')
+																	td(width='32')
+																		button#ButtonOpenTradingCenter(width='24', height='24', title='Open Trading Center') OTC
 											// end left hand status panel
 											td(width='615')
 												table(cellpadding='0', cellspacing='0')
@@ -889,6 +905,112 @@ head
 											span#TextBoxBattleships 0
 										td(width='200')
 											#SliderBattleships
+
+							#tradingControlDialog(style='width: 460px; height: 300px; display: none;')
+								table(cellpadding='0', cellspacing='0')
+									tr(height='90')
+										td
+											table(cellpadding='0', cellspacing='0', width='450', style='background-color: black;', class='greenText')
+												tr(height='30')
+													td(width='240')
+														span Your Stockpile (After Trades):
+													td(width='16')
+														span.icon-16x16-food(title='Food Amount')
+													td
+														span#tcdStockpileAmtFood.tradingCenterStatusText 0
+													td(width='16')
+														span.icon-16x16-ore(title='Ore Amount')
+													td
+														span#tcdStockpileAmtOre.tradingCenterStatusText 0
+													td(width='16')
+														span.icon-16x16-iridium(title='Iridium Amount')
+													td
+														span#tcdStockpileAmtIridium.tradingCenterStatusText 0
+												tr(height='30')
+													td(width='240')
+														span Galaxy Trading Center Stockpile:
+													td(width='16')
+														span.icon-16x16-food(title='Food Amount')
+													td
+														span#tcdTradingCenterAmtFood.tradingCenterStatusText 0
+													td(width='16')
+														span.icon-16x16-ore(title='Ore Amount')
+													td
+														span#tcdTradingCenterAmtOre.tradingCenterStatusText 0
+													td(width='16')
+														span.icon-16x16-iridium(title='Iridium Amount')
+													td
+														span#tcdTradingCenterAmtIridium.tradingCenterStatusText 0
+												tr(height='30')
+													td(width='240')
+														span Current Prices:
+													td(width='16')
+														span.icon-16x16-food(title='Food Price')
+													td
+														span#tcdStockpilePriceFood.tradingCenterStatusText 0
+													td(width='16')
+														span.icon-16x16-ore(title='Ore Price')
+													td
+														span#tcdStockpilePriceOre.tradingCenterStatusText 0
+													td(width='16')
+														span.icon-16x16-iridium(title='Iridium Price')
+													td
+														span#tcdStockpilePriceIridium.tradingCenterStatusText 0
+
+									tr(height='130')
+										td
+											table(cellpadding='0', cellspacing='0', width='450')
+												tr(height='25')
+													td(colspan='2')
+														span Submit Trade:
+												tr(height='25')
+													td(colspan='2')
+														label.radioButtonTrade
+															input#TradeTypeRadioBuy(type="radio", name="TradeTypeRadioGroup", value="buy", checked="checked")
+															| Buy
+														label.radioButtonTrade
+															input#TradeTypeRadioSell(type="radio", name="TradeTypeRadioGroup", value="sell")
+															| Sell
+												tr(height='25')
+													td(colspan='2')
+														label.radioButtonTrade
+															input#TradeResourceRadioFood(type="radio", name="TradeResourceRadioGroup", value="food", checked="checked")
+															| Food
+														label.radioButtonTrade
+															input#TradeResourceRadioOre(type="radio", name="TradeResourceRadioGroup", value="ore")
+															| Ore
+														label.radioButtonTrade
+															input#TradeResourceRadioIridium(type="radio", name="TradeResourceRadioGroup", value="iridium")
+															| Iridium
+												tr(height='55')
+													td(colspan='2')
+														table(width='450')
+															tr(height='30')
+																td
+																	span Amount
+																td
+																	span#TradeResourceAmount(style='text-align:right;padding-right:10px') 0
+																td(width='175')
+																	span
+																		#SliderTradeResourceAmount
+															tr(height='25')
+																td
+																	span Estimated Gold Amount
+																td
+																	span#TradeResourceEstimatedPrice(style='text-align:right;padding-right:10px;') 0
+																td
+																	span &nbsp
+												tr(height='25')
+													td(colspan='2')
+														button#ButtonSubmitTrade(width='75', height='24', title='Submit Trade') Submit Trade
+									tr(height='30')
+										td
+											| Submitted Trades
+											button#ButtonTradesSubmittedRetractSelectedTrade(width='24', height='24', title='Retract Selected Trade') RST
+									tr(height='50')
+										td
+											#TradesSubmittedListBox(style='height: 50px;')
+
 							#planetaryConflictDialog(style='width: 380px; height: 220px; display: none;')
 								table
 									tr(height='200')

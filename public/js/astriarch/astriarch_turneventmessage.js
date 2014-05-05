@@ -27,19 +27,21 @@ Astriarch.TurnEventMessage.TurnEventMessageComparerSortFunction = function(a, b)
 Astriarch.TurnEventMessage.TurnEventMessageType = {
 	ResourcesAutoSpent: 0,
 	PopulationGrowth: 1,
-	ImprovementBuilt: 2,
-	ShipBuilt: 3,
-	ImprovementDemolished: 4,
-	BuildQueueEmpty: 5,
-	CitizensProtesting: 6,
-	InsufficientFood: 7,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
-	DefendedAgainstAttackingFleet: 8,
-	AttackingFleetLost: 9,
-	PlanetCaptured: 10,
-	PopulationStarvation: 11,
-	FoodShortageRiots: 12,
-	PlanetLostDueToStarvation: 13,//this is bad but you probably know it's bad
-	PlanetLost: 14
+	TradesExecuted: 2,
+	TradesNotExecuted: 3,
+	ImprovementBuilt: 4,
+	ShipBuilt: 5,
+	ImprovementDemolished: 6,
+	BuildQueueEmpty: 7,
+	CitizensProtesting: 8,
+	InsufficientFood: 9,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
+	DefendedAgainstAttackingFleet: 10,
+	AttackingFleetLost: 11,
+	PlanetCaptured: 12,
+	PopulationStarvation: 13,
+	FoodShortageRiots: 14,
+	PlanetLostDueToStarvation: 15,//this is bad but you probably know it's bad
+	PlanetLost: 16
 };
 
 /**

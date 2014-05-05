@@ -525,6 +525,71 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 
 };
 
+exports.SubmitTrade = function(sessionId, payload, callback){
+
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		if(!payload.trade){
+			cb("No Trade Submitted.");
+			return;
+		}
+
+		getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.trade.planetId, function(err, player, planetSource, gameModel){
+			if(err){
+				callback(err);
+				return;
+			}
+			payload.trade.playerId = player.Id;
+
+			payload.trade.amount = payload.trade.amount || 0;
+
+			gameModel.TradingCenter.currentTrades.push(payload.trade);
+
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
+		});
+	}, 0, function(err, doc){
+		callback(err, doc);
+	});
+
+};
+
+exports.CancelTrade = function(sessionId, payload, callback){
+
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		if(payload.tradeIndex == null){
+			cb("No Trade Index Submitted.");
+			return;
+		}
+
+		getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetId, function(err, player, planetSource, gameModel){
+			if(err){
+				callback(err);
+				return;
+			}
+			var playerTradeCount = 0;
+			for(var i=0; i < gameModel.TradingCenter.currentTrades.length; i++){
+				var trade = gameModel.TradingCenter.currentTrades[i];
+				if(trade.playerId == player.Id){
+					if(payload.tradeIndex == playerTradeCount){
+						gameModel.TradingCenter.currentTrades.splice(i, 1);
+						break;
+					}
+					playerTradeCount++;
+				}
+			}
+
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
+		});
+	}, 0, function(err, doc){
+		callback(err, doc);
+	});
+
+};
+
+
 var applyPlanetViewWorkingDataObjectsToModel = function(planetViewWorkingDataModels, gameModel){
 	var planet = null;
 	var planetsById = {};//id:planet
@@ -551,7 +616,7 @@ var applyPlanetViewWorkingDataObjectsToModel = function(planetViewWorkingDataMod
 		var goldCost = originalResources.GoldAmount - pvwd.workingResources.GoldAmount;
 		var oreCost = originalResources.OreAmount - pvwd.workingResources.OreAmount;
 		var iridiumCost = originalResources.IridiumAmount - pvwd.workingResources.IridiumAmount;
-		planet.SpendResources(gameModel, goldCost, oreCost, iridiumCost, planet.Owner);
+		planet.SpendResources(gameModel, goldCost, 0, oreCost, iridiumCost, planet.Owner);
 		//add the remainders to the planets resources and accumulate
 		planet.Owner.Resources.GoldRemainder = pvwd.workingResources.GoldRemainder;
 		planet.Owner.Resources.OreRemainder = pvwd.workingResources.OreRemainder;

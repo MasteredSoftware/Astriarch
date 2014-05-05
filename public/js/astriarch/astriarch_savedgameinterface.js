@@ -43,7 +43,14 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	var newModel = new Astriarch.Model(/*List<Player>*/ players, options, true);
 	newModel.ShowUnexploredPlanetsAndEnemyPlayerStats = serializedModel.ShowUnexploredPlanetsAndEnemyPlayerStats;
 	newModel.Turn = extend(true, newModel.Turn, serializedModel.Turn);
-	
+
+	newModel.TradingCenter = new Astriarch.TradingCenter();
+	newModel.TradingCenter.goldAmount = serializedModel.TradingCenter.goldAmount;
+	newModel.TradingCenter.currentTrades = serializedModel.TradingCenter.currentTrades;
+	newModel.TradingCenter.foodResource = Astriarch.SavedGameInterface.getTradingCenterResourceFromSerializableTradingCenterResource(serializedModel.TradingCenter.foodResource);
+	newModel.TradingCenter.oreResource = Astriarch.SavedGameInterface.getTradingCenterResourceFromSerializableTradingCenterResource(serializedModel.TradingCenter.oreResource);
+	newModel.TradingCenter.iridiumResource = Astriarch.SavedGameInterface.getTradingCenterResourceFromSerializableTradingCenterResource(serializedModel.TradingCenter.iridiumResource);
+
 	var planets = [];
 	var planetsById = {};//id:planet
 	for(var i in serializedModel.SerializablePlanets)
@@ -94,6 +101,11 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	
 	return newModel;
 };
+
+Astriarch.SavedGameInterface.getTradingCenterResourceFromSerializableTradingCenterResource = function(stcr){
+	return new Astriarch.TradingCenter.Resource(stcr.type, stcr.amount, stcr.desiredAmount, stcr.priceMin, stcr.priceMax);
+};
+
 
 Astriarch.SavedGameInterface.setPlayerLastKnownPlanetFleetStrength = function(/*Player*/p, /*SerializablePlayer*/sp, gameGrid, clientPlayersById){
 
@@ -324,6 +336,8 @@ Astriarch.SerializableModel = function(/*Astriarch.Model*/ model) {
     //public bool EnsureEachSystemContainsAllPlanetTypes = true;//TODO: implement if false every planet type (except home) will be randomly selected
 
 	this.Turn = model.Turn;
+
+	this.TradingCenter = model.TradingCenter;
 	
 	//this.Players = players;//model has Players:Astriarch.Player
 	this.SerializablePlayers = [];

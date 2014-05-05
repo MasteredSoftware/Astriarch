@@ -8,7 +8,7 @@ Astriarch.GameController = {
 
 Astriarch.GameController.ResetView = function(clientGameModel) {
 	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').show();
-	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').show();
+	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton,#ButtonOpenTradingCenter').show();
 
 	var gameGrid = new Astriarch.Grid(615.0, 480.0);//TODO: externalize later
 	Astriarch.ClientGameModel = Astriarch.ClientModelInterface.GetClientModelFromSerializableClientModel(clientGameModel, gameGrid);
@@ -85,7 +85,7 @@ Astriarch.GameController.OnGameOverMessageResponse = function(message) {
 
 	Astriarch.GameController.UpdateUIForEndTurnMessage(message);
 
-	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton').hide();
+	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton,#ButtonOpenTradingCenter').hide();
 
 	Astriarch.GameOverControl.show(message.payload.winningSerializablePlayer, message.payload.playerWon, message.payload.score);
 };

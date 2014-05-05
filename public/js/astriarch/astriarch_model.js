@@ -19,6 +19,8 @@ Astriarch.Model = function(/*List<Player>*/ players, /*{systemsToGenerate:4, pla
 
 	this.Turn = new Astriarch.Model.Turn();
 
+	this.TradingCenter = new Astriarch.TradingCenter();
+
 	this.Players = players;
 	this.PlayersDestroyed = [];
 	

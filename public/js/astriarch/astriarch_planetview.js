@@ -897,7 +897,7 @@ Astriarch.PlanetView = {
 		var goldCost = originalResources.GoldAmount - self.workingResources.GoldAmount;
 		var oreCost = originalResources.OreAmount - self.workingResources.OreAmount;
 		var iridiumCost = originalResources.IridiumAmount - self.workingResources.IridiumAmount;
-		self.planetMain.SpendResources(Astriarch.ClientGameModel, goldCost, oreCost, iridiumCost, self.planetMain.Owner);
+		self.planetMain.SpendResources(Astriarch.ClientGameModel, goldCost, 0, oreCost, iridiumCost, self.planetMain.Owner);
 		//add the remainders to the planets resources and accumulate
 		self.planetMain.Owner.Resources.GoldRemainder = self.workingResources.GoldRemainder;
 		self.planetMain.Owner.Resources.OreRemainder = self.workingResources.OreRemainder;

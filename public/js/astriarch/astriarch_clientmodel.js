@@ -29,7 +29,7 @@ Astriarch.ClientModelInterface = {
 
 		Astriarch.SavedGameInterface.setPlayerLastKnownPlanetFleetStrength(mainPlayer, scm.SerializableMainPlayer, gameGrid, clientPlayersById);
 
-		return new Astriarch.ClientModel(scm.TurnNumber, mainPlayer, clientPlayers, clientPlanets, gameGrid, scm.Options);
+		return new Astriarch.ClientModel(scm.TurnNumber, mainPlayer, clientPlayers, clientPlanets, scm.ClientTradingCenter, gameGrid, scm.Options);
 	},
 
 	GetClientPlayerFromSerializableClientPlayer: function(scp){
@@ -70,13 +70,15 @@ Astriarch.ClientModelInterface = {
 	}
 };
 
-Astriarch.ClientModel = function(turnNumber, mainPlayer, clientPlayers, clientPlanets, gameGrid, options){
+Astriarch.ClientModel = function(turnNumber, mainPlayer, clientPlayers, clientPlanets, clientTradingCenter, gameGrid, options){
 	this.Turn = new Astriarch.Model.Turn();
 	this.Turn.Number = turnNumber;
 
 	this.MainPlayer = mainPlayer;//Astriarch.Player
 	this.ClientPlayers = clientPlayers;
 	this.ClientPlanets = clientPlanets;
+
+	this.ClientTradingCenter = clientTradingCenter;
 
 	this.GameGrid = gameGrid;
 
@@ -105,7 +107,16 @@ Astriarch.ClientPlanet = function(id, name, originPoint, gameGrid, boundingHex, 
 	this.Type = type; //NOTE: Populated when the main player explores the planet
 };
 
-Astriarch.SerializableClientModel = function(turnNumber, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, options){
+Astriarch.ClientTradingCenter = function(goldAmount, foodResource, oreResource, iridiumResource, clientPlayerTrades){
+	this.goldAmount = goldAmount;
+	this.foodResource = foodResource;
+	this.oreResource = oreResource;
+	this.iridiumResource = iridiumResource;
+
+	this.clientPlayerTrades = clientPlayerTrades;
+};
+
+Astriarch.SerializableClientModel = function(turnNumber, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, clientTradingCenter, options){
 	this.TurnNumber = turnNumber;
 
 	this.SerializableMainPlayer = serializableMainPlayer;//Astriarch.SerializablePlayer
@@ -114,6 +125,8 @@ Astriarch.SerializableClientModel = function(turnNumber, serializableMainPlayer,
 
 	//we need serializable planets for the main player's owned planets, so that we can reconstruct the main player without sending all the serializable planet objects
 	this.MainPlayerOwnedSerializablePlanets = mainPlayerOwnedSerializablePlanets; //Dictionary<int, SerializablePlanet>
+
+	this.ClientTradingCenter = clientTradingCenter;
 
 	this.Options = options || {"TurnTimeLimitSeconds":0};
 };

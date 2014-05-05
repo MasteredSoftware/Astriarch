@@ -22,7 +22,10 @@ Astriarch.Shared = {
 		"UPDATE_PLANET_BUILD_QUEUE":15,
 		"SEND_SHIPS":16,
 		"GAME_OVER":17,
-		"TEXT_MESSAGE":18 //client and server bound message
+		"SUBMIT_TRADE":18,
+		"CANCEL_TRADE":19,
+		"TEXT_MESSAGE":20 //client and server bound message
+
 	},
 
 	ERROR_TYPE: {

@@ -30,6 +30,9 @@ Astriarch.ServerController = {
 			}
 		}
 
+		//execute trades
+		Astriarch.ServerController.executeCurrentTrades(gameModel, endOfTurnMessagesByPlayerId);
+
 		//move ships called for all players before the rest of the end turn
 		for (var i in gameModel.Players)
 		{
@@ -68,7 +71,7 @@ Astriarch.ServerController = {
 					var oreCost = Math.floor(totalStrengthRepaired / 2);
 					var iridiumCost = Math.floor(totalStrengthRepaired / 4);
 					if(goldCost || oreCost || iridiumCost){
-						p.SpendResources(gameModel, goldCost, oreCost, iridiumCost, p.Owner);
+						p.SpendResources(gameModel, goldCost, 0, oreCost, iridiumCost, p.Owner);
 						if(!(p.Owner.Id in resourcesAutoSpentByPlayerId)){
 							resourcesAutoSpentByPlayerId[p.Owner.Id] = {"gold":0, "ore":0, "iridium":0};
 						}
@@ -141,6 +144,109 @@ Astriarch.ServerController = {
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.growPlayerPlanetPopulation(player));
 
 		return endOfTurnMessages;
+	},
+
+	executeCurrentTrades: function(gameModel, endOfTurnMessagesByPlayerId){
+		//go through the current trades and deduct from the stockpile for buy orders and add to the stockpile for sell orders
+		var executedStatusListdByPlayerId = {};
+
+		var tc = gameModel.TradingCenter;
+
+		var playersById = {};
+		for(var pi in gameModel.Players) {
+			var p = gameModel.Players[pi];
+			playersById[p.Id] = p;
+			executedStatusListdByPlayerId[p.Id] = [];
+		}
+
+		for(var i = 0; i < tc.currentTrades.length; i++){
+			var executedStatus = null;
+			var trade = tc.currentTrades[i];
+			var player = playersById[trade.playerId];
+			if(player){
+				var planet = player.OwnedPlanets[trade.planetId];
+				if(planet){
+					//{executed:false, foodAmount:0, oreAmount:0, iridiumAmount:0, tradeGoldAmount:0}
+					executedStatus = tc.executeTrade(gameModel, player, planet, trade);
+					executedStatus.trade = trade;
+					executedStatus.planet = planet;
+					if(executedStatus.executed){
+						//recalculate current prices in trading center for each trade executed
+						tc.recalculatePrices();
+					}
+				} else {
+					console.warn("Unable to find planet in executeCurrentTrades:", trade);
+				}
+			} else {
+				console.warn("Unable to find player in executeCurrentTrades:", trade);
+			}
+
+			if (executedStatus) {
+				executedStatusListdByPlayerId[trade.playerId].push(executedStatus);
+			}
+		}
+
+		//create summary endOfTurnMessages
+		for(var pId in executedStatusListdByPlayerId){
+			var resourcesBought = {food:0,ore:0,iridium:0,goldSpent:0, tradeCount: 0};
+			var resourcesSold = {food:0,ore:0,iridium:0,goldEarned:0, tradeCount: 0};
+			var resourcesNotBought = {food:0,ore:0,iridium:0,goldSpent:0, tradeCount: 0};
+			var resourcesNotSold = {food:0,ore:0,iridium:0,goldEarned:0, tradeCount: 0};
+			for(var t in executedStatusListdByPlayerId[pId]){
+				var executedStatus = executedStatusListdByPlayerId[pId][t];
+
+				var rbTarget = resourcesNotBought;
+				var rsTarget = resourcesNotSold;
+				if(executedStatus.executed) {
+					rbTarget = resourcesBought;
+					rsTarget = resourcesSold;
+				}
+				if (executedStatus.trade.tradeType == Astriarch.TradingCenter.TradeType.BUY) {
+					rbTarget.food += executedStatus.foodAmount;
+					rbTarget.ore += executedStatus.oreAmount;
+					rbTarget.iridium += executedStatus.iridiumAmount;
+					rbTarget.goldSpent += executedStatus.tradeGoldAmount;
+					rbTarget.tradeCount++;
+				} else {
+					rsTarget.food += executedStatus.foodAmount;
+					rsTarget.ore += executedStatus.oreAmount;
+					rsTarget.iridium += executedStatus.iridiumAmount;
+					rsTarget.goldEarned += executedStatus.tradeGoldAmount;
+					rsTarget.tradeCount++;
+				}
+
+			}
+			if(resourcesBought.tradeCount || resourcesSold.tradeCount){
+				var tradeCount = (resourcesBought.tradeCount + resourcesSold.tradeCount);
+				var message = tradeCount > 1 ? tradeCount + " Trades Executed," : tradeCount + " Trade Executed,";
+				if(resourcesBought.goldSpent){
+					message += " Spent " + resourcesBought.goldSpent.toFixed(2) + " gold buying: " + (resourcesBought.food ? resourcesBought.food + " food, " : "") + (resourcesBought.ore ? resourcesBought.ore + " ore, " : "") + (resourcesBought.iridium ? resourcesBought.iridium + " iridium, " : "");
+				}
+				if(resourcesSold.goldEarned){
+					message +=  " Earned " + resourcesSold.goldEarned.toFixed(2) + " gold selling: " + (resourcesSold.food ? resourcesSold.food + " food, " : "") + (resourcesSold.ore ? resourcesSold.ore + " ore, " : "") + (resourcesSold.iridium ? resourcesSold.iridium + " iridium, " : "");
+				}
+				message = message.substring(0, message.length - 2);
+
+
+				endOfTurnMessagesByPlayerId[pId].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.TradesExecuted, null, message));
+			}
+
+			if(resourcesNotBought.tradeCount || resourcesNotSold.tradeCount) {
+				var tradeCount = (resourcesNotBought.tradeCount + resourcesNotSold.tradeCount);
+				var message = tradeCount > 1 ? tradeCount + " Trades Not Executed," : tradeCount + " Trade Not Executed,";
+				if(resourcesNotBought.goldSpent){
+					message += " Could not Buy: " + (resourcesNotBought.food ? resourcesNotBought.food + " food, " : "") + (resourcesNotBought.ore ? resourcesNotBought.ore + " ore, " : "") + (resourcesNotBought.iridium ? resourcesNotBought.iridium + " iridium, " : "");
+				}
+				if(resourcesNotSold.goldEarned){
+					message += " Could not Sell: " + (resourcesNotSold.food ? resourcesNotSold.food + " food, " : "") + (resourcesNotSold.ore ? resourcesNotSold.ore + " ore, " : "") + (resourcesNotSold.iridium ? resourcesNotSold.iridium + " iridium, " : "");
+				}
+				message = message.substring(0, message.length - 2);
+
+				endOfTurnMessagesByPlayerId[pId].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.TradesNotExecuted, null, message));
+			}
+		}
+
+		tc.currentTrades = [];
 	},
 
 	moveShips: function(/*Player*/ player){
