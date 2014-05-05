@@ -21,6 +21,11 @@ Astriarch.TradingControl = {
 			}
 		);
 
+		$( "#TradeTypeRadio" ).buttonset();
+		$("#TradeResourceRadioFood").button( { icons: {primary:'icon-16x16-food'} } );
+		$("#TradeResourceRadioOre").button( { icons: {primary:'icon-16x16-ore'} } );
+		$("#TradeResourceRadioIridium").button( { icons: {primary:'icon-16x16-iridium'} } );
+		//$( "#TradeResourceRadio" ).buttonset();
 
 		Astriarch.TradingControl.jqElm.buttonSubmitTrade.button();
 		Astriarch.TradingControl.jqElm.buttonSubmitTrade.button('disable');
@@ -45,8 +50,6 @@ Astriarch.TradingControl = {
 		Astriarch.TradingControl.dialog.setTitle("Galactic Trading Center, Trading from: " + planet.Name);
 		Astriarch.TradingControl.dialog.open();
 
-		this.setPlayerResourceAmountAfterCurrentTrades();
-		this.refreshStatsFromClientTradingCenter();
 		this.refreshTradesSubmittedListBox();
 		this.setSliderPropertiesBasedOnNewTradeOptions();
 	},
@@ -67,6 +70,7 @@ Astriarch.TradingControl = {
 	},
 
 	refreshTradesSubmittedListBox: function() {
+		Astriarch.TradingControl.setPlayerResourceAmountAfterCurrentTrades();
 		Astriarch.TradingControl.tradesSubmittedListBox.clear();
 
 		for (var t in Astriarch.ClientGameModel.ClientTradingCenter.clientPlayerTrades){
@@ -125,6 +129,8 @@ Astriarch.TradingControl = {
 				this.playerResourceAmountsAfterTrades.iridium += amount;
 			}
 		}
+
+		this.refreshStatsFromClientTradingCenter();
 	},
 
 	SliderTradeResourceAmountValueChanged: function(event, ui){

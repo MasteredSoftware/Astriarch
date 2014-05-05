@@ -275,8 +275,7 @@ head
 			margin-left:10px;
 		}
 
-		.radioButtonTrade {
-			padding-left: 20px;
+		.radioButtonTradeLabel {
 			width:80px;
 			display:inline-block;
 		}
@@ -965,23 +964,23 @@ head
 														span Submit Trade:
 												tr(height='25')
 													td(colspan='2')
-														label.radioButtonTrade
+														div#TradeTypeRadio
 															input#TradeTypeRadioBuy(type="radio", name="TradeTypeRadioGroup", value="buy", checked="checked")
-															| Buy
-														label.radioButtonTrade
+															label.radioButtonTradeLabel(for="TradeTypeRadioBuy") Buy
+
 															input#TradeTypeRadioSell(type="radio", name="TradeTypeRadioGroup", value="sell")
-															| Sell
+															label.radioButtonTradeLabel(for="TradeTypeRadioSell") Sell
 												tr(height='25')
 													td(colspan='2')
-														label.radioButtonTrade
+														div#TradeResourceRadio
 															input#TradeResourceRadioFood(type="radio", name="TradeResourceRadioGroup", value="food", checked="checked")
-															| Food
-														label.radioButtonTrade
+															label#TradeResourceLabelFood.radioButtonTradeLabel(for="TradeResourceRadioFood") Food
+
 															input#TradeResourceRadioOre(type="radio", name="TradeResourceRadioGroup", value="ore")
-															| Ore
-														label.radioButtonTrade
+															label#TradeResourceLabelOre.radioButtonTradeLabel(for="TradeResourceRadioOre") Ore
+
 															input#TradeResourceRadioIridium(type="radio", name="TradeResourceRadioGroup", value="iridium")
-															| Iridium
+															label#TradeResourceLabelIridium.radioButtonTradeLabel(for="TradeResourceRadioIridium") Iridium
 												tr(height='55')
 													td(colspan='2')
 														table(width='450')

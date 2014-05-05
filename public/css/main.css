@@ -4,7 +4,7 @@
 }
 
 /* line 178, icon-16x16/*.png */
-.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, .icon-16x16-population, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
+.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food, .icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore, .icon-16x16-population, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
   background: url('/img/icon-16x16-s0916c1d2b2.png') no-repeat;
 }
 
@@ -89,12 +89,12 @@
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-16x16-food {
+.icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food {
   background-position: 0 -230px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-16x16-iridium {
+.icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium {
   background-position: 0 -102px;
 }
 
@@ -104,7 +104,7 @@
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-16x16-ore {
+.icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore {
   background-position: 0 -118px;
 }
 
@@ -235,7 +235,7 @@
 }
 
 /* line 19, main.scss */
-.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, .icon-16x16-population, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
+.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food, .icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore, .icon-16x16-population, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
   width: 16px;
   height: 16px;
 }
