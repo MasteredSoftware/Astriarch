@@ -584,19 +584,19 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopul
 			//check protest level of citizen, over 50% should show red, 0% show green, otherwise orange
 			var citizen = population[i - 1];
 			if(citizen.ProtestLevel == 0){
-				element.addClass("icon-10x16-PopulationSmallFilled");
+				element.attr("class","icon-10x16-PopulationSmallFilled");
 				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 			} else if(citizen.ProtestLevel > 0.5){
-				element.addClass("icon-10x16-PopulationSmallFilled_red");
+				element.attr("class","icon-10x16-PopulationSmallFilled_red");
 				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
 			} else {
-				element.addClass("icon-10x16-PopulationSmallFilled_orange");
+				element.attr("class","icon-10x16-PopulationSmallFilled_orange");
 				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
 			}
 
 		}
 		else {
-			element.addClass("icon-10x16-PopulationSmallEmpty");
+			element.attr("class","icon-10x16-PopulationSmallEmpty");
             element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
 		}
 	}

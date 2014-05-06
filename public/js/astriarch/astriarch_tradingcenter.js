@@ -2,9 +2,9 @@ var Astriarch = Astriarch || require('./astriarch_base');
 
 Astriarch.TradingCenter = function(){
 	this.goldAmount = 1000;
-	this.foodResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.FOOD, 300, 1200, 0.1, 1.5);
-	this.oreResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.ORE, 150, 600, 0.2, 3.0);
-	this.iridiumResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.IRIDIUM, 75, 300, 0.4, 6.0);
+	this.foodResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.FOOD, 80, 400, 0.1, 1.5);
+	this.oreResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.ORE, 20, 200, 0.2, 3.0);
+	this.iridiumResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.IRIDIUM, 10, 100, 0.4, 6.0);
 
 	this.currentTrades = [];
 };

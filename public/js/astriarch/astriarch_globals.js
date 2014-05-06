@@ -163,21 +163,21 @@ Astriarch.GameTools = {
 
 	StarShipTypeToHelpText: function(/*StarShipType*/ t){
 		//here are the advantages (-> means has an advantage over):
-		//defenders -> destroyers -> battleships -> cruisers -> spaceplatforms -> scouts (-> defenders)
+		//destroyers -> scouts -> battleships -> cruisers -> spaceplatforms (-> destroyers)
 		var helpText = "";
 		switch (t)
 		{
 			case Astriarch.Fleet.StarShipType.SystemDefense:
 				helpText = "Defenders protect a planet from attacking fleets but cannot move between planets.\r\n" +
-						   "Advantage against: Destroyers, Disadvantage Against: Scouts";
+						   "Advantage against: None, Disadvantage Against: None";
 				break;
 			case Astriarch.Fleet.StarShipType.Scout:
 				helpText = "Scouts are the weakest ship equipped with warp drive.\r\n" +
-						   "Advantage against: Defenders, Disadvantage Against: Space Platforms";
+						   "Advantage against: Battleships, Disadvantage Against: Destroyers";
 				break;
 			case Astriarch.Fleet.StarShipType.Destroyer:
 				helpText = "Destroyers require a Factory in order to build and are twice the strength of a Scout.\r\n" +
-						   "Advantage against: Battleships, Disadvantage Against: Defenders";
+						   "Advantage against: Scouts, Disadvantage Against: Space Platforms";
 				break;
 			case Astriarch.Fleet.StarShipType.Cruiser:
 				helpText = "Cruisers require a Space Platform in order to build and are twice the strength of a Destroyer.\r\n" +
@@ -185,7 +185,7 @@ Astriarch.GameTools = {
 				break;
 			case Astriarch.Fleet.StarShipType.Battleship:
 				helpText = "Battleships require a Space Platform in order to build and are twice the strength of a Cruiser.\r\n" +
-						   "Advantage against: Cruisers, Disadvantage Against: Destroyers";
+						   "Advantage against: Cruisers, Disadvantage Against: Scouts";
 				break;
 		}
 

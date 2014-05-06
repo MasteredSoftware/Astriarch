@@ -149,15 +149,12 @@ Astriarch.BattleSimulator = {
 			else if (defenderIsSpacePlatform && sstAttacker == Astriarch.Fleet.StarShipType.Cruiser)
 				return true;
 		}
-		else if (sstAttacker == Astriarch.Fleet.StarShipType.SystemDefense && sstDefender == Astriarch.Fleet.StarShipType.Battleship)
-			return true;
-		else if (sstAttacker == Astriarch.Fleet.StarShipType.Battleship && sstDefender == Astriarch.Fleet.StarShipType.Cruiser)
+		else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.Battleship)
 			return true;
 		else if (sstAttacker == Astriarch.Fleet.StarShipType.Destroyer && sstDefender == Astriarch.Fleet.StarShipType.Scout)
 			return true;
-		else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.SystemDefense)
+		else if (sstAttacker == Astriarch.Fleet.StarShipType.Battleship && sstDefender == Astriarch.Fleet.StarShipType.Cruiser)
 			return true;
-		
 
 		return false;
 	},
@@ -170,15 +167,12 @@ Astriarch.BattleSimulator = {
 			else if (defenderIsSpacePlatform && sstAttacker == Astriarch.Fleet.StarShipType.Destroyer)
 				return true;
 		}
-		else if (sstAttacker == Astriarch.Fleet.StarShipType.Battleship && sstDefender == Astriarch.Fleet.StarShipType.SystemDefense)
+		else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.Destroyer)
 			return true;
 		else if (sstAttacker == Astriarch.Fleet.StarShipType.Cruiser && sstDefender == Astriarch.Fleet.StarShipType.Battleship)
 			return true;
-		else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.Destroyer)
+		else if (sstAttacker == Astriarch.Fleet.StarShipType.Battleship && sstDefender == Astriarch.Fleet.StarShipType.Scout)
 			return true;
-		else if (sstAttacker == Astriarch.Fleet.StarShipType.SystemDefense && sstDefender == Astriarch.Fleet.StarShipType.Scout)
-			return true;
-
 
 		return false;
 	}
