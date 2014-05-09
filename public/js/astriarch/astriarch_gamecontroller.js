@@ -59,6 +59,7 @@ Astriarch.GameController.HideControlsForTurnStart = function(){
 	//hide other controls as well in case they are open
 	Astriarch.PlanetView.Close();
 	Astriarch.SendShipsControl.Close();
+	Astriarch.TradingControl.Close();
 };
 
 Astriarch.GameController.OnEndTurnMessageResponse = function(message) {

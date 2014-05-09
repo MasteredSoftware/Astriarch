@@ -7,12 +7,15 @@ var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 //connect to database
 //add username:password@ to url
 var un_pw = "";
-var un = (process.env.OPENSHIFT_MONGODB_DB_USERNAME || config.mongodb.username);
-var pw = (process.env.OPENSHIFT_MONGODB_DB_PASSWORD || config.mongodb.password);
+var un = (process.env.OPENSHIFT_MONGODB_DB_USERNAME || process.env.MONGODB_DB_USERNAME || config.mongodb.username);
+var pw = (process.env.OPENSHIFT_MONGODB_DB_PASSWORD || process.env.MONGODB_DB_PASSWORD || config.mongodb.password);
 if(un && pw){
 	un_pw = un + ":" + pw + "@"
 }
-var db = mongoose.connect('mongodb://' + un_pw + (process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host) + ':' + (process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port) + '/' + config.mongodb.gamedb_name);
+var host = (process.env.OPENSHIFT_MONGODB_DB_HOST || process.env.MONGODB_DB_HOST || config.mongodb.host);
+var port = (process.env.OPENSHIFT_MONGODB_DB_PORT || process.env.MONGODB_DB_PORT || config.mongodb.port);
+var gamedb = (process.env.MONGODB_GAME_DB_NAME || config.mongodb.gamedb_name);
+var db = mongoose.connect('mongodb://' + un_pw + host + ':' + port + '/' + gamedb);
 
 var ChatRoomSchema = new mongoose.Schema({
 	messages:[{text:String, sentByPlayerName:String, sentByPlayerNumber: Number, sentBySessionId:String, dateSent:{ type: Date, default: Date.now } }],
