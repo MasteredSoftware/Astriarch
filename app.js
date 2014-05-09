@@ -38,11 +38,11 @@ app.use(parseCookie);
 
 var MongoStore = require('connect-mongo')(express);
 var sessionStore = new MongoStore({
-	db: config.mongodb.sessiondb_name,
-	host: process.env.OPENSHIFT_MONGODB_DB_HOST || config.mongodb.host,
-	port: process.env.OPENSHIFT_MONGODB_DB_PORT || config.mongodb.port,
-	username: process.env.OPENSHIFT_MONGODB_DB_USERNAME || config.mongodb.username,
-	password: process.env.OPENSHIFT_MONGODB_DB_PASSWORD || config.mongodb.password
+	db: process.env.MONGODB_SESSION_DB_NAME || config.mongodb.sessiondb_name,
+	host: process.env.OPENSHIFT_MONGODB_DB_HOST || process.env.MONGODB_DB_HOST || config.mongodb.host,
+	port: process.env.OPENSHIFT_MONGODB_DB_PORT || process.env.MONGODB_DB_PORT || config.mongodb.port,
+	username: process.env.OPENSHIFT_MONGODB_DB_USERNAME || process.env.MONGODB_DB_USERNAME || config.mongodb.username,
+	password: process.env.OPENSHIFT_MONGODB_DB_PASSWORD || process.env.MONGODB_DB_PASSWORD || config.mongodb.password
 });
 
 app.use(express.session({
