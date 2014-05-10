@@ -20,7 +20,7 @@ block content
 		}
 
 		$(document).ready(function() {
-			Astriarch.server_comm.init(8000);
+			Astriarch.server_comm.init(#{port});
 			Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, renderMessage);
 			Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, renderMessage);
 

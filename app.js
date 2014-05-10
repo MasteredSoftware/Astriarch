@@ -60,7 +60,7 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/test', function(req, res){
-	res.render('test', { title: 'Astriarch' });
+	res.render('test', { title: 'Astriarch',"port":app.get('port') });
 });
 
 app.get('/', function(req, res){
@@ -88,7 +88,7 @@ var Astriarch = require("./public/js/astriarch/astriarch_loader");
 
 var wss = new WebSocketServer({server: server});
 wss.on('connection', function(ws) {
-
+	console.log("On Connection", ws);
 	parseCookie(ws.upgradeReq, null, function(err) {
 		var sessionId = ws.upgradeReq.signedCookies['connect.sid'];// ws.upgradeReq.cookies['connect.sid'];
 		console.log("SessionId: ", sessionId);
