@@ -70,7 +70,7 @@ app.get('/', function(req, res){
 	});
 });
 
-var server = http.createServer(app).listen(app.get('port'), app.get('host'), function(){
+var server = http.createServer(app).listen(app.get('port'), function(){
 	console.log('Express server listening at: ' + app.get('host') + app.get('port'));
 	if(config.cleanup_old_games.enabled){
 		cleanupOldGames();
