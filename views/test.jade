@@ -9,7 +9,7 @@ block content
 	input(type="button", value="send noop", onclick="sendMessage(Astriarch.Shared.MESSAGE_TYPE.NOOP)")
 	input(type="button", value="send list games", onclick="sendMessage(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES)")
 
-	script
+	script.
 		function renderMessage(message) {
 			document.getElementById('messages').innerHTML = JSON.stringify(message);
 		}
@@ -26,7 +26,7 @@ block content
 
 			var canvas1 = $('#imgCanvasTest')[0];
 			var ctx1    = canvas1.getContext('2d');
-			getImageData(ctx1, "img/PopulationSmallFilled.png");
+			getImageData(ctx1, "/img/icon-10x16-sf4a6be44db.png");
 		});
 
 		function getImageData(ctx, imgLoc) {
