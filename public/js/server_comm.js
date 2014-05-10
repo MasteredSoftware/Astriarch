@@ -11,13 +11,13 @@ Astriarch.server_comm = {
 		this.ws = new WebSocket('ws://' + host + portString);
 		this.ws.onmessage = this.receivedMessage;
 		this.ws.onclose = function(e){
-			console.log("onclose:", e);
+			console.log("onclose:", e, arguments);
 		};
 		this.ws.onerror = function(e){
-			console.log("onerror:", e, parameters);
+			console.log("onerror:", e, arguments);
 		};
 		this.ws.onopen = function(e){
-			console.log("onopen:", e);
+			console.log("onopen:", e, arguments);
 		};
 
 		for(var mt in Astriarch.Shared.MESSAGE_TYPE){
