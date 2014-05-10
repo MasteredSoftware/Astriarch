@@ -10,9 +10,15 @@ Astriarch.server_comm = {
 		var portString = !port  ? "" : ":" + port;
 		this.ws = new WebSocket('ws://' + host + portString);
 		this.ws.onmessage = this.receivedMessage;
-		this.ws.onclose = function(e){console.log("onclose:", e);}
-		this.ws.onerror = function(e){console.log("onerror:", e);}
-		this.ws.onopen = function(e){console.log("onopen:", e);}
+		this.ws.onclose = function(e){
+			console.log("onclose:", e);
+		};
+		this.ws.onerror = function(e){
+			console.log("onerror:", e, parameters);
+		};
+		this.ws.onopen = function(e){
+			console.log("onopen:", e);
+		};
 
 		for(var mt in Astriarch.Shared.MESSAGE_TYPE){
 			this.registeredListeners[Astriarch.Shared.MESSAGE_TYPE[mt]] = [];
