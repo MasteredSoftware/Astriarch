@@ -66,7 +66,7 @@ app.get('/test', function(req, res){
 app.get('/', function(req, res){
 	gameController.GetHighScoreBoard(10, function(err, results){
 		results = results || [];
-		res.render("astriarch", {"port":config.ws_port, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
+		res.render("astriarch", {"port":app.get('port'), "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
 	});
 });
 
