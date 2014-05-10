@@ -8,7 +8,7 @@ Astriarch.server_comm = {
 	init: function(port){
 		var host = window.document.location.host.replace(/:.*/, '');
 		var portString = !port  ? "" : ":" + port;
-		this.ws = new WebSocket('wss://' + host + portString);
+		this.ws = new WebSocket('ws://' + host + portString);
 		this.ws.onmessage = this.receivedMessage;
 		this.ws.onclose = function(e){
 			console.log("onclose:", e, arguments);
