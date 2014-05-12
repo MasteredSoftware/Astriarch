@@ -12,6 +12,7 @@
 	"cookie":{
 		"secret":"astriarch-node"
 	},
+	"port":8000,
 	"ws_port":8000,
 	"cleanup_old_games":{
 		"enabled":true,

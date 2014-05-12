@@ -25,7 +25,8 @@ var app = express();
 
 // all environments
 app.set('host', process.env.OPENSHIFT_NODEJS_IP || 'localhost');
-app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.ws_port || 8000);
+app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.port || 8000);
+app.set('ws_port', process.env.OPENSHIFT_NODEJS_PORT || process.env.WS_PORT || config.ws_port || 8000);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.use(express.favicon());
@@ -60,13 +61,13 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/test', function(req, res){
-	res.render('test', { title: 'Astriarch',"port":app.get('port') });
+	res.render('test', { title: 'Astriarch',"port":app.get('ws_port') });
 });
 
 app.get('/', function(req, res){
 	gameController.GetHighScoreBoard(10, function(err, results){
 		results = results || [];
-		res.render("astriarch", {"port":app.get('port'), "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
+		res.render("astriarch", {"port":app.get('ws_port'), "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
 	});
 });
 
