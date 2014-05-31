@@ -17,6 +17,7 @@ var express = require('express')
 
 
 var models = require("./models/models");
+var wssInterface = require("./wss_interface");
 var gameController = require("./controllers/game_controller");
 
 var clientFiles = require('./client_file_registry.js');
@@ -67,7 +68,7 @@ app.get('/test', function(req, res){
 app.get('/', function(req, res){
 	gameController.GetHighScoreBoard(10, function(err, results){
 		results = results || [];
-		res.render("astriarch", {"port":app.get('ws_port'), "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
+		res.render("astriarch", {"port":app.get('ws_port'), "ping_freq":config.ws_ping_freq, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
 	});
 });
 
@@ -75,6 +76,9 @@ var server = http.createServer(app).listen(app.get('port'), function(){
 	console.log('Express server listening at: ' + app.get('host') + app.get('port'));
 	if(config.cleanup_old_games.enabled){
 		cleanupOldGames();
+	}
+	if(config.client_timeout){
+		checkForExpiredSessions();
 	}
 });
 
@@ -84,24 +88,33 @@ var cleanupOldGames = function(){
 	});
 };
 
+var checkForExpiredSessions = function(){
+	gameController.cleanupExpiredSessions(config.client_timeout, function(err){
+		setTimeout(function(){checkForExpiredSessions()}, config.client_timeout);
+	});
+};
+
 
 var Astriarch = require("./public/js/astriarch/astriarch_loader");
 
 var wss = new WebSocketServer({server: server});
 wss.on('connection', function(ws) {
-	console.log("On Connection", ws);
+
+	wssInterface.init(wss);
+
 	parseCookie(ws.upgradeReq, null, function(err) {
 		var sessionId = ws.upgradeReq.signedCookies['connect.sid'];// ws.upgradeReq.cookies['connect.sid'];
 		console.log("SessionId: ", sessionId);
-		/*
-		sessionStore.get(sessionId, function(err, sess) {
-			console.log("Session: ", sess);
-		});
-
-		*/
 
 		ws.on('message', function(data, flags) {
 			console.debug("Message received:", data, sessionId);
+
+			//touch session
+			gameController.touchSession(sessionId, function(err){
+				if(err){
+					console.error("TouchSession Error: ", err);
+				}
+			});
 
 
 			var message = new Astriarch.Shared.Message();
@@ -117,18 +130,10 @@ wss.on('connection', function(ws) {
 					ws.send(JSON.stringify(message));
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.PING:
+
 					break;
-				case Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM:
-					//we need to join the user to the lobby chat room
-					var gameId = message.payload.gameId ? message.payload.gameId : null;
-					var session = {sessionId:sessionId, playerName:message.payload.playerName, playerNumber: message.payload.playerNumber, gameId:gameId};
-					gameController.JoinChatRoom(gameId, session, function(err, newChatRoomWithSessions, oldChatRoomWithSessions){
-						//broadcast to all other sessions in the chat room that a player just logged in
-						sendChatRoomSessionListUpdates(ws, sessionId, newChatRoomWithSessions);
-						if(oldChatRoomWithSessions) {
-							sendChatRoomSessionListUpdates(ws, sessionId, oldChatRoomWithSessions);
-						}
-					});
+				case Astriarch.Shared.MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED:
+					//This is a client bound message, the server shouldn't recieve it
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.LOGOUT:
 					break;
@@ -332,19 +337,21 @@ wss.on('connection', function(ws) {
 						}
 					});
 					break;
-				case Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE:
+				case Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE:
 					//TODO: get the player name and player number from the existing chatRoom so they can't as easily spoof that
 					message.payload.text = (message.payload.text || "").trim();
-					if(message.payload.text){
-						var chatLogMessage = {text: message.payload.text, sentByPlayerName: message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.sentByPlayerNumber, sentBySessionId: sessionId};
-						gameController.AddMessageToChatRoom(message.payload.gameId, chatLogMessage, function(err, doc){
-							//broadcast to all other sessions in the chat room
-							var messageForPlayers = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE,{text: message.payload.text, sentByPlayerName: message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.sentByPlayerNumber, dateSent:new Date().getTime()});
-							for(var s = 0; s < doc.sessions.length; s++){
-								var session = doc.sessions[s];
-								if(session.sessionId != sessionId){
-									wss.broadcastToSession(session.sessionId, messageForPlayers);
-								}
+					if(message.payload.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE && message.payload.text){
+						var chatLogMessage = {messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE, text: message.payload.text, sentByPlayerName: message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.sentByPlayerNumber, sentBySessionId: sessionId};
+						wssInterface.addMessageToChatRoomAndBroadcastToOtherMembers(message.payload.gameId, chatLogMessage, sessionId);
+					} else if(message.payload.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER){
+						//we need to join the user to the lobby or requested game chat room
+						var gameId = message.payload.gameId ? message.payload.gameId : null;
+						var session = {sessionId:sessionId, playerName:message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.playerNumber, gameId:gameId};
+						gameController.JoinChatRoom(gameId, session, function(err, newChatRoomWithSessions, oldChatRoomWithSessions){
+							//broadcast to all other sessions in the chat room that a player just logged in
+							wssInterface.sendChatRoomSessionListUpdates(ws, sessionId, newChatRoomWithSessions);
+							if(oldChatRoomWithSessions) {
+								wssInterface.sendChatRoomSessionListUpdates(ws, sessionId, oldChatRoomWithSessions);
 							}
 						});
 					}
@@ -361,10 +368,10 @@ wss.on('connection', function(ws) {
 		parseCookie(ws.upgradeReq, null, function(err) {
 			var sessionId = ws.upgradeReq.signedCookies['connect.sid'];
 			console.log('connection closed for session: ', sessionId);
-			gameController.LeaveChatRoom(sessionId, function(err, chatRoomWithSessions){
+			gameController.LeaveChatRoom(sessionId, true, function(err, chatRoomWithSessions){
 				console.log("Leaving Chat Room: ", err, chatRoomWithSessions);
 				if(chatRoomWithSessions) {
-					sendChatRoomSessionListUpdates(ws, null, chatRoomWithSessions);
+					wssInterface.sendChatRoomSessionListUpdates(ws, null, chatRoomWithSessions);
 				}
 			});
 		});
@@ -385,23 +392,6 @@ var sendUpdatedGameListToLobbyPlayers = function(gameDoc){
 			}
 		}
 	});
-};
-
-var sendChatRoomSessionListUpdates = function(ws, sessionId, chatRoomWithSessions){
-	var cleanSessions = [], session = null;//This doesn't include other player session ids for security
-	for(var s = 0; s < chatRoomWithSessions.sessions.length; s++){
-		session = chatRoomWithSessions.sessions[s];
-		cleanSessions.push({playerName:session.playerName, playerNumber: session.playerNumber, dateJoined: session.dateJoined});
-	}
-	var messageForPlayers = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM,{sessions:cleanSessions});
-	for(var s = 0; s < chatRoomWithSessions.sessions.length; s++){
-		session = chatRoomWithSessions.sessions[s];
-		if(session.sessionId != sessionId){
-			wss.broadcastToSession(session.sessionId, messageForPlayers);
-		} else {
-			ws.send(JSON.stringify(messageForPlayers));
-		}
-	}
 };
 
 var getSerializableClientModelFromSerializableModelForPlayer = function(serializableModel, targetPlayer){

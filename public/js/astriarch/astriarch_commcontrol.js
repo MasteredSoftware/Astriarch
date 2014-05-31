@@ -61,8 +61,8 @@ Astriarch.CommControl = {
 		var text = this.inputTextBox.val();
 		if(text && text.trim()){
 			this.inputTextBox.val("");
-			var message = {text: text, sentByPlayerName: this.playerName, sentByPlayerNumber: this.playerNumber};
-			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE, payload:message});
+			var message = {messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE, text: text, sentByPlayerName: this.playerName, sentByPlayerNumber: this.playerNumber};
+			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE, payload:message});
 			this.appendMessages([message]);
 		}
 	},
@@ -71,7 +71,7 @@ Astriarch.CommControl = {
 		//the user is joining the lobby or moving from the lobby to the game room, refresh his/her chat log and tell the server
 		this.playerName = playerName;
 		this.playerNumber = playerNumber;
-		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, payload:{playerName:playerName, playerNumber:playerNumber}});
+		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE, payload:{messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER, sentByPlayerName:playerName, sentByPlayerNumber:playerNumber}});
 		this.chatLog.html("");
 	},
 
@@ -107,7 +107,13 @@ Astriarch.CommControl = {
 		for(var i = 0; i < messages.length; i++){
 			var message = messages[i];
 			var messageFromClass = message.sentByPlayerNumber ? "messagePlayer" + message.sentByPlayerNumber : "messagePlayerLobby";
-			html += "<div class=\"chatLogMessage\"><span class=\"" + messageFromClass + "\">" + message.sentByPlayerName + ": </span>" + message.text + "</div>";
+			if(message.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE){
+				html += "<div class=\"chatLogMessage\"><span class=\"" + messageFromClass + "\">" + message.sentByPlayerName + ": </span>" + message.text + "</div>";
+			} else {
+				var text = (message.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER ? " Arrived" : (message.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_DISCONNECT ? " Disconnected" : " Left"));
+				html += "<div class=\"chatLogMessage\"><span class=\"messageSystem\">" + message.sentByPlayerName + text + "</span></div>";
+			}
+
 		}
 		this.chatLog.append(html);
 		this.chatLog.animate({scrollTop:this.chatLog[0].scrollHeight}, 1000);

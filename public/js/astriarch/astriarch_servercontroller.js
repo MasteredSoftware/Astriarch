@@ -23,10 +23,9 @@ Astriarch.ServerController = {
 		for (var i in gameModel.Players)
 		{
 			var player = gameModel.Players[i];
+			endOfTurnMessagesByPlayerId[player.Id] = [];
 			if (player.Type != Astriarch.Player.PlayerType.Human) {
 				Astriarch.AI.ComputerTakeTurn(gameModel, player);
-			} else {
-				endOfTurnMessagesByPlayerId[player.Id] = [];
 			}
 		}
 

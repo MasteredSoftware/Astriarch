@@ -149,6 +149,9 @@ head
 		.messagePlayer4 {
 			color: #FF0000;
 		}
+		.messageSystem {
+			color: #888;
+		}
 		#canvasAstriarchBackground
 		{
 			position:absolute;
@@ -452,6 +455,7 @@ head
 											span Turn Time Limit:
 											select#TurnTimeLimitComboBox
 												option(value='0', selected='true') None
+												option(value='30') 30 Seconds
 												option(value='60') 1 Minute
 												option(value='120') 2 Minutes
 												option(value='180') 3 Minutes
@@ -1045,7 +1049,7 @@ head
 
 		script(type='text/javascript').
 			$(document).ready(function() {
-				var serverConfig = {"port":#{port}};
+				var serverConfig = {"port":#{port}, "ping_freq":#{ping_freq}};
 
 				Astriarch.View.PageLoadInit(serverConfig);
 			});

@@ -4,10 +4,13 @@ Astriarch.server_comm = {
 	ws:null,
 	registeredListeners:{},//key is messagetype, value is array of callbacks
 	messageQueue: [],
+	pingFreq: 30000,
+	pingInterval: null,
 
-	init: function(port){
+	init: function(serverConfig){
+		this.pingFreq = serverConfig.ping_freq || 30000;
 		var host = window.document.location.host.replace(/:.*/, '');
-		var portString = !port  ? "" : ":" + port;
+		var portString = !serverConfig.port  ? "" : ":" + serverConfig.port;
 		this.ws = new WebSocket('ws://' + host + portString);
 		this.ws.onmessage = this.receivedMessage;
 		this.ws.onclose = function(e){
@@ -39,6 +42,12 @@ Astriarch.server_comm = {
 				Astriarch.server_comm.messageQueue = [];
 			}
 		}
+		if(this.pingInterval){
+			clearInterval(this.pingInterval);
+		}
+		this.pingInterval = setInterval(function(){
+			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.PING, payload:{}});
+		}, this.pingFreq);
 	},
 
 	receivedMessage: function(event){

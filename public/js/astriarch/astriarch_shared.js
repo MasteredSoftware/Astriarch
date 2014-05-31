@@ -6,7 +6,7 @@ Astriarch.Shared = {
 		"ERROR":-1,
 		"NOOP":0,
 		"PING":1,
-		"JOIN_CHAT_ROOM":2, //client and server bound message
+		"CHAT_ROOM_SESSIONS_UPDATED":2, //client bound message
 		"LOGOUT":3,
 		"LIST_GAMES":4, //client and server bound message
 		"GAME_LIST_UPDATED":5, //after a new game is created or updated, update lobby game list
@@ -24,7 +24,7 @@ Astriarch.Shared = {
 		"GAME_OVER":17,
 		"SUBMIT_TRADE":18,
 		"CANCEL_TRADE":19,
-		"TEXT_MESSAGE":20 //client and server bound message
+		"CHAT_MESSAGE":20 //client and server bound message
 
 	},
 
@@ -40,6 +40,13 @@ Astriarch.Shared = {
 		"MOVEUP":4,
 		"MOVEDOWN":5,
 		"DEMOLISH_IMPROVEMENT": 6
+	},
+
+	CHAT_MESSAGE_TYPE: {
+		"TEXT_MESSAGE":1,
+		"PLAYER_ENTER":2,
+		"PLAYER_EXIT":3,
+		"PLAYER_DISCONNECT":4
 	},
 
 	Message: function(type, payload){

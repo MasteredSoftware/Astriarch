@@ -8,6 +8,8 @@ var extend = require("extend");
 
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
+var wssInterface = require("./../wss_interface");
+
 var GetHighScoreBoard = function(maxResults, callback){
 	maxResults = maxResults || 10;
 
@@ -75,8 +77,15 @@ var JoinChatRoom = function(gameId, session, callback){
 						callback(err);
 						return;
 					}
+					//notify the new room that the user joined
+					var chatLogMessage = {messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER, sentByPlayerName: session.playerName, sentByPlayerNumber: session.playerNumber, sentBySessionId: session.sessionId};
+					wssInterface.addMessageToChatRoomAndBroadcastToOtherMembers(gameId, chatLogMessage, session.sessionId);
 					//check to see if we're leaving an existing room
 					if(doc && doc.gameId != gameId){
+
+						//notify the old room that the user left
+						chatLogMessage = {messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_EXIT, sentByPlayerName: doc.playerName, sentByPlayerNumber: doc.playerNumber, sentBySessionId: session.sessionId};
+						wssInterface.addMessageToChatRoomAndBroadcastToOtherMembers(doc.gameId, chatLogMessage, session.sessionId);
 						//we'll want to update the sessions for the old chat room with the new session list so we need to return it
 						GetChatRoomWithSessions(doc.gameId, function(err, chatRoom){
 							if(err){
@@ -109,20 +118,27 @@ var JoinChatRoom = function(gameId, session, callback){
 };
 exports.JoinChatRoom = JoinChatRoom;
 
-var LeaveChatRoom = function(sessionId, callback){
-	models.ChatRoomSessionModel.findOneAndRemove({"sessionId":sessionId}, function(err, doc){
+var LeaveChatRoom = function(sessionId, disconnected, callback){
+	models.ChatRoomSessionModel.findOneAndRemove({"sessionId":sessionId}, function(err, chatRoomSession){
 		if(err){
 			callback(err);
 			return;
 		}
 		//check to see if we're leaving an existing room
-		console.log("LeaveChatRoom:", doc);
-		if(doc){
-			GetChatRoomWithSessions(doc.gameId, function(err, chatRoom){
+		console.debug("LeaveChatRoom:", chatRoomSession);
+		if(chatRoomSession){
+			GetChatRoomWithSessions(chatRoomSession.gameId, function(err, chatRoom){
 				if(err){
 					callback(err);
 				} else {
-					callback(null, chatRoom);
+
+					if(chatRoom){
+						//notify the room that the user left or disconnected
+						var chatLogMessage = {messageType: (disconnected ? Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_DISCONNECT : Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_EXIT), sentByPlayerName: chatRoomSession.playerName, sentByPlayerNumber: chatRoomSession.playerNumber, sentBySessionId: sessionId};
+						wssInterface.addMessageToChatRoomAndBroadcastToOtherMembers(chatRoom.gameId, chatLogMessage, sessionId);
+					}
+
+					callback(null, chatRoom, chatRoomSession);
 				}
 			});
 		} else {
@@ -1038,6 +1054,56 @@ var getPlayerFromGameModelById = function(gameModel, playerId){
 		}
 	}
 	return retPlayer;
+};
+
+var touchSession = function(sessionId, callback){
+	models.SessionModel.update({"_id":sessionId}, {"dateLastSeenAt":new Date()}, function(err, numberAffected, raw) {
+		callback(err);
+	});
+};
+exports.touchSession = touchSession;
+
+var cleanupExpiredSessions = function(clientTimeout, callback){
+	var expirationDate = new Date(new Date().getTime() - clientTimeout);
+	console.log("Checking for expired Sessions before:", expirationDate);
+
+	models.SessionModel.find({"dateLastSeenAt":{$lt:expirationDate}}, function(err, docs){
+		if(err){
+			console.error("Problem in cleanupExpiredSessions:", err);
+		} else if(docs && docs.length > 0) {
+			console.log("cleanupExpiredSessions found:", docs.length, "expired sessions to timeout.");
+			async.eachSeries(docs, sessionTimeout, callback);
+		} else {
+			console.debug("cleanupExpiredSessions did not find any expired session to timeout.");
+			callback();
+		}
+	});
+
+};
+exports.cleanupExpiredSessions = cleanupExpiredSessions;
+
+var sessionTimeout = function(sessionDoc, callback){
+	async.series([
+		function(cb){
+			LeaveChatRoom(sessionDoc._id, true, function(err, chatRoom, chatRoomSession){
+				if(err){
+					console.error("Problem in sessionTimeout => ChatRoomSessionModel:", err);
+				}
+				cb(err);
+			});
+		},
+		function(cb){
+			models.SessionModel.findByIdAndRemove(sessionDoc._id, function(err){
+				if(err){
+					console.error("Problem removing session: ", err);
+				}
+				cb(err);
+			});
+		}
+	], function(err, results){
+		console.debug("Session Docs Timeout: ", sessionDoc);
+		callback(err, results);
+	});
 };
 
 var cleanupOldGames = function(callback){

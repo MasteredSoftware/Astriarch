@@ -16,6 +16,7 @@ Astriarch.AI = {
 		var ownedPlanetsSorted = player.GetOwnedPlanetsListSorted();
 		Astriarch.AI.computerSetPlanetBuildGoals(gameModel, player, ownedPlanetsSorted);
 
+		Astriarch.AI.computerSubmitTrades(gameModel, player, ownedPlanetsSorted);
 
 		Astriarch.AI.computerBuildImprovementsAndShips(gameModel, player, ownedPlanetsSorted);
 
@@ -29,9 +30,9 @@ Astriarch.AI = {
 		//if there are unclaimed explored planets
 		//find the closest one and send a detachment, based on planet class
 		//for easy level send detachments based only on distance
-		//normal mode additionaly prefers class 2 planets
-		//hard mode additionaly prefers Dead planets and considers enemy force before making an attack
-		//expert mode additionaly prefers asteroid belts late in the game when it needs crystal
+		//normal mode additionally prefers class 2 planets
+		//hard mode additionally prefers Dead planets and considers enemy force before making an attack
+		//expert mode additionally prefers asteroid belts late in the game when it needs crystal
 
 		//send scouts to unexplored planets (harder levels of computers know where better planets are?)
 
@@ -575,6 +576,79 @@ Astriarch.AI = {
 
 	},
 
+	computerSubmitTrades: function(gameModel, /*Player*/ player, ownedPlanetsSorted){
+		//first decide if we want to trade based on resource prices and needed resources (based on planet build goals)
+		var totalPopulation = player.GetTotalPopulation();
+		var totalGold = player.Resources.GoldAmount;
+		var totalFood = player.TotalFoodAmount();
+		var totalOre = player.TotalOreAmount();
+		var totalIridium = player.TotalIridiumAmount();
+
+		var goldDesired = 0;
+		var oreDesired = 0;
+		var iridiumDesired = 0;
+		for(var planetId in player.PlanetBuildGoals){
+			var ppi = player.PlanetBuildGoals[planetId];
+			goldDesired += ppi.GoldCost;
+			oreDesired += ppi.OreCost;
+			iridiumDesired += ppi.IridiumCost;
+		}
+		var purchaseMultiplier = 0.25;
+		var tradesToExecute = [];
+		var planetId = player.HomePlanet ? player.HomePlanet.Id : ownedPlanetsSorted[0].Id;
+		var amount = 0;
+		var orderType = Astriarch.TradingCenter.OrderType.MARKET;
+		var limitPrice = null;
+		var tradeType = Astriarch.TradingCenter.TradeType.SELL;
+		if(totalGold < goldDesired){
+
+			//try to sell resources
+			//only sell resources when you have far more than you need
+			if (totalFood >= totalPopulation * 2){
+				//sell some food
+				amount = Math.floor(totalFood * purchaseMultiplier);
+				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.FOOD, amount, orderType, limitPrice));
+			}
+			if(totalOre >= oreDesired * 2){
+				amount = Math.floor(totalOre * purchaseMultiplier);
+				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.ORE, amount, orderType, limitPrice));
+			}
+
+			if(totalIridium >= iridiumDesired * 2){
+				amount = Math.floor(totalIridium * purchaseMultiplier);
+				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.IRIDIUM, amount, orderType, limitPrice));
+			}
+		} else if(totalGold > goldDesired * 1.2){
+			tradeType = Astriarch.TradingCenter.TradeType.BUY;
+			//try to buy resources
+			if(totalFood <= totalPopulation * 1.2){
+				//buy some food
+				var amount = Math.floor(totalPopulation * purchaseMultiplier);
+				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.FOOD, amount, orderType, limitPrice));
+			}
+
+			if(totalOre <= oreDesired * 1.2){
+				var amount = Math.floor(oreDesired * purchaseMultiplier);
+				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.ORE, amount, orderType, limitPrice));
+			}
+			if(totalIridium <= iridiumDesired * 1.2){
+				var amount = Math.floor(iridiumDesired * purchaseMultiplier);
+				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.IRIDIUM, amount, orderType, limitPrice));
+			}
+		}
+
+		for(var t in tradesToExecute){
+			var trade = tradesToExecute[t];
+			if(trade.amount > 0) {
+				console.debug("Computer Submitted a Trade: ", trade);
+				gameModel.TradingCenter.currentTrades.push(trade);
+			} else {
+				console.debug("AI Trade found with zero amount.", trade);
+			}
+		}
+
+	},
+
 	computerBuildImprovementsAndShips: function(gameModel, /*Player*/ player, ownedPlanetsSorted){
 
 		//determine gold surplus needed to ship food
@@ -627,8 +701,7 @@ Astriarch.AI = {
 
 	},
 
-	computerSendShips: function(gameModel, /*Player*/ player, ownedPlanetsSorted)
-	{
+	computerSendShips: function(gameModel, /*Player*/ player, ownedPlanetsSorted){
 		//easy computer sends ships to closest planet at random
 		//normal computers keep detachments of ships as defence as deemed necessary based on scouted enemy forces and planet value
 		//hard computers also prefer planets based on class, location, and fleet defence

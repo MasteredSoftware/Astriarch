@@ -18,7 +18,7 @@ var gamedb = (process.env.MONGODB_GAME_DB_NAME || config.mongodb.gamedb_name);
 var db = mongoose.connect('mongodb://' + un_pw + host + ':' + port + '/' + gamedb);
 
 var ChatRoomSchema = new mongoose.Schema({
-	messages:[{text:String, sentByPlayerName:String, sentByPlayerNumber: Number, sentBySessionId:String, dateSent:{ type: Date, default: Date.now } }],
+	messages:[{messageType: Number, text:String, sentByPlayerName:String, sentByPlayerNumber: Number, sentBySessionId:String, dateSent:{ type: Date, default: Date.now } }],
 	gameId: {type:ObjectId, index:true, unique: true}//if this is null it is the lobby chat room
 });
 exports.ChatRoomModel = db.model('chatRooms', ChatRoomSchema);
@@ -83,3 +83,13 @@ var PlanetViewWorkingData = function(player, planet){
 };
 
 exports.PlanetViewWorkingData = PlanetViewWorkingData;
+
+var SessionSchema = new mongoose.Schema({
+	_id: String,
+	session: {type: String},
+	expires: { type: Date },
+	dateLastSeenAt: { type: Date, index: true, default: Date.now }
+});
+
+//compile schema to model
+exports.SessionModel = db.model('session', SessionSchema);

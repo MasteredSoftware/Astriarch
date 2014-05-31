@@ -66,7 +66,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.PlayerGameOptions = new Astriarch.Player.PlayerGameOptions();
 
 		//setup websocket communication
-		Astriarch.server_comm.init(serverConfig.port);
+		Astriarch.server_comm.init(serverConfig);
 
 		//register message type listeners
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.ERROR, function(message){
@@ -79,7 +79,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, function(message){console.log("NOOP: ", message)});
 
-		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.JOIN_CHAT_ROOM, function(message){Astriarch.CommControl.setPlayerSessions(message.payload.sessions)});
+		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED, function(message){Astriarch.CommControl.setPlayerSessions(message.payload.sessions)});
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, Astriarch.LobbyControl.refreshGameList);
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.GAME_LIST_UPDATED, Astriarch.LobbyControl.updateGameList);
@@ -96,7 +96,7 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.GAME_OVER, function(message){Astriarch.GameController.OnGameOverMessageResponse(message)});
 
-		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.TEXT_MESSAGE, function(message){Astriarch.CommControl.appendMessages([message.payload])});
+		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE, function(message){Astriarch.CommControl.appendMessages([message.payload])});
 
 		Astriarch.CommControl.init();
 
