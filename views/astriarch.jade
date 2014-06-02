@@ -17,6 +17,7 @@ head
 			script(type='text/javascript', src='#{file}')
 
 	script(src="/js/server_comm.js")
+	script(type="text/javascript", src="https://apis.google.com/js/plusone.js")
 	style(type='text/css').
 		* {
 			margin: 0;
@@ -336,6 +337,15 @@ head
 			}
 			ga('send', 'event', 'Astriarch', 'Game Over', 'Turns Played', data.Turns);
 		};
+
+		(function(d, s, id) {
+			var js, fjs = d.getElementsByTagName(s)[0];
+			if (d.getElementById(id)) return;
+			js = d.createElement(s); js.id = id;
+			js.src = "https://connect.facebook.net/en_US/all.js#xfbml=1";
+			fjs.parentNode.insertBefore(js, fjs);
+		}(document, 'script', 'facebook-jssdk'));
+
 	body
 		//
 			<div style="position: relative;">
