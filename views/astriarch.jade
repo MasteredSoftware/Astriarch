@@ -1038,14 +1038,30 @@ head
 					// right sidebar
 					aside#right-sidebar(style='height: 600px;float:right;margin-left:5px')
 
-			#footer.cf(style='color: white;')
-				br
+			#footer.cf(style='color: white;display:inline;text-align:center;width:728px;')
 				p
-					| Astriarch - Ruler of the Stars multiplayer beta version Copyright 2010
+					| Astriarch - Ruler of the Stars multiplayer version Copyright 2010&nbsp;
 					a(href='http://www.masteredsoftware.com/', target='_blank') Mastered Software
 					| , Music by Resonant.
-				p
-					a(href='http://www.astriarch.com/', target='_blank') Official Astriarch Site
+				div
+					script(type="text/javascript").
+						google_ad_client = "ca-pub-4435324278170744";
+						/* Astriarch - Leaderboard */
+						google_ad_slot = "4525540849";
+						google_ad_width = 728;
+						google_ad_height = 90;
+					script(type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js")
+				#social-links
+					div(style='height: 22px; margin-left: auto; margin-right: auto;')
+						span
+							.fb-like(data-href='http://www.astriarch.com', data-send='false', data-layout='button_count', data-width='75', data-height='25', data-show-faces='false', data-colorscheme='dark')
+						span(style='margin-left: 30px;')
+							g:plusone(size='medium', href='http://www.astriarch.com/')
+						span
+							a.twitter-share-button(href='https://twitter.com/share', data-related='masteredsoft,mpalmerlee', data-via='astriarch', data-text='Astriarch - Ruler of the Stars, HTML5 space strategy game', data-url='http://astriarch.com', data-lang='en', data-size='medium', data-count='horizontal') Tweet
+							script
+								!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+
 
 		script(type='text/javascript').
 			$(document).ready(function() {
