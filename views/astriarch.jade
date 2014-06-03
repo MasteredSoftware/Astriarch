@@ -304,6 +304,12 @@ head
 			content:" ";
 			font-size:0;
 		}
+
+		.fb-like > span {
+			vertical-align: top;
+			height: 25px !important;
+			width: 75px !important;
+		}
 	link(rel="stylesheet", type="text/css", href="/css/main.css")
 	script(type='text/javascript').
 
@@ -1062,9 +1068,9 @@ head
 						google_ad_height = 90;
 					script(type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js")
 				#social-links
-					div(style='height: 22px; margin-left: auto; margin-right: auto;')
+					div(style='height: 22px; margin-left: auto; margin-right: auto;display:block;')
 						span
-							.fb-like(data-href='http://www.astriarch.com', data-send='false', data-layout='button_count', data-width='75', data-height='25', data-show-faces='false', data-colorscheme='dark')
+							.fb-like(data-href='http://www.astriarch.com', data-send='false', data-layout='button_count', data-width='75', data-height='25', data-show-faces='false', data-colorscheme='dark', style='vertical-align:top;')
 						span(style='margin-left: 30px;')
 							g:plusone(size='medium', href='http://www.astriarch.com/')
 						span
