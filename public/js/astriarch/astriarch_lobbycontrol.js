@@ -4,6 +4,10 @@ Astriarch.LobbyControl = {
 		$("#NewSkirmishGameButton").button();
 		$("#NewSkirmishGameButton").click(
 			function() {
+				if(window.tour.enabled){
+					window.tour.jqElm.joyride('nextTip');
+				}
+
 				//Send a create game message
 				//every time the game name is changed we save it to local storage so we can use it next time?
 				Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CREATE_GAME, payload:{name:Astriarch.LocalStorageInterface.Prefs.gameName, playerName:Astriarch.LocalStorageInterface.Prefs.playerName}});

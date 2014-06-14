@@ -47,9 +47,12 @@ var sessionStore = new MongoStore({
 	password: process.env.OPENSHIFT_MONGODB_DB_PASSWORD || process.env.MONGODB_DB_PASSWORD || config.mongodb.password
 });
 
+var month = 30 * 24 * 60 * 60 * 1000;
+
 app.use(express.session({
 	secret: config.cookie.secret,
-	store: sessionStore
+	store: sessionStore,
+	cookie: { maxAge: month * 6 }
 }));
 
 app.use(app.router);

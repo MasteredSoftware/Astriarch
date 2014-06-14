@@ -79,7 +79,7 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, 0, this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.DeadPlanet:
-			this.MaxImprovements = 4;
+			this.MaxImprovements = 5;
 			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(2, 5), this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass1:
@@ -1039,12 +1039,12 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration = function(/*Planet*/ p, /*Plan
 	{
 		case Astriarch.Planet.PlanetType.AsteroidBelt:
 			this.BaseFoodAmountPerWorkerPerTurn = 0.5;
-			this.BaseOreAmountPerWorkerPerTurn = 2.0;
+			this.BaseOreAmountPerWorkerPerTurn = 1.75;
 			this.BaseIridiumAmountPerWorkerPerTurn = 1.0;
 			break;
 		case Astriarch.Planet.PlanetType.DeadPlanet:
 			this.BaseFoodAmountPerWorkerPerTurn = 1.0;
-			this.BaseOreAmountPerWorkerPerTurn = 1.25;
+			this.BaseOreAmountPerWorkerPerTurn = 1.5;
 			this.BaseIridiumAmountPerWorkerPerTurn = 0.5;
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass1:

@@ -41,6 +41,9 @@ Astriarch.NewGameControl = {
 		$("#StartGameOptionsOkButton").button();
 		$("#StartGameOptionsOkButton").click(
 			function() {
+				if(window.tour.enabled){
+					window.tour.jqElm.joyride('nextTip');
+				}
 				Astriarch.NewGameControl.SetupNewGame();
 			}
 		);
@@ -117,6 +120,10 @@ Astriarch.NewGameControl = {
 		this.drawGameOptionsRepresentationOnCanvas(gameOptions);
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload:{gameOptions: gameOptions, name:name}});
+
+		if(window.tour.enabled && ((gameOptions.systemsToGenerate == 2 && window.tour.step == 3) || (gameOptions.opponentOptions[0].type == 1 && window.tour.step == 4))){
+			window.tour.jqElm.joyride('nextTip');
+		}
 	},
 
 	OnGameOptionsChanged: function(message){

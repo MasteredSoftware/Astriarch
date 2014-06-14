@@ -158,17 +158,26 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	
 	$( "#PlanetViewButton" ).click(
 		function() {
+			if(window.tour.enabled && (window.tour.step == 15 || window.tour.step == 27 || window.tour.step == 32 || window.tour.step == 43 || window.tour.step == 53)){
+				window.tour.jqElm.joyride('nextTip');
+			}
 			Astriarch.View.ShowPlanetView();
 		}
 	);
 	
 	$( "#SendShipsButton" ).click(
 		function() {
+			if(window.tour.enabled && (window.tour.step == 55)){
+				window.tour.jqElm.joyride('nextTip');
+			}
 			Astriarch.View.StartSendShips();
 		}
 	);
 	
 	$( "#NextTurnButton" ).click(function() {
+			if(window.tour.enabled && (window.tour.step == 22 || window.tour.step == 24 || window.tour.step == 26 || window.tour.step == 28  || window.tour.step == 31 || window.tour.step == 35 || window.tour.step == 40 || window.tour.step == 42 || window.tour.step == 47)){
+				window.tour.jqElm.joyride('nextTip');
+			}
 			Astriarch.View.NextTurn();
 		}
 	);
@@ -211,6 +220,10 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 
 	$( "#ButtonOpenTradingCenter" ).click(
 		function() {
+			if(window.tour.enabled && (window.tour.step == 36)){
+				window.tour.jqElm.joyride('nextTip');
+			}
+
 			Astriarch.View.openTradingCenter();
 		}
 	);
@@ -606,7 +619,7 @@ Astriarch.View.updateSelectedItemImprovementSlotsPanel = function(improvementCou
 	$('#SelectedItemImprovementSlotsPanel').attr("Title", "Planetary Improvements: " + improvementCount + " / " + maxImprovements);
 
 	//clear out the appropriate ones
-	for (var i = maxImprovements + 1; i <= 9; i++)
+	for (var i = 1; i <= 9; i++)
 	{
 		$("#PlanetaryImprovementSlotsImage" + i).attr("class","impImg");
 	}
@@ -628,7 +641,7 @@ Astriarch.View.updateSelectedItemPopulationAssignmentsPanel = function() {
 	$('#SelectedItemPopulationAssignmentsPanel').attr("Title", tooltip);
 
 	//clear out the appropriate ones
-	for (var i = farmers + miners + workers + 1; i <= 16; i++)
+	for (var i = 1; i <= 16; i++)
 	{
 		$("#PopulationAssignmentImage" + i).attr("class","asnImg");
 	}

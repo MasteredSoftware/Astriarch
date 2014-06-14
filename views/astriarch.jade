@@ -7,6 +7,7 @@ head
 	link(type='text/css', href='css/custom-theme/jquery-ui-1.8.16.custom.css', rel='stylesheet')
 	link(type='text/css', href='css/js-listbox-style.css', rel='stylesheet')
 	link(type='text/css', href='css/jquery.ui.selectmenu.css', rel='stylesheet')
+	link(type='text/css', href='css/joyride-2.1.css', rel='stylesheet')
 	if use_compressed_js
 		script(type='text/javascript', src='js/external.js')
 		script(type='text/javascript', src='js/astriarch.js')
@@ -310,6 +311,12 @@ head
 			height: 25px !important;
 			width: 75px !important;
 		}
+
+		.joyride-tip-guide {
+			z-index:10001;
+		}
+
+
 	link(rel="stylesheet", type="text/css", href="/css/main.css")
 	script(type='text/javascript').
 
@@ -713,8 +720,10 @@ head
 																	td(width='32')
 																		span#SpeakerIcon.icon-16x16-speaker-on(title='Mute Audio')
 																		button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
-																	td(width='64')
+																	td(width='50')
 																		span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 5px;')
+																	td#StubTradeTour(width='14')
+																		span
 																	td(width='32')
 																		button#ButtonOpenTradingCenter(width='24', height='24', title='Open Trading Center') OTC
 											// end left hand status panel
@@ -1075,16 +1084,349 @@ head
 							g:plusone(size='medium', href='http://www.astriarch.com/')
 						span
 							a.twitter-share-button(href='https://twitter.com/share', data-related='masteredsoft,mpalmerlee', data-via='astriarch', data-text='Astriarch - Ruler of the Stars, HTML5 space strategy game', data-url='http://astriarch.com', data-lang='en', data-size='medium', data-count='horizontal') Tweet
-							script
+							script.
 								!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
 
+			ol#joyRideTipContent
+				li
+					h2 Welcome to Astriarch
+					p it looks like this is your first time here, click below to start the Tutorial
+					a#TutorialClose(href="#close", class="joyride-end-tour") Skip Tutorial
+					| &nbsp;
+					a(href="#", class="joyride-next-tip") Start Tutorial
+				li(data-id='NewSkirmishGameButton', data-options='tipLocation:top')
+					h2 Click "New Game"
+					p This will create a new game and allow other players to join,
+				li
+					h2 New Game Screen
+					p From here we can wait for other human opponents to join and change game options. For the tutorial we'll just play against the computer.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='NumberOfSystemsComboBox-button', data-options='tipLocation:bottom')
+					h2 Change the number of systems to 2
+					p This option determines the maximum number of players a game can support.
+				li(data-id='Player2ComboBox-button', data-options='tipLocation:top')
+					h2 Choose a computer opponent
+					p Change the option for Player 2 from "Open" to "Easy Computer". The rest of the options we can leave to the defaults.
+				li(data-id='StartGameOptionsOkButton', data-options='tipLocation:top')
+					h2 Click "Start Game"
+					p This will start the game with the options we've selected.
+				li
+					h2 Main Game Screen
+					p This is the main game screen, it allows us to manage our empire, select planets to view, send ships between planets and start trading sessions.
+					p Click next to learn about the different areas of the main game screen.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='TextBlockFoodAmount', data-options='tipLocation:bottom')
+					h2 Overall Empire Status
+					p The top panel shows overall statistics of our emprire: population, gold, food, ore, and iridium.  Hover the mouse over each number to get more details about that resource.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemStatus', data-options='tipLocation:right')
+					h2 Selected Planet Status
+					p The left panel shows details about the selected planet, our home planet is selected by default.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemPopulationPanel', data-options='tipLocation:bottom')
+					h2 Planet Population
+					p These icons show the current and maximum population of the selected planet, hover the mouse over the population panel for more details.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemImprovementSlotsPanel', data-options='tipLocation:bottom')
+					h2 Planet Improvements
+					p These icons show the current improvements built on a planet and show the maximum number of slots a planet has to build improvements.
+					p You currently don't have any improvements built so all the slots are empty.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemPopulationAssignmentsPanel', data-options='tipLocation:bottom')
+					h2 Population Assignments
+					p These icons show what jobs the population is currently assigned to: farmers, miners or builders.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemBuiltImprovementsGrid', data-options='tipLocation:bottom')
+					h2 Improvement Count
+					p This area shows a summary of the number of improvements the selected planet has built: farms, mines, factories, colonies and space platforms.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemPlanetaryFleetGrid', data-options='tipLocation:bottom')
+					h2 Fleet Details
+					p This area shows a summary of the number of ships currently on the selected planet: defenders, scouts, destroyers, cruisers, and battleships.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='SelectedItemStatusDetails', data-options='tipLocation:right')
+					h2 Planet Details
+					p This area shows detailed statistics about the selected planet, how many resources are on the planet (stockpile) as well as the number of resources generated per turn and per worker.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='PlanetViewButton', data-options='tipLocation:top')
+					h2 Click "Planet View"
+					p This will allow us to build planetary improvements and change population worker assignments on the selected planet.
+					p Alternatively double-clicking on the planet brings up the planet view as well.
+				li
+					h2 Planet View
+					p This screen gives us more detail on our planet. It also allows us to queue up buildings and starships as well as change population assignments on the planet.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='BuildQueue', data-options='tipLocation:top')
+					h2 Build Queue
+					p To start building improvements on our planet and to eventually build starships we must add items from the available items list on the left to the build queue on the right.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='PopulationAssignments', data-options='tipLocation:right')
+					h2 Population Assignments
+					p These sliders reassign which jobs each citizen on the planet is currently assigned to. Each turn farmers produce food, miners produce ore and iridium, and builders construct the next improvement or starship in the build queue.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='ItemsAvailableListBox', data-options='tipLocation:left')
+					h2 Queue up three Farms
+					p Throughout the game we must make sure our people have enough food or our population will start protesting and possibly rioting (population unrest decreases overall productivity on the planet).
+					p Let's add three farms to the build queue by clicking on the item labeled "Farm" and then clicking the add button three times.
+					p Alternatively double-clicking on the available items adds them to the build queue as well.
+				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
+					h2 Assign three Builders
+					p Reassign all farmers on the planet to be builders by dragging the slider next to builders all the way to the right.
+					p This will ensure that the farms that we've added to the build queue will actually get built. Don't worry about farmers at this point, we have enough food for the next few turns to feed our population.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p We can now close the planet view screen.
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Finish the Turn
+					p Now that we've added farms to the build queue and ensured that there are builders assigned to build them there isn't much more we can do this turn.
+					p Click "Next Turn" to finish the turn.
+				li(data-id='TurnSummaryItemsListBox', data-options='tipLocation:top')
+					h2 Turn Status Messages
+					p This area shows notifications for all events that took place since the end of our last turn.
+					p Notice the message that tells us that we built a farm on our home planet.
+					p Clicking on a status message in the list will select the planet associated with the message (if there is an associated planet).
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p We are still building farms on our home planet and there is not much else to do right now.
+					p Click "Next Turn" to finish the turn.
+				li(data-id='TurnSummaryItemsListBox', data-options='tipLocation:top')
+					h2 Population Growth
+					p Notice the message notifying us of population growth on our home planet. The population will slowly grow on a planet as long as it has room to grow and the citizens have sufficient food and aren't protesting.
+					p Your new citizen has automatically been assigned as a farmer on our home planet, which is fine for now because we need to make sure we start producing food to feed our population.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p We still have one more farm to build on our home planet, click "Next Turn" to finish the turn.
+				li(data-id='PlanetViewButton', data-options='tipLocation:top')
+					h2 Click "Planet View"
+					p We've built the third farm on our home planet, now we can build some mines to start mining minerals (ore and iridium).
+				li(data-id='ItemsAvailableListBox', data-options='tipLocation:left')
+					h2 Build Two Mines
+					p Ore and Iridium are vital to continuing to improve our planets as well as building ships to capture other planets.
+					p Let's add two mines to the build queue by clicking on the item labeled "Mine" and then clicking the add button two times.
+				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
+					h2 Assign Two Miners
+					p Reassign two citizens to be miners by dragging the slider next to miners to the right until we have two miners.
+					p This will ensure that we start to mine some ore and iridium while we build our mines that will improve our mineral output.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p We can now close the planet view screen.
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p Now that we've queued up our mines, we need to wait for them to build, click "Next Turn" to finish the turn.
+				li(data-id='PlanetViewButton', data-options='tipLocation:top')
+					h2 Click "Planet View"
+					p We just gained an additional citizen on our home planet and we have plenty of food, so we need to update our population assignments.
+				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
+					h2 Assign one more Miner
+					p Reassign one more citizen to be a miner by dragging the slider next to miners to the right until we have three miners total.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p We can now close the planet view screen.
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p We need to wait while we build our 2nd mine, click "Next Turn" to finish the turn.
+				li(data-id='StubTradeTour', data-options='tipLocation:top')
+					h2 Open Trading Center
+					p Sometimes it is necessary to buy needed resources or sell surplus resources, click the trading center button to open the galactic trading center.
+				li
+					h2 Galactic Trading Center
+					p This screen shows us details about the trading center resource stockpile as well as current prices for food, ore and iridium.
+					p Prices fluctuate based on the amount of resources in the trading center stockpile: the lower the amount in the stockpile the higher the price.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='TradeResourceLabelOre', data-options='tipLocation:top')
+					h2 Buy Ore
+					p Click the button for Ore to signify that we want to purchase ore.
+					p Then drag the Amount slider over one unit and click the "Submit Trade" button to submit a trade to purchase one unit of ore.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p We can now close the trading center.
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p Click "Next Turn" to finish the turn.
+				li(data-id='TurnSummaryItemsListBox', data-options='tipLocation:top')
+					h2 Trade Execution
+					p Notice the message notifying us that our trade was executed.
+					p Trades are rejected if trades were simultaneously submitted by other players and we no longer have the resouces to cover the trade.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p Click "Next Turn" to finish the turn.
+				li(data-id='PlanetViewButton', data-options='tipLocation:top')
+					h2 Click "Planet View"
+					p Now we should have enough resources to add a factory to the build queue.
+				li(data-id='ItemsAvailableListBox', data-options='tipLocation:bottom')
+					h2 Build a Factory
+					p Each factory on a planet increases the production generated by each builder.
+					p Let's add a factory to the build queue by clicking on the item labeled "Factory" and then clicking the add button.
+				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
+					h2 Assign Builders
+					p Reassign citizens to be a builders to by dragging the slider next to builders to the right until we have four builders total.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p We can now close the planet view screen.
+				li(data-id='NextTurnButton', data-options='tipLocation:top')
+					h2 Next Turn
+					p Click "Next Turn" to finish the turn.
+				li
+					h2 Continue Building Factories
+					p Now that you know how to manage resource production on your planet, go ahead and add two more factories when you have enough resources.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Build another Factory
+					p We've finished building our first factory, we need a total of three factories on our home planet to have a sufficient amount of production.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Build one more Factory
+					p Good job building our 2nd factory, we need to build one more when we have enough resources.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Build a Colony
+					p Our three factories will help produce improvements and starships faster.
+					p We should also build a colony on our home planet. Colonies increase the maximum population on a planet and also allow ships to be repaired on the planet.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Explore other planets
+					p Our home planet is now well developed, it's time to build some ships to start exploring the galaxy.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Build a Scout
+					p Scouts are the weakest ship equipped with a warp drive.
+					p They are perfect for exploring other planets early in the game because they are relatively cheap to build.
+					p Build a Scout when you have enough resources just like we built our other improvements.
+					a(href="#", class="joyride-next-tip") Ok
+				li(data-id='BuildLastShipCheckBoxLabel', data-options='tipLocation:top')
+					h2 Build Last Ship
+					p Once the scout is completed we will be able to explore other planets in the galaxy.
+					p Notice the Build Last Ship option for the planet, when this option is enabled, the planet will queue up the last ship built at the end of the turn (assuming the planet's build queue is empty and we have enough resources).
+					a(href="#", class="joyride-next-tip") Ok
+				li(data-id='SendShipsButton', data-options='tipLocation:top')
+					h2 Send Ships
+					p Now that we have built our first scout, we can send it to another planet in the galaxy.
+					p Click the "Send Ships" button to choose a destination planet.
+				li
+					h2 Select Destination
+					p Click on one of the unexplored planets closest to your home planet, this will bring up the send ships screen.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Send Ships Screen
+					p This screen allows us to choose which ships we want to send to the destination planet we selected.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='ButtonSendAllShips', data-options='tipLocation:top')
+					h2 Send a Scout
+					p Use the slider or simply click the "Send All" button to send all ships on the planet.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p Accept your selected fleet to send by clicking the "Ok" button.
+				li
+					h2 Planetary Conflict Summary
+					p We explored our first planet!
+					p This screen shows us the details of fleet battles and tells us if we defeated the enemy or not.
+					p Some planets are inhabited by natives and will have a small initial defense fleet.
+					a(href="#", class="joyride-next-tip") Next
+				li(data-id='NeverShowPlanetaryConflictPopupsCheckbox', data-options='tipLocation:bottom')
+					h2 Auto Show Summaries
+					p Notice the option to not automatically popup these planetary conflict summaries.
+					p Check this box so these screens will not popup every time there is a fleet battle, we can always bring up this screen by double-clicking the planetary conflict turn status messages from the main screen.
+				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
+					h2 Click "Ok"
+					p For now let's close the planetary conflict summary.
+				li
+					h2 Explore the Quadrant
+					p Finish exploring the other planets in our quadrant by sending scouts to the remaining two closest unexplored planets.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Quadrant Explored
+					p Good job exploring those planets!
+					p Notice how each planet in our system is unique, selecting each planet will show the type and the current owner in the top left of the screen.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Planet Types
+					p There are four types of planets in the galaxy, each type is useful to control and is better for obtaining certain resources than other planets.
+					p Terrestrial planets are excellent for farming, but poor for mining.
+					p Arid planets are good for farming and mediocre for mining.
+					p Dead planets are mediocre for farming and good for mining.
+					p Asteroid belts are poor for farming and excellent for mining.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Expand
+					p Now that we've found out what planets are in our system, build up our fleets and take control of those planets we just explored.
+					p Above each planet there is a small number which indicates the last known fleet strength of that planet, this gives us a general idea of how many ships are required to capture the planet.
+					p Each scout has a strength of 4, so if an enemy planet has 10 strength, we should send at least 3 scouts to capture the planet.
+					p Obviously, the more ships we send against another planet, the more likely we'll be to capture the planet.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Exploit
+					p Great job capturing those planets! Now we can make the new planets more effective at generating resources.
+					p As we capture new planets, it is critical to build improvements so that the new planets are able to generate resources and eventually build fleets.
+					p Build one or two mines on asteroid belts and dead planets because they are better at mining ore and iridium.
+					p Build one or two farms on Arid planets because they are better at farming.
+					p We should also build at least one factory on each planet to speed up production and to allow us to build better ships and eventually a space platform.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Space Platforms
+					p Space Platforms are defensive battle stations that protect planets from attacking fleets and allow construction of cruisers and battleships.
+					p Space Platforms are expensive to build and cannot move between planets but are critical in our quest to dominate the galaxy.
+					p Save up enough resources and build a Space Platform on our home planet.
+					a(href="#", class="joyride-next-tip") Ok
+				li
+					h2 Ship Types
+					p Now that we've built our first space platform we can construct the strongest ships: cruisers and battleships.
+					p In order to effectively crush our opposition we need to leverage all five ship types.
+					p Defenders protect a planet from attacking fleets but are not equipped with warp drives so they are not able to move between planets.
+					p Scouts, destroyers, cruisers, and battleships can attack other planets and their respective strengths increase exponentially.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Starship Advantages
+					p Some starships have natural advantages over other starships and will attack those starships first in combat.
+					p An advantage increases attack strength by 50% while a disadvantage decreases attack strength by 50%.
+					p Defenders do not have an advantage or disadvantage against any other starship.
+					p Space Platforms have an advantage over every other type of starship and no disadvantages.
+					p Scouts have an advantage over battleships, while every other ship has an advantage against the ship directly beneath it in strength.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Help Page
+					p That was a lot of information to process, clicking the "Help" menu item in the top of the screen will bring up a summary of all the important information covered in this tutorial.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Exterminate
+					p We are now ready to build up our planets and fleets to destroy the opponent.
+					p Once you have captured all of the enemy's planets and the enemy has no more fleets in transit, you will have won the game and earned the title of Astriarch - Ruler of the Stars.
+					a(href="#", class="joyride-next-tip") Next
+				li
+					h2 Good luck!
+					p That concludes this tutorial, after finishing this game try playing against more opponents or more difficult computers.
+					p Astriarch is also multiplayer as well, so start a game against a friend and get your name on the "Top Rulers" board!
+					a(href="#", class="joyride-next-tip") Finish
 
-		script(type='text/javascript').
-			$(document).ready(function() {
-				var serverConfig = {"port":#{port}, "ping_freq":#{ping_freq}};
 
-				Astriarch.View.PageLoadInit(serverConfig);
-			});
+			script(type='text/javascript').
+				$(document).ready(function() {
+					var serverConfig = {"port":#{port}, "ping_freq":#{ping_freq}};
+
+					Astriarch.View.PageLoadInit(serverConfig);
+
+					var preStepCallback = function(index) { window.tour.enabled = true; window.tour.step = index; };
+					var postStepCallback = function(index, tip){ };
+					var preTutorialCallback = function(index, tip, elm){ };
+					var postTutorialCallback = function(){ window.tour.enabled = false;};
+
+					window.tour = {enabled:false, step:-1, jqElm:null};
+					var jrTour = $("#joyRideTipContent").joyride({
+						'scroll': false,
+						'autoStart': true,
+						'nextButton': false,
+						'localStorage': true,
+						'localStorageKey': 'seentutorial',
+						'preStepCallback': preStepCallback,
+						'postStepCallback': postStepCallback,
+						'preRideCallback': preTutorialCallback,
+						'postRideCallback': postTutorialCallback,
+						pauseAfter:[27, 32, 43, 48, 49, 50, 51, 53, 54, 56, 59, 63, 66, 68]
+					});
+					window.tour.jqElm = $(jrTour);
+				});
 
 		script(type='text/javascript').
 			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){

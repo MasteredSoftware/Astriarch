@@ -6,9 +6,18 @@ Astriarch.PlanetaryConflictControl = {
 	init: function() {
 		
 		Astriarch.PlanetaryConflictControl.dialog = new Astriarch.Dialog('#planetaryConflictDialog', 'Planetary Conflict', 424, 323, Astriarch.PlanetaryConflictControl.OKClose, Astriarch.PlanetaryConflictControl.CancelClose);
+		$('#NeverShowPlanetaryConflictPopupsCheckbox').change(function(){
+			if(window.tour.enabled && window.tour.step == 61 && this.checked) {
+				window.tour.jqElm.joyride('nextTip');
+			}
+		});
 	},
 	
 	show: function(/*TurnEventMessage*/ planetaryConflictMessage) {
+		if(window.tour.enabled && window.tour.step == 59) {
+			window.tour.jqElm.joyride('resume');
+		}
+
 		Astriarch.PlanetaryConflictControl.planetaryConflictMessage = planetaryConflictMessage;
 		
 		var summary = "";
@@ -17,7 +26,7 @@ Astriarch.PlanetaryConflictControl = {
 		//show resources looted if a planet changed hands
 		var resourcesLootedMessage = "";
 		if(planetaryConflictMessage.Type == Astriarch.TurnEventMessage.TurnEventMessageType.PlanetCaptured ||
-				planetaryConflictMessage.Type == Astriarch.TurnEventMessage.TurnEventMessageType.PlanetLost) {
+		   planetaryConflictMessage.Type == Astriarch.TurnEventMessage.TurnEventMessageType.PlanetLost) {
 			resourcesLootedMessage = "No Resources Looted.";
 			if(planetaryConflictMessage.Data.FoodAmountLooted != 0 ||
 			   planetaryConflictMessage.Data.GoldAmountLooted != 0 ||
@@ -66,10 +75,13 @@ Astriarch.PlanetaryConflictControl = {
 		}
 		//this is probably not the best way to do this, but it can't be syncronous because it needs to pop this up again
 		setTimeout(function() { Astriarch.GameController.processNextEndOfTurnPlanetaryConflictMessage(); }, 100);
+
+		if(window.tour.enabled && window.tour.step == 62) {
+			window.tour.jqElm.joyride('nextTip');
+		}
 	},
 
-	CancelClose: function()
-	{
+	CancelClose: function() {
 		//this is probably not the best way to do this, but it can't be syncronous because it needs to pop this up again
 		setTimeout(function() { Astriarch.GameController.processNextEndOfTurnPlanetaryConflictMessage(); }, 100);
 	}

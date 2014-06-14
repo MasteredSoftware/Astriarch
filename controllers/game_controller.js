@@ -1093,9 +1093,11 @@ var sessionTimeout = function(sessionDoc, callback){
 			});
 		},
 		function(cb){
-			models.SessionModel.findByIdAndRemove(sessionDoc._id, function(err){
+			//instead of removing the session, just remove the dateLastSeenAt property.
+			// It seems removing the document causes express to regenerate a new sessionId for the user even if the cookie still exists
+			models.SessionModel.update({"_id":sessionDoc._id}, {"dateLastSeenAt":null}, function(err, numberAffected, raw) {
 				if(err){
-					console.error("Problem removing session: ", err);
+					console.error("Problem deactivating session: ", err);
 				}
 				cb(err);
 			});

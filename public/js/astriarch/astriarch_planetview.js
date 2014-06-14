@@ -239,6 +239,10 @@ Astriarch.PlanetView = {
 	
 		Astriarch.PlanetView.dialog.setTitle("Planet " + p.Name + " View");
 		Astriarch.PlanetView.dialog.open();
+
+		if(window.tour.enabled && (window.tour.step == 27 || window.tour.step == 32 || window.tour.step == 43)){
+			window.tour.jqElm.joyride('resume');
+		}
 	},
 	
 	BuildQueueSelectionChanged: function() {
@@ -729,7 +733,16 @@ Astriarch.PlanetView = {
 		$('#TextBoxFarmers').text(self.farmers);
 		$('#TextBoxMiners').text(self.miners);
 		$('#TextBoxWorkers').text(self.workers);
-		
+
+		if(window.tour.enabled && window.tour.step == 20 && self.workers == 3){
+			window.tour.jqElm.joyride('nextTip');
+		} else if(window.tour.enabled && window.tour.step == 29 && self.miners == 2){
+			window.tour.jqElm.joyride('nextTip');
+		} else if(window.tour.enabled && window.tour.step == 33 && self.miners == 3){
+			window.tour.jqElm.joyride('nextTip');
+		} else if(window.tour.enabled && window.tour.step == 45 && self.workers == 3){
+			window.tour.jqElm.joyride('nextTip');
+		}
 
 		self.recalculateBuildQueueListItemsTurnsToCompleteEstimates();
 		self.refreshResourcesPerTurnTextBoxes();
@@ -835,6 +848,22 @@ Astriarch.PlanetView = {
 						var pi = new Astriarch.Planet.PlanetImprovement(lbiImprovement.AvailablePlanetImprovement.Type);
 						Astriarch.PlanetView.workingBuildQueue.push(pi);
 
+						if(window.tour.enabled) {
+							if (window.tour.step == 19 && Astriarch.PlanetView.workingBuildQueue.length == 3 &&
+								Astriarch.PlanetView.workingBuildQueue[0].Type == Astriarch.Planet.PlanetImprovementType.Farm &&
+								Astriarch.PlanetView.workingBuildQueue[1].Type == Astriarch.Planet.PlanetImprovementType.Farm &&
+								Astriarch.PlanetView.workingBuildQueue[2].Type == Astriarch.Planet.PlanetImprovementType.Farm) {
+								window.tour.jqElm.joyride('nextTip');
+							} else if (window.tour.step == 28 && Astriarch.PlanetView.workingBuildQueue.length == 2 &&
+								Astriarch.PlanetView.workingBuildQueue[0].Type == Astriarch.Planet.PlanetImprovementType.Mine &&
+								Astriarch.PlanetView.workingBuildQueue[1].Type == Astriarch.Planet.PlanetImprovementType.Mine) {
+								window.tour.jqElm.joyride('nextTip');
+							} else if (window.tour.step == 44 && Astriarch.PlanetView.workingBuildQueue.length == 2 &&
+								Astriarch.PlanetView.workingBuildQueue[1].Type == Astriarch.Planet.PlanetImprovementType.Factory) {
+								window.tour.jqElm.joyride('nextTip');
+							}
+						}
+
 						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload:{actionType:Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_IMPROVEMENT, planetId:Astriarch.PlanetView.planetMain.Id, data:lbiImprovement.AvailablePlanetImprovement.Type}});
 					}
 					else
@@ -861,6 +890,13 @@ Astriarch.PlanetView = {
 						var ssip = new Astriarch.Planet.StarShipInProduction(lbiStarship.AvailableStarShip.Type);
 						Astriarch.PlanetView.workingBuildQueue.push(ssip);
 
+						if(window.tour.enabled) {
+							if (Astriarch.PlanetView.workingBuildQueue.length == 1 &&
+								Astriarch.PlanetView.workingBuildQueue[0].Type == Astriarch.Fleet.StarShipType.Scout) {
+								window.tour.jqElm.joyride('resume');
+							}
+						}
+
 						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload:{actionType:Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_STARSHIP, planetId:Astriarch.PlanetView.planetMain.Id, data:lbiStarship.AvailableStarShip.Type}});
 					}
 					else
@@ -880,6 +916,9 @@ Astriarch.PlanetView = {
 	},
 	
 	OKClose: function()	{
+		if(window.tour.enabled && (window.tour.step == 21 || window.tour.step == 30 || window.tour.step == 34 || window.tour.step == 46)){
+			window.tour.jqElm.joyride('nextTip');
+		}
 	//TODO: throw exception if farmers miners and worker counts are greater than our planet pop
 		var self = Astriarch.PlanetView;
 		self.planetMain.UpdatePopulationWorkerTypes(self.farmers, self.miners, self.workers);

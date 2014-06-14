@@ -32,6 +32,11 @@ Astriarch.SendShipsControl = {
 	},
 	
 	show: function(/*Planet*/ pSource, /*ClientPlanet*/ pDest, /*int*/ distance) {
+
+		if(window.tour.enabled && window.tour.step == 56) {
+			window.tour.jqElm.joyride('resume');
+		}
+
 		Astriarch.SendShipsControl.CreatedFleet = null;
 		Astriarch.SendShipsControl.pSource = pSource;
 		Astriarch.SendShipsControl.pDest = pDest;
@@ -117,6 +122,10 @@ Astriarch.SendShipsControl = {
 
 	SliderScoutsValueChanged: function(event, ui) {
 		$('#TextBoxScouts').text(ui.value);
+
+		if(window.tour.enabled && window.tour.step == 58 && ui.value > 0) {
+			window.tour.jqElm.joyride('nextTip');
+		}
 	},
 
 	OKClose: function()	{
@@ -145,6 +154,10 @@ Astriarch.SendShipsControl = {
 			self.CreatedFleet = null;//just to be sure because we check this in MainPage.xaml.cs
 		}
 		Astriarch.View.SendShipsDialogWindowClosed(true);
+
+		if(window.tour.enabled && window.tour.step == 59) {
+			window.tour.jqElm.joyride('nextTip');
+		}
 	},
 
 	CancelClose: function() {

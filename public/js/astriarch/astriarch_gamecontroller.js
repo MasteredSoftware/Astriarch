@@ -224,6 +224,35 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 		Astriarch.View.TurnSummaryItemsListBox.addItems(listBoxItems);
 
 	}
+
+	//check for tutorial goals
+	var homePlanet = Astriarch.ClientGameModel.MainPlayer.HomePlanet;
+	if(homePlanet && window.tour.enabled){
+		var factoryCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
+		var colonyCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length;
+		var spacePlatformCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length;
+		if((factoryCount == 1 && window.tour.step == 48) ||
+			(factoryCount == 2 && window.tour.step == 49) ||
+			(factoryCount == 3 && window.tour.step == 50) ||
+			(colonyCount == 1 && window.tour.step == 51) ||
+			(spacePlatformCount == 1 && window.tour.step == 68)){
+			window.tour.jqElm.joyride('resume');
+		}
+
+		var scoutCount = homePlanet.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
+		if(scoutCount > 0 && window.tour.step == 54){
+			window.tour.jqElm.joyride('resume');
+		}
+
+		if(Astriarch.CountObjectKeys(Astriarch.ClientGameModel.MainPlayer.KnownClientPlanets) >= 4 && window.tour.step == 63){
+			window.tour.jqElm.joyride('resume');
+		}
+
+		if(Astriarch.CountObjectKeys(Astriarch.ClientGameModel.MainPlayer.OwnedPlanets) >= 4 && window.tour.step == 66){
+			window.tour.jqElm.joyride('resume');
+		}
+
+	}
 };
 
 Astriarch.GameController.processNextEndOfTurnPlanetaryConflictMessage = function() {

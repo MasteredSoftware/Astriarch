@@ -32,6 +32,10 @@ Astriarch.TradingControl = {
 
 		Astriarch.TradingControl.jqElm.buttonSubmitTrade.click(
 			function() {
+				if(window.tour.enabled && (window.tour.step == 38)){
+					window.tour.jqElm.joyride('nextTip');
+				}
+
 				Astriarch.TradingControl.ButtonSubmitTradeClick();
 			}
 		);
@@ -202,6 +206,9 @@ Astriarch.TradingControl = {
 	},
 
 	OKClose: function()	{
+		if(window.tour.enabled && (window.tour.step == 39)){
+			window.tour.jqElm.joyride('nextTip');
+		}
 		//Astriarch.View.SendShipsDialogWindowClosed(true);
 	},
 
