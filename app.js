@@ -496,3 +496,9 @@ wss.broadcastToSession = function(playerSessionKey, message) {
 		}
 	}
 };
+
+
+//404 handling
+app.use(function(req, res, next){
+	res.redirect(301, 'http://old.astriarch.com' + req.path);
+});
