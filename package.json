@@ -1,6 +1,6 @@
 {
   "name": "Astriarch",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "private": true,
   "scripts": {
 	"start": "node app.js"
@@ -8,7 +8,7 @@
   "dependencies": {
 	"express": "3.3.4",
 	"jade": "0.35.0",
-	"mongoose": "3.6.16",
+	"mongoose": "3.8.19",
 	"connect-mongo": "0.4.0",
 	"console-ten": "0.0.5",
 	"ws": "0.4.27",

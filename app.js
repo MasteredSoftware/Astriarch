@@ -76,13 +76,7 @@ app.get('/', function(req, res){
 });
 
 var server = http.createServer(app).listen(app.get('port'), function(){
-	console.log('Express server listening at: ' + app.get('host') + app.get('port'));
-	if(config.cleanup_old_games.enabled){
-		cleanupOldGames();
-	}
-	if(config.client_timeout){
-		checkForExpiredSessions();
-	}
+	console.log('Express server listening at: ' + app.get('host') + ":" + app.get('port'));
 });
 
 var cleanupOldGames = function(){
@@ -97,13 +91,31 @@ var checkForExpiredSessions = function(){
 	});
 };
 
+var initializeAfterWssConnected = function(){
+	if(config.cleanup_old_games.enabled){
+		cleanupOldGames();
+	}
+	if(config.client_timeout){
+		checkForExpiredSessions();
+	}
+};
 
 var Astriarch = require("./public/js/astriarch/astriarch_loader");
 
-var wss = new WebSocketServer({server: server});
-wss.on('connection', function(ws) {
+var wssInitialized = false;
 
-	wssInterface.init(wss);
+var wss = new WebSocketServer({server: server});
+
+wss.on('listening', function(){
+	console.log("Web Socket Server Listening.");
+	if(!wssInitialized){
+		wssInitialized = true;
+		wssInterface.init(wss);
+		initializeAfterWssConnected();
+	}
+});
+
+wss.on('connection', function(ws) {
 
 	parseCookie(ws.upgradeReq, null, function(err) {
 		var sessionId = ws.upgradeReq.signedCookies['connect.sid'];// ws.upgradeReq.cookies['connect.sid'];
@@ -349,7 +361,7 @@ wss.on('connection', function(ws) {
 					} else if(message.payload.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER){
 						//we need to join the user to the lobby or requested game chat room
 						var gameId = message.payload.gameId ? message.payload.gameId : null;
-						var session = {sessionId:sessionId, playerName:message.payload.sentByPlayerName, sentByPlayerNumber: message.payload.playerNumber, gameId:gameId};
+						var session = {sessionId:sessionId, playerName:message.payload.sentByPlayerName, playerNumber: message.payload.sentByPlayerNumber, gameId:gameId};
 						gameController.JoinChatRoom(gameId, session, function(err, newChatRoomWithSessions, oldChatRoomWithSessions){
 							//broadcast to all other sessions in the chat room that a player just logged in
 							wssInterface.sendChatRoomSessionListUpdates(ws, sessionId, newChatRoomWithSessions);
@@ -372,7 +384,7 @@ wss.on('connection', function(ws) {
 			var sessionId = ws.upgradeReq.signedCookies['connect.sid'];
 			console.log('connection closed for session: ', sessionId);
 			gameController.LeaveChatRoom(sessionId, true, function(err, chatRoomWithSessions){
-				console.log("Leaving Chat Room: ", err, chatRoomWithSessions);
+				console.debug("Leaving Chat Room: ", err, chatRoomWithSessions);
 				if(chatRoomWithSessions) {
 					wssInterface.sendChatRoomSessionListUpdates(ws, null, chatRoomWithSessions);
 				}
