@@ -77,6 +77,7 @@ app.get('/', function(req, res){
 
 var server = http.createServer(app).listen(app.get('port'), function(){
 	console.log('Express server listening at: ' + app.get('host') + ":" + app.get('port'));
+	setupUncaughtExceptionHandler();
 });
 
 var cleanupOldGames = function(){
@@ -514,3 +515,29 @@ wss.broadcastToSession = function(playerSessionKey, message) {
 app.use(function(req, res, next){
 	res.redirect(301, 'http://old.astriarch.com' + req.path);
 });
+
+var setupUncaughtExceptionHandler = function() {
+	/**
+	 * Handle uncaught node exceptions:
+	 * http://nodejs.org/docs/v0.6.19/api/process.html#process_event_uncaughtexception
+	 */
+	process.on('uncaughtException', function (err) {
+		try{
+			var message = "Caught exception: " + err.stack;
+			console.error(message);
+
+			//persist to mongo
+			var errorEvent = new models.ErrorEventModel({"message":message});
+			errorEvent.save(function(err, results){
+				if(err){
+					console.error("Problem saving ErrorEvent:", err);
+				}
+				process.exit(1);
+			});
+
+		} catch(err){
+			console.error("Exception caught in uncaughtException handler: " + err);
+			process.exit(1);
+		}
+	});
+};

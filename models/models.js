@@ -93,3 +93,11 @@ var SessionSchema = new mongoose.Schema({
 
 //compile schema to model
 exports.SessionModel = db.model('session', SessionSchema);
+
+var ErrorEventSchema = new mongoose.Schema({
+	message: {type: String},
+	dateCreated: { type: Date, index: true, default: Date.now }
+});
+
+//compile schema to model
+exports.ErrorEventModel = db.model('error_event', ErrorEventSchema);

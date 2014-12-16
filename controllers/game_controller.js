@@ -624,7 +624,10 @@ var applyPlanetViewWorkingDataObjectsToModel = function(planetViewWorkingDataMod
 
 		planet.BuildQueue = [];
 		for (var i in pvwd.workingBuildQueue){
-			planet.BuildQueue.push(Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(pvwd.workingBuildQueue[i]));
+			var sppi = pvwd.workingBuildQueue[i];
+			if(sppi){
+				planet.BuildQueue.push(Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi));
+			}
 		}
 
 		//now spend our resources and in case we issued a refund, add remainders to this planets resources and accumulate
