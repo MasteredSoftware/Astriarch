@@ -541,21 +541,14 @@ Astriarch.Planet.PlanetProductionItemType = {
 
 Astriarch.SavedGameInterface.makePlanetProductionItemSerializable = function(/*PlanetProductionItem*/ sppi) {
 	//since the instanceof is not serializable, we need to add a property to the PlanetProductionItem to tell what type it is
-	sppi.PlanetProductionItemType = Astriarch.Planet.PlanetProductionItemType.Unknown
-	if (sppi instanceof Astriarch.Planet.PlanetImprovement)
-	{
+	sppi.PlanetProductionItemType = Astriarch.Planet.PlanetProductionItemType.Unknown;
+	if (sppi instanceof Astriarch.Planet.PlanetImprovement) {
 		sppi.PlanetProductionItemType = Astriarch.Planet.PlanetProductionItemType.PlanetImprovement;
-	}
-	else if (sppi instanceof Astriarch.Planet.StarShipInProduction)//it's a ship
-	{
+	} else if (sppi instanceof Astriarch.Planet.StarShipInProduction) { //it's a ship
 		sppi.PlanetProductionItemType = Astriarch.Planet.PlanetProductionItemType.StarShipInProduction;
-	}
-	else if(sppi instanceof Astriarch.Planet.PlanetImprovementToDestroy)//it is a destroy improvement request
-	{
+	} else if(sppi instanceof Astriarch.Planet.PlanetImprovementToDestroy) { //it is a destroy improvement request
 		sppi.PlanetProductionItemType = Astriarch.Planet.PlanetProductionItemType.PlanetImprovementToDestroy;
-	}
-	else
-	{
+	} else {
 		var string = "Problem!";
 	}
 	return sppi;

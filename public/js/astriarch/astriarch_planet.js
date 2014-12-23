@@ -153,7 +153,7 @@ Astriarch.Planet.prototype.RemoveBuildQueueItemForRefund = function(/*int*/ inde
 	var goldRefunded = 0;
 	if (this.BuildQueue.length > index)
 	{
-		var productionItems = new Array(); //List<PlanetProductionItem>();
+		var productionItems = []; //List<PlanetProductionItem>();
 		for(var i in this.BuildQueue)
 		{
 			productionItems.push(this.BuildQueue[i]);
@@ -266,9 +266,11 @@ Astriarch.Planet.prototype.BuildQueueContainsImprovement = function(/*PlanetImpr
  */
 Astriarch.Planet.prototype.EnqueueProductionItemAndSpendResources = function(gameModel, /*PlanetProductionItem*/ item, /*Player*/ player)
 {
-	this.BuildQueue.push(item);
-	
-	this.SpendResources(gameModel, item.GoldCost, 0, item.OreCost, item.IridiumCost, player);
+	if(item) {
+		this.BuildQueue.push(item);
+
+		this.SpendResources(gameModel, item.GoldCost, 0, item.OreCost, item.IridiumCost, player);
+	}
 };
 
 /**

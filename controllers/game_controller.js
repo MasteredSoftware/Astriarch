@@ -839,23 +839,24 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 				switch(payload.actionType){
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_IMPROVEMENT:
 						//payload.data is an Astriarch.Planet.PlanetImprovementType
+						var pitData = parseIntDefaultIfNaN(payload.data, 3);
 
 						//CHECK if (lbiImprovement.CanBuild)
 						var canBuild = true;
 						var improvementCount = planet.BuiltImprovementCount();
 
 						//count items that take up slots in working queue
-						for (var i in pvwd.workingBuildQueue)
-						{
+						for (var i in pvwd.workingBuildQueue) {
 							var ppi = pvwd.workingBuildQueue[i];//PlanetProductionItem
-							if (ppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.PlanetImprovement && ppi.Type != Astriarch.Planet.PlanetImprovementType.SpacePlatform)
+							if (ppi && ppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.PlanetImprovement && ppi.Type != Astriarch.Planet.PlanetImprovementType.SpacePlatform) {
 								improvementCount++;
+							}
 						}
 
 						var slotsAvailable = planet.MaxImprovements - improvementCount;
 
 
-						if(payload.data != Astriarch.Planet.PlanetImprovementType.SpacePlatform){
+						if(pitData != Astriarch.Planet.PlanetImprovementType.SpacePlatform){
 							if (slotsAvailable <= 0) {//less than zero is a problem, but we'll just make sure they can't build more here
 								canBuild = false;
 							}
@@ -875,7 +876,7 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 							return;
 						}
 
-						var availablePlanetImprovement = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.PlanetImprovement(parseInt(payload.data)));
+						var availablePlanetImprovement = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.PlanetImprovement(pitData));
 						if (pvwd.workingResources.GoldAmount >= availablePlanetImprovement.GoldCost &&
 							pvwd.workingResources.IridiumAmount >= availablePlanetImprovement.IridiumCost &&
 							pvwd.workingResources.OreAmount >= availablePlanetImprovement.OreCost)
@@ -894,11 +895,13 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_STARSHIP:
 						//payload.data is an Astriarch.Fleet.StarShipType
 
+						var sstData = parseIntDefaultIfNaN(payload.data, 1);
+
 						var canBuild = true;
 
-						if (payload.data == Astriarch.Fleet.StarShipType.Destroyer && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0){
+						if (sstData == Astriarch.Fleet.StarShipType.Destroyer && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0){
 							canBuild = false;
-						} else if((payload.data == Astriarch.Fleet.StarShipType.Cruiser || payload.data == Astriarch.Fleet.StarShipType.Battleship) && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0){
+						} else if((sstData == Astriarch.Fleet.StarShipType.Cruiser || sstData == Astriarch.Fleet.StarShipType.Battleship) && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0){
 							canBuild = false;
 						}
 
@@ -907,7 +910,7 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 							return;
 						}
 
-						var availableStarShip = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.StarShipInProduction(parseInt(payload.data)));
+						var availableStarShip = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.StarShipInProduction(sstData));
 						if (pvwd.workingResources.GoldAmount >= availableStarShip.GoldCost &&
 							pvwd.workingResources.IridiumAmount >= availableStarShip.IridiumCost &&
 							pvwd.workingResources.OreAmount >= availableStarShip.OreCost)
@@ -926,7 +929,7 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.REMOVE:
 						//payload.data is the index in the queue
 
-						var index = parseInt(payload.data);
+						var index = parseIntDefaultIfNaN(payload.data);
 						if(index < pvwd.workingBuildQueue.length){
 							pvwd.workingResources = new Astriarch.Model.WorkingPlayerResources(null, pvwd.workingResources);
 							var refundObject = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(pvwd.workingBuildQueue[index]).GetRefundAmount();
@@ -945,15 +948,15 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 						break;
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.MOVEUP:
 						//payload.data is the index in the queue
-						moveItemInQueue(pvwd, parseInt(payload.data), true);
+						moveItemInQueue(pvwd, parseIntDefaultIfNaN(payload.data, 1), true);
 						break;
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.MOVEDOWN:
 						//payload.data is the index in the queue
-						moveItemInQueue(pvwd, parseInt(payload.data), false);
+						moveItemInQueue(pvwd, parseIntDefaultIfNaN(payload.data, 0), false);
 						break;
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.DEMOLISH_IMPROVEMENT:
 						//payload.data is an Astriarch.Planet.PlanetImprovementType
-						var pi = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.PlanetImprovementToDestroy(parseInt(payload.data)));
+						var pi = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.PlanetImprovementToDestroy(parseIntDefaultIfNaN(payload.data, 3)));
 						pvwd.workingBuildQueue.push(pi);
 						break;
 				}
@@ -1189,6 +1192,15 @@ var deleteGameById = function(gameDoc, callback){
 		callback(err, results);
 	});
 
+};
+
+var parseIntDefaultIfNaN = function(str, defaultInt){
+	defaultInt = defaultInt || 0;
+	var intData = parseInt(str);
+	if(isNaN(intData)){
+		intData = defaultInt;
+	}
+	return intData;
 };
 
 

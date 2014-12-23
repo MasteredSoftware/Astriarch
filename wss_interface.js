@@ -10,6 +10,9 @@ var init = function(wssInstance){
 exports.init = init;
 
 var sendChatRoomSessionListUpdates = function(ws, sessionId, chatRoomWithSessions){
+	if(!chatRoomWithSessions){
+		return;
+	}
 	var cleanSessions = [], session = null;//This doesn't include other player session ids for security
 	for(var s = 0; s < chatRoomWithSessions.sessions.length; s++){
 		session = chatRoomWithSessions.sessions[s];
