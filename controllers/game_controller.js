@@ -932,13 +932,15 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 						var index = parseIntDefaultIfNaN(payload.data);
 						if(index < pvwd.workingBuildQueue.length){
 							pvwd.workingResources = new Astriarch.Model.WorkingPlayerResources(null, pvwd.workingResources);
-							var refundObject = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(pvwd.workingBuildQueue[index]).GetRefundAmount();
+							var sppi = pvwd.workingBuildQueue[index];
+							if(sppi) {
+								var refundObject = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi).GetRefundAmount();
 
-							pvwd.workingResources.GoldRemainder += refundObject.Gold;
-							pvwd.workingResources.OreRemainder += refundObject.Ore;
-							pvwd.workingResources.IridiumRemainder += refundObject.Iridium;
-							pvwd.workingResources.AccumulateResourceRemainders();
-
+								pvwd.workingResources.GoldRemainder += refundObject.Gold;
+								pvwd.workingResources.OreRemainder += refundObject.Ore;
+								pvwd.workingResources.IridiumRemainder += refundObject.Iridium;
+								pvwd.workingResources.AccumulateResourceRemainders();
+							}
 							pvwd.workingBuildQueue.splice(index, 1);
 						} else {
 							callback({'type':'INVALID_INDEX','message':'Payload.data containted an invalid index for REMOVE:' + payload.data});

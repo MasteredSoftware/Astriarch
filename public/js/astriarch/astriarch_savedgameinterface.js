@@ -139,8 +139,10 @@ Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet = function(sp, gameGr
 	for(var j in sp.BuildQueue)
 	{
 		var sppi = sp.BuildQueue[j];
-		var ppi = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi);
-		p.BuildQueue.push(ppi);
+		if(sppi) {
+			var ppi = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi);
+			p.BuildQueue.push(ppi);
+		}
 	}
 
 
@@ -219,8 +221,10 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 	for(var j in sp.PlanetBuildGoals)
 	{
 		var sppi = sp.PlanetBuildGoals[j];
-		var ppi = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi);
-		p.PlanetBuildGoals[j] = ppi;
+		if(sppi) {
+			var ppi = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi);
+			p.PlanetBuildGoals[j] = ppi;
+		}
 	}
 
 	p.HomePlanet = null;
