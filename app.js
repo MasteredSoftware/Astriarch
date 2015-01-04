@@ -143,20 +143,20 @@ wss.on('connection', function(ws) {
 				case Astriarch.Shared.MESSAGE_TYPE.NOOP:
 					message.payload.message = "Hello From the Server";
 					message.payload.counter = (message.payload.counter || 0) + 1 ;
-					ws.send(JSON.stringify(message));
+					wssInterface.wsSend(ws, message);
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.PING:
 
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED:
-					//This is a client bound message, the server shouldn't recieve it
+					//This is a client bound message, the server shouldn't receive it
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.LOGOUT:
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES:
 					gameController.ListLobbyGames({sessionId: sessionId}, function(err, docs){
 						message.payload = docs;
-						ws.send(JSON.stringify(message));
+						wssInterface.wsSend(ws, message);
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS:
@@ -173,13 +173,13 @@ wss.on('connection', function(ws) {
 						var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, {gameOptions:game.gameOptions});
 						broadcastMessageToOtherPlayers(game, sessionId, broadcastMessage);
 
-						ws.send(JSON.stringify(broadcastMessage));
+						wssInterface.wsSend(ws, broadcastMessage);
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.CREATE_GAME:
 					gameController.CreateGame({name:message.payload.name, players:[{name:message.payload.playerName, sessionId:sessionId, position:0}]}, function(err, doc){
 						message.payload = doc["_id"];
-						ws.send(JSON.stringify(message));
+						wssInterface.wsSend(ws, message);
 
 						//update the players in the lobby for the new game
 						sendUpdatedGameListToLobbyPlayers(doc);
@@ -190,7 +190,7 @@ wss.on('connection', function(ws) {
 						console.log("Player" + playerPosition + " Joined, sessionId: ", sessionId);
 						message.payload = {gameOptions:game.gameOptions, name:game.name, playerPosition: playerPosition};
 						message.payload["_id"] = game["_id"];
-						ws.send(JSON.stringify(message));
+						wssInterface.wsSend(ws, message);
 
 						//broadcast to other players
 						var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, message.payload);
@@ -203,7 +203,7 @@ wss.on('connection', function(ws) {
 					gameController.ResumeGame({sessionId: sessionId, gameId: message.payload.gameId}, function(err, doc, player){
 						var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(doc.gameData, player);
 						message.payload = {gameData: serializableClientModel, playerPosition: player.position};
-						ws.send(JSON.stringify(message));
+						wssInterface.wsSend(ws, message);
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.START_GAME:
@@ -215,7 +215,7 @@ wss.on('connection', function(ws) {
 							if(err.type == Astriarch.Shared.ERROR_TYPE.INVALID_GAME_OPTIONS){
 								message.payload = "Invalid Game Options!";
 							}
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 						} else {
 							//for each player we need to create a client model and send that model to the player
 							console.log("gameController.StartGame players: ", game.players);
@@ -250,7 +250,7 @@ wss.on('connection', function(ws) {
 						if(err){
 							console.error("gameController.UpdatePlanetBuildQueue: ", err);
 							message.payload = {"error":err};
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 						}
 					});
 
@@ -260,7 +260,7 @@ wss.on('connection', function(ws) {
 						if(err){
 							console.error("gameController.SendShips: ", err);
 							message.payload = {"error":err};
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 						}
 					});
 					break;
@@ -269,7 +269,7 @@ wss.on('connection', function(ws) {
 						if(err){
 							console.error("gameController.EndPlayerTurn: ", err);
 							message.payload = {"error":err};
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 							return;
 						}
 						// data = {"allPlayersFinished": true|false, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc};
@@ -325,12 +325,12 @@ wss.on('connection', function(ws) {
 								if(sk != sessionId){
 									wss.broadcastToSession(sk, playerMessage);
 								} else {
-									ws.send(JSON.stringify(playerMessage));
+									wssInterface.wsSend(ws, playerMessage);
 								}
 							}
 						} else {
 							message.payload = payloadOrig;
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 						}
 
 					});
@@ -340,7 +340,7 @@ wss.on('connection', function(ws) {
 						if (err) {
 							console.error("gameController.SubmitTrade: ", err);
 							message.payload = {"error": err};
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 						}
 					});
 					break;
@@ -349,7 +349,7 @@ wss.on('connection', function(ws) {
 						if (err) {
 							console.error("gameController.CancelTrade: ", err);
 							message.payload = {"error": err};
-							ws.send(JSON.stringify(message));
+							wssInterface.wsSend(ws, message);
 						}
 					});
 					break;

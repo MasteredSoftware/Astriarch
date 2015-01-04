@@ -9,6 +9,12 @@ var init = function(wssInstance){
 };
 exports.init = init;
 
+var wsSend = function(ws, message, callback){
+	callback = callback || function(err){if(err){console.error("Problem in wsSend:", err);}};
+	ws.send(JSON.stringify(message), callback);
+};
+exports.wsSend = wsSend;
+
 var sendChatRoomSessionListUpdates = function(ws, sessionId, chatRoomWithSessions){
 	if(!chatRoomWithSessions){
 		return;
@@ -24,7 +30,7 @@ var sendChatRoomSessionListUpdates = function(ws, sessionId, chatRoomWithSession
 		if(!ws || session.sessionId != sessionId){
 			wss.broadcastToSession(session.sessionId, messageForPlayers);
 		} else {
-			ws.send(JSON.stringify(messageForPlayers));
+			wsSend(ws, messageForPlayers);
 		}
 	}
 };
