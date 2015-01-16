@@ -17,12 +17,15 @@ Astriarch.BattleSimulator = {
 
 		//fleet damage pending structures are so we can have both fleets fire simultaneously without damaging each-other till the end
 		var fleet1DamagePending = {}; //Dictionary<StarShipId, {Starship:starshipObject, Damage:int}>
-		var fleet1SpacePlatformDamagePendingObject = {'enemyFleetSpacePlatformDamagePending': 0};
+		var fleet1SpacePlatformDamagePendingObject = null;
 		var fleet2DamagePending = {}; //Dictionary<StarShipId, {Starship:starshipObject, Damage:int}>
-		var fleet2SpacePlatformDamagePendingObject = {'enemyFleetSpacePlatformDamagePending': 0};
+		var fleet2SpacePlatformDamagePendingObject = null;
 
 		while (f1.DetermineFleetStrength(true) > 0 && f2.DetermineFleetStrength(true) > 0)
 		{
+			fleet1SpacePlatformDamagePendingObject = {'enemyFleetSpacePlatformDamagePending': 0};
+			fleet2SpacePlatformDamagePendingObject = {'enemyFleetSpacePlatformDamagePending': 0};
+
 			var f1StarShips = f1.GetAllStarShips();//List<StarShip>
 			var f2StarShips = f2.GetAllStarShips();//List<StarShip>
 
@@ -94,15 +97,16 @@ Astriarch.BattleSimulator = {
 
 		for (var iGun = 0; iGun < strength; iGun += Astriarch.BattleSimulator.STARSHIP_WEAPON_POWER)
 		{
-			//remove any in the enemy fleet with strength - pending damage <= 0
+			//remove any in the enemy fleet with strength - pending damage <= 0 so that they aren't a target
 			for (var i = workingEnemyFleet.length - 1; i >= 0 ; i--)
 			{
 				var enemy = workingEnemyFleet[i];//StarShip
 				var pendingDamage = {'Starship':enemy, 'Damage':0};
 				if(fleetDamagePending[enemy.id])
 					pendingDamage = fleetDamagePending[enemy.id];
-				if(workingEnemyFleet[i].Strength() - pendingDamage['Damage'] <=0)
+				if(workingEnemyFleet[i].Strength() - pendingDamage['Damage'] <= 0) {
 					workingEnemyFleet.splice(i, 1);
+				}
 			}
 
 			//choose target

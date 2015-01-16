@@ -187,23 +187,39 @@ wss.on('connection', function(ws) {
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME:
 					gameController.JoinGame({gameId:message.payload.gameId, sessionId:sessionId, playerName:message.payload.playerName}, function(err, game, playerPosition){
-						console.log("Player" + playerPosition + " Joined, sessionId: ", sessionId);
-						message.payload = {gameOptions:game.gameOptions, name:game.name, playerPosition: playerPosition};
-						message.payload["_id"] = game["_id"];
-						wssInterface.wsSend(ws, message);
+						if(err || !game){
+							var msg = err || "Unable to find Game to Join.";
+							console.error("gameController.JoinGame: ", msg);
+							message.payload = msg;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+						} else {
+							console.log("Player" + playerPosition + " Joined, sessionId: ", sessionId);
+							message.payload = {gameOptions: game.gameOptions, name: game.name, playerPosition: playerPosition};
+							message.payload["_id"] = game["_id"];
+							wssInterface.wsSend(ws, message);
 
-						//broadcast to other players
-						var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, message.payload);
-						broadcastMessageToOtherPlayers(game, sessionId, broadcastMessage);
+							//broadcast to other players
+							var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, message.payload);
+							broadcastMessageToOtherPlayers(game, sessionId, broadcastMessage);
 
-						sendUpdatedGameListToLobbyPlayers(game);
+							sendUpdatedGameListToLobbyPlayers(game);
+						}
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME:
 					gameController.ResumeGame({sessionId: sessionId, gameId: message.payload.gameId}, function(err, doc, player){
-						var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(doc.gameData, player);
-						message.payload = {gameData: serializableClientModel, playerPosition: player.position};
-						wssInterface.wsSend(ws, message);
+						if(err || !game){
+							var msg = err || "Unable to find Game to Resume.";
+							console.error("gameController.ResumeGame: ", msg);
+							message.payload = msg;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+						} else {
+							var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(doc.gameData, player);
+							message.payload = {gameData: serializableClientModel, playerPosition: player.position};
+							wssInterface.wsSend(ws, message);
+						}
 					});
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.START_GAME:
@@ -249,7 +265,8 @@ wss.on('connection', function(ws) {
 					gameController.UpdatePlanetBuildQueue(sessionId, message.payload, function(err){
 						if(err){
 							console.error("gameController.UpdatePlanetBuildQueue: ", err);
-							message.payload = {"error":err};
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
 							wssInterface.wsSend(ws, message);
 						}
 					});
@@ -259,7 +276,8 @@ wss.on('connection', function(ws) {
 					gameController.SendShips(sessionId, message.payload, function(err){
 						if(err){
 							console.error("gameController.SendShips: ", err);
-							message.payload = {"error":err};
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
 							wssInterface.wsSend(ws, message);
 						}
 					});
@@ -268,7 +286,8 @@ wss.on('connection', function(ws) {
 					gameController.EndPlayerTurn(sessionId, message.payload, function(err, data){
 						if(err){
 							console.error("gameController.EndPlayerTurn: ", err);
-							message.payload = {"error":err};
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
 							wssInterface.wsSend(ws, message);
 							return;
 						}
@@ -339,7 +358,8 @@ wss.on('connection', function(ws) {
 					gameController.SubmitTrade(sessionId, message.payload, function(err, data) {
 						if (err) {
 							console.error("gameController.SubmitTrade: ", err);
-							message.payload = {"error": err};
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
 							wssInterface.wsSend(ws, message);
 						}
 					});
@@ -348,7 +368,8 @@ wss.on('connection', function(ws) {
 					gameController.CancelTrade(sessionId, message.payload, function(err, data) {
 						if (err) {
 							console.error("gameController.CancelTrade: ", err);
-							message.payload = {"error": err};
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
 							wssInterface.wsSend(ws, message);
 						}
 					});

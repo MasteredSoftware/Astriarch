@@ -1459,9 +1459,9 @@ Astriarch.Planet.PlanetImprovement = Astriarch.Planet.PlanetProductionItem.exten
 				break;
 			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
 				this.BaseProductionCost = 162;//space platforms should be expensive
-				this.OreCost = 30;
-				this.IridiumCost = 12;
-				this.GoldCost = 50;
+				this.OreCost = 16;
+				this.IridiumCost = 8;
+				this.GoldCost = 24;
 				break;
 		}
 	},
@@ -1496,21 +1496,21 @@ Astriarch.Planet.StarShipInProduction = Astriarch.Planet.PlanetProductionItem.ex
 		{
 			case Astriarch.Fleet.StarShipType.Battleship:
 				this.BaseProductionCost = 162;
-				this.OreCost = 30;
-				this.IridiumCost = 12;
-				this.GoldCost = 50;
+				this.OreCost = 16;
+				this.IridiumCost = 8;
+				this.GoldCost = 24;
 				break;
 			case Astriarch.Fleet.StarShipType.Cruiser:
 				this.BaseProductionCost = 54;
-				this.OreCost = 12;
-				this.IridiumCost = 5;
-				this.GoldCost = 20;
+				this.OreCost = 8;
+				this.IridiumCost = 4;
+				this.GoldCost = 12;
 				break;
 			case Astriarch.Fleet.StarShipType.Destroyer:
 				this.BaseProductionCost = 18;
-				this.OreCost = 5;
+				this.OreCost = 4;
 				this.IridiumCost = 2;
-				this.GoldCost = 8;
+				this.GoldCost = 6;
 				break;
 			case Astriarch.Fleet.StarShipType.Scout:
 				this.BaseProductionCost = 6;

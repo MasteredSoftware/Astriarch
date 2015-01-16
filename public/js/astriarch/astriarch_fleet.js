@@ -212,8 +212,7 @@ Astriarch.Fleet.prototype.ReduceFleet = function(spacePlatformDamage)
  */
 Astriarch.Fleet.prototype.DetermineFleetStrength = function(includeSpacePlatformDefence)
 {
-	if(includeSpacePlatformDefence === null || typeof includeSpacePlatformDefence == "undefined")
-		includeSpacePlatformDefence = true;
+	includeSpacePlatformDefence = includeSpacePlatformDefence || true;
 	var strength = 0;
 
 	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense])
