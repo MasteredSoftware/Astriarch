@@ -209,7 +209,7 @@ wss.on('connection', function(ws) {
 					break;
 				case Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME:
 					gameController.ResumeGame({sessionId: sessionId, gameId: message.payload.gameId}, function(err, doc, player){
-						if(err || !game){
+						if(err || !doc){
 							var msg = err || "Unable to find Game to Resume.";
 							console.error("gameController.ResumeGame: ", msg);
 							message.payload = msg;
