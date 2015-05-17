@@ -11,7 +11,7 @@ var Astriarch = Astriarch || require('./astriarch_base');
 Astriarch.BattleSimulator = {
 	STARSHIP_WEAPON_POWER: 2,//defenders have one gun and battleships have 16
 	STARSHIP_WEAPON_POWER_HALF: 1,
-	
+
 	SimulateFleetBattle: function(/*Fleet*/ f1, /*Fleet*/ f2){//returns bool?
 		var fleet1Wins = null;//bool?
 
@@ -79,7 +79,7 @@ Astriarch.BattleSimulator = {
 				f2.Owner.Points += Astriarch.ServerController.POINTS_PER_DAMAGED_STARSHIP_STRENGTH * fleet1SpacePlatformDamagePendingObject['enemyFleetSpacePlatformDamagePending'];
 			}
 		}
-		
+
 		if (f1.DetermineFleetStrength(true) > 0)
 			fleet1Wins = true;
 		else if (f2.DetermineFleetStrength(true) > 0)
@@ -87,7 +87,7 @@ Astriarch.BattleSimulator = {
 
 		return fleet1Wins;
 	},
-	
+
 	//enemyFleetSpacePlatformDamagePendingObject is just for the ref (in/out) parm wich is simply: {enemyFleetSpacePlatformDamagePending: 0}
 	StarshipFireWeapons: function(/*int*/ strength, /*StarShipType*/ type, /*bool*/ isSpacePlatform, /*List<StarShip>*/ enemyFleet, /*bool*/ enemyHasSpacePlatform, /*Dictionary<StarShipId, {Starship:starshipObject, Damage:int}>*/ fleetDamagePending, /*ref int*/ enemyFleetSpacePlatformDamagePendingObject) {
 		var workingEnemyFleet = [];// List<StarShip>(enemyFleet.Count);
@@ -146,12 +146,10 @@ Astriarch.BattleSimulator = {
 	},
 
 	StarshipHasAdvantageBasedOnType: function(/*bool*/ attackerIsSpacePlatform, /*StarShipType*/ sstAttacker, /*bool*/ defenderIsSpacePlatform, /*StarShipType*/ sstDefender) {
-		//space platforms have advantages over everything else
-		if (attackerIsSpacePlatform){
+		//space platforms have advantages over nothing
+		if (sstAttacker == Astriarch.Fleet.StarShipType.SystemDefense && sstDefender == Astriarch.Fleet.StarShipType.Battleship){
 			return true;
-		} else if(defenderIsSpacePlatform){
-			return false;
-		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.Battleship){
+		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.SystemDefense){
 			return true;
 		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Destroyer && sstDefender == Astriarch.Fleet.StarShipType.Scout) {
 			return true;
@@ -165,9 +163,7 @@ Astriarch.BattleSimulator = {
 	},
 
 	StarshipHasDisadvantageBasedOnType: function(/*bool*/ attackerIsSpacePlatform, /*StarShipType*/ sstAttacker, /*bool*/ defenderIsSpacePlatform, /*StarShipType*/ sstDefender) {
-		if (attackerIsSpacePlatform){
-			return false;
-		} else if(defenderIsSpacePlatform){
+		if (sstAttacker == Astriarch.Fleet.StarShipType.SystemDefense && sstDefender == Astriarch.Fleet.StarShipType.Scout){
 			return true;
 		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.Destroyer){
 			return true;
@@ -175,7 +171,7 @@ Astriarch.BattleSimulator = {
 			return true;
 		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Cruiser && sstDefender == Astriarch.Fleet.StarShipType.Battleship){
 			return true;
-		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Battleship && sstDefender == Astriarch.Fleet.StarShipType.Scout){
+		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Battleship && sstDefender == Astriarch.Fleet.StarShipType.SystemDefense){
 			return true;
 		}
 

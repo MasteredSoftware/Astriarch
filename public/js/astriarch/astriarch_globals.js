@@ -7,7 +7,7 @@ Astriarch.NextRandom = function(lowInclusive, highExclusive) {
 		highExclusive = lowInclusive;
 		lowInclusive = 0;
 	}
-	
+
 	if(lowInclusive < 0)
 		highExclusive += Math.abs(lowInclusive);
 	else
@@ -130,7 +130,7 @@ Astriarch.GameTools = {
 			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
 				helpText = "Space Platforms provide planetary defense.\r\n" +
                            "Allows construction of Cruisers and Battleships.\r\n" +
-                           "Advantage against: Destroyers, Disadvantage Against: Cruisers";
+                           "Advantage against: None, Disadvantage Against: None";
 				break;
 		}
 
@@ -164,17 +164,17 @@ Astriarch.GameTools = {
 	StarShipTypeToHelpText: function(/*StarShipType*/ t){
 		//here are the advantages (-> means has an advantage over):
 		//space platforms -> all
-		//battleships -> cruisers -> destroyers -> scouts (-> battleships)
+		//battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
 		var helpText = "";
 		switch (t)
 		{
 			case Astriarch.Fleet.StarShipType.SystemDefense:
 				helpText = "Defenders protect a planet from attacking fleets but cannot move between planets.\r\n" +
-						   "Advantage against: None, Disadvantage Against: None";
+						   "Advantage against: Battleships, Disadvantage Against: Scouts";
 				break;
 			case Astriarch.Fleet.StarShipType.Scout:
 				helpText = "Scouts are the weakest ship equipped with warp drive.\r\n" +
-						   "Advantage against: Battleships, Disadvantage Against: Destroyers";
+						   "Advantage against: Defenders, Disadvantage Against: Destroyers";
 				break;
 			case Astriarch.Fleet.StarShipType.Destroyer:
 				helpText = "Destroyers require a Factory in order to build and are twice the strength of a Scout.\r\n" +
@@ -186,7 +186,7 @@ Astriarch.GameTools = {
 				break;
 			case Astriarch.Fleet.StarShipType.Battleship:
 				helpText = "Battleships require a Space Platform in order to build and are twice the strength of a Cruiser.\r\n" +
-						   "Advantage against: Cruisers, Disadvantage Against: Scouts";
+						   "Advantage against: Cruisers, Disadvantage Against: Defenders";
 				break;
 		}
 
@@ -215,7 +215,7 @@ Astriarch.GameTools = {
 };//Astriarch.GameTools
 
 Astriarch.Util = {
-	
+
 	//image data hard-coded here to get around having to draw an image to a canvas in order to change the pixels
 	starshipImageData: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,0,0,0,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0],
 	spaceplatformImageData: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,128,0,255,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,128,0,255,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
@@ -232,7 +232,7 @@ Astriarch.Util = {
 		}
 		return Astriarch.Util.imageDataByColorRGBA[key];
 	},
-	
+
 	ChangeImageColor: function(/*Image bitmap array*/ bmpArr, /*ColorRGBA*/ colorNew) {
 		var retBmpArr = new Array(bmpArr.length);
 		for (var i = 0; i < bmpArr.length; i+=4)
@@ -251,7 +251,7 @@ Astriarch.Util = {
 			}
 			retBmpArr[i+3] = bmpArr[i+3];//alpha, keep it the same as the source
 		}
-		
+
 		return retBmpArr;
 	}
 
