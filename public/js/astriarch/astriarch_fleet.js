@@ -491,7 +491,7 @@ Astriarch.Fleet.LastKnownFleet = function(/*Fleet*/ fleet, /*ClientPlayer*/ owne
  * @constructor
  */
 Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
-	this.id = Astriarch.Fleet.StarShip.Static.NEXT_STARSHIP_ID++
+	this.id = Astriarch.Fleet.StarShip.Static.NEXT_STARSHIP_ID++;
 	this.Type = type;
 
 	this.BaseStarShipStrength = 0;
