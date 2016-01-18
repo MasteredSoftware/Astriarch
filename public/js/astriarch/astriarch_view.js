@@ -420,7 +420,7 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.ExactTotalFoodAmount() + " +" + totalResourceProduction.food_exact + " -" + totalPopulation);
 
 		$('#TextBlockGoldAmount').text(mainPlayer.Resources.GoldAmount);
-		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + (mainPlayer.Resources.GoldAmount + mainPlayer.Resources.GoldRemainder));
+		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.ExactTotalGoldAmount());
 
 		$('#TextBlockOreAmount').text(mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
 		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.ExactTotalOreAmount() + " +" + totalResourceProduction.ore_exact);

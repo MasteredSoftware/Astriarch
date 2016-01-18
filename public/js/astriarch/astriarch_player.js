@@ -60,6 +60,15 @@ Astriarch.Player.prototype.GetOwnedPlanetsListSorted = function()	{
 };
 
 /**
+ * the exact total gold for this player
+ * @this {Astriarch.Player}
+ * @return {number}
+ */
+Astriarch.Player.prototype.ExactTotalGoldAmount = function()	{
+	return this.Resources.GoldAmount + this.Resources.GoldRemainder;
+};
+
+/**
  * the total food on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}

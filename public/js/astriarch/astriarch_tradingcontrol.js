@@ -71,6 +71,8 @@ Astriarch.TradingControl = {
 		$("#tcdStockpilePriceIridium").text(ctc.iridiumResource.currentPrice.toFixed(2));
 		$("#tcdTradingCenterAmtIridium").text(ctc.iridiumResource.amount);
 		$("#tcdStockpileAmtIridium").text(this.playerResourceAmountsAfterTrades.iridium);
+
+		$("#tcdTradingCenterAmtGold").text(ctc.goldAmount.toFixed(2));
 	},
 
 	refreshTradesSubmittedListBox: function() {

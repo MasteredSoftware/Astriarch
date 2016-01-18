@@ -15,9 +15,12 @@ Astriarch.server_comm = {
 		this.ws.onmessage = this.receivedMessage;
 		this.ws.onclose = function(e){
 			console.log("onclose:", e, arguments);
+			//TODO: eventually try to reconnect automatically?
+			new Astriarch.Alert("Connection Lost", "<span style=\"color:red\">Communication with the server was interrupted, please refresh the browser and reconnect to your game to continue playing.</span>");
 		};
 		this.ws.onerror = function(e){
 			console.log("onerror:", e, arguments);
+			new Astriarch.Alert("Server Connection Error", "<span style=\"color:red\">An error was detected when connecting to the server.</span>");
 		};
 		this.ws.onopen = function(e){
 			console.log("onopen:", e, arguments);

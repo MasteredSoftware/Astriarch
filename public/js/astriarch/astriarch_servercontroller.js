@@ -147,7 +147,7 @@ Astriarch.ServerController = {
 
 	executeCurrentTrades: function(gameModel, endOfTurnMessagesByPlayerId){
 		//go through the current trades and deduct from the stockpile for buy orders and add to the stockpile for sell orders
-		var executedStatusListdByPlayerId = {};
+		var executedStatusListByPlayerId = {};
 
 		var tc = gameModel.TradingCenter;
 
@@ -155,7 +155,7 @@ Astriarch.ServerController = {
 		for(var pi in gameModel.Players) {
 			var p = gameModel.Players[pi];
 			playersById[p.Id] = p;
-			executedStatusListdByPlayerId[p.Id] = [];
+			executedStatusListByPlayerId[p.Id] = [];
 		}
 
 		for(var i = 0; i < tc.currentTrades.length; i++){
@@ -181,18 +181,18 @@ Astriarch.ServerController = {
 			}
 
 			if (executedStatus) {
-				executedStatusListdByPlayerId[trade.playerId].push(executedStatus);
+				executedStatusListByPlayerId[trade.playerId].push(executedStatus);
 			}
 		}
 
 		//create summary endOfTurnMessages
-		for(var pId in executedStatusListdByPlayerId){
+		for(var pId in executedStatusListByPlayerId){
 			var resourcesBought = {food:0,ore:0,iridium:0,goldSpent:0, tradeCount: 0};
 			var resourcesSold = {food:0,ore:0,iridium:0,goldEarned:0, tradeCount: 0};
 			var resourcesNotBought = {food:0,ore:0,iridium:0,goldSpent:0, tradeCount: 0};
 			var resourcesNotSold = {food:0,ore:0,iridium:0,goldEarned:0, tradeCount: 0};
-			for(var t in executedStatusListdByPlayerId[pId]){
-				var executedStatus = executedStatusListdByPlayerId[pId][t];
+			for(var t in executedStatusListByPlayerId[pId]){
+				var executedStatus = executedStatusListByPlayerId[pId][t];
 
 				var rbTarget = resourcesNotBought;
 				var rsTarget = resourcesNotSold;
@@ -226,7 +226,7 @@ Astriarch.ServerController = {
 				}
 				message = message.substring(0, message.length - 2);
 
-
+				endOfTurnMessagesByPlayerId[pId] = endOfTurnMessagesByPlayerId[pId] || [];
 				endOfTurnMessagesByPlayerId[pId].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.TradesExecuted, null, message));
 			}
 
@@ -241,11 +241,14 @@ Astriarch.ServerController = {
 				}
 				message = message.substring(0, message.length - 2);
 
+				endOfTurnMessagesByPlayerId[pId] = endOfTurnMessagesByPlayerId[pId] || [];
 				endOfTurnMessagesByPlayerId[pId].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.TradesNotExecuted, null, message));
 			}
 		}
 
 		tc.currentTrades = [];
+
+		return executedStatusListByPlayerId;
 	},
 
 	moveShips: function(/*Player*/ player){

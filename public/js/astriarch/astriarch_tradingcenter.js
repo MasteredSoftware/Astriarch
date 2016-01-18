@@ -7,6 +7,7 @@ Astriarch.TradingCenter = function(){
 	this.iridiumResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.IRIDIUM, 5, 100, 0.4, 6.0);
 
 	this.currentTrades = [];
+	this.transactionFeePercentage = 0.1;
 };
 
 Astriarch.TradingCenter.prototype.recalculatePrices = function(){
@@ -42,7 +43,7 @@ Astriarch.TradingCenter.prototype.executeTrade = function(gameModel, player, pla
 	if(trade.tradeType == Astriarch.TradingCenter.TradeType.SELL){
 		//ensure the player has enough resources and the market has enough gold
 
-		executedStatus.tradeGoldAmount -= executedStatus.tradeGoldAmount * 0.1;
+		executedStatus.tradeGoldAmount -= executedStatus.tradeGoldAmount * this.transactionFeePercentage;
 		if(this.goldAmount >= executedStatus.tradeGoldAmount && playerResourceAmount >= trade.amount){
 			//execute trade
 			this.goldAmount -= executedStatus.tradeGoldAmount;
@@ -57,7 +58,7 @@ Astriarch.TradingCenter.prototype.executeTrade = function(gameModel, player, pla
 	} else { //BUY
 		//ensure the player has enough gold and the market has enough resources
 
-		executedStatus.tradeGoldAmount += executedStatus.tradeGoldAmount * 0.1;
+		executedStatus.tradeGoldAmount += executedStatus.tradeGoldAmount * this.transactionFeePercentage;
 		if(player.Resources.GoldAmount >= executedStatus.tradeGoldAmount && marketResource.amount >= trade.amount){
 			//execute trade
 			this.goldAmount += executedStatus.tradeGoldAmount;
