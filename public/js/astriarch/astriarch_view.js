@@ -305,10 +305,17 @@ Astriarch.View.CancelSendShips = function() {
 	Astriarch.View.sendingShipsTo = false;
 };
 
+Astriarch.View.PlanetViewDialogWindowClosed = function() {
+	Astriarch.View.updateSelectedItemPanelForPlanet();
+	Astriarch.View.updatePlayerStatusPanel();//for total food per turn indicator and build queue updates
+	var dp = Astriarch.View.DrawnPlanets[Astriarch.PlanetView.planetMain.Id];
+	dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel.MainPlayer);
+	Astriarch.View.CanvasPlayfieldLayer.needsDisplay = true;
+};
+
 Astriarch.View.SendShipsDialogWindowClosed = function(dialogResult) {
 
-	if (dialogResult == true)
-	{
+	if (dialogResult == true) {
 		//check to make sure a fleet was created and then add the appropriate controls to our canvas
 		if (Astriarch.SendShipsControl.CreatedFleet != null)
 		{
@@ -465,7 +472,8 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				lastKnownFleet = mainPlayer.LastKnownPlanetFleetStrength[cp.Id];
 				lastKnownOwner = lastKnownFleet.LastKnownOwner;
 			}
-				
+
+			//Planet Type
 			sb += Astriarch.GameTools.PlanetTypeToFriendlyName(planetTypeIfKnownByPlayer) + "<br />";
 
 			var p = mainPlayer.GetPlanetIfOwnedByPlayer(cp);
@@ -476,7 +484,24 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				if (p.Owner != null)
 					owner = p.Owner.Name;
 				sb += owner + "<br />";
-				
+
+				//Producing Status
+				var ppi = p.GetNextProductionItemFromBuildQueue();//PlanetProductionItem
+				var queuedItemText = "None";
+				var queuedItemClass = "qi-default";
+
+				if(ppi) {
+					if (ppi instanceof Astriarch.Planet.PlanetImprovement) {
+						queuedItemClass = "qi-planetImprovement";
+					} else if (ppi instanceof Astriarch.Planet.StarShipInProduction) { //it's a ship
+						queuedItemClass = "qi-starShipInProduction";
+					} else if(ppi instanceof Astriarch.Planet.PlanetImprovementToDestroy) { //it is a destroy improvement request
+						queuedItemClass = "qi-planetImprovementToDestroy";
+					}
+					queuedItemText = ppi.ToString() + " (" + ppi.TurnsToComplete + ")";
+				}
+				sb +=  "<span class='" + queuedItemClass + "'>" + queuedItemText + "</span>";
+
 				$('#SelectedItemBuiltImprovementsGrid').css({"visibility":"visible"});
 				$('#SelectedItemPlanetaryFleetGrid').css({"visibility":"visible"});
 				$('#SelectedItemPopulationPanel').css({"visibility":"visible"});

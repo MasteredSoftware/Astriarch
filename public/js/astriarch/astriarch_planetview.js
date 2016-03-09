@@ -919,7 +919,7 @@ Astriarch.PlanetView = {
 		if(window.tour.enabled && (window.tour.step == 21 || window.tour.step == 30 || window.tour.step == 34 || window.tour.step == 46)){
 			window.tour.jqElm.joyride('nextTip');
 		}
-	//TODO: throw exception if farmers miners and worker counts are greater than our planet pop
+		//TODO: throw exception if farmers miners and worker counts are greater than our planet pop
 		var self = Astriarch.PlanetView;
 		self.planetMain.UpdatePopulationWorkerTypes(self.farmers, self.miners, self.workers);
 		self.planetMain.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
@@ -949,9 +949,8 @@ Astriarch.PlanetView = {
 		}
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_FINISH, payload:{"OkClose": true, "planetId": self.planetMain.Id, "farmers":self.farmers, "miners":self.miners, "workers":self.workers, "BuildLastStarShip":Astriarch.PlanetView.planetMain.BuildLastStarShip}});
-		
-		Astriarch.View.updateSelectedItemPanelForPlanet();
-        Astriarch.View.updatePlayerStatusPanel();//for total food per turn indicator and build queue updates
+
+		Astriarch.View.PlanetViewDialogWindowClosed();
 	},
 
 	CancelClose: function()	{

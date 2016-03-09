@@ -30,7 +30,9 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 													  this.ClientPlanet.BoundingHex.MidPoint.Y + (Astriarch.Planet.Static.PLANET_SIZE/2) - 2,
 													  11, 11);
 		this.drawSpacePlatformRectangle = false;
-		this.spacePlatformRectangleImageData = Astriarch.Util.spaceplatformImageData;											  
+		this.spacePlatformRectangleImageData = Astriarch.Util.spaceplatformImageData;
+
+		this.productionItemStatusColor = null;
 		
 		
 		//images
@@ -115,6 +117,31 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 					platformImg.data[i] = this.spacePlatformRectangleImageData[i];
 				ctx.putImageData(platformImg, this.spacePlatformRectangle.X, this.spacePlatformRectangle.Y);
 			}
+
+			if(this.productionItemStatusColor) {
+				var statusRadius = 2;
+				var offset = 4;
+				var statusCenterX = centerX - width/2 - offset;
+				var statusCenterY = centerY;
+				ctx.beginPath();
+				ctx.moveTo(statusCenterX, centerY - statusRadius);
+				// draw left side of Ellipse
+				ctx.bezierCurveTo(statusCenterX-statusRadius,statusCenterY-statusRadius,
+					statusCenterX-statusRadius,statusCenterY+statusRadius,
+					statusCenterX,statusCenterY+statusRadius);
+
+				// draw right side of Ellipse
+				ctx.bezierCurveTo(statusCenterX+statusRadius,statusCenterY+statusRadius,
+					statusCenterX+statusRadius,statusCenterY-statusRadius,
+					statusCenterX,statusCenterY-statusRadius);
+
+				ctx.lineWidth=2.0;
+				ctx.strokeStyle = this.productionItemStatusColor;
+				ctx.fillStyle = this.productionItemStatusColor;
+				ctx.stroke();
+				ctx.fill();
+				ctx.closePath();
+			}
 		}
 		
 	},
@@ -183,11 +210,12 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 		}*/
 
 		this.drawFleetRectangle = false;
-		this.drawSpacePlatformRectangle = false
+		this.drawSpacePlatformRectangle = false;
+		this.productionItemStatusColor = null;
 
 		var lastKnownFleet = null;
 		var lastKnownOwner = null;//ClientPlayer
-		if (this.ClientPlanet.Id in player.LastKnownPlanetFleetStrength){
+		if(this.ClientPlanet.Id in player.LastKnownPlanetFleetStrength) {
 			lastKnownFleet = player.LastKnownPlanetFleetStrength[this.ClientPlanet.Id];
 			lastKnownOwner = lastKnownFleet.LastKnownOwner;
 		}
@@ -210,6 +238,20 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 			}
 			
 			this.textBlockStrengthText = planet.PlanetaryFleet.DetermineFleetStrength() + "";
+
+			//set build status circle
+			var ppi = planet.GetNextProductionItemFromBuildQueue();//PlanetProductionItem
+			if(ppi) {
+				if (ppi instanceof Astriarch.Planet.PlanetImprovement) {
+					this.productionItemStatusColor = "#00FF00";
+				} else if (ppi instanceof Astriarch.Planet.StarShipInProduction) { //it's a ship
+					this.productionItemStatusColor = "#336699";
+				} else if(ppi instanceof Astriarch.Planet.PlanetImprovementToDestroy) { //it is a destroy improvement request
+					this.productionItemStatusColor = "#FF0000";
+				}
+			} else {
+				this.productionItemStatusColor = "#CCCCCC";
+			}
 
 		} else if (this.knownPlanetType && lastKnownFleet && lastKnownOwner) {
 

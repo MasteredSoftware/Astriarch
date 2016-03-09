@@ -264,14 +264,22 @@ Astriarch.Planet.prototype.BuildQueueContainsImprovement = function(/*PlanetImpr
  * Adds an item to the build queue and reduces the players resources based on the cost
  * @this {Astriarch.Planet}
  */
-Astriarch.Planet.prototype.EnqueueProductionItemAndSpendResources = function(gameModel, /*PlanetProductionItem*/ item, /*Player*/ player)
-{
+Astriarch.Planet.prototype.EnqueueProductionItemAndSpendResources = function(gameModel, /*PlanetProductionItem*/ item, /*Player*/ player) {
 	if(item) {
 		this.BuildQueue.push(item);
 
 		this.SpendResources(gameModel, item.GoldCost, 0, item.OreCost, item.IridiumCost, player);
 	}
 };
+
+/**
+ * Returns the top item of the BuildQueue
+ * @this {Astriarch.Planet}
+ */
+Astriarch.Planet.prototype.GetNextProductionItemFromBuildQueue = function() {
+	return this.BuildQueue[0];
+};
+
 
 /**
  * reduces the players resources based on the cost
@@ -398,14 +406,9 @@ Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//
 			{
 				var nextInQueue = this.BuildQueue.slice(0, 1)[0];//PlanetProductionItem
 				nextItemInQueueName = nextInQueue.ToString();
-				/*
-				if (nextInQueue instanceof Astriarch.Planet.PlanetImprovement)
-					nextItemInQueueName = ((PlanetImprovement)nextInQueue.ToString();
-				else if (nextInQueue instanceof Astriarch.Planet.StarShipInProduction)
-					nextItemInQueueName = ((StarShipInProduction)nextInQueue).ToString();
-				else if (nextInQueue instanceof Astriarch.Planet.PlanetImprovementToDestroy)
-					nextItemInQueueName = ((PlanetImprovementToDestroy)nextInQueue).ToString();
-				*/
+
+				//estimate turns left for next item so that we display it correctly on the main screen
+				nextInQueue.EstimateTurnsToComplete(planetProductionPerTurn);
 			}
 
 			if (nextItem instanceof Astriarch.Planet.PlanetImprovement)
