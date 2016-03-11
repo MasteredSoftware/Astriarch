@@ -34,7 +34,7 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 
 		this.productionItemStatusColor = null;
 		
-		
+		this.wayPointLine = null;//Astriarch.Line()
 		//images
 		/*
 		new BitmapImage(new Uri(@"img/PlanetClass2Tile.png", UriKind.Relative));
@@ -142,6 +142,19 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 				ctx.fill();
 				ctx.closePath();
 			}
+
+			if(this.wayPointLine) {
+				//draw waypoint line
+				ctx.strokeStyle = this.textBlockForeground;
+				ctx.lineWidth = 1.0;
+				ctx.setLineDash([8, 15]);
+				ctx.beginPath();
+				ctx.moveTo(this.wayPointLine.X1, this.wayPointLine.Y1);
+				ctx.lineTo(this.wayPointLine.X2, this.wayPointLine.Y2);
+				ctx.closePath();
+				ctx.stroke();
+				ctx.setLineDash([]);
+			}
 		}
 		
 	},
@@ -178,7 +191,8 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 	 * Updates the DrawnPlanet's properties based on what the player knows about the planet
 	 * @this {Astriarch.DrawnPlanet}
 	 */
-	UpdatePlanetDrawingForPlayer: function(/*Player*/ player) {
+	UpdatePlanetDrawingForPlayer: function(/*Astriarch.ClientGameModel*/ clientGameModel) {
+		var player = clientGameModel.MainPlayer;
 		this.planetImageBackgroundPosition = null;
 		this.knownPlanetType = player.PlanetTypeIfKnownByPlayer(this.ClientPlanet);
 
@@ -212,6 +226,8 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 		this.drawFleetRectangle = false;
 		this.drawSpacePlatformRectangle = false;
 		this.productionItemStatusColor = null;
+
+		this.wayPointLine = null;
 
 		var lastKnownFleet = null;
 		var lastKnownOwner = null;//ClientPlayer
@@ -251,6 +267,17 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 				}
 			} else {
 				this.productionItemStatusColor = "#CCCCCC";
+			}
+
+			//draw waypoint line if WayPointPlanetId is set
+			if(planet.WayPointPlanetId) {
+				var wayPointPlanet = clientGameModel.getClientPlanetById(planet.WayPointPlanetId);
+				if(wayPointPlanet) {
+					this.wayPointLine = new Astriarch.Line(this.ClientPlanet.BoundingHex.MidPoint.X,
+						this.ClientPlanet.BoundingHex.MidPoint.Y,
+						wayPointPlanet.BoundingHex.MidPoint.X,
+						wayPointPlanet.BoundingHex.MidPoint.Y);
+				}
 			}
 
 		} else if (this.knownPlanetType && lastKnownFleet && lastKnownOwner) {

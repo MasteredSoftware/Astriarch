@@ -85,6 +85,15 @@ Astriarch.ClientModel = function(turnNumber, mainPlayer, clientPlayers, clientPl
 	this.Options = options || {"TurnTimeLimitSeconds":0};
 };
 
+Astriarch.ClientModel.prototype.getClientPlanetById = function(id){
+	for(var i = 0; i < this.ClientPlanets.length; i++){
+		if(this.ClientPlanets[i].Id == id){
+			return this.ClientPlanets[i];
+		}
+	}
+	return null;
+};
+
 Astriarch.ClientPlayer = function(id, playerType, name, color, points){
 	this.Id = id;
 	this.Type = playerType;//PlayerType

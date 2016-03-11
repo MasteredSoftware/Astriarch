@@ -804,6 +804,29 @@ exports.SendShips = function(sessionId, payload, callback){
 
 			planetSource.OutgoingFleets.push(createdFleet);
 
+			//set WayPointPlanetId if key is set
+			if(payload.data.WayPointPlanetId !== undefined){
+				planetSource.WayPointPlanetId = payload.data.WayPointPlanetId;
+			}
+
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
+		});
+	}, 0, callback);
+};
+
+exports.ClearWaypoint = function(sessionId, payload, callback){
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+		//payload: {"planetIdSource":1}
+		getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetIdSource, function(err, player, planetSource, gameModel){
+			if(err){
+				callback(err);
+				return;
+			}
+
+			//clear WayPointPlanetId
+			planetSource.WayPointPlanetId = null;
+
 			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
 			cb(null, data);
 		});

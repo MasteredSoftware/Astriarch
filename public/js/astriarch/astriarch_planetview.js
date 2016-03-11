@@ -104,12 +104,21 @@ Astriarch.PlanetView = {
 				Astriarch.PlanetView.addImprovementToDestroy(Astriarch.Planet.PlanetImprovementType.Colony);
 			}
 		);
+
+		$( "#ButtonClearWaypoint" ).button();
+		$( "#ButtonClearWaypoint" ).click(
+			function() {
+				$('#ButtonClearWaypoint').button('disable');
+				Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CLEAR_WAYPOINT, payload:{"planetIdSource":Astriarch.PlanetView.planetMain.Id} });
+				Astriarch.PlanetView.planetMain.WayPointPlanetId = null;
+			}
+		);
 		
 		var checkBoxTooltip = "If this option is checked and the build queue is empty at the end of the turn,\r\nthe ship last built on this planet will be added to the queue.\r\nIn order to build the ship, sufficient resources must exist\r\nas well as a surplus of gold to cover the amount of food shipped last turn.";
 		//$('#BuildLastShipCheckBox').attr('title', checkBoxTooltip);
 		$('#BuildLastShipCheckBoxLabel').attr('title', checkBoxTooltip);
 		
-		$('#BuildLastShipCheckBox').attr('checked', true);
+		$('#BuildLastShipCheckBox').prop('checked', true);
 		
 		Astriarch.PlanetView.ItemsAvailableListBox = new JSListBox({'containerSelector':'ItemsAvailableListBox'});
 		Astriarch.PlanetView.BuildQueueListBox = new JSListBox({'containerSelector':'BuildQueueListBox'});
@@ -216,6 +225,12 @@ Astriarch.PlanetView = {
 		$('#ButtonBuildQueueRemoveSelectedItem').button('disable');
 		$('#ButtonBuildQueueMoveSelectedItemDown').button('disable');
 		$('#ButtonBuildQueueMoveSelectedItemUp').button('disable');
+
+		if(Astriarch.PlanetView.planetMain.WayPointPlanetId) {
+			$('#ButtonClearWaypoint').button('enable');
+		} else {
+			$('#ButtonClearWaypoint').button('disable');
+		}
 		
 		Astriarch.PlanetView.refreshCurrentWorkingResourcesTextBoxes();
 		

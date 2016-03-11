@@ -777,7 +777,8 @@ head
 													td(colspan='3', width='110')
 														span#TextBlockPlanetType(title='', style='text-align: center;')
 												tr(height='20')
-													td(colspan='4')  
+													td(colspan='4')
+														button#ButtonClearWaypoint(height='18', title='Clear Waypoint') Clear Waypoint
 												tr(height='32')
 													td(width='32')
 														span.icon-32x32-FoodLarge(title='Food Per Turn')
@@ -915,6 +916,7 @@ head
 																	#ItemsAvailableListBox(style='height: 225px;')
 																td(width='200')
 																	#BuildQueueListBox(style='height: 225px;')
+
 							#sendShipsDialog(style='width: 380px; height: 240px; display: none;')
 								table(cellpadding='0', cellspacing='0')
 									tr(height='25')
@@ -927,34 +929,45 @@ head
 														button#ButtonSendNoShips(width='75', height='24', title='Send no ships from the Planet') Send None
 													td(width='100')
 														button#ButtonSendAllShips(width='75', height='24', title='Send all ships on the Planet') Send All
-									tr(height='50')
+									tr(height='40')
 										td(width='140')
 											span Scouts:
 										td(width='40')
 											span#TextBoxScouts 0
 										td(width='200')
 											#SliderScouts
-									tr(height='50')
+									tr(height='40')
 										td(width='140')
 											span Destroyers:
 										td(width='40')
 											span#TextBoxDestroyers 0
 										td(width='200')
 											#SliderDestroyers
-									tr(height='50')
+									tr(height='40')
 										td(width='140')
 											span Cruisers:
 										td(width='40')
 											span#TextBoxCruisers 0
 										td(width='200')
 											#SliderCruisers
-									tr(height='50')
+									tr(height='40')
 										td(width='140')
 											span Battleships:
 										td(width='40')
 											span#TextBoxBattleships 0
 										td(width='200')
 											#SliderBattleships
+									tr(height='30')
+										td(colspan='3', width='380', valign='top')
+											table(cellpadding='0', cellspacing='0')
+												tr(height='30')
+													td(width='180')
+														span#CurrentWaypointStatus
+													td(width='100')
+														label#SetWaypointCheckBoxLabel(for='SetWaypointCheckBox', style='display: inline;') Set Waypoint
+													td(width='100')
+														input#SetWaypointCheckBox(type='checkbox', name='SetwaypointCheckBox')
+
 
 							#tradingControlDialog(style='width: 460px; height: 300px; display: none;')
 								table(cellpadding='0', cellspacing='0')

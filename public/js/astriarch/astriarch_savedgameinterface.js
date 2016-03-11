@@ -166,6 +166,7 @@ Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet = function(sp, gameGr
 
 	p.StarShipTypeLastBuilt = sp.StarShipTypeLastBuilt;//StarShipType
 	p.BuildLastStarShip = sp.BuildLastStarShip;
+	p.WayPointPlanetId = sp.WayPointPlanetId;
 
 	p.ResourcesPerTurn = new Astriarch.Planet.PlanetPerTurnResourceGeneration(/*Planet*/ p, /*PlanetType*/ p.Type);
 
@@ -531,6 +532,7 @@ Astriarch.SerializablePlanet = function(/*Astriarch.Planet*/ planet) {
 	
 	this.StarShipTypeLastBuilt = planet.StarShipTypeLastBuilt;//StarShipType
     this.BuildLastStarShip = planet.BuildLastStarShip;
+	this.WayPointPlanetId = planet.WayPointPlanetId;
 
 	//NOTE: not serialized
 	//this.maxPopulation = this.MaxImprovements;

@@ -27,6 +27,10 @@ Astriarch.SendShipsControl = {
 				Astriarch.SendShipsControl.ButtonSendAllShipsClick();
 			}
 		);
+
+		var checkBoxTooltip = "When a waypoint is set on a planet, newly built ships will automatically be sent to the destination planet.";
+		$('#SetWaypointCheckBoxLabel').attr('title', checkBoxTooltip);
+		$('#SetWaypointCheckBox').prop('checked', false);
 		
 		Astriarch.SendShipsControl.dialog = new Astriarch.Dialog('#sendShipsDialog', 'Send Ships', 380, 330, Astriarch.SendShipsControl.OKClose, Astriarch.SendShipsControl.CancelClose);
 	},
@@ -48,46 +52,49 @@ Astriarch.SendShipsControl = {
 
 		$('#SliderScouts').slider("value", 0);
 		$('#SliderScouts').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Scout].length);
-		if ($('#SliderScouts').slider("option", "max") > 0)
-		{
+		if ($('#SliderScouts').slider("option", "max") > 0) {
 			$('#SliderScouts').slider("enable");
-		}
-		else
-		{
+		} else {
 			$('#SliderScouts').slider("disable");
 		}
 
 		$('#SliderDestroyers').slider("value", 0);
 		$('#SliderDestroyers').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length);
-		if ($('#SliderDestroyers').slider("option", "max") > 0)
-		{
+		if ($('#SliderDestroyers').slider("option", "max") > 0) {
 			$('#SliderDestroyers').slider("enable");
-		}
-		else
-		{
+		} else {
 			$('#SliderDestroyers').slider("disable");
 		}
 
 		$('#SliderCruisers').slider("value", 0);
 		$('#SliderCruisers').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length);
-		if ($('#SliderCruisers').slider("option", "max") > 0)
-		{
+		if ($('#SliderCruisers').slider("option", "max") > 0) {
 			$('#SliderCruisers').slider("enable");
-		}
-		else
-		{
+		} else {
 			$('#SliderCruisers').slider("disable");
 		}
 
 		$('#SliderBattleships').slider("value", 0);
 		$('#SliderBattleships').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Battleship].length);
-		if ($('#SliderBattleships').slider("option", "max") > 0)
-		{
+		if ($('#SliderBattleships').slider("option", "max") > 0) {
 			$('#SliderBattleships').slider("enable");
-		}
-		else
-		{
+		} else {
 			$('#SliderBattleships').slider("disable");
+		}
+
+		var currentWaypointStatus = "Waypoint not set";
+		if(pSource.WayPointPlanetId){
+			var waypointClientPlanet = Astriarch.ClientGameModel.getClientPlanetById(pSource.WayPointPlanetId);
+			if(waypointClientPlanet) {
+				currentWaypointStatus = "Waypoint set to planet " + waypointClientPlanet.Name;
+			}
+		}
+		$('#CurrentWaypointStatus').text(currentWaypointStatus);
+
+		if(pSource.WayPointPlanetId == pDest.Id) {
+			$('#SetWaypointCheckBox').prop('checked', true);
+		} else {
+			$('#SetWaypointCheckBox').prop('checked', false);
 		}
 		
 		Astriarch.SendShipsControl.dialog.setTitle("Sending Ships from " + pSource.Name + " to " + pDest.Name);
@@ -147,12 +154,23 @@ Astriarch.SendShipsControl = {
 			self.pSource.OutgoingFleets.push(self.CreatedFleet);
 
 			var payload = {"planetIdSource":self.pSource.Id, "planetIdDest":self.pDest.Id, "data":{"scouts":scouts, "destroyers":destroyers, "cruisers":cruisers, "battleships":battleships}};
+
+			//check to see if we need to set (or unset) our waypoint
+			if($('#SetWaypointCheckBox').attr('checked')){
+				Astriarch.SendShipsControl.pSource.WayPointPlanetId = Astriarch.SendShipsControl.pDest.Id;
+				payload.data.WayPointPlanetId = Astriarch.SendShipsControl.pDest.Id;
+			} else if(Astriarch.SendShipsControl.pSource.WayPointPlanetId == Astriarch.SendShipsControl.pDest.Id) {
+				Astriarch.SendShipsControl.pSource.WayPointPlanetId = null;
+				payload.data.WayPointPlanetId = null;
+			}
+
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.SEND_SHIPS, payload:payload});
 		}
 		else
 		{
 			self.CreatedFleet = null;//just to be sure because we check this in MainPage.xaml.cs
 		}
+
 		Astriarch.View.SendShipsDialogWindowClosed(true);
 
 		if(window.tour.enabled && window.tour.step == 59) {

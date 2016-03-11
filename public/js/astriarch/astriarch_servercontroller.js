@@ -138,7 +138,7 @@ Astriarch.ServerController = {
 
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.adjustPlayerPlanetProtestLevels(player));
 
-		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.buildPlayerPlanetImprovements(player));
+		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.buildPlayerPlanetImprovements(gameModel, player));
 
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.growPlayerPlanetPopulation(player));
 
@@ -699,7 +699,7 @@ Astriarch.ServerController = {
 		}
 	},
 
-	buildPlayerPlanetImprovements: function(/*Player*/ player){//returns List<TurnEventMessage>
+	buildPlayerPlanetImprovements: function(gameModel, /*Player*/ player){//returns List<TurnEventMessage>
 		var endOfTurnMessages = []; //List<TurnEventMessage>
 		//build planet improvements
 		var planetNameBuildQueueEmptyList = [];
@@ -709,7 +709,7 @@ Astriarch.ServerController = {
 		{
 			var p = player.OwnedPlanets[i];//Planet
 			var buildQueueEmptyObject = {'buildQueueEmpty': false};
-			endOfTurnMessages = endOfTurnMessages.concat(p.BuildImprovements(buildQueueEmptyObject));
+			endOfTurnMessages = endOfTurnMessages.concat(p.BuildImprovements(gameModel, buildQueueEmptyObject));
 			if (buildQueueEmptyObject['buildQueueEmpty'])//if the build queue was empty we'll increase gold based on planet production
 			{
 				buildQueueEmptyPlanetTarget = p;

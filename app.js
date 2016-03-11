@@ -282,6 +282,16 @@ wss.on('connection', function(ws) {
 						}
 					});
 					break;
+				case Astriarch.Shared.MESSAGE_TYPE.CLEAR_WAYPOINT:
+					gameController.ClearWaypoint(sessionId, message.payload, function(err){
+						if(err){
+							console.error("gameController.ClearWaypoint: ", err);
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+						}
+					});
+					break;
 				case Astriarch.Shared.MESSAGE_TYPE.END_TURN:
 					gameController.EndPlayerTurn(sessionId, message.payload, function(err, data){
 						if(err){

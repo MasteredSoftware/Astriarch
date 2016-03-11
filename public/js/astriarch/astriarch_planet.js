@@ -56,6 +56,7 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	
 	this.StarShipTypeLastBuilt = null;//StarShipType
     this.BuildLastStarShip = true;
+	this.WayPointPlanetId = null;//string Planet Id
 
 	if (initialOwner !== null)
 	{
@@ -366,7 +367,7 @@ Astriarch.Planet.prototype.GenerateResources = function()
  * Builds improvements in the queue
  * @this {Astriarch.Planet}
  */
-Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//returns List<SerializableTurnEventMessage>
+Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmptyObject)//returns List<SerializableTurnEventMessage>
 {
 	buildQueueEmptyObject.buildQueueEmpty = false;
 	var eotMessages = []; //List<SerializableTurnEventMessage>
@@ -425,8 +426,20 @@ Astriarch.Planet.prototype.BuildImprovements = function(buildQueueEmptyObject)//
 			else if (nextItem instanceof Astriarch.Planet.StarShipInProduction)//it's a ship
 			{
 				var ship = new Astriarch.Fleet.StarShip(nextItem.Type);
-				this.PlanetaryFleet.StarShips[nextItem.Type].push(ship);
 				this.StarShipTypeLastBuilt = nextItem.Type;
+
+				//if we have a waypoint set on the planet, send this new starship to the waypoint planet
+				var waypointPlanet = this.WayPointPlanetId ? gameModel.getPlanetById(this.WayPointPlanetId) : null;
+				if(waypointPlanet && nextItem.Type != Astriarch.Fleet.StarShipType.SystemDefense) {
+					var newFleet = new Astriarch.Fleet(this.Owner);
+					newFleet.StarShips[nextItem.Type].push(ship);
+
+					newFleet.SetDestination(gameModel.GameGrid, this.BoundingHex, waypointPlanet.BoundingHex);
+
+					this.OutgoingFleets.push(newFleet);
+				} else {
+					this.PlanetaryFleet.StarShips[nextItem.Type].push(ship);
+				}
 
 				eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ShipBuilt, this, nextItem.ToString() + " built on planet: " + this.Name + ", next in queue: " + nextItemInQueueName));
 			}
@@ -484,6 +497,7 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 
 	//remove current planet owner
 	if (this.Owner !== null) {
+		this.WayPointPlanetId = null;
 		//if this planet has items in the build queue we should remove them now
 		for (var i = this.BuildQueue.length - 1; i >= 0; i--){
 			goldRefunded += this.RemoveBuildQueueItemForRefund(i);

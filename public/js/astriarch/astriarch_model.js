@@ -69,6 +69,19 @@ Astriarch.Model = function(/*List<Player>*/ players, /*{systemsToGenerate:4, pla
 };
 
 /**
+ * Returns the planet object corresponding to a given Id
+ * @this {Astriarch.Model}
+ */
+Astriarch.Model.prototype.getPlanetById = function(id){
+	for(var i = 0; i < this.Planets.length; i++){
+		if(this.Planets[i].Id == id){
+			return this.Planets[i];
+		}
+	}
+	return null;
+};
+
+/**
  * Populates the planets in the model based on the game options 
  * @this {Astriarch.Model}
  */

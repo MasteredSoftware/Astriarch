@@ -309,7 +309,7 @@ Astriarch.View.PlanetViewDialogWindowClosed = function() {
 	Astriarch.View.updateSelectedItemPanelForPlanet();
 	Astriarch.View.updatePlayerStatusPanel();//for total food per turn indicator and build queue updates
 	var dp = Astriarch.View.DrawnPlanets[Astriarch.PlanetView.planetMain.Id];
-	dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel.MainPlayer);
+	dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel);
 	Astriarch.View.CanvasPlayfieldLayer.needsDisplay = true;
 };
 
@@ -323,7 +323,7 @@ Astriarch.View.SendShipsDialogWindowClosed = function(dialogResult) {
 			if (Astriarch.SendShipsControl.pSource.PlanetaryFleet.GetPlanetaryFleetMobileStarshipCount() == 0)
 			{
 				var dp = Astriarch.View.DrawnPlanets[Astriarch.SendShipsControl.pSource.Id];//DrawnPlanet
-				dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel.MainPlayer);
+				dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel);
 			}
 		}
 	}
@@ -352,8 +352,6 @@ Astriarch.View.PlayfieldClicked = function(pos) {
 				var p2 = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;
 
 				Astriarch.SendShipsControl.show(p1, p2, distance);
-				
-				//TODO: add close handling on the send ships control
 			}
 			//alert("The hexes are " + distance + " spaces away.");
 			Astriarch.View.CancelSendShips();
@@ -692,7 +690,7 @@ Astriarch.View.updateCanvasForPlayer = function() {
 
 	for (var i in Astriarch.View.DrawnPlanets)
 	{
-		Astriarch.View.DrawnPlanets[i].UpdatePlanetDrawingForPlayer(mainPlayer);
+		Astriarch.View.DrawnPlanets[i].UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel);
 	}
 	Astriarch.View.CanvasPlayfieldLayer.needsDisplay = true;
 
