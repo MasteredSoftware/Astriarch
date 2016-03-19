@@ -7,12 +7,11 @@ Astriarch.SendShipsControl = {
 	distance:null,
 	
 	CreatedFleet:null,//Fleet
+
+	StarShipsAvailableCardList:null,
 	
 	init: function() {
-		$('#SliderScouts').slider({value:0, step:1, min:0, max:10, change: Astriarch.SendShipsControl.SliderScoutsValueChanged});
-		$('#SliderDestroyers').slider({value:0, step:1, min:0, max:10, change: Astriarch.SendShipsControl.SliderDestroyersValueChanged});
-		$('#SliderCruisers').slider({value:0, step:1, min:0, max:10, change: Astriarch.SendShipsControl.SliderCruisersValueChanged});
-		$('#SliderBattleships').slider({value:0, step:1, min:0, max:10, change: Astriarch.SendShipsControl.SliderBattleshipsValueChanged});
+		Astriarch.SendShipsControl.StarShipsAvailableCardList = new JSCardList({'containerSelector':'StarShipsAvailableCardList', 'multiselect':true});
 		
 		$( "#ButtonSendNoShips, #ButtonSendAllShips").button();
 		
@@ -49,38 +48,11 @@ Astriarch.SendShipsControl = {
 		$('#SendShipsDialogStatus').text(distance + " parsecs from " + pSource.Name + " to " + pDest.Name);
 
 		var pf = pSource.PlanetaryFleet;//Fleet
-
-		$('#SliderScouts').slider("value", 0);
-		$('#SliderScouts').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Scout].length);
-		if ($('#SliderScouts').slider("option", "max") > 0) {
-			$('#SliderScouts').slider("enable");
-		} else {
-			$('#SliderScouts').slider("disable");
-		}
-
-		$('#SliderDestroyers').slider("value", 0);
-		$('#SliderDestroyers').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length);
-		if ($('#SliderDestroyers').slider("option", "max") > 0) {
-			$('#SliderDestroyers').slider("enable");
-		} else {
-			$('#SliderDestroyers').slider("disable");
-		}
-
-		$('#SliderCruisers').slider("value", 0);
-		$('#SliderCruisers').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length);
-		if ($('#SliderCruisers').slider("option", "max") > 0) {
-			$('#SliderCruisers').slider("enable");
-		} else {
-			$('#SliderCruisers').slider("disable");
-		}
-
-		$('#SliderBattleships').slider("value", 0);
-		$('#SliderBattleships').slider("option", "max", pf.StarShips[Astriarch.Fleet.StarShipType.Battleship].length);
-		if ($('#SliderBattleships').slider("option", "max") > 0) {
-			$('#SliderBattleships').slider("enable");
-		} else {
-			$('#SliderBattleships').slider("disable");
-		}
+		Astriarch.SendShipsControl.StarShipsAvailableCardList.clear();
+		Astriarch.SendShipsControl.addAvailableStarShipCardListItems(pf.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
+		Astriarch.SendShipsControl.addAvailableStarShipCardListItems(pf.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
+		Astriarch.SendShipsControl.addAvailableStarShipCardListItems(pf.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
+		Astriarch.SendShipsControl.addAvailableStarShipCardListItems(pf.StarShips[Astriarch.Fleet.StarShipType.Scout]);
 
 		var currentWaypointStatus = "Waypoint not set";
 		if(pSource.WayPointPlanetId){
@@ -100,39 +72,21 @@ Astriarch.SendShipsControl = {
 		Astriarch.SendShipsControl.dialog.setTitle("Sending Ships from " + pSource.Name + " to " + pDest.Name);
 		Astriarch.SendShipsControl.dialog.open();
 	},
+
+	addAvailableStarShipCardListItems: function(ships) {
+		var items = [];
+		for(var i = 0; i < ships.length; i++) {
+			items.push(new Astriarch.SendShipsControl.AvailableStarShipCardListItem(ships[i]));
+		}
+		Astriarch.SendShipsControl.StarShipsAvailableCardList.addItems(items);
+	},
 	
 	ButtonSendAllShipsClick: function() {
-		$('#SliderScouts').slider("value", $('#SliderScouts').slider("option", "max"));
-		$('#SliderDestroyers').slider("value", $('#SliderDestroyers').slider("option", "max"));
-		$('#SliderCruisers').slider("value", $('#SliderCruisers').slider("option", "max"));
-		$('#SliderBattleships').slider("value", $('#SliderBattleships').slider("option", "max"));
+		Astriarch.SendShipsControl.StarShipsAvailableCardList.selectAll();
 	},
 
 	ButtonSendNoShipsClick: function() {
-		$('#SliderScouts').slider("value", 0);
-		$('#SliderDestroyers').slider("value", 0);
-		$('#SliderCruisers').slider("value", 0);
-		$('#SliderBattleships').slider("value", 0);
-	},
-
-	SliderBattleshipsValueChanged: function(event, ui) {
-		$('#TextBoxBattleships').text(ui.value);
-	},
-
-	SliderCruisersValueChanged: function(event, ui) {
-		$('#TextBoxCruisers').text(ui.value);		
-	},
-
-	SliderDestroyersValueChanged: function(event, ui) {
-		$('#TextBoxDestroyers').text(ui.value);
-	},
-
-	SliderScoutsValueChanged: function(event, ui) {
-		$('#TextBoxScouts').text(ui.value);
-
-		if(window.tour.enabled && window.tour.step == 58 && ui.value > 0) {
-			window.tour.jqElm.joyride('nextTip');
-		}
+		Astriarch.SendShipsControl.StarShipsAvailableCardList.selectNone();
 	},
 
 	OKClose: function()	{
@@ -140,20 +94,38 @@ Astriarch.SendShipsControl = {
 		var self = Astriarch.SendShipsControl;
 		
 		var planetaryFleet = self.pSource.PlanetaryFleet;//Fleet
-		var scouts = parseInt($('#TextBoxScouts').text());
-		var destroyers = parseInt($('#TextBoxDestroyers').text());
-		var cruisers = parseInt($('#TextBoxCruisers').text());
-		var battleships = parseInt($('#TextBoxBattleships').text());
 
-		if (scouts != 0 || destroyers != 0 || cruisers != 0 || battleships != 0)
+		var selectedItems = Astriarch.SendShipsControl.StarShipsAvailableCardList.getSelectedItems();
+
+		if (selectedItems.length > 0)
 		{
-			self.CreatedFleet = planetaryFleet.SplitFleet(scouts, destroyers, cruisers, battleships);
+			var scoutIds = [], destroyerIds = [], cruiserIds = [], battleshipIds = [];
+
+			for(var i = 0; i < selectedItems.length; i++) {
+				var starShip = selectedItems[i].StarShip;
+				switch(starShip.Type){
+					case Astriarch.Fleet.StarShipType.Scout:
+						scoutIds.push(starShip.id);
+						break;
+					case Astriarch.Fleet.StarShipType.Destroyer:
+						destroyerIds.push(starShip.id);
+						break;
+					case Astriarch.Fleet.StarShipType.Cruiser:
+						cruiserIds.push(starShip.id);
+						break;
+					case Astriarch.Fleet.StarShipType.Battleship:
+						battleshipIds.push(starShip.id);
+						break;
+				}
+			}
+
+			self.CreatedFleet = planetaryFleet.SplitFleetWithShipIds(scoutIds, destroyerIds, cruiserIds, battleshipIds);
 
 			self.CreatedFleet.CreateDrawnFleetAndSetDestination(Astriarch.ClientGameModel.GameGrid, self.pSource.BoundingHex, self.pDest.BoundingHex);
 
 			self.pSource.OutgoingFleets.push(self.CreatedFleet);
 
-			var payload = {"planetIdSource":self.pSource.Id, "planetIdDest":self.pDest.Id, "data":{"scouts":scouts, "destroyers":destroyers, "cruisers":cruisers, "battleships":battleships}};
+			var payload = {"planetIdSource":self.pSource.Id, "planetIdDest":self.pDest.Id, "data":{"scouts":scoutIds, "destroyers":destroyerIds, "cruisers":cruiserIds, "battleships":battleshipIds}};
 
 			//check to see if we need to set (or unset) our waypoint
 			if($('#SetWaypointCheckBox').attr('checked')){
@@ -186,3 +158,68 @@ Astriarch.SendShipsControl = {
 		Astriarch.SendShipsControl.dialog.dlg.dialog('close');
 	}
 };
+
+
+/**
+ * AvailableStarShipCardListItem is a card list box item for the available starships on the planet
+ * @constructor
+ */
+Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.extend({
+
+	Tooltip: "",
+	StarShip: null,//Astriarch.Fleet.StarShip
+	Foreground: "white",
+
+	/**
+	 * initializes this AvailableStarShipListBoxItem
+	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 */
+	init: function(/*Astriarch.Fleet.StarShip*/ ship) {
+		this.Tooltip = Astriarch.GameTools.StarShipTypeToHelpText(ship.Type);
+		this.StarShip = ship;
+	},
+
+	/**
+	 * renders this AvailableStarShipListBoxItem
+	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 * @return {string}
+	 */
+	render: function() {
+		var percentDamage = this.StarShip.DamageAmount / this.StarShip.BaseStarShipStrength;
+		if(this.StarShip.DamageAmount == 0)
+			this.Foreground = "green";
+		else if(percentDamage < 0.25)
+			this.Foreground = "yellow";
+		else if(percentDamage < 0.5)
+			this.Foreground = "orange";
+		else
+			this.Foreground = "red";
+
+		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.StarShip.Type);
+		var element = '<span class="sscItem">' +
+			'<span class="sscItemHealth">' + (this.StarShip.BaseStarShipStrength - this.StarShip.DamageAmount) + "/" + this.StarShip.BaseStarShipStrength +
+			'</span><div class="sscItemImg '+imageClassName+'" />' +
+			'<div class="sscHealthBarContainer"><div class="sscHealthBar" style="background:'+this.Foreground+';height:'+ (1 - percentDamage) * 100 + '%" /></div>';
+
+		var text = Astriarch.GameTools.StarShipTypeToFriendlyName(this.StarShip.Type);
+		return '<a class="sscItemAnchor" href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';
+	},
+
+	/**
+	 * fires the selection changed event
+	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 */
+	onClick: function() {
+		if(window.tour.enabled && window.tour.step == 58) {
+			window.tour.jqElm.joyride('nextTip');
+		}
+	},
+
+	/**
+	 * fires the double click event
+	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 */
+	onDblClick: function() {
+
+	}
+});

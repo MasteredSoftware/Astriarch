@@ -210,6 +210,11 @@ Astriarch.GameTools = {
 				break;
 		}
 		return planetImageClass;
+	},
+
+	StarShipTypeToClassName: function(/*StarShipType*/ t){
+		var friendlyName = Astriarch.GameTools.StarShipTypeToFriendlyName(t);
+		return 'icon-32x32-'+friendlyName+'Large';
 	}
 
 };//Astriarch.GameTools

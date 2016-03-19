@@ -11,3 +11,41 @@
 	overflow: auto;
 	background: none !important;
 }
+
+
+.menuContainerJSCardList
+{
+	overflow: auto;
+	background: none !important;
+}
+
+.ui-cardlist {
+	list-style:none;
+	padding: 2px;
+	margin: 0;
+	display:block;
+	float: left;
+}
+.ui-cardlist .ui-cardlist {
+	margin-top: -3px;
+}
+.ui-cardlist .ui-cardlist-item {
+	margin:0;
+	padding: 0;
+	zoom: 1;
+	float: left;
+}
+.ui-cardlist .ui-cardlist-item a {
+	text-decoration:none;
+	display:block;
+	padding:.2em .4em;
+	line-height:1.5;
+	zoom:1;
+	border: 1px solid #121212;
+	margin: 1px;
+}
+.ui-cardlist .ui-cardlist-item a.ui-state-hover,
+.ui-cardlist .ui-cardlist-item a.ui-state-active {
+	font-weight: normal;
+	margin: 1px;
+}

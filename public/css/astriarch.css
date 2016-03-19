@@ -1,0 +1,357 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+html {
+    height: 100%;
+    width: 100%
+}
+body {
+    height: 100%;
+    width: 100%;
+    background: #000 url("img/tile-bg.png") repeat top center;
+    /*  Webkit */
+    display: -webkit-box;
+    -webkit-box-orient: horizontal;
+    -webkit-box-pack: center;
+    -webkit-box-align: center;
+    /*  Mozilla */
+    display: -moz-box;
+    -moz-box-orient: horizontal;
+    -moz-box-pack: center;
+    -moz-box-align: center;
+    /*  Standard */
+    display: box;
+    box-orient: horizontal;
+    box-pack: center;
+    box-align: center;
+    /*
+    box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    -ms-box-sizing: border-box;
+    */
+    margin:0;
+    padding:0;
+}
+img {
+    border: 0px;
+}
+#gameElementsContainer
+{
+}
+a:focus, a:hover, a:active { outline:none }
+:focus {outline:none;}
+::-moz-focus-inner {border:0;}
+.ui-selectmenu
+{
+    font-size: 12px !important;
+    height: 2em;
+    text-align: left;
+}
+.ui-widget
+{
+    font-size: 75%;
+    /*font-family: Lucida Sans Unicode,Veranda,Lucida Grande,Lucida Sans,Helvetica,Arial,sans-serif;
+    font-weight: bold;*/
+    font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
+}
+.ui-widget .ui-widget
+{
+    font-size: 1em;
+    font-size: 95%;
+}
+/* fix size of icon only jquery ui buttons */
+.ui-button-icon-only
+{
+    width: 24px;
+    height:24px;
+}
+body, .defaultFont
+{
+    /*font-family: Lucida Sans Unicode,Veranda,Lucida Grande,Lucida Sans;*/
+    font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
+    /*disable text selection*/
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -o-user-select: none;
+    user-select: none;
+    outline:none;
+}
+table, td, tr, thead, tfoot, tbody, th, tf {
+    table-layout:fixed;
+    border-collapse: collapse;
+    margin: 0px;
+    padding: 0px;
+    border:0;
+}
+td > span, td > img {
+    display: block;
+}
+#chatArea {
+    display: none;
+    color: white;
+    font-size: 12px;
+}
+#chatRoomInfo, #chatLog, #chatLogPlayerNameArea {
+    width:260px;
+    overflow:auto;
+    background-color: rgba(128,128,128,0.4);
+}
+#topRulersList{
+    float:left;
+    margin-left:20px;
+    width:300px;
+    height:120px;
+    overflow:auto;
+    background-color: rgba(128,128,128,0.4);
+    color: white;
+    font-size: 12px;
+}
+#GameNameTextBox, #PlayerNameTextBox, #chatInputTextBox, #chatPlayerNameTextBox {
+    background-color:#595959;
+    color:white;
+    border: 1px solid #333;
+    font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
+}
+.messagePlayerLobby {
+    color:white;
+}
+.messagePlayer1 {
+    color: #00FF00;
+}
+.messagePlayer2 {
+    color: #C800C8;
+}
+.messagePlayer3 {
+    color: #0080FF;
+}
+.messagePlayer4 {
+    color: #FF0000;
+}
+.messageSystem {
+    color: #888;
+}
+#canvasAstriarchBackground
+{
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:0;
+    background-color:black;
+}
+#canvasAstriarchPlayfield
+{
+    position:absolute;
+    top:5px;
+    /*right:8px;*/
+    left:177px;
+    /*bottom:115px;*/
+    z-index:1;
+}
+#gameControls
+{
+    position:absolute;
+    left:0;
+    top:0;
+    z-index:100;
+    width: 800px;
+    height: 600px;
+}
+#mainMenu,
+#startGameOptionsContainer,
+#TurnDisplay,
+#OverallPlayerStatusGrid,
+#SelectedItemPopulationPanel,
+#SelectedItemImprovementSlotsPanel,
+#SelectedItemPopulationAssignmentsPanel,
+#SelectedItemBuiltImprovementsGrid,
+#SelectedItemPlanetaryFleetGrid,
+#BottomStatusGrid,
+#ButtonPanel
+{
+    display:none;
+}
+.greenText
+{
+    color: green;
+    font-family: "Courier New";
+
+}
+
+.qi-default
+{
+    color: #CCCCCC;
+    font-size: 9pt;
+}
+.qi-planetImprovement
+{
+    color: #00FF00;
+    font-size: 9pt;
+}
+.qi-planetImprovementToDestroy
+{
+    color: #FF0000;
+    font-size: 9pt;
+}
+.qi-starShipInProduction
+{
+    color: #336699;
+    font-size: 9pt;
+}
+
+.playerSummaryStatusText, .tradingCenterStatusText
+{
+    text-align:left;
+    font-weight:bold;
+    font-size:14pt;
+    padding-left:5px;
+    min-width:32px;
+
+}
+.playerSummaryStatusText {
+    cursor: help;
+}
+.playerStatusText
+{
+    text-align:right;
+    font-weight:bold;
+    font-size:20pt;
+}
+.planetStatusTextCentered
+{
+    text-align:center;
+    font-weight:bold;
+    font-size:20pt;
+    cursor: help;
+}
+.planetStatusTextSmallCentered
+{
+    text-align:center;
+    font-weight:bold;
+    font-size:14pt;
+    cursor: help;
+}
+.playerStatusTextRight{
+    text-align:right;
+    font-weight:bold;
+    font-size:20pt;
+}
+.smallStatusText
+{
+    font-size:10pt;
+    font-weight:bold;
+    cursor: default;
+}
+.popImg, .asnImg, .impImg
+{
+    cursor: help;
+}
+#MainMenuIcon
+{
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    margin-bottom: 4px;
+}
+#SpeakerIcon
+{
+    width: 16px;
+    height: 16px;
+    margin-left: 6px;
+    margin-bottom: 4px;
+}
+#SliderVolume
+{
+    position: absolute;
+    bottom: 44px;
+    left: 48px;
+    display: none;
+    height: 100px;
+    z-index: 2000;
+}
+#BuildLastShipCheckBoxLabel, .ui-checkbox
+{
+    vertical-align:top;
+    font-size:11px;
+}
+
+#ButtonTradesSubmittedRetractSelectedTrade {
+    margin-left:10px;
+}
+
+.radioButtonTradeLabel {
+    width:80px;
+    display:inline-block;
+}
+
+.wrapper {
+    position: relative;
+    margin: 0 auto;
+}
+#mainnav {
+    clear: both;
+}
+
+input[type=checkbox] {
+    vertical-align: sub;
+}
+
+.cf:after {
+    display:block;
+    clear:both;
+    height:0;
+    visibility:hidden;
+    content:" ";
+    font-size:0;
+}
+
+.fb-like > span {
+    vertical-align: top;
+    height: 25px !important;
+    width: 75px !important;
+}
+
+.joyride-tip-guide {
+    z-index:10001;
+}
+
+.sscItemAnchor {
+    position: relative;
+    height: 32px;
+    width: 32px;
+}
+
+.sscItem * {
+    position: absolute;
+}
+
+.sscItem {
+    left: 0;
+    top: 0;
+}
+
+.sscItemImg {
+    left:8px;
+}
+
+.sscItemHealth {
+    top:0;
+    z-index:5;
+    font-size: 11px;
+    text-shadow: 1px 1px 1px black;
+}
+
+.sscHealthBarContainer {
+    z-index:4;
+    position:absolute;
+    width:3px;
+    top:2px;
+    bottom:2px;
+    left:2px;
+}
+
+.sscHealthBar {
+    width:100%;
+    bottom:0;
+}

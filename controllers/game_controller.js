@@ -782,7 +782,7 @@ exports.FinishUpdatePlanet = function(options, payload, callback){
 
 exports.SendShips = function(sessionId, payload, callback){
 	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
-		//payload: {"planetIdSource":1, "planetIdDest":1, "data":{"scouts":1, "destroyers":1, "cruisers":1, "battleships":1}}
+		//payload: {"planetIdSource":1, "planetIdDest":1, "data":{"scouts":[1,5], "destroyers":[], "cruisers":[2,14], "battleships":[31]}}
 		getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetIdSource, function(err, player, planetSource, gameModel){
 			if(err){
 				callback(err);
@@ -799,7 +799,7 @@ exports.SendShips = function(sessionId, payload, callback){
 				callback({'type':'INVALID_PLANET_ID','message':'Could not find destination planet for Id: ' + payload.planetIdDest});
 				return;
 			}
-			var createdFleet = planetSource.PlanetaryFleet.SplitFleet(payload.data.scouts, payload.data.destroyers, payload.data.cruisers, payload.data.battleships);
+			var createdFleet = planetSource.PlanetaryFleet.SplitFleetWithShipIds(payload.data.scouts, payload.data.destroyers, payload.data.cruisers, payload.data.battleships);
 			createdFleet.SetDestination(gameModel.GameGrid, planetSource.BoundingHex, planetDest.BoundingHex);
 
 			planetSource.OutgoingFleets.push(createdFleet);

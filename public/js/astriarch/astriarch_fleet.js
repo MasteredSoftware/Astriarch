@@ -300,6 +300,49 @@ Astriarch.Fleet.prototype.SplitFleet = function(scoutCount, destoyerCount, cruis
 	return newFleet;
 };
 
+/// <summary>
+/// Creates a new fleet with the ships specified, removing the ships from this fleet
+/// </summary>
+/// <param name="scouts">array of starship ids</param>
+/// <param name="destoyers">array of starship ids</param>
+/// <param name="cruisers">array of starship ids</param>
+/// <param name="battleships">array of starship ids</param>
+/// <returns>the new fleet</returns>
+/**
+ * Splits this fleet off into another fleet
+ * @this {Astriarch.Fleet}
+ * @return {Astriarch.Fleet} the new fleet
+ */
+Astriarch.Fleet.prototype.SplitFleetWithShipIds = function(scouts, destoyers, cruisers, battleships) {//returns Fleet
+
+	var newFleet = new Astriarch.Fleet(this.Owner);
+	newFleet.LocationHex = this.LocationHex;
+
+	var moveShipsToFleet = function(sourceFleet, destFleet, starShipType, idsToMove) {
+		var sourceStarShipArray = sourceFleet.StarShips[starShipType];
+		for(var i = 0; i < sourceStarShipArray.length; i++) {
+			for(var j = 0; j < idsToMove.length; j++) {
+				if(sourceStarShipArray[i].id == idsToMove[j]) {
+					var ship = sourceStarShipArray[i];
+					destFleet.StarShips[starShipType].push(ship);
+					sourceStarShipArray.splice(i, 1);
+					continue;
+				}
+			}
+		}
+	};
+
+	moveShipsToFleet(this, newFleet, Astriarch.Fleet.StarShipType.Scout, scouts);
+
+	moveShipsToFleet(this, newFleet, Astriarch.Fleet.StarShipType.Destroyer, destoyers);
+
+	moveShipsToFleet(this, newFleet, Astriarch.Fleet.StarShipType.Cruiser, cruisers);
+
+	moveShipsToFleet(this, newFleet, Astriarch.Fleet.StarShipType.Battleship, battleships);
+
+	return newFleet;
+};
+
 /**
  * Splits this fleet off in a fleet that contains one weak ship
  * @this {Astriarch.Fleet}
