@@ -753,11 +753,11 @@ Astriarch.AI = {
 							}
 							else if (player.KnownClientPlanets[closestUnownedPlanet.Id])
 							{
-								strengthToDefend += Math.floor(Math.pow((closestUnownedPlanet.Type), 2) * 4); ;
+								strengthToDefend += Math.floor(Math.pow((closestUnownedPlanet.Type), 2) * 4);
 							}
 						}
 
-						var turnsToCompleteStarshipStrengthObject = {'turnsToComplete': 99, 'starshipStrength':0}
+						var turnsToCompleteStarshipStrengthObject = {'turnsToComplete': 99, 'starshipStrength':0};
 						if (p.BuildQueueContainsMobileStarship(turnsToCompleteStarshipStrengthObject))
 						{
 							if (turnsToCompleteStarshipStrengthObject['turnsToComplete'] <= minDistanceObject['minDistance'] + 1)//if we can build this before an enemy can get here

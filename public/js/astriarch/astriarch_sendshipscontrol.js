@@ -185,7 +185,8 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 	 * @return {string}
 	 */
 	render: function() {
-		var percentDamage = this.StarShip.DamageAmount / this.StarShip.BaseStarShipStrength;
+		var strength  = this.StarShip.Strength();
+		var percentDamage = this.StarShip.DamageAmount / strength;
 		if(this.StarShip.DamageAmount == 0)
 			this.Foreground = "green";
 		else if(percentDamage < 0.25)
@@ -195,11 +196,16 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 		else
 			this.Foreground = "red";
 
+		var levelObj = this.StarShip.Level();
+		var percentLevel = this.StarShip.ExperienceAmount / levelObj.nextLevelExpRequirement;
+
 		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.StarShip.Type);
 		var element = '<span class="sscItem">' +
-			'<span class="sscItemHealth">' + (this.StarShip.BaseStarShipStrength - this.StarShip.DamageAmount) + "/" + this.StarShip.BaseStarShipStrength +
-			'</span><div class="sscItemImg '+imageClassName+'" />' +
-			'<div class="sscHealthBarContainer"><div class="sscHealthBar" style="background:'+this.Foreground+';height:'+ (1 - percentDamage) * 100 + '%" /></div>';
+			'<span class="sscItemHealth">' + strength + "/" + this.StarShip.MaxStrength() + '</span>' +
+			'<div class="sscItemImg '+imageClassName+'" />' +
+			'<div class="sscHealthBarContainer"><div class="sscHealthBar" style="background:'+this.Foreground+';height:'+ (1 - percentDamage) * 100 + '%" /></div>' +
+			'<div class="sscExpBarContainer"><div class="sscExpBar" style="background:#369;height:'+ (percentLevel) * 100 + '%" /></div>' +
+			'<span class="sscItemLevel">' + (levelObj.level + 1) + '</span>';
 
 		var text = Astriarch.GameTools.StarShipTypeToFriendlyName(this.StarShip.Type);
 		return '<a class="sscItemAnchor" href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';

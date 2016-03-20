@@ -355,3 +355,26 @@ input[type=checkbox] {
     width:100%;
     bottom:0;
 }
+
+.sscItemLevel {
+    color:#369;
+    bottom:0;
+    right:10px;
+    z-index:5;
+    font: 14px bold;
+    text-shadow: 1px 1px 1px black;
+}
+
+.sscExpBarContainer {
+    z-index:4;
+    position:absolute;
+    width:3px;
+    top:2px;
+    bottom:2px;
+    right:2px;
+}
+
+.sscExpBar {
+    width:100%;
+    bottom:0;
+}

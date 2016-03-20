@@ -540,7 +540,8 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
 	this.BaseStarShipStrength = 0;
 	//TODO: could eventually allow ship upgrades? to improve on base strength
 
-	this.DamageAmount = 0;//starships will auto-heal between turns but if there are multiple battles in one turn involving a starship then this comes into play
+	this.DamageAmount = 0;//starships will heal between turns if the planet has the necessary building and the player has the requisite resources
+	this.ExperienceAmount = 0;//each time a starship damages an opponent the experience amount increases by the damage amount
 
 	//ship strength is based on ship cost
 	//  right now it is double the value of the next lower ship class
@@ -574,12 +575,60 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
 Astriarch.Fleet.StarShip.Static = {NEXT_STARSHIP_ID: 1};
 
 /**
- * A printable version of the fleet
+ * Get a starships's total Strength
  * @this {Astriarch.Fleet.StarShip}
  * @return {number} the starship's strength
  */
 Astriarch.Fleet.StarShip.prototype.Strength = function() {
-	return this.BaseStarShipStrength - this.DamageAmount;
+	return this.MaxStrength() - this.DamageAmount;
+};
+
+/**
+ * Get a starships's maximum Strength (not including damage)
+ * @this {Astriarch.Fleet.StarShip}
+ * @return {number} the starship's max strength
+ */
+Astriarch.Fleet.StarShip.prototype.MaxStrength = function() {
+	return this.BaseStarShipStrength + this.StrengthBoostFromLevel();
+};
+
+/**
+ * Get a starships's level strength boost
+ * @this {Astriarch.Fleet.StarShip}
+ * @return {number} the additional starship strength based on it's level
+ */
+Astriarch.Fleet.StarShip.prototype.StrengthBoostFromLevel = function() {
+	var level = this.Level().level;
+	if(level <= 2) {
+		return level * (this.BaseStarShipStrength/4);
+	}
+	//at some level the ship's strength should be about 3 times it's base strength
+	//well use the log function to figure out at a given level for a certain ship what the proper boost should be
+	var x = 9;//the target level (which is somewhat difficult to achieve)
+	var y = this.BaseStarShipStrength * 2;
+	var b = Math.pow(x,(1/y));
+	return Math.round(Math.log(level)/Math.log(b));//b^y=x
+};
+
+/**
+ * Get a starships's level based on experience points
+ * @this {Astriarch.Fleet.StarShip}
+ * @return {number} {level: 1, nextLevelExpRequirement: 4}
+ */
+Astriarch.Fleet.StarShip.prototype.Level = function() {
+	var level = -1;
+	var levelExpRequirement = this.BaseStarShipStrength / 2;
+	//for the ship to make it to level 1 it must have 1/2 the base strength in experience points
+	// after that the experience needed for each level = previous level exp + round((previous level exp)/2);
+	var foundLevel = false;
+	while(!foundLevel) {
+		if(this.ExperienceAmount < levelExpRequirement) {
+			foundLevel = true;
+		}
+		levelExpRequirement += levelExpRequirement + Math.round(levelExpRequirement/2);
+		level++;
+	}
+	return {level: level, nextLevelExpRequirement: levelExpRequirement};
 };
 
 /**
@@ -590,6 +639,7 @@ Astriarch.Fleet.StarShip.prototype.Strength = function() {
 Astriarch.Fleet.StarShip.prototype.CloneStarShip = function(){//returns StarShip
 	var s = new Astriarch.Fleet.StarShip(this.Type);
 	s.DamageAmount = this.DamageAmount;
+	s.ExperienceAmount = this.ExperienceAmount;
 	return s;
 };
 

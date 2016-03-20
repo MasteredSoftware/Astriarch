@@ -29,7 +29,7 @@ describe('#BattleSimulator', function () {
 		// battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
 
 		it('should allow the fleet with the advantage to win given the fleets have the same strength', function (done) {
-			var battleTries = 10;
+			var battleTries = 100;
 
 			//scouts over defenders
 			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 1, 0, 0, 0, null);
@@ -76,7 +76,7 @@ describe('#BattleSimulator', function () {
 		});
 
 		it('should allow the fleet with the disadvantage to win given the disadvantaged fleet has sufficiently more power (4x)', function(done) {
-			var battleTries = 100;
+			var battleTries = 1000;
 
 			//scouts over destroyers
 			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 4, 0, 0, 0, null);
@@ -84,7 +84,7 @@ describe('#BattleSimulator', function () {
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			//console.log("f1: ", f1.DetermineFleetStrength(), "f2:", f2.DetermineFleetStrength());
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("Scout fleet Win Count:", fleet1WinCount);
 			if(fleet1WinCount < (battleTries * .5)){
 				return done("Four scouts won less than 50% of the time against a Destroyer!")
 			}
@@ -94,7 +94,7 @@ describe('#BattleSimulator', function () {
 			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 1, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("Destroyer fleet Win Count:", fleet1WinCount);
 			if(fleet1WinCount < (battleTries * .5)){
 				return done("Four Destroyers won less than 50% of the time against a Cruiser!");
 			}
@@ -104,7 +104,7 @@ describe('#BattleSimulator', function () {
 			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("Cruiser fleet Win Count:", fleet1WinCount);
 			if(fleet1WinCount < (battleTries * .5)){
 				return done("Four Cruisers won less than 50% of the time against a Battleship!");
 			}
@@ -114,7 +114,7 @@ describe('#BattleSimulator', function () {
 			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 8, 0, 0, 0, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("Battleship fleet Win Count:", fleet1WinCount);
 			if(fleet1WinCount < (battleTries * .5)){
 				return done("A Battleship won less than 50% of the time against 4 Scouts!");
 			}
@@ -130,11 +130,11 @@ describe('#BattleSimulator', function () {
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("Defender fleet Win Count:", fleet1WinCount);
 			if(fleet1WinCount > (battleTries * .56)){
-				return done("Defender Fleet won more than 53% of the time!");
+				return done("Defender Fleet won more than 56% of the time!");
 			} else if(fleet1WinCount < (battleTries * .44)){
-				return done("Defender Fleet won less than 47% of the time!");
+				return done("Defender Fleet won less than 44% of the time!");
 			}
 			done();
 		});
@@ -150,7 +150,7 @@ describe('#BattleSimulator', function () {
 			//Note: when there are lots of little ships like scouts and defenders without advantages or disadvantages against a fleet with the same power, the fleet with lots of little ships wins about 60% of the time
 			//	This is caused by "overkill" since each gun has 2 power, each time a ship has one strength left it's possible that the gun will damage 2, leaving an extra damage that could have been assigned to another ship
 			//  this side effect actually seems realistic and is a reason to keep tougher ships relative costs the same, even though they can repair
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("Defender fleet Win Count:", fleet1WinCount);
 			if(fleet1WinCount > (battleTries * .66)){
 				return done("Defender Fleet won more than 66% of the time!");
 			} else if(fleet1WinCount < (battleTries * .40)){
@@ -161,7 +161,7 @@ describe('#BattleSimulator', function () {
 
 
 		it('should allow spaceplatforms to win against any other fleet, even if the other fleet has slightly more power', function(done) {
-			var battleTries = 100;
+			var battleTries = 1000;
 
 			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 8, 4, 2, 0, null);
 			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, null);
@@ -169,7 +169,7 @@ describe('#BattleSimulator', function () {
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 1.5);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
-			console.log("fleet1WinCount:", fleet1WinCount);
+			console.log("fleet1WinCount against Space Platform:", fleet1WinCount);
 			if(fleet1WinCount > (battleTries * .15)){
 				return done("Fleet won more than 15% of the time against a Space Platform!")
 			}

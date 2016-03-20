@@ -236,7 +236,7 @@ Astriarch.Planet.prototype.BuildQueueContainsMobileStarship = function(turnsToCo
 		if (ppi instanceof Astriarch.Planet.StarShipInProduction && ppi.Type != Astriarch.Fleet.StarShipType.SystemDefense)
 		{
 			turnsToCompleteStarshipStrengthObject['turnsToComplete'] = ppi.TurnsToComplete;
-			turnsToCompleteStarshipStrengthObject['starshipStrength'] = new Astriarch.Fleet.StarShip(ppi.Type).BaseStarShipStrength;
+			turnsToCompleteStarshipStrengthObject['starshipStrength'] = new Astriarch.Fleet.StarShip(ppi.Type).Strength();
 			return true;
 		}
 	}
