@@ -1010,7 +1010,7 @@ head
 					a(href="#", class="joyride-next-tip") Next
 				li(data-id='ButtonSendAllShips', data-options='tipLocation:top')
 					h2 Send a Scout
-					p Use the slider or simply click the "Send All" button to send all ships on the planet.
+					p Select the ship to send or simply click the "Send All" button to send all ships on the planet.
 				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
 					h2 Click "Ok"
 					p Accept your selected fleet to send by clicking the "Ok" button.
@@ -1098,29 +1098,11 @@ head
 
 			script(type='text/javascript').
 				$(document).ready(function() {
+					window.tour = {enabled:false, step:-1, jqElm:null};
+
 					var serverConfig = {"port":#{port}, "ping_freq":#{ping_freq}};
 
 					Astriarch.View.PageLoadInit(serverConfig);
-
-					var preStepCallback = function(index) { window.tour.enabled = true; window.tour.step = index; };
-					var postStepCallback = function(index, tip){ };
-					var preTutorialCallback = function(index, tip, elm){ };
-					var postTutorialCallback = function(){ window.tour.enabled = false;};
-
-					window.tour = {enabled:false, step:-1, jqElm:null};
-					var jrTour = $("#joyRideTipContent").joyride({
-						'scroll': false,
-						'autoStart': true,
-						'nextButton': false,
-						'localStorage': true,
-						'localStorageKey': 'seentutorial',
-						'preStepCallback': preStepCallback,
-						'postStepCallback': postStepCallback,
-						'preRideCallback': preTutorialCallback,
-						'postRideCallback': postTutorialCallback,
-						pauseAfter:[27, 32, 43, 48, 49, 50, 51, 53, 54, 56, 59, 63, 66, 68]
-					});
-					window.tour.jqElm = $(jrTour);
 				});
 
 		script(type='text/javascript').

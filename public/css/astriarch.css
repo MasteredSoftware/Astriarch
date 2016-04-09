@@ -9,7 +9,7 @@ html {
 body {
     height: 100%;
     width: 100%;
-    background: #000 url("img/tile-bg.png") repeat top center;
+    background: #000 url("/img/tile-bg.png") repeat top center;
     /*  Webkit */
     display: -webkit-box;
     -webkit-box-orient: horizontal;

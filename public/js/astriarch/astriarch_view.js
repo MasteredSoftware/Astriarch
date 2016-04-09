@@ -317,14 +317,10 @@ Astriarch.View.SendShipsDialogWindowClosed = function(dialogResult) {
 
 	if (dialogResult == true) {
 		//check to make sure a fleet was created and then add the appropriate controls to our canvas
-		if (Astriarch.SendShipsControl.CreatedFleet != null)
-		{
-			//update the canvas so we hide the fleets if there are no more ships in the planetary fleet
-			if (Astriarch.SendShipsControl.pSource.PlanetaryFleet.GetPlanetaryFleetMobileStarshipCount() == 0)
-			{
-				var dp = Astriarch.View.DrawnPlanets[Astriarch.SendShipsControl.pSource.Id];//DrawnPlanet
-				dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel);
-			}
+		if (Astriarch.SendShipsControl.CreatedFleet != null) {
+			//update the canvas so we update the planetary fleet indicators
+			var dp = Astriarch.View.DrawnPlanets[Astriarch.SendShipsControl.pSource.Id];//DrawnPlanet
+			dp.UpdatePlanetDrawingForPlayer(Astriarch.ClientGameModel);
 		}
 	}
 	
@@ -730,6 +726,25 @@ Astriarch.View.backgroundSpriteSheetImageLoaded = function() {
 	//we have finished all the time consuming drawing and loading, hide spinner and show main interface
 	$('#loadingSpinner').hide();
 	$('#mainMenu').show();//finally show the main menu after everything else is loaded.
+
+	var preStepCallback = function(index) { window.tour.enabled = true; window.tour.step = index; };
+	var postStepCallback = function(index, tip){ };
+	var preTutorialCallback = function(index, tip, elm){ };
+	var postTutorialCallback = function(){ window.tour.enabled = false;};
+
+	var jrTour = $("#joyRideTipContent").joyride({
+		'scroll': false,
+		'autoStart': true,
+		'nextButton': false,
+		'localStorage': true,
+		'localStorageKey': 'seentutorial',
+		'preStepCallback': preStepCallback,
+		'postStepCallback': postStepCallback,
+		'preRideCallback': preTutorialCallback,
+		'postRideCallback': postTutorialCallback,
+		pauseAfter:[27, 32, 43, 48, 49, 50, 51, 53, 54, 56, 59, 63, 66, 68]
+	});
+	window.tour.jqElm = $(jrTour);
 };
 
 Astriarch.View.populateBackgroundImages = function() {
