@@ -244,5 +244,24 @@ describe('#BattleSimulator', function () {
 			done();
 		});
 
+		it('should properly assign experience points to the winning fleet', function(done){
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 6, 0, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 2, null);
+
+			var f1Strength = f1.DetermineFleetStrength();
+
+			var fleet1wins = Astriarch.BattleSimulator.SimulateFleetBattle(f1, f2);
+			fleet1wins.should.equal(false);
+			//check total experience points for fleet2
+			var ships = f2.GetAllStarShips();
+			var experiencePointsTotal = 0;
+			ships.forEach(function(ship){
+				experiencePointsTotal += ship.ExperienceAmount;
+			});
+			experiencePointsTotal.should.equal(f1Strength);
+			done();
+
+		});
+
 	});
 });

@@ -33,7 +33,31 @@ Astriarch.Fleet = function(/*Player*/ p) {
 		this.Owner = p;//backreference to player (or ClientPlayer on client)
 };
 
-Astriarch.Fleet.Static = {SPACE_PLATFORM_STRENGTH: 64};//TODO: twice the strength of a battleship, is this good?
+Astriarch.Fleet.Static = {
+	SPACE_PLATFORM_STRENGTH: 64,//TODO: twice the strength of a battleship, is this good?
+	getStrengthDetailsForShips: function(ships){
+		var details = {strength: 0, maxStrength:0, damageAmount:0, percentDamage:0, color:null, percentDamageText: "", damageText: ""};
+		for(var i = 0; i < ships.length; i++) {
+			var s = ships[i];
+			details.strength += s.Strength();
+			details.maxStrength += s.MaxStrength();
+			details.damageAmount += s.DamageAmount;
+		}
+		details.percentDamage = details.maxStrength == 0 ? 0 : details.damageAmount / details.maxStrength;
+		var percentDamageFriendly = details.percentDamage ? ((1 - details.percentDamage) * 100).toFixed(1) : 100;
+		details.percentDamageText = ships.length == 0 ? "" : percentDamageFriendly + "%";
+		details.damageText = details.strength + "/" + details.maxStrength;
+		if(details.percentDamage == 0)
+			details.color = "green";
+		else if(details.percentDamage < 0.25)
+			details.color = "yellow";
+		else if(details.percentDamage < 0.5)
+			details.color = "orange";
+		else
+			details.color = "red";
+		return details;
+	}
+};
 
 /**
  * Sets the HasSpacePlatform var if there is a space platform at the fleet's planet.

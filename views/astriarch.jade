@@ -386,18 +386,18 @@ head
 													tr
 														td
 															table#SelectedItemPlanetaryFleetGrid(cellpadding='0', cellspacing='0', style='text-align: center;')
-																tr(height='32')
+																tr(height='42')
 																	td(width='32')
-																		span.icon-32x32-DefenderLarge(title='Defender Count')
+																		canvas#CanvasDefenderLarge(title='Defenders', width='32', height='42')
 																	td(width='32')
-																		span.icon-32x32-ScoutLarge(title='Scout Count')
+																		canvas#CanvasScoutLarge(title='Scouts', width='32', height='42')
 																	td(width='32')
-																		span.icon-32x32-DestroyerLarge(title='Destroyer Count')
+																		canvas#CanvasDestroyerLarge(title='Destroyers', width='32', height='42')
 																	td(width='32')
-																		span.icon-32x32-CruiserLarge(title='Cruiser Count')
+																		canvas#CanvasCruiserLarge(title='Cruisers', width='32', height='42')
 																	td(width='32')
-																		span.icon-32x32-BattleshipLarge(title='Battleship Count')
-																tr(height='32')
+																		canvas#CanvasBattleshipLarge(title='Battleships', width='32', height='42')
+																tr(height='22')
 																	td(width='32')
 																		span#TextBlockDefenderCount.planetStatusTextSmallCentered(title='Defender Count')
 																	td(width='32')
@@ -410,7 +410,7 @@ head
 																		span#TextBlockBattleshipCount.planetStatusTextSmallCentered(title='Battleship Count')
 													tr
 														td
-															span#SelectedItemStatusDetails.smallStatusText(style='height: 288px;')
+															span#SelectedItemStatusDetails.smallStatusText(style='height: 282px;')
 													tr
 														td
 															table#BottomStatusGrid(cellpadding='0', cellspacing='0')

@@ -33,10 +33,10 @@ Astriarch.BattleSimulator = {
 
 			for (var i in f1StarShips) {
 				var s = f1StarShips[i];//StarShip
-				if(!(experiencedGainedByStarShipId[s.Id])) {
-					experiencedGainedByStarShipId[s.Id] = 0;
+				if(!(experiencedGainedByStarShipId[s.id])) {
+					experiencedGainedByStarShipId[s.id] = 0;
 				}
-				experiencedGainedByStarShipId[s.Id] += Astriarch.BattleSimulator.StarshipFireWeapons(s.Strength(), s.Type, false, f2StarShips, f2.HasSpacePlatform, fleet2DamagePending, fleet2SpacePlatformDamagePendingObject);
+				experiencedGainedByStarShipId[s.id] += Astriarch.BattleSimulator.StarshipFireWeapons(s.Strength(), s.Type, false, f2StarShips, f2.HasSpacePlatform, fleet2DamagePending, fleet2SpacePlatformDamagePendingObject);
 			}
 			if (f1.HasSpacePlatform) {
 				Astriarch.BattleSimulator.StarshipFireWeapons(Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH - f1.SpacePlatformDamage, Astriarch.Fleet.StarShipType.SystemDefense, true, f2StarShips, f2.HasSpacePlatform, fleet1DamagePending, fleet2SpacePlatformDamagePendingObject);
@@ -44,10 +44,10 @@ Astriarch.BattleSimulator = {
 
 			for (var i in f2StarShips) {
 				var s = f2StarShips[i];
-				if(!(experiencedGainedByStarShipId[s.Id])) {
-					experiencedGainedByStarShipId[s.Id] = 0;
+				if(!(experiencedGainedByStarShipId[s.id])) {
+					experiencedGainedByStarShipId[s.id] = 0;
 				}
-				experiencedGainedByStarShipId[s.Id] += Astriarch.BattleSimulator.StarshipFireWeapons(s.Strength(), s.Type, false, f1StarShips, f1.HasSpacePlatform, fleet1DamagePending, fleet1SpacePlatformDamagePendingObject);
+				experiencedGainedByStarShipId[s.id] += Astriarch.BattleSimulator.StarshipFireWeapons(s.Strength(), s.Type, false, f1StarShips, f1.HasSpacePlatform, fleet1DamagePending, fleet1SpacePlatformDamagePendingObject);
 			}
 			if (f2.HasSpacePlatform) {
 				Astriarch.BattleSimulator.StarshipFireWeapons(Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH - f2.SpacePlatformDamage, Astriarch.Fleet.StarShipType.SystemDefense, true, f1StarShips, f1.HasSpacePlatform, fleet1DamagePending, fleet1SpacePlatformDamagePendingObject);
@@ -90,16 +90,16 @@ Astriarch.BattleSimulator = {
 			fleet1Wins = true;
 			//assign experience to fleet1
 			f1.GetAllStarShips().forEach(function(s) {
-				if(experiencedGainedByStarShipId[s.Id]) {
-					s.ExperienceAmount += experiencedGainedByStarShipId[s.Id];
+				if(experiencedGainedByStarShipId[s.id]) {
+					s.ExperienceAmount += experiencedGainedByStarShipId[s.id];
 				}
 			});
 		} else if (f2.DetermineFleetStrength(true) > 0) {
 			fleet1Wins = false;
 			//assign experience to fleet2
 			f2.GetAllStarShips().forEach(function(s) {
-				if(experiencedGainedByStarShipId[s.Id]) {
-					s.ExperienceAmount += experiencedGainedByStarShipId[s.Id];
+				if(experiencedGainedByStarShipId[s.id]) {
+					s.ExperienceAmount += experiencedGainedByStarShipId[s.id];
 				}
 			});
 		}

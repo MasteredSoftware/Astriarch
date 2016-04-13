@@ -1,22 +1,41 @@
-Astriarch.View = {jCanvasDraw:null,
-				  audioInterface:null,
-				  audioMouseInTimer:null,
-				  audioMouseOutTimer:null,
-				  CanvasBackground:null,
-				  ContextBackground:null,
-				  CanvasPlayfieldLayer:null,
-				  CanvasFleetsLayer:null,
-				  BackgroundSpriteSheetImage:null,
-				  BACKGROUND_COUNT:7,
-				  BACKGROUND_DARKNESS:30,
-				  DrawnPlanets:{},
-				  DrawnFleets:[],
-				  Colors:["white","yellow","orange","blue","green","red","purple"],
-				  ColorsRGBA: {"white":null ,"yellow":null ,"orange":null ,"blue":null ,"green":null ,"red":null ,"purple":null},
-				  sendingShipsTo:false,
-				  sendShipsFromHex: null,
-				  TurnSummaryItemsListBox:null,
-				  SpriteSheetInfo:{filename:null, planetAsteroidY:null, planetDeadY:null, planetClass1Y:null, planetClass2Y:null}
+Astriarch.View = {
+					jCanvasDraw:null,
+					audioInterface:null,
+				  	audioMouseInTimer:null,
+				  	audioMouseOutTimer:null,
+				  	CanvasBackground:null,
+				  	ContextBackground:null,
+				  	CanvasPlayfieldLayer:null,
+				  	CanvasFleetsLayer:null,
+				  	BackgroundSpriteSheetImage:null,
+				  	BACKGROUND_COUNT:7,
+				  	BACKGROUND_DARKNESS:30,
+				  	DrawnPlanets:{},
+				  	DrawnFleets:[],
+				  	Colors:["white","yellow","orange","blue","green","red","purple"],
+				  	ColorsRGBA: {"white":null ,"yellow":null ,"orange":null ,"blue":null ,"green":null ,"red":null ,"purple":null},
+				  	sendingShipsTo:false,
+				  	sendShipsFromHex: null,
+				  	TurnSummaryItemsListBox:null,
+				  	SpriteSheetInfo: {
+						filename:null,
+						planetAsteroidY:null,
+						planetDeadY:null,
+						planetClass1Y:null,
+						planetClass2Y:null,
+						starshipDefenderY:null,
+						starshipScoutY:null,
+						starshipDestroyerY:null,
+						starshipCruiserY:null,
+						starshipBattleshipY:null
+					},
+					ImageCanvasStarships: {
+						defender: null,
+						scout: null,
+						destroyer: null,
+						cruiser: null,
+						battleship: null
+					}
 				};
 				  
 
@@ -51,15 +70,6 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.View.ContextBackground.globalAlpha = 1.0;
 		
 		setInterval(function() { Astriarch.View.jCanvasDraw.draw() }, 50);
-		
-		//initialize standard and player colors, move this later
-		Astriarch.View.ColorsRGBA["white"] = new Astriarch.Util.ColorRGBA(255, 255, 255, 255);//#ffffff
-		Astriarch.View.ColorsRGBA["yellow"] = new Astriarch.Util.ColorRGBA(255, 255, 0, 255);//#ffff00
-		Astriarch.View.ColorsRGBA["orange"] = new Astriarch.Util.ColorRGBA(255, 165, 0, 255);//#ffa500
-		Astriarch.View.ColorsRGBA["blue"] = new Astriarch.Util.ColorRGBA(0, 0, 255, 255);//#0000ff
-		Astriarch.View.ColorsRGBA["green"] = new Astriarch.Util.ColorRGBA(0, 128, 0, 255);//#008000
-		Astriarch.View.ColorsRGBA["red"] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//#ff0000
-		Astriarch.View.ColorsRGBA["purple"] = new Astriarch.Util.ColorRGBA(128, 0, 128, 255);//#800080
 		
 		Astriarch.View.audioInterface = new AudioInterface(true);//if you have a slow connection maybe we should disable music downloads?
 
@@ -133,6 +143,15 @@ Astriarch.View.ClearGameBackgroundControls = function() {
 };
 
 Astriarch.View.SetupGraphicalDOMElements = function() {
+
+	//initialize standard and player colors
+	Astriarch.View.ColorsRGBA["white"] = new Astriarch.Util.ColorRGBA(255, 255, 255, 255);//#ffffff
+	Astriarch.View.ColorsRGBA["yellow"] = new Astriarch.Util.ColorRGBA(255, 255, 0, 255);//#ffff00
+	Astriarch.View.ColorsRGBA["orange"] = new Astriarch.Util.ColorRGBA(255, 165, 0, 255);//#ffa500
+	Astriarch.View.ColorsRGBA["blue"] = new Astriarch.Util.ColorRGBA(0, 0, 255, 255);//#0000ff
+	Astriarch.View.ColorsRGBA["green"] = new Astriarch.Util.ColorRGBA(0, 128, 0, 255);//#008000
+	Astriarch.View.ColorsRGBA["red"] = new Astriarch.Util.ColorRGBA(255, 0, 0, 255);//#ff0000
+	Astriarch.View.ColorsRGBA["purple"] = new Astriarch.Util.ColorRGBA(128, 0, 128, 255);//#800080
 
 	Astriarch.LobbyControl.init();
 
@@ -253,6 +272,19 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	Astriarch.View.SpriteSheetInfo.planetDeadY = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetDead", "background-position");
 	Astriarch.View.SpriteSheetInfo.planetClass1Y = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetClass1", "background-position");
 	Astriarch.View.SpriteSheetInfo.planetClass2Y = -1 * getPropertyValueFromCssClass("icon-32x32-PlanetClass2", "background-position");
+	Astriarch.View.SpriteSheetInfo.starshipDefenderY = -1 * getPropertyValueFromCssClass("icon-32x32-DefenderLarge", "background-position");
+	Astriarch.View.SpriteSheetInfo.starshipScoutY = -1 * getPropertyValueFromCssClass("icon-32x32-ScoutLarge", "background-position");
+	Astriarch.View.SpriteSheetInfo.starshipDestroyerY = -1 * getPropertyValueFromCssClass("icon-32x32-DestroyerLarge", "background-position");
+	Astriarch.View.SpriteSheetInfo.starshipCruiserY = -1 * getPropertyValueFromCssClass("icon-32x32-CruiserLarge", "background-position");
+	Astriarch.View.SpriteSheetInfo.starshipBattleshipY = -1 * getPropertyValueFromCssClass("icon-32x32-BattleshipLarge", "background-position");
+
+	var shipColorRgbaArray = [Astriarch.View.ColorsRGBA["green"], Astriarch.View.ColorsRGBA["yellow"], Astriarch.View.ColorsRGBA["orange"], Astriarch.View.ColorsRGBA["red"]];
+	Astriarch.View.ImageCanvasStarships.defender = new Astriarch.View.StarshipCanvas("#CanvasDefenderLarge", Astriarch.View.SpriteSheetInfo.filename, 32, 32, shipColorRgbaArray, Astriarch.View.SpriteSheetInfo.starshipDefenderY);
+	Astriarch.View.ImageCanvasStarships.scout = new Astriarch.View.StarshipCanvas("#CanvasScoutLarge", Astriarch.View.SpriteSheetInfo.filename, 32, 32, shipColorRgbaArray, Astriarch.View.SpriteSheetInfo.starshipScoutY);
+	Astriarch.View.ImageCanvasStarships.destroyer = new Astriarch.View.StarshipCanvas("#CanvasDestroyerLarge", Astriarch.View.SpriteSheetInfo.filename, 32, 32, shipColorRgbaArray, Astriarch.View.SpriteSheetInfo.starshipDestroyerY);
+	Astriarch.View.ImageCanvasStarships.cruiser = new Astriarch.View.StarshipCanvas("#CanvasCruiserLarge", Astriarch.View.SpriteSheetInfo.filename, 32, 32, shipColorRgbaArray, Astriarch.View.SpriteSheetInfo.starshipCruiserY);
+	Astriarch.View.ImageCanvasStarships.battleship = new Astriarch.View.StarshipCanvas("#CanvasBattleshipLarge", Astriarch.View.SpriteSheetInfo.filename, 32, 32, shipColorRgbaArray, Astriarch.View.SpriteSheetInfo.starshipBattleshipY);
+
 };
 
 Astriarch.View.NextTurn = function() {
@@ -525,7 +557,28 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				$('#TextBlockFactoryCount').text(factoryCount);
 				$('#TextBlockColonyCount').text(colonyCount);
 				$('#TextBlockSpacePlatformCount').text(spacePlatformCount);
-				
+
+				//adjust canvas drawing based on damage of ships
+				var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
+				Astriarch.View.ImageCanvasStarships.defender.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				$(Astriarch.View.ImageCanvasStarships.defender.canvasSelector).prop("title", "Defenders" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout]);
+				Astriarch.View.ImageCanvasStarships.scout.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				$(Astriarch.View.ImageCanvasStarships.scout.canvasSelector).prop("title", "Scouts" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
+				Astriarch.View.ImageCanvasStarships.destroyer.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				$(Astriarch.View.ImageCanvasStarships.destroyer.canvasSelector).prop("title", "Destroyers" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
+				Astriarch.View.ImageCanvasStarships.cruiser.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				$(Astriarch.View.ImageCanvasStarships.cruiser.canvasSelector).prop("title", "Cruisers" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
+				Astriarch.View.ImageCanvasStarships.battleship.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				$(Astriarch.View.ImageCanvasStarships.battleship.canvasSelector).prop("title", "Battleships" + (details.maxStrength ? ": " + details.damageText : ""));
+
 				var scoutCount = p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
 				var destroyerCount = p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length;
 				var cruiserCount = p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length;
@@ -586,6 +639,27 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 					sb += "1 Space Platform<br />";
 				else
 					sb += "No Space Platform<br />";
+
+				//adjust canvas drawing based on last known enemy fleet
+				var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
+				Astriarch.View.ImageCanvasStarships.defender.drawShip(Astriarch.View.ColorsRGBA["green"], "");
+				$(Astriarch.View.ImageCanvasStarships.defender.canvasSelector).prop("title", "Defenders" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Scout]);
+				Astriarch.View.ImageCanvasStarships.scout.drawShip(Astriarch.View.ColorsRGBA["green"], "");
+				$(Astriarch.View.ImageCanvasStarships.scout.canvasSelector).prop("title", "Scouts" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
+				Astriarch.View.ImageCanvasStarships.destroyer.drawShip(Astriarch.View.ColorsRGBA["green"], "");
+				$(Astriarch.View.ImageCanvasStarships.destroyer.canvasSelector).prop("title", "Destroyers" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
+				Astriarch.View.ImageCanvasStarships.cruiser.drawShip(Astriarch.View.ColorsRGBA["green"], "");
+				$(Astriarch.View.ImageCanvasStarships.cruiser.canvasSelector).prop("title", "Cruisers" + (details.maxStrength ? ": " + details.damageText : ""));
+
+				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
+				Astriarch.View.ImageCanvasStarships.battleship.drawShip(Astriarch.View.ColorsRGBA["green"], "");
+				$(Astriarch.View.ImageCanvasStarships.battleship.canvasSelector).prop("title", "Battleships" + (details.maxStrength ? ": " + details.damageText : ""));
 				
 				$('#TextBlockDefenderCount').text(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].length);
 				$('#TextBlockScoutCount').text(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length);
@@ -986,3 +1060,71 @@ Astriarch.View.openTradingCenter = function() {
 		Astriarch.TradingControl.show(p);
 	}
 };
+
+/**
+ * ImageCanvas represents a canvas that will draw an image with different colors
+ * @constructor
+ */
+Astriarch.View.ImageCanvas = Class.extend({
+	init: function(canvasSelector, imgFilename, width, height, colorRgbaArray, offsetY) {
+		this.canvasSelector = canvasSelector;
+		this.imgFilename = imgFilename;
+		this.width = width;
+		this.height = height;
+		this.colorRgbaArray = colorRgbaArray || [];
+		this.offsetY = offsetY || 0;//this is the offset for the image in the Spritesheet
+
+		this.imageDataDefault = null;
+		this.imageDataByColorRGBA = {};//indexed by ColorRGBA.toString(), value is image data []
+
+		this.canvas = $(canvasSelector);
+		this.ctx = this.canvas[0].getContext("2d");
+
+		var self = this;
+
+		var image = new Image();
+		image.onload = function() {
+			var uInt8ClampedArrayToArray = function(data) {
+				var arr = [];
+				for(var i in data) {
+					arr.push(data[i]);
+				}
+				return arr;
+			};
+			self.ctx.drawImage(image, 0, offsetY, width, height, 0, 0, width, height);
+			self.imageDataDefault = uInt8ClampedArrayToArray(self.ctx.getImageData(0, 0 , width, height).data);
+			for(var i = 0; i < colorRgbaArray.length; i++) {
+				var color = colorRgbaArray[i];
+				self.imageDataByColorRGBA[color.toString()] = Astriarch.Util.ChangeImageColor(self.imageDataDefault, color);
+			}
+		};
+		image.src = imgFilename;
+	},
+
+	draw: function(color) {
+		this.ctx.clearRect(0, 0, this.canvas[0].width, this.canvas[0].height);
+
+		var imageData = color ? this.imageDataByColorRGBA[color.toString()] : this.imageDataDefault;
+		var canvasImgData = this.ctx.createImageData(this.width, this.height);
+		for(var i in imageData) {
+			canvasImgData.data[i] = imageData[i];
+		}
+		this.ctx.putImageData(canvasImgData, 0, 0);
+	}
+});
+
+Astriarch.View.StarshipCanvas = Astriarch.View.ImageCanvas.extend({
+	init: function (canvasSelector, imgFilename, width, height, colorRgbaArray, offsetY) {
+		this._super(canvasSelector, imgFilename, width, height, colorRgbaArray, offsetY);//invoke base class constructor
+	},
+
+	drawShip: function(color, text) {
+		this.draw(color);
+
+		this.ctx.textAlign = "center";
+		this.ctx.textBaseline = 'middle';
+		this.ctx.fillStyle = color.toString();
+		this.ctx.font = "bold 7pt Trebuchet MS,Tahoma,Verdana,Arial,sans-serif";
+		this.ctx.fillText(text, this.width/2, this.canvas[0].height - 4);
+	}
+});
