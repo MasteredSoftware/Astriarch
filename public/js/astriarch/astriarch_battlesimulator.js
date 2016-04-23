@@ -173,12 +173,9 @@ Astriarch.BattleSimulator = {
 	},
 
 	StarshipHasAdvantageBasedOnType: function(/*bool*/ attackerIsSpacePlatform, /*StarShipType*/ sstAttacker, /*bool*/ defenderIsSpacePlatform, /*StarShipType*/ sstDefender) {
-		//space platforms have advantages over everything except battleships
+		//space platforms have advantages over everything
 		if (attackerIsSpacePlatform){
-			if(sstDefender == Astriarch.Fleet.StarShipType.Battleship)
-				return false;
-			else
-				return true;
+			return true;
 		} else if(defenderIsSpacePlatform){
 			return false;
 		} else if (sstAttacker == Astriarch.Fleet.StarShipType.SystemDefense && sstDefender == Astriarch.Fleet.StarShipType.Battleship){
@@ -199,10 +196,7 @@ Astriarch.BattleSimulator = {
 		if (attackerIsSpacePlatform){
 			return false;
 		} else if(defenderIsSpacePlatform){
-			if(sstAttacker == Astriarch.Fleet.StarShipType.Battleship)
-				return false;
-			else
-				return true;
+			return true;
 		} else if (sstAttacker == Astriarch.Fleet.StarShipType.SystemDefense && sstDefender == Astriarch.Fleet.StarShipType.Scout){
 			return true;
 		} else if (sstAttacker == Astriarch.Fleet.StarShipType.Scout && sstDefender == Astriarch.Fleet.StarShipType.Destroyer){

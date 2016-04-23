@@ -176,20 +176,18 @@ describe('#BattleSimulator', function () {
 			done();
 		});
 
-		it('should allow spaceplatforms to win against an equivalent strength fleet of battleships about 50% of the time', function(done) {
+		it('should allow spaceplatforms to win against a 1.5x strength fleet of battleships most of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 2, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 3, null);
 			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, null);
 			f2.HasSpacePlatform = true;
 
-			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
+			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 1.5);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			console.log("Battleship fleet Win Count:", fleet1WinCount);
-			if(fleet1WinCount > (battleTries * .54)){
-				return done("Battleship Fleet won more than 54% of the time against a Space Platform!");
-			} else if(fleet1WinCount < (battleTries * .46)){
-				return done("Battleship Fleet won less than 46% of the time against a Space Platform!");
+			if(fleet1WinCount > (battleTries * .15)){
+				return done("Battleship Fleet won more than 15% of the time against a Space Platform!")
 			}
 			done();
 		});
