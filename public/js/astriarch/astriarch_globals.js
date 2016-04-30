@@ -130,7 +130,7 @@ Astriarch.GameTools = {
 			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
 				helpText = "Space Platforms provide planetary defense.\r\n" +
                            "Allows construction of Cruisers and Battleships.\r\n" +
-                           "Advantage against: All ships except Battleships, Disadvantage Against: None";
+                           "Advantage against: All ships, Disadvantage Against: None";
 				break;
 		}
 
