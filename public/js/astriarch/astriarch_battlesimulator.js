@@ -59,7 +59,7 @@ Astriarch.BattleSimulator = {
 				f1KVP['Starship'].DamageAmount += f1KVP['Damage'];
 				//assign points
 				if(f2.Owner){
-					f2.Owner.Points += Astriarch.ServerController.POINTS_PER_DAMAGED_STARSHIP_STRENGTH * f1KVP['Damage'];
+					f2.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, f1KVP['Damage']);
 				}
 			}
 			fleet1DamagePending = {};
@@ -69,7 +69,7 @@ Astriarch.BattleSimulator = {
 				f2KVP['Starship'].DamageAmount += f2KVP['Damage'];
 				//assign points
 				if(f1.Owner){
-					f1.Owner.Points += Astriarch.ServerController.POINTS_PER_DAMAGED_STARSHIP_STRENGTH * f2KVP['Damage'];
+					f1.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, f2KVP['Damage']);
 				}
 			}
 			fleet2DamagePending = {};
@@ -78,11 +78,11 @@ Astriarch.BattleSimulator = {
 			f2.ReduceFleet(fleet2SpacePlatformDamagePendingObject['enemyFleetSpacePlatformDamagePending']);
 			//assign points
 			if(f1.Owner){
-				f1.Owner.Points += Astriarch.ServerController.POINTS_PER_DAMAGED_STARSHIP_STRENGTH * fleet2SpacePlatformDamagePendingObject['enemyFleetSpacePlatformDamagePending'];
+				f1.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, fleet2SpacePlatformDamagePendingObject['enemyFleetSpacePlatformDamagePending']);
 			}
 			//assign points
 			if(f2.Owner){
-				f2.Owner.Points += Astriarch.ServerController.POINTS_PER_DAMAGED_STARSHIP_STRENGTH * fleet1SpacePlatformDamagePendingObject['enemyFleetSpacePlatformDamagePending'];
+				f2.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, fleet1SpacePlatformDamagePendingObject['enemyFleetSpacePlatformDamagePending']);
 			}
 		}
 

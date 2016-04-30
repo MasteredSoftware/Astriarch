@@ -4,12 +4,6 @@ Astriarch.ServerController = {
 
 	BATTLE_RANDOMNESS_FACTOR: 4.0,//the amount randomness (chance) when determining fleet conflict outcomes, it is the strength multiplyer where the winner is guaranteed to win
 
-	POINTS_PER_POPULATION_GROWTH: 4,
-	POINTS_PER_PRODUCTION_UNIT_BUILT: 0.25,
-	POINTS_PER_REPAIRED_STARSHIP_STRENGTH: 0.25,
-	POINTS_PER_DAMAGED_STARSHIP_STRENGTH: 0.5,
-	POINTS_PER_CITIZEN_ON_CAPTURED_PLANET: 10,
-
 	/// <summary>
 	/// Finishes (takes) the turns for all AI opponents and builds resources for everyone
 	/// </summary>
@@ -79,7 +73,7 @@ Astriarch.ServerController = {
 						resourcesAutoSpentByPlayerId[p.Owner.Id].iridium += iridiumCost;
 					}
 					//assign points
-					p.Owner.Points += Astriarch.ServerController.POINTS_PER_REPAIRED_STARSHIP_STRENGTH * totalStrengthRepaired;
+					p.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.REPAIRED_STARSHIP_STRENGTH, totalStrengthRepaired);
 
 				}
 			}
@@ -803,7 +797,7 @@ Astriarch.ServerController = {
 					p.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 
 					//assign points
-					player.Points += Astriarch.ServerController.POINTS_PER_POPULATION_GROWTH * 1;
+					player.IncreasePoints(Astriarch.Player.EarnedPointsType.POPULATION_GROWTH, 1);
 				}
 			}
 		}

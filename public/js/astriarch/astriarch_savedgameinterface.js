@@ -233,6 +233,7 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 		p.HomePlanet = planetsById[sp.HomePlanetId];
 	}
 
+	p.EarnedPointsByType = sp.EarnedPointsByType;
 	p.Points = sp.Points;
 
 	for(var j in sp.SerializableFleetsInTransit)
@@ -419,6 +420,7 @@ Astriarch.SerializablePlayer = function(/*Astriarch.Player*/ player) {
 		this.HomePlanetId = player.HomePlanet.Id;//Player has HomePlanet:Planet
 	}
 
+	this.EarnedPointsByType = player.EarnedPointsByType;
 	this.Points = player.Points;
 
 	this.SerializableFleetsInTransit = [];//Player has FleetsInTransit:List<Fleet>

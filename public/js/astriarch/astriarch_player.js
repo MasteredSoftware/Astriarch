@@ -26,7 +26,8 @@ Astriarch.Player = function(/*PlayerType*/ playerType, /*string*/ name) {
 
 	this.HomePlanet = null;//Planet
 
-	this.Points = 0;
+	this.EarnedPointsByType = {};//indexed by Astriarch.Player.EarnedPointsType.key value is number of earned points for that type
+	this.Points = 0;//computed value based on EarnedPointsByType
 
 	this.FleetsInTransit = [];//List<Fleet>
 
@@ -34,6 +35,35 @@ Astriarch.Player = function(/*PlayerType*/ playerType, /*string*/ name) {
 };
 
 Astriarch.Player.Static = {NEXT_PLAYER_ID:1};
+
+Astriarch.Player.EarnedPointsType = {
+	POPULATION_GROWTH: {key: 0, points_per:4, max_points:100000},
+	PRODUCTION_UNIT_BUILT: {key: 1, points_per:0.25, max_points:500},
+	REPAIRED_STARSHIP_STRENGTH: {key: 2, points_per:2, max_points:4000},
+	DAMAGED_STARSHIP_STRENGTH: {key: 3, points_per:0.5, max_points:1000},
+	CITIZEN_ON_CAPTURED_PLANET: {key: 4, points_per:10, max_points:10000}
+};
+
+/**
+ * Increases the players points
+ * @this {Astriarch.Player}
+ */
+Astriarch.Player.prototype.IncreasePoints = function(earnedPointsType, amount)	{
+	if(!(earnedPointsType.key in this.EarnedPointsByType)) {
+		this.EarnedPointsByType[earnedPointsType.key] = 0;
+	}
+
+	if(this.EarnedPointsByType[earnedPointsType.key] < earnedPointsType.max_points) {
+		this.EarnedPointsByType[earnedPointsType.key] += earnedPointsType.points_per * amount;
+	}
+
+	this.Points = 0;
+	for(var i in this.EarnedPointsByType) {
+		this.Points += this.EarnedPointsByType[i];
+	}
+	this.Points = Math.floor(this.Points);
+	return this.Points;
+};
 
 /**
  * sets the players rgba color

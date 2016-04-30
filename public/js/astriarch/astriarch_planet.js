@@ -396,10 +396,7 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 
 			//assign points
 			if(this.Owner){
-				//cap points for production since it is easy to game this by simply setting up auto-building ships and automating next turn clicking
-				if(this.Owner.Points < 1000) {
-					this.Owner.Points += Astriarch.ServerController.POINTS_PER_PRODUCTION_UNIT_BUILT * nextItem.BaseProductionCost;
-				}
+				this.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.PRODUCTION_UNIT_BUILT, nextItem.BaseProductionCost);
 			}
 
 			var nextItemInQueueName = "Nothing";
@@ -547,7 +544,7 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 
 		//assign points
 		if(p){
-			p.Points += Astriarch.ServerController.POINTS_PER_CITIZEN_ON_CAPTURED_PLANET * this.Population.length;
+			p.IncreasePoints(Astriarch.Player.EarnedPointsType.CITIZEN_ON_CAPTURED_PLANET, this.Population.length);
 		}
 	}
 
