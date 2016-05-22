@@ -473,6 +473,10 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 		//update players current turn ended
 		cb(null, data);
 	}, 0, function(err, doc){
+		if(err || !doc) {
+			callback(err || "Unable to find game doc in EndPlayerTurn");
+			return;
+		}
 		//now that we ensured only one player ended their turn at a time, let's check again
 		var returnData = {"allPlayersFinished": false, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc, "gameModel":null};
 		returnData.allPlayersFinished = setCurrentTurnEndedReturnAllPlayersFinished(sessionId, doc);
