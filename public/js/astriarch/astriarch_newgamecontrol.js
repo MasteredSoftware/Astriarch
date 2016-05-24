@@ -228,7 +228,7 @@ Astriarch.NewGameControl = {
 
 			var x = 0;
 			var y = 0;
-			if((gameOptions.systemsToGenerate == 2 && i == 1) || (gameOptions.systemsToGenerate == 4 && i == 3)) {
+			if((gameOptions.systemsToGenerate == 2 && i == 1) || (gameOptions.systemsToGenerate == 4 && i == 2)) {
 				x = halfWidth;
 				y = halfHeight;
 			} else if ((gameOptions.systemsToGenerate == 3 || gameOptions.systemsToGenerate == 4) && i == 1) {
@@ -236,7 +236,7 @@ Astriarch.NewGameControl = {
 			} else if (gameOptions.systemsToGenerate == 3 && i == 2) {
 				x = width / 4;
 				y = halfHeight;
-			} else if (gameOptions.systemsToGenerate == 4 && i == 2) {
+			} else if (gameOptions.systemsToGenerate == 4 && i == 3) {
 				y = halfHeight;
 			}
 
