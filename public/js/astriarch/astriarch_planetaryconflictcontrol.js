@@ -84,5 +84,9 @@ Astriarch.PlanetaryConflictControl = {
 	CancelClose: function() {
 		//this is probably not the best way to do this, but it can't be syncronous because it needs to pop this up again
 		setTimeout(function() { Astriarch.GameController.processNextEndOfTurnPlanetaryConflictMessage(); }, 100);
+	},
+
+	Close: function() {
+		Astriarch.PlanetaryConflictControl.dialog.dlg.dialog('close');
 	}
 };

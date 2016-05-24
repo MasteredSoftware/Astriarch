@@ -60,6 +60,7 @@ Astriarch.GameController.HideControlsForTurnStart = function(){
 	Astriarch.PlanetView.Close();
 	Astriarch.SendShipsControl.Close();
 	Astriarch.TradingControl.Close();
+	Astriarch.PlanetaryConflictControl.Close();
 };
 
 Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
