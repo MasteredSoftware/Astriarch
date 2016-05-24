@@ -45,7 +45,7 @@ Astriarch.GameController.SetupViewFromGameModel = function() {
 	Astriarch.View.updateCanvasForPlayer();
 	
 	//select our home planet
-	Astriarch.ClientGameModel.GameGrid.SelectHex(Astriarch.ClientGameModel.MainPlayer.HomePlanet.BoundingHex);
+	Astriarch.ClientGameModel.GameGrid.SelectHex(Astriarch.ClientGameModel.getClientPlanetById(Astriarch.ClientGameModel.MainPlayer.HomePlanetId).BoundingHex);
 	Astriarch.View.updateSelectedItemPanelForPlanet();
 	
 	Astriarch.View.updatePlayerStatusPanel();
@@ -226,7 +226,7 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 	}
 
 	//check for tutorial goals
-	var homePlanet = Astriarch.ClientGameModel.MainPlayer.HomePlanet;
+	var homePlanet = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(Astriarch.ClientGameModel.MainPlayer.HomePlanetId);
 	if(homePlanet && window.tour.enabled){
 		var factoryCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 		var colonyCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length;

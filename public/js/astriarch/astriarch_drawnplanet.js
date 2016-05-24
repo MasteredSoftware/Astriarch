@@ -236,7 +236,7 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 			lastKnownOwner = lastKnownFleet.LastKnownOwner;
 		}
 
-		var planet = player.GetPlanetIfOwnedByPlayer(this.ClientPlanet);
+		var planet = player.GetPlanetIfOwnedByPlayer(this.ClientPlanet.Id);
 		if (planet) {
 			this.textBlockForeground = player.Color.toString();
 			this.textBlockStrengthForeground = player.Color.toString();

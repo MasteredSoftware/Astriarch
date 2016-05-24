@@ -23,8 +23,8 @@ describe('#TradingCenter', function () {
 	describe('executeCurrentTrades()', function () {
 		it('should execute all current trades when trades are valid', function (done) {
 			var newTrades = [];
-			newTrades.push(new Astriarch.TradingCenter.Trade(player1.Id, player1.HomePlanet.Id, Astriarch.TradingCenter.TradeType.SELL, Astriarch.TradingCenter.ResourceType.FOOD, 1, Astriarch.TradingCenter.OrderType.MARKET, null));
-			newTrades.push(new Astriarch.TradingCenter.Trade(player2.Id, player2.HomePlanet.Id, Astriarch.TradingCenter.TradeType.BUY, Astriarch.TradingCenter.ResourceType.FOOD, 1, Astriarch.TradingCenter.OrderType.MARKET, null));
+			newTrades.push(new Astriarch.TradingCenter.Trade(player1.Id, player1.HomePlanetId, Astriarch.TradingCenter.TradeType.SELL, Astriarch.TradingCenter.ResourceType.FOOD, 1, Astriarch.TradingCenter.OrderType.MARKET, null));
+			newTrades.push(new Astriarch.TradingCenter.Trade(player2.Id, player2.HomePlanetId, Astriarch.TradingCenter.TradeType.BUY, Astriarch.TradingCenter.ResourceType.FOOD, 1, Astriarch.TradingCenter.OrderType.MARKET, null));
 			gameModel.TradingCenter.currentTrades = gameModel.TradingCenter.currentTrades.concat(newTrades);
 			var endOfTurnMessagesByPlayerId = {};
 			var executedStatusListByPlayerId = Astriarch.ServerController.executeCurrentTrades(gameModel, endOfTurnMessagesByPlayerId);
@@ -49,9 +49,10 @@ var checkTrade = function(player, tradeType, resourceType, tradeAmount, callback
 	var origGoldAmount = player.ExactTotalGoldAmount();
 	var origFoodAmount = player.ExactTotalFoodAmount();
 	var origFoodPrice = gameModel.TradingCenter.foodResource.currentPrice;
-	var trade = new Astriarch.TradingCenter.Trade(-1, player.HomePlanet.Id, tradeType, resourceType, tradeAmount, Astriarch.TradingCenter.OrderType.MARKET, null);
+	var trade = new Astriarch.TradingCenter.Trade(-1, player.HomePlanetId, tradeType, resourceType, tradeAmount, Astriarch.TradingCenter.OrderType.MARKET, null);
 	//{executed:false, foodAmount:0, oreAmount:0, iridiumAmount:0, tradeGoldAmount:0}
-	var executedStatus = gameModel.TradingCenter.executeTrade(gameModel, player, player.HomePlanet, trade);
+	var homePlanet = gameModel.getPlanetById(player.HomePlanetId);
+	var executedStatus = gameModel.TradingCenter.executeTrade(gameModel, player, homePlanet, trade);
 	if(executedStatus.executed) {
 		//recalculate current prices in trading center for each trade executed
 		gameModel.TradingCenter.recalculatePrices();

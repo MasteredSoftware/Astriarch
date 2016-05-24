@@ -1058,7 +1058,7 @@ var getPlayerPlanetAndGameModelFromDocumentBySessionId = function(doc, sessionId
 	}
 
 	//ensure that the PlanetId passed in belongs to the player
-	var planet = player.GetPlanetIfOwnedByPlayer({"Id":planetId});
+	var planet = player.GetPlanetIfOwnedByPlayer(planetId);
 	if(!planet){
 		callback("PlanetId: " + planetId + " not owned by Player in UpdatePlanetForPlayer!");
 		return;

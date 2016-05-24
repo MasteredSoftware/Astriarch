@@ -595,7 +595,7 @@ Astriarch.AI = {
 		}
 		var purchaseMultiplier = 0.25;
 		var tradesToExecute = [];
-		var planetId = player.HomePlanet ? player.HomePlanet.Id : ownedPlanetsSorted[0].Id;
+		var planetId = player.HomePlanetId ? player.HomePlanetId : ownedPlanetsSorted[0].Id;
 		var amount = 0;
 		var orderType = Astriarch.TradingCenter.OrderType.MARKET;
 		var limitPrice = null;
@@ -794,7 +794,7 @@ Astriarch.AI = {
 					{
 						planetCandidatesForInboundScouts.push(p);
 					}
-					else if (!player.GetPlanetIfOwnedByPlayer(p))//TODO: we might still want to gather fleets strategically
+					else if (!player.GetPlanetIfOwnedByPlayer(p.Id))//TODO: we might still want to gather fleets strategically
 					{
 						planetCandidatesForInboundAttackingFleets.push(p);
 					}
@@ -814,18 +814,19 @@ Astriarch.AI = {
 
 
 		//first sort planet candidates for inbound fleets by closest to home planet
-		if (player.HomePlanet != null)//just to make sure
+		if (player.HomePlanetId != null)//just to make sure
 		{
+			var homePlanet = gameModel.getPlanetById(player.HomePlanetId);
 			if (player.Type == Astriarch.Player.PlayerType.Computer_Easy || player.Type == Astriarch.Player.PlayerType.Computer_Normal)
 			{
-				var planetDistanceComparer = new Astriarch.Planet.PlanetDistanceComparer(gameModel, player.HomePlanet)
+				var planetDistanceComparer = new Astriarch.Planet.PlanetDistanceComparer(gameModel, homePlanet);
 				planetCandidatesForInboundAttackingFleets.sort(planetDistanceComparer.sortFunction);
 				planetCandidatesForInboundScouts.sort(planetDistanceComparer.sortFunction);
 			}
 			else
 			{
 				//hard and expert computer will sort with a bit of complexly (based on value and last known strength as well as distance)
-				var planetValueDistanceStrengthComparer = new Astriarch.Planet.PlanetValueDistanceStrengthComparer(gameModel, player.HomePlanet, player.LastKnownPlanetFleetStrength)
+				var planetValueDistanceStrengthComparer = new Astriarch.Planet.PlanetValueDistanceStrengthComparer(gameModel, homePlanet, player.LastKnownPlanetFleetStrength);
 				planetCandidatesForInboundAttackingFleets.sort(planetValueDistanceStrengthComparer.sortFunction);
 				planetCandidatesForInboundScouts.sort(planetValueDistanceStrengthComparer.sortFunction);
 			}

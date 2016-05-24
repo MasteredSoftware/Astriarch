@@ -873,8 +873,9 @@ Astriarch.PlanetView = {
 								Astriarch.PlanetView.workingBuildQueue[0].Type == Astriarch.Planet.PlanetImprovementType.Mine &&
 								Astriarch.PlanetView.workingBuildQueue[1].Type == Astriarch.Planet.PlanetImprovementType.Mine) {
 								window.tour.jqElm.joyride('nextTip');
-							} else if (window.tour.step == 44 && Astriarch.PlanetView.workingBuildQueue.length == 2 &&
-								Astriarch.PlanetView.workingBuildQueue[1].Type == Astriarch.Planet.PlanetImprovementType.Factory) {
+							} else if (window.tour.step == 44 &&
+								(Astriarch.PlanetView.workingBuildQueue.length == 2 && Astriarch.PlanetView.workingBuildQueue[1].Type == Astriarch.Planet.PlanetImprovementType.Factory) ||
+								(Astriarch.PlanetView.workingBuildQueue.length == 1 && Astriarch.PlanetView.workingBuildQueue[0].Type == Astriarch.Planet.PlanetImprovementType.Factory) ) {
 								window.tour.jqElm.joyride('nextTip');
 							}
 						}

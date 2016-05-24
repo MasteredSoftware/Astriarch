@@ -551,10 +551,6 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 	this.Owner = p;
 	if (this.Owner) {
 		p.KnownClientPlanets[this.Id] = this.GetClientPlanet();
-		if (Astriarch.CountObjectKeys(p.OwnedPlanets) == 0)
-		{
-			p.HomePlanet = this;
-		}
 		p.OwnedPlanets[this.Id] = this;
 	}
 

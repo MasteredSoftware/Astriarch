@@ -222,6 +222,7 @@ Astriarch.Model.prototype.populatePlanets = function(){
 			//if we set an initial owner, give the planet 2 ore and 1 iridium
 			if(initialPlanetOwner)
 			{
+				initialPlanetOwner.HomePlanetId = p.Id;
 				p.Resources.OreAmount = 2;
 				p.Resources.IridiumAmount = 1;
 			}

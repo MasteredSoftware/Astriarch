@@ -24,7 +24,7 @@ Astriarch.Player = function(/*PlayerType*/ playerType, /*string*/ name) {
 
 	this.PlanetBuildGoals = {};//Dictionary<int, PlanetProductionItem>
 
-	this.HomePlanet = null;//Planet
+	this.HomePlanetId = null;//int
 
 	this.EarnedPointsByType = {};//indexed by Astriarch.Player.EarnedPointsType.key value is number of earned points for that type
 	this.Points = 0;//computed value based on EarnedPointsByType
@@ -220,10 +220,10 @@ Astriarch.Player.prototype.GatherFleetsArrivingOnUnownedPlanets = function() {
  * @this {Astriarch.Player}
  * @return {boolean} 
  */
-Astriarch.Player.prototype.GetPlanetIfOwnedByPlayer = function(/*ClientPlanet*/ p) {
+Astriarch.Player.prototype.GetPlanetIfOwnedByPlayer = function(planetId) {
 	var planet = null;
-	if(p.Id in this.OwnedPlanets) {
-		planet = this.OwnedPlanets[p.Id];
+	if(planetId in this.OwnedPlanets) {
+		planet = this.OwnedPlanets[planetId];
 	}
 
 	return planet;

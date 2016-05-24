@@ -319,7 +319,7 @@ Astriarch.View.ShowMainMenu = function() {
 
 Astriarch.View.ShowPlanetView = function() {
 	var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//ClientPlanet
-	var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp);
+	var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp.Id);
 	Astriarch.PlanetView.show(p);
 };
 
@@ -376,7 +376,7 @@ Astriarch.View.PlayfieldClicked = function(pos) {
 
 				//show select ships to send dialog
 				var cp1 = Astriarch.View.sendShipsFromHex.ClientPlanetContainedInHex;
-				var p1 = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp1);
+				var p1 = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp1.Id);
 				var p2 = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;
 
 				Astriarch.SendShipsControl.show(p1, p2, distance);
@@ -396,7 +396,7 @@ Astriarch.View.PlayfieldDoubleClicked = function(pos) {
 	var hClicked = Astriarch.ClientGameModel.GameGrid.GetHexAt(point);//Hexagon
 
 	if (hClicked != null && hClicked.ClientPlanetContainedInHex != null) {
-		var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(hClicked.ClientPlanetContainedInHex);
+		var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(hClicked.ClientPlanetContainedInHex.Id);
 		if (p) {
 			//fire off planet view
 			Astriarch.View.ShowPlanetView();
@@ -502,7 +502,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 			//Planet Type
 			sb += Astriarch.GameTools.PlanetTypeToFriendlyName(planetTypeIfKnownByPlayer) + "<br />";
 
-			var p = mainPlayer.GetPlanetIfOwnedByPlayer(cp);
+			var p = mainPlayer.GetPlanetIfOwnedByPlayer(cp.Id);
 			//TODO: make work with Astriarch.ClientGameModel.ShowUnexploredPlanetsAndEnemyPlayerStats option at the end of game
 			if (p) {
 				//show details for owned planets
@@ -1055,7 +1055,7 @@ Astriarch.View.volumeSliderValueChanged = function(event, ui) {
 
 Astriarch.View.openTradingCenter = function() {
 	var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//ClientPlanet
-	var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp);
+	var p = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp.Id);
 	if(p){
 		Astriarch.TradingControl.show(p);
 	}

@@ -228,10 +228,7 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 		}
 	}
 
-	p.HomePlanet = null;
-	if(sp.HomePlanetId){
-		p.HomePlanet = planetsById[sp.HomePlanetId];
-	}
+	p.HomePlanetId = sp.HomePlanetId;
 
 	p.EarnedPointsByType = sp.EarnedPointsByType;
 	p.Points = sp.Points;
@@ -415,10 +412,7 @@ Astriarch.SerializablePlayer = function(/*Astriarch.Player*/ player) {
 		Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(this.PlanetBuildGoals[i]);
 	}
 
-	this.HomePlanetId = null;
-	if(player.HomePlanet){
-		this.HomePlanetId = player.HomePlanet.Id;//Player has HomePlanet:Planet
-	}
+	this.HomePlanetId =  player.HomePlanetId;
 
 	this.EarnedPointsByType = player.EarnedPointsByType;
 	this.Points = player.Points;
