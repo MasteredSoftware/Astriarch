@@ -719,14 +719,14 @@ exports.StartUpdatePlanet = function(options, payload, callback){
 	});
 };
 
-exports.FinishUpdatePlanet = function(options, payload, callback){
+exports.UpdatePlanetOptions = function(options, payload, callback){
 	var sessionId = options.sessionId;
 	FindGameById(payload.gameId, function(err, doc){
 		if(err){
 			callback(err);
 			return;
 		}
-		//payload: {"OkClose": true|false, "planetId": 1, "farmers":1, "miners":1, "workers":1, "BuildLastStarShip":true}
+		//payload: {"planetId": 1, "farmers":1, "miners":1, "workers":1, "BuildLastStarShip":true}
 		getExistingPlanetViewWorkingDataModel(doc._id, sessionId, payload.planetId, function(err, pvwdmExisting){
 			if(err){
 				callback(err);
@@ -738,48 +738,33 @@ exports.FinishUpdatePlanet = function(options, payload, callback){
 				callback(msg);
 				return;
 			}
-			if(payload.OkClose){
-				//update working
+			getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetId, function(err, player, planet, gameModelReturned){
+				if(err){
+					callback(err);
+					return;
+				}
 
-				getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetId, function(err, player, planet, gameModelReturned){
+				//ensure farmers + miners + workers == population count
+				var totalWorkerCount = payload.farmers + payload.miners + payload.workers;
+				var citizens = planet.GetPopulationByContentment();
+				if(totalWorkerCount != citizens.content.length){
+					callback("Total workers sent in payload does not match content Population total in UpdatePlanetForPlayer!");
+					return;
+				}
+
+				pvwdmExisting.planetViewWorkingData.farmers = payload.farmers;
+				pvwdmExisting.planetViewWorkingData.miners = payload.miners;
+				pvwdmExisting.planetViewWorkingData.workers = payload.workers;
+				pvwdmExisting.planetViewWorkingData.BuildLastStarShip = payload.BuildLastStarShip;
+
+				pvwdmExisting.markModified('planetViewWorkingData');
+				pvwdmExisting.save(function(err){
 					if(err){
-						callback(err);
-						return;
-					}
-
-					//ensure farmers + miners + workers == population count
-					var totalWorkerCount = payload.farmers + payload.miners + payload.workers;
-					var citizens = planet.GetPopulationByContentment();
-					if(totalWorkerCount != citizens.content.length){
-						callback("Total workers sent in payload does not match content Population total in UpdatePlanetForPlayer!");
-						return;
-					}
-
-					pvwdmExisting.planetViewWorkingData.farmers = payload.farmers;
-					pvwdmExisting.planetViewWorkingData.miners = payload.miners;
-					pvwdmExisting.planetViewWorkingData.workers = payload.workers;
-					pvwdmExisting.planetViewWorkingData.BuildLastStarShip = payload.BuildLastStarShip;
-
-					pvwdmExisting.markModified('planetViewWorkingData');
-					pvwdmExisting.save(function(err){
-						if(err){
-							console.error("FinishUpdatePlanet error saving PlanetViewWorkingDataModel: ", err);
-						}
-						callback(err);
-					});
-				});
-			} else {
-				//delete PlanetViewWorkingDataModel
-				/*
-				pvwdmExisting.remove(function(err){
-					if(err){
-						console.error("FinishUpdatePlanet error removing PlanetViewWorkingDataModel: ", err);
+						console.error("FinishUpdatePlanet error saving PlanetViewWorkingDataModel: ", err);
 					}
 					callback(err);
 				});
-				*/
-				console.log("Nothing to do when payload.OkClose == false;")
-			}
+			});
 		});
 	});
 };

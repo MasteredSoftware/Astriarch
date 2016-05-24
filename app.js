@@ -253,8 +253,8 @@ wss.on('connection', function(ws) {
 					});
 
 					break;
-				case Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_FINISH:
-					gameController.FinishUpdatePlanet({sessionId:sessionId}, message.payload, function(err){
+				case Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_OPTIONS:
+					gameController.UpdatePlanetOptions({sessionId:sessionId}, message.payload, function(err){
 						if(err){
 							console.error("gameController.FinishUpdatePlanet: ", err);
 						}

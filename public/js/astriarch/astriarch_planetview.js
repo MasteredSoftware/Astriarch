@@ -7,10 +7,6 @@ Astriarch.PlanetView = {
     farmers:0,
     miners:0,
     workers:0,
-
-    farmersOrig:0,
-    minersOrig:0,
-    workersOrig:0,
 	
 	farmCount:0,
     mineCount:0,
@@ -51,7 +47,9 @@ Astriarch.PlanetView = {
 		$('#SliderFarmers').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderFarmersValueChanged});
 		$('#SliderMiners').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderMinersValueChanged});
 		$('#SliderWorkers').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderWorkersValueChanged});
-	 
+
+		$('#BuildLastShipCheckBox').change(Astriarch.PlanetView.BuildLastShipCheckBoxValueChanged);
+
 		$("#ButtonBuildQueueAddSelectedItem").button({ icons: {primary:'icon-16x16-build-queue-add'}, text: false });
 		$("#ButtonBuildQueueRemoveSelectedItem").button({ icons: {primary:'icon-16x16-build-queue-remove'}, text: false });
 		$("#ButtonBuildQueueMoveSelectedItemDown").button({ icons: {primary:'icon-16x16-build-queue-down'}, text: false });
@@ -147,7 +145,7 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiCruiser);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiBattleship);
 	 
-		Astriarch.PlanetView.dialog = new Astriarch.Dialog('#planetViewDialog', 'Planet View', 568, 485, Astriarch.PlanetView.OKClose, Astriarch.PlanetView.CancelClose);
+		Astriarch.PlanetView.dialog = new Astriarch.Dialog('#planetViewDialog', 'Planet View', 568, 485, Astriarch.PlanetView.OKClose);
 		
 		Astriarch.PlanetView.lastClicked = Astriarch.PlanetView.SliderValueClicked.None;
 		Astriarch.PlanetView.lastChanged = Astriarch.PlanetView.SliderValueClicked.None;
@@ -192,11 +190,6 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.farmers = pop.Farmers;
 		Astriarch.PlanetView.miners = pop.Miners;
 		Astriarch.PlanetView.workers = pop.Workers;
-
-		//copy to our orig variables to remember in case we cancel/close
-		Astriarch.PlanetView.farmersOrig = Astriarch.PlanetView.farmers;
-		Astriarch.PlanetView.minersOrig = Astriarch.PlanetView.miners;
-		Astriarch.PlanetView.workersOrig = Astriarch.PlanetView.workers;
 
 		$('#SliderFarmers').slider("value", Astriarch.PlanetView.farmers);
 		$('#TextBoxFarmers').text(Astriarch.PlanetView.farmers + "");
@@ -759,26 +752,39 @@ Astriarch.PlanetView = {
 			window.tour.jqElm.joyride('nextTip');
 		}
 
+		self.SendUpdatePlanetOptionsMessage();
+
 		self.recalculateBuildQueueListItemsTurnsToCompleteEstimates();
 		self.refreshResourcesPerTurnTextBoxes();
 	},
+
+	SendUpdatePlanetOptionsMessage: function() {
+		Astriarch.PlanetView.planetMain.BuildLastStarShip = true;
+		if(!$('#BuildLastShipCheckBox').prop('checked')) {
+			Astriarch.PlanetView.planetMain.BuildLastStarShip = false;
+		}
+
+		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload:{"planetId": Astriarch.PlanetView.planetMain.Id, "farmers":Astriarch.PlanetView.farmers, "miners":Astriarch.PlanetView.miners, "workers":Astriarch.PlanetView.workers, "BuildLastStarShip":Astriarch.PlanetView.planetMain.BuildLastStarShip}});
+	},
 	
-	SliderFarmersValueChanged: function(event, ui)
-	{
+	SliderFarmersValueChanged: function(event, ui) {
 		if(!Astriarch.PlanetView.updatingGUI)
 			Astriarch.PlanetView.updateSliderValues(Astriarch.PlanetView.SliderValueClicked.Farmers, ui.value);
 	},
 
-	SliderMinersValueChanged: function(event, ui)
-	{
+	SliderMinersValueChanged: function(event, ui) {
 		if (!Astriarch.PlanetView.updatingGUI)
 			Astriarch.PlanetView.updateSliderValues(Astriarch.PlanetView.SliderValueClicked.Miners, ui.value);
 	},
 
-	SliderWorkersValueChanged: function(event, ui)
-	{
+	SliderWorkersValueChanged: function(event, ui) {
 		if (!Astriarch.PlanetView.updatingGUI)
 			Astriarch.PlanetView.updateSliderValues(Astriarch.PlanetView.SliderValueClicked.Workers, ui.value);
+	},
+
+	BuildLastShipCheckBoxValueChanged: function(event, ui) {
+		if (!Astriarch.PlanetView.updatingGUI)
+			Astriarch.PlanetView.SendUpdatePlanetOptionsMessage();
 	},
 	
 	moveSelectedItemInQueue: function(/*bool*/ moveUp){
@@ -958,24 +964,8 @@ Astriarch.PlanetView = {
 		self.planetMain.Owner.Resources.OreRemainder = self.workingResources.OreRemainder;
 		self.planetMain.Owner.Resources.IridiumRemainder = self.workingResources.IridiumRemainder;
 		self.planetMain.Owner.Resources.AccumulateResourceRemainders();
-		
-		Astriarch.PlanetView.planetMain.BuildLastStarShip = true;
-		if(!$('#BuildLastShipCheckBox').attr('checked')) {
-			Astriarch.PlanetView.planetMain.BuildLastStarShip = false;
-		}
-
-		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_FINISH, payload:{"OkClose": true, "planetId": self.planetMain.Id, "farmers":self.farmers, "miners":self.miners, "workers":self.workers, "BuildLastStarShip":Astriarch.PlanetView.planetMain.BuildLastStarShip}});
 
 		Astriarch.View.PlanetViewDialogWindowClosed();
-	},
-
-	CancelClose: function()	{
-		//copy back our original workers to our planet object
-		var self = Astriarch.PlanetView;
-		self.planetMain.UpdatePopulationWorkerTypes(self.farmersOrig, self.minersOrig, self.workersOrig);
-		self.planetMain.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
-
-		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_FINISH, payload:{"OkClose": false, "planetId": self.planetMain.Id}});
 	},
 
 	Close: function() {
