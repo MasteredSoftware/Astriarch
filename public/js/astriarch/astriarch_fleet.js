@@ -344,13 +344,13 @@ Astriarch.Fleet.prototype.SplitFleetWithShipIds = function(scouts, destoyers, cr
 
 	var moveShipsToFleet = function(sourceFleet, destFleet, starShipType, idsToMove) {
 		var sourceStarShipArray = sourceFleet.StarShips[starShipType];
-		for(var i = sourceStarShipArray.length - 1; i >= 0; i--) {
-			for(var j = 0; j < idsToMove.length; j++) {
+		for(var j = 0; j < idsToMove.length; j++) {
+			for(var i = sourceStarShipArray.length - 1; i >= 0; i--) {
 				if(sourceStarShipArray[i].id == idsToMove[j]) {
 					var ship = sourceStarShipArray[i];
 					destFleet.StarShips[starShipType].push(ship);
 					sourceStarShipArray.splice(i, 1);
-					continue;
+					break;
 				}
 			}
 		}
