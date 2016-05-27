@@ -108,6 +108,8 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 
 		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE, function(message){Astriarch.CommControl.appendMessages([message.payload])});
 
+		Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.EXIT_RESIGN, function(message){Astriarch.GameController.OnExitResignMessageResponse(message)});
+
 		Astriarch.CommControl.init();
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, payload:{}});
@@ -174,6 +176,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	Astriarch.PlanetaryConflictControl.init();
 	Astriarch.GameOverControl.init();
 	Astriarch.TradingControl.init();
+	Astriarch.ExitConfirmControl.init();
 	
 	$( "#PlanetViewButton" ).click(
 		function() {
@@ -214,7 +217,8 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	$("#MainMenuButton").button({ icons: {primary:'icon-16x16-main-menu'}, text: false });
 	
 	$( "#MainMenuButton" ).click(function() {
-			Astriarch.View.ShowMainMenu();
+			//TODO: show confirm dialog to ask if they want to resign
+			Astriarch.ExitConfirmControl.show();
 		}
 	);
 	

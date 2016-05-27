@@ -25,8 +25,8 @@ Astriarch.Shared = {
 		"GAME_OVER":18,
 		"SUBMIT_TRADE":19,
 		"CANCEL_TRADE":20,
-		"CHAT_MESSAGE":21 //client and server bound message
-
+		"CHAT_MESSAGE":21, //client and server bound message
+		"EXIT_RESIGN":22
 	},
 
 	ERROR_TYPE: {

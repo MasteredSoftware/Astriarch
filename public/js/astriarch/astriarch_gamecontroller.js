@@ -92,6 +92,11 @@ Astriarch.GameController.OnGameOverMessageResponse = function(message) {
 	Astriarch.GameOverControl.show(message.payload.winningSerializablePlayer, message.payload.playerWon, message.payload.score);
 };
 
+Astriarch.GameController.OnExitResignMessageResponse = function(message) {
+	//Ensure they've ended their turn
+	Astriarch.GameController.NextTurn();
+};
+
 Astriarch.GameController.RefreshTurnDisplay = function(){
 	var year = Astriarch.ClientGameModel.Turn.Number + 3000;
 	$('#TurnDisplay').text("Turn " + Astriarch.ClientGameModel.Turn.Number + ", Year " + year);

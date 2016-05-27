@@ -82,6 +82,35 @@ Astriarch.Model.prototype.getPlanetById = function(id){
 };
 
 /**
+ * Returns the player object corresponding to a given Id
+ * @this {Astriarch.Model}
+ */
+Astriarch.Model.prototype.getPlayerById = function(id){
+	var player = null;
+	for (var i in this.Players)
+	{
+		var p = this.Players[i];//Player
+		if(p.Id == id){
+			player = p;
+			break;
+		}
+	}
+
+	if(!player){
+		//player was destroyed
+		for (var i in this.PlayersDestroyed)
+		{
+			var p = this.PlayersDestroyed[i];//Player
+			if(p.Id == id){
+				player = p;
+				break;
+			}
+		}
+	}
+	return player;
+};
+
+/**
  * Populates the planets in the model based on the game options 
  * @this {Astriarch.Model}
  */

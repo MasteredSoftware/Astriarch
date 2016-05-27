@@ -418,8 +418,8 @@ head
 																	td(colspan='3')  
 																tr(height='32')
 																	td(width='32')
-																		span#MainMenuIcon.icon-16x16-main-menu(title='Main Menu')
-																		button#MainMenuButton(width='24', height='24', title='Main Menu', style='display: none;') Main Menu
+																		span#MainMenuIcon.icon-16x16-main-menu(title='Exit')
+																		button#MainMenuButton(width='24', height='24', title='Exit', style='display: none;') Exit
 																	td(width='32')
 																		span#SpeakerIcon.icon-16x16-speaker-on(title='Mute Audio')
 																		button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
@@ -749,11 +749,14 @@ head
 									tr(height='210')
 										td
 											#GameOverSummary(style='width: 380px; height: 210px;')
-							#endTurnDialog(style='width: 380px; height: 210px; display: none;')
+							#exitConfirmDialog(style='width: 200px; height: 70px; display: none;')
 								table
-									tr(height='210')
+									tr(height='35')
 										td
-											#EndTurnSummary(style='width: 380px; height: 210px;')
+											button#ButtonExitMainMenu(width='75', height='24', title='Exit to Main Menu') Exit Game
+									tr(height='35')
+										td
+											button#ButtonExitResign(width='75', height='24', title='Quit game and Resign') Resign Command
 
 					// right sidebar
 					aside#right-sidebar(style='height: 600px;float:right;margin-left:5px')

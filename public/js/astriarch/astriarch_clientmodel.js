@@ -48,7 +48,7 @@ Astriarch.ClientModelInterface = {
 		}
 		var tem = new Astriarch.TurnEventMessage(stem.Type, cp, stem.Message);
 		if(stem.Data){
-			console.log("GetTurnEventMessageFromSerializableTurnEventMessage:", stem.Data);
+			//console.log("GetTurnEventMessageFromSerializableTurnEventMessage:", stem.Data);
 			//convert SerializablePlanetaryConflictData to PlanetaryConflictData
 			var defendingCP = null;
 			if(stem.Data.DefendingSerializableClientPlayer){

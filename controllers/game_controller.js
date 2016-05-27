@@ -206,8 +206,19 @@ var updateGameById = function(gameId, data, callback){
 };
 
 exports.ListLobbyGames = function(options, callback){
-	//find any game that is not started
-	models.GameModel.find({$or:[{started:false},{ended:false,"players.sessionId":options.sessionId}]}, null, {"sort": { dateLastPlayed : -1 }}, function(err, docs){
+	//find any game that is not started, or the current player is already in
+	var query = {
+		$or:[
+			{started:false},
+			{$and:
+				[
+					{ended:false},
+					{ "players.sessionId": options.sessionId, "players.destroyed": false }
+				]
+			}
+		]
+	};
+	models.GameModel.find(query, null, {"sort": { dateLastPlayed : -1 }}, function(err, docs){
 		var lobbyGameSummaries = [];
 		if(err){
 			console.error("ListLobbyGames", err);
@@ -609,6 +620,41 @@ exports.CancelTrade = function(sessionId, payload, callback){
 
 };
 
+exports.ExitResign = function(sessionId, payload, callback){
+
+	var score = 0;
+	var gameModel = null;
+	var playerId = null;
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		var serverPlayer = getPlayerFromDocumentBySessionId(doc, sessionId);
+		if(!serverPlayer){
+			callback("ServerPlayer not found in ExitResign!");
+			return;
+		}
+		playerId = serverPlayer.Id;
+		gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
+
+		score = Astriarch.ServerController.ResignPlayer(gameModel, playerId, doc.gameOptions.opponentOptions);
+
+		var data = {players:doc.players, gameData: new Astriarch.SerializableModel(gameModel)};
+
+		//set player destroyed so they can't re-join the game
+		for(var i = 0; i < doc.players.length; i++){
+			if(playerId == doc.players[i].Id) {
+				doc.players[i].currentTurnEnded = true;
+				doc.players[i].destroyed = true;
+			}
+		}
+
+		cb(null, data);
+	}, 0, function(err, doc){
+		var returnData = {"playerId": playerId, "score": score, "game": doc, "gameModel": gameModel};
+
+		callback(err, returnData);
+	});
+
+};
 
 var applyPlanetViewWorkingDataObjectsToModel = function(planetViewWorkingDataModels, gameModel){
 	var planet = null;

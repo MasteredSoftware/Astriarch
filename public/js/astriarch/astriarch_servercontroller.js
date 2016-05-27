@@ -807,55 +807,50 @@ Astriarch.ServerController = {
 
 	CheckPlayersDestroyed: function(gameModel)	{
 
-		var destroyedPlayers = [];//List<Player>();
-		for (var i in gameModel.Players)
-		{
-			var player = gameModel.Players[i];//Player
-			//a player is destroyed if they have no owned planets and no fleets in transit
-			if (Astriarch.CountObjectKeys(player.OwnedPlanets) == 0 && player.FleetsInTransit.length == 0)
-			{
+		//first make a shallow copy of the array
+		var players =  gameModel.Players.concat([]);
+		var destroyedPlayers = [];
+
+		players.forEach(function(player){
+			var destroyedPlayer = Astriarch.ServerController.checkPlayerDestroyedAndRemove(gameModel, player);
+			if(destroyedPlayer) {
 				destroyedPlayers.push(player);
 			}
-		}
-
-		for (var dpi in destroyedPlayers)
-		{
-			var destroyedPlayer = destroyedPlayers[dpi];
-			gameModel.PlayersDestroyed.push(destroyedPlayer);
-			for(var i = gameModel.Players.length-1; i >= 0; i--) {
-				if(gameModel.Players[i] == destroyedPlayer) {
-					gameModel.Players.splice(i, 1);
-				}
-			}
-		}
+		});
 
 		return destroyedPlayers;
 	},
 
+	checkPlayerDestroyedAndRemove: function(gameModel, player) {
+		//a player is destroyed if they have no owned planets and no fleets in transit
+		if (Astriarch.CountObjectKeys(player.OwnedPlanets) == 0 && player.FleetsInTransit.length == 0) {
+			gameModel.Players.splice(gameModel.Players.indexOf(player), 1);
+			gameModel.PlayersDestroyed.push(player);
+			return player;
+		}
+		return null;
+	},
+
+	ResignPlayer: function(gameModel, playerId, opponentOptions) {
+		//destroy the player by clearing OwnedPlanets and FleetsInTransit, at the end of the turn, other players will realize the player is destroyed
+		// eventually we could allow for the option of allowing a computer player to take a resigning player's place instead
+		var player = gameModel.getPlayerById(playerId);
+		for(var id in player.OwnedPlanets) {
+			var planet = gameModel.getPlanetById(id);
+			planet.SetPlanetOwner(null);
+		}
+		player.FleetsInTransit = [];
+
+		return Astriarch.ServerController.getPlayerPoints(gameModel, player, opponentOptions, false);
+	},
+
 	CalculateEndGamePoints: function(gameModel, playerId, opponentOptions, /*bool*/ playerWon) {
+		var player = gameModel.getPlayerById(playerId);
 
-		var player = null;
-		for (var i in gameModel.Players)
-		{
-			var p = gameModel.Players[i];//Player
-			if(p.Id == playerId){
-				player = p;
-				break;
-			}
-		}
+		return Astriarch.ServerController.getPlayerPoints(gameModel, player, opponentOptions, playerWon);
+	},
 
-		if(!player){
-			//player was destroyed
-			for (var i in gameModel.PlayersDestroyed)
-			{
-				var p = gameModel.PlayersDestroyed[i];//Player
-				if(p.Id == playerId){
-					player = p;
-					break;
-				}
-			}
-		}
-
+	getPlayerPoints: function(gameModel, player, opponentOptions, /*bool*/ playerWon) {
 		var points = player.Points;
 
 		var turnsTaken = gameModel.Turn.Number;

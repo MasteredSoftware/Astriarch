@@ -216,7 +216,7 @@ wss.on('connection', function(ws) {
 							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
 							wssInterface.wsSend(ws, message);
 						} else {
-							var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(doc.gameData, player);
+							var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(doc.gameData, player.Id);
 							message.payload = {gameData: serializableClientModel, playerPosition: player.position};
 							wssInterface.wsSend(ws, message);
 						}
@@ -237,7 +237,7 @@ wss.on('connection', function(ws) {
 							console.log("gameController.StartGame players: ", game.players);
 							for(var p = 0; p < game.players.length; p++){
 								var player = game.players[p];
-								var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(serializableModel, player);
+								var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(serializableModel, player.Id);
 								//player.sessionId
 								message.payload = serializableClientModel;
 								wss.broadcastToSession(player.sessionId, message);
@@ -333,7 +333,7 @@ wss.on('connection', function(ws) {
 									payload.endOfTurnMessages = data.endOfTurnMessagesByPlayerId[player.Id];
 								}
 
-								payload.gameData = getSerializableClientModelFromSerializableModelForPlayer(data.game.gameData, player);
+								payload.gameData = getSerializableClientModelFromSerializableModelForPlayer(data.game.gameData, player.Id);
 
 								var playerMessage = null;
 								if(player.Id in destroyedHumanClientPlayersById || winningSerializablePlayer){
@@ -403,6 +403,26 @@ wss.on('connection', function(ws) {
 						});
 					}
 					break;
+				case Astriarch.Shared.MESSAGE_TYPE.EXIT_RESIGN:
+					gameController.ExitResign(sessionId, message.payload, function(err, data) {
+						if (err) {
+							console.error("gameController.ExitResign: ", err);
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+							return;
+						}
+						//Acknowledge the EXIT_RESIGN message
+						wssInterface.wsSend(ws, message);
+
+						//data = {"playerId":playerId, "score":score, "game": doc, "gameModel":gameModel};
+						var payload = {"winningSerializablePlayer": null, "playerWon": false, "score":data.score, "endOfTurnMessages":[], "gameData":null};
+						payload.gameData = getSerializableClientModelFromSerializableModelForPlayer(data.game.gameData, data.playerId);
+						message.payload = payload;
+						message.type = Astriarch.Shared.MESSAGE_TYPE.GAME_OVER;
+						wssInterface.wsSend(ws, message);
+					});
+					break;
 				default:
 					console.error("Unhandled Message Type: ", message.type);
 					break;
@@ -441,7 +461,7 @@ var sendUpdatedGameListToLobbyPlayers = function(gameDoc){
 	});
 };
 
-var getSerializableClientModelFromSerializableModelForPlayer = function(serializableModel, targetPlayer){
+var getSerializableClientModelFromSerializableModelForPlayer = function(serializableModel, targetPlayerId){
 
 	var mainPlayerOwnedSerializablePlanets = {};
 	var serializableClientPlayers = [];
@@ -449,7 +469,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 	for(var p in serializableModel.SerializablePlayers){
 		var player = serializableModel.SerializablePlayers[p];
 		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points));
-		if(player.Id == targetPlayer.Id){
+		if(player.Id == targetPlayerId){
 			serializableMainPlayer = player;
 		}
 	}
@@ -457,7 +477,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 		//main player is destroyed
 		for(var p in serializableModel.SerializablePlayersDestroyed){
 			var player = serializableModel.SerializablePlayersDestroyed[p];
-			if(player.Id == targetPlayer.Id){
+			if(player.Id == targetPlayerId){
 				serializableMainPlayer = player;
 			}
 		}
@@ -490,7 +510,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 	//collect trades for targetPlayer
 	for(var t in tc.currentTrades){
 		var trade = tc.currentTrades[t];
-		if(trade.playerId == targetPlayer.Id){
+		if(trade.playerId == targetPlayerId){
 			clientPlayerTrades.push(trade);
 		}
 	}
