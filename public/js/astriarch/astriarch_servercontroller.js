@@ -651,18 +651,13 @@ Astriarch.ServerController = {
 		//determine tax revenue (gold)
 		//TODO: later we may want to allow the user to control taxes vs. research
 
-		var totalWorkers = 0, totalfarmers=0, totalMiners=0;
-		for (var i in player.OwnedPlanets)
-		{
+		var totalPop = 0;
+		for (var i in player.OwnedPlanets) {
 			var p = player.OwnedPlanets[i];//Planet
-			var pop = new Astriarch.Planet.PopulationAssignments();
-			p.CountPopulationWorkerTypes(pop);
-			totalWorkers += pop.Workers;
-			totalfarmers += pop.Farmers;
-			totalMiners += pop.Miners;
+			totalPop += p.Id == player.HomePlanetId ? p.Population.length * 2 : p.Population.length;
 		}
 
-		player.Resources.GoldRemainder += (totalWorkers + totalMiners + totalfarmers) / 1.75;
+		player.Resources.GoldRemainder += (totalPop) / 1.75;
 		player.Resources.AccumulateResourceRemainders();
 
 		//generate planet resources
@@ -749,7 +744,12 @@ Astriarch.ServerController = {
 					//	each turn reduce a random amount of protest for each citizen
 					//  the amount of reduction is based on the percentage of the total population protesting (to a limit)
 					//   (the more people protesting the more likely others will keep protesting)
-					citizen.ProtestLevel -= Astriarch.NextRandomFloat(0, Math.max(0.25, contentCitizenRatio));
+					var protestReduction = Astriarch.NextRandomFloat(0, Math.max(0.25, contentCitizenRatio));
+					//citizens are more quickly content on the home planet
+					if(p.Id == player.HomePlanetId) {
+						protestReduction *= 2.0;
+					}
+					citizen.ProtestLevel -= protestReduction;
 
 					if(citizen.ProtestLevel <= 0){
 						citizen.ProtestLevel = 0;
