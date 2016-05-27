@@ -96,19 +96,19 @@ Astriarch.TradingControl = {
 		var ctc = Astriarch.ClientGameModel.ClientTradingCenter;
 		if(radioOptions.tradeType == Astriarch.TradingCenter.TradeType.BUY){
 			if(radioOptions.resourceType == Astriarch.TradingCenter.ResourceType.FOOD){
-				max = ctc.foodResource.amount;
+				max = Math.min(ctc.foodResource.amount, ctc.foodResource.tradeAmountMax);
 			} else if(radioOptions.resourceType == Astriarch.TradingCenter.ResourceType.ORE){
-				max = ctc.oreResource.amount;
+				max = Math.min(ctc.oreResource.amount, ctc.oreResource.tradeAmountMax);
 			} else {
-				max = ctc.iridiumResource.amount;
+				max = Math.min(ctc.iridiumResource.amount, ctc.iridiumResource.tradeAmountMax);
 			}
 		} else {
 			if(radioOptions.resourceType == Astriarch.TradingCenter.ResourceType.FOOD){
-				max = this.playerResourceAmountsAfterTrades.food;
+				max = Math.min(this.playerResourceAmountsAfterTrades.food, ctc.foodResource.tradeAmountMax);
 			} else if(radioOptions.resourceType == Astriarch.TradingCenter.ResourceType.ORE){
-				max = this.playerResourceAmountsAfterTrades.ore;
+				max = Math.min(this.playerResourceAmountsAfterTrades.ore, ctc.oreResource.tradeAmountMax);
 			} else {
-				max = this.playerResourceAmountsAfterTrades.iridium;
+				max = Math.min(this.playerResourceAmountsAfterTrades.iridium, ctc.iridiumResource.tradeAmountMax);
 			}
 		}
 		this.jqElm.tradeResourceAmount.text(0);

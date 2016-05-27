@@ -103,7 +103,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 };
 
 Astriarch.SavedGameInterface.getTradingCenterResourceFromSerializableTradingCenterResource = function(stcr){
-	return new Astriarch.TradingCenter.Resource(stcr.type, stcr.amount, stcr.desiredAmount, stcr.priceMin, stcr.priceMax);
+	return new Astriarch.TradingCenter.Resource(stcr.type, stcr.amount, stcr.desiredAmount, stcr.priceMin, stcr.priceMax, stcr.tradeAmountMax);
 };
 
 

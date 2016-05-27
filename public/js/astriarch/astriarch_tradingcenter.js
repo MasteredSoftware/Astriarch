@@ -2,9 +2,9 @@ var Astriarch = Astriarch || require('./astriarch_base');
 
 Astriarch.TradingCenter = function(){
 	this.goldAmount = 1000;
-	this.foodResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.FOOD, 320, 400, 0.1, 1.5);
-	this.oreResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.ORE, 10, 200, 0.2, 3.0);
-	this.iridiumResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.IRIDIUM, 5, 100, 0.4, 6.0);
+	this.foodResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.FOOD, 320, 400, 0.1, 1.5, 40);
+	this.oreResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.ORE, 10, 200, 0.2, 3.0, 20);
+	this.iridiumResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.IRIDIUM, 5, 100, 0.4, 6.0, 10);
 
 	this.currentTrades = [];
 	this.transactionFeePercentage = 0.1;
@@ -24,17 +24,19 @@ Astriarch.TradingCenter.prototype.executeTrade = function(gameModel, player, pla
 	//return false if the trade could not be executed
 	var executedStatus = {executed:false, foodAmount:0, oreAmount:0, iridiumAmount:0, tradeGoldAmount:0};
 
-
 	var marketResource = this.getResourceByType(trade.resourceType);
 	var playerResourceAmount = 0;
 
 	if(trade.resourceType == Astriarch.TradingCenter.ResourceType.FOOD){
+		trade.amount = Math.min(trade.amount, this.foodResource.tradeAmountMax);//limit trade to trading max for resource
 		playerResourceAmount = player.TotalFoodAmount();
 		executedStatus.foodAmount = trade.amount;
 	} else if (trade.resourceType == Astriarch.TradingCenter.ResourceType.ORE){
+		trade.amount = Math.min(trade.amount, this.oreResource.tradeAmountMax);//limit trade to trading max for resource
 		playerResourceAmount = player.TotalOreAmount();
 		executedStatus.oreAmount = trade.amount;
 	} else {
+		trade.amount = Math.min(trade.amount, this.iridiumResource.tradeAmountMax);//limit trade to trading max for resource
 		playerResourceAmount = player.TotalIridiumAmount();
 		executedStatus.iridiumAmount = trade.amount;
 	}
@@ -86,12 +88,13 @@ Astriarch.TradingCenter.ResourceType = {
 	"IRIDIUM":3
 };
 
-Astriarch.TradingCenter.Resource = function(type, amount, desiredAmount, priceMin, priceMax){
+Astriarch.TradingCenter.Resource = function(type, amount, desiredAmount, priceMin, priceMax, tradeAmountMax){
 	this.type = type;
 	this.amount = amount;
 	this.desiredAmount = desiredAmount;
 	this.priceMin = priceMin;
 	this.priceMax = priceMax;
+	this.tradeAmountMax = tradeAmountMax || (type == Astriarch.TradingCenter.ResourceType.FOOD ? 40 : type == Astriarch.TradingCenter.ResourceType.ORE ? 20 : 10);
 
 	this.currentPrice = priceMax;
 	this.calculateCurrentPrice();
