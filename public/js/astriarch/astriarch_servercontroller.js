@@ -857,8 +857,8 @@ Astriarch.ServerController = {
 		if (turnsTaken > 1000)//some max, nobody should play this long?
 			turnsTaken = 1000;
 
-		var totalSystems = gameModel.SystemsToGenerate;
-		var planetsPerSystem = Math.floor(gameModel.PlanetsPerSystem);
+		var totalSystems = gameModel.GameOptions.SystemsToGenerate;
+		var planetsPerSystem = Math.floor(gameModel.GameOptions.PlanetsPerSystem);
 		var difficultyRating = totalSystems * planetsPerSystem - 8;
 
 

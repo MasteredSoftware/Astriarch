@@ -51,7 +51,7 @@ var GameSchema = new mongoose.Schema({
 	dateCreated: { type: Date, default: Date.now },
 	dateLastPlayed: { type: Date, default: Date.now },
 	gameData: mongoose.Schema.Types.Mixed,
-	gameOptions: {type:mongoose.Schema.Types.Mixed, default:{"mainPlayerName":"Player", "opponentOptions": [{name:"2", type:-1},{name:"3", type:-1},{name:"4", type:-1}], "systemsToGenerate":4, "planetsPerSystem":4, "distributePlanetsEvenly":true, "turnTimeLimitSeconds":0} }
+	gameOptions: {type:mongoose.Schema.Types.Mixed, default:{"mainPlayerName":"Player", "opponentOptions": [{name:"2", type:-1},{name:"3", type:-1},{name:"4", type:-1}], "systemsToGenerate":4, "planetsPerSystem":4, "galaxySize":3, "distributePlanetsEvenly":true, "turnTimeLimitSeconds":0} }
 });
 
 //compile schema to model

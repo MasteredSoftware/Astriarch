@@ -410,7 +410,7 @@ exports.StartGame = function(options, callback){
 			return;
 		}
 		//TODO: should we change this not to be sent from the game creator? and just get it from the doc instead?
-		var gameOptions = options.gameOptions;// {"mainPlayerName":playerName, "opponentOptions": playerOptions, "systemsToGenerate":systemsToGenerate, "planetsPerSystem":planetsPerSystem};
+		var gameOptions = options.gameOptions;// {"mainPlayerName":playerName, "opponentOptions": playerOptions, "systemsToGenerate":systemsToGenerate, "planetsPerSystem":planetsPerSystem, "galaxySize":galaxySize};
 
 		var players = []; //List<Player>
 		var playerName = gameOptions.mainPlayerName;
@@ -446,7 +446,16 @@ exports.StartGame = function(options, callback){
 			return;
 		}
 
-		var gameModel = new Astriarch.Model(players, gameOptions);
+		var gameModel = new Astriarch.Model(
+					players,
+					{
+						SystemsToGenerate:gameOptions.systemsToGenerate,
+						PlanetsPerSystem:gameOptions.planetsPerSystem,
+						GalaxySize:gameOptions.galaxySize,
+						DistributePlanetsEvenly: gameOptions.distributePlanetsEvenly,
+						TurnTimeLimitSeconds:gameOptions.turnTimeLimitSeconds
+					}
+				);
 		doc.gameData = new Astriarch.SerializableModel(gameModel);
 		doc.started = true;
 

@@ -43,15 +43,15 @@ Astriarch.Hexagon = jCanvas.DrawnObject.extend({ //hexagon drawn object class
 	 * initializes this Hexagon
 	 * @this {Astriarch.Hexagon}
 	 */
-	init: function(id, x, y) {
+	init: function(id, x, y, width, height, side) {
 		this.Points = [];//Polygon Base
-		var x1 = (Astriarch.Hexagon.Static.WIDTH - Astriarch.Hexagon.Static.SIDE)/2;
-		var y1 = (Astriarch.Hexagon.Static.HEIGHT / 2);
+		var x1 = (width - side)/2;
+		var y1 = (height / 2);
 		this.Points.push(new Astriarch.Point(x1 + x, y));
-		this.Points.push(new Astriarch.Point(x1 + Astriarch.Hexagon.Static.SIDE + x, y));
-		this.Points.push(new Astriarch.Point(Astriarch.Hexagon.Static.WIDTH + x, y1 + y));
-		this.Points.push(new Astriarch.Point(x1 + Astriarch.Hexagon.Static.SIDE + x, Astriarch.Hexagon.Static.HEIGHT + y));
-		this.Points.push(new Astriarch.Point(x1 + x, Astriarch.Hexagon.Static.HEIGHT + y));
+		this.Points.push(new Astriarch.Point(x1 + side + x, y));
+		this.Points.push(new Astriarch.Point(width + x, y1 + y));
+		this.Points.push(new Astriarch.Point(x1 + side + x, height + y));
+		this.Points.push(new Astriarch.Point(x1 + x, height + y));
 		this.Points.push(new Astriarch.Point(x, y1 + y));
 		
 		this.Id = id;
@@ -60,8 +60,11 @@ Astriarch.Hexagon = jCanvas.DrawnObject.extend({ //hexagon drawn object class
 		this.y = y;
 		
 		this.TopLeftPoint = new Astriarch.Point(this.x, this.y);
-		this.BottomRightPoint = new Astriarch.Point(this.x + Astriarch.Hexagon.Static.WIDTH, this.y + Astriarch.Hexagon.Static.HEIGHT);
-		this.MidPoint = new Astriarch.Point(this.x + (Astriarch.Hexagon.Static.WIDTH / 2), this.y + (Astriarch.Hexagon.Static.HEIGHT / 2));
+		this.TopRightPoint = new Astriarch.Point(this.x + width, this.y);
+		this.BottomLeftPoint = new Astriarch.Point(this.x, this.y + height);
+		this.BottomRightPoint = new Astriarch.Point(this.x + width, this.y + height);
+
+		this.MidPoint = new Astriarch.Point(this.x + (width / 2), this.y + (height / 2));
 		this.PathCoOrdX = null;//x co-ordinate for distance finding
 		this.PathCoOrdY = null;//y co-ordinate for distance finding
 
@@ -176,6 +179,6 @@ Astriarch.Hexagon = jCanvas.DrawnObject.extend({ //hexagon drawn object class
 	}
 });
 
-Astriarch.Hexagon.Static = {HEIGHT:40.0, WIDTH:55.0, SIDE:25.0};//hexagons will have 25 unit sides for now
+Astriarch.Hexagon.Static = {HEIGHT:40.0, WIDTH:71.0, SIDE:29.0, X:21};
 
 

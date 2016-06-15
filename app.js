@@ -517,7 +517,14 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 
 	var clientTradingCenter = new Astriarch.ClientTradingCenter(tc.goldAmount, tc.foodResource, tc.oreResource, tc.iridiumResource, clientPlayerTrades);
 
-	var serializableClientModel = new Astriarch.SerializableClientModel(serializableModel.Turn.Number, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, clientTradingCenter, {"TurnTimeLimitSeconds":serializableModel.TurnTimeLimitSeconds});
+	var serializableClientModel = new Astriarch.SerializableClientModel(serializableModel.Turn.Number,
+				serializableMainPlayer,
+				serializableClientPlayers,
+				serializableClientPlanets,
+				mainPlayerOwnedSerializablePlanets,
+				clientTradingCenter,
+				serializableModel.GameOptions
+			);
 
 	return serializableClientModel;
 };

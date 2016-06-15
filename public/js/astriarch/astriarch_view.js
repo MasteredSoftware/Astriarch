@@ -48,8 +48,8 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 								'canvasNotSupportedCallback':Astriarch.View.CanvasNotSupported,
 								'layers':[
 									{'name':'canvasAstriarchBackground', x:0, y:0, width:800, height:600,'zIndex':1, 'backgroundColor':'black'},
-									{'name':'canvasAstriarchPlayfield', x:177, y:21, width:615, height:480,'zIndex':2, 'clickCallback':Astriarch.View.PlayfieldClicked, 'dblclickCallback':Astriarch.View.PlayfieldDoubleClicked, 'mouseHitSelector':'#canvasMouseHitDetector'},
-									{'name':'canvasAstriarchFleets', x:177, y:21, width:615, height:480,'zIndex':3, 'clickCallback':Astriarch.View.FleetsClicked, 'mouseHitSelector':'#canvasMouseHitDetector'}
+									{'name':'canvasAstriarchPlayfield', x:177, y:21, width:621, height:480,'zIndex':2, 'clickCallback':Astriarch.View.PlayfieldClicked, 'dblclickCallback':Astriarch.View.PlayfieldDoubleClicked, 'mouseHitSelector':'#canvasMouseHitDetector'},
+									{'name':'canvasAstriarchFleets', x:177, y:21, width:621, height:480,'zIndex':3, 'clickCallback':Astriarch.View.FleetsClicked, 'mouseHitSelector':'#canvasMouseHitDetector'}
 								]
 							});
 	//if the canvas isn't supported by the browser, don't do anything else

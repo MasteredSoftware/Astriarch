@@ -82,7 +82,7 @@ Astriarch.ClientModel = function(turnNumber, mainPlayer, clientPlayers, clientPl
 
 	this.GameGrid = gameGrid;
 
-	this.Options = options || {"TurnTimeLimitSeconds":0};
+	this.GameOptions = options || {"TurnTimeLimitSeconds":0};
 };
 
 Astriarch.ClientModel.prototype.getClientPlanetById = function(id){

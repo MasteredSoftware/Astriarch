@@ -6,12 +6,12 @@ Astriarch.GameController = {
 };
 
 
-Astriarch.GameController.ResetView = function(clientGameModel) {
+Astriarch.GameController.ResetView = function(serializableClientModel) {
 	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').show();
 	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton,#ButtonOpenTradingCenter').show();
 
-	var gameGrid = new Astriarch.Grid(615.0, 480.0);//TODO: externalize later
-	Astriarch.ClientGameModel = Astriarch.ClientModelInterface.GetClientModelFromSerializableClientModel(clientGameModel, gameGrid);
+	var gameGrid = new Astriarch.Grid(621.0, 480.0, serializableClientModel.Options);//TODO: externalize later
+	Astriarch.ClientGameModel = Astriarch.ClientModelInterface.GetClientModelFromSerializableClientModel(serializableClientModel, gameGrid);
 
 	Astriarch.GameController.RefreshTurnDisplay();
 
@@ -33,10 +33,15 @@ Astriarch.GameController.SetupViewFromGameModel = function() {
 		//add to canvas layer
 		Astriarch.View.CanvasPlayfieldLayer.addChild(Astriarch.ClientGameModel.GameGrid.Hexes[h]);
 	}
+
+	//add quadrants to canvas
+	for(var q in Astriarch.ClientGameModel.GameGrid.Quadrants){
+		//add to canvas layer
+		Astriarch.View.CanvasPlayfieldLayer.addChild(new Astriarch.Grid.DrawnRect(Astriarch.ClientGameModel.GameGrid.Quadrants[q]));
+	}
 	
 	//add drawn planets to canvas
-	for (var i in Astriarch.ClientGameModel.ClientPlanets)
-    {
+	for (var i in Astriarch.ClientGameModel.ClientPlanets) {
 		var cp = Astriarch.ClientGameModel.ClientPlanets[i];
 		var dp = new Astriarch.DrawnPlanet(cp);
 		Astriarch.View.DrawnPlanets[cp.Id] = dp;
@@ -102,16 +107,16 @@ Astriarch.GameController.RefreshTurnDisplay = function(){
 	$('#TurnDisplay').text("Turn " + Astriarch.ClientGameModel.Turn.Number + ", Year " + year);
 
 	var turnTimer = $('#TurnTimer');
-	if(Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds) {
+	if(Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds) {
 		turnTimer.show();
 
 		turnTimer.stop(true).animate({ width: '100%' }, 500, "linear", function(){
-			turnTimer.animate({ width: '0px' }, Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds * 1000, "linear");
+			turnTimer.animate({ width: '0px' }, Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds * 1000, "linear");
 			//I had problems with this not clearing out correctly in the view, so I'm calling it here too
 			if(Astriarch.GameController.turnTimerTimeoutId){
 				clearTimeout(Astriarch.GameController.turnTimerTimeoutId);
 			}
-			Astriarch.GameController.turnTimerTimeoutId = setTimeout(function(){Astriarch.View.NextTurn();}, Astriarch.ClientGameModel.Options.TurnTimeLimitSeconds * 1000);
+			Astriarch.GameController.turnTimerTimeoutId = setTimeout(function(){Astriarch.View.NextTurn();}, Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds * 1000);
 		});
 	} else {
 		turnTimer.hide();
