@@ -178,9 +178,9 @@ Astriarch.NewGameControl = {
 			//we get this message for player name changes and joins also
 			for(var i = 0; i < gameOptions.opponentOptions.length; i++){
 				var opponent = gameOptions.opponentOptions[i];
+				var selectId = 'select#Player' + (i + 2) + 'ComboBox';
+				$(selectId).selectmenu("value", opponent.type);
 				if(opponent.type == 0){
-					var selectId = 'select#Player' + (i + 2) + 'ComboBox';
-					$(selectId).selectmenu("value","0");
 					$('#Player' + (i + 2) + 'OptionsBox').hide();
 					$('#Player' + (i + 2) + 'NamePanel').text(opponent.name);
 					//TODO: Add Kick button for GameCreator

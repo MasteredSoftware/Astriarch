@@ -291,14 +291,27 @@ exports.JoinGame = function(options, callback){
 	var playerName = options.playerName || "Player";
 	var playerPosition = null;
 	saveGameByIdWithConcurrencyProtection(options.gameId, function(doc, cb){
+		//first check if this user is already a player
 		for(var i = 0; i < doc.players.length; i++){
 			if(doc.players[i].sessionId == options.sessionId){
 				playerPosition = i;
 				break;
 			}
 		}
+		//if not assign the player a position and add
 		if(playerPosition === null){
-			playerPosition = doc.players.length;
+			//check if computer players are already assigned in doc.gameOptions.opponentOptions
+			for(var slot = 0; slot < doc.gameOptions.opponentOptions.length; slot++) {
+				var opponent = doc.gameOptions.opponentOptions[slot];
+				if(opponent.type == -1){
+					playerPosition = slot + 1;
+					break;
+				}
+			}
+			//if we don't have any open slots then just assign the first non-human slot, eventually maybe we don't let another player join if all slots are full?
+			if(playerPosition === null) {
+				playerPosition = doc.players.length;
+			}
 			doc.players.push({name:playerName, sessionId:options.sessionId, position:playerPosition});
 		}
 
