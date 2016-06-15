@@ -241,7 +241,7 @@ Astriarch.Grid.DrawnRect = jCanvas.DrawnObject.extend({ // Astriarch.Grid.Rect d
 
 		if (this.selected) {
 			ctx.strokeStyle = "blue";
-			ctx.lineWidth = 1;
+			ctx.lineWidth = 2;
 			ctx.rect(this.Rect.X, this.Rect.Y, this.Rect.Width, this.Rect.Height);
 			ctx.stroke();
 			this.Rect.Children.forEach(function(r){

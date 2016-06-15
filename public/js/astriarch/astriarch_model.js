@@ -190,9 +190,9 @@ Astriarch.Model.prototype.populatePlanets = function(){
 		if (this.GameOptions.PlanetsPerSystem != Astriarch.Model.PlanetsPerSystemOption.FOUR) {
 			var quadrantChances = [25, 25, 25, 25];
 
-			var chanceToGetAsteroid = 50;
+			var chanceToGetAsteroid = 40;
 			var chanceToGetDead = 34;
-			var chanceToGetClass1 = 16;
+			var chanceToGetClass1 = 26;
 
 			for (var iPlanet = 4; iPlanet < this.GameOptions.PlanetsPerSystem; iPlanet++) {
 				var hexFound = false;
