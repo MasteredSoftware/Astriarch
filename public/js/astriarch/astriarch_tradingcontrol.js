@@ -62,15 +62,15 @@ Astriarch.TradingControl = {
 		var ctc = Astriarch.ClientGameModel.ClientTradingCenter;
 		$("#tcdStockpilePriceFood").text(ctc.foodResource.currentPrice.toFixed(2));
 		$("#tcdTradingCenterAmtFood").text(ctc.foodResource.amount);
-		$("#tcdStockpileAmtFood").text(this.playerResourceAmountsAfterTrades.food);
+		$("#tcdStockpileAmtFood").text(Math.floor(this.playerResourceAmountsAfterTrades.food));
 
 		$("#tcdStockpilePriceOre").text(ctc.oreResource.currentPrice.toFixed(2));
 		$("#tcdTradingCenterAmtOre").text(ctc.oreResource.amount);
-		$("#tcdStockpileAmtOre").text(this.playerResourceAmountsAfterTrades.ore);
+		$("#tcdStockpileAmtOre").text(Math.floor(this.playerResourceAmountsAfterTrades.ore));
 
 		$("#tcdStockpilePriceIridium").text(ctc.iridiumResource.currentPrice.toFixed(2));
 		$("#tcdTradingCenterAmtIridium").text(ctc.iridiumResource.amount);
-		$("#tcdStockpileAmtIridium").text(this.playerResourceAmountsAfterTrades.iridium);
+		$("#tcdStockpileAmtIridium").text(Math.floor(this.playerResourceAmountsAfterTrades.iridium));
 
 		$("#tcdTradingCenterAmtGold").text(ctc.goldAmount.toFixed(2));
 	},

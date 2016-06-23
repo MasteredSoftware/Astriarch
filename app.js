@@ -435,6 +435,7 @@ wss.on('connection', function(ws) {
 		parseCookie(ws.upgradeReq, null, function(err) {
 			var sessionId = ws.upgradeReq.signedCookies['connect.sid'];
 			console.log('connection closed for session: ', sessionId);
+			//TODO: if we are in the game and it hasn't started we should probably leave the game too?
 			gameController.LeaveChatRoom(sessionId, true, function(err, chatRoomWithSessions){
 				console.debug("Leaving Chat Room: ", err, chatRoomWithSessions);
 				if(chatRoomWithSessions) {
@@ -468,10 +469,10 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 	var serializableMainPlayer = null;
 	for(var p in serializableModel.SerializablePlayers){
 		var player = serializableModel.SerializablePlayers[p];
-		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points));
 		if(player.Id == targetPlayerId){
 			serializableMainPlayer = player;
 		}
+		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points));
 	}
 	if(!serializableMainPlayer){
 		//main player is destroyed
@@ -479,8 +480,14 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 			var player = serializableModel.SerializablePlayersDestroyed[p];
 			if(player.Id == targetPlayerId){
 				serializableMainPlayer = player;
+				break;
 			}
 		}
+	}
+	//TODO: what do we do if we still don't have a serializableMainPlayer at this point? right now this happens if a player sends a message for a game the server doesn't know he/she is in
+	//  currently this happens when a player joins and then the host disconnects and reconnects, the client thinks they are still in the game but the server doesn't know?
+	if(!serializableMainPlayer) {
+		return null;//For now just return null in this case to indicate a problem
 	}
 	var serializableClientPlanets = [];
 	for(var p in serializableModel.SerializablePlanets){

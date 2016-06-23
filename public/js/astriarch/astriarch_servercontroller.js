@@ -657,8 +657,7 @@ Astriarch.ServerController = {
 			totalPop += p.Id == player.HomePlanetId ? p.Population.length * 2 : p.Population.length;
 		}
 
-		player.Resources.GoldRemainder += (totalPop) / 1.75;
-		player.Resources.AccumulateResourceRemainders();
+		player.Resources.GoldAmount += (totalPop) / 1.75;
 
 		//generate planet resources
 		for (var i in player.OwnedPlanets)
@@ -709,8 +708,7 @@ Astriarch.ServerController = {
 				}
 			}
 		}
-		player.Resources.GoldRemainder += goldProducedAmount;
-		player.Resources.AccumulateResourceRemainders();
+		player.Resources.GoldAmount += goldProducedAmount;
 
 		var goldProducedMessage = "";
 		if(goldProducedAmount){

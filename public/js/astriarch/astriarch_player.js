@@ -90,15 +90,6 @@ Astriarch.Player.prototype.GetOwnedPlanetsListSorted = function()	{
 };
 
 /**
- * the exact total gold for this player
- * @this {Astriarch.Player}
- * @return {number}
- */
-Astriarch.Player.prototype.ExactTotalGoldAmount = function()	{
-	return this.Resources.GoldAmount + this.Resources.GoldRemainder;
-};
-
-/**
  * the total food on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}
@@ -107,21 +98,6 @@ Astriarch.Player.prototype.TotalFoodAmount = function()	{
 	var foodAmt = 0;
 	for (var i in this.OwnedPlanets)
 	{
-		foodAmt += this.OwnedPlanets[i].Resources.FoodAmount;
-	}
-	return foodAmt;
-};
-
-/**
- * the exact total food on all owned planets for this player
- * @this {Astriarch.Player}
- * @return {number}
- */
-Astriarch.Player.prototype.ExactTotalFoodAmount = function()	{
-	var foodAmt = 0;
-	for (var i in this.OwnedPlanets)
-	{
-		foodAmt += this.OwnedPlanets[i].Resources.FoodRemainder;
 		foodAmt += this.OwnedPlanets[i].Resources.FoodAmount;
 	}
 	return foodAmt;
@@ -142,21 +118,6 @@ Astriarch.Player.prototype.TotalOreAmount = function()	{
 };
 
 /**
- * the exact total ore on all owned planets for this player
- * @this {Astriarch.Player}
- * @return {number}
- */
-Astriarch.Player.prototype.ExactTotalOreAmount = function()	{
-	var oreAmt = 0;
-	for (var i in this.OwnedPlanets)
-	{
-		oreAmt += this.OwnedPlanets[i].Resources.OreRemainder;
-		oreAmt += this.OwnedPlanets[i].Resources.OreAmount;
-	}
-	return oreAmt;
-};
-
-/**
  * the total Iridium on all owned planets for this player
  * @this {Astriarch.Player}
  * @return {number}
@@ -165,21 +126,6 @@ Astriarch.Player.prototype.TotalIridiumAmount = function()	{
 	var iridiumAmt = 0;
 	for (var i in this.OwnedPlanets)
 	{
-		iridiumAmt += this.OwnedPlanets[i].Resources.IridiumAmount;
-	}
-	return iridiumAmt;
-};
-
-/**
- * the exact total Iridium on all owned planets for this player
- * @this {Astriarch.Player}
- * @return {number}
- */
-Astriarch.Player.prototype.ExactTotalIridiumAmount = function()	{
-	var iridiumAmt = 0;
-	for (var i in this.OwnedPlanets)
-	{
-		iridiumAmt += this.OwnedPlanets[i].Resources.IridiumRemainder;
 		iridiumAmt += this.OwnedPlanets[i].Resources.IridiumAmount;
 	}
 	return iridiumAmt;
@@ -281,19 +227,15 @@ Astriarch.Player.prototype.GetTotalPopulation = function() {
  * @return {Object}
  */
 Astriarch.Player.prototype.GetTotalResourceProductionPerTurn = function() {
-	var totalResourceProduction = {"food":0, "food_exact":0, "ore":0, "ore_exact": 0, "iridium":0, "iridium_exact":0};
+	var totalResourceProduction = {"food":0, "ore":0, "iridium":0};
 
-	for (var i in this.OwnedPlanets)
-	{
+	for (var i in this.OwnedPlanets) {
 		var p = this.OwnedPlanets[i];
 		totalResourceProduction.food += p.ResourcesPerTurn.FoodAmountPerTurn;
-		totalResourceProduction.food_exact += p.ResourcesPerTurn.FoodAmountPerTurn + p.ResourcesPerTurn.RemainderFoodPerTurn;
 
 		totalResourceProduction.ore += p.ResourcesPerTurn.OreAmountPerTurn;
-		totalResourceProduction.ore_exact += p.ResourcesPerTurn.OreAmountPerTurn + p.ResourcesPerTurn.RemainderOrePerTurn;
 
 		totalResourceProduction.iridium += p.ResourcesPerTurn.IridiumAmountPerTurn;
-		totalResourceProduction.iridium_exact += p.ResourcesPerTurn.IridiumAmountPerTurn + p.ResourcesPerTurn.RemainderIridiumPerTurn;
 	}
 
 	return totalResourceProduction;
@@ -314,19 +256,6 @@ Astriarch.Player.PlayerType = {
 Astriarch.Player.PlayerResources = function() {
 	//players start with some resources
 	this.GoldAmount = 3;
-	this.GoldRemainder = 0.0;
-};
-
-/**
- * accumulates remainders over one for PlayerResources
- * @this {Astriarch.Player.PlayerResources}
- */
-Astriarch.Player.PlayerResources.prototype.AccumulateResourceRemainders = function() {
-	if (this.GoldRemainder >= 1.0 || this.GoldRemainder <= -1.0)
-	{
-		this.GoldAmount += this.GoldRemainder >= 1.0 ? Math.floor(this.GoldRemainder / 1.0) : Math.ceil(this.GoldRemainder / 1.0);
-		this.GoldRemainder = this.GoldRemainder % 1;
-	}
 };
 
 /**

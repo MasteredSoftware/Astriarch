@@ -489,20 +489,17 @@ Astriarch.PlanetView = {
 	},
 	
 	refreshCurrentWorkingResourcesTextBoxes: function() {
-		$('#TextBlockCurrentGoldAmount').text(Astriarch.PlanetView.workingResources.GoldAmount);
-        $('#TextBlockCurrentOreAmount').text(Astriarch.PlanetView.workingResources.OreAmount);
-        $('#TextBlockCurrentIridiumAmount').text(Astriarch.PlanetView.workingResources.IridiumAmount);
+		$('#TextBlockCurrentGoldAmount').text(Math.floor(Astriarch.PlanetView.workingResources.GoldAmount));
+        $('#TextBlockCurrentOreAmount').text(Math.floor(Astriarch.PlanetView.workingResources.OreAmount));
+        $('#TextBlockCurrentIridiumAmount').text(Math.floor(Astriarch.PlanetView.workingResources.IridiumAmount));
 	},
 	
-	countDemolishImprovementsInQueueByType: function(/*PlanetImprovementType*/ pit)
-	{
+	countDemolishImprovementsInQueueByType: function(/*PlanetImprovementType*/ pit) {
 		var count = 0;
 
-		for (var i in Astriarch.PlanetView.workingBuildQueue)
-		{
+		for (var i in Astriarch.PlanetView.workingBuildQueue) {
 			var ppi = Astriarch.PlanetView.workingBuildQueue[i];
-			if (ppi instanceof Astriarch.Planet.PlanetImprovementToDestroy && ppi.TypeToDestroy == pit)
-			{
+			if (ppi instanceof Astriarch.Planet.PlanetImprovementToDestroy && ppi.TypeToDestroy == pit) {
 				count++;
 			}
 		}
@@ -510,8 +507,7 @@ Astriarch.PlanetView = {
 		return count;
 	},
 	
-	addImprovementToDestroy: function(/*PlanetImprovementType*/ pit)
-	{
+	addImprovementToDestroy: function(/*PlanetImprovementType*/ pit) {
 		var pi = new Astriarch.Planet.PlanetImprovementToDestroy(pit);
 		Astriarch.PlanetView.workingBuildQueue.push(pi);
 
@@ -521,8 +517,7 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.refreshBuildQueueListBox();
 	},
 	
-	updateSliderValues: function(/*SliderValueClicked*/ clicked, clickedValue)//apparently for the one changing you have to get it from the args
-	{
+	updateSliderValues: function(/*SliderValueClicked*/ clicked, clickedValue) {//apparently for the one changing you have to get it from the args
 		var self = Astriarch.PlanetView;
 		//TODO: is dependent sliders the way to go? for now hopefully it's easy
 		//determine if we're adding or removing...
@@ -543,8 +538,7 @@ Astriarch.PlanetView = {
 		//if either others are candidates, choose the one we didn't last change (alternate)
 
 		//first figure differences
-		switch (clicked)
-		{
+		switch (clicked) {
 			case Astriarch.PlanetView.SliderValueClicked.Farmers:
 				roundedFarmerSliderValue = clickedValue;
 				diff = roundedFarmerSliderValue - self.farmers;
@@ -563,64 +557,52 @@ Astriarch.PlanetView = {
 		var canChangeMiners = false;
 		var canChangeWorkers = false;
 		//next figure can change candidates
-		if (diff > 0) //we're looking for a slider to take from
-		{
+		if (diff > 0) {
+			//we're looking for a slider to take from
 			canChangeFarmers = (self.farmers != 0);
 			canChangeMiners = (self.miners != 0);
 			canChangeWorkers = (self.workers != 0);
-		}
-		else if (diff < 0) //we're looking for a slider to give to
-		{
+		} else if (diff < 0) {
+			//we're looking for a slider to give to
 			canChangeFarmers = (self.farmers != self.population);
 			canChangeMiners = (self.miners != self.population);
 			canChangeWorkers = (self.workers != self.population);
-		}
-		else
-		{
+		} else {
 			//we're not changing anything
 			self.updatingGUI = false;
 			//console.log("NOT Changing the sliders");
 			return;
 		}
 
-		while(diff != 0)
-		{
+		while(diff != 0) {
 			var diffToChange = 1;
 			if(diff < 0)
 				diffToChange = -1;
 				
 			var sliderToChange = Astriarch.PlanetView.SliderValueClicked.None;
 			//next pick a slider to change
-			switch (clicked)
-			{
+			switch (clicked) {
 				case Astriarch.PlanetView.SliderValueClicked.Farmers:
-					if(canChangeMiners && !canChangeWorkers)
-					{
+					if(canChangeMiners && !canChangeWorkers) {
 						sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
-					}
-					else if(!canChangeMiners && canChangeWorkers)
-					{
+					} else if(!canChangeMiners && canChangeWorkers) {
 						sliderToChange = Astriarch.PlanetView.SliderValueClicked.Workers;
-					}
-					else//if both values are the same, check last change to alternate candidates
+					} else {
+						//if both values are the same, check last change to alternate candidates
 						//otherwize first check diff to see if we want the larger or the smaller
-					{
-						if (roundedMinerSliderValue == roundedWorkerSliderValue)
-						{
+						if (roundedMinerSliderValue == roundedWorkerSliderValue) {
 							if (self.lastChanged != Astriarch.PlanetView.SliderValueClicked.Miners)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
 							else
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Workers;
-						}
-						else if (diff > 0)//we're removing so choose the slider with a larger value
-						{
+						} else if (diff > 0) {
+							//we're removing so choose the slider with a larger value
 							if (roundedMinerSliderValue > roundedWorkerSliderValue)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
 							else
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Workers;
-						}
-						else//choose the slider with a smaller value
-						{
+						} else {
+							//choose the slider with a smaller value
 							if (roundedMinerSliderValue < roundedWorkerSliderValue)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
 							else
@@ -630,33 +612,28 @@ Astriarch.PlanetView = {
 
 					break;
 				case Astriarch.PlanetView.SliderValueClicked.Miners:
-					if (canChangeFarmers && !canChangeWorkers)
-					{
+					if (canChangeFarmers && !canChangeWorkers) {
 						sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
-					}
-					else if (!canChangeFarmers && canChangeWorkers)
-					{
+					} else if (!canChangeFarmers && canChangeWorkers) {
 						sliderToChange = Astriarch.PlanetView.SliderValueClicked.Workers;
 					}
-					else//if both values are the same, check last change to alternate candidates
+					else {
+						//if both values are the same, check last change to alternate candidates
 						//otherwize first check diff to see if we want the larger or the smaller
-					{
-						if (roundedFarmerSliderValue == roundedWorkerSliderValue)
-						{
+						if (roundedFarmerSliderValue == roundedWorkerSliderValue) {
 							if (self.lastChanged != Astriarch.PlanetView.SliderValueClicked.Farmers)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
 							else
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Workers;
 						}
-						else if (diff > 0)//we're removing so choose the slider with a larger value
-						{
+						else if (diff > 0) {
+							//we're removing so choose the slider with a larger value
 							if (roundedFarmerSliderValue > roundedWorkerSliderValue)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
 							else
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Workers;
-						}
-						else//choose the slider with a smaller value
-						{
+						} else {
+							//choose the slider with a smaller value
 							if (roundedFarmerSliderValue < roundedWorkerSliderValue)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
 							else
@@ -665,33 +642,26 @@ Astriarch.PlanetView = {
 					}
 					break;
 				case Astriarch.PlanetView.SliderValueClicked.Workers:
-					if (canChangeFarmers && !canChangeMiners)
-					{
+					if (canChangeFarmers && !canChangeMiners) {
 						sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
-					}
-					else if (!canChangeFarmers && canChangeMiners)
-					{
+					} else if (!canChangeFarmers && canChangeMiners) {
 						sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
-					}
-					else//if both values are the same, check last change to alternate candidates
+					} else {
+						//if both values are the same, check last change to alternate candidates
 						//otherwize first check diff to see if we want the larger or the smaller
-					{
-						if (roundedFarmerSliderValue == roundedMinerSliderValue)
-						{
+						if (roundedFarmerSliderValue == roundedMinerSliderValue) {
 							if (self.lastChanged != Astriarch.PlanetView.SliderValueClicked.Farmers)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
 							else
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
-						}
-						else if (diff > 0)//we're removing so choose the slider with a larger value
-						{
+						} else if (diff > 0) {
+							//we're removing so choose the slider with a larger value
 							if (roundedFarmerSliderValue > roundedMinerSliderValue)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
 							else
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Miners;
-						}
-						else//choose the slider with a smaller value
-						{
+						} else {
+							//choose the slider with a smaller value
 							if (roundedFarmerSliderValue < roundedMinerSliderValue)
 								sliderToChange = Astriarch.PlanetView.SliderValueClicked.Farmers;
 							else
@@ -702,8 +672,7 @@ Astriarch.PlanetView = {
 			}
 			
 			//finally, change the picked slider
-			switch (sliderToChange)
-			{
+			switch (sliderToChange) {
 				case Astriarch.PlanetView.SliderValueClicked.Farmers:
 					roundedFarmerSliderValue -= diffToChange;
 					$('#SliderFarmers').slider("value", roundedFarmerSliderValue);
@@ -829,10 +798,9 @@ Astriarch.PlanetView = {
 
 			var refundObject = bqlbi.ProductionItem.GetRefundAmount();
 
-			Astriarch.PlanetView.workingResources.GoldRemainder += refundObject.Gold;
-			Astriarch.PlanetView.workingResources.OreRemainder += refundObject.Ore;
-			Astriarch.PlanetView.workingResources.IridiumRemainder += refundObject.Iridium;
-			Astriarch.PlanetView.workingResources.AccumulateResourceRemainders();
+			Astriarch.PlanetView.workingResources.GoldAmount += refundObject.Gold;
+			Astriarch.PlanetView.workingResources.OreAmount += refundObject.Ore;
+			Astriarch.PlanetView.workingResources.IridiumAmount += refundObject.Iridium;
 
 			//Astriarch.PlanetView.workingBuildQueue.Remove(bqlbi.ProductionItem);
 			Astriarch.PlanetView.workingBuildQueue.splice(index, 1);
@@ -953,17 +921,16 @@ Astriarch.PlanetView = {
 			self.planetMain.BuildQueue.push(self.workingBuildQueue[i]);
 		}
 
-		//now spend our resources and in case we issued a refund, add remainders to this planets resources and accumulate
+		//now spend our resources and in case we issued a refund, set this planets resources
 		var originalResources = new Astriarch.Model.WorkingPlayerResources(self.planetMain.Owner);
 		var goldCost = originalResources.GoldAmount - self.workingResources.GoldAmount;
 		var oreCost = originalResources.OreAmount - self.workingResources.OreAmount;
 		var iridiumCost = originalResources.IridiumAmount - self.workingResources.IridiumAmount;
 		self.planetMain.SpendResources(Astriarch.ClientGameModel, goldCost, 0, oreCost, iridiumCost, self.planetMain.Owner);
-		//add the remainders to the planets resources and accumulate
-		self.planetMain.Owner.Resources.GoldRemainder = self.workingResources.GoldRemainder;
-		self.planetMain.Owner.Resources.OreRemainder = self.workingResources.OreRemainder;
-		self.planetMain.Owner.Resources.IridiumRemainder = self.workingResources.IridiumRemainder;
-		self.planetMain.Owner.Resources.AccumulateResourceRemainders();
+		//set the workingResources to the planets resources
+		self.planetMain.Owner.Resources.GoldAmount = self.workingResources.GoldAmount;
+		self.planetMain.Owner.Resources.OreAmount = self.workingResources.OreAmount;
+		self.planetMain.Owner.Resources.IridiumAmount = self.workingResources.IridiumAmount;
 
 		Astriarch.View.PlanetViewDialogWindowClosed();
 	},

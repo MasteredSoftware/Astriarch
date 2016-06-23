@@ -298,46 +298,15 @@ Astriarch.Model.GalaxySizeOptionToHexSizeMultiplier = function(galaxySize) {
 Astriarch.Model.WorkingPlayerResources = function(player, workingPlayerResources) {
 	if(player){
 		this.GoldAmount = player.Resources.GoldAmount;
-		this.GoldRemainder = 0.0;
 
 		this.OreAmount = player.TotalOreAmount();
-		this.OreRemainder = 0.0;
 
 		this.IridiumAmount = player.TotalIridiumAmount();
-		this.IridiumRemainder = 0.0;
 	} else {
 		this.GoldAmount = workingPlayerResources.GoldAmount;
-		this.GoldRemainder = workingPlayerResources.GoldRemainder;
 
 		this.OreAmount = workingPlayerResources.OreAmount;
-		this.OreRemainder = workingPlayerResources.OreRemainder;
 
 		this.IridiumAmount = workingPlayerResources.IridiumAmount;
-		this.IridiumRemainder = workingPlayerResources.IridiumRemainder;
-	}
-};
-
-/**
- * AccumulateResourceRemainders for our WorkingPlayerResources object
- * @this {Astriarch.Model.WorkingPlayerResources}
- */
-Astriarch.Model.WorkingPlayerResources.prototype.AccumulateResourceRemainders = function() {
-
-	if (this.GoldRemainder >= 1.0)
-	{
-		this.GoldAmount += Math.floor(this.GoldRemainder / 1.0);
-		this.GoldRemainder = this.GoldRemainder % 1;
-	}
-
-	if (this.OreRemainder >= 1.0)
-	{
-		this.OreAmount += Math.floor(this.OreRemainder / 1.0);
-		this.OreRemainder = this.OreRemainder % 1;
-	}
-
-	if (this.IridiumRemainder >= 1.0)
-	{
-		this.IridiumAmount += Math.floor(this.IridiumRemainder / 1.0);
-		this.IridiumRemainder = this.IridiumRemainder % 1;
 	}
 };

@@ -702,17 +702,16 @@ var applyPlanetViewWorkingDataObjectsToModel = function(planetViewWorkingDataMod
 			}
 		}
 
-		//now spend our resources and in case we issued a refund, add remainders to this planets resources and accumulate
+		//now spend our resources and in case we issued a refund, set this planets resources
 		var originalResources = new Astriarch.Model.WorkingPlayerResources(planet.Owner);
 		var goldCost = originalResources.GoldAmount - pvwd.workingResources.GoldAmount;
 		var oreCost = originalResources.OreAmount - pvwd.workingResources.OreAmount;
 		var iridiumCost = originalResources.IridiumAmount - pvwd.workingResources.IridiumAmount;
 		planet.SpendResources(gameModel, goldCost, 0, oreCost, iridiumCost, planet.Owner);
-		//add the remainders to the planets resources and accumulate
-		planet.Owner.Resources.GoldRemainder = pvwd.workingResources.GoldRemainder;
-		planet.Owner.Resources.OreRemainder = pvwd.workingResources.OreRemainder;
-		planet.Owner.Resources.IridiumRemainder = pvwd.workingResources.IridiumRemainder;
-		planet.Owner.Resources.AccumulateResourceRemainders();
+		//set the workingResources to the planets resources
+		planet.Owner.Resources.GoldAmount = pvwd.workingResources.GoldAmount;
+		planet.Owner.Resources.OreAmount = pvwd.workingResources.OreAmount;
+		planet.Owner.Resources.IridiumAmount = pvwd.workingResources.IridiumAmount;
 
 		planet.BuildLastStarShip = (pvwd.BuildLastStarShip ? true : false);
 	}
@@ -1016,10 +1015,9 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 							if(sppi) {
 								var refundObject = Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProductionItem(sppi).GetRefundAmount();
 
-								pvwd.workingResources.GoldRemainder += refundObject.Gold;
-								pvwd.workingResources.OreRemainder += refundObject.Ore;
-								pvwd.workingResources.IridiumRemainder += refundObject.Iridium;
-								pvwd.workingResources.AccumulateResourceRemainders();
+								pvwd.workingResources.GoldAmount += refundObject.Gold;
+								pvwd.workingResources.OreAmount += refundObject.Ore;
+								pvwd.workingResources.IridiumAmount += refundObject.Iridium;
 							}
 							pvwd.workingBuildQueue.splice(index, 1);
 						} else {

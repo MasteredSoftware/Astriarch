@@ -49,7 +49,7 @@ Astriarch.TradingCenter.prototype.executeTrade = function(gameModel, player, pla
 		if(this.goldAmount >= executedStatus.tradeGoldAmount && playerResourceAmount >= trade.amount){
 			//execute trade
 			this.goldAmount -= executedStatus.tradeGoldAmount;
-			player.Resources.GoldRemainder += executedStatus.tradeGoldAmount;
+			player.Resources.GoldAmount += executedStatus.tradeGoldAmount;
 
 			marketResource.amount += trade.amount;
 			planet.SpendResources(gameModel, 0, executedStatus.foodAmount, executedStatus.oreAmount, executedStatus.iridiumAmount, player);
@@ -64,7 +64,7 @@ Astriarch.TradingCenter.prototype.executeTrade = function(gameModel, player, pla
 		if(player.Resources.GoldAmount >= executedStatus.tradeGoldAmount && marketResource.amount >= trade.amount){
 			//execute trade
 			this.goldAmount += executedStatus.tradeGoldAmount;
-			player.Resources.GoldRemainder -= executedStatus.tradeGoldAmount;
+			player.Resources.GoldAmount -= executedStatus.tradeGoldAmount;
 
 			marketResource.amount -= trade.amount;
 			if(trade.resourceType == Astriarch.TradingCenter.ResourceType.FOOD){

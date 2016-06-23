@@ -1,6 +1,6 @@
 {
   "name": "Astriarch",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "private": true,
   "dependencies": {
 	"express": "3.3.4",

@@ -11,7 +11,6 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	this.Type = type;
 	this.Population = [];//List<Citizen>
 	this.RemainderProduction = 0;//if we finished building something we may have remainder to apply to the next item
-	this.RemainderProductionFraction = 0;//if we have RemainderProductionPerTurn it is accumulated here
 	this.BuildQueue = [];//Queue<PlanetProductionItem>
 	this.BuiltImprovements = {};//Dictionary<PlanetImprovementType, List<PlanetImprovement>>
 
@@ -165,12 +164,9 @@ Astriarch.Planet.prototype.RemoveBuildQueueItemForRefund = function(/*int*/ inde
 		var refundObject = ppi.GetRefundAmount();
 
 		goldRefunded += refundObject.Gold;
-		this.Owner.Resources.GoldRemainder += refundObject.Gold;
-		this.Owner.Resources.OreRemainder += refundObject.Ore;
-		this.Owner.Resources.IridiumRemainder += refundObject.Iridium;
-
-		//accumulate
-		this.Owner.Resources.AccumulateResourceRemainders();
+		this.Owner.Resources.GoldAmount += refundObject.Gold;
+		this.Owner.Resources.OreAmount += refundObject.Ore;
+		this.Owner.Resources.IridiumAmount += refundObject.Iridium;
 
 		//remove item and repopulate buildQueue
 		productionItems.splice(index, 1);
@@ -349,16 +345,11 @@ Astriarch.Planet.prototype.GenerateResources = function()
 		else if(this.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Riots)//riots cause 1/4 production
 			divisor = 4.0;
 
-		this.Resources.FoodAmount += Math.round(this.ResourcesPerTurn.FoodAmountPerTurn / divisor);
-		this.Resources.FoodRemainder += this.ResourcesPerTurn.RemainderFoodPerTurn / divisor;
+		this.Resources.FoodAmount += this.ResourcesPerTurn.FoodAmountPerTurn / divisor;
 
-		this.Resources.OreAmount += Math.round(this.ResourcesPerTurn.OreAmountPerTurn / divisor);
-		this.Resources.OreRemainder += this.ResourcesPerTurn.RemainderOrePerTurn / divisor;
+		this.Resources.OreAmount += this.ResourcesPerTurn.OreAmountPerTurn / divisor;
 
-		this.Resources.IridiumAmount += Math.round(this.ResourcesPerTurn.IridiumAmountPerTurn / divisor);
-		this.Resources.IridiumRemainder += this.ResourcesPerTurn.RemainderIridiumPerTurn / divisor;
-		//accumulate
-		this.Resources.AccumulateResourceRemainders();
+		this.Resources.IridiumAmount += this.ResourcesPerTurn.IridiumAmountPerTurn / divisor;
 	}
 };
 
@@ -371,19 +362,11 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 {
 	buildQueueEmptyObject.buildQueueEmpty = false;
 	var eotMessages = []; //List<SerializableTurnEventMessage>
-	if (this.BuildQueue.length > 0)
-	{
+	if (this.BuildQueue.length > 0) {
 		var nextItem = this.BuildQueue.slice(0, 1)[0];//PlanetProductionItem
 
 		var divisor = this.ResourcesPerTurn.GetProductionDivisor();
 		var planetProductionPerTurn = this.ResourcesPerTurn.GetProductionAmountPerTurn();
-
-		//accumulate RemainderProductionPerTurn to RemainderProductionFraction
-		this.RemainderProductionFraction += (this.ResourcesPerTurn.RemainderProductionPerTurn / divisor);
-		if(this.RemainderProductionFraction >= 1.0){
-			this.RemainderProduction += Math.floor(this.RemainderProductionFraction / 1.0);
-			this.RemainderProductionFraction = this.RemainderProductionFraction % 1;
-		}
 
 		nextItem.ProductionCostComplete += planetProductionPerTurn + this.RemainderProduction;
 		this.RemainderProduction = 0;
@@ -501,7 +484,6 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 		}
 		//Also clear out any remainder production
 		this.RemainderProduction = 0;
-		this.RemainderProductionFraction = 0;
 
 		//also remove space platforms because they were destroyed in combat (used for defense)
 		this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform] = [];
@@ -1035,16 +1017,12 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration = function(/*Planet*/ p, /*Plan
 	this.BaseProductionPerWorkerPerTurn = 2.0;
 
 	this.FoodAmountPerTurn = 0;
-	this.RemainderFoodPerTurn = 0.0;
 
 	this.OreAmountPerTurn = 0;
-	this.RemainderOrePerTurn = 0.0;
 
 	this.IridiumAmountPerTurn = 0;
-	this.RemainderIridiumPerTurn = 0.0;
 
 	this.ProductionAmountPerTurn = 0;
-	this.RemainderProductionPerTurn = 0.0;
 
 	this.Planet = p;
 
@@ -1098,7 +1076,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionDivisor 
  * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionAmountPerTurn = function() {
-	return Math.round(this.Planet.ResourcesPerTurn.ProductionAmountPerTurn / this.GetProductionDivisor());
+	return Math.floor(this.Planet.ResourcesPerTurn.ProductionAmountPerTurn / this.GetProductionDivisor());
 };
 
 /**
@@ -1126,33 +1104,21 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 	//additive means if you have two mines you don't get (base production * 1.5 * 1.5),
 	//you get (base production + (base production * 0.5) + (base production * 0.5))
 
-	if (this.Planet.BuiltImprovementCount() > 0)
-	{
+	if (this.Planet.BuiltImprovementCount() > 0) {
 		var farmCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm].length;
 		var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
 		var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 
-		if (farmCount > 0)
-		{
-			var foodRemainder = (baseFoodAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * farmCount;
-			this.FoodAmountPerTurn = Math.floor(baseFoodAmountPerTurn + foodRemainder);
-			this.RemainderFoodPerTurn = (baseFoodAmountPerTurn + foodRemainder) % 1;
+		if (farmCount > 0) {
+			this.FoodAmountPerTurn = baseFoodAmountPerTurn + ((baseFoodAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * farmCount);
 		}
-		if (mineCount > 0)
-		{
-			var oreRemainder = (baseOreAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
-			this.OreAmountPerTurn = Math.floor(baseOreAmountPerTurn + oreRemainder);
-			this.RemainderOrePerTurn = (baseOreAmountPerTurn + oreRemainder) % 1;
+		if (mineCount > 0) {
+			this.OreAmountPerTurn = baseOreAmountPerTurn + ((baseOreAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount);
 
-			var iridiumRemainder = (baseIridiumAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
-			this.IridiumAmountPerTurn = Math.floor(baseIridiumAmountPerTurn + iridiumRemainder);
-			this.RemainderIridiumPerTurn = (baseIridiumAmountPerTurn + iridiumRemainder) % 1;
+			this.IridiumAmountPerTurn = baseIridiumAmountPerTurn + (baseIridiumAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
 		}
-		if (factoryCount > 0)
-		{
-			var prodRemainder = (baseProductionAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * factoryCount;
-			this.ProductionAmountPerTurn = Math.floor(baseProductionAmountPerTurn + prodRemainder);
-			this.RemainderProductionPerTurn = (baseProductionAmountPerTurn + prodRemainder) % 1;
+		if (factoryCount > 0) {
+			this.ProductionAmountPerTurn = baseProductionAmountPerTurn + ((baseProductionAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * factoryCount);
 		}
 	}
 };
@@ -1166,7 +1132,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.FoodAmountPerWorkerPerTurn = function() {
-	return Math.round(this.GetExactFoodAmountPerWorkerPerTurn());   
+	return Math.floor(this.GetExactFoodAmountPerWorkerPerTurn());
 };
 
 /**
@@ -1175,7 +1141,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.FoodAmountPerWorkerPe
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.OreAmountPerWorkerPerTurn = function() {
-	return Math.round(this.GetExactOreAmountPerWorkerPerTurn());   
+	return Math.floor(this.GetExactOreAmountPerWorkerPerTurn());
 };
 
 /**
@@ -1184,7 +1150,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.OreAmountPerWorkerPer
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.IridiumAmountPerWorkerPerTurn = function() {
-	return Math.round(this.GetExactIridiumAmountPerWorkerPerTurn());   
+	return Math.floor(this.GetExactIridiumAmountPerWorkerPerTurn());
 };
 
 /**
@@ -1193,7 +1159,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.IridiumAmountPerWorke
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.ProductionAmountPerWorkerPerTurn = function() {
-	return Math.round(this.GetExactProductionAmountPerWorkerPerTurn());   
+	return Math.floor(this.GetExactProductionAmountPerWorkerPerTurn());
 };
 
 /**
@@ -1242,37 +1208,10 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactProductionAmo
  */
 Astriarch.Planet.PlanetResources = function() {
 	this.FoodAmount = 0;
-	this.FoodRemainder = 0.0;
 	
 	this.OreAmount = 0;
-	this.OreRemainder = 0.0;
 	
 	this.IridiumAmount = 0;
-	this.IridiumRemainder = 0.0;
-};
-
-/**
- * Food is produced into the remainder var and then anything over 1.0 is added to the 'integer' food amount var
- * @this {Astriarch.Planet.PlanetResources}
- */
-Astriarch.Planet.PlanetResources.prototype.AccumulateResourceRemainders = function() {
-	if (this.FoodRemainder >= 1.0)
-	{
-		this.FoodAmount += Math.floor(this.FoodRemainder / 1.0);
-		this.FoodRemainder = this.FoodRemainder % 1;
-	}
-	
-	if (this.OreRemainder >= 1.0)
-	{
-		this.OreAmount += Math.floor(this.OreRemainder / 1.0);
-		this.OreRemainder = this.OreRemainder % 1;
-	}
-
-	if (this.IridiumRemainder >= 1.0)
-	{
-		this.IridiumAmount += Math.floor(this.IridiumRemainder / 1.0);
-		this.IridiumRemainder = this.IridiumRemainder % 1;
-	}
 };
 
 /**

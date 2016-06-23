@@ -453,17 +453,17 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 		}
 
 		$('#TextBlockFoodAmount').css("color", foodAmountColor);
-		$('#TextBlockFoodAmount').text(totalFoodAmount + " " + foodDiffPositiveIndicator + foodDiffPerTurn);
-		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.ExactTotalFoodAmount() + " +" + totalResourceProduction.food_exact + " -" + totalPopulation);
+		$('#TextBlockFoodAmount').text(Math.floor(totalFoodAmount) + " " + foodDiffPositiveIndicator + foodDiffPerTurn);
+		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.TotalFoodAmount() + " +" + totalResourceProduction.food + " -" + totalPopulation);
 
-		$('#TextBlockGoldAmount').text(mainPlayer.Resources.GoldAmount);
-		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.ExactTotalGoldAmount());
+		$('#TextBlockGoldAmount').text(Math.floor(mainPlayer.Resources.GoldAmount));
+		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.Resources.GoldAmount);
 
-		$('#TextBlockOreAmount').text(mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
-		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.ExactTotalOreAmount() + " +" + totalResourceProduction.ore_exact);
+		$('#TextBlockOreAmount').text(Math.floor(mainPlayer.TotalOreAmount()) + " +" + totalResourceProduction.ore);
+		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
 
-		$('#TextBlockIridiumAmount').text(mainPlayer.TotalIridiumAmount() + " +" + totalResourceProduction.iridium);
-		$('#TextBlockIridiumAmount').prop("title", "Iridium Amount: " + mainPlayer.ExactTotalIridiumAmount() + " +" + totalResourceProduction.iridium_exact);
+		$('#TextBlockIridiumAmount').text(Math.floor(mainPlayer.TotalIridiumAmount()) + " +" + totalResourceProduction.iridium);
+		$('#TextBlockIridiumAmount').prop("title", "Iridium Amount: " + mainPlayer.TotalIridiumAmount() + " +" + totalResourceProduction.iridium);
 	}
 };
 
@@ -609,16 +609,16 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				var sisdText = "";
 
 				sisdText += "<br />--- Stockpile ---<br />";
-				sisdText += "Production: " + (p.RemainderProduction + p.RemainderProductionFraction) + "<br />";
-				sisdText += "Food: " + (p.Resources.FoodAmount + p.Resources.FoodRemainder) + "<br />";
-				sisdText += "Ore: " + (p.Resources.OreAmount + p.Resources.OreRemainder) + "<br />";
-				sisdText += "Iridium: " + (p.Resources.IridiumAmount + p.Resources.IridiumRemainder) + "<br />";
+				sisdText += "Production: " + p.RemainderProduction + "<br />";
+				sisdText += "Food: " + p.Resources.FoodAmount + "<br />";
+				sisdText += "Ore: " + p.Resources.OreAmount + "<br />";
+				sisdText += "Iridium: " + p.Resources.IridiumAmount + "<br />";
 
 				sisdText += "<br />--- Per Turn ---<br />";
-				sisdText += "Production: " + (p.ResourcesPerTurn.ProductionAmountPerTurn + p.ResourcesPerTurn.RemainderProductionPerTurn) + "<br />";
-				sisdText += "Food: " + (p.ResourcesPerTurn.FoodAmountPerTurn + p.ResourcesPerTurn.RemainderFoodPerTurn) + "<br />";
-				sisdText += "Ore: " + (p.ResourcesPerTurn.OreAmountPerTurn + p.ResourcesPerTurn.RemainderOrePerTurn) + "<br />";
-				sisdText += "Iridium: " + (p.ResourcesPerTurn.IridiumAmountPerTurn + p.ResourcesPerTurn.RemainderIridiumPerTurn) + "<br />";
+				sisdText += "Production: " + p.ResourcesPerTurn.ProductionAmountPerTurn + "<br />";
+				sisdText += "Food: " + p.ResourcesPerTurn.FoodAmountPerTurn + "<br />";
+				sisdText += "Ore: " + p.ResourcesPerTurn.OreAmountPerTurn + "<br />";
+				sisdText += "Iridium: " + p.ResourcesPerTurn.IridiumAmountPerTurn + "<br />";
 
 				sisdText += "<br />--- Per Worker ---<br />";
 				sisdText += "Production: " + p.ResourcesPerTurn.GetExactProductionAmountPerWorkerPerTurn()+ "<br />";
