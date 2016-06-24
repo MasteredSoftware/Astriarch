@@ -460,12 +460,12 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.Resources.GoldAmount);
 
 		var oreAmount = mainPlayer.TotalOreAmount();
-		var decimalPlaces = oreAmount > 100 ? 0 : oreAmount > 10 ? 1 : 2;
+		var decimalPlaces = oreAmount >= 100 ? 0 : oreAmount >= 10 ? 1 : 2;
 		$('#TextBlockOreAmount').text(Math.floor(oreAmount) + " +" + totalResourceProduction.ore.toFixed(decimalPlaces));
 		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
 
 		var iridiumAmount = mainPlayer.TotalIridiumAmount();
-		decimalPlaces = oreAmount > 100 ? 0 : oreAmount > 10 ? 1 : 2;
+		decimalPlaces = iridiumAmount >= 100 ? 0 : iridiumAmount >= 10 ? 1 : 2;
 		$('#TextBlockIridiumAmount').text(Math.floor(iridiumAmount) + " +" + totalResourceProduction.iridium.toFixed(decimalPlaces));
 		$('#TextBlockIridiumAmount').prop("title", "Iridium Amount: " + mainPlayer.TotalIridiumAmount() + " +" + totalResourceProduction.iridium);
 	}
