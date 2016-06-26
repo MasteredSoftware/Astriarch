@@ -82,6 +82,10 @@ Astriarch.SendShipsControl = {
 	},
 	
 	ButtonSendAllShipsClick: function() {
+		if(window.tour.enabled && window.tour.step == 58) {
+			window.tour.jqElm.joyride('nextTip');
+		}
+
 		Astriarch.SendShipsControl.StarShipsAvailableCardList.selectAll();
 	},
 
