@@ -30,7 +30,7 @@ app.set('port', process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.
 app.set('ws_port', process.env.OPENSHIFT_NODEJS_PORT || process.env.WS_PORT || config.ws_port || 8000);
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
-app.use(express.favicon());
+app.use(express.favicon(__dirname + '/public/img/favicon.ico'));
 app.use(express.logger('dev'));
 app.use(express.bodyParser());
 app.use(express.methodOverride());
