@@ -729,13 +729,18 @@ var finalizePlanetViewWorkingDataObjectsForGame = function(gameId, gameModel, ca
 
 		applyPlanetViewWorkingDataObjectsToModel(planetViewWorkingDataModels, gameModel);
 
-		for(var i in planetViewWorkingDataModels){
-			var planetViewWorkingDataModel = planetViewWorkingDataModels[i];
-			//now delete processed PlanetViewWorkingDataModel
-			planetViewWorkingDataModel.remove();
-		}
+		//now delete processed PlanetViewWorkingDataModel
+		var removePlanetViewWorkingDataModel = function(planetViewWorkingDataModel, callback){
+			planetViewWorkingDataModel.remove(callback);
+		};
 
-		callback();
+		async.each(planetViewWorkingDataModels, removePlanetViewWorkingDataModel, function(err, result){
+			if(err) {
+				console.error("Problem removing planetViewWorkingDataModel in finalizePlanetViewWorkingDataObjectsForGame:", err);
+			}
+			callback();
+		});
+
 	});
 };
 
