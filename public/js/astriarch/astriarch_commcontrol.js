@@ -87,7 +87,7 @@ Astriarch.CommControl = {
 			//we are in a game and we should base the player list on the client game model players
 			for(var i = 0; i < Astriarch.ClientGameModel.ClientPlayers.length; i++){
 				var player = Astriarch.ClientGameModel.ClientPlayers[i];
-				var sessionClass = "messagePlayer" + (i + 1);
+				var sessionClass = "messagePlayer" + player.Id;
 				var points = player.Points != null ? " (" + Math.floor(player.Points) + ")" : "";
 				html += "<div class=\"" + sessionClass + "\">" + player.Name + points + "</div>";
 			}
