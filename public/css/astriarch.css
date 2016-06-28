@@ -132,6 +132,9 @@ td > span, td > img {
 .messageSystem {
     color: #888;
 }
+.messageTime {
+    color: #999;
+}
 #canvasAstriarchBackground
 {
     position:absolute;

@@ -61,7 +61,7 @@ Astriarch.CommControl = {
 		var text = this.inputTextBox.val();
 		if(text && text.trim()){
 			this.inputTextBox.val("");
-			var message = {messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE, text: text, sentByPlayerName: this.playerName, sentByPlayerNumber: this.playerNumber};
+			var message = {messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE, text: text, sentByPlayerName: this.playerName, sentByPlayerNumber: this.playerNumber, dateSent:new Date().getTime()};
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE, payload:message});
 			this.appendMessages([message]);
 		}
@@ -106,12 +106,13 @@ Astriarch.CommControl = {
 		var html = "";
 		for(var i = 0; i < messages.length; i++){
 			var message = messages[i];
+			var messageDateString = new Date(message.dateSent).toLocaleTimeString('en-US', { hour12: false }) + " ";
 			var messageFromClass = message.sentByPlayerNumber ? "messagePlayer" + message.sentByPlayerNumber : "messagePlayerLobby";
 			if(message.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE){
-				html += "<div class=\"chatLogMessage\"><span class=\"" + messageFromClass + "\">" + message.sentByPlayerName + ": </span>" + message.text + "</div>";
+				html += "<div class=\"chatLogMessage\"><span class=\"messageTime\">" + messageDateString + "</span><span class=\"" + messageFromClass + "\">" + message.sentByPlayerName + ": </span>" + message.text + "</div>";
 			} else {
 				var text = (message.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER ? " Arrived" : (message.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_DISCONNECT ? " Disconnected" : " Left"));
-				html += "<div class=\"chatLogMessage\"><span class=\"messageSystem\">" + message.sentByPlayerName + text + "</span></div>";
+				html += "<div class=\"chatLogMessage\"><span class=\"messageTime\">" + messageDateString + "</span><span class=\"messageSystem\">" + message.sentByPlayerName + text + "</span></div>";
 			}
 
 		}
