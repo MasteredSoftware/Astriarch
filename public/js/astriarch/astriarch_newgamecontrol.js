@@ -73,6 +73,9 @@ Astriarch.NewGameControl = {
 	},
 
 	buildPlanetsPerSystemComboBox: function(selectedPlanetsPerSystem, selectedGalaxySize) {
+		selectedPlanetsPerSystem = selectedPlanetsPerSystem || Number($('select#PlanetsPerSystemComboBox').selectmenu("value"));
+		selectedGalaxySize = selectedGalaxySize || Number($('select#GalaxySizeComboBox').selectmenu("value"));
+
 		//rebuild planets per system dropdown, if SMALL then we shouldn't have > 6 an option
 		var planetsPerSystemComboBoxOptions = "";
 		for(var i = 4; i <= Astriarch.Model.PlanetsPerSystemOption.EIGHT; i++) {
@@ -103,9 +106,14 @@ Astriarch.NewGameControl = {
 		}
 	},
 
-	newGame: function(){
+	newGame: function(message){
 		//join the chat room for this game
 		Astriarch.CommControl.joinChatRoom(Astriarch.LocalStorageInterface.Prefs.playerName, 1);
+
+		if(message) {
+			//this happens when the game creator re-joins, we have to refresh the controls to the saved game options
+			Astriarch.NewGameControl.OnGameOptionsChanged(message);
+		}
 	},
 
 	joinGame: function(message){
@@ -133,10 +141,7 @@ Astriarch.NewGameControl = {
 	},
 
 	changedGalaxySize: function() {
-		var selectedGalaxySize = Number($('select#GalaxySizeComboBox').selectmenu("value"));
-		var selectedPlanetsPerSystem = Number($('select#PlanetsPerSystemComboBox').selectmenu("value"));
-
-		Astriarch.NewGameControl.buildPlanetsPerSystemComboBox(selectedPlanetsPerSystem, selectedGalaxySize);
+		Astriarch.NewGameControl.buildPlanetsPerSystemComboBox();
 
 		Astriarch.NewGameControl.changedGameOptions();
 	},
@@ -156,6 +161,7 @@ Astriarch.NewGameControl = {
 	OnGameOptionsChanged: function(message){
 		var gameOptions = message.payload.gameOptions;
 		this.drawGameOptionsRepresentationOnCanvas(gameOptions);
+
 		//refresh view with new game options
 		if(!Astriarch.NewGameControl.GameCreator){
 			$("#GameNameValue").text(message.payload.name);
@@ -167,13 +173,24 @@ Astriarch.NewGameControl = {
 
 			$("#DistributePlanetsEvenlyValue").text("Distribute Planets Evenly: " + gameOptions.distributePlanetsEvenly);
 			var turnTimeLimitMinutes = gameOptions.turnTimeLimitSeconds / 60;
-			$("#TurnTimeLimitValue").text("Turn Time Limit: " + (turnTimeLimitMinutes == 0 ? "None" : (turnTimeLimitMinutes == 1 ? "1 Minute" : turnTimeLimitMinutes + " Minutes")));
+			$("#TurnTimeLimitValue").text("Turn Time Limit: " + (turnTimeLimitMinutes == 0 ? "None" : turnTimeLimitMinutes < 1 ? gameOptions.turnTimeLimitSeconds + " Seconds" : (turnTimeLimitMinutes == 1 ? "1 Minute" : turnTimeLimitMinutes + " Minutes")));
 
 			$("#Player1NamePanel").text(gameOptions.mainPlayerName);
 			$("#Player2NamePanel").text(Astriarch.GameTools.OpponentOptionToFriendlyString(gameOptions.opponentOptions[0]));
 			$("#Player3NamePanel").text(Astriarch.GameTools.OpponentOptionToFriendlyString(gameOptions.opponentOptions[1]));
 			$("#Player4NamePanel").text(Astriarch.GameTools.OpponentOptionToFriendlyString(gameOptions.opponentOptions[2]));
 		} else {
+			$("#GameNameTextBox").val(message.payload.name);
+
+			$('select#NumberOfSystemsComboBox').selectmenu("value", gameOptions.systemsToGenerate);
+			Astriarch.NewGameControl.buildPlanetsPerSystemComboBox(gameOptions.planetsPerSystem, gameOptions.systemsToGenerate);
+
+			$('select#GalaxySizeComboBox').selectmenu("value", gameOptions.galaxySize);
+
+			$('input#DistributePlanetsEvenlyCheckBox').prop( "checked", gameOptions.distributePlanetsEvenly);
+			$('select#TurnTimeLimitComboBox').selectmenu("value", gameOptions.turnTimeLimitSeconds);
+
+			Astriarch.NewGameControl.UpdateStartupOptionsBasedOnOpponentCount();
 			Astriarch.NewGameControl.buildPlayerComboBoxes(gameOptions);
 			//we get this message for player name changes and joins also
 			for(var i = 0; i < gameOptions.opponentOptions.length; i++){

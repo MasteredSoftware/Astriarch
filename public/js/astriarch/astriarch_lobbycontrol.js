@@ -53,7 +53,7 @@ Astriarch.LobbyControl = {
 			Astriarch.NewGameControl.joinGame(message);
 		} else {
 			//this was the game creator re-joining
-			Astriarch.NewGameControl.newGame();
+			Astriarch.NewGameControl.newGame(message);
 		}
 
 

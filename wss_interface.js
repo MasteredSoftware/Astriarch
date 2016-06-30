@@ -11,6 +11,7 @@ exports.init = init;
 
 var wsSend = function(ws, message, callback){
 	callback = callback || function(err){if(err){console.error("Problem in wsSend:", err);}};
+	console.debug("wsSend Message: ", message);
 	ws.send(JSON.stringify(message), callback);
 };
 exports.wsSend = wsSend;
