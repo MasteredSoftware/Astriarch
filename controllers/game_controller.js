@@ -806,8 +806,8 @@ exports.UpdatePlanetOptions = function(options, payload, callback){
 			}
 			if(!pvwdmExisting){
 				var msg = "Couldn't find ExistingPlanetViewWorkingDataModel in FinishUpdatePlanet!";
-				console.error(msg);
-				callback(msg);
+				console.warn(msg);
+				callback();
 				return;
 			}
 			getPlayerPlanetAndGameModelFromDocumentBySessionId(doc, sessionId, payload.planetId, function(err, player, planet, gameModelReturned){
