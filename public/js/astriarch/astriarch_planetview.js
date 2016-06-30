@@ -727,7 +727,14 @@ Astriarch.PlanetView = {
 			Astriarch.PlanetView.planetMain.BuildLastStarShip = false;
 		}
 
-		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload:{"planetId": Astriarch.PlanetView.planetMain.Id, "farmers":Astriarch.PlanetView.farmers, "miners":Astriarch.PlanetView.miners, "workers":Astriarch.PlanetView.workers, "BuildLastStarShip":Astriarch.PlanetView.planetMain.BuildLastStarShip}});
+		var payload = {
+			"planetId": Astriarch.PlanetView.planetMain.Id,
+			"farmers":Astriarch.PlanetView.farmers,
+			"miners":Astriarch.PlanetView.miners,
+			"workers":Astriarch.PlanetView.workers,
+			"BuildLastStarShip":Astriarch.PlanetView.planetMain.BuildLastStarShip
+		};
+		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload:payload});
 	},
 	
 	SliderFarmersValueChanged: function(event, ui) {

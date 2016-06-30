@@ -79,7 +79,7 @@ var PlanetViewWorkingData = function(player, planet){
 	this.farmers = populationWorkerTypes.Farmers;
 	this.miners = populationWorkerTypes.Miners;
 	this.workers = populationWorkerTypes.Workers;
-	this.BuildLastStarShip = true;
+	this.BuildLastStarShip = planet.BuildLastStarShip;
 };
 
 exports.PlanetViewWorkingData = PlanetViewWorkingData;
