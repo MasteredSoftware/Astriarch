@@ -233,16 +233,10 @@ Astriarch.PlanetView = {
 			$("#BuildLastShipCheckBox").prop('checked', false);
 		}
 		
-		
-		$('#BuildLastShipCheckBoxLabel').text("Build Last Ship");
+
 		$("#LastShipBuiltTextBlock").text("");
-		if (Astriarch.PlanetView.planetMain.StarShipTypeLastBuilt != null)
-		{
-			//this.BuildLastShipCheckBox.IsEnabled = true;
+		if (Astriarch.PlanetView.planetMain.StarShipTypeLastBuilt != null) {
 			$("#LastShipBuiltTextBlock").text("Last Built: " + Astriarch.GameTools.StarShipTypeToFriendlyName(Astriarch.PlanetView.planetMain.StarShipTypeLastBuilt));
-			//if(Astriarch.PlanetView.planetMain.BuildQueue.length == 0) {
-			//	$('#BuildLastShipCheckBoxLabel').text("Build " + Astriarch.GameTools.StarShipTypeToFriendlyName(Astriarch.PlanetView.planetMain.StarShipTypeLastBuilt) + "s");
-			//}
 		}
 	
 		Astriarch.PlanetView.dialog.setTitle("Planet " + p.Name + " View");
