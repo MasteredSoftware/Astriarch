@@ -2,8 +2,8 @@ var should = require('should');
 
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
-var player1 = new Astriarch.Player(Astriarch.Player.PlayerType.Computer_Expert, "Player1");
-var player2 = new Astriarch.Player(Astriarch.Player.PlayerType.Computer_Expert, "Player2");
+var player1 = new Astriarch.Player(1, Astriarch.Player.PlayerType.Computer_Expert, "Player1");
+var player2 = new Astriarch.Player(2, Astriarch.Player.PlayerType.Computer_Expert, "Player2");
 var gameModel = new Astriarch.Model([player1, player2], {systemsToGenerate:2, planetsPerSystem:4, distributePlanetsEvenly: true, "turnTimeLimitSeconds":0});
 
 describe('#Astriarch.Fleet.StarShip', function () {

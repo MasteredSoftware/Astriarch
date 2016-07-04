@@ -429,7 +429,7 @@ exports.StartGame = function(options, callback){
 		var playerName = gameOptions.mainPlayerName;
 		if(!playerName)
 			playerName = "Player";
-		var hostPlayer = new Astriarch.Player(Astriarch.Player.PlayerType.Human, playerName);
+		var hostPlayer = new Astriarch.Player(1, Astriarch.Player.PlayerType.Human, playerName);
 		doc.players[0].Id = hostPlayer.Id;//the hosting player is always at position zero
 		players.push(hostPlayer);
 
@@ -438,7 +438,7 @@ exports.StartGame = function(options, callback){
 		for(var i = 0; i < gameOptions.opponentOptions.length; i++){
 			var playerType = gameOptions.opponentOptions[i].type;
 			if(playerType == 0){
-				var player = new Astriarch.Player(playerType, gameOptions.opponentOptions[i].name);
+				var player = new Astriarch.Player(i + 2, playerType, gameOptions.opponentOptions[i].name);
 				//get corresponding player from the doc and set the Id
 				for(var j = 0; j < doc.players.length; j++){
 					var dp = doc.players[j];
@@ -449,7 +449,7 @@ exports.StartGame = function(options, callback){
 				}
 				players.push(player);
 			} else if(playerType > 0){
-				players.push(new Astriarch.Player(playerType, "Computer " + (computerNumber++)));
+				players.push(new Astriarch.Player(i + 2, playerType, "Computer " + (computerNumber++)));
 			}
 		}
 

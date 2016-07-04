@@ -6,9 +6,6 @@ var Astriarch = Astriarch || require('./astriarch_base');
  * @constructor
  */
 Astriarch.Model = function(/*List<Player>*/ players, /*{SystemsToGenerate:4, PlanetsPerSystem:4, GalaxySize:1, DistributePlanetsEvenly: true, "TurnTimeLimitSeconds":0}*/ options, dontPopulatePlanets) {
-
-	Astriarch.Player.Static = {NEXT_PLAYER_ID:1};//reset the static Ids so that player positions always match the ids
-
 	this.ShowUnexploredPlanetsAndEnemyPlayerStats = false;//for debugging for now, could eventually be used once a scanner is researched?
 
     this.GameOptions = new Astriarch.Model.GameOptions(options);

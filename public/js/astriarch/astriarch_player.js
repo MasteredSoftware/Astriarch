@@ -4,9 +4,9 @@ var Astriarch = Astriarch || require('./astriarch_base');
  * A Player represents either the main player or computer players
  * @constructor
  */
-Astriarch.Player = function(/*PlayerType*/ playerType, /*string*/ name) {
+Astriarch.Player = function(id, /*PlayerType*/ playerType, /*string*/ name) {
 
-	this.Id = Astriarch.Player.Static.NEXT_PLAYER_ID++;
+	this.Id = id;
 	
 	this.Type = playerType;//PlayerType
 
@@ -33,8 +33,6 @@ Astriarch.Player = function(/*PlayerType*/ playerType, /*string*/ name) {
 
 	this.fleetsArrivingOnUnownedPlanets = {};//Dictionary<int, Fleet>//indexed by planet id
 };
-
-Astriarch.Player.Static = {NEXT_PLAYER_ID:1};
 
 Astriarch.Player.EarnedPointsType = {
 	POPULATION_GROWTH: {key: 0, points_per:4, max_points:100000},

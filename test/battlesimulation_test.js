@@ -2,8 +2,8 @@
 
 var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 
-var player1 = new Astriarch.Player(Astriarch.Player.PlayerType.Computer_Expert, "Player1");
-var player2 = new Astriarch.Player(Astriarch.Player.PlayerType.Computer_Expert, "Player2");
+var player1 = new Astriarch.Player(1, Astriarch.Player.PlayerType.Computer_Expert, "Player1");
+var player2 = new Astriarch.Player(2, Astriarch.Player.PlayerType.Computer_Expert, "Player2");
 
 function checkFleetWinCount(fleet1, fleet2, battleTries) {
 	var i = 0;

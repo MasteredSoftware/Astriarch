@@ -173,8 +173,8 @@ Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet = function(sp, gameGr
 };
 
 Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, /*SerializablePlayer*/sp, planetsById, clientPlanetsById) {
-	var p = new Astriarch.Player(/*PlayerType*/ sp.Type, /*string*/ sp.Name);
-	p.Id = sp.Id;
+	var p = new Astriarch.Player(sp.Id, /*PlayerType*/ sp.Type, /*string*/ sp.Name);
+
 	p.Resources = extend(true, p.Resources, sp.Resources);
 	//for the main player we just want the color to be set, keep default image data
 	//maybe this logic should be in SetColor instead?
