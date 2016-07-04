@@ -3,7 +3,7 @@
  * @constructor
  */
 Astriarch.Dialog = function(contentSelector, title, width, height, okCallback, cancelCallback) {
-	
+	this.contentSelector = contentSelector;
 	this.DialogResult = false;
 	
 	this.okCallback = okCallback;
@@ -11,15 +11,28 @@ Astriarch.Dialog = function(contentSelector, title, width, height, okCallback, c
 
 	var buttons = [];
 	if(typeof this.okCallback == 'function'){
-		buttons.push({text: "Ok",click: function() { self.okClose(); }});
+		buttons.push({text: "Ok", click: function() { self.okClose(); }});
 	}
 	if(typeof this.cancelCallback == 'function'){
-		buttons.push({text: "Cancel",click: function() { self.cancelClose(); }});
+		buttons.push({text: "Cancel", click: function() { self.cancelClose(); }});
 	}
 	
 	var self = this;
-	this.dlg = $(contentSelector).dialog({'autoOpen':false, 'resizable':false, 'title':title, 'width':width, 'height':height, 'modal':true, 'buttons':buttons});
-	
+	this.dlg = $(contentSelector).dialog({
+		'autoOpen':false,
+		'resizable':false,
+		'title':title,
+		'width':width,
+		'height':height,
+		'modal':true,
+		'buttons':buttons,
+		'open': function( event, ui ) {
+			//auto-focus the ok button
+			$(this).siblings('.ui-dialog-buttonpane').find('button[autofocus]').focus();
+		},
+		'close': function( event, ui ) { Astriarch.View.BindHotkeys(); }
+	});
+
 };
 
 /**
@@ -27,6 +40,7 @@ Astriarch.Dialog = function(contentSelector, title, width, height, okCallback, c
  * @this {Astriarch.Dialog}
  */
 Astriarch.Dialog.prototype.open = function() {
+	Astriarch.View.BindHotkeys(this.contentSelector);
 	this.dlg.dialog('open');
 };
 
@@ -46,7 +60,7 @@ Astriarch.Dialog.prototype.okClose = function() {
 	this.DialogResult = true;
 	if(typeof this.okCallback == 'function')
 		this.okCallback();
-	this.dlg.dialog('close');
+	this.close();
 };
 
 /**
@@ -57,7 +71,7 @@ Astriarch.Dialog.prototype.cancelClose = function() {
 	this.DialogResult = false;
 	if(typeof this.cancelCallback == 'function')
 		this.cancelCallback();
-	this.dlg.dialog('close');
+	this.close();
 };
 
 /**

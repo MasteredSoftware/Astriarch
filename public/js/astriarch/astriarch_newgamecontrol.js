@@ -26,16 +26,16 @@ Astriarch.NewGameControl = {
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_PLAYER_NAME, payload:payload});
 		});
 
-		$('select#NumberOfSystemsComboBox').selectmenu({style:'popup', width:55, change:function(e, object){Astriarch.NewGameControl.UpdateStartupOptionsBasedOnOpponentCount();Astriarch.NewGameControl.changedGameOptions();}});
+		$('select#NumberOfSystemsComboBox').selectmenu({width:55, change:function(e, object){Astriarch.NewGameControl.UpdateStartupOptionsBasedOnOpponentCount();Astriarch.NewGameControl.changedGameOptions();}});
 		Astriarch.NewGameControl.buildPlanetsPerSystemComboBox(Astriarch.Model.PlanetsPerSystemOption.FOUR, Astriarch.Model.GalaxySizeOption.LARGE);
 
-		$('select#GalaxySizeComboBox').selectmenu({style:'popup', width:120, change: function(e, object){Astriarch.NewGameControl.changedGalaxySize();} });
+		$('select#GalaxySizeComboBox').selectmenu({width:120, change: function(e, object){Astriarch.NewGameControl.changedGalaxySize();} });
 
 		$('input#DistributePlanetsEvenlyCheckBox').change(function(){
 			Astriarch.NewGameControl.changedGameOptions();
 		});
 
-		$('select#TurnTimeLimitComboBox').selectmenu({style:'popup', width:120, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
+		$('select#TurnTimeLimitComboBox').selectmenu({width:120, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
 
 		this.buildPlayerComboBoxes();
 
@@ -67,14 +67,14 @@ Astriarch.NewGameControl = {
 		//jquery ui selectmenu
 		//from https://github.com/fnagel/jquery-ui
 		//also here: http://jquerystyle.com/2009/08/24/jquery-ui-selectmenu
-		$('select#Player2ComboBox').selectmenu({style:'popup',width:150, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
-		$('select#Player3ComboBox').selectmenu({style:'popup',width:150, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
-		$('select#Player4ComboBox').selectmenu({style:'popup',width:150, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
+		$('select#Player2ComboBox').selectmenu({width:150, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
+		$('select#Player3ComboBox').selectmenu({width:150, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
+		$('select#Player4ComboBox').selectmenu({width:150, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
 	},
 
 	buildPlanetsPerSystemComboBox: function(selectedPlanetsPerSystem, selectedGalaxySize) {
-		selectedPlanetsPerSystem = selectedPlanetsPerSystem || Number($('select#PlanetsPerSystemComboBox').selectmenu("value"));
-		selectedGalaxySize = selectedGalaxySize || Number($('select#GalaxySizeComboBox').selectmenu("value"));
+		selectedPlanetsPerSystem = selectedPlanetsPerSystem || Number($('select#PlanetsPerSystemComboBox').val());
+		selectedGalaxySize = selectedGalaxySize || Number($('select#GalaxySizeComboBox').val());
 
 		//rebuild planets per system dropdown, if SMALL then we shouldn't have > 6 an option
 		var planetsPerSystemComboBoxOptions = "";
@@ -86,23 +86,23 @@ Astriarch.NewGameControl = {
 			planetsPerSystemComboBoxOptions += '<option value="' + i + '"' + selected + '>' + i + '</option>';
 		}
 		$("#PlanetsPerSystemOptionsBox").html('<select id="PlanetsPerSystemComboBox">' + planetsPerSystemComboBoxOptions + '</select>');
-		$('select#PlanetsPerSystemComboBox').selectmenu({style:'popup', width:55, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
+		$('select#PlanetsPerSystemComboBox').selectmenu({width:55, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
 	},
 
 	UpdateStartupOptionsBasedOnOpponentCount: function() {
-		var numberOfOpponents = Number($('select#NumberOfSystemsComboBox').selectmenu("value"));
+		var numberOfOpponents = Number($('select#NumberOfSystemsComboBox').val());
 		$('.Player3Panel').hide();
 		$('.Player4Panel').hide();
 
 		if (numberOfOpponents >= 3) {
 			$('.Player3Panel').show();
 		} else {
-			$('select#Player3ComboBox').selectmenu("value","-2");
+			$('select#Player3ComboBox').val('-2').selectmenu('refresh');
 		}
 		if (numberOfOpponents >= 4){
 			$('.Player4Panel').show();
 		} else {
-			$('select#Player4ComboBox').selectmenu("value","-2");
+			$('select#Player4ComboBox').val('-2').selectmenu('refresh');
 		}
 	},
 
@@ -182,13 +182,13 @@ Astriarch.NewGameControl = {
 		} else {
 			$("#GameNameTextBox").val(message.payload.name);
 
-			$('select#NumberOfSystemsComboBox').selectmenu("value", gameOptions.systemsToGenerate);
+			$('select#NumberOfSystemsComboBox').val(gameOptions.systemsToGenerate).selectmenu('refresh');
 			Astriarch.NewGameControl.buildPlanetsPerSystemComboBox(gameOptions.planetsPerSystem, gameOptions.systemsToGenerate);
 
-			$('select#GalaxySizeComboBox').selectmenu("value", gameOptions.galaxySize);
+			$('select#GalaxySizeComboBox').val(gameOptions.galaxySize).selectmenu('refresh');
 
 			$('input#DistributePlanetsEvenlyCheckBox').prop( "checked", gameOptions.distributePlanetsEvenly);
-			$('select#TurnTimeLimitComboBox').selectmenu("value", gameOptions.turnTimeLimitSeconds);
+			$('select#TurnTimeLimitComboBox').val(gameOptions.turnTimeLimitSeconds).selectmenu('refresh');
 
 			Astriarch.NewGameControl.UpdateStartupOptionsBasedOnOpponentCount();
 			Astriarch.NewGameControl.buildPlayerComboBoxes(gameOptions);
@@ -196,7 +196,7 @@ Astriarch.NewGameControl = {
 			for(var i = 0; i < gameOptions.opponentOptions.length; i++){
 				var opponent = gameOptions.opponentOptions[i];
 				var selectId = 'select#Player' + (i + 2) + 'ComboBox';
-				$(selectId).selectmenu("value", opponent.type);
+				$(selectId).val(opponent.type).selectmenu('refresh');
 				if(opponent.type == 0){
 					$('#Player' + (i + 2) + 'OptionsBox').hide();
 					$('#Player' + (i + 2) + 'NamePanel').text(opponent.name);
@@ -222,22 +222,22 @@ Astriarch.NewGameControl = {
 			playerName = "Player";
 
 		//NOTE: difficulty Combobox values correspond to Astriarch.Player.PlayerType 'enum' values (with -1 meaning closed)
-		opponentOptions.push({name: $("#Player2NamePanel").text(), type: Number($('select#Player2ComboBox').selectmenu("value"))});
-		opponentOptions.push({name: $("#Player3NamePanel").text(), type: Number($('select#Player3ComboBox').selectmenu("value"))});
-		opponentOptions.push({name: $("#Player4NamePanel").text(), type: Number($('select#Player4ComboBox').selectmenu("value"))});
+		opponentOptions.push({name: $("#Player2NamePanel").text(), type: Number($('select#Player2ComboBox').val())});
+		opponentOptions.push({name: $("#Player3NamePanel").text(), type: Number($('select#Player3ComboBox').val())});
+		opponentOptions.push({name: $("#Player4NamePanel").text(), type: Number($('select#Player4ComboBox').val())});
 
-		var systemsToGenerate = Number($('select#NumberOfSystemsComboBox').selectmenu("value"));
+		var systemsToGenerate = Number($('select#NumberOfSystemsComboBox').val());
 		//NOTE: systems to generate combobox values correspond to Astriarch.Model.PlanetsPerSystemOption 'enum' values
-		var planetsPerSystem = Number($('select#PlanetsPerSystemComboBox').selectmenu("value"));
+		var planetsPerSystem = Number($('select#PlanetsPerSystemComboBox').val());
 
-		var galaxySize = Number($('select#GalaxySizeComboBox').selectmenu("value"));
+		var galaxySize = Number($('select#GalaxySizeComboBox').val());
 
 		var distributePlanetsEvenly = true;
 		if(!$('#DistributePlanetsEvenlyCheckBox').attr('checked')){
 			distributePlanetsEvenly = false;
 		}
 
-		var turnTimeLimitSeconds = Number($('select#TurnTimeLimitComboBox').selectmenu("value"));
+		var turnTimeLimitSeconds = Number($('select#TurnTimeLimitComboBox').val());
 
 		var gameOptions = {
 			"mainPlayerName":playerName,

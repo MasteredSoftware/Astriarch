@@ -65,7 +65,7 @@ if ('development' == app.get('env')) {
 }
 
 app.get('/test', function(req, res){
-	res.render('test', { title: 'Astriarch',"port":app.get('ws_port') });
+	res.render('test', {"port":app.get('ws_port'), "ping_freq":config.ws_ping_freq, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal});
 });
 
 app.get('/', function(req, res){

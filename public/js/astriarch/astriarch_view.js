@@ -35,7 +35,8 @@ Astriarch.View = {
 						destroyer: null,
 						cruiser: null,
 						battleship: null
-					}
+					},
+					hotkeyElementsByScreen: {} //this allows us to disable hotkeys on the main screen when a dialog pops up and vise-versa
 				};
 				  
 
@@ -113,7 +114,72 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 		Astriarch.CommControl.init();
 
 		Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, payload:{}});
+
+		Astriarch.View.RegisterHotkeys();
+		Astriarch.View.BindHotkeys();
 	}
+};
+
+Astriarch.View.RegisterHotkeys = function() {
+	var registerClickTargetToHotkey = function(clickTarget, hotkeyAttr, screenElm) {
+		//register this hotkey in hotkeyElementsByScreen
+		var screenIdSel = "#" + screenElm.attr("id");
+		Astriarch.View.hotkeyElementsByScreen[screenIdSel] = Astriarch.View.hotkeyElementsByScreen[screenIdSel] || [];
+		Astriarch.View.hotkeyElementsByScreen[screenIdSel].push({'elm': clickTarget, 'hotkey': hotkeyAttr.toLowerCase()});
+	};
+
+	var getClickTargetTextElm = function(clickTarget) {
+		return clickTarget.children(".ui-button-text, .ui-corner-all").first();
+	};
+
+	var underlineClickTargetWithHotkey = function(clickTarget, hotkeyAttr) {
+		//style the dom element text with an underline at the first found character corresponding to the hotkey
+		var textElm = getClickTargetTextElm(clickTarget);
+		var text = textElm.text();
+		var index = text.indexOf(hotkeyAttr);
+		if(index != -1) {
+			textElm.html(text.substring(0, index) + "<u>" + hotkeyAttr + "</u>" + text.substring(index + 1));
+		}
+	};
+
+	//find elements with hotkey property
+	$("[hotkey]").each(function() {
+		var clickTarget = $(this);
+		var hotkeyAttr = clickTarget.attr("hotkey");
+		underlineClickTargetWithHotkey(clickTarget, hotkeyAttr);
+
+		var screenElm = clickTarget.parents(".screen").first();
+		registerClickTargetToHotkey(clickTarget, hotkeyAttr, screenElm);
+	});
+
+	//set hotkeys and style dialog ok/cancel buttons
+	$(".ui-dialog-buttonpane").each(function() {
+		//get sibling .screen for registration
+		var screenElm = $(this).siblings(".screen").first();
+		$(this).find(".ui-dialog-buttonset > .ui-button").each(function() {
+			var clickTarget = $(this);
+			var text = getClickTargetTextElm(clickTarget).text();
+
+			var hotkeyAttr = "C";
+			if(text == "Ok") {
+				clickTarget.attr("autofocus", true);
+				hotkeyAttr = "O";
+			}
+			underlineClickTargetWithHotkey(clickTarget, hotkeyAttr);
+
+			registerClickTargetToHotkey(clickTarget, hotkeyAttr, screenElm);
+		});
+	});
+
+};
+
+Astriarch.View.BindHotkeys = function(screenId) {
+	Mousetrap.reset();
+	screenId = screenId || "#gameControls";
+	var hotkeyElements = Astriarch.View.hotkeyElementsByScreen[screenId] || [];
+	hotkeyElements.forEach(function(hotkeyElm) {
+		Mousetrap.bind(hotkeyElm.hotkey, function() { hotkeyElm.elm.click() });
+	});
 };
 
 Astriarch.View.CanvasNotSupported = function() {

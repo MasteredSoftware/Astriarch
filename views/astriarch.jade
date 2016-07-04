@@ -4,9 +4,10 @@ head
 	meta(charset='UTF-8')
 	title Astriarch - Ruler of the Stars, space strategy game
 	link(type='text/css', href='css/theme.css', rel='stylesheet')
-	link(type='text/css', href='css/custom-theme/jquery-ui-1.8.16.custom.css', rel='stylesheet')
+	link(type='text/css', href='css/custom-theme/jquery-ui.min.css', rel='stylesheet')
 	link(type='text/css', href='css/js-listbox-style.css', rel='stylesheet')
-	link(type='text/css', href='css/jquery.ui.selectmenu.css', rel='stylesheet')
+	link(type='text/css', href='css/jquery.ui.adjust.css', rel='stylesheet')
+
 	link(type='text/css', href='css/joyride-2.1.css', rel='stylesheet')
 	if use_compressed_js
 		script(type='text/javascript', src='js/external.js')
@@ -242,7 +243,7 @@ head
 							#SliderVolume
 							#AstriarchAlertBox(style='display: none; height: 100px;')
 							#gameControlsContainer(style='position: relative; background-color: blue;')
-								#gameControls
+								#gameControls.screen
 									table#OverallPlayerStatusGrid.greenText(cellpadding='0', cellspacing='0', style='position: absolute; left: 0px; right: 0px; top: 0px; left:0px; z-index: 201; width:100%')
 										tr(height='16')
 											td(width='169', valign='top')
@@ -442,7 +443,7 @@ head
 																	td#StubTradeTour(width='14')
 																		span
 																	td(width='32')
-																		button#ButtonOpenTradingCenter(width='24', height='24', title='Open Trading Center') OTC
+																		button#ButtonOpenTradingCenter(width='24', height='24', hotkey='r', title='Open Trading Center (hotkey: "r")') OTC
 											// end left hand status panel
 											td(width='621')
 												table(cellpadding='0', cellspacing='0')
@@ -455,13 +456,13 @@ head
 													tr(height='30')
 														td
 															#ButtonPanel
-																button#PlanetViewButton(width='100') Planet View
-																button#SendShipsButton(width='100') Send Ships
-																button#NextTurnButton(width='100') Next Turn
+																button#PlanetViewButton(width='100', hotkey='V') Planet View
+																button#SendShipsButton(width='100', hotkey='S') Send Ships
+																button#NextTurnButton(width='100', hotkey='T') Next Turn
 																span#SendShipsStatus.defaultFont(style='color: yellow; font-size: 14px;')
-																button#CancelSendButton(width='100') Cancel Send Ships
-																button#MainMenuButtonGameOver(width='75') Main Menu
-							#planetViewDialog(style='width: 560px; height: 360px; display: none;')
+																button#CancelSendButton(width='100', hotkey='C') Cancel Send Ships
+																button#MainMenuButtonGameOver(width='75', hotkey='M') Main Menu
+							#planetViewDialog.screen(style='width: 560px; height: 360px; display: none;')
 								table#planetViewGrid(cellpadding='0', cellspacing='0')
 									tr(height='360')
 										td(width='160', valign='top')
@@ -544,19 +545,22 @@ head
 													td
 														table#PopulationAssignments(cellpadding='0', cellspacing='0', style='height: 90px; width: 400px;')
 															tr(height='30')
-																td(width='55') Farmers:
+																td(width='55')
+																	button#PlanetViewButtonFarmers(width='50', hotkey='F') Farmers:
 																td(width='25')
 																	span#TextBoxFarmers(style='border: 1px;')
 																td(width='200')
 																	#SliderFarmers
 															tr(height='30')
-																td(width='55') Miners:
+																td(width='55')
+																	button#PlanetViewButtonMiners(width='50', hotkey='M') Miners:
 																td(width='25')
 																	span#TextBoxMiners(style='border: 1px;')
 																td(width='200')
 																	#SliderMiners
 															tr(height='30')
-																td(width='55') Builders:
+																td(width='55')
+																	button#PlanetViewButtonWorkers(width='50', hotkey='B') Builders:
 																td(width='25')
 																	span#TextBoxWorkers(style='border: 1px;')
 																td(width='200')
@@ -612,7 +616,7 @@ head
 																td(width='200')
 																	#BuildQueueListBox(style='height: 225px;')
 
-							#sendShipsDialog(style='width: 380px; height: 240px; display: none;')
+							#sendShipsDialog.screen(style='width: 380px; height: 240px; display: none;')
 								table(cellpadding='0', cellspacing='0')
 									tr(height='25')
 										td(width='380', valign='top')
@@ -621,9 +625,9 @@ head
 													td(width='180')
 														span#SendShipsDialogStatus
 													td(width='100')
-														button#ButtonSendNoShips(width='75', height='24', title='Send no ships from the Planet') Send None
+														button#ButtonSendNoShips(width='75', height='24', hotkey='N', title='Send no ships from the Planet') Send None
 													td(width='100')
-														button#ButtonSendAllShips(width='75', height='24', title='Send all ships on the Planet') Send All
+														button#ButtonSendAllShips(width='75', height='24', hotkey='A', title='Send all ships on the Planet') Send All
 									tr(height='160')
 										td(width='380')
 											#StarShipsAvailableCardList(style='height: 160px;')
@@ -639,7 +643,7 @@ head
 														input#SetWaypointCheckBox(type='checkbox', name='SetwaypointCheckBox')
 
 
-							#tradingControlDialog(style='width: 460px; height: 300px; display: none;')
+							#tradingControlDialog.screen(style='width: 460px; height: 300px; display: none;')
 								table(cellpadding='0', cellspacing='0')
 									tr(height='90')
 										td
@@ -748,7 +752,7 @@ head
 										td
 											#TradesSubmittedListBox(style='height: 50px;')
 
-							#planetaryConflictDialog(style='width: 380px; height: 220px; display: none;')
+							#planetaryConflictDialog.screen(style='width: 380px; height: 220px; display: none;')
 								table
 									tr(height='200')
 										td
@@ -758,12 +762,12 @@ head
 											label
 												input#NeverShowPlanetaryConflictPopupsCheckbox(type='checkbox', name='NeverShowPlanetaryConflictPopupsCheckbox')
 												| Don't automatically show planetary conflict summaries
-							#gameOverDialog(style='width: 380px; height: 210px; display: none;')
+							#gameOverDialog.screen(style='width: 380px; height: 210px; display: none;')
 								table
 									tr(height='210')
 										td
 											#GameOverSummary(style='width: 380px; height: 210px;')
-							#exitConfirmDialog(style='width: 200px; height: 70px; display: none;')
+							#exitConfirmDialog.screen(style='width: 200px; height: 70px; display: none;')
 								table
 									tr(height='35')
 										td

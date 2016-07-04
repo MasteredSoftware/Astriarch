@@ -42,30 +42,7 @@ img {
 a:focus, a:hover, a:active { outline:none }
 :focus {outline:none;}
 ::-moz-focus-inner {border:0;}
-.ui-selectmenu
-{
-    font-size: 12px !important;
-    height: 2em;
-    text-align: left;
-}
-.ui-widget
-{
-    font-size: 75%;
-    /*font-family: Lucida Sans Unicode,Veranda,Lucida Grande,Lucida Sans,Helvetica,Arial,sans-serif;
-    font-weight: bold;*/
-    font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
-}
-.ui-widget .ui-widget
-{
-    font-size: 1em;
-    font-size: 95%;
-}
-/* fix size of icon only jquery ui buttons */
-.ui-button-icon-only
-{
-    width: 24px;
-    height:24px;
-}
+
 body, .defaultFont
 {
     /*font-family: Lucida Sans Unicode,Veranda,Lucida Grande,Lucida Sans;*/

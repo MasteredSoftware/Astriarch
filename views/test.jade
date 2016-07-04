@@ -8,6 +8,13 @@ block content
 	div#messages
 	input(type="button", value="send noop", onclick="sendMessage(Astriarch.Shared.MESSAGE_TYPE.NOOP)")
 	input(type="button", value="send list games", onclick="sendMessage(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES)")
+	div#testArea
+		#myslider
+		select#mySelectmenu
+			option(value='1') Small
+			option(value='2') Medium
+			option(value='3', selected='true') Large
+
 
 	script.
 		function renderMessage(message) {
@@ -20,13 +27,30 @@ block content
 		}
 
 		$(document).ready(function() {
+			/*
 			Astriarch.server_comm.init({port:#{port}});
 			Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.NOOP, renderMessage);
 			Astriarch.server_comm.register(Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES, renderMessage);
-
+			*/
 			var canvas1 = $('#imgCanvasTest')[0];
 			var ctx1    = canvas1.getContext('2d');
 			getImageData(ctx1, "/img/icon-10x16-sf4a6be44db.png");
+
+			$('#myslider').slider({value:0, step:1, min:0, max:10});
+
+			$('select#mySelectmenu').selectmenu({width:120});
+
+			var dlg = $('#testArea').dialog({
+				'autoOpen': false,
+				'resizable': false,
+				'title': 'my title',
+				'width': 400,
+				'height': 300,
+				'modal': true
+			});
+			dlg.dialog('open');
+			//var dialog = new Astriarch.Dialog('#testArea', 'Planet View', 568, 485, Astriarch.PlanetView.OKClose);
+			//dialog.open();
 		});
 
 		function getImageData(ctx, imgLoc) {

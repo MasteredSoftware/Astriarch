@@ -41,7 +41,6 @@ Astriarch.PlanetView = {
 	itemsAvailable: [],
 	
 	init: function() {
-	
 		$( "#ButtonDemolishFarm, #ButtonDemolishMine, #ButtonDemolishFactory, #ButtonDemolishColony").button({ icons: {primary:'icon-16x16-demolish'}, text: false });
  
 		$('#SliderFarmers').slider({value:0, step:1, min:0, max:10, slide: Astriarch.PlanetView.SliderFarmersValueChanged});
@@ -103,6 +102,35 @@ Astriarch.PlanetView = {
 			}
 		);
 
+		$("#PlanetViewButtonFarmers, #PlanetViewButtonMiners, #PlanetViewButtonWorkers").button();
+
+		$("#PlanetViewButtonFarmers").click(
+			function() {
+				var sliderElm = $('#SliderFarmers');
+				var newSliderValue = sliderElm.slider("value") + 1;
+				Astriarch.PlanetView.updateSliderValues(Astriarch.PlanetView.SliderValueClicked.Farmers, newSliderValue);
+				sliderElm.slider("value", newSliderValue);//we still have to set it in the ui because we didn't click it
+			}
+		);
+
+		$("#PlanetViewButtonMiners").click(
+			function() {
+				var sliderElm = $('#SliderMiners');
+				var newSliderValue = sliderElm.slider("value") + 1;
+				Astriarch.PlanetView.updateSliderValues(Astriarch.PlanetView.SliderValueClicked.Miners, newSliderValue);
+				sliderElm.slider("value", newSliderValue);//we still have to set it in the ui because we didn't click it
+			}
+		);
+
+		$("#PlanetViewButtonWorkers").click(
+			function() {
+				var sliderElm = $('#SliderWorkers');
+				var newSliderValue = sliderElm.slider("value") + 1;
+				Astriarch.PlanetView.updateSliderValues(Astriarch.PlanetView.SliderValueClicked.Workers, newSliderValue);
+				sliderElm.slider("value", newSliderValue);//we still have to set it in the ui because we didn't click it
+			}
+		);
+
 		$( "#ButtonClearWaypoint" ).button();
 		$( "#ButtonClearWaypoint" ).click(
 			function() {
@@ -121,18 +149,18 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.ItemsAvailableListBox = new JSListBox({'containerSelector':'ItemsAvailableListBox'});
 		Astriarch.PlanetView.BuildQueueListBox = new JSListBox({'containerSelector':'BuildQueueListBox'});
 	 
-		Astriarch.PlanetView.lbiFarm = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Farm);
-        Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Mine);
-        Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Colony);
-        Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Factory);
-        Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform);
+		Astriarch.PlanetView.lbiFarm = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Farm, 'r');
+        Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Mine, 'i');
+        Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Colony, 'o');
+        Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Factory, 'a');
+        Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
 
-        Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.SystemDefense);
-        Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Scout);
-        Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Destroyer);
-        Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Cruiser);
-        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Battleship);
-		
+        Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.SystemDefense, 'e');
+        Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Scout, 'S');
+        Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Destroyer, 'D');
+        Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Cruiser, 'C');
+        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Battleship, 'B');
+
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFarm);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiMine);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiColony);
@@ -323,8 +351,7 @@ Astriarch.PlanetView = {
 		return false;
 	},
 	
-	disableOrEnableImprovementsBasedOnSlotsAvailable: function()
-	{
+	disableOrEnableImprovementsBasedOnSlotsAvailable: function() {
 		var improvementCount = Astriarch.PlanetView.planetMain.BuiltImprovementCount();
 		//count items that take up slots in working queue
 		for (var i in Astriarch.PlanetView.workingBuildQueue)
@@ -336,15 +363,13 @@ Astriarch.PlanetView = {
 
 		var slotsAvailable = Astriarch.PlanetView.planetMain.MaxImprovements - improvementCount;
 
-		if (slotsAvailable <= 0)//less than zero is a problem, but we'll just make sure they can't build more here
-		{
+		if (slotsAvailable <= 0) {
+			//less than zero is a problem, but we'll just make sure they can't build more here
 			Astriarch.PlanetView.lbiFarm.CanBuild = false;
 			Astriarch.PlanetView.lbiMine.CanBuild = false;
 			Astriarch.PlanetView.lbiColony.CanBuild = false;
 			Astriarch.PlanetView.lbiFactory.CanBuild = false;
-		}
-		else
-		{
+		} else {
 			Astriarch.PlanetView.lbiFarm.CanBuild = true;
 			Astriarch.PlanetView.lbiMine.CanBuild = true;
 			Astriarch.PlanetView.lbiColony.CanBuild = true;
@@ -358,46 +383,32 @@ Astriarch.PlanetView = {
 
 		//we can only have one space platform
 		if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0 ||
-			Astriarch.PlanetView.workingQueueContainsSpacePlatform())
-		{
+			Astriarch.PlanetView.workingQueueContainsSpacePlatform()) {
 			Astriarch.PlanetView.lbiSpacePlatform.CanBuild = false;
 		}
 	},
 	
-	disableImprovementsBasedOnResourcesAvailable: function()
-	{
-		for(var i in Astriarch.PlanetView.itemsAvailable)
-		{
+	disableImprovementsBasedOnResourcesAvailable: function() {
+		for(var i in Astriarch.PlanetView.itemsAvailable) {
 			var lbi = Astriarch.PlanetView.itemsAvailable[i];//ListBoxItem
-			if (lbi instanceof Astriarch.PlanetView.AvailableImprovementListBoxItem)
-			{
-				if (lbi.CanBuild)
-				{
+			if (lbi instanceof Astriarch.PlanetView.AvailableImprovementListBoxItem) {
+				if (lbi.CanBuild) {
 					if (Astriarch.PlanetView.workingResources.GoldAmount < lbi.AvailablePlanetImprovement.GoldCost ||
 						Astriarch.PlanetView.workingResources.IridiumAmount < lbi.AvailablePlanetImprovement.IridiumCost ||
-						Astriarch.PlanetView.workingResources.OreAmount < lbi.AvailablePlanetImprovement.OreCost)
-					{
+						Astriarch.PlanetView.workingResources.OreAmount < lbi.AvailablePlanetImprovement.OreCost) {
 						lbi.CanBuildBasedOnResources = false;
-					}
-					else
-					{
+					} else {
 						lbi.CanBuildBasedOnResources = true;
 					}
 				}
 
-			}
-			else if (lbi instanceof Astriarch.PlanetView.AvailableStarShipListBoxItem)
-			{
-				if (lbi.CanBuild)
-				{
+			} else if (lbi instanceof Astriarch.PlanetView.AvailableStarShipListBoxItem) {
+				if (lbi.CanBuild) {
 					if (Astriarch.PlanetView.workingResources.GoldAmount < lbi.AvailableStarShip.GoldCost ||
 							Astriarch.PlanetView.workingResources.IridiumAmount < lbi.AvailableStarShip.IridiumCost ||
-							Astriarch.PlanetView.workingResources.OreAmount < lbi.AvailableStarShip.OreCost)
-					{
+							Astriarch.PlanetView.workingResources.OreAmount < lbi.AvailableStarShip.OreCost) {
 						lbi.CanBuildBasedOnResources = false;
-					}
-					else
-					{
+					} else {
 						lbi.CanBuildBasedOnResources = true;
 					}
 				}
@@ -406,8 +417,7 @@ Astriarch.PlanetView = {
 
 		//check to ensure the selected item is not enabled
 		if (Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem != null &&
-		    !(Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.CanBuild && Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.CanBuildBasedOnResources) )
-		{
+		    !(Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.CanBuild && Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.CanBuildBasedOnResources) ) {
 			Astriarch.PlanetView.ItemsAvailableListBox.setSelectedItem(null);
 			Astriarch.PlanetView.ItemsAvailableListBox.refresh();
 		}
@@ -453,29 +463,25 @@ Astriarch.PlanetView = {
 	},
 	
 	showOrHideDemolishImprovementButtons: function() {
-		if (Astriarch.PlanetView.farmCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Farm) > 0)
-		{
+		if (Astriarch.PlanetView.farmCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Farm) > 0) {
 			$('#ButtonDemolishFarm').css({"visibility":"visible"});
 		}
 		else
 			$('#ButtonDemolishFarm').css({"visibility":"hidden"});
 
-		if (Astriarch.PlanetView.mineCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Mine) > 0)
-		{
+		if (Astriarch.PlanetView.mineCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Mine) > 0) {
 			$('#ButtonDemolishMine').css({"visibility":"visible"});
 		}
 		else
 			$('#ButtonDemolishMine').css({"visibility":"hidden"});
 
-		if (Astriarch.PlanetView.factoryCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Factory) > 0)
-		{
+		if (Astriarch.PlanetView.factoryCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Factory) > 0) {
 			$('#ButtonDemolishFactory').css({"visibility":"visible"});
 		}
 		else
 			$('#ButtonDemolishFactory').css({"visibility":"hidden"});
 
-		if (Astriarch.PlanetView.colonyCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Colony) > 0)
-		{
+		if (Astriarch.PlanetView.colonyCount - Astriarch.PlanetView.countDemolishImprovementsInQueueByType(Astriarch.Planet.PlanetImprovementType.Colony) > 0) {
 			$('#ButtonDemolishColony').css({"visibility":"visible"});
 		}
 		else
@@ -513,6 +519,9 @@ Astriarch.PlanetView = {
 	
 	updateSliderValues: function(/*SliderValueClicked*/ clicked, clickedValue) {//apparently for the one changing you have to get it from the args
 		var self = Astriarch.PlanetView;
+		if(clickedValue < 0 || clickedValue > self.population) {
+			return;
+		}
 		//TODO: is dependent sliders the way to go? for now hopefully it's easy
 		//determine if we're adding or removing...
 		//if clicked farmers switch off between giving to/taking from miners and workers
@@ -995,14 +1004,16 @@ Astriarch.PlanetView.AvailableImprovementListBoxItem = JSListBox.Item.extend({
 	CanBuild: true,
 	CanBuildBasedOnResources: true,
 	Foreground: "white",
+	Hotkey: null,
 	
 	/**
 	 * initializes this AvailableImprovementListBoxItem
 	 * @this {Astriarch.PlanetView.AvailableImprovementListBoxItem}
 	 */
-	init: function(/*PlanetImprovementType*/ type) {
+	init: function(/*PlanetImprovementType*/ type, hotkey) {
 		this.Tooltip = Astriarch.GameTools.PlanetImprovementTypeToHelpText(type);
 		this.AvailablePlanetImprovement = new Astriarch.Planet.PlanetImprovement(type);
+		this.Hotkey = hotkey;
 	},
 
 	/**
@@ -1026,7 +1037,7 @@ Astriarch.PlanetView.AvailableImprovementListBoxItem = JSListBox.Item.extend({
 		//show build cost
 		text += " (" + this.AvailablePlanetImprovement.GoldCost + " / " + this.AvailablePlanetImprovement.OreCost + " / " + this.AvailablePlanetImprovement.IridiumCost + ")";
 		if(this.enabled)
-			return '<a href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + text + '</a>';
+			return '<a href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</a>';
 		else
 			return '<a style="color:' + this.Foreground + '">' + text + '</a>';
 	},
@@ -1059,14 +1070,16 @@ Astriarch.PlanetView.AvailableStarShipListBoxItem = JSListBox.Item.extend({
 	CanBuild: true,
 	CanBuildBasedOnResources: true,
 	Foreground: "white",
+	Hotkey: null,
 	
 	/**
 	 * initializes this AvailableStarShipListBoxItem
 	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
 	 */
-	init: function(/*StarShipType*/ type) {
+	init: function(/*StarShipType*/ type, hotkey) {
 		this.Tooltip = Astriarch.GameTools.StarShipTypeToHelpText(type);
 		this.AvailableStarShip = new Astriarch.Planet.StarShipInProduction(type);
+		this.Hotkey = hotkey;
 	},
 
 	/**
@@ -1090,7 +1103,7 @@ Astriarch.PlanetView.AvailableStarShipListBoxItem = JSListBox.Item.extend({
 		//show build cost
 		text += " (" + this.AvailableStarShip.GoldCost + " / " + this.AvailableStarShip.OreCost + " / " + this.AvailableStarShip.IridiumCost + ")";
 		if(this.enabled)
-			return '<a href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + text + '</a>';
+			return '<a href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</a>';
 		else
 			return '<a style="color:' + this.Foreground + '">' + text + '</a>';
 	},

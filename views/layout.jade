@@ -1,11 +1,18 @@
 doctype html
 html
 	head
-		title= title
-		link(rel='stylesheet', href='/css/style.css')
+		meta(charset='UTF-8')
+		title Astriarch - Ruler of the Stars, space strategy game
+
+		link(type='text/css', href='css/theme.css', rel='stylesheet')
+		link(type='text/css', href='css/custom-theme/jquery-ui.min.css', rel='stylesheet')
+		link(type='text/css', href='css/jquery.ui.adjust.css', rel='stylesheet')
 		script(type='text/javascript', src='js/jquery-1.7.1.min.js')
+		script(type='text/javascript', src='js/jquery-ui.min.js')
 		script(type='text/javascript', src="js/astriarch/astriarch_base.js")
 		script(type='text/javascript', src="js/astriarch/astriarch_shared.js")
 		script(type='text/javascript', src="js/server_comm.js")
+
+
 	body
 		block content

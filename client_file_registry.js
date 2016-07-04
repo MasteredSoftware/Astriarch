@@ -36,12 +36,12 @@ exports.clientFilesInternal = [
 
 exports.clientFilesExternal = [
 	'js/jquery-1.7.1.min.js',
-	'js/jquery-ui-1.8.16.custom.min.js',
+	'js/jquery-ui.min.js',
 	'js/js-inherit.js',
 	'js/jCanvas.js',
 	'js/js-listbox.js',
 	'js/js-cardlist.js',
-	'js/jquery.ui.selectmenu.js',
 	'js/audio-interface.js',
-	'js/jquery.joyride-2.1.js'
+	'js/jquery.joyride-2.1.js',
+	'js/mousetrap.min.js'
 ];
