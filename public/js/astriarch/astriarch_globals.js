@@ -212,6 +212,11 @@ Astriarch.GameTools = {
 		return planetImageClass;
 	},
 
+	PlanetImprovementTypeToClassName: function(/*PlanetImprovementType*/ t){
+		var friendlyName = Astriarch.GameTools.PlanetImprovementTypeToFriendlyName(t).replace(' ', '');
+		return 'icon-32x32-'+friendlyName+'Large';
+	},
+
 	StarShipTypeToClassName: function(/*StarShipType*/ t){
 		var friendlyName = Astriarch.GameTools.StarShipTypeToFriendlyName(t);
 		return 'icon-32x32-'+friendlyName+'Large';

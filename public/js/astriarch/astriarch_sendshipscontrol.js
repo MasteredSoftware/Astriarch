@@ -179,7 +179,7 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
 	 */
 	init: function(/*Astriarch.Fleet.StarShip*/ ship) {
-		this.Tooltip = Astriarch.GameTools.StarShipTypeToHelpText(ship.Type);
+		this.Tooltip = Astriarch.GameTools.StarShipTypeToFriendlyName(ship.Type);
 		this.StarShip = ship;
 	},
 
@@ -202,9 +202,9 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 			'<div class="sscItemImg '+imageClassName+'" />' +
 			'<div class="sscHealthBarContainer"><div class="sscHealthBar" style="background:'+this.Foreground+';height:'+ details.percentDamageText + '" /></div>' +
 			'<div class="sscExpBarContainer"><div class="sscExpBar" style="background:#369;height:'+ (percentLevel) * 100 + '%" /></div>' +
-			'<span class="sscItemLevel">' + (levelObj.level + 1) + '</span>';
+			'<span class="sscItemLevel">' + (levelObj.level + 1) + '</span>' +
+			'</span>';
 
-		var text = Astriarch.GameTools.StarShipTypeToFriendlyName(this.StarShip.Type);
 		return '<a class="sscItemAnchor" href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';
 	},
 

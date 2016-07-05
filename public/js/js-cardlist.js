@@ -59,7 +59,6 @@ JSCardList.prototype.refresh = function() {
                     var item = ui.item.data( "jscardlist.item" );
 
                     if(!self.multiselect) {
-                        self.selectNone();
                         item.selected = true;
                     } else {
                         //toggle
@@ -86,7 +85,9 @@ JSCardList.prototype.setSelectedItem = function(item) {
     if(!this.multiselect) {
         this.selectNone();
     }
-    item.selected = true;
+    if(item) {
+        item.selected = true;
+    }
 };
 
 JSCardList.prototype.setSelectedIndex = function(index) {

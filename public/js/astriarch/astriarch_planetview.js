@@ -22,16 +22,16 @@ Astriarch.PlanetView = {
     lastChanged: null,
 	
 	updatingGUI: false,
-	ItemsAvailableListBox: null,
+	ItemsAvailableCardList: null,
 	BuildQueueListBox: null,
 	//items available list box items
-	//AvailableImprovementListBoxItems
+	//AvailableImprovementCardListItems
 	lbiFarm: null,
 	lbiMine: null,
 	lbiColony: null,
 	lbiFactory: null,
 	lbiSpacePlatform: null,
-	//AvailableStarShipListBoxItems
+	//AvailableStarShipCardListItems
 	lbiDefender: null,
 	lbiScout: null,
 	lbiDestroyer: null,
@@ -49,16 +49,9 @@ Astriarch.PlanetView = {
 
 		$('#BuildLastShipCheckBox').change(Astriarch.PlanetView.BuildLastShipCheckBoxValueChanged);
 
-		$("#ButtonBuildQueueAddSelectedItem").button({ icons: {primary:'icon-16x16-build-queue-add'}, text: false });
 		$("#ButtonBuildQueueRemoveSelectedItem").button({ icons: {primary:'icon-16x16-build-queue-remove'}, text: false });
 		$("#ButtonBuildQueueMoveSelectedItemDown").button({ icons: {primary:'icon-16x16-build-queue-down'}, text: false });
 		$("#ButtonBuildQueueMoveSelectedItemUp").button({ icons: {primary:'icon-16x16-build-queue-up'}, text: false });
-		
-		$( "#ButtonBuildQueueAddSelectedItem" ).click(
-			function() {
-				Astriarch.PlanetView.addSelectedItemToQueue();
-			}
-		);
 		
 		$( "#ButtonBuildQueueRemoveSelectedItem" ).click(
 			function() {
@@ -146,27 +139,27 @@ Astriarch.PlanetView = {
 		
 		$('#BuildLastShipCheckBox').prop('checked', true);
 		
-		Astriarch.PlanetView.ItemsAvailableListBox = new JSListBox({'containerSelector':'ItemsAvailableListBox'});
+		Astriarch.PlanetView.ItemsAvailableCardList = new JSCardList({'containerSelector':'ItemsAvailableCardList', 'multiselect':false});
 		Astriarch.PlanetView.BuildQueueListBox = new JSListBox({'containerSelector':'BuildQueueListBox'});
 	 
-		Astriarch.PlanetView.lbiFarm = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Farm, 'r');
-        Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Mine, 'i');
-        Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Colony, 'o');
-        Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.Factory, 'a');
-        Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementListBoxItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
+		Astriarch.PlanetView.lbiFarm = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Farm, 'r');
+        Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Mine, 'i');
+        Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Colony, 'o');
+        Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Factory, 'a');
+        Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
 
-        Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.SystemDefense, 'e');
-        Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Scout, 'S');
-        Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Destroyer, 'D');
-        Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Cruiser, 'C');
-        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipListBoxItem(Astriarch.Fleet.StarShipType.Battleship, 'B');
+        Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SystemDefense, 'e');
+        Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Scout, 'S');
+        Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Destroyer, 'D');
+        Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Cruiser, 'C');
+        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Battleship, 'B');
 
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFarm);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiMine);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiColony);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFactory);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiSpacePlatform);
-		//Astriarch.PlanetView.ItemsAvailableListBox.addItem(new Separator());
+		//Astriarch.PlanetView.ItemsAvailableCardList.addItem(new Separator());
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDefender);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiScout);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDestroyer);
@@ -236,13 +229,12 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.workingResources = new Astriarch.Model.WorkingPlayerResources(p.Owner);
 		Astriarch.PlanetView.workingProductionRemainderOriginal = p.RemainderProduction;
 
-		Astriarch.PlanetView.ItemsAvailableListBox.setSelectedItem(null);
-		Astriarch.PlanetView.refreshItemsAvailableListBox();
+		Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(null);
+		Astriarch.PlanetView.refreshItemsAvailableCardList();
 		
 		Astriarch.PlanetView.refreshBuildQueueListBox();
 		Astriarch.PlanetView.showOrHideDemolishImprovementButtons();
 
-		$('#ButtonBuildQueueAddSelectedItem').button('disable');
 		$('#ButtonBuildQueueRemoveSelectedItem').button('disable');
 		$('#ButtonBuildQueueMoveSelectedItemDown').button('disable');
 		$('#ButtonBuildQueueMoveSelectedItemUp').button('disable');
@@ -289,15 +281,10 @@ Astriarch.PlanetView = {
 		}
 	},
 	
-	ItemsAvailableSelectionChanged: function() {
-		if (Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem != null && Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.enabled)
-		{
-			$('#ButtonBuildQueueAddSelectedItem').button('enable')
-		}
-		else
-		{
-			$('#ButtonBuildQueueAddSelectedItem').button('disable');
-		}
+	ItemsAvailableClicked: function() {
+		Astriarch.PlanetView.addSelectedItemToQueue();
+		//TODO: this is kinda a hack to make the cardlist behave like a card button list, maybe this should be suppoted in the card list?
+		setTimeout(function() { Astriarch.PlanetView.ItemsAvailableCardList.selectNone(); }, 70);
 	},
 	
 	recalculateBuildQueueListItemsTurnsToCompleteEstimates: function() {
@@ -391,7 +378,7 @@ Astriarch.PlanetView = {
 	disableImprovementsBasedOnResourcesAvailable: function() {
 		for(var i in Astriarch.PlanetView.itemsAvailable) {
 			var lbi = Astriarch.PlanetView.itemsAvailable[i];//ListBoxItem
-			if (lbi instanceof Astriarch.PlanetView.AvailableImprovementListBoxItem) {
+			if (lbi instanceof Astriarch.PlanetView.AvailableImprovementCardListItem) {
 				if (lbi.CanBuild) {
 					if (Astriarch.PlanetView.workingResources.GoldAmount < lbi.AvailablePlanetImprovement.GoldCost ||
 						Astriarch.PlanetView.workingResources.IridiumAmount < lbi.AvailablePlanetImprovement.IridiumCost ||
@@ -402,7 +389,7 @@ Astriarch.PlanetView = {
 					}
 				}
 
-			} else if (lbi instanceof Astriarch.PlanetView.AvailableStarShipListBoxItem) {
+			} else if (lbi instanceof Astriarch.PlanetView.AvailableStarShipCardListItem) {
 				if (lbi.CanBuild) {
 					if (Astriarch.PlanetView.workingResources.GoldAmount < lbi.AvailableStarShip.GoldCost ||
 							Astriarch.PlanetView.workingResources.IridiumAmount < lbi.AvailableStarShip.IridiumCost ||
@@ -416,14 +403,14 @@ Astriarch.PlanetView = {
 		}
 
 		//check to ensure the selected item is not enabled
-		if (Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem != null &&
-		    !(Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.CanBuild && Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem.CanBuildBasedOnResources) ) {
-			Astriarch.PlanetView.ItemsAvailableListBox.setSelectedItem(null);
-			Astriarch.PlanetView.ItemsAvailableListBox.refresh();
+		if (Astriarch.PlanetView.ItemsAvailableCardList.SelectedItem != null &&
+		    !(Astriarch.PlanetView.ItemsAvailableCardList.SelectedItem.CanBuild && Astriarch.PlanetView.ItemsAvailableCardList.SelectedItem.CanBuildBasedOnResources) ) {
+			Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(null);
+			Astriarch.PlanetView.ItemsAvailableCardList.refresh();
 		}
 	},
 	
-	refreshItemsAvailableListBox: function() {
+	refreshItemsAvailableCardList: function() {
 
 		Astriarch.PlanetView.disableOrEnableImprovementsBasedOnSlotsAvailable();
 
@@ -444,8 +431,8 @@ Astriarch.PlanetView = {
 		
 		Astriarch.PlanetView.disableImprovementsBasedOnResourcesAvailable();
 		
-		Astriarch.PlanetView.ItemsAvailableListBox.clear();
-		Astriarch.PlanetView.ItemsAvailableListBox.addItems(Astriarch.PlanetView.itemsAvailable);
+		Astriarch.PlanetView.ItemsAvailableCardList.clear();
+		Astriarch.PlanetView.ItemsAvailableCardList.addItems(Astriarch.PlanetView.itemsAvailable);
 	},
 	
 	refreshBuildQueueListBox: function() {
@@ -816,7 +803,7 @@ Astriarch.PlanetView = {
 			Astriarch.PlanetView.workingBuildQueue.splice(index, 1);
 			Astriarch.PlanetView.BuildQueueListBox.removeAt(index);
 
-			Astriarch.PlanetView.refreshItemsAvailableListBox();
+			Astriarch.PlanetView.refreshItemsAvailableCardList();
 			
 			Astriarch.PlanetView.refreshCurrentWorkingResourcesTextBoxes();
 			Astriarch.PlanetView.showOrHideDemolishImprovementButtons();
@@ -828,12 +815,13 @@ Astriarch.PlanetView = {
 	},
 
 	addSelectedItemToQueue: function() {
-		var o = Astriarch.PlanetView.ItemsAvailableListBox.SelectedItem;
-		if (o != null)
+		var selectedItems = Astriarch.PlanetView.ItemsAvailableCardList.getSelectedItems();
+		if (selectedItems && selectedItems.length)
 		{
-			if (o instanceof Astriarch.PlanetView.AvailableImprovementListBoxItem)
+			var o = selectedItems[0];
+			if (o instanceof Astriarch.PlanetView.AvailableImprovementCardListItem)
 			{
-				var lbiImprovement = o;//AvailableImprovementListBoxItem
+				var lbiImprovement = o;//AvailableImprovementCardListItem
 				if (lbiImprovement.CanBuild)
 				{
 					//check to see if we have enough resouces 
@@ -874,9 +862,9 @@ Astriarch.PlanetView = {
 				}
 				//else warn them?
 			}
-			else if (o instanceof Astriarch.PlanetView.AvailableStarShipListBoxItem)
+			else if (o instanceof Astriarch.PlanetView.AvailableStarShipCardListItem)
 			{
-				var lbiStarship = o;//AvailableStarShipListBoxItem
+				var lbiStarship = o;//AvailableStarShipCardListItem
 				if (lbiStarship.CanBuild)
 				{
 					//check to see if we have enough resouces 
@@ -908,7 +896,7 @@ Astriarch.PlanetView = {
 				}
 				//else warn them?
 			}
-			Astriarch.PlanetView.refreshItemsAvailableListBox();
+			Astriarch.PlanetView.refreshItemsAvailableCardList();
 			
 			Astriarch.PlanetView.refreshBuildQueueListBox();
 			Astriarch.PlanetView.refreshCurrentWorkingResourcesTextBoxes();
@@ -994,10 +982,10 @@ Astriarch.PlanetView.BuildQueueListBoxItem = JSListBox.Item.extend({
 });
 
 /**
- * AvailableImprovementListBoxItem is a list box item for the available items to build list
+ * AvailableImprovementCardListItem is a list box item for the available items to build list
  * @constructor
  */
-Astriarch.PlanetView.AvailableImprovementListBoxItem = JSListBox.Item.extend({
+Astriarch.PlanetView.AvailableImprovementCardListItem = JSCardList.Item.extend({
 
 	Tooltip: "",
 	AvailablePlanetImprovement: null,//PlanetImprovement
@@ -1007,8 +995,8 @@ Astriarch.PlanetView.AvailableImprovementListBoxItem = JSListBox.Item.extend({
 	Hotkey: null,
 	
 	/**
-	 * initializes this AvailableImprovementListBoxItem
-	 * @this {Astriarch.PlanetView.AvailableImprovementListBoxItem}
+	 * initializes this AvailableImprovementCardListItem
+	 * @this {Astriarch.PlanetView.AvailableImprovementCardListItem}
 	 */
 	init: function(/*PlanetImprovementType*/ type, hotkey) {
 		this.Tooltip = Astriarch.GameTools.PlanetImprovementTypeToHelpText(type);
@@ -1017,8 +1005,8 @@ Astriarch.PlanetView.AvailableImprovementListBoxItem = JSListBox.Item.extend({
 	},
 
 	/**
-	 * renders this AvailableImprovementListBoxItem
-	 * @this {Astriarch.PlanetView.AvailableImprovementListBoxItem}
+	 * renders this AvailableImprovementCardListItem
+	 * @this {Astriarch.PlanetView.AvailableImprovementCardListItem}
 	 * @return {string}
 	 */
 	render: function() {
@@ -1032,38 +1020,43 @@ Astriarch.PlanetView.AvailableImprovementListBoxItem = JSListBox.Item.extend({
 			this.Foreground = "white";
 			this.enabled = true;
 		}
-		
+
+		var imageClassName = Astriarch.GameTools.PlanetImprovementTypeToClassName(this.AvailablePlanetImprovement.Type);
 		var text = Astriarch.GameTools.PlanetImprovementTypeToFriendlyName(this.AvailablePlanetImprovement.Type);
-		//show build cost
-		text += " (" + this.AvailablePlanetImprovement.GoldCost + " / " + this.AvailablePlanetImprovement.OreCost + " / " + this.AvailablePlanetImprovement.IridiumCost + ")";
-		if(this.enabled)
-			return '<a href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</a>';
-		else
-			return '<a style="color:' + this.Foreground + '">' + text + '</a>';
+
+		var element = '<span class="pvcItem">' +
+			'<span class="pvcItemName"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</span>' +
+			'<div class="pvcItemImg '+imageClassName+'" />' +
+			'<span class="pvcItemGoldCost colorGold">' + this.AvailablePlanetImprovement.GoldCost + '</span>' +
+			'<span class="pvcItemOreCost colorOre">' + this.AvailablePlanetImprovement.OreCost + '</span>' +
+			'<span class="pvcItemIridiumCost colorIridium">' + this.AvailablePlanetImprovement.IridiumCost + '</span>' +
+			'</span>';
+
+		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';
 	},
 	
 	/**
 	 * fires the selection changed event
-	 * @this {Astriarch.PlanetView.AvailableImprovementListBoxItem}
+	 * @this {Astriarch.PlanetView.AvailableImprovementCardListItem}
 	 */
 	onClick: function() {
-		Astriarch.PlanetView.ItemsAvailableSelectionChanged();
+		Astriarch.PlanetView.ItemsAvailableClicked();
 	},
 	
 	/**
 	 * fires the double click event
-	 * @this {Astriarch.PlanetView.AvailableImprovementListBoxItem}
+	 * @this {Astriarch.PlanetView.AvailableImprovementCardListItem}
 	 */
 	onDblClick: function() {
-		Astriarch.PlanetView.addSelectedItemToQueue();
+
 	}
 });
 
 /**
- * AvailableStarShipListBoxItem is a list box item for the available items to build list
+ * AvailableStarShipCardListItem is a list box item for the available items to build list
  * @constructor
  */
-Astriarch.PlanetView.AvailableStarShipListBoxItem = JSListBox.Item.extend({
+Astriarch.PlanetView.AvailableStarShipCardListItem = JSCardList.Item.extend({
 
 	Tooltip: "",
 	AvailableStarShip: null,//StarShipInProduction
@@ -1073,8 +1066,8 @@ Astriarch.PlanetView.AvailableStarShipListBoxItem = JSListBox.Item.extend({
 	Hotkey: null,
 	
 	/**
-	 * initializes this AvailableStarShipListBoxItem
-	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 * initializes this AvailableStarShipCardListItem
+	 * @this {Astriarch.PlanetView.AvailableStarShipCardListItem}
 	 */
 	init: function(/*StarShipType*/ type, hotkey) {
 		this.Tooltip = Astriarch.GameTools.StarShipTypeToHelpText(type);
@@ -1083,8 +1076,8 @@ Astriarch.PlanetView.AvailableStarShipListBoxItem = JSListBox.Item.extend({
 	},
 
 	/**
-	 * renders this AvailableStarShipListBoxItem
-	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 * renders this AvailableStarShipCardListItem
+	 * @this {Astriarch.PlanetView.AvailableStarShipCardListItem}
 	 * @return {string}
 	 */
 	render: function() {
@@ -1098,30 +1091,35 @@ Astriarch.PlanetView.AvailableStarShipListBoxItem = JSListBox.Item.extend({
 			this.Foreground = "white";
 			this.enabled = true;
 		}
-		
+
+		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.AvailableStarShip.Type);
 		var text = Astriarch.GameTools.StarShipTypeToFriendlyName(this.AvailableStarShip.Type);
-		//show build cost
-		text += " (" + this.AvailableStarShip.GoldCost + " / " + this.AvailableStarShip.OreCost + " / " + this.AvailableStarShip.IridiumCost + ")";
-		if(this.enabled)
-			return '<a href="#" title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</a>';
-		else
-			return '<a style="color:' + this.Foreground + '">' + text + '</a>';
+
+		var element = '<span class="pvcItem">' +
+			'<span class="pvcItemName"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</span>' +
+			'<div class="pvcItemImg '+imageClassName+'" />' +
+			'<span class="pvcItemGoldCost colorGold">' + this.AvailableStarShip.GoldCost + '</span>' +
+			'<span class="pvcItemOreCost colorOre">' + this.AvailableStarShip.OreCost + '</span>' +
+			'<span class="pvcItemIridiumCost colorIridium">' + this.AvailableStarShip.IridiumCost + '</span>' +
+			'</span>';
+
+		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';
 	},
 	
 	/**
 	 * fires the selection changed event
-	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 * @this {Astriarch.PlanetView.AvailableStarShipCardListItem}
 	 */
 	onClick: function() {
-		Astriarch.PlanetView.ItemsAvailableSelectionChanged();
+		Astriarch.PlanetView.ItemsAvailableClicked();
 	},
 	
 	/**
 	 * fires the double click event
-	 * @this {Astriarch.PlanetView.AvailableStarShipListBoxItem}
+	 * @this {Astriarch.PlanetView.AvailableStarShipCardListItem}
 	 */
 	onDblClick: function() {
-		Astriarch.PlanetView.addSelectedItemToQueue();
+
 	}
 });
 

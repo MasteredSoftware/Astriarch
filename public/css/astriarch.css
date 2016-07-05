@@ -296,23 +296,58 @@ input[type=checkbox] {
     z-index:10001;
 }
 
+.pvcItemAnchor {
+    position: relative;
+    height: 46px;
+    width: 46px;
+}
+
 .sscItemAnchor {
     position: relative;
     height: 32px;
     width: 32px;
 }
 
-.sscItem * {
+.sscItem *, .pvcItem * {
     position: absolute;
 }
 
-.sscItem {
+.sscItem, .pvcItem {
     left: 0;
     top: 0;
 }
 
 .sscItemImg {
     left:8px;
+}
+
+.pvcItemImg {
+    left:12px;
+    top:10px;
+}
+
+.pvcItemName {
+    font-size: 0.9em;
+    z-index:5;
+}
+
+.pvcItemGoldCost, .pvcItemOreCost, .pvcItemIridiumCost {
+    bottom:0;
+    font-size: 14px;
+}
+
+.pvcItemGoldCost {
+    left:0;
+}
+
+.pvcItemOreCost {
+    left:0;
+    width: 56px;
+    text-align: center;
+}
+
+.pvcItemIridiumCost {
+    right:0;
 }
 
 .sscItemHealth {
@@ -357,4 +392,16 @@ input[type=checkbox] {
 .sscExpBar {
     width:100%;
     bottom:0;
+}
+
+.colorGold {
+    color: yellow;
+}
+
+.colorOre {
+    color: black;
+}
+
+.colorIridium {
+    color: #C800C8;
 }

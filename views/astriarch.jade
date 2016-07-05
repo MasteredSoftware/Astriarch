@@ -386,7 +386,7 @@ head
 																	td(width='32')
 																		span.icon-32x32-ColonyLarge(title='Colony Count')
 																	td(width='32')
-																		span.icon-32x32-SpaceplatformLarge(title='Space Platform Count')
+																		span.icon-32x32-SpacePlatformLarge(title='Space Platform Count')
 																tr(height='32')
 																	td(width='32')
 																		span#TextBlockFarmCount.planetStatusTextCentered(title='Farm Count')
@@ -535,7 +535,7 @@ head
 														button#ButtonDemolishColony(width='24', height='24', title='Demolish one Colony') DC
 												tr(height='32')
 													td(width='32')
-														span.icon-32x32-SpaceplatformLarge(title='Space Platform Count')
+														span.icon-32x32-SpacePlatformLarge(title='Space Platform Count')
 													td(width='64')
 														span#PlanetViewSpacePlatformCount.playerStatusTextRight(title='Space Platform Count')
 													td(width='48', colspan='2')  
@@ -578,20 +578,18 @@ head
 																	table(cellpadding='0', cellspacing='0', style='height: 30px; width: 180px;')
 																		tr(height='12')
 																			td(width='52')
-																				span(style='text-align: right;') (Gold
+																				span(style='text-align: right;', class='colorGold') Gold
 																			td(width='52')
-																				span(style='text-align: center;') /  Ore  /
+																				span(style='text-align: center;', class='colorOre') Ore
 																			td(width='52')
-																				span(style='text-align: left;') Iridium)
-																			td(width='24', rowspan='2')
-																				button#ButtonBuildQueueAddSelectedItem(width='24', height='24', title='Add Selected Item to Build Queue') BQA
+																				span(style='text-align: left;', class='colorIridium') Iridium
 																		tr(height='12')
 																			td(width='52')
-																				span#TextBlockCurrentGoldAmount(style='text-align: right;')
+																				span#TextBlockCurrentGoldAmount(style='text-align: right;', class='colorGold')
 																			td(width='52')
-																				span#TextBlockCurrentOreAmount(style='text-align: center;')
+																				span#TextBlockCurrentOreAmount(style='text-align: center;', class='colorOre')
 																			td(width='52')
-																				span#TextBlockCurrentIridiumAmount(style='text-align: left;')
+																				span#TextBlockCurrentIridiumAmount(style='text-align: left;', class='colorIridium')
 																td
 																	table(cellpadding='0', cellspacing='0', style='width: 200px;')
 																		tr
@@ -612,7 +610,7 @@ head
 																							span#LastShipBuiltTextBlock(style='height: 12px; font-size: 10px; display: inline;')
 															tr(height='225')
 																td(width='180')
-																	#ItemsAvailableListBox(style='height: 225px;')
+																	#ItemsAvailableCardList(style='height: 225px;')
 																td(width='200')
 																	#BuildQueueListBox(style='height: 225px;')
 
@@ -880,11 +878,10 @@ head
 					h2 Population Assignments
 					p These sliders reassign which jobs each citizen on the planet is currently assigned to. Each turn farmers produce food, miners produce ore and iridium, and builders construct the next improvement or starship in the build queue.
 					a(href="#", class="joyride-next-tip") Next
-				li(data-id='ItemsAvailableListBox', data-options='tipLocation:left')
+				li(data-id='ItemsAvailableCardList', data-options='tipLocation:left')
 					h2 Queue up three Farms
 					p Throughout the game we must make sure our people have enough food or our population will start protesting and possibly rioting (population unrest decreases overall productivity on the planet).
-					p Let's add three farms to the build queue by clicking on the item labeled "Farm" and then clicking the add button three times.
-					p Alternatively double-clicking on the available items adds them to the build queue as well.
+					p Let's add three farms to the build queue by clicking on the item labeled "Farm" three times.
 				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
 					h2 Assign three Builders
 					p Reassign all farmers on the planet to be builders by dragging the slider next to builders all the way to the right.
@@ -917,10 +914,10 @@ head
 				li(data-id='PlanetViewButton', data-options='tipLocation:top')
 					h2 Click "Planet View"
 					p We've built the third farm on our home planet, now we can build some mines to start mining minerals (ore and iridium).
-				li(data-id='ItemsAvailableListBox', data-options='tipLocation:left')
+				li(data-id='ItemsAvailableCardList', data-options='tipLocation:left')
 					h2 Build Two Mines
 					p Ore and Iridium are vital to continuing to improve our planets as well as building ships to capture other planets.
-					p Let's add two mines to the build queue by clicking on the item labeled "Mine" and then clicking the add button two times.
+					p Let's add two mines to the build queue by clicking on the item labeled "Mine" two times.
 				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
 					h2 Assign Two Miners
 					p Reassign two citizens to be miners by dragging the slider next to miners to the right until we have two miners.
@@ -972,10 +969,10 @@ head
 				li(data-id='PlanetViewButton', data-options='tipLocation:top')
 					h2 Click "Planet View"
 					p Now we should have enough resources to add a factory to the build queue.
-				li(data-id='ItemsAvailableListBox', data-options='tipLocation:bottom')
+				li(data-id='ItemsAvailableCardList', data-options='tipLocation:bottom')
 					h2 Build a Factory
 					p Each factory on a planet increases the production generated by each builder.
-					p Let's add a factory to the build queue by clicking on the item labeled "Factory" and then clicking the add button.
+					p Let's add a factory to the build queue by clicking on the item labeled "Factory".
 				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
 					h2 Assign Builders
 					p Reassign citizens to be a builders to by dragging the slider next to builders to the right until we have four builders total.
