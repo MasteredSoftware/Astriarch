@@ -144,7 +144,7 @@ Astriarch.PlanetView = {
 	 
 		Astriarch.PlanetView.lbiFarm = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Farm, 'r');
         Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Mine, 'i');
-        Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Colony, 'o');
+        Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Colony, 'l');
         Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Factory, 'a');
         Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
 
@@ -170,7 +170,6 @@ Astriarch.PlanetView = {
 		
 		Astriarch.PlanetView.lastClicked = Astriarch.PlanetView.SliderValueClicked.None;
 		Astriarch.PlanetView.lastChanged = Astriarch.PlanetView.SliderValueClicked.None;
-		
 	},
 	
 	show: function(/*Planet*/ p) {
@@ -228,9 +227,6 @@ Astriarch.PlanetView = {
 		
 		Astriarch.PlanetView.workingResources = new Astriarch.Model.WorkingPlayerResources(p.Owner);
 		Astriarch.PlanetView.workingProductionRemainderOriginal = p.RemainderProduction;
-
-		Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(null);
-		Astriarch.PlanetView.refreshItemsAvailableCardList();
 		
 		Astriarch.PlanetView.refreshBuildQueueListBox();
 		Astriarch.PlanetView.showOrHideDemolishImprovementButtons();
@@ -261,6 +257,9 @@ Astriarch.PlanetView = {
 	
 		Astriarch.PlanetView.dialog.setTitle("Planet " + p.Name + " View");
 		Astriarch.PlanetView.dialog.open();
+
+		Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(null);
+		Astriarch.PlanetView.refreshItemsAvailableCardList();
 
 		if(window.tour.enabled && (window.tour.step == 27 || window.tour.step == 32 || window.tour.step == 43)){
 			window.tour.jqElm.joyride('resume');
@@ -412,27 +411,43 @@ Astriarch.PlanetView = {
 	
 	refreshItemsAvailableCardList: function() {
 
-		Astriarch.PlanetView.disableOrEnableImprovementsBasedOnSlotsAvailable();
+		if(Astriarch.PlanetView.planetMain) {
+			Astriarch.PlanetView.disableOrEnableImprovementsBasedOnSlotsAvailable();
 
-		if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0)
-			Astriarch.PlanetView.lbiDestroyer.CanBuild = false;
-		else
-			Astriarch.PlanetView.lbiDestroyer.CanBuild = true;
-		if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0)
-		{
-			Astriarch.PlanetView.lbiCruiser.CanBuild = false;
-			Astriarch.PlanetView.lbiBattleship.CanBuild = false;
+			if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0)
+				Astriarch.PlanetView.lbiDestroyer.CanBuild = false;
+			else
+				Astriarch.PlanetView.lbiDestroyer.CanBuild = true;
+			if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0) {
+				Astriarch.PlanetView.lbiCruiser.CanBuild = false;
+				Astriarch.PlanetView.lbiBattleship.CanBuild = false;
+			}
+			else {
+				Astriarch.PlanetView.lbiCruiser.CanBuild = true;
+				Astriarch.PlanetView.lbiBattleship.CanBuild = true;
+			}
+
+			Astriarch.PlanetView.disableImprovementsBasedOnResourcesAvailable();
 		}
-		else
-		{
-			Astriarch.PlanetView.lbiCruiser.CanBuild = true;
-			Astriarch.PlanetView.lbiBattleship.CanBuild = true;
-		}
-		
-		Astriarch.PlanetView.disableImprovementsBasedOnResourcesAvailable();
 		
 		Astriarch.PlanetView.ItemsAvailableCardList.clear();
 		Astriarch.PlanetView.ItemsAvailableCardList.addItems(Astriarch.PlanetView.itemsAvailable);
+		//bind hotkeys
+		$(".pvcItemAnchor[data-hotkey]").each(function() {
+			var clickTarget = $(this);
+			var hotkeyAttr = clickTarget.attr("data-hotkey");
+			clickTarget = clickTarget.parent();
+
+			Astriarch.View.RegisterClickTargetToHotkey(clickTarget, hotkeyAttr, "planetViewDialog");
+		});
+		var hotkeyFn = function(hotkeyElm) {
+			var item = hotkeyElm.data("jscardlist.item");
+			if(item) {
+				Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(item);
+				item.onClick();
+			}
+		};
+		Astriarch.View.BindHotkeys("#planetViewDialog", hotkeyFn);
 	},
 	
 	refreshBuildQueueListBox: function() {
@@ -1022,17 +1037,17 @@ Astriarch.PlanetView.AvailableImprovementCardListItem = JSCardList.Item.extend({
 		}
 
 		var imageClassName = Astriarch.GameTools.PlanetImprovementTypeToClassName(this.AvailablePlanetImprovement.Type);
-		var text = Astriarch.GameTools.PlanetImprovementTypeToFriendlyName(this.AvailablePlanetImprovement.Type);
+		var text = Astriarch.View.GetUnderlinedHtmlForHotkey(Astriarch.GameTools.PlanetImprovementTypeToFriendlyName(this.AvailablePlanetImprovement.Type), this.Hotkey);
 
 		var element = '<span class="pvcItem">' +
-			'<span class="pvcItemName"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</span>' +
+			'<span class="pvcItemName">' + text + '</span>' +
 			'<div class="pvcItemImg '+imageClassName+'" />' +
 			'<span class="pvcItemGoldCost colorGold">' + this.AvailablePlanetImprovement.GoldCost + '</span>' +
 			'<span class="pvcItemOreCost colorOre">' + this.AvailablePlanetImprovement.OreCost + '</span>' +
 			'<span class="pvcItemIridiumCost colorIridium">' + this.AvailablePlanetImprovement.IridiumCost + '</span>' +
 			'</span>';
 
-		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';
+		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' data-hotkey="' + this.Hotkey + '"' : '') + '>' + element + '</a>';
 	},
 	
 	/**
@@ -1093,17 +1108,17 @@ Astriarch.PlanetView.AvailableStarShipCardListItem = JSCardList.Item.extend({
 		}
 
 		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.AvailableStarShip.Type);
-		var text = Astriarch.GameTools.StarShipTypeToFriendlyName(this.AvailableStarShip.Type);
+		var text = Astriarch.View.GetUnderlinedHtmlForHotkey(Astriarch.GameTools.StarShipTypeToFriendlyName(this.AvailableStarShip.Type), this.Hotkey);
 
 		var element = '<span class="pvcItem">' +
-			'<span class="pvcItemName"' + (this.Hotkey ? ' hotkey="' + this.Hotkey + '"' : '') + '>' + text + '</span>' +
+			'<span class="pvcItemName">' + text + '</span>' +
 			'<div class="pvcItemImg '+imageClassName+'" />' +
 			'<span class="pvcItemGoldCost colorGold">' + this.AvailableStarShip.GoldCost + '</span>' +
 			'<span class="pvcItemOreCost colorOre">' + this.AvailableStarShip.OreCost + '</span>' +
 			'<span class="pvcItemIridiumCost colorIridium">' + this.AvailableStarShip.IridiumCost + '</span>' +
 			'</span>';
 
-		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '">' + element + '</a>';
+		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' data-hotkey="' + this.Hotkey + '"' : '') + '>' + element + '</a>';
 	},
 	
 	/**

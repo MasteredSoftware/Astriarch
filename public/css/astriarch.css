@@ -308,7 +308,7 @@ input[type=checkbox] {
     width: 32px;
 }
 
-.sscItem *, .pvcItem * {
+.sscItem *, .pvcItem *:not(.hotkeyChar) {
     position: absolute;
 }
 

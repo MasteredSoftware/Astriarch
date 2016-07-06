@@ -443,7 +443,7 @@ head
 																	td#StubTradeTour(width='14')
 																		span
 																	td(width='32')
-																		button#ButtonOpenTradingCenter(width='24', height='24', hotkey='r', title='Open Trading Center (hotkey: "r")') OTC
+																		button#ButtonOpenTradingCenter(width='24', height='24', data-hotkey='r', title='Open Trading Center (hotkey: "r")') OTC
 											// end left hand status panel
 											td(width='621')
 												table(cellpadding='0', cellspacing='0')
@@ -456,12 +456,12 @@ head
 													tr(height='30')
 														td
 															#ButtonPanel
-																button#PlanetViewButton(width='100', hotkey='V') Planet View
-																button#SendShipsButton(width='100', hotkey='S') Send Ships
-																button#NextTurnButton(width='100', hotkey='T') Next Turn
+																button#PlanetViewButton(width='100', data-hotkey='V') Planet View
+																button#SendShipsButton(width='100', data-hotkey='S') Send Ships
+																button#NextTurnButton(width='100', data-hotkey='T') Next Turn
 																span#SendShipsStatus.defaultFont(style='color: yellow; font-size: 14px;')
-																button#CancelSendButton(width='100', hotkey='C') Cancel Send Ships
-																button#MainMenuButtonGameOver(width='75', hotkey='M') Main Menu
+																button#CancelSendButton(width='100', data-hotkey='C') Cancel Send Ships
+																button#MainMenuButtonGameOver(width='75', data-hotkey='M') Main Menu
 							#planetViewDialog.screen(style='width: 560px; height: 360px; display: none;')
 								table#planetViewGrid(cellpadding='0', cellspacing='0')
 									tr(height='360')
@@ -546,21 +546,21 @@ head
 														table#PopulationAssignments(cellpadding='0', cellspacing='0', style='height: 90px; width: 400px;')
 															tr(height='30')
 																td(width='55')
-																	button#PlanetViewButtonFarmers(width='50', hotkey='F') Farmers:
+																	button#PlanetViewButtonFarmers(width='50', data-hotkey='F') Farmers:
 																td(width='25')
 																	span#TextBoxFarmers(style='border: 1px;')
 																td(width='200')
 																	#SliderFarmers
 															tr(height='30')
 																td(width='55')
-																	button#PlanetViewButtonMiners(width='50', hotkey='M') Miners:
+																	button#PlanetViewButtonMiners(width='50', data-hotkey='M') Miners:
 																td(width='25')
 																	span#TextBoxMiners(style='border: 1px;')
 																td(width='200')
 																	#SliderMiners
 															tr(height='30')
 																td(width='55')
-																	button#PlanetViewButtonWorkers(width='50', hotkey='B') Builders:
+																	button#PlanetViewButtonWorkers(width='50', data-hotkey='B') Builders:
 																td(width='25')
 																	span#TextBoxWorkers(style='border: 1px;')
 																td(width='200')
@@ -623,9 +623,9 @@ head
 													td(width='180')
 														span#SendShipsDialogStatus
 													td(width='100')
-														button#ButtonSendNoShips(width='75', height='24', hotkey='N', title='Send no ships from the Planet') Send None
+														button#ButtonSendNoShips(width='75', height='24', data-hotkey='N', title='Send no ships from the Planet') Send None
 													td(width='100')
-														button#ButtonSendAllShips(width='75', height='24', hotkey='A', title='Send all ships on the Planet') Send All
+														button#ButtonSendAllShips(width='75', height='24', data-hotkey='A', title='Send all ships on the Planet') Send All
 									tr(height='160')
 										td(width='380')
 											#StarShipsAvailableCardList(style='height: 160px;')

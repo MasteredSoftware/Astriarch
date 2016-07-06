@@ -120,36 +120,44 @@ Astriarch.View.PageLoadInit = function(serverConfig){
 	}
 };
 
+Astriarch.View.GetUnderlinedHtmlForHotkey = function(text, hotkeyAttr) {
+	var index = text.indexOf(hotkeyAttr);
+	if(index != -1) {
+		return text.substring(0, index) + '<u class="hotkeyChar">' + hotkeyAttr + '</u>' + text.substring(index + 1);
+	} else {
+		return text;
+	}
+};
+
+Astriarch.View.RegisterClickTargetToHotkey = function(clickTarget, hotkeyAttr, screenId) {
+	screenId = screenId || "gameControls";
+	//register this hotkey in hotkeyElementsByScreen
+	var screenIdSel = "#" + screenId;
+	Astriarch.View.hotkeyElementsByScreen[screenIdSel] = Astriarch.View.hotkeyElementsByScreen[screenIdSel] || {};
+	Astriarch.View.hotkeyElementsByScreen[screenIdSel][hotkeyAttr.toLowerCase()] = clickTarget;
+};
+
 Astriarch.View.RegisterHotkeys = function() {
-	var registerClickTargetToHotkey = function(clickTarget, hotkeyAttr, screenElm) {
-		//register this hotkey in hotkeyElementsByScreen
-		var screenIdSel = "#" + screenElm.attr("id");
-		Astriarch.View.hotkeyElementsByScreen[screenIdSel] = Astriarch.View.hotkeyElementsByScreen[screenIdSel] || [];
-		Astriarch.View.hotkeyElementsByScreen[screenIdSel].push({'elm': clickTarget, 'hotkey': hotkeyAttr.toLowerCase()});
-	};
 
 	var getClickTargetTextElm = function(clickTarget) {
-		return clickTarget.children(".ui-button-text, .ui-corner-all").first();
+		return clickTarget.find(".ui-button-text, .ui-corner-all, .hotkeyText").first();
 	};
 
 	var underlineClickTargetWithHotkey = function(clickTarget, hotkeyAttr) {
 		//style the dom element text with an underline at the first found character corresponding to the hotkey
 		var textElm = getClickTargetTextElm(clickTarget);
 		var text = textElm.text();
-		var index = text.indexOf(hotkeyAttr);
-		if(index != -1) {
-			textElm.html(text.substring(0, index) + "<u>" + hotkeyAttr + "</u>" + text.substring(index + 1));
-		}
+		textElm.html(Astriarch.View.GetUnderlinedHtmlForHotkey(text, hotkeyAttr));
 	};
 
-	//find elements with hotkey property
-	$("[hotkey]").each(function() {
+	//find elements with data-hotkey property
+	$("[data-hotkey]").each(function() {
 		var clickTarget = $(this);
-		var hotkeyAttr = clickTarget.attr("hotkey");
+		var hotkeyAttr = clickTarget.attr("data-hotkey");
 		underlineClickTargetWithHotkey(clickTarget, hotkeyAttr);
 
 		var screenElm = clickTarget.parents(".screen").first();
-		registerClickTargetToHotkey(clickTarget, hotkeyAttr, screenElm);
+		Astriarch.View.RegisterClickTargetToHotkey(clickTarget, hotkeyAttr, screenElm.attr("id"));
 	});
 
 	//set hotkeys and style dialog ok/cancel buttons
@@ -167,18 +175,24 @@ Astriarch.View.RegisterHotkeys = function() {
 			}
 			underlineClickTargetWithHotkey(clickTarget, hotkeyAttr);
 
-			registerClickTargetToHotkey(clickTarget, hotkeyAttr, screenElm);
+			Astriarch.View.RegisterClickTargetToHotkey(clickTarget, hotkeyAttr, screenElm.attr("id"));
 		});
 	});
 
 };
 
-Astriarch.View.BindHotkeys = function(screenId) {
+Astriarch.View.BindHotkeys = function(screenId, hotkeyFn) {
+	hotkeyFn = hotkeyFn || function(hotkeyElm) {
+		hotkeyElm.click();
+	};
 	Mousetrap.reset();
 	screenId = screenId || "#gameControls";
 	var hotkeyElements = Astriarch.View.hotkeyElementsByScreen[screenId] || [];
-	hotkeyElements.forEach(function(hotkeyElm) {
-		Mousetrap.bind(hotkeyElm.hotkey, function() { hotkeyElm.elm.click() });
+	Object.keys(hotkeyElements).forEach(function(hotkey) {
+		var hotkeyElm = hotkeyElements[hotkey];
+		Mousetrap.bind(hotkey, function() {
+			hotkeyFn(hotkeyElm);
+		});
 	});
 };
 
