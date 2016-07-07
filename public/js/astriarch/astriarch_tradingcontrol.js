@@ -45,7 +45,7 @@ Astriarch.TradingControl = {
 
 		Astriarch.TradingControl.tradesSubmittedListBox = new JSListBox({'containerSelector':'TradesSubmittedListBox'});
 
-		Astriarch.TradingControl.dialog = new Astriarch.Dialog('#tradingControlDialog', 'Galactic Trading Center', 470, 425, Astriarch.TradingControl.OKClose, Astriarch.TradingControl.CancelClose);
+		Astriarch.TradingControl.dialog = new Astriarch.Dialog('#tradingControlDialog', 'Galactic Trading Center', 470, 425, Astriarch.TradingControl.OKClose);
 	},
 
 	show: function(/*Planet*/ planet) {
@@ -212,10 +212,6 @@ Astriarch.TradingControl = {
 			window.tour.jqElm.joyride('nextTip');
 		}
 		//Astriarch.View.SendShipsDialogWindowClosed(true);
-	},
-
-	CancelClose: function() {
-		//Astriarch.View.SendShipsDialogWindowClosed(false);
 	},
 
 	Close: function() {

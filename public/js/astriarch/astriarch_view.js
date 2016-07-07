@@ -129,12 +129,15 @@ Astriarch.View.GetUnderlinedHtmlForHotkey = function(text, hotkeyAttr) {
 	}
 };
 
-Astriarch.View.RegisterClickTargetToHotkey = function(clickTarget, hotkeyAttr, screenId) {
+Astriarch.View.RegisterClickTargetToHotkey = function(clickTarget, hotkeyAttr, screenId, hotkeyFn) {
 	screenId = screenId || "gameControls";
+	hotkeyFn = hotkeyFn || function(hotkeyElm) {
+		hotkeyElm.click();
+	};
 	//register this hotkey in hotkeyElementsByScreen
 	var screenIdSel = "#" + screenId;
 	Astriarch.View.hotkeyElementsByScreen[screenIdSel] = Astriarch.View.hotkeyElementsByScreen[screenIdSel] || {};
-	Astriarch.View.hotkeyElementsByScreen[screenIdSel][hotkeyAttr.toLowerCase()] = clickTarget;
+	Astriarch.View.hotkeyElementsByScreen[screenIdSel][hotkeyAttr.toLowerCase()] = {elm: clickTarget, fn:hotkeyFn};
 };
 
 Astriarch.View.RegisterHotkeys = function() {
@@ -179,17 +182,33 @@ Astriarch.View.RegisterHotkeys = function() {
 		});
 	});
 
+	var selectHomePlanet = function() {Astriarch.View.selectPlanet(Astriarch.ClientGameModel.getClientPlanetById(Astriarch.ClientGameModel.MainPlayer.HomePlanetId));};
+	var selectNextPlanet = function() {Astriarch.View.cycleSelectedPlanet(1)};
+	var selectPreviousPlanet = function() {Astriarch.View.cycleSelectedPlanet(-1)};
+	var finishSendShips = function() {Astriarch.View.FinishSendShips();};
+
+	//setup non-click hotkeys
+	var nonClickHotkeys = {
+		'h': selectHomePlanet,
+		'right': selectNextPlanet,
+		'n': selectNextPlanet,
+		'left': selectPreviousPlanet,
+		'p': selectPreviousPlanet,
+		'space': finishSendShips
+	};
+	Object.keys(nonClickHotkeys).forEach(function(hotkey){
+		Astriarch.View.RegisterClickTargetToHotkey(null, hotkey, null, nonClickHotkeys[hotkey]);
+	});
+
 };
 
-Astriarch.View.BindHotkeys = function(screenId, hotkeyFn) {
-	hotkeyFn = hotkeyFn || function(hotkeyElm) {
-		hotkeyElm.click();
-	};
+Astriarch.View.BindHotkeys = function(screenId) {
 	Mousetrap.reset();
 	screenId = screenId || "#gameControls";
-	var hotkeyElements = Astriarch.View.hotkeyElementsByScreen[screenId] || [];
+	var hotkeyElements = Astriarch.View.hotkeyElementsByScreen[screenId] || {};
 	Object.keys(hotkeyElements).forEach(function(hotkey) {
-		var hotkeyElm = hotkeyElements[hotkey];
+		var hotkeyElm = hotkeyElements[hotkey].elm;
+		var hotkeyFn = hotkeyElements[hotkey].fn;
 		Mousetrap.bind(hotkey, function() {
 			hotkeyFn(hotkeyElm);
 		});
@@ -414,6 +433,24 @@ Astriarch.View.StartSendShips = function() {
 	Astriarch.View.sendShipsFromHex = Astriarch.ClientGameModel.GameGrid.SelectedHex;
 };
 
+Astriarch.View.FinishSendShips = function() {
+	//TODO: this could be cleaner, at least make it change the cursor so you know your sending ships
+	if (Astriarch.View.sendingShipsTo) {
+		if (Astriarch.View.sendShipsFromHex != Astriarch.ClientGameModel.GameGrid.SelectedHex) {
+			var distance = Astriarch.ClientGameModel.GameGrid.GetHexDistance(Astriarch.View.sendShipsFromHex, Astriarch.ClientGameModel.GameGrid.SelectedHex);
+
+			//show select ships to send dialog
+			var cp1 = Astriarch.View.sendShipsFromHex.ClientPlanetContainedInHex;
+			var p1 = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp1.Id);
+			var p2 = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;
+
+			Astriarch.SendShipsControl.show(p1, p2, distance);
+		}
+		//alert("The hexes are " + distance + " spaces away.");
+		Astriarch.View.CancelSendShips();
+	}
+};
+
 Astriarch.View.CancelSendShips = function() {
 	$('#SendShipsStatus').text("");
 	$('#CancelSendButton').hide();
@@ -447,28 +484,11 @@ Astriarch.View.PlayfieldClicked = function(pos) {
 	var point = new Astriarch.Point(pos.x, pos.y);
 	var hClicked = Astriarch.ClientGameModel.GameGrid.GetHexAt(point);//Hexagon
 
-	if (hClicked != null && hClicked.ClientPlanetContainedInHex != null)
-	{
+	if (hClicked != null && hClicked.ClientPlanetContainedInHex != null) {
 		Astriarch.ClientGameModel.GameGrid.SelectHex(hClicked);
 		Astriarch.View.updateSelectedItemPanelForPlanet();
-		
-		if (Astriarch.View.sendingShipsTo)//TODO: this could be cleaner, at least make it change the cursor so you know your sending ships
-		{
-			if (Astriarch.View.sendShipsFromHex != Astriarch.ClientGameModel.GameGrid.SelectedHex)
-			{
-				var distance = Astriarch.ClientGameModel.GameGrid.GetHexDistance(Astriarch.View.sendShipsFromHex, Astriarch.ClientGameModel.GameGrid.SelectedHex);
 
-				//show select ships to send dialog
-				var cp1 = Astriarch.View.sendShipsFromHex.ClientPlanetContainedInHex;
-				var p1 = Astriarch.ClientGameModel.MainPlayer.GetPlanetIfOwnedByPlayer(cp1.Id);
-				var p2 = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;
-
-				Astriarch.SendShipsControl.show(p1, p2, distance);
-			}
-			//alert("The hexes are " + distance + " spaces away.");
-			Astriarch.View.CancelSendShips();
-		}
-	
+		Astriarch.View.FinishSendShips();
 	}
 	
 	return true;
@@ -494,6 +514,30 @@ Astriarch.View.FleetsClicked = function(pos) {
 	//console.log('FleetsClicked ('+ pos.x +','+ pos.y +')');
 	//alert('FleetsClicked ('+ pos.x +','+ pos.y +')');
 	return true;
+};
+
+Astriarch.View.cycleSelectedPlanet = function(direction) {
+	var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//ClientPlanet
+	var mainPlayer = Astriarch.ClientGameModel.MainPlayer;
+	var ownedPlanetIds = Object.keys(mainPlayer.OwnedPlanets);
+	if(ownedPlanetIds <= 1) {
+		return;
+	}
+	var currentIndex = ownedPlanetIds.indexOf(cp.Id + '');
+	if(currentIndex == -1) {
+		return;
+	}
+	currentIndex += direction;
+	if(currentIndex < 0) {
+		currentIndex = ownedPlanetIds.length - 1;
+	} else if(currentIndex >= ownedPlanetIds.length) {
+		currentIndex = 0;
+	}
+	var planetId = ownedPlanetIds[currentIndex];
+	var planet = mainPlayer.OwnedPlanets[planetId];
+	if(planet) {
+		Astriarch.View.selectPlanet(planet);
+	}
 };
 
 Astriarch.View.selectPlanet = function(/*Planet*/ p) {
@@ -560,7 +604,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 
 	if (Astriarch.ClientGameModel.GameGrid.SelectedHex != null)
 	{
-		var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//Planet
+		var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//ClientPlanet
 		var mainPlayer = Astriarch.ClientGameModel.MainPlayer;
 		sb += "--- Planet " + cp.Name + " ---<br />";
 

@@ -50,8 +50,7 @@ Astriarch.GameController.SetupViewFromGameModel = function() {
 	Astriarch.View.updateCanvasForPlayer();
 	
 	//select our home planet
-	Astriarch.ClientGameModel.GameGrid.SelectHex(Astriarch.ClientGameModel.getClientPlanetById(Astriarch.ClientGameModel.MainPlayer.HomePlanetId).BoundingHex);
-	Astriarch.View.updateSelectedItemPanelForPlanet();
+	Astriarch.View.selectPlanet(Astriarch.ClientGameModel.getClientPlanetById(Astriarch.ClientGameModel.MainPlayer.HomePlanetId));
 	
 	Astriarch.View.updatePlayerStatusPanel();
 };

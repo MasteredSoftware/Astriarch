@@ -5,7 +5,7 @@ Astriarch.GameOverControl = {
 	
 	init: function() {
 		
-		Astriarch.GameOverControl.dialog = new Astriarch.Dialog('#gameOverDialog', 'Game Over', 424, 313, Astriarch.GameOverControl.OKClose, Astriarch.GameOverControl.CancelClose);
+		Astriarch.GameOverControl.dialog = new Astriarch.Dialog('#gameOverDialog', 'Game Over', 424, 313, Astriarch.GameOverControl.OKClose);
 	},
 	
 	show: function(/*SerializablePlayer*/ winningSerializablePlayer, /*bool*/ localPlayerWon, score) {
@@ -36,11 +36,6 @@ Astriarch.GameOverControl = {
 	},
 
 	OKClose: function()	{
-		Astriarch.GameController.GameOverControlClosed();
-	},
-
-	CancelClose: function()
-	{
 		Astriarch.GameController.GameOverControlClosed();
 	}
 };

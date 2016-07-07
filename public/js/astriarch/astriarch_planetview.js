@@ -145,14 +145,14 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.lbiFarm = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Farm, 'r');
         Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Mine, 'i');
         Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Colony, 'l');
-        Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Factory, 'a');
+        Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Factory, 't');
         Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
 
         Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SystemDefense, 'e');
         Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Scout, 'S');
         Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Destroyer, 'D');
         Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Cruiser, 'C');
-        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Battleship, 'B');
+        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Battleship, 'a');
 
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFarm);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiMine);
@@ -258,7 +258,6 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.dialog.setTitle("Planet " + p.Name + " View");
 		Astriarch.PlanetView.dialog.open();
 
-		Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(null);
 		Astriarch.PlanetView.refreshItemsAvailableCardList();
 
 		if(window.tour.enabled && (window.tour.step == 27 || window.tour.step == 32 || window.tour.step == 43)){
@@ -282,8 +281,6 @@ Astriarch.PlanetView = {
 	
 	ItemsAvailableClicked: function() {
 		Astriarch.PlanetView.addSelectedItemToQueue();
-		//TODO: this is kinda a hack to make the cardlist behave like a card button list, maybe this should be suppoted in the card list?
-		setTimeout(function() { Astriarch.PlanetView.ItemsAvailableCardList.selectNone(); }, 70);
 	},
 	
 	recalculateBuildQueueListItemsTurnsToCompleteEstimates: function() {
@@ -401,12 +398,6 @@ Astriarch.PlanetView = {
 			}
 		}
 
-		//check to ensure the selected item is not enabled
-		if (Astriarch.PlanetView.ItemsAvailableCardList.SelectedItem != null &&
-		    !(Astriarch.PlanetView.ItemsAvailableCardList.SelectedItem.CanBuild && Astriarch.PlanetView.ItemsAvailableCardList.SelectedItem.CanBuildBasedOnResources) ) {
-			Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(null);
-			Astriarch.PlanetView.ItemsAvailableCardList.refresh();
-		}
 	},
 	
 	refreshItemsAvailableCardList: function() {
@@ -429,25 +420,30 @@ Astriarch.PlanetView = {
 
 			Astriarch.PlanetView.disableImprovementsBasedOnResourcesAvailable();
 		}
-		
-		Astriarch.PlanetView.ItemsAvailableCardList.clear();
-		Astriarch.PlanetView.ItemsAvailableCardList.addItems(Astriarch.PlanetView.itemsAvailable);
-		//bind hotkeys
+
+		Astriarch.PlanetView.itemsAvailable.forEach(function(item){
+			item.selected = false;
+		});
+
+		Astriarch.PlanetView.ItemsAvailableCardList.setItems(Astriarch.PlanetView.itemsAvailable);
+		var hotkeyFn = function(hotkeyElm) {
+			var item = hotkeyElm.data("jscardlist.item");
+			if(item) {
+				item.selected = true;
+				item.onClick();
+			}
+		};
+		//register and bind hotkeys
 		$(".pvcItemAnchor[data-hotkey]").each(function() {
 			var clickTarget = $(this);
 			var hotkeyAttr = clickTarget.attr("data-hotkey");
 			clickTarget = clickTarget.parent();
-
-			Astriarch.View.RegisterClickTargetToHotkey(clickTarget, hotkeyAttr, "planetViewDialog");
-		});
-		var hotkeyFn = function(hotkeyElm) {
-			var item = hotkeyElm.data("jscardlist.item");
-			if(item) {
-				Astriarch.PlanetView.ItemsAvailableCardList.setSelectedItem(item);
-				item.onClick();
+			if(clickTarget.attr( "enabled" ) == "true") {
+				Astriarch.View.RegisterClickTargetToHotkey(clickTarget, hotkeyAttr, "planetViewDialog", hotkeyFn);
 			}
-		};
-		Astriarch.View.BindHotkeys("#planetViewDialog", hotkeyFn);
+		});
+
+		Astriarch.View.BindHotkeys("#planetViewDialog");
 	},
 	
 	refreshBuildQueueListBox: function() {

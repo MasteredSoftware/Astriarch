@@ -5,7 +5,7 @@ Astriarch.PlanetaryConflictControl = {
 	
 	init: function() {
 		
-		Astriarch.PlanetaryConflictControl.dialog = new Astriarch.Dialog('#planetaryConflictDialog', 'Planetary Conflict', 424, 323, Astriarch.PlanetaryConflictControl.OKClose, Astriarch.PlanetaryConflictControl.CancelClose);
+		Astriarch.PlanetaryConflictControl.dialog = new Astriarch.Dialog('#planetaryConflictDialog', 'Planetary Conflict', 424, 323, Astriarch.PlanetaryConflictControl.OKClose);
 		$('#NeverShowPlanetaryConflictPopupsCheckbox').change(function(){
 			if(window.tour.enabled && window.tour.step == 61 && this.checked) {
 				window.tour.jqElm.joyride('nextTip');
@@ -79,11 +79,6 @@ Astriarch.PlanetaryConflictControl = {
 		if(window.tour.enabled && window.tour.step == 62) {
 			window.tour.jqElm.joyride('nextTip');
 		}
-	},
-
-	CancelClose: function() {
-		//this is probably not the best way to do this, but it can't be syncronous because it needs to pop this up again
-		setTimeout(function() { Astriarch.GameController.processNextEndOfTurnPlanetaryConflictMessage(); }, 100);
 	},
 
 	Close: function() {

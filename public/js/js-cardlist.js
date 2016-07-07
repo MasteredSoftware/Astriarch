@@ -12,6 +12,7 @@ JSCardList = function(configObject) {
         tmpContainer.css(configObject.stylemap);
 
     this.menuContainerHTML = tmpContainer.clone().wrap('<div></div>').parent().html();//need to get tmpContainer's html itself
+    this.menuContainer = null;
 };
 
 JSCardList.prototype.clear = function() {
@@ -25,10 +26,12 @@ JSCardList.prototype.addItem = function(item) {
 };
 
 JSCardList.prototype.addItems = function(newItems) {
-    for(var i in newItems)
-    {
-        this.items.push(newItems[i]);
-    }
+    this.items = this.items.concat(newItems);
+    this.refresh();
+};
+
+JSCardList.prototype.setItems = function(newItems) {
+    this.items = newItems;
     this.refresh();
 };
 

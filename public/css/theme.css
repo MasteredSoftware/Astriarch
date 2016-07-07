@@ -36,7 +36,7 @@ td > span, td > img {
 	display: block;
 }
 
-#about-astriarch * {
+#about-astriarch *:not(u) {
 	margin: 3px;
 	padding: 3px;
 }
