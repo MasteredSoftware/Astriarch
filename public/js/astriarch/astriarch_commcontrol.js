@@ -88,6 +88,13 @@ Astriarch.CommControl = {
 			for(var i = 0; i < Astriarch.ClientGameModel.ClientPlayers.length; i++){
 				var player = Astriarch.ClientGameModel.ClientPlayers[i];
 				var sessionClass = "messagePlayer" + player.Id;
+				if(player.Type != Astriarch.Player.PlayerType.Human || player.CurrentTurnEnded) {
+					sessionClass += " sessionTurnEnded";
+				} else if(player.Destroyed) {
+					sessionClass += " sessionDestroyed";
+				} else {
+					sessionClass += " sessionNormal";
+				}
 				var points = player.Points != null ? " (" + Math.floor(player.Points) + ")" : "";
 				html += "<div class=\"" + sessionClass + "\">" + player.Name + points + "</div>";
 			}

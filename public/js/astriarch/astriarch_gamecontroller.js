@@ -74,8 +74,12 @@ Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 		Astriarch.GameController.HideControlsForTurnStart();
 
 		Astriarch.GameController.OnStartTurn(message);
-	} else {
-		//TODO: update GUI to reflect which player(s) we're waiting on, also eventually we want to add turn time limits
+	} else if (message.payload.clientPlayers) {
+		//update session list to reflect which player(s) we're waiting on
+		Astriarch.ClientGameModel.ClientPlayers = message.payload.clientPlayers.map(function(sp) {
+			return Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(sp);
+		});
+		Astriarch.CommControl.refreshPlayerList();
 	}
 };
 

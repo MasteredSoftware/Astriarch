@@ -91,6 +91,18 @@ td > span, td > img {
     border: 1px solid #333;
     font-family:Trebuchet MS,Tahoma,Verdana,Arial,sans-serif;
 }
+.sessionNormal {
+    font-style: italic;
+    font-weight: bolder;
+    text-decoration: none;
+}
+.sessionTurnEnded {
+    font-style: normal;
+    font-weight: normal;
+}
+.sessionDestroyed {
+    text-decoration: line-through;
+}
 .messagePlayerLobby {
     color:white;
 }

@@ -302,7 +302,7 @@ wss.on('connection', function(ws) {
 							return;
 						}
 						// data = {"allPlayersFinished": true|false, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc};
-						var payloadOrig = {"allPlayersFinished":data.allPlayersFinished, "endOfTurnMessages":null, "destroyedClientPlayers":data.destroyedClientPlayers};
+						var payloadOrig = {"allPlayersFinished":data.allPlayersFinished, "endOfTurnMessages":null, "destroyedClientPlayers":data.destroyedClientPlayers, "clientPlayers":null};
 						if(data.allPlayersFinished){
 
 							var winningSerializablePlayer = null;
@@ -358,8 +358,11 @@ wss.on('connection', function(ws) {
 								}
 							}
 						} else {
+							payloadOrig.clientPlayers = getSerializableClientPlayersFromSerializableModel(data.game.gameData);
 							message.payload = payloadOrig;
 							wssInterface.wsSend(ws, message);
+
+							broadcastMessageToOtherPlayers(data.game, sessionId, message);
 						}
 
 					});
@@ -462,18 +465,23 @@ var sendUpdatedGameListToLobbyPlayers = function(gameDoc){
 	});
 };
 
+var getSerializableClientPlayersFromSerializableModel = function(serializableModel) {
+	return serializableModel.SerializablePlayers.map(function(player) {
+		return new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed);
+	});
+};
+
 var getSerializableClientModelFromSerializableModelForPlayer = function(serializableModel, targetPlayerId){
 
 	var mainPlayerOwnedSerializablePlanets = {};
-	var serializableClientPlayers = [];
+	var serializableClientPlayers = getSerializableClientPlayersFromSerializableModel(serializableModel);
 	var serializableMainPlayer = null;
-	for(var p in serializableModel.SerializablePlayers){
-		var player = serializableModel.SerializablePlayers[p];
+	serializableModel.SerializablePlayers.forEach(function(player) {
 		if(player.Id == targetPlayerId){
 			serializableMainPlayer = player;
 		}
-		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed));
-	}
+	});
+
 	if(!serializableMainPlayer){
 		//main player is destroyed
 		for(var p in serializableModel.SerializablePlayersDestroyed){
