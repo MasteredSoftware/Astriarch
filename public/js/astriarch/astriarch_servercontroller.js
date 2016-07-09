@@ -14,10 +14,13 @@ Astriarch.ServerController = {
 
 		var endOfTurnMessagesByPlayerId = {}; //Dictionary<Id, SerializableTurnEventMessage>
 
-		for (var i in gameModel.Players)
-		{
+		for (var i in gameModel.Players) {
 			var player = gameModel.Players[i];
 			endOfTurnMessagesByPlayerId[player.Id] = [];
+			//set all players back to currentTurnEnded = false for next turn;
+			if(!player.Destroyed){
+				player.CurrentTurnEnded = false;
+			}
 			if (player.Type != Astriarch.Player.PlayerType.Human) {
 				Astriarch.AI.ComputerTakeTurn(gameModel, player);
 			}
@@ -822,6 +825,8 @@ Astriarch.ServerController = {
 	checkPlayerDestroyedAndRemove: function(gameModel, player) {
 		//a player is destroyed if they have no owned planets and no fleets in transit
 		if (Astriarch.CountObjectKeys(player.OwnedPlanets) == 0 && player.FleetsInTransit.length == 0) {
+			player.Destroyed = true;
+			player.CurrentTurnEnded = true;
 			gameModel.Players.splice(gameModel.Players.indexOf(player), 1);
 			gameModel.PlayersDestroyed.push(player);
 			return player;
@@ -833,6 +838,8 @@ Astriarch.ServerController = {
 		//destroy the player by clearing OwnedPlanets and FleetsInTransit, at the end of the turn, other players will realize the player is destroyed
 		// eventually we could allow for the option of allowing a computer player to take a resigning player's place instead
 		var player = gameModel.getPlayerById(playerId);
+		player.CurrentTurnEnded = true;
+		player.Destroyed = true;
 		for(var id in player.OwnedPlanets) {
 			var planet = gameModel.getPlanetById(id);
 			planet.SetPlanetOwner(null);

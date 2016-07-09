@@ -71,7 +71,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	{
 		var player = players[i];
 		playersById[player.Id] = player;
-		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points);
+		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed);
 	}
 	
 	//look for serializable destroyed players
@@ -81,7 +81,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 		var player = Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer(newModel.GameGrid, sp, planetsById);
 		newModel.PlayersDestroyed.push(player);
 		playersById[player.Id] = player;
-		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points);
+		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed);
 	}
 
 	//second pass serializable players
@@ -233,7 +233,10 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 	{
 		p.FleetsInTransit.push(Astriarch.SavedGameInterface.getFleetFromSerializableFleet(p, sp.SerializableFleetsInTransit[j], gameGrid));
 	}
-	
+
+	p.CurrentTurnEnded = sp.CurrentTurnEnded;
+	p.Destroyed = sp.Destroyed;
+
 	return p;
 };
 
@@ -413,6 +416,8 @@ Astriarch.SerializablePlayer = function(/*Astriarch.Player*/ player) {
 	//NOTE: not serialized
 	//this.fleetsArrivingOnUnownedPlanets = {};//Dictionary<int, Fleet>//indexed by planet id
 
+	this.CurrentTurnEnded = player.CurrentTurnEnded;
+	this.Destroyed = player.Destroyed;
 };
 
 /**

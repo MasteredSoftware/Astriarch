@@ -45,7 +45,7 @@ exports.GameHighScoreBoardModel = db.model('gameHighScoreBoard', GameHighScoreBo
 var GameSchema = new mongoose.Schema({
 	nonce: ObjectId, //this is used for protecting against concurrent edits: http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/
 	name:  String,
-	players: [{name:String, sessionId:{ type: String, index: true }, Id: Number, position:Number, currentTurnEnded:{type: Boolean, default:false}, destroyed:{type: Boolean, default:false}}],
+	players: [{name:String, sessionId:{ type: String, index: true }, Id: Number, position:Number, destroyed:{type: Boolean, default:false}}],//NOTE: destroyed is duplicated here and within the Player objects within the game model, this is to optimize the ListLobbyGames query
 	started:  {type: Boolean, default:false},
 	ended:  {type: Boolean, default:false},
 	dateCreated: { type: Date, default: Date.now },

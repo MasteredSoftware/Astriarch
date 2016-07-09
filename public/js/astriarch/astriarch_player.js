@@ -32,6 +32,9 @@ Astriarch.Player = function(id, /*PlayerType*/ playerType, /*string*/ name) {
 	this.FleetsInTransit = [];//List<Fleet>
 
 	this.fleetsArrivingOnUnownedPlanets = {};//Dictionary<int, Fleet>//indexed by planet id
+
+	this.CurrentTurnEnded = false;
+	this.Destroyed = false;
 };
 
 Astriarch.Player.EarnedPointsType = {

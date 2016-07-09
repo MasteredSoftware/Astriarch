@@ -377,17 +377,10 @@ exports.ResumeGame = function(options, callback){
 			console.error("ResumeGame FindGameById: ", err);
 			callback(err);
 		}
-		var player = null;
-		for(var i = 0; i < doc.players.length; i++){
-			var p = doc.players[i];
-			if(p.sessionId == options.sessionId){
-				player = p;
-				break;
-			}
-		}
-
-		if(!player){
-			console.error("Could not find player in game for ResumeGame!");
+		var serverPlayer = getPlayerFromDocumentBySessionId(doc, options.sessionId);
+		if(!serverPlayer){
+			callback("ServerPlayer not found in ResumeGame!");
+			return;
 		}
 
 		//find all working planet view data objects for player to apply to the model for that player
@@ -410,7 +403,7 @@ exports.ResumeGame = function(options, callback){
 
 			//TODO: for now we'll just resume the game, later we'll want to have a UI for waiting for the rest of the original players to join
 			//  and give the host an option to substitute them with computer players
-			callback(err, doc, player);
+			callback(err, doc, serverPlayer);
 		});
 
 	});
@@ -485,42 +478,45 @@ exports.StartGame = function(options, callback){
 
 exports.EndPlayerTurn = function(sessionId, payload, callback){
 
-	var setCurrentTurnEndedReturnAllPlayersFinished = function(sessionId, doc){
-		//Check to see if all other players have finished their turns
+	var returnAllPlayersFinished = function(serializableGameModel) {
+		//Check to see if all players have finished their turns
 		var allPlayersFinished = true;
-		for(var i = 0; i < doc.players.length; i++){
-			var player = doc.players[i];
-			if(player.sessionId == sessionId){
-				player.currentTurnEnded = true;
-			} else if(!player.currentTurnEnded) {
+		var sp = null;
+
+		for(var i = 0; i < serializableGameModel.SerializablePlayers.length; i++) {
+			sp = serializableGameModel.SerializablePlayers[i];
+			if(sp.Type == Astriarch.Player.PlayerType.Human && !sp.CurrentTurnEnded) {
 				allPlayersFinished = false;
+				break;
 			}
 		}
+
 		return allPlayersFinished;
 	};
 
-	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+	var setPlayerCurrentTurnEnded = function(doc, sessionId, callback){
+		getPlayerAndGameModelFromDocumentBySessionId(doc, sessionId, function(err, player, gameModel){
+			if(err) {
+				callback(err);
+				return;
+			}
+			//update players current turn ended
+			player.CurrentTurnEnded = true;
+			callback(null, {gameData: new Astriarch.SerializableModel(gameModel)});
+		});
+	};
 
-		setCurrentTurnEndedReturnAllPlayersFinished(sessionId, doc);
-		var data = {players:doc.players};
-		//update players current turn ended
-		cb(null, data);
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+		setPlayerCurrentTurnEnded(doc, sessionId, cb);
 	}, 0, function(err, doc){
 		if(err || !doc) {
 			callback(err || "Unable to find game doc in EndPlayerTurn");
 			return;
 		}
-		//now that we ensured only one player ended their turn at a time, let's check again
+		//now that we ensured only one player ended their turn at a time, let's check to see if all players are finished
 		var returnData = {"allPlayersFinished": false, "endOfTurnMessagesByPlayerId": null, "destroyedClientPlayers":null, "game": doc, "gameModel":null};
-		returnData.allPlayersFinished = setCurrentTurnEndedReturnAllPlayersFinished(sessionId, doc);
+		returnData.allPlayersFinished = returnAllPlayersFinished(doc.gameData);
 		if(returnData.allPlayersFinished){
-			//set all players back to currentTurnEnded = false for next turn;
-			for(var i = 0; i < doc.players.length; i++){
-				if(!doc.players[i].destroyed){
-					doc.players[i].currentTurnEnded = false;
-				}
-			}
-
 			doc.dateLastPlayed = new Date();
 
 			returnData.gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
@@ -535,14 +531,13 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 				var destroyedPlayers = Astriarch.ServerController.CheckPlayersDestroyed(returnData.gameModel);
 				if(destroyedPlayers.length > 0){
 					returnData.destroyedClientPlayers = [];
-					for(var ip in destroyedPlayers){
+					for(var ip in destroyedPlayers) {
 						var p = destroyedPlayers[ip];
-						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color, p.Points));
+						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color, p.Points, true, true));
 
 						//set destroyed players
 						for(var i = 0; i < doc.players.length; i++){
 							if(p.Id == doc.players[i].Id) {
-								doc.players[i].currentTurnEnded = true;
 								doc.players[i].destroyed = true;
 							}
 						}
@@ -550,7 +545,7 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 
 					//check to see if the game is ended (either no more human players or only one player left)
 					var humansLeft = false;
-					for(var ip in returnData.gameModel.Players){
+					for(var ip in returnData.gameModel.Players) {
 						if(returnData.gameModel.Players[ip].Type == Astriarch.Player.PlayerType.Human){
 							humansLeft = true;
 							break;
@@ -664,7 +659,6 @@ exports.ExitResign = function(sessionId, payload, callback){
 		//set player destroyed so they can't re-join the game
 		for(var i = 0; i < doc.players.length; i++){
 			if(playerId == doc.players[i].Id) {
-				doc.players[i].currentTurnEnded = true;
 				doc.players[i].destroyed = true;
 			}
 		}
@@ -1097,30 +1091,41 @@ var getExistingPlanetViewWorkingDataModel = function(gameId, sessionId, planetId
 		callback(err, planetViewWorkingDataModel);
 	});
 };
-
-var getPlayerPlanetAndGameModelFromDocumentBySessionId = function(doc, sessionId, planetId, callback){
+var getPlayerAndGameModelFromDocumentBySessionId = function(doc, sessionId, callback) {
 	var serverPlayer = getPlayerFromDocumentBySessionId(doc, sessionId);
-	if(!serverPlayer){
-		callback("ServerPlayer not found in UpdatePlanetForPlayer!");
+	if (!serverPlayer) {
+		callback("ServerPlayer not found for SessionId!");
 		return;
 	}
 
 	var gameModel = Astriarch.SavedGameInterface.getModelFromSerializableModel(doc.gameData);
 
 	var player = getPlayerFromGameModelById(gameModel, serverPlayer.Id);
-	if(!player){
-		callback("Player not found in UpdatePlanetForPlayer!");
+	if (!player) {
+		callback("Player not found for Id!");
 		return;
 	}
 
-	//ensure that the PlanetId passed in belongs to the player
-	var planet = player.GetPlanetIfOwnedByPlayer(planetId);
-	if(!planet){
-		callback("PlanetId: " + planetId + " not owned by Player in UpdatePlanetForPlayer!");
-		return;
-	}
+	callback(null, player, gameModel);
+};
 
-	callback(null, player, planet, gameModel);
+
+var getPlayerPlanetAndGameModelFromDocumentBySessionId = function(doc, sessionId, planetId, callback){
+	getPlayerAndGameModelFromDocumentBySessionId(doc, sessionId, function(err, player, gameModel){
+		if(err) {
+			callback(err);
+			return;
+		}
+
+		//ensure that the PlanetId passed in belongs to the player
+		var planet = player.GetPlanetIfOwnedByPlayer(planetId);
+		if(!planet){
+			callback("PlanetId: " + planetId + " not owned by Player!");
+			return;
+		}
+
+		callback(null, player, planet, gameModel);
+	});
 };
 
 var getPlayerFromDocumentBySessionId = function(doc, sessionId){

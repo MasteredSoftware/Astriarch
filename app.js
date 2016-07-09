@@ -472,7 +472,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(serializ
 		if(player.Id == targetPlayerId){
 			serializableMainPlayer = player;
 		}
-		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points));
+		serializableClientPlayers.push(new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed));
 	}
 	if(!serializableMainPlayer){
 		//main player is destroyed
