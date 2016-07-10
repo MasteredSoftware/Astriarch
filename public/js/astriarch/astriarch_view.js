@@ -232,7 +232,7 @@ Astriarch.View.ClearPlanetsAndFleets = function() {
 };
 
 Astriarch.View.ShowNewGameOptions = function() {
-	$('#startGameOptionsContainer').show();
+	Astriarch.NewGameControl.show();
 	//also hide everything but the starfield so if we just finished a game those controls aren't still shown
 	Astriarch.View.ClearGameBackgroundControls();
 };

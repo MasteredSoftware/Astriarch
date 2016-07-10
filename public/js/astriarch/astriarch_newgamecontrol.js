@@ -16,12 +16,10 @@ Astriarch.NewGameControl = {
 			Astriarch.NewGameControl.changedGameOptions();
 		});
 
-
-		$("#PlayerNameTextBox").val(Astriarch.LocalStorageInterface.Prefs.playerName);
 		$("#PlayerNameTextBox").change(function(){
 			var playerName = $( this ).val();
-			Astriarch.LocalStorageInterface.Prefs.playerName = playerName;
-			Astriarch.LocalStorageInterface.savePrefs();
+			//also update the chat log area and local storage
+			Astriarch.CommControl.setPlayerNameDivAndLocalStorageToNewName(playerName);
 			var payload = {playerName: playerName};
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.CHANGE_PLAYER_NAME, payload:payload});
 		});
@@ -53,6 +51,12 @@ Astriarch.NewGameControl = {
 		//Display the canvas representation
 		var gameOptions = this.getSelectedGameOptions();
 		this.drawGameOptionsRepresentationOnCanvas(gameOptions);
+	},
+
+	show: function() {
+		$("#PlayerNameTextBox").val(Astriarch.LocalStorageInterface.Prefs.playerName);
+
+		$('#startGameOptionsContainer').show();
 	},
 
 	buildPlayerComboBoxes: function(gameOptions){

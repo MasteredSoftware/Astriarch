@@ -48,13 +48,17 @@ Astriarch.CommControl = {
 	},
 
 	submitPlayerNameChange: function(){
-		Astriarch.CommControl.playerName = Astriarch.CommControl.playerNameTextBox.val();
-		Astriarch.LocalStorageInterface.Prefs.playerName = Astriarch.CommControl.playerName;
-		Astriarch.LocalStorageInterface.savePrefs();
+		Astriarch.CommControl.setPlayerNameDivAndLocalStorageToNewName(Astriarch.CommControl.playerNameTextBox.val());
 		Astriarch.CommControl.joinChatRoom(Astriarch.CommControl.playerName, Astriarch.CommControl.playerNumber);
-		Astriarch.CommControl.chatLogPlayerNameDiv.text(Astriarch.CommControl.playerName);
 		Astriarch.CommControl.playerNameTextBox.hide();
 		Astriarch.CommControl.chatLogPlayerNameDiv.show();
+	},
+
+	setPlayerNameDivAndLocalStorageToNewName: function(newName) {
+		Astriarch.CommControl.playerName = newName;
+		Astriarch.LocalStorageInterface.Prefs.playerName = Astriarch.CommControl.playerName;
+		Astriarch.LocalStorageInterface.savePrefs();
+		Astriarch.CommControl.chatLogPlayerNameDiv.text(Astriarch.CommControl.playerName);
 	},
 
 	sendTextMessage: function(){
