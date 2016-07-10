@@ -478,6 +478,7 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 	//remove current planet owner
 	if (this.Owner !== null) {
 		this.WayPointPlanetId = null;
+		this.StarShipTypeLastBuilt = null;
 		//if this planet has items in the build queue we should remove them now
 		for (var i = this.BuildQueue.length - 1; i >= 0; i--){
 			goldRefunded += this.RemoveBuildQueueItemForRefund(i);
