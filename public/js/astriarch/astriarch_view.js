@@ -519,22 +519,50 @@ Astriarch.View.FleetsClicked = function(pos) {
 Astriarch.View.cycleSelectedPlanet = function(direction) {
 	var cp = Astriarch.ClientGameModel.GameGrid.SelectedHex.ClientPlanetContainedInHex;//ClientPlanet
 	var mainPlayer = Astriarch.ClientGameModel.MainPlayer;
-	var ownedPlanetIds = Object.keys(mainPlayer.OwnedPlanets);
-	if(ownedPlanetIds <= 1) {
+	//var ownedPlanetIds = Object.keys(mainPlayer.OwnedPlanets);
+	var planetsToCycle = Astriarch.ClientGameModel.ClientPlanets.concat([]);
+	//sort planets to prefer owned planets first, then known planets, then sort by id
+	planetsToCycle.sort(function(a, b){
+		if(a.Id in mainPlayer.OwnedPlanets) {
+			return -1;
+		} else if(b.Id in mainPlayer.OwnedPlanets) {
+			return 1;
+		}
+
+		if(a.Id in mainPlayer.KnownClientPlanets) {
+			return -1;
+		} else if(b.Id in mainPlayer.KnownClientPlanets) {
+			return 1;
+		}
+
+		if(a.Id < b.Id) {
+			return -1;
+		} else if(a.Id > b.Id) {
+			return 1;
+		} else {
+			return 0;
+		}
+	});
+
+	if(planetsToCycle <= 1) {
 		return;
 	}
-	var currentIndex = ownedPlanetIds.indexOf(cp.Id + '');
+	var currentIndex = -1;
+	planetsToCycle.forEach(function(p, index) {
+		if(p.Id == cp.Id) {
+			currentIndex = index;
+		}
+	});
 	if(currentIndex == -1) {
 		return;
 	}
 	currentIndex += direction;
 	if(currentIndex < 0) {
-		currentIndex = ownedPlanetIds.length - 1;
-	} else if(currentIndex >= ownedPlanetIds.length) {
+		currentIndex = planetsToCycle.length - 1;
+	} else if(currentIndex >= planetsToCycle.length) {
 		currentIndex = 0;
 	}
-	var planetId = ownedPlanetIds[currentIndex];
-	var planet = mainPlayer.OwnedPlanets[planetId];
+	var planet = planetsToCycle[currentIndex];
 	if(planet) {
 		Astriarch.View.selectPlanet(planet);
 	}
