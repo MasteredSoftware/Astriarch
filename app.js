@@ -170,7 +170,7 @@ wss.on('connection', function(ws) {
 				case Astriarch.Shared.MESSAGE_TYPE.CHANGE_PLAYER_NAME:
 					gameController.ChangePlayerName({playerName:message.payload.playerName, gameId:message.payload.gameId, sessionId:sessionId}, function(err, game){
 						//broadcast to other players
-						var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, {gameOptions:game.gameOptions});
+						var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, {gameOptions:game.gameOptions, name:game.name});
 						broadcastMessageToOtherPlayers(game, sessionId, broadcastMessage);
 
 						wssInterface.wsSend(ws, broadcastMessage);
