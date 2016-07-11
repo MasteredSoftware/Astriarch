@@ -2,7 +2,8 @@
 
 Astriarch.GameController = {
 	planetaryConflictMessages: [],
-	turnTimerTimeoutId: null
+	turnTimerTimeoutId: null,
+	gameOver: false
 };
 
 
@@ -89,6 +90,8 @@ Astriarch.GameController.OnPlayerDestroyed = function(/*ClientPlayer)*/ clientPl
 
 //payload = {"winningSerializablePlayer": winningSerializablePlayer, "playerWon": playerWon, "score":score};
 Astriarch.GameController.OnGameOverMessageResponse = function(message) {
+	Astriarch.GameController.gameOver = true;
+
 	Astriarch.View.audioInterface.EndGame();
 
 	Astriarch.GameController.HideControlsForTurnStart();
@@ -102,7 +105,7 @@ Astriarch.GameController.OnGameOverMessageResponse = function(message) {
 
 Astriarch.GameController.OnExitResignMessageResponse = function(message) {
 	//Ensure they've ended their turn
-	Astriarch.GameController.NextTurn();
+	Astriarch.View.NextTurn();
 };
 
 Astriarch.GameController.RefreshTurnDisplay = function(){
@@ -110,19 +113,23 @@ Astriarch.GameController.RefreshTurnDisplay = function(){
 	$('#TurnDisplay').text("Turn " + Astriarch.ClientGameModel.Turn.Number + ", Year " + year);
 
 	var turnTimer = $('#TurnTimer');
-	if(Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds) {
+	if(Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds && !Astriarch.GameController.gameOver) {
 		turnTimer.show();
 
 		turnTimer.stop(true).animate({ width: '100%' }, 500, "linear", function(){
 			turnTimer.animate({ width: '0px' }, Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds * 1000, "linear");
 			//I had problems with this not clearing out correctly in the view, so I'm calling it here too
-			if(Astriarch.GameController.turnTimerTimeoutId){
-				clearTimeout(Astriarch.GameController.turnTimerTimeoutId);
-			}
+			Astriarch.GameController.ClearTurnTimer();
 			Astriarch.GameController.turnTimerTimeoutId = setTimeout(function(){Astriarch.View.NextTurn();}, Astriarch.ClientGameModel.GameOptions.TurnTimeLimitSeconds * 1000);
 		});
 	} else {
 		turnTimer.hide();
+	}
+};
+
+Astriarch.GameController.ClearTurnTimer = function() {
+	if(Astriarch.GameController.turnTimerTimeoutId){
+		clearTimeout(Astriarch.GameController.turnTimerTimeoutId);
 	}
 };
 

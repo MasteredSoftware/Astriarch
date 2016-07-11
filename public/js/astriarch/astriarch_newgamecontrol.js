@@ -272,6 +272,7 @@ Astriarch.NewGameControl = {
 	},
 
 	OnGameStartMessageResponse: function(message) {
+		Astriarch.GameController.gameOver = false;
 
 		$('#startGameOptionsContainer').hide();
 

@@ -391,9 +391,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 };
 
 Astriarch.View.NextTurn = function() {
-	if(Astriarch.GameController.turnTimerTimeoutId){
-		clearTimeout(Astriarch.GameController.turnTimerTimeoutId);
-	}
+	Astriarch.GameController.ClearTurnTimer();
 	$("#NextTurnButton").button('disable');
 	Astriarch.GameController.NextTurn();
 };
@@ -402,6 +400,8 @@ Astriarch.View.ShowMainMenu = function() {
 	Astriarch.GameId = null;
 
 	Astriarch.View.audioInterface.StartMenu();
+
+	Astriarch.GameController.ClearTurnTimer();
 
 	//clear out the lobby control, once we get the response back from the LIST_GAMES message, it will populate
 	Astriarch.LobbyControl.refreshGameList({});
