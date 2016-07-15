@@ -81,6 +81,15 @@ Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 			return Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(sp);
 		});
 		Astriarch.CommControl.refreshPlayerList();
+
+		//it has been observed that sometimes a player clicks the end turn button but then the server still thinks he/she hasn't ended their turn
+		//  if we find the main player hasn't ended the turn at this point, let's re-enable the next turn button
+		Astriarch.ClientGameModel.ClientPlayers.forEach(function(cp) {
+			if(cp.Id == Astriarch.ClientGameModel.MainPlayer.Id && !cp.CurrentTurnEnded) {
+				$("#NextTurnButton").button('enable');
+			}
+		});
+
 	}
 };
 
