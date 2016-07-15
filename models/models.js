@@ -37,7 +37,8 @@ var GameHighScoreBoardSchema = new mongoose.Schema({
 	playerName:String,
 	playerNumber: Number,
 	playerPoints: {type:Number, index:true},
-	gameId: {type:ObjectId}
+	gameId: {type:ObjectId},
+	dateCreated: { type: Date, index: true, default: Date.now }
 });
 exports.GameHighScoreBoardModel = db.model('gameHighScoreBoard', GameHighScoreBoardSchema);
 

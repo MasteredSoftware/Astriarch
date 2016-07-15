@@ -75,10 +75,10 @@ td > span, td > img {
     overflow:auto;
     background-color: rgba(128,128,128,0.4);
 }
-#topRulersList{
+#topRulersList, #topRulersListRecent {
     float:left;
     margin-left:20px;
-    width:300px;
+    width:245px;
     height:120px;
     overflow:auto;
     background-color: rgba(128,128,128,0.4);

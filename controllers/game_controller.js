@@ -20,6 +20,17 @@ var GetHighScoreBoard = function(maxResults, callback){
 };
 exports.GetHighScoreBoard = GetHighScoreBoard;
 
+var GetHighScoreBoardRecent = function(maxResults, callback){
+	maxResults = maxResults || 10;
+	var limitDate = new Date(new Date().getTime() - (1000 * 60 * 60 * 24 * 7));
+
+	models.GameHighScoreBoardModel.find({"dateCreated":{$gt:limitDate}}, null, {"skip":0, "limit":maxResults, "sort": { playerPoints : -1 }}, function(err, results){
+		//console.log("GetHighScoreBoard:", err, results);
+		callback(err, results);
+	});
+};
+exports.GetHighScoreBoardRecent = GetHighScoreBoardRecent;
+
 var AddHighScoreBoardEntry = function(highScoreBoardSession, callback){
 	//Maybe this should not add an entry if the entry isn't in the top x players?
 	var highScore = new models.GameHighScoreBoardModel(highScoreBoardSession);

@@ -89,6 +89,12 @@ head
 					ol(style="margin-left:20px")
 						each ruler in top_rulers
 							li #{ruler.playerName} (#{ruler.playerPoints})
+				div#topRulersListRecent
+					div(style="color:#0A0") Recent Top Rulers:
+						hr(style="background-color:#0A0;color:#0A0;height:2px;border:0")
+					ol(style="margin-left:20px")
+						each ruler in top_rulers_recent
+							li #{ruler.playerName} (#{ruler.playerPoints})
 			#main.cf
 				// left sidebar
 				aside#left-sidebar(style='width: 260px; height: 600px;float:left;margin-right:5px;')

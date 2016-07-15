@@ -11,9 +11,10 @@ consoleTEN.init(console, consoleTEN.LEVELS[config.loglevel]);
 
 var WebSocketServer = require('ws').Server;
 
-var express = require('express')
-  , http = require('http')
-  , path = require('path');
+var express = require('express'),
+	http = require('http'),
+	async = require('async'),
+	path = require('path');
 
 
 var models = require("./models/models");
@@ -69,10 +70,37 @@ app.get('/test', function(req, res){
 });
 
 app.get('/', function(req, res){
-	gameController.GetHighScoreBoard(10, function(err, results){
-		results = results || [];
-		res.render("astriarch", {"port":app.get('ws_port'), "ping_freq":config.ws_ping_freq, "use_compressed_js": config.use_compressed_js, "file_list_external": clientFiles.clientFilesExternal, "file_list_internal": clientFiles.clientFilesInternal, "top_rulers":results});
+	async.auto({
+		"top_rulers":function(cb){
+			gameController.GetHighScoreBoard(10, function(err, results){
+				if(err) {
+					console.error("gameController.GetHighScoreBoard:", err);
+				}
+				results = results || [];
+				cb(null, results);
+			});
+		},
+		"top_rulers_recent":function(cb){
+			gameController.GetHighScoreBoardRecent(10, function(err, results){
+				if(err) {
+					console.error("gameController.GetHighScoreBoardRecent:", err);
+				}
+				results = results || [];
+				cb(null, results);
+			});
+		}
+	}, function(err, results){
+		res.render("astriarch", {
+			"port":app.get('ws_port'),
+			"ping_freq":config.ws_ping_freq,
+			"use_compressed_js": config.use_compressed_js,
+			"file_list_external": clientFiles.clientFilesExternal,
+			"file_list_internal": clientFiles.clientFilesInternal,
+			"top_rulers":results.top_rulers,
+			"top_rulers_recent":results.top_rulers_recent
+		});
 	});
+
 });
 
 var server = http.createServer(app).listen(app.get('port'), function(){
