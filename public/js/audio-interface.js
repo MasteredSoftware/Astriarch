@@ -14,6 +14,9 @@ AudioInterface = function(enabled) {
 		this.mediaInGame3 = this.createAudioElement('audio/in-game3', false, true);
 		this.mediaInGame4 = this.createAudioElement('audio/in-game4', false, true);
 		this.mediaEnd = this.createAudioElement('audio/game-over', true, false);
+
+		this.mediaTurnStart = this.createAudioElement('audio/sfx-turn-start', false, false);
+		this.mediaTurnEnd = this.createAudioElement('audio/sfx-turn-end', false, false);
 	}
 	
 	this.fadingPlayer = null;
@@ -178,5 +181,23 @@ AudioInterface.prototype.EndGame = function() {
 
 		this.mediaEnd.play();
 		this.mediaEnd.volume = this.Volume;
+	}
+};
+
+AudioInterface.prototype.StartTurn = function() {
+	if(this.enabled && !this.muted){
+
+		this.mediaTurnStart.currentTime = 0;
+		this.mediaTurnStart.play();
+		this.mediaTurnStart.volume = this.Volume;
+	}
+};
+
+AudioInterface.prototype.EndTurn = function() {
+	if(this.enabled && !this.muted){
+
+		this.mediaTurnEnd.currentTime = 0;
+		this.mediaTurnEnd.play();
+		this.mediaTurnEnd.volume = this.Volume;
 	}
 };

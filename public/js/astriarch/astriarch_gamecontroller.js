@@ -74,8 +74,12 @@ Astriarch.GameController.OnEndTurnMessageResponse = function(message) {
 		$("#NextTurnButton").button('enable');
 		Astriarch.GameController.HideControlsForTurnStart();
 
+		Astriarch.View.audioInterface.StartTurn();
+
 		Astriarch.GameController.OnStartTurn(message);
 	} else if (message.payload.clientPlayers) {
+		Astriarch.View.audioInterface.EndTurn();
+
 		//update session list to reflect which player(s) we're waiting on
 		Astriarch.ClientGameModel.ClientPlayers = message.payload.clientPlayers.map(function(sp) {
 			return Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(sp);
