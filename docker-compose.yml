@@ -1,0 +1,29 @@
+# see ./scripts/docker/README.md
+version: '2'
+services:
+  astriarchapp:
+    container_name: astriarch_app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: astriarch
+    ports:
+      - '8000:8000'
+    volumes:
+        - .:/usr/src/app
+    working_dir: /usr/src/app
+    command: npm start
+    environment:
+      NODE_ENV: local
+    networks:
+      - astriarch_net
+
+  db:
+    image: mongo:3.2.8
+    container_name: astriarch_mongo
+    networks:
+     - astriarch_net
+
+
+networks:
+  astriarch_net:
