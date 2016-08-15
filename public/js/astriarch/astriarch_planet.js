@@ -80,11 +80,11 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 			break;
 		case Astriarch.Planet.PlanetType.DeadPlanet:
 			this.MaxImprovements = 5;
-			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(2, 5), this.BoundingHex);
+			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(3, 5), this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass1:
 			this.MaxImprovements = 6;
-			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(5, 10), this.BoundingHex);
+			this.PlanetaryFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateShips(initialOwner, Astriarch.Fleet.StarShipType.SystemDefense, Astriarch.NextRandom(4, 6), this.BoundingHex);
 			break;
 		case Astriarch.Planet.PlanetType.PlanetClass2:
 			this.MaxImprovements = 9;
