@@ -772,24 +772,18 @@ Astriarch.ServerController = {
 		return eotMessages;
 	},
 
-	growPlayerPlanetPopulation: function(/*Player*/ player){//returns List<SerializableTurnEventMessage>
+	growPlayerPlanetPopulation: function(/*Player*/ player) {//returns List<SerializableTurnEventMessage>
 		var endOfTurnMessages = [];// List<SerializableTurnEventMessage>
 		//population growth rate is based on available space at the planet and the amount currently there
 		//as we fill up the planet, growth rate slows
-		for (var i in player.OwnedPlanets)
-		{
+		for (var i in player.OwnedPlanets) {
 			var p = player.OwnedPlanets[i];//Planet
-			var popCount = p.Population.length;
-			//check if we can grow
-			if (popCount > 0 && p.PlanetHappiness != Astriarch.Planet.PlanetHappinessType.Riots && (popCount < p.MaxPopulation() || p.Population[popCount - 1].PopulationChange < 1.0))
-			{
-				var growthRatio = popCount / 4.0 * ((p.MaxPopulation() - popCount) / 8.0);
-				if (p.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest slows pop growth
-					growthRatio = growthRatio / 2.0;
-				var lastCitizen = p.Population[popCount - 1];//Citizen
-				lastCitizen.PopulationChange += growthRatio;
-				if (lastCitizen.PopulationChange >= 1.0)
-				{
+			var growthRate = p.GetPopulationGrowthRate();
+			//check if we are growing
+			if (growthRate > 0) {
+				var lastCitizen = p.Population[p.Population.length - 1];//Citizen
+				lastCitizen.PopulationChange += growthRate;
+				if (lastCitizen.PopulationChange >= 1.0) {
 					//notify user of growth
 					endOfTurnMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.PopulationGrowth, p, "Population growth on planet: " + p.Name));
 					//grow

@@ -695,7 +695,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				$('#SelectedItemImprovementSlotsPanel').css({"visibility":"visible"});
 				$('#SelectedItemStatusDetails').css({"visibility":"visible"});
 
-				Astriarch.View.updateSelectedItemPopulationPanel(p.Population, p.MaxPopulation());
+				Astriarch.View.updateSelectedItemPopulationPanel(p);
 
 				var farmCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm].length;
 				var mineCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
@@ -835,13 +835,21 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 	$('#SelectedItemStatus').html(sb);
 };
 
-Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopulation) {
+Astriarch.View.updateSelectedItemPopulationPanel = function(planet) {
+	var population = planet.Population;
+	var maxPopulation = planet.MaxPopulation();
     var element = null;
+	var popGrowthIn = planet.GetTurnsUntilPopulationGrowth();
+	var popGrowthInText = "";
+	if(popGrowthIn < 999) {
+		popGrowthInText = ", Growth in " + popGrowthIn + " turn";
+		popGrowthInText += popGrowthIn > 1 ? "s" : "";
+	}
 	//clear out the appropriate ones
 	for (var i = maxPopulation + 1; i <= 16; i++) {
         element = $("#PopulationImage" + i);
 		element.attr("class","popImg");
-        element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
+        element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText);
 	}
 
 	for (var i = 1; i <= maxPopulation; i++) {
@@ -851,19 +859,19 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(population, maxPopul
 			var citizen = population[i - 1];
 			if(citizen.ProtestLevel == 0){
 				element.attr("class","icon-10x16-PopulationSmallFilled");
-				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
+				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText);
 			} else if(citizen.ProtestLevel > 0.5){
 				element.attr("class","icon-10x16-PopulationSmallFilled_red");
-				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
+				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%" + popGrowthInText);
 			} else {
 				element.attr("class","icon-10x16-PopulationSmallFilled_orange");
-				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%");
+				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%" + popGrowthInText);
 			}
 
 		}
 		else {
 			element.attr("class","icon-10x16-PopulationSmallEmpty");
-            element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation)
+            element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText);
 		}
 	}
 };

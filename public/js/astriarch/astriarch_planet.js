@@ -102,7 +102,7 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 Astriarch.Planet.Static = {NEXT_PLANET_ID:1, PLANET_SIZE: 20.0};
 
 /**
- * Gets all population by wether they have a ProtestLevel or not
+ * Gets all population by whether they have a ProtestLevel or not
  * @returns {{protesting: Array, content: Array}}
  * @constructor
  */
@@ -117,6 +117,44 @@ Astriarch.Planet.prototype.GetPopulationByContentment = function(){
 		}
 	}
 	return citizens;
+};
+
+/**
+ * Gets the speed that population is currently growing on this planet
+ * @returns {number} a decimal value of the fraction added to the population each turn
+ * @constructor
+ */
+Astriarch.Planet.prototype.GetPopulationGrowthRate = function() {
+	var popCount = this.Population.length;
+	var growthRate = 0;
+	//check if we can grow
+	if (popCount > 0 && this.PlanetHappiness != Astriarch.Planet.PlanetHappinessType.Riots && (popCount < this.MaxPopulation() || this.Population[popCount - 1].PopulationChange < 1.0)) {
+		var openSlots = this.MaxPopulation() - popCount;
+		var maxProcreation = popCount / 8.0;
+		//when there are 2 open slots per pop, then the maximum growth rate is achieved per population
+		growthRate = maxProcreation * Math.min(openSlots / popCount, 2.0);
+		if (this.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest slows pop growth
+			growthRate = growthRate / 2.0;
+	}
+	return growthRate;
+};
+
+/**
+ * Gets the number of turns estimated till the planet grows in population
+ * @returns {number} turns till growth
+ * @constructor
+ */
+Astriarch.Planet.prototype.GetTurnsUntilPopulationGrowth = function() {
+	var turns = 999;
+	if(this.Population.length > 0 && this.Population.length < this.MaxPopulation()) {
+		var currentLevel =  this.Population[this.Population.length - 1].PopulationChange;
+		if(currentLevel >= 1) {
+			turns = 1;
+		} else {
+			turns = Math.floor((1 - currentLevel) / this.GetPopulationGrowthRate()) + 1;
+		}
+	}
+	return turns;
 };
 
 /**
