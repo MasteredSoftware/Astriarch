@@ -54,6 +54,9 @@ Astriarch.SendShipsControl = {
 		Astriarch.SendShipsControl.addAvailableStarShipCardListItems(pf.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
 		Astriarch.SendShipsControl.addAvailableStarShipCardListItems(pf.StarShips[Astriarch.Fleet.StarShipType.Scout]);
 
+		//Default to the first ship selected
+		Astriarch.SendShipsControl.StarShipsAvailableCardList.setSelectedIndex(0);
+
 		var currentWaypointStatus = "Waypoint not set";
 		if(pSource.WayPointPlanetId){
 			var waypointClientPlanet = Astriarch.ClientGameModel.getClientPlanetById(pSource.WayPointPlanetId);
@@ -144,7 +147,7 @@ Astriarch.SendShipsControl = {
 		}
 		else
 		{
-			self.CreatedFleet = null;//just to be sure because we check this in MainPage.xaml.cs
+			self.CreatedFleet = null;//just to be sure
 		}
 
 		Astriarch.View.SendShipsDialogWindowClosed(true);

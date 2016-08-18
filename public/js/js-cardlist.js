@@ -90,6 +90,7 @@ JSCardList.prototype.setSelectedItem = function(item) {
     }
     if(item) {
         item.selected = true;
+        this.refresh();
     }
 };
 
