@@ -36,22 +36,22 @@ Astriarch.Fleet = function(/*Player*/ p) {
 Astriarch.Fleet.Static = {
 	SPACE_PLATFORM_STRENGTH: 64,//TODO: twice the strength of a battleship, is this good?
 	getStrengthDetailsForShips: function(ships){
-		var details = {strength: 0, maxStrength:0, damageAmount:0, percentDamage:0, color:null, percentDamageText: "", damageText: ""};
+		var details = {strength: 0, maxStrength:0, health:0, percentHealth:0, color:null, percentHealthText: "", damageText: ""};
 		for(var i = 0; i < ships.length; i++) {
 			var s = ships[i];
 			details.strength += s.Strength();
 			details.maxStrength += s.MaxStrength();
-			details.damageAmount += s.DamageAmount;
+			details.health += s.Health;
 		}
-		details.percentDamage = details.maxStrength == 0 ? 0 : details.damageAmount / details.maxStrength;
-		var percentDamageFriendly = details.percentDamage ? ((1 - details.percentDamage) * 100).toFixed(1) : 100;
-		details.percentDamageText = ships.length == 0 ? "" : percentDamageFriendly + "%";
+		details.percentHealth = details.maxStrength == 0 ? 1 : details.health / details.maxStrength;
+		var percentHealthFriendly = details.percentHealth ? (details.percentHealth * 100).toFixed(1) : 0;
+		details.percentHealthText = ships.length == 0 ? "" : percentHealthFriendly + "%";
 		details.damageText = details.strength + "/" + details.maxStrength;
-		if(details.percentDamage == 0)
+		if(details.percentHealth == 1)
 			details.color = "green";
-		else if(details.percentDamage < 0.25)
+		else if(details.percentHealth > 0.75)
 			details.color = "yellow";
-		else if(details.percentDamage < 0.5)
+		else if(details.percentHealth > 0.5)
 			details.color = "orange";
 		else
 			details.color = "red";
@@ -564,9 +564,6 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
 	this.BaseStarShipStrength = 0;
 	//TODO: could eventually allow ship upgrades? to improve on base strength
 
-	this.DamageAmount = 0;//starships will heal between turns if the planet has the necessary building and the player has the requisite resources
-	this.ExperienceAmount = 0;//each time a starship damages an opponent the experience amount increases by the damage amount
-
 	//ship strength is based on ship cost
 	//  right now it is double the value of the next lower ship class
 	//maybe later: + 50% (rounded up) of the next lower ship cost
@@ -576,8 +573,7 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
 	//each cruiser is worth 16
 	//each battleship is worth 32
 
-	switch (this.Type)
-	{
+	switch (this.Type) {
 		case Astriarch.Fleet.StarShipType.SystemDefense:
 			this.BaseStarShipStrength = 2;
 			break;
@@ -594,6 +590,11 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
 			this.BaseStarShipStrength = 32;
 			break;
 	}
+
+	this.Health = this.BaseStarShipStrength;//starships will heal between turns if the planet has the necessary building and the player has the requisite resources
+	this.ExperienceAmount = 0;//each time a starship damages an opponent the experience amount increases by the damage amount
+
+
 };
 
 Astriarch.Fleet.StarShip.Static = {NEXT_STARSHIP_ID: 1};
@@ -604,7 +605,7 @@ Astriarch.Fleet.StarShip.Static = {NEXT_STARSHIP_ID: 1};
  * @return {number} the starship's strength
  */
 Astriarch.Fleet.StarShip.prototype.Strength = function() {
-	return this.MaxStrength() - this.DamageAmount;
+	return this.Health;
 };
 
 /**
@@ -662,7 +663,7 @@ Astriarch.Fleet.StarShip.prototype.Level = function() {
  */
 Astriarch.Fleet.StarShip.prototype.CloneStarShip = function(){//returns StarShip
 	var s = new Astriarch.Fleet.StarShip(this.Type);
-	s.DamageAmount = this.DamageAmount;
+	s.Health = this.Health;
 	s.ExperienceAmount = this.ExperienceAmount;
 	return s;
 };
@@ -672,9 +673,10 @@ Astriarch.Fleet.StarShip.prototype.CloneStarShip = function(){//returns StarShip
  * @this {Astriarch.Fleet.StarShip}
  * @return {Number} the amount repaired
  */
-Astriarch.Fleet.StarShip.prototype.RepairStarShip = function(maxStrengthToRepair){//returns Number
-	var amountRepaired = Math.min(maxStrengthToRepair, this.DamageAmount);
-	this.DamageAmount -= amountRepaired;
+Astriarch.Fleet.StarShip.prototype.RepairStarShip = function(maxStrengthToRepair) {
+	var damageAmount = this.MaxStrength() - this.Health;
+	var amountRepaired = Math.min(maxStrengthToRepair, damageAmount);
+	this.Health += amountRepaired;
 	return amountRepaired;
 };
 

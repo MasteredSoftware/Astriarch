@@ -720,23 +720,23 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 
 				//adjust canvas drawing based on damage of ships
 				var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
-				Astriarch.View.ImageCanvasStarships.defender.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				Astriarch.View.ImageCanvasStarships.defender.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentHealthText);
 				$(Astriarch.View.ImageCanvasStarships.defender.canvasSelector).prop("title", "Defenders" + (details.maxStrength ? ": " + details.damageText : ""));
 
 				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout]);
-				Astriarch.View.ImageCanvasStarships.scout.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				Astriarch.View.ImageCanvasStarships.scout.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentHealthText);
 				$(Astriarch.View.ImageCanvasStarships.scout.canvasSelector).prop("title", "Scouts" + (details.maxStrength ? ": " + details.damageText : ""));
 
 				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
-				Astriarch.View.ImageCanvasStarships.destroyer.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				Astriarch.View.ImageCanvasStarships.destroyer.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentHealthText);
 				$(Astriarch.View.ImageCanvasStarships.destroyer.canvasSelector).prop("title", "Destroyers" + (details.maxStrength ? ": " + details.damageText : ""));
 
 				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
-				Astriarch.View.ImageCanvasStarships.cruiser.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				Astriarch.View.ImageCanvasStarships.cruiser.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentHealthText);
 				$(Astriarch.View.ImageCanvasStarships.cruiser.canvasSelector).prop("title", "Cruisers" + (details.maxStrength ? ": " + details.damageText : ""));
 
 				details = Astriarch.Fleet.Static.getStrengthDetailsForShips(p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
-				Astriarch.View.ImageCanvasStarships.battleship.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentDamageText);
+				Astriarch.View.ImageCanvasStarships.battleship.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentHealthText);
 				$(Astriarch.View.ImageCanvasStarships.battleship.canvasSelector).prop("title", "Battleships" + (details.maxStrength ? ": " + details.damageText : ""));
 
 				var scoutCount = p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;

@@ -189,7 +189,7 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 	 * @return {string}
 	 */
 	render: function() {
-		var details = Astriarch.Fleet.Static.getStrengthDetailsForShips([this.StarShip]);//{strength: 0, maxStrength:0, damageAmount:0, percentDamage:0, color:null, percentDamageText: "", damageText: ""};
+		var details = Astriarch.Fleet.Static.getStrengthDetailsForShips([this.StarShip]);//{strength: 0, maxStrength:0, health:0, percentHealth:0, color:null, percentHealthText: "", damageText: ""};
 
 		this.Foreground = details.color;
 
@@ -200,7 +200,7 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 		var element = '<span class="sscItem">' +
 			'<span class="sscItemHealth">' + details.damageText + '</span>' +
 			'<div class="sscItemImg '+imageClassName+'" />' +
-			'<div class="sscHealthBarContainer"><div class="sscHealthBar" style="background:'+this.Foreground+';height:'+ details.percentDamageText + '" /></div>' +
+			'<div class="sscHealthBarContainer"><div class="sscHealthBar" style="background:'+this.Foreground+';height:'+ details.percentHealthText + '" /></div>' +
 			'<div class="sscExpBarContainer"><div class="sscExpBar" style="background:#369;height:'+ (percentLevel) * 100 + '%" /></div>' +
 			'<span class="sscItemLevel">' + (levelObj.level + 1) + '</span>' +
 			'</span>';

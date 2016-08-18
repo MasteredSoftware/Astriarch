@@ -56,7 +56,7 @@ Astriarch.BattleSimulator = {
 			//deal damage
 			for(var i in fleet1DamagePending) {
 				var f1KVP = fleet1DamagePending[i];//KeyValuePair<StarShipId, {Starship:starshipObject, Damage:int}>
-				f1KVP['Starship'].DamageAmount += f1KVP['Damage'];
+				f1KVP['Starship'].Health -= f1KVP['Damage'];
 				//assign points
 				if(f2.Owner){
 					f2.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, f1KVP['Damage']);
@@ -66,7 +66,7 @@ Astriarch.BattleSimulator = {
 
 			for (var i in fleet2DamagePending) {
 				var f2KVP = fleet2DamagePending[i];//KeyValuePair<StarShipId, {Starship:starshipObject, Damage:int}>
-				f2KVP['Starship'].DamageAmount += f2KVP['Damage'];
+				f2KVP['Starship'].Health -= f2KVP['Damage'];
 				//assign points
 				if(f1.Owner){
 					f1.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, f2KVP['Damage']);
