@@ -19,10 +19,14 @@ head
 			script(type='text/javascript', src='#{file}')
 
 	script(src="/js/server_comm.js")
-	script(type="text/javascript", src="https://apis.google.com/js/plusone.js")
+	if external_resource_connect
+		script(type="text/javascript", src="https://apis.google.com/js/plusone.js")
 	link(rel="stylesheet", type="text/css", href="/css/astriarch.css")
 	link(rel="stylesheet", type="text/css", href="/css/main.css")
 	script(type='text/javascript').
+
+		var config = {};
+		config.external_resource_connect = '#{external_resource_connect}';
 
 		function openWin(url) {
 			window.open (url,"aboutastriarch","scrollbars=1,width=800,height=600");
@@ -39,29 +43,36 @@ head
 
 		AstriarchExtern.OnGameStart = function(data) {
 			//{'Players':#, 'PlanetsPerSystem':#, 'Systems':#}
-			ga('send', 'event', 'Astriarch', 'Game Started', 'Players', data.Players);
-			ga('send', 'event', 'Astriarch', 'Game Started', 'Planets Per System', data.PlanetsPerSystem);
-			ga('send', 'event', 'Astriarch', 'Game Started', 'Systems', data.Systems);
+			if(config.external_resource_connect) {
+				ga('send', 'event', 'Astriarch', 'Game Started', 'Players', data.Players);
+				ga('send', 'event', 'Astriarch', 'Game Started', 'Planets Per System', data.PlanetsPerSystem);
+				ga('send', 'event', 'Astriarch', 'Game Started', 'Systems', data.Systems);
+			}
 		};
 
 		AstriarchExtern.OnGameOver = function(data) {
 			//{'PlayerWon':true|false, 'Turns':#, 'Score':#}
-			if(data.PlayerWon){
-				ga('send', 'event', 'Astriarch', 'Game Over', 'Player Won', data.Score);
+			if(config.external_resource_connect) {
+				if (data.PlayerWon) {
+					ga('send', 'event', 'Astriarch', 'Game Over', 'Player Won', data.Score);
+				}
+				else {
+					ga('send', 'event', 'Astriarch', 'Game Over', 'Player Lost', data.Score);
+				}
+				ga('send', 'event', 'Astriarch', 'Game Over', 'Turns Played', data.Turns);
 			}
-			else {
-				ga('send', 'event', 'Astriarch', 'Game Over', 'Player Lost', data.Score);
-			}
-			ga('send', 'event', 'Astriarch', 'Game Over', 'Turns Played', data.Turns);
 		};
 
-		(function(d, s, id) {
-			var js, fjs = d.getElementsByTagName(s)[0];
-			if (d.getElementById(id)) return;
-			js = d.createElement(s); js.id = id;
-			js.src = "https://connect.facebook.net/en_US/all.js#xfbml=1";
-			fjs.parentNode.insertBefore(js, fjs);
-		}(document, 'script', 'facebook-jssdk'));
+		if(config.external_resource_connect) {
+			(function (d, s, id) {
+				var js, fjs = d.getElementsByTagName(s)[0];
+				if (d.getElementById(id)) return;
+				js = d.createElement(s);
+				js.id = id;
+				js.src = "https://connect.facebook.net/en_US/all.js#xfbml=1";
+				fjs.parentNode.insertBefore(js, fjs);
+			}(document, 'script', 'facebook-jssdk'));
+		}
 
 	body
 		//
@@ -790,24 +801,25 @@ head
 					| Astriarch - Ruler of the Stars multiplayer version Copyright 2010&nbsp;
 					a(href='http://www.masteredsoftware.com/', target='_blank') Mastered Software
 					| , Music by Resonant.
-				div
-					script(type="text/javascript").
-						google_ad_client = "ca-pub-4435324278170744";
-						/* Astriarch - Leaderboard */
-						google_ad_slot = "4525540849";
-						google_ad_width = 728;
-						google_ad_height = 90;
-					script(type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js")
-				#social-links
-					div(style='height: 22px; margin-left: auto; margin-right: auto;display:block;')
-						span
-							.fb-like(data-href='http://www.astriarch.com', data-send='false', data-layout='button_count', data-width='75', data-height='25', data-show-faces='false', data-colorscheme='dark', style='vertical-align:top;')
-						span(style='margin-left: 30px;')
-							g:plusone(size='medium', href='http://www.astriarch.com/')
-						span
-							a.twitter-share-button(href='https://twitter.com/share', data-related='masteredsoft,mpalmerlee', data-via='astriarch', data-text='Astriarch - Ruler of the Stars, HTML5 space strategy game', data-url='http://astriarch.com', data-lang='en', data-size='medium', data-count='horizontal') Tweet
-							script.
-								!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+				if external_resource_connect
+					div
+						script(type="text/javascript").
+							google_ad_client = "ca-pub-4435324278170744";
+							/* Astriarch - Leaderboard */
+							google_ad_slot = "4525540849";
+							google_ad_width = 728;
+							google_ad_height = 90;
+						script(type="text/javascript" src="http://pagead2.googlesyndication.com/pagead/show_ads.js")
+					#social-links
+						div(style='height: 22px; margin-left: auto; margin-right: auto;display:block;')
+							span
+								.fb-like(data-href='http://www.astriarch.com', data-send='false', data-layout='button_count', data-width='75', data-height='25', data-show-faces='false', data-colorscheme='dark', style='vertical-align:top;')
+							span(style='margin-left: 30px;')
+								g:plusone(size='medium', href='http://www.astriarch.com/')
+							span
+								a.twitter-share-button(href='https://twitter.com/share', data-related='masteredsoft,mpalmerlee', data-via='astriarch', data-text='Astriarch - Ruler of the Stars, HTML5 space strategy game', data-url='http://astriarch.com', data-lang='en', data-size='medium', data-count='horizontal') Tweet
+								script.
+									!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
 
 			ol#joyRideTipContent
 				li
@@ -1131,10 +1143,11 @@ head
 					Astriarch.View.PageLoadInit(serverConfig);
 				});
 
-		script(type='text/javascript').
-			(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-			(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-			m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-			})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-			ga('create', 'UA-7797548-2', 'astriarch.com');
-			ga('send', 'pageview');
+		if external_resource_connect
+			script(type='text/javascript').
+				(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+				(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+				m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+				})(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+				ga('create', 'UA-7797548-2', 'astriarch.com');
+				ga('send', 'pageview');

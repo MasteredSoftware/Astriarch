@@ -94,6 +94,7 @@ app.get('/', function(req, res){
 			"port":app.get('ws_port'),
 			"ping_freq":config.ws_ping_freq,
 			"use_compressed_js": config.use_compressed_js,
+			"external_resource_connect": config.external_resource_connect,
 			"file_list_external": clientFiles.clientFilesExternal,
 			"file_list_internal": clientFiles.clientFilesInternal,
 			"top_rulers":results.top_rulers,

@@ -509,9 +509,10 @@ Astriarch.SerializablePlanet = function(/*Astriarch.Planet*/ planet) {
 	
 	//populate outgoingFleets
 	this.OutgoingSerializableFleets = [];//Planet has OutgoingFleets List<Fleet>
-	for(var i in planet.OutgoingFleets)
-	{
-		this.OutgoingSerializableFleets.push(new Astriarch.SerializableFleet(planet.OutgoingFleets[i], planet.Owner.Type == Astriarch.Player.PlayerType.Human));
+	for(var i in planet.OutgoingFleets) {
+		if(planet.Owner) {
+			this.OutgoingSerializableFleets.push(new Astriarch.SerializableFleet(planet.OutgoingFleets[i], planet.Owner.Type == Astriarch.Player.PlayerType.Human));
+		}
 	}
 
 	this.PlanetHappiness = planet.PlanetHappiness;//PlanetHappinessType

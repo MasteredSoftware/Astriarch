@@ -1,6 +1,7 @@
 {
 	"loglevel":"INFO",
 	"use_compressed_js":true,
+	"external_resource_connect":true,
 	"mongodb":{
 		"gamedb_name":"astriarch",
 		"sessiondb_name":"astriarch",
