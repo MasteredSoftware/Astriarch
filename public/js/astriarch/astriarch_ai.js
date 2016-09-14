@@ -2,7 +2,9 @@ var Astriarch = Astriarch || require('./astriarch_base');
 
 Astriarch.AI = {
 
-	OnComputerSentFleet: null,//function pointer: ComputerSentFleet(Fleet f)
+	OnComputerSentFleet: function(f) {
+		console.debug("Computer Sent Fleet:", f.ToString(), "From:", f.travelingFromHex.PlanetContainedInHex.Name, "To:", f.DestinationHex.PlanetContainedInHex.Name);
+	},
 
 	ComputerTakeTurn: function(gameModel, /*Player*/ player){
 		//determine highest priority for resource usage
@@ -59,9 +61,10 @@ Astriarch.AI = {
 
 			allPlanets.push(p);
 
-			//TODO: do we need to do this?
+			console.debug(player.Name, "Population Assignment for planet:", p.Name, pop);
+
 			//make sure we have up to date resources per turn before we make decisions based on assignments
-			//p.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
+			p.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 		}
 
 
@@ -149,13 +152,15 @@ Astriarch.AI = {
 
 		var oreAmountNeeded = Math.round(oreAmountRecommended * mineralOverestimation) - player.TotalOreAmount();
 		var iridiumAmountNeeded = Math.round(iridiumAmountRecommended * mineralOverestimation) - player.TotalIridiumAmount();
+		var foodDiff = 0;
+		console.debug(player.Name, "Mineral Needs:", oreAmountNeeded, iridiumAmountNeeded);
 
 		if (totalPopulation > (totalFoodProduction + totalFoodAmountOnPlanets))
 		{
 			//check to see if we can add farmers to class 1 and class 2 planets
-			var foodDiff = totalPopulation - (totalFoodProduction + totalFoodAmountOnPlanets);
+			foodDiff = totalPopulation - (totalFoodProduction + totalFoodAmountOnPlanets);
 			//first try to satiate by retasking miners/workers on planets with less food amount than population
-
+			console.debug(player.Name, "potential food shortage:", foodDiff);
 
 			//gather potential planets for adding farmers to
 			//TODO: this should order by planets with farms as well as planets who's population demands more food than it produces (more potential for growth)
@@ -168,11 +173,11 @@ Astriarch.AI = {
 				for (var i in allPlanets)
 				{
 					var p = allPlanets[i];//Planet
-					if (neededFarmers > 0 && p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn() > 0
+					if (neededFarmers > 0 && p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn() > 0
 							&& (planetMiners[p.Id] > 0 || planetWorkers[p.Id] > 0))
 					{
 						planetCandidatesForAddingFarmers.push(p);
-						neededFarmers -= p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn();
+						neededFarmers -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						if (neededFarmers <= 0)
 							break;
 					}
@@ -197,7 +202,7 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 1, -1, 0);
 						planetFarmers[p.Id]++;
 						planetMiners[p.Id]--;
-						foodDiff -= p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn();
+						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
 					else if (planetWorkers[p.Id] > 0)
@@ -205,7 +210,7 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 1, 0, -1);
 						planetFarmers[p.Id]++;
 						planetWorkers[p.Id]--;
-						foodDiff -= p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn();
+						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
 
@@ -223,7 +228,8 @@ Astriarch.AI = {
 		}
 		else//we can re-task farmers at class 1 and class 2 planets (and maybe dead planets?)
 		{
-			var foodDiff = (totalFoodProduction + totalFoodAmountOnPlanets) - totalPopulation;
+			foodDiff = (totalFoodProduction + totalFoodAmountOnPlanets) - totalPopulation;
+			console.debug(player.Name, "potential food surplus:", foodDiff);
 
 			//gather potential planets for removing farmers from
 			//TODO: this should order by planets without farms and planets which have more food production than it's population demands (less potential for growth)
@@ -237,11 +243,11 @@ Astriarch.AI = {
 				{
 					var p = allPlanets[i];//Planet
 					if (unneededFarmers > 0 &&
-						unneededFarmers > p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn() &&
+						unneededFarmers > p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn() &&
 						planetFarmers[p.Id] > 0)
 					{
 						planetCandidatesForRemovingFarmers.push(p);
-						unneededFarmers -= p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn();
+						unneededFarmers -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						if (unneededFarmers <= 0)
 							break;
 					}
@@ -253,20 +259,20 @@ Astriarch.AI = {
 				for (var i in planetCandidatesForRemovingFarmers)
 				{
 					var p = planetCandidatesForRemovingFarmers[i];//Planet
-					if (foodDiff < p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn())
+					if (foodDiff < p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn())
 						continue;//if removing this farmer would create a shortage, skip this planet
 
 					//check if we need more minerals, otherwise prefer production
 					//on terrestrial planets, make sure we have a mine before we add a miner
-					var addMiner = (p.Type != Astriarch.Planet.PlanetType.PlanetClass2 || p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].Count > 0);
+					var addMiner = (p.Type != Astriarch.Planet.PlanetType.PlanetClass2 || p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length > 0);
 					if (addMiner && (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) && planetFarmers[p.Id] > 0)
 					{
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], -1, 1, 0);
 						planetFarmers[p.Id]--;
 						planetMiners[p.Id]++;
-						oreAmountNeeded -= p.ResourcesPerTurn.OreAmountPerWorkerPerTurn();
-						iridiumAmountNeeded -= p.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn();
-						foodDiff -= p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn();
+						oreAmountNeeded -= p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
+						iridiumAmountNeeded -= p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
+						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
 					else if (planetFarmers[p.Id] > 0)
@@ -274,7 +280,7 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], -1, 0, 1);
 						planetFarmers[p.Id]--;
 						planetWorkers[p.Id]++;
-						foodDiff -= p.ResourcesPerTurn.FoodAmountPerWorkerPerTurn();
+						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
 
@@ -288,58 +294,53 @@ Astriarch.AI = {
 			}//while (foodDiff > 0)
 		}
 
+		var oreAmountNeededWorking = (oreAmountNeeded * 1.0);
+		var iridumAmountNeededWorking = (iridiumAmountNeeded * 1.0);
 		//next see if we need miners, look for workers to reassign (don't reassign farmers at this point)
-		if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0)
-		{
-			var oreAmountNeededWorking = (oreAmountNeeded * 1.0);
-			var iridumAmountNeededWorking = (iridiumAmountNeeded * 1.0);
+		if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) {
 
 			var planetCandidatesForRemovingWorkers = []; //List<Planet>
 			
 			var mineralProductionComparer = new Astriarch.Planet.PlanetMineralProductionComparer(oreAmountNeeded, iridiumAmountNeeded);
 			allPlanets.sort(mineralProductionComparer.sortFunction);
 
-			if (oreAmountNeededWorking > 0 || iridumAmountNeededWorking > 0)
-				for (var i in allPlanets)
-				{
-					var p = allPlanets[i];//Planet
-					//leave at least one worker on terrestrial planets, leave 2 workers if we don't have a mine yet
-					var minWorkers = 0;
-					var minFarmers = -1;
-					if (p.Type == Astriarch.Planet.PlanetType.PlanetClass2)
-					{
-						minWorkers = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length == 0 ? 2 : 1;
-						minFarmers = 0;//also make sure we have one farmer before reassigning a worker to be miner
-					}
-
-
-					if (planetWorkers[p.Id] > minWorkers && planetFarmers[p.Id] > minFarmers)
-					{
-						planetCandidatesForRemovingWorkers.push(p);
-						oreAmountNeededWorking -= p.ResourcesPerTurn.OreAmountPerWorkerPerTurn();
-						iridumAmountNeededWorking -= p.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn();
-					}
+			for (var i in allPlanets) {
+				if (oreAmountNeededWorking < 0 && iridumAmountNeededWorking < 0) {
+					break;
 				}
+				var p = allPlanets[i];//Planet
+				//leave at least one worker on terrestrial planets, leave 2 workers if we don't have a mine yet
+				var minWorkers = 0;
+				var minFarmers = -1;
+				if (p.Type == Astriarch.Planet.PlanetType.PlanetClass2) {
+					minWorkers = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length == 0 ? 2 : 1;
+					minFarmers = 0;//also make sure we have one farmer before reassigning a worker to be miner
+				}
+
+
+				if (planetWorkers[p.Id] > minWorkers && planetFarmers[p.Id] > minFarmers) {
+					planetCandidatesForRemovingWorkers.push(p);
+					oreAmountNeededWorking -= p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
+					iridumAmountNeededWorking -= p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
+				}
+			}
 			
 
-			while (oreAmountNeeded > 0 || iridiumAmountNeeded > 0)
-			{
+			while (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) {
 				var changedAssignment = false;
-				for (var i in planetCandidatesForRemovingWorkers)
-				{
+				for (var i in planetCandidatesForRemovingWorkers) {
 					var p = planetCandidatesForRemovingWorkers[i];//Planet
 					//double check we have enough workers still
 					var minWorkers = 1;
 					if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length == 0)
 						minWorkers = 2;
 
-					if (planetWorkers[p.Id] > minWorkers)
-					{
+					if (planetWorkers[p.Id] > minWorkers) {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 0, 1, -1);
 						planetMiners[p.Id]++;
 						planetWorkers[p.Id]--;
-						oreAmountNeeded -= p.ResourcesPerTurn.OreAmountPerWorkerPerTurn();
-						iridiumAmountNeeded -= p.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn();
+						oreAmountNeeded -= p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
+						iridiumAmountNeeded -= p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
 
@@ -352,46 +353,43 @@ Astriarch.AI = {
 					break;
 			}//while (oreAmountNeeded > 0 || iridiumAmountNeeded > 0)
 
-		}//if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0)
-		else//we have enough minerals, reassign miners to workers
-		{
-			var oreMinersUnneeded = Math.abs(oreAmountNeeded * 1.0) / 2.0;
-			var iridumMinersUnneeded = Math.abs(iridiumAmountNeeded * 1.0);
+		} else {
+			//we have enough minerals, reassign miners to workers
+
 			var planetCandidatesForRemovingMiners = []; //List<Planet>
 
 			var mineralProductionComparer = new Astriarch.Planet.PlanetMineralProductionComparer(oreAmountNeeded, iridiumAmountNeeded);
 			allPlanets.sort(mineralProductionComparer.sortFunction);
 			allPlanets.reverse();
 
-			if (oreMinersUnneeded > 0 || iridumMinersUnneeded > 0)
-				for (var i in allPlanets)
-				{
-					var p = allPlanets[i];//Planet
-					if (planetMiners[p.Id] > 0)
-					{
-						planetCandidatesForRemovingMiners.push(p);
-						oreMinersUnneeded -= p.ResourcesPerTurn.OreAmountPerWorkerPerTurn();
-						iridumMinersUnneeded -= p.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn();
-					}
-				}
 
-			while (oreAmountNeeded <= 0 || iridiumAmountNeeded <= 0)
-			{
+			for (var i in allPlanets) {
+				if (oreAmountNeededWorking > 0 || iridumAmountNeededWorking > 0) {
+					break;
+				}
+				var p = allPlanets[i];//Planet
+				if (planetMiners[p.Id] > 0) {
+					planetCandidatesForRemovingMiners.push(p);
+					oreAmountNeededWorking += p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
+					iridumAmountNeededWorking += p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
+				}
+			}
+
+			while (oreAmountNeeded < 0 && iridiumAmountNeeded < 0) {
 				var changedAssignment = false;
-				for (var i in planetCandidatesForRemovingMiners)
-				{
+				for (var i in planetCandidatesForRemovingMiners) {
 					var p = planetCandidatesForRemovingMiners[i];//Planet
-					if (planetMiners[p.Id] > 0)//double check we still have miners
-					{
+					//double check we still have miners and that we don't over compensate
+					if (planetMiners[p.Id] > 0 && (oreAmountNeeded + p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn() < 0 && iridiumAmountNeeded + p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn() < 0)) {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 0, -1, 1);
 						planetMiners[p.Id]--;
 						planetWorkers[p.Id]++;
-						oreAmountNeeded += p.ResourcesPerTurn.OreAmountPerWorkerPerTurn();
-						iridiumAmountNeeded += p.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn();
+						oreAmountNeeded += p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
+						iridiumAmountNeeded += p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
 
-					if (oreAmountNeeded > 0 && iridiumAmountNeeded > 0)
+					if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0)
 						break;
 				}
 
@@ -409,52 +407,54 @@ Astriarch.AI = {
 		var planetCandidatesForNeedingSpacePlatforms = []; //List<Planet>
 		var planetCandidatesForNeedingShips = []; //List<Planet>
 
-		for(var i in ownedPlanetsSorted)
-		{
+		var planetCountNeedingExploration = Astriarch.AI.countPlanetsNeedingExploration(gameModel, player);
+
+		for(var i in ownedPlanetsSorted) {
 			var p = ownedPlanetsSorted[i];//Planet
 			//if this planet doesn't already have a build goal in player.PlanetBuildGoals
-			if (!player.PlanetBuildGoals[p.Id])
-			{
-				if (p.BuildQueue.length <= 1)//even if we have something in queue we might want to set a goal to save up resources?
-				{
-					if (p.BuiltAndBuildQueueImprovementCount() < p.MaxImprovements)
-					{
-						planetCandidatesForNeedingImprovements.push(p);
-					}
-					else if (Astriarch.AI.countPlanetsNeedingExploration(gameModel, player) != 0)//if we need to explore some planets before building a space platform, do so
-					{
-						planetCandidatesForNeedingShips.push(p);
-					}
-					else if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0)
-					{
-						planetCandidatesForNeedingSpacePlatforms.push(p);
-					}
-					else
-					{
-						planetCandidatesForNeedingShips.push(p);
+			if (!player.PlanetBuildGoals[p.Id]) {
+				if(p.BuildQueue.length)
+					console.debug(player.Name, "build queue on:", p.Name, p.BuildQueue[0]);
+				if (p.BuildQueue.length <= 1) {
+					//even if we have something in queue we might want to set a goal to save up resources?
+
+					//always check for improvements in case we need to destroy some
+					planetCandidatesForNeedingImprovements.push(p);
+					if(ownedPlanetsSorted.length > 1){
+						if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
+							planetCandidatesForNeedingSpacePlatforms.push(p);
+						} else {
+							planetCandidatesForNeedingShips.push(p);
+						}
+					} else {
+						if (planetCountNeedingExploration != 0) {
+							//if we need to explore some planets before building a space platform, do so
+							planetCandidatesForNeedingShips.push(p);
+						} else if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
+							planetCandidatesForNeedingSpacePlatforms.push(p);
+						} else {
+							planetCandidatesForNeedingShips.push(p);
+						}
 					}
 				}
 			}
 		}
 
 		//space platforms
-		for (var i in planetCandidatesForNeedingSpacePlatforms)
-		{
+		for (var i in planetCandidatesForNeedingSpacePlatforms) {
 			var p = planetCandidatesForNeedingSpacePlatforms[i];//Planet
-			if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.SpacePlatform) == 0)
-			{
+			if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.SpacePlatform) == 0) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.SpacePlatform);
 			}
 		}
 		
 		//build improvements
-		for (var i in planetCandidatesForNeedingImprovements)
-		{
+		for (var i in planetCandidatesForNeedingImprovements) {
 			var p = planetCandidatesForNeedingImprovements[i];//Planet
 			//planet class 2 should have 3 farms and 2 mines
-			//planet class 1 should have 2 farm and 1 mines
+			//planet class 1 should have 2 farms and 0 mines
 			//dead planets should have 0 farms and 1 mine
-			//asterorids should have 0 farms and 1 mine
+			//asteroids should have 0 farms and 1 mine
 			//otherwise build 1 factory if none exist
 			//otherwise build 1 colony if none exist
 			//otherwise build factories to recommended amount
@@ -464,114 +464,109 @@ Astriarch.AI = {
 			var recommendedFarms = 0;
 			var recommendedMines = 0;
 			var recommendedFactories = 1;
-			
+			var recommendedColonies = 1;
+
+			var farmCount = p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Farm);
+			var mineCount = p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Mine);
+			var factoryCount = p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Factory);
+			var colonyCount = p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Colony);
 
 			//NOTE: we aren't checking gold for the purposes of farms, we'll just build them
 
-			if (p.Type == Astriarch.Planet.PlanetType.PlanetClass2)
-			{
-				recommendedFarms = 3;
-				recommendedMines = 2;
-				recommendedFactories = 3;
-			}
-			else if (p.Type == Astriarch.Planet.PlanetType.PlanetClass1)
-			{
+			if (p.Type == Astriarch.Planet.PlanetType.PlanetClass2) {
+				if(ownedPlanetsSorted.length == 1) {
+					//until we have another planet we need to build some mines to get resources
+					recommendedFarms = 3;
+					recommendedMines = 2;
+				} else {
+					recommendedFarms = 4;
+					recommendedMines = 0;
+				}
+			} else if (p.Type == Astriarch.Planet.PlanetType.PlanetClass1) {
 				recommendedFarms = 2;
-				recommendedFactories = 2;
-			}
-			else if (p.Type == Astriarch.Planet.PlanetType.DeadPlanet)
-			{
+			} else if (p.Type == Astriarch.Planet.PlanetType.DeadPlanet) {
 				recommendedMines = 1;
+			} else if (p.Type == Astriarch.Planet.PlanetType.AsteroidBelt) {
+				recommendedMines = 2;
 			}
-			else if (p.Type == Astriarch.Planet.PlanetType.AsteroidBelt)
-			{
-				recommendedMines = 1;
-			}
+			recommendedFactories = p.MaxImprovements - recommendedMines - recommendedFarms - recommendedColonies;
 
 			//make sure farms are built before mines
-			if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Farm) < recommendedFarms)
-			{
+			if (farmCount < recommendedFarms) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Farm);
-			}
-			else if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Mine) < recommendedMines)
-			{
+			} else if (mineCount < recommendedMines) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Mine);
-			}
-			else if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Factory) == 0)
-			{
+			} else if (factoryCount == 0 && recommendedFactories > 0) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Factory);
-			}
-			else if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Colony) == 0)
-			{
+			} else if (colonyCount < recommendedColonies) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Colony);
-			}
-			else if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Factory) < recommendedFactories)
-			{
+			} else if (factoryCount < recommendedFactories) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Factory);
+			} else if (farmCount > recommendedFarms) {
+				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovementToDestroy(Astriarch.Planet.PlanetImprovementType.Farm);
+			} else if (mineCount > recommendedMines) {
+				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovementToDestroy(Astriarch.Planet.PlanetImprovementType.Mine);
+			} else if (factoryCount > recommendedFactories) {
+				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovementToDestroy(Astriarch.Planet.PlanetImprovementType.Factory);
+			} else if (colonyCount > recommendedColonies) {
+				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovementToDestroy(Astriarch.Planet.PlanetImprovementType.Colony);
 			}
-			else if (p.BuiltAndBuildQueueImprovementCount() < p.MaxImprovements)//just to double check
-			{
-				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Colony);
+			if(player.PlanetBuildGoals[p.Id]) {
+				console.debug(player.Name, "Planet:", p.Name, "Improvement Build Goal:", player.PlanetBuildGoals[p.Id], Astriarch.GameTools.PlanetImprovementTypeToFriendlyName(player.PlanetBuildGoals[p.Id].Type));
 			}
+
 
 			//after all that we should be ready to set fleet goals
 		}
 
 		//build ships
-		for (var i in planetCandidatesForNeedingShips)
-		{
+		for (var i in planetCandidatesForNeedingShips) {
+			var p = planetCandidatesForNeedingShips[i];//Planet
+			if(player.PlanetBuildGoals[p.Id] && !(ownedPlanetsSorted.length == 1 && mineCount == recommendedMines)) {
+				//do this for now so that the computer builds improvements before too much scouting, however might want to revisit this so that there is some scouting done before all buildings are built
+				continue;
+			}
 			//defenders and destroyers will be built at random for the easier computers
 			var buildDefenders = false;
 			var buildDestroyers = false;
-			if(player.Type == Astriarch.Player.PlayerType.Computer_Easy)
-			{
+			if(player.Type == Astriarch.Player.PlayerType.Computer_Easy) {
 				//50% chance to build defenders, 50% chance for destroyers
 				buildDefenders = (Astriarch.NextRandom(0, 4) <= 1);
 				buildDestroyers = (!buildDefenders && Astriarch.NextRandom(0, 4) <= 1);
-			}
-			else if (player.Type == Astriarch.Player.PlayerType.Computer_Normal)
-			{
+			} else if (player.Type == Astriarch.Player.PlayerType.Computer_Normal) {
 				//25% chance to build defenders, 25% chance for destroyers
 				buildDefenders = (Astriarch.NextRandom(0, 4) == 0);
 				buildDestroyers = (!buildDefenders && Astriarch.NextRandom(0, 4) == 0);
 			}
-		
-			var p = planetCandidatesForNeedingShips[i];//Planet
-			if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0 && !buildDefenders)
-			{
+
+			if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0 && !buildDefenders) {
 				var rand = Astriarch.NextRandom(4);
 				//build battleships at half the planets with spaceplatforms
-				if (rand < 2)
-				{
-					if (rand % 2 == 0)//1/4 the time we build battleshipts 1/2 time build destroyers
+				if (rand < 2) {
+					if (rand % 2 == 0)//1/4 the time we build battleships 1/2 time build destroyers
 						player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.Battleship);
 					else
 						player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.Destroyer);
-				}
-				else 
-				{
+				} else {
 					if (rand % 2 == 1)//1/4 the time we build cruisers 1/2 time build destroyers
 						player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.Cruiser);
 					else
 						player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.Destroyer);
 				}
-			}
-			//if there are unexplored planets still, build some scouts
-			else if (Astriarch.AI.countPlanetsNeedingExploration(gameModel, player) != 0)
-			{
+			} else if (planetCountNeedingExploration != 0) {
+				//if there are unexplored planets still, build some scouts
+				console.debug(player.Name, planetCountNeedingExploration, "Planets needing exploration, building scouts");
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.Scout);
-			}
-			else if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0 && buildDestroyers)
-			{
+			} else if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0 && buildDestroyers) {
 				//NOTE: this actually never gets hit because right now we're always building scouts, then spaceplatforms, then above applies
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.Destroyer);
-			}
-			//else create defender (but only sometimes so we save gold)
-			else if (gameModel.Turn.Number % 4 == 0 && buildDefenders)
-			{
+			} else if (gameModel.Turn.Number % 4 == 0 && buildDefenders) {
+				//else create defender (but only sometimes so we save gold)
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.SystemDefense);
 			}
-
+			if(player.PlanetBuildGoals[p.Id]) {
+				console.debug(player.Name, "Planet:", p.Name, "StarShip Build Goal:", Astriarch.GameTools.StarShipTypeToFriendlyName(player.PlanetBuildGoals[p.Id].Type));
+			}
 		}
 
 	},
@@ -604,7 +599,7 @@ Astriarch.AI = {
 
 			//try to sell resources
 			//only sell resources when you have far more than you need
-			if (totalFood >= totalPopulation * 2){
+			if (totalFood >= totalPopulation * 4){
 				//sell some food
 				amount = Math.floor(totalFood * purchaseMultiplier);
 				tradesToExecute.push(new Astriarch.TradingCenter.Trade(player.Id, planetId, tradeType, Astriarch.TradingCenter.ResourceType.FOOD, amount, orderType, limitPrice));
@@ -640,10 +635,10 @@ Astriarch.AI = {
 		for(var t in tradesToExecute){
 			var trade = tradesToExecute[t];
 			if(trade.amount > 0) {
-				console.debug("Computer Submitted a Trade: ", trade);
+				console.debug(player.Name, "Submitted a Trade: ", trade);
 				gameModel.TradingCenter.currentTrades.push(trade);
 			} else {
-				console.debug("AI Trade found with zero amount.", trade);
+				console.debug(player.Name, "Trade found with zero amount.", trade);
 			}
 		}
 
@@ -779,23 +774,15 @@ Astriarch.AI = {
 
 		var planetCandidatesForInboundScouts = []; //List<Planet>
 		var planetCandidatesForInboundAttackingFleets = []; //List<Planet>
-		if (planetCandidatesForSendingShips.length > 0)
-		{
-			for (var i in gameModel.Planets)
-			{
+		if (planetCandidatesForSendingShips.length > 0) {
+			for (var i in gameModel.Planets) {
 				var p = gameModel.Planets[i];//Planet
-				if (p.Owner != player && !player.PlanetContainsFriendlyInboundFleet(p))//exploring/attacking inbound fleets to unowned planets should be excluded
-				{
-					if (!player.KnownClientPlanets[p.Id] ||
-						//also check to see if we need to update intelligence
-						(player.Type != Astriarch.Player.PlayerType.Computer_Easy &&
-						player.LastKnownPlanetFleetStrength[p.Id] &&
-						(gameModel.Turn.Number - player.LastKnownPlanetFleetStrength[p.Id].TurnLastExplored) > 20))//TODO: figure out best value here (could be shorter if planets are closer together)
-					{
+				if (p.Owner != player && !player.PlanetContainsFriendlyInboundFleet(p)) {
+					//exploring/attacking inbound fleets to unowned planets should be excluded
+					if (Astriarch.AI.planetNeedsExploration(p, gameModel, player)) {
 						planetCandidatesForInboundScouts.push(p);
-					}
-					else if (!player.GetPlanetIfOwnedByPlayer(p.Id))//TODO: we might still want to gather fleets strategically
-					{
+					} else if (!player.GetPlanetIfOwnedByPlayer(p.Id)) {
+						//TODO: we might still want to gather fleets strategically
 						planetCandidatesForInboundAttackingFleets.push(p);
 					}
 				}
@@ -846,6 +833,52 @@ Astriarch.AI = {
 			}
 		}
 
+		console.debug(player.Name, "planetCandidatesForSendingShips:", planetCandidatesForSendingShips.length, "planetCandidatesForInboundScouts:", planetCandidatesForInboundScouts.length, "planetCandidatesForInboundAttackingFleets:", planetCandidatesForInboundAttackingFleets.length, "planetCandidatesForInboundReinforcements:", planetCandidatesForInboundReinforcements.length);
+
+		if (planetCandidatesForSendingShips.length > 0) {
+			for (var i = planetCandidatesForInboundScouts.length - 1; i >= 0; i--) {
+				var pEnemyInbound = planetCandidatesForInboundScouts[i];//Planet
+
+				if (player.Type == Astriarch.Player.PlayerType.Computer_Easy || player.Type == Astriarch.Player.PlayerType.Computer_Normal) {
+					var planetDistanceComparer = new Astriarch.Planet.PlanetDistanceComparer(gameModel, pEnemyInbound);
+					planetCandidatesForSendingShips.sort(planetDistanceComparer.sortFunction);
+				} else {
+					// harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
+					var planetValueDistanceStrengthComparer = new Astriarch.Planet.PlanetValueDistanceStrengthComparer(gameModel, pEnemyInbound, player.LastKnownPlanetFleetStrength)
+					planetCandidatesForSendingShips.sort(planetValueDistanceStrengthComparer.sortFunction);
+					//because the PlanetValueDistanceStrengthComparer prefers weakest planets, we want the opposite in this case
+					//so we want to prefer sending from asteroid belts with high strength value
+					planetCandidatesForSendingShips.reverse();
+				}
+
+				for (var j = planetCandidatesForSendingShips.length - 1; j >= 0; j--) {
+					var pFriendly = planetCandidatesForSendingShips[j];//Planet
+
+					//send smallest detachment possible
+					var inboundPlanet = planetCandidatesForInboundScouts[i];//Planet
+					var newFleet = pFriendly.PlanetaryFleet.SplitOffSmallestPossibleFleet();//Fleet
+					//if we do this right newFleet should never be null
+					{
+						newFleet.SetDestination(gameModel.GameGrid, pFriendly.BoundingHex, inboundPlanet.BoundingHex);
+						pFriendly.OutgoingFleets.push(newFleet);
+						if (Astriarch.AI.OnComputerSentFleet != null) {
+							Astriarch.AI.OnComputerSentFleet(newFleet);
+						}
+
+						var mobileStarshipsLeft = pFriendly.PlanetaryFleet.GetPlanetaryFleetMobileStarshipCount();
+						if (mobileStarshipsLeft == 0) {
+							planetCandidatesForSendingShips.splice(j, 1);
+						}
+
+						break;
+					}
+				}
+
+				if (planetCandidatesForSendingShips.length == 0)
+					break;
+			}
+		}
+
 		//next for each candidate for inbound attacking fleets, sort the candidates for sending ships by closest first
 
 		//look for closest planet to attack first
@@ -860,7 +893,7 @@ Astriarch.AI = {
 			}
 			else// harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
 			{
-				var planetValueDistanceStrengthComparer = new Astriarch.Planet.PlanetValueDistanceStrengthComparer(gameModel, pEnemyInbound, player.LastKnownPlanetFleetStrength)
+				var planetValueDistanceStrengthComparer = new Astriarch.Planet.PlanetValueDistanceStrengthComparer(gameModel, pEnemyInbound, player.LastKnownPlanetFleetStrength);
 				planetCandidatesForSendingShips.sort(planetValueDistanceStrengthComparer.sortFunction);
 				//because the PlanetValueDistanceStrengthComparer prefers weakest planets, we want the opposite in this case
 				//so we want to prefer sending from asteroid belts with high strength value
@@ -995,59 +1028,7 @@ Astriarch.AI = {
 
 		}//end planetCandidatesForInboundAttackingFleets loop
 
-		if (planetCandidatesForSendingShips.length > 0)
-		{
-			for (var i = planetCandidatesForInboundScouts.length - 1; i >= 0; i--)
-			{
-				var pEnemyInbound = planetCandidatesForInboundScouts[i];//Planet
 
-				if (player.Type == Astriarch.Player.PlayerType.Computer_Easy || player.Type == Astriarch.Player.PlayerType.Computer_Normal)
-				{
-					var planetDistanceComparer = new Astriarch.Planet.PlanetDistanceComparer(gameModel, pEnemyInbound);
-					planetCandidatesForSendingShips.sort(planetDistanceComparer.sortFunction);
-				}
-				else// harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
-				{
-					var planetValueDistanceStrengthComparer = new Astriarch.Planet.PlanetValueDistanceStrengthComparer(gameModel, pEnemyInbound, player.LastKnownPlanetFleetStrength)
-					planetCandidatesForSendingShips.sort(planetValueDistanceStrengthComparer.sortFunction);
-					//because the PlanetValueDistanceStrengthComparer prefers weakest planets, we want the opposite in this case
-					//so we want to prefer sending from asteroid belts with high strength value
-					planetCandidatesForSendingShips.reverse();
-				}
-
-				//bool fleetSent = false;
-				for (var j = planetCandidatesForSendingShips.length - 1; j >= 0; j--)
-				{
-					var pFriendly = planetCandidatesForSendingShips[j];//Planet
-
-					//send smallest detachment possible
-					var inboundPlanet = planetCandidatesForInboundScouts[i];//Planet
-					var newFleet = pFriendly.PlanetaryFleet.SplitOffSmallestPossibleFleet();//Fleet
-					//if we do this right newFleet should never be null
-					{
-						newFleet.SetDestination(gameModel.GameGrid, pFriendly.BoundingHex, inboundPlanet.BoundingHex);
-						pFriendly.OutgoingFleets.push(newFleet);
-						if (Astriarch.AI.OnComputerSentFleet != null)
-						{
-							Astriarch.AI.OnComputerSentFleet(newFleet);
-						}
-
-						var mobileStarshipsLeft = pFriendly.PlanetaryFleet.GetPlanetaryFleetMobileStarshipCount();
-						if (mobileStarshipsLeft == 0)
-						{
-							planetCandidatesForSendingShips.splice(j, 1);
-						}
-
-						//fleetSent = true;
-						break;
-					}
-
-				}
-
-				if (planetCandidatesForSendingShips.length == 0)
-					break;
-			}
-		}
 	},
 
 	//minDistance object is for out parameters: {minDistance: 999}
@@ -1078,22 +1059,49 @@ Astriarch.AI = {
 	 */
 	countPlanetsNeedingExploration: function(gameModel, player) {
 		var planetsNeedingExploration = 0;
-		for (var i in gameModel.Planets)
-		{
+		for (var i in gameModel.Planets) {
 			var p = gameModel.Planets[i];
-			if (p.Owner != player && !player.PlanetContainsFriendlyInboundFleet(p))//exploring/attacking inbound fleets to unowned planets should be excluded
-			{
-				if (!(p.Id in player.KnownClientPlanets) ||
-					//also check to see if we need to update intelligence
-					(player.Type != Astriarch.Player.PlayerType.Computer_Easy &&
-						(p.Id in player.LastKnownPlanetFleetStrength) &&
-						(gameModel.Turn.Number - player.LastKnownPlanetFleetStrength[p.Id].TurnLastExplored) > 20))//TODO: figure out best value here (could be shorter if planets are closer together)
-				{
+			if (p.Owner != player && !player.PlanetContainsFriendlyInboundFleet(p)) {
+				//exploring/attacking inbound fleets to unowned planets should be excluded
+				if (Astriarch.AI.planetNeedsExploration(p, gameModel, player)) {
 					planetsNeedingExploration++;
 				}
 			}
 		}
 
 		return planetsNeedingExploration;
+	},
+
+	/**
+	 * returns true if it has been enough turns since this planet was explored
+	 * @return {number}
+	 */
+	planetNeedsExploration: function(p, gameModel, player) {
+		if(!(p.Id in player.KnownClientPlanets)) {
+			return true;
+		} else if(player.Type === Astriarch.Player.PlayerType.Computer_Easy) {
+			return false;//easy computers never update intelligence by scouting
+		}
+
+
+		var turnsSinceLastExplored = (p.Id in player.LastKnownPlanetFleetStrength) ? (gameModel.Turn.Number - player.LastKnownPlanetFleetStrength[p.Id].TurnLastExplored) : 0;
+		//the more planets and larger the galaxy, the longer the time till new intelligence is needed
+		var turnLastExploredCutoff = (gameModel.Planets.length / 2) * gameModel.GameOptions.GalaxySize;//range: 4 - 48
+		if(turnsSinceLastExplored > turnLastExploredCutoff) {
+			//this is just a quick short circuit
+			return true;
+		} else {
+			//get average distance of planet to other owned planets, if distance below threshold, treat as needs exploration
+			var distanceCutoff = turnLastExploredCutoff / 2;
+			var averageDistance = Astriarch.CountObjectKeys(player.OwnedPlanets) || 1;
+			for(var i in player.OwnedPlanets) {
+				averageDistance += gameModel.GameGrid.GetHexDistance(p.BoundingHex, player.OwnedPlanets[i].BoundingHex);
+			}
+			averageDistance = averageDistance / (Astriarch.CountObjectKeys(player.OwnedPlanets) || 1);
+			if(averageDistance <= distanceCutoff && turnsSinceLastExplored > averageDistance) {
+				return true;
+			}
+		}
+		return false;
 	}
 };

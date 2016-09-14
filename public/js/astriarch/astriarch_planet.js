@@ -874,7 +874,7 @@ Astriarch.Planet.PlanetPopulationImprovementCountComparerSortFunction = function
  * @return {number}
  */
 Astriarch.Planet.PlanetFoodProductionComparerSortFunction = function(/*Planet*/ a, /*Planet*/ b) {
-	return b.ResourcesPerTurn.FoodAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.FoodAmountPerWorkerPerTurn());
+	return b.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn());
 };
 
 /**
@@ -894,9 +894,9 @@ Astriarch.Planet.PlanetMineralProductionComparer = function(/*int*/ oreNeeded, /
 Astriarch.Planet.PlanetMineralProductionComparer.prototype.sortFunction = function(/*Planet*/ a, /*Planet*/ b) {
 	var ret = 0;
 	if (this.oreNeeded >= this.iridiumNeeded)
-		ret = b.ResourcesPerTurn.OreAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.OreAmountPerWorkerPerTurn());
+		ret = b.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn());
 	else
-		ret = b.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.IridiumAmountPerWorkerPerTurn());
+		ret = b.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn());
 
 	return ret;
 };
@@ -1164,42 +1164,6 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 
 
 Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.5};
-
-/**
- * returns how much food each worker produces per turn
- * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
- * @return {number}
- */
-Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.FoodAmountPerWorkerPerTurn = function() {
-	return Math.floor(this.GetExactFoodAmountPerWorkerPerTurn());
-};
-
-/**
- * returns how much ore each worker produces per turn
- * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
- * @return {number}
- */
-Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.OreAmountPerWorkerPerTurn = function() {
-	return Math.floor(this.GetExactOreAmountPerWorkerPerTurn());
-};
-
-/**
- * returns how much iridium each worker produces per turn
- * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
- * @return {number}
- */
-Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.IridiumAmountPerWorkerPerTurn = function() {
-	return Math.floor(this.GetExactIridiumAmountPerWorkerPerTurn());
-};
-
-/**
- * returns how much production each worker produces per turn
- * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
- * @return {number}
- */
-Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.ProductionAmountPerWorkerPerTurn = function() {
-	return Math.floor(this.GetExactProductionAmountPerWorkerPerTurn());
-};
 
 /**
  * returns how much food each worker produces per turn without rounding
