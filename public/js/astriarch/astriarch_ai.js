@@ -472,12 +472,12 @@ Astriarch.AI = {
 			var colonyCount = p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.Colony);
 
 			//NOTE: we aren't checking gold for the purposes of farms, we'll just build them
-
+			var origRecommendedMines = 2;
 			if (p.Type == Astriarch.Planet.PlanetType.PlanetClass2) {
 				if(ownedPlanetsSorted.length == 1) {
 					//until we have another planet we need to build some mines to get resources
 					recommendedFarms = 3;
-					recommendedMines = 2;
+					recommendedMines = origRecommendedMines;
 				} else {
 					recommendedFarms = 4;
 					recommendedMines = 0;
@@ -522,7 +522,7 @@ Astriarch.AI = {
 		//build ships
 		for (var i in planetCandidatesForNeedingShips) {
 			var p = planetCandidatesForNeedingShips[i];//Planet
-			if(player.PlanetBuildGoals[p.Id] && !(ownedPlanetsSorted.length == 1 && mineCount == recommendedMines)) {
+			if(player.PlanetBuildGoals[p.Id] && (ownedPlanetsSorted.length > 3 || ownedPlanetsSorted.length == 1) && mineCount != origRecommendedMines) {
 				//do this for now so that the computer builds improvements before too much scouting, however might want to revisit this so that there is some scouting done before all buildings are built
 				continue;
 			}

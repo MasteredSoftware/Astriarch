@@ -731,6 +731,7 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypesByDiff = function(currentF
 	{
 		console.error("Couldn't move workers in Planet.UpdatePopulationWorkerTypesByDiff!", farmerDiff, minerDiff, workerDiff);
 	}
+	this.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 };
 
 /**
@@ -823,6 +824,7 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypes = function(targetFarmers,
 	{
 		console.error("Couldn't move workers in Planet.UpdatePopulationWorkerTypes! targets: ", targetFarmers, targetMiners, targetWorkers, "currents:", currentFarmers, currentMiners, currentWorkers);
 	}
+	this.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 };
 
 /**
@@ -1056,12 +1058,16 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration = function(/*Planet*/ p, /*Plan
 	this.BaseProductionPerWorkerPerTurn = 2.0;
 
 	this.FoodAmountPerTurn = 0;
+	this.FoodAmountPerFarmerPerTurn = 0;
 
 	this.OreAmountPerTurn = 0;
+	this.OreAmountPerMinerPerTurn = 0;
 
 	this.IridiumAmountPerTurn = 0;
+	this.IridiumAmountPerMinerPerTurn = 0;
 
 	this.ProductionAmountPerTurn = 0;
+	this.ProductionAmountPerBuilderPerTurn = 0;
 
 	this.Planet = p;
 
@@ -1115,7 +1121,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionDivisor 
  * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionAmountPerTurn = function() {
-	return Math.floor(this.Planet.ResourcesPerTurn.ProductionAmountPerTurn / this.GetProductionDivisor());
+	return Math.floor(this.ProductionAmountPerTurn / this.GetProductionDivisor());
 };
 
 /**
@@ -1126,7 +1132,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 	//base resource generation on citizen amount and assignment
 	var pop = new Astriarch.Planet.PopulationAssignments();
 	this.Planet.CountPopulationWorkerTypes(pop);
-
+	
 	var baseFoodAmountPerTurn = this.BaseFoodAmountPerWorkerPerTurn * pop.Farmers;
 	var baseOreAmountPerTurn = this.BaseOreAmountPerWorkerPerTurn * pop.Miners;
 	var baseIridiumAmountPerTurn = this.BaseIridiumAmountPerWorkerPerTurn * pop.Miners;
@@ -1148,22 +1154,27 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 		var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
 		var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 
-		if (farmCount > 0) {
-			this.FoodAmountPerTurn = baseFoodAmountPerTurn + ((baseFoodAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * farmCount);
+		if (farmCount > 0 && pop.Farmers > 0) {
+			this.FoodAmountPerTurn += Math.min(farmCount, pop.Farmers) * this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
 		}
-		if (mineCount > 0) {
-			this.OreAmountPerTurn = baseOreAmountPerTurn + ((baseOreAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount);
+		if (mineCount > 0 && pop.Miners > 0) {
+			this.OreAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
 
-			this.IridiumAmountPerTurn = baseIridiumAmountPerTurn + (baseIridiumAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
+			this.IridiumAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
 		}
-		if (factoryCount > 0) {
-			this.ProductionAmountPerTurn = baseProductionAmountPerTurn + ((baseProductionAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * factoryCount);
+		if (factoryCount > 0 && pop.Workers > 0) {
+			this.ProductionAmountPerTurn += Math.min(factoryCount, pop.Workers) * this.BaseProductionPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
 		}
 	}
+
+	this.FoodAmountPerFarmerPerTurn = pop.Farmers ? this.FoodAmountPerTurn / pop.Farmers : 0;
+	this.OreAmountPerMinerPerTurn = pop.Miners ? this.OreAmountPerTurn / pop.Miners : 0;
+	this.IridiumAmountPerMinerPerTurn = pop.Miners ? this.IridiumAmountPerTurn / pop.Miners : 0;
+	this.ProductionAmountPerBuilderPerTurn = pop.Workers ? this.ProductionAmountPerTurn / pop.Workers : 0;
 };
 
 
-Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.5};
+Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 2.0};
 
 /**
  * returns how much food each worker produces per turn without rounding
@@ -1171,8 +1182,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountPerWorkerPerTurn = function() {
-	var farmCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm].length;
-	return this.BaseFoodAmountPerWorkerPerTurn + (this.BaseFoodAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * farmCount));
+	return this.FoodAmountPerFarmerPerTurn;
 };
 
 /**
@@ -1181,8 +1191,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountPer
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountPerWorkerPerTurn = function() {
-	var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
-	return this.BaseOreAmountPerWorkerPerTurn + (this.BaseOreAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * mineCount));
+	return this.OreAmountPerMinerPerTurn;
 };
 
 /**
@@ -1191,8 +1200,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountPerW
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmountPerWorkerPerTurn = function() {
-	var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
-	return this.BaseIridiumAmountPerWorkerPerTurn + (this.BaseIridiumAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * mineCount));
+	return this.IridiumAmountPerMinerPerTurn;
 };
 
 /**
@@ -1201,8 +1209,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmount
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactProductionAmountPerWorkerPerTurn = function() {
-	var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
-	return this.BaseProductionPerWorkerPerTurn + (this.BaseProductionPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * factoryCount));
+	return this.ProductionAmountPerBuilderPerTurn;
 };
 
 /**
