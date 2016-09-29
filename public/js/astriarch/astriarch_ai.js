@@ -933,6 +933,10 @@ Astriarch.AI = {
 				if (player.LastKnownPlanetFleetStrength[pEnemyInbound.Id])
 				{
 					fleetStrength = player.LastKnownPlanetFleetStrength[pEnemyInbound.Id].Fleet.DetermineFleetStrength();
+					if(player.LastKnownPlanetFleetStrength[pEnemyInbound.Id].Fleet.HasSpacePlatform) {
+						//since space platforms are so hard to kill, make sure we double the strength required to send for a space platform
+						fleetStrength += Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH;
+					}
 				}
 
 				var scouts = pFriendly.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
