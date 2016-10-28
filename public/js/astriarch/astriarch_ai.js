@@ -930,9 +930,11 @@ Astriarch.AI = {
 
 				//rely only on our last known-information
 				var fleetStrength = Math.floor(Math.pow((pEnemyInbound.Type + 1), 2) * 4);//estimate required strength based on planet type
-				if (player.LastKnownPlanetFleetStrength[pEnemyInbound.Id])
-				{
-					fleetStrength = player.LastKnownPlanetFleetStrength[pEnemyInbound.Id].Fleet.DetermineFleetStrength();
+				var lkpfs = player.LastKnownPlanetFleetStrength[pEnemyInbound.Id];
+				if (lkpfs) {
+					fleetStrength = lkpfs.Fleet.DetermineFleetStrength();
+					//include extra if the last known fleet has a space platform, since they are harder to kill
+					fleetStrength += lkpfs.Fleet.HasSpacePlatform ? Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH : 0;
 				}
 
 				var scouts = pFriendly.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;

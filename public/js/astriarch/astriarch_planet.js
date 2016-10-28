@@ -1629,6 +1629,6 @@ Astriarch.Planet.Citizen = function(/*PlanetType*/ type, loyalToPlayerId) {
 
 	this.WorkerType = Astriarch.Planet.CitizenWorkerType.Farmer;
 
-	if (type == Astriarch.Planet.PlanetType.AsteroidBelt)//default to miners for asteroids
+	if (type == Astriarch.Planet.PlanetType.AsteroidBelt || type == Astriarch.Planet.PlanetType.DeadPlanet)//default to miners for asteroids & dead planets
 		this.WorkerType = Astriarch.Planet.CitizenWorkerType.Miner;
 };

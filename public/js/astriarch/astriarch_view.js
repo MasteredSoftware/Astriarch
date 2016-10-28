@@ -604,15 +604,16 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 			foodAmountColor = "orange";//we're still gaining food but we'll still starve
 		}
 
+		var decimalPlaces = totalFoodAmount >= 100 ? 0 : totalFoodAmount >= 10 ? 1 : 2;
 		$('#TextBlockFoodAmount').css("color", foodAmountColor);
-		$('#TextBlockFoodAmount').text(Math.floor(totalFoodAmount) + " " + foodDiffPositiveIndicator + foodDiffPerTurn);
+		$('#TextBlockFoodAmount').text(Math.floor(totalFoodAmount) + " " + foodDiffPositiveIndicator + foodDiffPerTurn.toFixed(decimalPlaces));
 		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.TotalFoodAmount() + " +" + totalResourceProduction.food + " -" + totalPopulation);
 
 		$('#TextBlockGoldAmount').text(Math.floor(mainPlayer.Resources.GoldAmount));
 		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.Resources.GoldAmount);
 
 		var oreAmount = mainPlayer.TotalOreAmount();
-		var decimalPlaces = oreAmount >= 100 ? 0 : oreAmount >= 10 ? 1 : 2;
+		decimalPlaces = oreAmount >= 100 ? 0 : oreAmount >= 10 ? 1 : 2;
 		$('#TextBlockOreAmount').text(Math.floor(oreAmount) + " +" + totalResourceProduction.ore.toFixed(decimalPlaces));
 		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
 
