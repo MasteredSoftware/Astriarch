@@ -232,11 +232,11 @@ Astriarch.Player.prototype.GetTotalResourceProductionPerTurn = function() {
 
 	for (var i in this.OwnedPlanets) {
 		var p = this.OwnedPlanets[i];
-		totalResourceProduction.food += p.ResourcesPerTurn.FoodAmountPerTurn;
+		totalResourceProduction.food += p.ResourcesPerTurn.GetFoodAmountPerTurn();
 
-		totalResourceProduction.ore += p.ResourcesPerTurn.OreAmountPerTurn;
+		totalResourceProduction.ore += p.ResourcesPerTurn.GetOreAmountPerTurn();
 
-		totalResourceProduction.iridium += p.ResourcesPerTurn.IridiumAmountPerTurn;
+		totalResourceProduction.iridium += p.ResourcesPerTurn.GetIridiumAmountPerTurn();
 	}
 
 	return totalResourceProduction;

@@ -731,6 +731,7 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypesByDiff = function(currentF
 	{
 		console.error("Couldn't move workers in Planet.UpdatePopulationWorkerTypesByDiff!", farmerDiff, minerDiff, workerDiff);
 	}
+	this.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 };
 
 /**
@@ -823,6 +824,7 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypes = function(targetFarmers,
 	{
 		console.error("Couldn't move workers in Planet.UpdatePopulationWorkerTypes! targets: ", targetFarmers, targetMiners, targetWorkers, "currents:", currentFarmers, currentMiners, currentWorkers);
 	}
+	this.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 };
 
 /**
@@ -873,30 +875,30 @@ Astriarch.Planet.PlanetPopulationImprovementCountComparerSortFunction = function
  * A sort function to prefer planets with higher food production
  * @return {number}
  */
-Astriarch.Planet.PlanetFoodProductionComparerSortFunction = function(/*Planet*/ a, /*Planet*/ b) {
-	return b.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn());
+Astriarch.Planet.PlanetFoodProductionPotentialComparerSortFunction = function(/*Planet*/ a, /*Planet*/ b) {
+	return b.ResourcesPerTurn.GetExactFoodAmountNextWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactFoodAmountNextWorkerPerTurn());
 };
 
 /**
  * A sort function object to prefer planets with higher mineral production
  * @constructor
  */
-Astriarch.Planet.PlanetMineralProductionComparer = function(/*int*/ oreNeeded, /*int*/ iridiumNeeded) {
+Astriarch.Planet.PlanetMineralProductionPotentialComparer = function(/*int*/ oreNeeded, /*int*/ iridiumNeeded) {
 	this.oreNeeded = oreNeeded;
 	this.iridiumNeeded = iridiumNeeded;
 };
 
 /**
  * Gets a citizen based on worker type
- * @this {Astriarch.Planet.PlanetMineralProductionComparer}
+ * @this {Astriarch.Planet.PlanetMineralProductionPotentialComparer}
  * @return {number}
  */
-Astriarch.Planet.PlanetMineralProductionComparer.prototype.sortFunction = function(/*Planet*/ a, /*Planet*/ b) {
+Astriarch.Planet.PlanetMineralProductionPotentialComparer.prototype.sortFunction = function(/*Planet*/ a, /*Planet*/ b) {
 	var ret = 0;
 	if (this.oreNeeded >= this.iridiumNeeded)
-		ret = b.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn());
+		ret = b.ResourcesPerTurn.GetExactOreAmountNextWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactOreAmountNextWorkerPerTurn());
 	else
-		ret = b.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn());
+		ret = b.ResourcesPerTurn.GetExactIridiumAmountNextWorkerPerTurn().compareTo(a.ResourcesPerTurn.GetExactIridiumAmountNextWorkerPerTurn());
 
 	return ret;
 };
@@ -1056,12 +1058,19 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration = function(/*Planet*/ p, /*Plan
 	this.BaseProductionPerWorkerPerTurn = 2.0;
 
 	this.FoodAmountPerTurn = 0;
+	this.FoodAmountPerFarmerPerTurn = 0;
+	this.FoodAmountNextFarmerPerTurn = 0;//Potential extra food if the player adds a farmer
 
 	this.OreAmountPerTurn = 0;
+	this.OreAmountPerMinerPerTurn = 0;
+	this.OreAmountNextMinerPerTurn = 0;//Potential extra ore if the player adds a miner
 
 	this.IridiumAmountPerTurn = 0;
+	this.IridiumAmountPerMinerPerTurn = 0;
+	this.IridiumAmountNextMinerPerTurn = 0;//Potential extra iridium if the player adds a miner
 
 	this.ProductionAmountPerTurn = 0;
+	this.ProductionAmountPerBuilderPerTurn = 0;
 
 	this.Planet = p;
 
@@ -1111,12 +1120,51 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionDivisor 
 };
 
 /**
+ * gets divisor to adjust resource production based on planet happiness
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetResourceDivisor = function() {
+	var divisor = 1.0;
+	if (this.Planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest causes 1/2 resource production
+		divisor = 2.0;
+	else if (this.Planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Riots)//riots cause 1/4 resource production
+		divisor = 4.0;
+
+	return divisor;
+};
+
+/**
  * gets adjusted production per turn based on planet happiness
  * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetProductionAmountPerTurn = function() {
-	return Math.floor(this.Planet.ResourcesPerTurn.ProductionAmountPerTurn / this.GetProductionDivisor());
+	return this.ProductionAmountPerTurn / this.GetProductionDivisor();
 };
+
+/**
+ * gets adjusted food production per turn based on planet happiness
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetFoodAmountPerTurn = function() {
+	return this.FoodAmountPerTurn / this.GetResourceDivisor();
+};
+
+/**
+ * gets adjusted ore production per turn based on planet happiness
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetOreAmountPerTurn = function() {
+	return this.OreAmountPerTurn / this.GetResourceDivisor();
+};
+
+/**
+ * gets adjusted iridium production per turn based on planet happiness
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetIridiumAmountPerTurn = function() {
+	return this.IridiumAmountPerTurn / this.GetResourceDivisor();
+};
+
 
 /**
  * updates resources generated per turn based on improvements, etc...
@@ -1127,16 +1175,28 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 	var pop = new Astriarch.Planet.PopulationAssignments();
 	this.Planet.CountPopulationWorkerTypes(pop);
 
+	this.FoodAmountNextFarmerPerTurn = 0;
+	this.OreAmountNextMinerPerTurn = 0;
+	this.IridiumAmountNextMinerPerTurn = 0;
+	if(pop.Farmers < this.Planet.Population.length) {
+		this.FoodAmountNextFarmerPerTurn = this.BaseFoodAmountPerWorkerPerTurn;
+	}
+
+	if(pop.Miners < this.Planet.Population.length) {
+		this.OreAmountNextMinerPerTurn = this.BaseOreAmountPerWorkerPerTurn;
+		this.IridiumAmountNextMinerPerTurn = this.BaseIridiumAmountPerWorkerPerTurn;
+	}
+
 	var baseFoodAmountPerTurn = this.BaseFoodAmountPerWorkerPerTurn * pop.Farmers;
 	var baseOreAmountPerTurn = this.BaseOreAmountPerWorkerPerTurn * pop.Miners;
 	var baseIridiumAmountPerTurn = this.BaseIridiumAmountPerWorkerPerTurn * pop.Miners;
 	var baseProductionAmountPerTurn = this.BaseProductionPerWorkerPerTurn * pop.Workers;
 
 	//determine production per turn
-	this.FoodAmountPerTurn = Math.floor(baseFoodAmountPerTurn);
-	this.OreAmountPerTurn = Math.floor(baseOreAmountPerTurn);
-	this.IridiumAmountPerTurn = Math.floor(baseIridiumAmountPerTurn);
-	this.ProductionAmountPerTurn = Math.floor(baseProductionAmountPerTurn);
+	this.FoodAmountPerTurn = baseFoodAmountPerTurn;
+	this.OreAmountPerTurn = baseOreAmountPerTurn;
+	this.IridiumAmountPerTurn = baseIridiumAmountPerTurn;
+	this.ProductionAmountPerTurn = baseProductionAmountPerTurn;
 
 	//each mine increases mineral production 50% from base (additive)
 	//each farm increases food production 50% from base (additive)
@@ -1149,21 +1209,37 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 		var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 
 		if (farmCount > 0) {
-			this.FoodAmountPerTurn = baseFoodAmountPerTurn + ((baseFoodAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * farmCount);
+			if(pop.Farmers < farmCount) {
+				this.FoodAmountNextFarmerPerTurn += this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+			}
+			if(pop.Farmers > 0) {
+				this.FoodAmountPerTurn += Math.min(farmCount, pop.Farmers) * this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+			}
 		}
 		if (mineCount > 0) {
-			this.OreAmountPerTurn = baseOreAmountPerTurn + ((baseOreAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount);
+			if(pop.Miners < mineCount) {
+				this.OreAmountNextMinerPerTurn += this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+				this.IridiumAmountNextMinerPerTurn += this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+			}
 
-			this.IridiumAmountPerTurn = baseIridiumAmountPerTurn + (baseIridiumAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * mineCount;
+			if(pop.Miners > 0) {
+				this.OreAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+				this.IridiumAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+			}
 		}
-		if (factoryCount > 0) {
-			this.ProductionAmountPerTurn = baseProductionAmountPerTurn + ((baseProductionAmountPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO) * factoryCount);
+		if (factoryCount > 0 && pop.Workers > 0) {
+			this.ProductionAmountPerTurn += Math.min(factoryCount, pop.Workers) * this.BaseProductionPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
 		}
 	}
+
+	this.FoodAmountPerFarmerPerTurn = pop.Farmers ? this.FoodAmountPerTurn / pop.Farmers : 0;
+	this.OreAmountPerMinerPerTurn = pop.Miners ? this.OreAmountPerTurn / pop.Miners : 0;
+	this.IridiumAmountPerMinerPerTurn = pop.Miners ? this.IridiumAmountPerTurn / pop.Miners : 0;
+	this.ProductionAmountPerBuilderPerTurn = pop.Workers ? this.ProductionAmountPerTurn / pop.Workers : 0;
 };
 
 
-Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.5};
+Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 2.0};
 
 /**
  * returns how much food each worker produces per turn without rounding
@@ -1171,8 +1247,16 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.Static = {IMPROVEMENT_RATIO: 0.
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountPerWorkerPerTurn = function() {
-	var farmCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm].length;
-	return this.BaseFoodAmountPerWorkerPerTurn + (this.BaseFoodAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * farmCount));
+	return this.FoodAmountPerFarmerPerTurn;
+};
+
+/**
+ * returns how much additional food the planet will produce if we add a farmer
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ * @return {number}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountNextWorkerPerTurn = function() {
+	return this.FoodAmountNextFarmerPerTurn;
 };
 
 /**
@@ -1181,8 +1265,16 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactFoodAmountPer
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountPerWorkerPerTurn = function() {
-	var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
-	return this.BaseOreAmountPerWorkerPerTurn + (this.BaseOreAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * mineCount));
+	return this.OreAmountPerMinerPerTurn;
+};
+
+/**
+ * returns how much additional ore the planet will produce if we add a miner
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ * @return {number}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountNextWorkerPerTurn = function() {
+	return this.OreAmountNextMinerPerTurn;
 };
 
 /**
@@ -1191,8 +1283,16 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactOreAmountPerW
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmountPerWorkerPerTurn = function() {
-	var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
-	return this.BaseIridiumAmountPerWorkerPerTurn + (this.BaseIridiumAmountPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * mineCount));
+	return this.IridiumAmountPerMinerPerTurn;
+};
+
+/**
+ * returns how much additional iridium the planet will produce if we add a miner
+ * @this {Astriarch.Planet.PlanetPerTurnResourceGeneration}
+ * @return {number}
+ */
+Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmountNextWorkerPerTurn = function() {
+	return this.IridiumAmountNextMinerPerTurn;
 };
 
 /**
@@ -1201,8 +1301,7 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactIridiumAmount
  * @return {number}
  */
 Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.GetExactProductionAmountPerWorkerPerTurn = function() {
-	var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
-	return this.BaseProductionPerWorkerPerTurn + (this.BaseProductionPerWorkerPerTurn * (Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * factoryCount));
+	return this.ProductionAmountPerBuilderPerTurn;
 };
 
 /**
@@ -1530,6 +1629,6 @@ Astriarch.Planet.Citizen = function(/*PlanetType*/ type, loyalToPlayerId) {
 
 	this.WorkerType = Astriarch.Planet.CitizenWorkerType.Farmer;
 
-	if (type == Astriarch.Planet.PlanetType.AsteroidBelt)//default to miners for asteroids
+	if (type == Astriarch.Planet.PlanetType.AsteroidBelt || type == Astriarch.Planet.PlanetType.DeadPlanet)//default to miners for asteroids & dead planets
 		this.WorkerType = Astriarch.Planet.CitizenWorkerType.Miner;
 };

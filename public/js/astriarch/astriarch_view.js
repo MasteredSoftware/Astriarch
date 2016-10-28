@@ -604,15 +604,16 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 			foodAmountColor = "orange";//we're still gaining food but we'll still starve
 		}
 
+		var decimalPlaces = totalFoodAmount >= 100 ? 0 : totalFoodAmount >= 10 ? 1 : 2;
 		$('#TextBlockFoodAmount').css("color", foodAmountColor);
-		$('#TextBlockFoodAmount').text(Math.floor(totalFoodAmount) + " " + foodDiffPositiveIndicator + foodDiffPerTurn);
+		$('#TextBlockFoodAmount').text(Math.floor(totalFoodAmount) + " " + foodDiffPositiveIndicator + foodDiffPerTurn.toFixed(decimalPlaces));
 		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.TotalFoodAmount() + " +" + totalResourceProduction.food + " -" + totalPopulation);
 
 		$('#TextBlockGoldAmount').text(Math.floor(mainPlayer.Resources.GoldAmount));
 		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.Resources.GoldAmount);
 
 		var oreAmount = mainPlayer.TotalOreAmount();
-		var decimalPlaces = oreAmount >= 100 ? 0 : oreAmount >= 10 ? 1 : 2;
+		decimalPlaces = oreAmount >= 100 ? 0 : oreAmount >= 10 ? 1 : 2;
 		$('#TextBlockOreAmount').text(Math.floor(oreAmount) + " +" + totalResourceProduction.ore.toFixed(decimalPlaces));
 		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
 
@@ -765,22 +766,22 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				var sisdText = "";
 
 				sisdText += "<br />--- Stockpile ---<br />";
-				sisdText += "Production: " + p.RemainderProduction + "<br />";
-				sisdText += "Food: " + p.Resources.FoodAmount + "<br />";
-				sisdText += "Ore: " + p.Resources.OreAmount + "<br />";
-				sisdText += "Iridium: " + p.Resources.IridiumAmount + "<br />";
+				sisdText += "Production: " + Astriarch.DecimalToFixed(p.RemainderProduction, 3) + "<br />";
+				sisdText += "Food: " + Astriarch.DecimalToFixed(p.Resources.FoodAmount, 3) + "<br />";
+				sisdText += "Ore: " + Astriarch.DecimalToFixed(p.Resources.OreAmount, 3) + "<br />";
+				sisdText += "Iridium: " + Astriarch.DecimalToFixed(p.Resources.IridiumAmount, 3) + "<br />";
 
 				sisdText += "<br />--- Per Turn ---<br />";
-				sisdText += "Production: " + p.ResourcesPerTurn.ProductionAmountPerTurn + "<br />";
-				sisdText += "Food: " + p.ResourcesPerTurn.FoodAmountPerTurn + "<br />";
-				sisdText += "Ore: " + p.ResourcesPerTurn.OreAmountPerTurn + "<br />";
-				sisdText += "Iridium: " + p.ResourcesPerTurn.IridiumAmountPerTurn + "<br />";
+				sisdText += "Production: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetProductionAmountPerTurn(), 3) + "<br />";
+				sisdText += "Food: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetFoodAmountPerTurn(), 3) + "<br />";
+				sisdText += "Ore: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetOreAmountPerTurn(), 3) + "<br />";
+				sisdText += "Iridium: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetIridiumAmountPerTurn(), 3) + "<br />";
 
 				sisdText += "<br />--- Per Worker ---<br />";
-				sisdText += "Production: " + p.ResourcesPerTurn.GetExactProductionAmountPerWorkerPerTurn()+ "<br />";
-				sisdText += "Food: " + p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn()+ "<br />";
-				sisdText += "Ore: " + p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn()+ "<br />";
-				sisdText += "Iridium: " + p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn()+ "<br />";
+				sisdText += "Production: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetExactProductionAmountPerWorkerPerTurn(), 3) + "<br />";
+				sisdText += "Food: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn(), 3) + "<br />";
+				sisdText += "Ore: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn(), 3) + "<br />";
+				sisdText += "Iridium: " + Astriarch.DecimalToFixed(p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn(), 3) + "<br />";
 
 				$("#SelectedItemStatusDetails").html(sisdText);
 

@@ -60,19 +60,19 @@ Astriarch.TradingControl = {
 
 	refreshStatsFromClientTradingCenter: function(){
 		var ctc = Astriarch.ClientGameModel.ClientTradingCenter;
-		$("#tcdStockpilePriceFood").text(ctc.foodResource.currentPrice.toFixed(2));
+		$("#tcdStockpilePriceFood").text(Astriarch.DecimalToFixed(ctc.foodResource.currentPrice, 2));
 		$("#tcdTradingCenterAmtFood").text(ctc.foodResource.amount);
 		$("#tcdStockpileAmtFood").text(Math.floor(this.playerResourceAmountsAfterTrades.food));
 
-		$("#tcdStockpilePriceOre").text(ctc.oreResource.currentPrice.toFixed(2));
+		$("#tcdStockpilePriceOre").text(Astriarch.DecimalToFixed(ctc.oreResource.currentPrice, 2));
 		$("#tcdTradingCenterAmtOre").text(ctc.oreResource.amount);
 		$("#tcdStockpileAmtOre").text(Math.floor(this.playerResourceAmountsAfterTrades.ore));
 
-		$("#tcdStockpilePriceIridium").text(ctc.iridiumResource.currentPrice.toFixed(2));
+		$("#tcdStockpilePriceIridium").text(Astriarch.DecimalToFixed(ctc.iridiumResource.currentPrice, 2));
 		$("#tcdTradingCenterAmtIridium").text(ctc.iridiumResource.amount);
 		$("#tcdStockpileAmtIridium").text(Math.floor(this.playerResourceAmountsAfterTrades.iridium));
 
-		$("#tcdTradingCenterAmtGold").text(ctc.goldAmount.toFixed(2));
+		$("#tcdTradingCenterAmtGold").text(Astriarch.DecimalToFixed(ctc.goldAmount, 2));
 	},
 
 	refreshTradesSubmittedListBox: function() {
@@ -160,7 +160,7 @@ Astriarch.TradingControl = {
 		} else {
 			estimatedPrice = ctc.iridiumResource.currentPrice * amount;
 		}
-		Astriarch.TradingControl.jqElm.tradeResourceEstimatedPrice.text(estimatedPrice.toFixed(2));
+		Astriarch.TradingControl.jqElm.tradeResourceEstimatedPrice.text(Astriarch.DecimalToFixed(estimatedPrice, 2));
 	},
 
 	ButtonSubmitTradeClick: function(){
