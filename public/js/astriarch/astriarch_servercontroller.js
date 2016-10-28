@@ -216,10 +216,10 @@ Astriarch.ServerController = {
 				var tradeCount = (resourcesBought.tradeCount + resourcesSold.tradeCount);
 				var message = tradeCount > 1 ? tradeCount + " Trades Executed," : tradeCount + " Trade Executed,";
 				if(resourcesBought.goldSpent){
-					message += " Spent " + resourcesBought.goldSpent.toFixed(2) + " gold buying: " + (resourcesBought.food ? resourcesBought.food + " food, " : "") + (resourcesBought.ore ? resourcesBought.ore + " ore, " : "") + (resourcesBought.iridium ? resourcesBought.iridium + " iridium, " : "");
+					message += " Spent " + Astriarch.DecimalToFixed(resourcesBought.goldSpent, 2) + " gold buying: " + (resourcesBought.food ? resourcesBought.food + " food, " : "") + (resourcesBought.ore ? resourcesBought.ore + " ore, " : "") + (resourcesBought.iridium ? resourcesBought.iridium + " iridium, " : "");
 				}
 				if(resourcesSold.goldEarned){
-					message +=  " Earned " + resourcesSold.goldEarned.toFixed(2) + " gold selling: " + (resourcesSold.food ? resourcesSold.food + " food, " : "") + (resourcesSold.ore ? resourcesSold.ore + " ore, " : "") + (resourcesSold.iridium ? resourcesSold.iridium + " iridium, " : "");
+					message +=  " Earned " + Astriarch.DecimalToFixed(resourcesSold.goldEarned, 2) + " gold selling: " + (resourcesSold.food ? resourcesSold.food + " food, " : "") + (resourcesSold.ore ? resourcesSold.ore + " ore, " : "") + (resourcesSold.iridium ? resourcesSold.iridium + " iridium, " : "");
 				}
 				message = message.substring(0, message.length - 2);
 
@@ -705,10 +705,7 @@ Astriarch.ServerController = {
 			{
 				buildQueueEmptyPlanetTarget = p;
 				planetNameBuildQueueEmptyList.push(p.Name);
-				if (p.ResourcesPerTurn.ProductionAmountPerTurn > 0)
-				{
-					goldProducedAmount += p.ResourcesPerTurn.ProductionAmountPerTurn / 4.0;
-				}
+				goldProducedAmount += p.ResourcesPerTurn.GetProductionAmountPerTurn() / 4.0;
 			}
 		}
 		player.Resources.GoldAmount += goldProducedAmount;

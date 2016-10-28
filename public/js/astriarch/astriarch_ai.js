@@ -76,7 +76,7 @@ Astriarch.AI = {
 		{
 			var p = player.OwnedPlanets[i];//Planet
 			totalFoodAmountOnPlanets += p.Resources.FoodAmount;
-			totalFoodProduction += p.ResourcesPerTurn.FoodAmountPerTurn;
+			totalFoodProduction += p.ResourcesPerTurn.GetFoodAmountPerTurn();
 			if (p.Population.length < p.MaxPopulation())
 				totalPlanetsWithPopulationGrowthPotential++;
 		}
@@ -164,7 +164,7 @@ Astriarch.AI = {
 
 			//gather potential planets for adding farmers to
 			//TODO: this should order by planets with farms as well as planets who's population demands more food than it produces (more potential for growth)
-			allPlanets.sort(Astriarch.Planet.PlanetFoodProductionComparerSortFunction);
+			allPlanets.sort(Astriarch.Planet.PlanetFoodProductionPotentialComparerSortFunction);
 
 			var neededFarmers = foodDiff;
 			var planetCandidatesForAddingFarmers = []; //List<Planet>
@@ -173,11 +173,11 @@ Astriarch.AI = {
 				for (var i in allPlanets)
 				{
 					var p = allPlanets[i];//Planet
-					if (neededFarmers > 0 && p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn() > 0
+					if (neededFarmers > 0 && p.ResourcesPerTurn.GetExactFoodAmountNextWorkerPerTurn() > 0
 							&& (planetMiners[p.Id] > 0 || planetWorkers[p.Id] > 0))
 					{
 						planetCandidatesForAddingFarmers.push(p);
-						neededFarmers -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
+						neededFarmers -= p.ResourcesPerTurn.GetExactFoodAmountNextWorkerPerTurn();
 						if (neededFarmers <= 0)
 							break;
 					}
@@ -202,7 +202,7 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 1, -1, 0);
 						planetFarmers[p.Id]++;
 						planetMiners[p.Id]--;
-						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
+						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountNextWorkerPerTurn();
 						changedAssignment = true;
 					}
 					else if (planetWorkers[p.Id] > 0)
@@ -210,7 +210,7 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 1, 0, -1);
 						planetFarmers[p.Id]++;
 						planetWorkers[p.Id]--;
-						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
+						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountNextWorkerPerTurn();
 						changedAssignment = true;
 					}
 
@@ -233,7 +233,7 @@ Astriarch.AI = {
 
 			//gather potential planets for removing farmers from
 			//TODO: this should order by planets without farms and planets which have more food production than it's population demands (less potential for growth)
-			allPlanets.sort(Astriarch.Planet.PlanetFoodProductionComparerSortFunction);
+			allPlanets.sort(Astriarch.Planet.PlanetFoodProductionPotentialComparerSortFunction);
 			allPlanets.reverse();
 
 			var unneededFarmers = foodDiff;
@@ -270,8 +270,8 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], -1, 1, 0);
 						planetFarmers[p.Id]--;
 						planetMiners[p.Id]++;
-						oreAmountNeeded -= p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
-						iridiumAmountNeeded -= p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
+						oreAmountNeeded -= p.ResourcesPerTurn.GetExactOreAmountNextWorkerPerTurn();
+						iridiumAmountNeeded -= p.ResourcesPerTurn.GetExactIridiumAmountNextWorkerPerTurn();
 						foodDiff -= p.ResourcesPerTurn.GetExactFoodAmountPerWorkerPerTurn();
 						changedAssignment = true;
 					}
@@ -301,7 +301,7 @@ Astriarch.AI = {
 
 			var planetCandidatesForRemovingWorkers = []; //List<Planet>
 			
-			var mineralProductionComparer = new Astriarch.Planet.PlanetMineralProductionComparer(oreAmountNeeded, iridiumAmountNeeded);
+			var mineralProductionComparer = new Astriarch.Planet.PlanetMineralProductionPotentialComparer(oreAmountNeeded, iridiumAmountNeeded);
 			allPlanets.sort(mineralProductionComparer.sortFunction);
 
 			for (var i in allPlanets) {
@@ -320,8 +320,8 @@ Astriarch.AI = {
 
 				if (planetWorkers[p.Id] > minWorkers && planetFarmers[p.Id] > minFarmers) {
 					planetCandidatesForRemovingWorkers.push(p);
-					oreAmountNeededWorking -= p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
-					iridumAmountNeededWorking -= p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
+					oreAmountNeededWorking -= p.ResourcesPerTurn.GetExactOreAmountNextWorkerPerTurn();
+					iridumAmountNeededWorking -= p.ResourcesPerTurn.GetExactIridiumAmountNextWorkerPerTurn();
 				}
 			}
 			
@@ -339,8 +339,8 @@ Astriarch.AI = {
 						p.UpdatePopulationWorkerTypesByDiff(planetFarmers[p.Id], planetMiners[p.Id], planetWorkers[p.Id], 0, 1, -1);
 						planetMiners[p.Id]++;
 						planetWorkers[p.Id]--;
-						oreAmountNeeded -= p.ResourcesPerTurn.GetExactOreAmountPerWorkerPerTurn();
-						iridiumAmountNeeded -= p.ResourcesPerTurn.GetExactIridiumAmountPerWorkerPerTurn();
+						oreAmountNeeded -= p.ResourcesPerTurn.GetExactOreAmountNextWorkerPerTurn();
+						iridiumAmountNeeded -= p.ResourcesPerTurn.GetExactIridiumAmountNextWorkerPerTurn();
 						changedAssignment = true;
 					}
 
@@ -358,7 +358,7 @@ Astriarch.AI = {
 
 			var planetCandidatesForRemovingMiners = []; //List<Planet>
 
-			var mineralProductionComparer = new Astriarch.Planet.PlanetMineralProductionComparer(oreAmountNeeded, iridiumAmountNeeded);
+			var mineralProductionComparer = new Astriarch.Planet.PlanetMineralProductionPotentialComparer(oreAmountNeeded, iridiumAmountNeeded);
 			allPlanets.sort(mineralProductionComparer.sortFunction);
 			allPlanets.reverse();
 

@@ -20,6 +20,10 @@ Astriarch.NextRandomFloat = function(lowInclusive, highExclusive) {
 	return Math.random() * (highExclusive - lowInclusive) + lowInclusive;
 };
 
+Astriarch.DecimalToFixed = function(number, maxDecimalPlaces) {
+	return number ? (Math.round(number) != number ? number.toFixed(maxDecimalPlaces).replace(/0+$/, '') : number) : number;
+};
+
 //could add as prototype to object but that may cause problems:
 //http://stackoverflow.com/questions/5223/length-of-javascript-associative-array
 Astriarch.CountObjectKeys = function(obj) {

@@ -300,10 +300,10 @@ Astriarch.PlanetView = {
 	},
 	
 	refreshResourcesPerTurnTextBoxes: function() {
-		$('#TextBlockFoodPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.FoodAmountPerTurn);
-        $('#TextBlockOrePerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.OreAmountPerTurn);
-        $('#TextBlockIridiumPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.IridiumAmountPerTurn);
-        $('#TextBlockProductionPerTurn').text(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn());
+		$('#TextBlockFoodPerTurn').text(Astriarch.DecimalToFixed(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetFoodAmountPerTurn(), 3));
+        $('#TextBlockOrePerTurn').text(Astriarch.DecimalToFixed(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetOreAmountPerTurn(), 3));
+        $('#TextBlockIridiumPerTurn').text(Astriarch.DecimalToFixed(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetIridiumAmountPerTurn(), 3));
+        $('#TextBlockProductionPerTurn').text(Astriarch.DecimalToFixed(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn(), 3));
 	},
 	
 	updatePlanetStatsToolTip: function() {
