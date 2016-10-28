@@ -152,7 +152,6 @@ wss.on('connection', function(ws) {
 		console.log("SessionId: ", sessionId);
 
 		ws.on('message', function(data, flags) {
-			console.debug("Message received:", data, sessionId);
 
 			//touch session
 			gameController.touchSession(sessionId, function(err){
@@ -166,6 +165,7 @@ wss.on('connection', function(ws) {
 			if (!flags.binary) {
 				var parsedMessage = JSON.parse(data);
 				message = new Astriarch.Shared.Message(parsedMessage.type, parsedMessage.payload);
+				console.info(Astriarch.Shared.GetMessageType(message.type), "Message received:", data, sessionId);
 			}
 
 			switch(message.type){

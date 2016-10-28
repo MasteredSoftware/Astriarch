@@ -50,9 +50,21 @@ Astriarch.Shared = {
 		"PLAYER_DISCONNECT":4
 	},
 
-	Message: function(type, payload){
+	Message: function(type, payload) {
 		this.type = type || 0;
 		this.payload = payload || {};
+	},
+
+	messageIdToTypeName: null,
+
+	GetMessageType: function(type) {
+		if(!Astriarch.Shared.messageIdToTypeName) {
+			Astriarch.Shared.messageIdToTypeName = {};
+			for(var mtName in Astriarch.Shared.MESSAGE_TYPE) {
+				Astriarch.Shared.messageIdToTypeName[Astriarch.Shared.MESSAGE_TYPE[mtName]] = mtName;
+			}
+		}
+		return Astriarch.Shared.messageIdToTypeName[type];
 	}
 };
 
