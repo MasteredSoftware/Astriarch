@@ -887,11 +887,13 @@ Astriarch.ServerController = {
 		if (ownedPlanets == 0)
 			ownedPlanets = 1;//so that we have points for loosers too
 		var totalPopulation = player.GetTotalPopulation();
-
 		if (totalPopulation == 0)
 			totalPopulation = 1;//so that we have points for loosers too
 
-		points += Math.round(((speedFactor * difficultyRating * ownedPlanets) + (totalPopulation * totalSystems)) * (playerWon ? 2 : 0.25) );
+		var additionalPoints = Math.round(((speedFactor * difficultyRating * ownedPlanets) + (totalPopulation * totalSystems)) * (playerWon ? 2 : 0.25) );
+		console.log("CalculateEndGamePoints: points:", points, "additionalPoints:", additionalPoints, "speedFactor:", speedFactor, "difficultyRating:", difficultyRating, "ownedPlanets:", ownedPlanets, "totalPopulation:", totalPopulation, "totalSystems:", totalSystems, "playerWon:", playerWon, "gameModel.Turn.Number:", gameModel.Turn.Number);
+
+		points += additionalPoints;
 
 		return Math.floor(points);
 	}
