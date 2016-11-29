@@ -11,7 +11,7 @@ describe('#TradingCenter', function () {
 	beforeEach(function(){
 		player1 = new Astriarch.Player(1, Astriarch.Player.PlayerType.Computer_Expert, "Player1");
 		player2 = new Astriarch.Player(2, Astriarch.Player.PlayerType.Computer_Expert, "Player2");
-		gameModel = new Astriarch.Model([player1, player2], {systemsToGenerate:2, planetsPerSystem:4, distributePlanetsEvenly: true, "turnTimeLimitSeconds":0});
+		gameModel = new Astriarch.Model([player1, player2], {SystemsToGenerate:2, PlanetsPerSystem:4, DistributePlanetsEvenly: true, "TurnTimeLimitSeconds":0});
 	});
 
 	describe('executeTrade()', function () {

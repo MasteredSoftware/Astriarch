@@ -9,7 +9,7 @@ var mocha = new Mocha({
 	timeout: 999999
 });
 
-mocha.addFile('./test/tradingcenter_test.js');
+mocha.addFile('./test/servercontroller_test.js');
 
 var runner = mocha.run(function(){
 	console.log('finished');

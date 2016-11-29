@@ -880,7 +880,7 @@ Astriarch.ServerController = {
 		}
 		//max difficulty right now is (4 * 8) - 8 + (3 * 8) = 48
 		//min is 1
-		var minTurns = playerWon ? (6 * totalSystems * planetsPerSystem) : 6;
+		var minTurns = playerWon ? (totalSystems * planetsPerSystem) : 6;
 		var speedFactor = (difficultyRating + minTurns)/turnsTaken;
 
 		var ownedPlanets = Astriarch.CountObjectKeys(player.OwnedPlanets);
@@ -890,8 +890,10 @@ Astriarch.ServerController = {
 		if (totalPopulation == 0)
 			totalPopulation = 1;//so that we have points for loosers too
 
-		var additionalPoints = Math.round(((speedFactor * difficultyRating * ownedPlanets) + (totalPopulation * totalSystems)) * (playerWon ? 2 : 0.25) );
-		console.log("CalculateEndGamePoints: points:", points, "additionalPoints:", additionalPoints, "speedFactor:", speedFactor, "difficultyRating:", difficultyRating, "ownedPlanets:", ownedPlanets, "totalPopulation:", totalPopulation, "totalSystems:", totalSystems, "playerWon:", playerWon, "gameModel.Turn.Number:", gameModel.Turn.Number);
+		var percentageOwned = ownedPlanets / (totalSystems * planetsPerSystem);
+
+		var additionalPoints = Math.round(((percentageOwned * difficultyRating * speedFactor) + (totalPopulation * difficultyRating * speedFactor)) * (playerWon ? 2 : 0.25) );
+		console.log("CalculateEndGamePoints: points:", points, "additionalPoints:", additionalPoints, "speedFactor:", speedFactor, "difficultyRating:", difficultyRating, "percentageOwned:", percentageOwned, "ownedPlanets:", ownedPlanets, "totalPopulation:", totalPopulation, "totalSystems:", totalSystems, "playerWon:", playerWon, "gameModel.Turn.Number:", gameModel.Turn.Number);
 
 		points += additionalPoints;
 
