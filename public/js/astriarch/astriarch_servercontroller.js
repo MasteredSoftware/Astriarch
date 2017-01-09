@@ -837,16 +837,16 @@ Astriarch.ServerController = {
 		}
 		player.FleetsInTransit = [];
 
-		return Astriarch.ServerController.getPlayerPoints(gameModel, player, opponentOptions, false);
+		return Astriarch.ServerController.getAdditionalPlayerPoints(gameModel, player, opponentOptions, false);
 	},
 
 	CalculateEndGamePoints: function(gameModel, playerId, opponentOptions, /*bool*/ playerWon) {
 		var player = gameModel.getPlayerById(playerId);
 
-		return Astriarch.ServerController.getPlayerPoints(gameModel, player, opponentOptions, playerWon);
+		return Astriarch.ServerController.getAdditionalPlayerPoints(gameModel, player, opponentOptions, playerWon);
 	},
 
-	getPlayerPoints: function(gameModel, player, opponentOptions, /*bool*/ playerWon) {
+	getAdditionalPlayerPoints: function(gameModel, player, opponentOptions, /*bool*/ playerWon) {
 		var points = player.Points;
 
 		var turnsTaken = gameModel.Turn.Number;
@@ -855,7 +855,8 @@ Astriarch.ServerController = {
 
 		var totalSystems = gameModel.GameOptions.SystemsToGenerate;
 		var planetsPerSystem = Math.floor(gameModel.GameOptions.PlanetsPerSystem);
-		var difficultyRating = totalSystems * planetsPerSystem - 8;
+		var minTurns = totalSystems * planetsPerSystem - 8;
+		var difficultyRating = minTurns;
 
 
 		for(var i in opponentOptions) {
@@ -878,26 +879,57 @@ Astriarch.ServerController = {
 					break;
 			}
 		}
-		//max difficulty right now is (4 * 8) - 8 + (3 * 8) = 48
-		//min is 1
-		var minTurns = playerWon ? (totalSystems * planetsPerSystem) : 6;
-		var speedFactor = (difficultyRating + minTurns)/turnsTaken;
+
 
 		var ownedPlanets = Astriarch.CountObjectKeys(player.OwnedPlanets);
-		if (ownedPlanets == 0)
+		if (ownedPlanets == 0) {
 			ownedPlanets = 1;//so that we have points for loosers too
+		}
 		var totalPopulation = player.GetTotalPopulation();
-		if (totalPopulation == 0)
+		if (totalPopulation == 0) {
 			totalPopulation = 1;//so that we have points for loosers too
+		}
 
-		var percentageOwned = ownedPlanets / (totalSystems * planetsPerSystem);
+		var maxPopulation = 0;
+		for(var i in player.OwnedPlanets) {
+			maxPopulation += player.OwnedPlanets[i].maxPopulation;//only count max pop w/o colonies
+		}
 
-		var additionalPoints = Math.round(((percentageOwned * difficultyRating * speedFactor) + (totalPopulation * difficultyRating * speedFactor)) * (playerWon ? 2 : 0.25) );
-		console.log("CalculateEndGamePoints: points:", points, "additionalPoints:", additionalPoints, "speedFactor:", speedFactor, "difficultyRating:", difficultyRating, "percentageOwned:", percentageOwned, "ownedPlanets:", ownedPlanets, "totalPopulation:", totalPopulation, "totalSystems:", totalSystems, "playerWon:", playerWon, "gameModel.Turn.Number:", gameModel.Turn.Number);
+		//max difficulty right now is (4 * 8) - 8 + (3 * 8) = 48
+		//min is 1
+		difficultyRating = difficultyRating / 48;
+
+		minTurns += playerWon ? (ownedPlanets) * (gameModel.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.SMALL ? 0.5 : gameModel.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM ? 0.75 : 1.0) : 6;
+		var speedFactor = (minTurns) / turnsTaken;
+
+		var additionalPoints = Astriarch.ServerController.calculateAdditionalPoints(points, ownedPlanets, totalPopulation, maxPopulation, totalSystems, planetsPerSystem, difficultyRating, speedFactor, playerWon);
+		console.log("CalculateEndGamePoints: points:", points,
+			"additionalPoints:", additionalPoints,
+			"speedFactor:", speedFactor,
+			"difficultyRating:", difficultyRating,
+			"percentageOwned:", (ownedPlanets / (totalSystems * planetsPerSystem)),
+			"ownedPlanets:", ownedPlanets,
+			"totalPopulation:", totalPopulation,
+			"maxPopulation:", maxPopulation,
+			"totalSystems:", totalSystems,
+			"planetsPerSystem:", planetsPerSystem,
+			"playerWon:", playerWon,
+			"minTurns:", minTurns,
+			"gameModel.Turn.Number:", gameModel.Turn.Number);
 
 		points += additionalPoints;
 
 		return Math.floor(points);
+	},
+
+	calculateAdditionalPoints: function(points, ownedPlanets, totalPopulation, maxPopulation, totalSystems, planetsPerSystem, difficultyRating, speedFactor, playerWon) {
+		var percentageOwned = ownedPlanets / (totalSystems * planetsPerSystem);
+		var percentagePopulated = totalPopulation / maxPopulation;
+
+		var additionalPoints = points * (playerWon ? 2 : 0.25);
+		additionalPoints = Math.round( additionalPoints * ( (percentageOwned * difficultyRating * speedFactor) + (percentagePopulated * difficultyRating * speedFactor) ) );
+
+		return additionalPoints;
 	}
 
 
