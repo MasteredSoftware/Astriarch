@@ -894,6 +894,10 @@ Astriarch.ServerController = {
 		for(var i in player.OwnedPlanets) {
 			maxPopulation += player.OwnedPlanets[i].maxPopulation;//only count max pop w/o colonies
 		}
+		//prevent divide by zero
+		if(maxPopulation == 0) {
+			maxPopulation = 100;
+		}
 
 		//max difficulty right now is (4 * 8) - 8 + (3 * 8) = 48
 		//min is 1
