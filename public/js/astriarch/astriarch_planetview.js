@@ -775,18 +775,15 @@ Astriarch.PlanetView = {
 		var bqlbi = Astriarch.PlanetView.BuildQueueListBox.items[index];//BuildQueueListBoxItem
 		Astriarch.PlanetView.BuildQueueListBox.items.splice(index, 1);
 		Astriarch.PlanetView.workingBuildQueue.splice(index, 1);
-		if(moveUp)
-		{
-			Astriarch.PlanetView.BuildQueueListBox.items.splice(index-1, 0, bqlbi);
-			Astriarch.PlanetView.workingBuildQueue.splice(index-1, 0, bqlbi.ProductionItem);
+		if(moveUp) {
+			Astriarch.PlanetView.BuildQueueListBox.items.splice(index - 1, 0, bqlbi);
+			Astriarch.PlanetView.workingBuildQueue.splice(index - 1, 0, bqlbi.ProductionItem);
 			Astriarch.PlanetView.BuildQueueListBox.setSelectedIndex(index - 1);
 
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload:{actionType:Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.MOVEUP, planetId:Astriarch.PlanetView.planetMain.Id, data:index}});
-		}
-		else
-		{
-			Astriarch.PlanetView.BuildQueueListBox.items.splice(index+1, 0, bqlbi);
-			Astriarch.PlanetView.workingBuildQueue.splice(index+1, 0, bqlbi.ProductionItem);
+		} else {
+			Astriarch.PlanetView.BuildQueueListBox.items.splice(index + 1, 0, bqlbi);
+			Astriarch.PlanetView.workingBuildQueue.splice(index + 1, 0, bqlbi.ProductionItem);
 			Astriarch.PlanetView.BuildQueueListBox.setSelectedIndex(index + 1);
 
 			Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload:{actionType:Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.MOVEDOWN, planetId:Astriarch.PlanetView.planetMain.Id, data:index}});

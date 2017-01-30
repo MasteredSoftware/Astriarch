@@ -98,8 +98,7 @@ JSListBox.prototype.setSelectedIndex = function(index) {
 };
 
 JSListBox.prototype.getItemIndex = function(item) {
-	for(var i in this.items)
-	{
+	for(var i = 0; i < this.items.length; i++) {
 		if(this.items[i] == item)
 			return i;
 	}
