@@ -304,6 +304,13 @@ Astriarch.ServerController = {
 			var playerFleet = unownedPlanetFleets[i];//Fleet
 			var destinationPlanet = playerFleet.DestinationHex.PlanetContainedInHex;//Planet
 
+			//if there are ships in the planet's OutgoingFleets list, recall them since we are being attacked
+			//  this happens when a player has used the waypoint feature and just built a ship
+			destinationPlanet.OutgoingFleets.forEach(function(fleet){
+				destinationPlanet.PlanetaryFleet.MergeFleet(fleet);
+			});
+			destinationPlanet.OutgoingFleets = [];
+
 			//battle!
 			var enemyFleet = destinationPlanet.PlanetaryFleet;//Fleet
 
