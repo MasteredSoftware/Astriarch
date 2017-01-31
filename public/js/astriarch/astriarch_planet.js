@@ -1428,6 +1428,10 @@ Astriarch.Planet.PlanetProductionItem = Class.extend({ //abstract class
 		} else {
 			this.TurnsToComplete = 999;//if there are no workers
 		}
+		//We at least need one turn to build it, even if we have stockpile greater than the production cost
+		if(!this.TurnsToComplete) {
+			this.TurnsToComplete = 1;
+		}
 	},
 
 	/**
