@@ -125,7 +125,7 @@ Astriarch.ServerController = {
 		var totalPop = player.GetTotalPopulation();
 
 		if(player.Type == Astriarch.Player.PlayerType.Human) {
-			Astriarch.ServerController.addLastStarShipToQueueOnPlanets(gameModel, player);
+			endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.addLastStarShipToQueueOnPlanets(gameModel, player));
 		}
 
 		Astriarch.ServerController.generatePlayerResources(player);
@@ -677,23 +677,66 @@ Astriarch.ServerController = {
 
 	},
 
-	addLastStarShipToQueueOnPlanets: function(gameModel, /*Player*/ player)
-	{
-		for(var i in player.OwnedPlanets)
-		{
+	addLastStarShipToQueueOnPlanets: function(gameModel, /*Player*/ player) { //returns List<TurnEventMessage>
+		var autoQueuedCount = 0;
+		var unableToAutoQueueCount = 0;
+		var autoQueuedFleet = new Astriarch.Fleet();
+		var unableToAutoQueueFleet = new Astriarch.Fleet();
+		var goldShortage = 0;
+		var oreShortage = 0;
+		var iridiumShortage = 0;
+        var focusPlanet = null;
+		for(var i in player.OwnedPlanets) {
 			var p = player.OwnedPlanets[i];//Planet
-			if (p.BuildLastStarShip && p.BuildQueue.length == 0 && p.StarShipTypeLastBuilt != null)
-			{
+			if (p.BuildLastStarShip && p.BuildQueue.length == 0 && p.StarShipTypeLastBuilt != null) {
+                focusPlanet = p;
 				//check resources
 				var s = new Astriarch.Planet.StarShipInProduction(p.StarShipTypeLastBuilt);
+				var canBuild = true;
+				if(player.Resources.GoldAmount - s.GoldCost <= player.LastTurnFoodNeededToBeShipped) {
+					canBuild = false;
+					goldShortage += s.GoldCost;
+				}
 
-				if (player.Resources.GoldAmount - s.GoldCost > player.LastTurnFoodNeededToBeShipped &&
-					player.TotalOreAmount() - s.OreCost >= 0 &&
-					player.TotalIridiumAmount() - s.IridiumCost >= 0)
-				{
+				if(player.TotalOreAmount() - s.OreCost < 0) {
+					canBuild = false;
+					oreShortage += s.OreCost;
+				}
+
+				if(player.TotalIridiumAmount() - s.IridiumCost < 0) {
+					canBuild = false;
+					iridiumShortage += s.IridiumCost;
+				}
+
+				if (canBuild) {
+					autoQueuedCount++;
+					autoQueuedFleet.StarShips[p.StarShipTypeLastBuilt].push(new Astriarch.Fleet.StarShip(p.StarShipTypeLastBuilt));
 					p.EnqueueProductionItemAndSpendResources(gameModel, s, player);
+				} else {
+					unableToAutoQueueCount++;
+					unableToAutoQueueFleet.StarShips[p.StarShipTypeLastBuilt].push(new Astriarch.Fleet.StarShip(p.StarShipTypeLastBuilt));
 				}
 			}
+		}
+        if(goldShortage) {
+            goldShortage += player.LastTurnFoodNeededToBeShipped;
+        }
+
+		if(autoQueuedCount || unableToAutoQueueCount) {
+			var autoBuiltStarshipsMessage = "";
+			if(autoQueuedCount) {
+				autoBuiltStarshipsMessage = "Auto-queued: " + autoQueuedFleet.ToString();
+			}
+			if(unableToAutoQueueCount) {
+				if(autoBuiltStarshipsMessage != "") {
+					autoBuiltStarshipsMessage += ", ";
+				}
+				autoBuiltStarshipsMessage += "Unable to auto-queue: " + unableToAutoQueueFleet.ToString() + ", need" + (goldShortage ? " " + goldShortage + " Gold" : "") + (oreShortage ? " " + oreShortage + " Ore" : "") + (iridiumShortage ? " " + iridiumShortage + " Iridium" : "");
+			}
+			var endOfTurnMessage = new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResourcesAutoSpent, focusPlanet, autoBuiltStarshipsMessage);
+			return [endOfTurnMessage];
+		} else {
+			return [];
 		}
 	},
 
