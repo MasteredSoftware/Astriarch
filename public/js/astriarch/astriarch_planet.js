@@ -1420,9 +1420,10 @@ Astriarch.Planet.PlanetProductionItem = Class.extend({ //abstract class
 	 * sets the turns to complete based on production
 	 * @this {Astriarch.Planet.PlanetProductionItem}
 	 */
-	EstimateTurnsToComplete: function(/*int*/ planetProductionPerTurn) {
+	EstimateTurnsToComplete: function(/*int*/ planetProductionPerTurn, remainderProductionStockpile) {
+		remainderProductionStockpile = remainderProductionStockpile || 0;
 		if (planetProductionPerTurn !== 0) {
-			var productionCostLeft = this.BaseProductionCost - this.ProductionCostComplete;
+			var productionCostLeft = this.BaseProductionCost - this.ProductionCostComplete - remainderProductionStockpile;
 			this.TurnsToComplete = Math.ceil(productionCostLeft / planetProductionPerTurn);
 		} else {
 			this.TurnsToComplete = 999;//if there are no workers

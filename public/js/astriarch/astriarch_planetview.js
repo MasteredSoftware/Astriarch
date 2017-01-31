@@ -290,10 +290,9 @@ Astriarch.PlanetView = {
 		self.planetMain.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 
 		var workingProdRemainder = self.workingProductionRemainderOriginal;
-		for ( var i in self.BuildQueueListBox.items)
-		{
+		for ( var i in self.BuildQueueListBox.items) {
 			var queueItem = self.BuildQueueListBox.items[i];//BuildQueueListBoxItem
-			queueItem.ProductionItem.EstimateTurnsToComplete(self.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn() + workingProdRemainder);
+			queueItem.ProductionItem.EstimateTurnsToComplete(self.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn(), workingProdRemainder);
 			workingProdRemainder = 0;
 		}
 		self.BuildQueueListBox.refresh();
@@ -450,10 +449,9 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.BuildQueueListBox.clear();
 
 		var workingProdRemainder = Astriarch.PlanetView.workingProductionRemainderOriginal;
-		for (var i in Astriarch.PlanetView.workingBuildQueue)
-		{
+		for (var i in Astriarch.PlanetView.workingBuildQueue) {
 			var ppi = Astriarch.PlanetView.workingBuildQueue[i];//PlanetProductionItem
-			ppi.EstimateTurnsToComplete(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn() + workingProdRemainder);
+			ppi.EstimateTurnsToComplete(Astriarch.PlanetView.planetMain.ResourcesPerTurn.GetProductionAmountPerTurn(), workingProdRemainder);
 			workingProdRemainder = 0;
 			var queueItem = new Astriarch.PlanetView.BuildQueueListBoxItem(ppi);
 			Astriarch.PlanetView.BuildQueueListBox.addItem(queueItem);
