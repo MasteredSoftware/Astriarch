@@ -52,8 +52,8 @@ Astriarch.ServerController = {
 		//repair fleets on planets
 		for (var i in gameModel.Planets) {
 			var p = gameModel.Planets[i];
-			//Require a colony to even consider repairing a fleet
-			if(p.Owner && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length > 0){
+			//Require a colony and a happy population to even consider repairing a fleet
+			if(p.Owner && p.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Normal && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length > 0){
 				//charge the user a bit for repairing the fleets
 				//i.e. 2 gold per 3 damage, 1 ore per 2 damage, 1 iridium per 4 damage
 				var goldAmount = p.Owner.Resources.GoldAmount;

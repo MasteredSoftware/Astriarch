@@ -841,6 +841,7 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(planet) {
 	var maxPopulation = planet.MaxPopulation();
     var element = null;
 	var popGrowthIn = planet.GetTurnsUntilPopulationGrowth();
+	var planetHappinessText = planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Riots ? ", population rioting" : planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest ? ", population unrest" : "";
 	var popGrowthInText = "";
 	if(popGrowthIn < 999) {
 		popGrowthInText = ", Growth in " + popGrowthIn + " turn";
@@ -850,7 +851,7 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(planet) {
 	for (var i = maxPopulation + 1; i <= 16; i++) {
         element = $("#PopulationImage" + i);
 		element.attr("class","popImg");
-        element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText);
+        element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText + planetHappinessText);
 	}
 
 	for (var i = 1; i <= maxPopulation; i++) {
@@ -860,19 +861,19 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(planet) {
 			var citizen = population[i - 1];
 			if(citizen.ProtestLevel == 0){
 				element.attr("class","icon-10x16-PopulationSmallFilled");
-				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText);
+				element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText + planetHappinessText);
 			} else if(citizen.ProtestLevel > 0.5){
 				element.attr("class","icon-10x16-PopulationSmallFilled_red");
-				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%" + popGrowthInText);
+				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%" + popGrowthInText + planetHappinessText);
 			} else {
 				element.attr("class","icon-10x16-PopulationSmallFilled_orange");
-				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%" + popGrowthInText);
+				element.prop("title", "Citizens Protesting at " + (Math.round(100 * citizen.ProtestLevel)) + "%" + popGrowthInText + planetHappinessText);
 			}
 
 		}
 		else {
 			element.attr("class","icon-10x16-PopulationSmallEmpty");
-            element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText);
+            element.prop('title',"Planet Population: " + population.length + " / " + maxPopulation + popGrowthInText + planetHappinessText);
 		}
 	}
 };
