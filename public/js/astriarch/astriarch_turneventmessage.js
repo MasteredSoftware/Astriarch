@@ -35,15 +35,16 @@ Astriarch.TurnEventMessage.TurnEventMessageType = {
 	BuildQueueEmpty: 7,
 	ResearchComplete: 8,
 	ResearchQueueEmpty: 9,
-	CitizensProtesting: 10,
-	InsufficientFood: 11,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
-	DefendedAgainstAttackingFleet: 12,
-	AttackingFleetLost: 13,
-	PlanetCaptured: 14,
-	PopulationStarvation: 15,
-	FoodShortageRiots: 16,
-	PlanetLostDueToStarvation: 17,//this is bad but you probably know it's bad
-	PlanetLost: 18
+    ResearchStolen: 10,
+	CitizensProtesting: 11,
+	InsufficientFood: 12,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
+	DefendedAgainstAttackingFleet: 13,
+	AttackingFleetLost: 14,
+	PlanetCaptured: 15,
+	PopulationStarvation: 16,
+	FoodShortageRiots: 17,
+	PlanetLostDueToStarvation: 18,//this is bad but you probably know it's bad
+	PlanetLost: 19
 };
 
 /**

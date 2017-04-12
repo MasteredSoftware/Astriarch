@@ -100,7 +100,9 @@ Astriarch.Research.prototype.nextTurn = function(goldAmountAtMaxPercent) {
     } else {
         returnObj.goldAmountEarned = goldAmountAtMaxPercent;
         returnObj.researchAmountEarned = 0;
-        returnObj.endOfTurnMessages.push(new Astriarch.TurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResearchQueueEmpty, null, "Our Scientists and Engineers are idle, R&D points were used for tax collection instead."));
+        if(this.researchPercent) {
+            returnObj.endOfTurnMessages.push(new Astriarch.TurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResearchQueueEmpty, null, "Our Scientists and Engineers are idle, R&D points were used for tax collection instead."));
+        }
     }
     return returnObj;
 };

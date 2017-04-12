@@ -428,7 +428,11 @@ Astriarch.ServerController = {
 						//NOTE: currently you can't steal custom ship research
 						if(attackingPlayerResearch.canResearch() && !rp.isCustomShip && rp.currentResearchLevel > attackingPlayerResearch.currentResearchLevel && rp.researchPointsCompleted > attackingPlayerResearch.researchPointsCompleted) {
 							planetaryConflictData.ResearchAmountLooted = Astriarch.NextRandom(0, Math.floor(Math.min((goldLootMax * 4), rp.researchPointsCompleted - attackingPlayerResearch.researchPointsCompleted) + 1));
-							attackingPlayerResearch.setResearchPointsCompleted(attackingPlayerResearch.researchPointsCompleted + planetaryConflictData.ResearchAmountLooted);
+							var levelIncrease = attackingPlayerResearch.setResearchPointsCompleted(attackingPlayerResearch.researchPointsCompleted + planetaryConflictData.ResearchAmountLooted);
+							if(levelIncrease) {
+								endOfTurnMessagesByPlayerId[defendingPlayer.Id].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResearchStolen, destinationPlanet, attackingPlayerResearch.ToString() + " was stolen by " + player.Name));
+								endOfTurnMessagesByPlayerId[player.Id].push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ResearchStolen, destinationPlanet, "You stole " + attackingPlayerResearch.ToString() + " from " + defendingPlayer.Name));
+							}
 							break;
 						}
 					}
