@@ -30,14 +30,12 @@ Astriarch.ServerController = {
 		Astriarch.ServerController.executeCurrentTrades(gameModel, endOfTurnMessagesByPlayerId);
 
 		//move ships called for all players before the rest of the end turn
-		for (var i in gameModel.Players)
-		{
+		for (var i in gameModel.Players) {
 			Astriarch.ServerController.moveShips(gameModel.Players[i]);
 		}
 
 		//could eventually prefer computer opponents
-		for (var i in gameModel.Players)
-		{
+		for (var i in gameModel.Players) {
 			var player = gameModel.Players[i];
 			if (player.Type == Astriarch.Player.PlayerType.Human) {
 				endOfTurnMessagesByPlayerId[player.Id] = endOfTurnMessagesByPlayerId[player.Id].concat(Astriarch.ServerController.endTurn(gameModel, player));
@@ -128,9 +126,8 @@ Astriarch.ServerController = {
 			endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.addLastStarShipToQueueOnPlanets(gameModel, player));
 		}
 
-		Astriarch.ServerController.generatePlayerResources(player);
+		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.generatePlayerResourcesAndResearch(player));
 
-		//this could all be done at the start of the turn also.
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.eatAndStarve(gameModel, player, totalPop));
 
 		endOfTurnMessages = endOfTurnMessages.concat(Astriarch.ServerController.adjustPlayerPlanetProtestLevels(player));
@@ -273,7 +270,7 @@ Astriarch.ServerController = {
 		for (var i = player.FleetsInTransit.length - 1; i >= 0; i--)
 		{
 			var playerFleet = player.FleetsInTransit[i];//Fleet
-			if (playerFleet.TurnsToDestination == 0)
+			if (playerFleet.ParsecsToDestination <= 0)
 			{
 				var destinationPlanet = playerFleet.DestinationHex.PlanetContainedInHex;//Planet
 				if (destinationPlanet.Owner == player)
@@ -332,7 +329,10 @@ Astriarch.ServerController = {
 
 			//July 21st 2010, changed from pure statistics to BattleSimulator, still have this AttackingFleetChances code to show a percentage (for now as an estimation)
 
-
+			planetaryConflictData.AttackingFleetResearchBoostAttack = player.Research.getResearchData(Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_ATTACK).chance;
+			planetaryConflictData.AttackingFleetResearchBoostDefense = player.Research.getResearchData(Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_DEFENSE).chance;
+			planetaryConflictData.DefendingFleetResearchBoostAttack = destinationPlanet.Owner ? destinationPlanet.Owner.Research.getResearchData(Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_ATTACK).chance : 0;
+			planetaryConflictData.DefendingFleetResearchBoostDefense = destinationPlanet.Owner ? destinationPlanet.Owner.Research.getResearchData(Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_DEFENSE).chance : 0;
 
 			if (enemyFleetStrength > playerFleetStrength * Astriarch.ServerController.BATTLE_RANDOMNESS_FACTOR)
 			{
@@ -524,14 +524,8 @@ Astriarch.ServerController = {
 					var pSurplus = foodSurplusPlanets[s];//Planet
 					var amountSpent = 0;
 
-					if (foodShortageTotal > pSurplus.Resources.FoodAmount)//we can't get all our shortage from this one planet
-					{
-						amountSpent = player.Resources.SpendGoldAsPossible(pSurplus.Resources.FoodAmount);
-					}
-					else//we've can satisfy this deficit if we can pay for it, pay for as much shipping as we can
-					{
-						amountSpent = player.Resources.SpendGoldAsPossible(foodShortageTotal);
-					}
+					amountSpent = player.Resources.SpendGoldAsPossible(Math.min(foodShortageTotal, pSurplus.Resources.FoodAmount));
+
 					totalFoodShipped += amountSpent;
 
 					foodShortageTotal = foodShortageTotal - amountSpent;
@@ -657,24 +651,19 @@ Astriarch.ServerController = {
 		return eotMessages;
 	},
 
-	generatePlayerResources: function(/*Player*/ player) {
-		//determine tax revenue (gold)
-		//TODO: later we may want to allow the user to control taxes vs. research
+	generatePlayerResourcesAndResearch: function(/*Player*/ player) { //returns List<TurnEventMessage>
+		//perform research
+		//allows the user to control taxes vs. research
+		var researchReturnObj = player.Research.nextTurn(player.GetTaxRevenueAtMaxPercent());
 
-		var totalPop = 0;
-		for (var i in player.OwnedPlanets) {
-			var p = player.OwnedPlanets[i];//Planet
-			totalPop += p.Id == player.HomePlanetId ? p.Population.length * 2 : p.Population.length;
-		}
+		player.Resources.GoldAmount += researchReturnObj.goldAmountEarned;
 
-		player.Resources.GoldAmount += (totalPop) / 1.75;
 
 		//generate planet resources
-		for (var i in player.OwnedPlanets)
-		{
+		for (var i in player.OwnedPlanets) {
 			player.OwnedPlanets[i].GenerateResources();
 		}
-
+		return researchReturnObj.endOfTurnMessages;
 	},
 
 	addLastStarShipToQueueOnPlanets: function(gameModel, /*Player*/ player) { //returns List<TurnEventMessage>
@@ -691,7 +680,11 @@ Astriarch.ServerController = {
 			if (p.BuildLastStarShip && p.BuildQueue.length == 0 && p.StarShipTypeLastBuilt != null) {
                 focusPlanet = p;
 				//check resources
-				var s = new Astriarch.Planet.StarShipInProduction(p.StarShipTypeLastBuilt);
+				var data = {};
+				if(p.StarShipCustomShipLastBuilt) {
+					data = player.Research.getResearchDataByStarShipHullType(p.StarShipTypeLastBuilt);
+				}
+				var s = new Astriarch.Planet.StarShipInProduction(p.StarShipTypeLastBuilt, p.StarShipCustomShipLastBuilt, data.advantageAgainst, data.disadvantageAgainst);
 				var canBuild = true;
 				if(player.Resources.GoldAmount - s.GoldCost <= player.LastTurnFoodNeededToBeShipped) {
 					canBuild = false;
@@ -710,11 +703,11 @@ Astriarch.ServerController = {
 
 				if (canBuild) {
 					autoQueuedCount++;
-					autoQueuedFleet.StarShips[p.StarShipTypeLastBuilt].push(new Astriarch.Fleet.StarShip(p.StarShipTypeLastBuilt));
+					autoQueuedFleet.StarShips[p.StarShipTypeLastBuilt].push(new Astriarch.Fleet.StarShip(p.StarShipTypeLastBuilt, p.StarShipCustomShipLastBuilt, data.advantageAgainst, data.disadvantageAgainst));
 					p.EnqueueProductionItemAndSpendResources(gameModel, s, player);
 				} else {
 					unableToAutoQueueCount++;
-					unableToAutoQueueFleet.StarShips[p.StarShipTypeLastBuilt].push(new Astriarch.Fleet.StarShip(p.StarShipTypeLastBuilt));
+					unableToAutoQueueFleet.StarShips[p.StarShipTypeLastBuilt].push(new Astriarch.Fleet.StarShip(p.StarShipTypeLastBuilt, p.StarShipCustomShipLastBuilt, data.advantageAgainst, data.disadvantageAgainst));
 				}
 			}
 		}

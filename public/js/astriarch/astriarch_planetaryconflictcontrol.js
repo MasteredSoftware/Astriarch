@@ -43,10 +43,14 @@ Astriarch.PlanetaryConflictControl = {
 		}
 		summary += resourcesLootedMessage + "<br />";
 		var attackingFleetStrength = planetaryConflictMessage.Data.AttackingFleet.DetermineFleetStrength();
-		summary += "Attacking Fleet (strength " + attackingFleetStrength + ", Chance to Win: " + planetaryConflictMessage.Data.AttackingFleetChances + "%): <br />";
+		var researchBoostSummaryAttackingFleet = planetaryConflictMessage.Data.AttackingFleetResearchBoostAttack ? ", +" + (planetaryConflictMessage.Data.AttackingFleetResearchBoostAttack / 2 * 100) +"% Attack" : "";
+		researchBoostSummaryAttackingFleet += planetaryConflictMessage.Data.AttackingFleetResearchBoostDefense ? ", +" + (planetaryConflictMessage.Data.AttackingFleetResearchBoostDefense / 2 * 100) +"% Defense" : "";
+		summary += "Attacking Fleet (strength " + attackingFleetStrength + ", Chance to Win: " + planetaryConflictMessage.Data.AttackingFleetChances + "%" + researchBoostSummaryAttackingFleet + "): <br />";
 		summary += planetaryConflictMessage.Data.AttackingFleet.ToString() + "<br /><br />";
 		var defendingFleetStrength = planetaryConflictMessage.Data.DefendingFleet.DetermineFleetStrength();
-		summary += "Defending Fleet (strength " + defendingFleetStrength + "): <br />";
+		var researchBoostSummaryDefendingFleet = planetaryConflictMessage.Data.DefendingFleetResearchBoostAttack ? ", +" + (planetaryConflictMessage.Data.DefendingFleetResearchBoostAttack / 2 * 100) +"% Attack" : "";
+		researchBoostSummaryDefendingFleet += planetaryConflictMessage.Data.DefendingFleetResearchBoostDefense ? ", +" + (planetaryConflictMessage.Data.DefendingFleetResearchBoostDefense / 2 * 100) +"% Defense" : "";
+		summary += "Defending Fleet (strength " + defendingFleetStrength + researchBoostSummaryDefendingFleet + "): <br />";
 		summary += planetaryConflictMessage.Data.DefendingFleet.ToString() + "<br /><br />";
 		summary += "Ships Remaining: <br />";
 		summary += planetaryConflictMessage.Data.WinningFleet.ToString() + "<br />";

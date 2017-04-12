@@ -11,6 +11,7 @@ var clientmodel = require("./astriarch_clientmodel");
 var fleet = require("./astriarch_fleet");
 var planet = require("./astriarch_planet");
 var tc = require("./astriarch_tradingcenter");
+var r = require("./astriarch_research");
 var savedgameinterface = require("./astriarch_savedgameinterface");
 var player = require("./astriarch_player");
 var grid = require("./astriarch_grid");

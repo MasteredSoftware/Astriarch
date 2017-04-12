@@ -416,6 +416,36 @@ wss.on('connection', function(ws) {
 						}
 					});
 					break;
+				case Astriarch.Shared.MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT:
+					gameController.AdjustResearchPercent(sessionId, message.payload, function(err, data) {
+						if (err) {
+							console.error("gameController.AdjustResearchPercent: ", err);
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+						}
+					});
+					break;
+				case Astriarch.Shared.MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM:
+					gameController.SubmitResearchItem(sessionId, message.payload, function(err, data) {
+						if (err) {
+							console.error("gameController.SubmitResearchItem: ", err);
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+						}
+					});
+					break;
+				case Astriarch.Shared.MESSAGE_TYPE.CANCEL_RESEARCH_ITEM:
+					gameController.CancelResearchItem(sessionId, message.payload, function(err, data) {
+						if (err) {
+							console.error("gameController.CancelResearchItem: ", err);
+							message.payload = err;
+							message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+							wssInterface.wsSend(ws, message);
+						}
+					});
+					break;
 				case Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE:
 					//TODO: get the player name and player number from the existing chatRoom so they can't as easily spoof that
 					message.payload.text = (message.payload.text || "").trim();
@@ -496,7 +526,7 @@ var sendUpdatedGameListToLobbyPlayers = function(gameDoc){
 
 var getSerializableClientPlayersFromSerializableModel = function(serializableModel) {
 	return serializableModel.SerializablePlayers.map(function(player) {
-		return new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed);
+		return new Astriarch.SerializableClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed, player.Research);
 	});
 };
 

@@ -199,7 +199,7 @@ Astriarch.SendShipsControl.AvailableStarShipCardListItem = JSCardList.Item.exten
 		var levelObj = this.StarShip.Level();
 		var percentLevel = this.StarShip.ExperienceAmount / levelObj.nextLevelExpRequirement;
 
-		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.StarShip.Type);
+		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.StarShip.Type, this.StarShip.CustomShip);
 		var element = '<span class="sscItem">' +
 			'<span class="sscItemHealth">' + details.damageText + '</span>' +
 			'<div class="sscItemImg '+imageClassName+'" />' +

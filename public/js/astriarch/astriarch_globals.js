@@ -141,8 +141,52 @@ Astriarch.GameTools = {
 		return helpText;
 	},
 
-	StarShipTypeToFriendlyName: function(/*StarShipType*/ t)
-	{
+	ResearchTypeToHelpText: function(/*Astriarch.Research.ResearchType*/ t){//returns string
+		var helpText = "";
+		switch (t)
+		{
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_DEFENDER:
+				helpText = "Create a new Custom Ship with the Defender Hull Type";
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_SCOUT:
+				helpText = "Create a new Custom Ship with the Scout Hull Type";
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_DESTROYER:
+				helpText = "Create a new Custom Ship with the Destroyer Hull Type";
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_CRUISER:
+				helpText = "Create a new Custom Ship with the Cruiser Hull Type";
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_BATTLESHIP:
+				helpText = "Create a new Custom Ship with the Battleship Hull Type";
+				break;
+			case Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_ATTACK:
+				helpText = "Improves ship attack by up to 50%";
+				break;
+			case Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
+				helpText = "Improves ship defense by up to 50%";
+				break;
+			case Astriarch.Research.ResearchType.PROPULSION_IMPROVEMENT:
+				helpText = "Improves ship speed";
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
+				helpText = "Boost Farm effectiveness to as much as 200% of normal";
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
+				helpText = "Boost Mine effectiveness to as much as 200% of normal";
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
+				helpText = "Increase Population growth on planets with colonies";
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
+				helpText = "Boost Farm effectiveness to as much as 200% of normal";
+				break;
+		}
+
+		return helpText;
+	},
+
+	StarShipTypeToFriendlyName: function(/*StarShipType*/ t) {
 		var name = "";
 		switch(t)
 		{
@@ -165,34 +209,28 @@ Astriarch.GameTools = {
 		return name;
 	},
 
-	StarShipTypeToHelpText: function(/*StarShipType*/ t){
-		//here are the advantages (-> means has an advantage over):
-		//space platforms -> all
-		//battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
+	StarShipTypeToHelpText: function(/*Astriarch.Planet.StarShipInProduction*/ ssip){
 		var helpText = "";
-		switch (t)
+		switch (ssip.Type)
 		{
 			case Astriarch.Fleet.StarShipType.SystemDefense:
-				helpText = "Defenders protect a planet from attacking fleets but cannot move between planets.\r\n" +
-						   "Advantage against: Battleships, Disadvantage Against: Scouts";
+				helpText = "Defenders protect a planet from attacking fleets but cannot move between planets.\r\n";
 				break;
 			case Astriarch.Fleet.StarShipType.Scout:
-				helpText = "Scouts are the weakest ship equipped with warp drive.\r\n" +
-						   "Advantage against: Defenders, Disadvantage Against: Destroyers";
+				helpText = "Scouts are the weakest ship equipped with warp drive.\r\n";
 				break;
 			case Astriarch.Fleet.StarShipType.Destroyer:
-				helpText = "Destroyers require a Factory in order to build and are twice the strength of a Scout.\r\n" +
-						   "Advantage against: Scouts, Disadvantage Against: Cruisers";
+				helpText = "Destroyers require a Factory in order to build and are twice the strength of a Scout.\r\n";
 				break;
 			case Astriarch.Fleet.StarShipType.Cruiser:
-				helpText = "Cruisers require a Space Platform in order to build and are twice the strength of a Destroyer.\r\n" +
-						   "Advantage against: Destroyers, Disadvantage Against: Battleships";
+				helpText = "Cruisers require a Space Platform in order to build and are twice the strength of a Destroyer.\r\n";
 				break;
 			case Astriarch.Fleet.StarShipType.Battleship:
-				helpText = "Battleships require a Space Platform in order to build and are twice the strength of a Cruiser.\r\n" +
-						   "Advantage against: Cruisers, Disadvantage Against: Defenders";
+				helpText = "Battleships require a Space Platform in order to build and are twice the strength of a Cruiser.\r\n";
 				break;
 		}
+
+		helpText += "Advantage against: " + Astriarch.GameTools.StarShipTypeToFriendlyName(ssip.AdvantageAgainstType) + ", Disadvantage Against: " + Astriarch.GameTools.StarShipTypeToFriendlyName(ssip.DisadvantageAgainstType);
 
 		return helpText;
 	},
@@ -221,9 +259,52 @@ Astriarch.GameTools = {
 		return 'icon-32x32-'+friendlyName+'Large';
 	},
 
-	StarShipTypeToClassName: function(/*StarShipType*/ t){
+	StarShipTypeToClassName: function(/*StarShipType*/ t, isCustom){
 		var friendlyName = Astriarch.GameTools.StarShipTypeToFriendlyName(t);
-		return 'icon-32x32-'+friendlyName+'Large';
+		return 'icon-32x32-'+friendlyName + (isCustom ? 'Custom' : '') + 'Large';
+	},
+
+	ResearchTypeToClassName: function(/*Astriarch.Research.ResearchType*/ t) {
+		var className = '';
+		switch(t) {
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_DEFENDER:
+				className = 'icon-32x32-DefenderCustomLarge';
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_SCOUT:
+				className = 'icon-32x32-ScoutCustomLarge';
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_DESTROYER:
+				className = 'icon-32x32-DestroyerCustomLarge';
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_CRUISER:
+				className = 'icon-32x32-CruiserCustomLarge';
+				break;
+			case Astriarch.Research.ResearchType.NEW_SHIP_TYPE_BATTLESHIP:
+				className = 'icon-32x32-BattleshipCustomLarge';
+				break;
+			case Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_ATTACK:
+				className = 'icon-32x32-ResearchAttack';
+				break;
+			case Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
+				className = 'icon-32x32-ResearchDefense';
+				break;
+			case Astriarch.Research.ResearchType.PROPULSION_IMPROVEMENT:
+				className = 'icon-32x32-ResearchPropulsion';
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
+				className = 'icon-32x32-FarmLarge';
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
+				className = 'icon-32x32-MineLarge';
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
+				className = 'icon-32x32-ColonyLarge';
+				break;
+			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
+				className = 'icon-32x32-FactoryLarge';
+				break;
+		}
+		return className;
 	}
 
 };//Astriarch.GameTools

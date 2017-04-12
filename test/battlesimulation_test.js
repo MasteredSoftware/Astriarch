@@ -217,9 +217,9 @@ describe('#BattleSimulator', function () {
 
 			console.log("fleet1WinCount:", fleet1WinCount);
 			if(fleet1WinCount > (battleTries * .53)){
-				return done("Defender Fleet won more than 53% of the time!");
+				return done("Attacking Fleet won more than 53% of the time!");
 			} else if(fleet1WinCount < (battleTries * .47)){
-				return done("Defender Fleet won less than 47% of the time!");
+				return done("Attacking Fleet won less than 47% of the time!");
 			}
 			done();
 		});
@@ -227,17 +227,62 @@ describe('#BattleSimulator', function () {
 		it('should allow a mixed fleet to win against another mixed fleet with the same power about 50% of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 2, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 8, 0, 0, 1, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 
 			console.log("fleet1WinCount:", fleet1WinCount);
 			if(fleet1WinCount > (battleTries * .58)){
-				return done("Defender Fleet won more than 65% of the time!");
+				return done("Attacking Fleet won more than 58% of the time!");
 			} else if(fleet1WinCount < (battleTries * .42)){
-				return done("Defender Fleet won less than 45% of the time!");
+				return done("Attacking Fleet won less than 42% of the time!");
+			}
+			done();
+		});
+
+		it('should properly account for customized starship advantages and disadvantages', function(done) {
+			var battleTries = 1000;
+
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, null);
+
+			f1.StarShips[Astriarch.Fleet.StarShipType.Destroyer].forEach(function(s) {
+				s.CustomShip = true;
+				s.AdvantageAgainstType = Astriarch.Fleet.StarShipType.Cruiser;
+			});
+
+			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
+			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+
+			console.log("fleet1WinCount:", fleet1WinCount);
+			if(fleet1WinCount > (battleTries * .58)){
+				return done("Attacking Fleet won more than 58% of the time!");
+			} else if(fleet1WinCount < (battleTries * .42)){
+				return done("Attacking Fleet won less than 42% of the time!");
+			}
+			done();
+		});
+
+		it('should properly account for starship research bonuses', function(done) {
+			var battleTries = 1000;
+
+			var playerNew = new Astriarch.Player(2, Astriarch.Player.PlayerType.Computer_Expert, "PlayerNew");
+			playerNew.Research.researchProgressByType[Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_ATTACK].setResearchPointsCompleted(1000);
+			playerNew.Research.researchProgressByType[Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_DEFENSE].setResearchPointsCompleted(1000);
+
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(playerNew, 0, 0, 4, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, null);
+
+			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
+			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+
+			console.log("fleet1WinCount:", fleet1WinCount);
+			if(fleet1WinCount > (battleTries * .58)){
+				return done("Attacking Fleet won more than 58% of the time!");
+			} else if(fleet1WinCount < (battleTries * .42)){
+				return done("Attacking Fleet won less than 42% of the time!");
 			}
 			done();
 		});

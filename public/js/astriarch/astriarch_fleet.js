@@ -21,7 +21,7 @@ Astriarch.Fleet = function(/*Player*/ p) {
 		this.DestinationHex = null;//Hexagon
 
 		this.totalTravelDistance = 0;
-		this.TurnsToDestination = 0;
+		this.ParsecsToDestination = 0;
 
         this.OnFleetMoved = null;//function pointer: FleetMoved(Fleet f);
         this.OnFleetMergedOrDestroyed = null;//function pointer: FleetMergedOrDestroyed(Fleet f)
@@ -73,7 +73,7 @@ Astriarch.Fleet.prototype.SetFleetHasSpacePlatform = function() {
  * Sets the destimation hex for a fleet
  * @this {Astriarch.Fleet}
  */
-Astriarch.Fleet.prototype.SetDestination = function(gameGrid, /*Hexagon*/ travelingFromHex, /*Hexagon*/ destinationHex, /*int?*/ turnsToDestination, /*int?*/ totalTravelDistance) {
+Astriarch.Fleet.prototype.SetDestination = function(gameGrid, /*Hexagon*/ travelingFromHex, /*Hexagon*/ destinationHex, /*int?*/ parsecsToDestination, /*int?*/ totalTravelDistance) {
 	this.HasSpacePlatform = false;
 	this.DestinationHex = destinationHex;
 
@@ -83,10 +83,10 @@ Astriarch.Fleet.prototype.SetDestination = function(gameGrid, /*Hexagon*/ travel
 	{
 		this.totalTravelDistance = gameGrid.GetHexDistance(this.travelingFromHex, this.DestinationHex);
 	}
-	this.TurnsToDestination = this.totalTravelDistance;
-	if(turnsToDestination)
+	this.ParsecsToDestination = this.totalTravelDistance;
+	if(parsecsToDestination)
 	{
-		this.TurnsToDestination = turnsToDestination;
+		this.ParsecsToDestination = parsecsToDestination;
 	}
 };
 
@@ -94,9 +94,9 @@ Astriarch.Fleet.prototype.SetDestination = function(gameGrid, /*Hexagon*/ travel
  * Sets the destimation hex for a fleet and creates a drawn representation
  * @this {Astriarch.Fleet}
  */
-Astriarch.Fleet.prototype.CreateDrawnFleetAndSetDestination = function(gameGrid, /*Hexagon*/ travelingFromHex, /*Hexagon*/ destinationHex, /*int?*/ turnsToDestination, /*int?*/ totalTravelDistance) {
+Astriarch.Fleet.prototype.CreateDrawnFleetAndSetDestination = function(gameGrid, /*Hexagon*/ travelingFromHex, /*Hexagon*/ destinationHex, /*int?*/ parsecsToDestination, /*int?*/ totalTravelDistance) {
 
-	this.SetDestination(gameGrid, travelingFromHex, destinationHex, turnsToDestination, totalTravelDistance);
+	this.SetDestination(gameGrid, travelingFromHex, destinationHex, parsecsToDestination, totalTravelDistance);
 
 	this.CreateDrawnFleet();
 };
@@ -114,13 +114,26 @@ Astriarch.Fleet.prototype.CreateDrawnFleet = function(){
 };
 
 /**
+ * Gets parsec / turn speed based on research
+ * @this {Astriarch.Fleet}
+ */
+Astriarch.Fleet.prototype.GetSpeed = function() {
+	return this.Owner ? this.Owner.Research.getResearchData(Astriarch.Research.ResearchType.PROPULSION_IMPROVEMENT).percent : 1;
+};
+
+Astriarch.Fleet.prototype.GetTurnsToDestination = function() {
+	return this.ParsecsToDestination / this.GetSpeed();
+};
+
+/**
  * Moves a fleet one space
  * @this {Astriarch.Fleet}
  */
 Astriarch.Fleet.prototype.MoveFleet = function() {
 	this.LocationHex = null;
 	//TODO: should this update the location hex to a closer hex as well?
-	this.TurnsToDestination -= 1;
+
+	this.ParsecsToDestination -= this.GetSpeed();
 
 	if(this.DrawnFleet){
 		this.DrawnFleet.updateTravelLine();
@@ -140,7 +153,7 @@ Astriarch.Fleet.prototype.LandFleet = function(/*Fleet*/ landingFleet, /*Hexagon
 
 	landingFleet.travelingFromHex = null;
 	landingFleet.DestinationHex = null;
-	landingFleet.TurnsToDestination = 0;
+	landingFleet.ParsecsToDestination = 0;
 	
 	this.LocationHex = newLocation;
 
@@ -485,6 +498,32 @@ Astriarch.Fleet.prototype.RepairFleet = function(maxStrengthToRepair){
 	return totalStrengthRepaired;
 };
 
+Astriarch.Fleet.prototype.CountShipsByType = function(){
+	var my = this;
+	var countByType = function(type) {
+		var i = null;
+		var ret = {count:my.StarShips[type].length, standard:0, custom:0};
+		for(i = 0; i < ret.count; i++) {
+			var ship = my.StarShips[type][i];
+			if(ship.CustomShip) {
+				ret.custom++;
+			} else {
+				ret.standard++;
+			}
+		}
+		return ret;
+	};
+
+	var returnData = {};
+	returnData[Astriarch.Fleet.StarShipType.SystemDefense] = countByType(Astriarch.Fleet.StarShipType.SystemDefense);
+	returnData[Astriarch.Fleet.StarShipType.Scout] = countByType(Astriarch.Fleet.StarShipType.Scout);
+	returnData[Astriarch.Fleet.StarShipType.Destroyer] = countByType(Astriarch.Fleet.StarShipType.Destroyer);
+	returnData[Astriarch.Fleet.StarShipType.Cruiser] = countByType(Astriarch.Fleet.StarShipType.Cruiser);
+	returnData[Astriarch.Fleet.StarShipType.Battleship] = countByType(Astriarch.Fleet.StarShipType.Battleship);
+
+	return returnData;
+};
+
 /**
  * A printable version of the fleet
  * @this {Astriarch.Fleet}
@@ -492,40 +531,27 @@ Astriarch.Fleet.prototype.RepairFleet = function(maxStrengthToRepair){
  */
 Astriarch.Fleet.prototype.ToString = function(){
 	var fleetSummary = "";
-	var count = -1;
-	count = this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].length;
-	if (count > 0)
-	{
-		fleetSummary = count + " Defender" + (count > 1 ? "s" : "");
-	}
-	count = this.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
-	if (count > 0)
-	{
-		if (fleetSummary != "")
-			fleetSummary += ", ";
-		fleetSummary += count + " Scout" + (count > 1 ? "s" : "");
-	}
-	count = this.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length;
-	if (count > 0)
-	{
-		if (fleetSummary != "")
-			fleetSummary += ", ";
-		fleetSummary += count + " Destroyer" + (count > 1 ? "s" : "");
-	}
-	count = this.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length;
-	if (count > 0)
-	{
-		if (fleetSummary != "")
-			fleetSummary += ", ";
-		fleetSummary += count + " Cruiser" + (count > 1 ? "s" : "");
-	}
-	count = this.StarShips[Astriarch.Fleet.StarShipType.Battleship].length;
-	if (count > 0)
-	{
-		if (fleetSummary != "")
-			fleetSummary += ", ";
-		fleetSummary += count + " Battleship" + (count > 1 ? "s" : "");
-	}
+	var fleetShipCountsByType = this.CountShipsByType();
+
+	var appendToFleetSummaryByType = function(type) {
+		var shipCounts = fleetShipCountsByType[type];
+		if (shipCounts.standard > 0) {
+			if (fleetSummary != "")
+				fleetSummary += ", ";
+			fleetSummary += shipCounts.standard + " " + Astriarch.GameTools.StarShipTypeToFriendlyName(type) + (shipCounts.standard > 1 ? "s" : "");
+		}
+		if (shipCounts.custom > 0) {
+			if (fleetSummary != "")
+				fleetSummary += ", ";
+			fleetSummary += shipCounts.custom + " Custom " + Astriarch.GameTools.StarShipTypeToFriendlyName(type) + (shipCounts.custom > 1 ? "s" : "");
+		}
+	};
+
+	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.SystemDefense);
+	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Scout);
+	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Destroyer);
+	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Cruiser);
+	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Battleship);
 
 	if (this.HasSpacePlatform)
 	{
@@ -557,9 +583,13 @@ Astriarch.Fleet.LastKnownFleet = function(/*Fleet*/ fleet, /*ClientPlayer*/ owne
  * A Starship is an attack platform that has weapons and an amount of damage
  * @constructor
  */
-Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
+Astriarch.Fleet.StarShip = function(/*StarShipType*/ type, isCustomShip, advantageAgainst, disadvantageAgainst){
 	this.id = Astriarch.Fleet.StarShip.Static.NEXT_STARSHIP_ID++;
 	this.Type = type;
+
+	this.CustomShip = false;//if this is a researched ship
+	this.AdvantageAgainstType = null;
+	this.DisadvantageAgainstType = null;
 
 	this.BaseStarShipStrength = 0;
 	//TODO: could eventually allow ship upgrades? to improve on base strength
@@ -573,27 +603,46 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type){
 	//each cruiser is worth 16
 	//each battleship is worth 32
 
+	//here are the advantages (-> means has an advantage over):
+	//space platforms -> all
+	//battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
+
 	switch (this.Type) {
 		case Astriarch.Fleet.StarShipType.SystemDefense:
 			this.BaseStarShipStrength = 2;
+			this.AdvantageAgainstType = Astriarch.Fleet.StarShipType.Battleship;
+			this.DisadvantageAgainstType = Astriarch.Fleet.StarShipType.Scout;
 			break;
 		case Astriarch.Fleet.StarShipType.Scout:
 			this.BaseStarShipStrength = 4;
+			this.AdvantageAgainstType = Astriarch.Fleet.StarShipType.SystemDefense;
+			this.DisadvantageAgainstType = Astriarch.Fleet.StarShipType.Destroyer;
 			break;
 		case Astriarch.Fleet.StarShipType.Destroyer:
 			this.BaseStarShipStrength = 8;
+			this.AdvantageAgainstType = Astriarch.Fleet.StarShipType.Scout;
+			this.DisadvantageAgainstType = Astriarch.Fleet.StarShipType.Cruiser;
 			break;
 		case Astriarch.Fleet.StarShipType.Cruiser:
 			this.BaseStarShipStrength = 16;
+			this.AdvantageAgainstType = Astriarch.Fleet.StarShipType.Destroyer;
+			this.DisadvantageAgainstType = Astriarch.Fleet.StarShipType.Battleship;
 			break;
 		case Astriarch.Fleet.StarShipType.Battleship:
 			this.BaseStarShipStrength = 32;
+			this.AdvantageAgainstType = Astriarch.Fleet.StarShipType.Cruiser;
+			this.DisadvantageAgainstType = Astriarch.Fleet.StarShipType.SystemDefense;
 			break;
 	}
 
 	this.Health = this.BaseStarShipStrength;//starships will heal between turns if the planet has the necessary building and the player has the requisite resources
 	this.ExperienceAmount = 0;//each time a starship damages an opponent the experience amount increases by the damage amount
 
+	if(isCustomShip) {
+		this.CustomShip = true;
+		this.AdvantageAgainstType = advantageAgainst;
+		this.DisadvantageAgainstType = disadvantageAgainst;
+	}
 
 };
 
@@ -662,7 +711,7 @@ Astriarch.Fleet.StarShip.prototype.Level = function() {
  * @return {Astriarch.Fleet.StarShip} the copied starship
  */
 Astriarch.Fleet.StarShip.prototype.CloneStarShip = function(){//returns StarShip
-	var s = new Astriarch.Fleet.StarShip(this.Type);
+	var s = new Astriarch.Fleet.StarShip(this.Type, this.CustomShip, this.AdvantageAgainstType, this.DisadvantageAgainstType);
 	s.Health = this.Health;
 	s.ExperienceAmount = this.ExperienceAmount;
 	return s;
@@ -684,8 +733,8 @@ Astriarch.Fleet.StarShip.prototype.RepairStarShip = function(maxStrengthToRepair
  * StarShipAdvantageStrengthComparer is an object that allows array sorting of starships
  * @constructor
  */
-Astriarch.Fleet.StarShipAdvantageStrengthComparer = function(/*StarShipType*/ type, /*bool*/ isSpacePlatform, /*Dictionary<StarShip, int>*/ fleetDamagePending) {
-	this.type = type;
+Astriarch.Fleet.StarShipAdvantageStrengthComparer = function(/*StarShip*/ ship, /*bool*/ isSpacePlatform, /*Dictionary<StarShip, int>*/ fleetDamagePending) {
+	this.ship = ship;
 	this.isSpacePlatform = isSpacePlatform;
 	this.fleetDamagePending = fleetDamagePending;
 	var self = this;
@@ -716,9 +765,9 @@ Astriarch.Fleet.StarShipAdvantageStrengthComparer.prototype.getStarShipAdvantage
 	if (this.fleetDamagePending[enemy])
 		adjustedStrength -= this.fleetDamagePending[enemy];
 
-	if (Astriarch.BattleSimulator.StarshipHasAdvantageBasedOnType(this.isSpacePlatform, this.type, false, enemy.Type))
+	if (Astriarch.BattleSimulator.StarshipHasAdvantage(this.isSpacePlatform, this.ship, false, enemy.Type))
 		adjustedStrength *= 1;//this just ensures we're always attaking the enemy we have an advantage over
-	else if (Astriarch.BattleSimulator.StarshipHasDisadvantageBasedOnType(this.isSpacePlatform, this.type, false, enemy.Type))
+	else if (Astriarch.BattleSimulator.StarshipHasDisadvantage(this.isSpacePlatform, this.ship, false, enemy.Type))
 		adjustedStrength *= 10000;
 	else
 		adjustedStrength *= 100;

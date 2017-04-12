@@ -457,12 +457,12 @@ head
 																	td(width='32')
 																		span#SpeakerIcon.icon-16x16-speaker-on(title='Mute Audio')
 																		button#ButtonSpeakerToggleMute(width='24', height='24', title='Mute Audio', style='display: none;') STM
-																	td(width='50')
-																		span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 5px;')
-																	td#StubTradeTour(width='14')
-																		span
 																	td(width='32')
-																		button#ButtonOpenTradingCenter(width='24', height='24', data-hotkey='r', title='Open Trading Center (hotkey: "r")') OTC
+																		span#SystemMasterVersion.defaultFont(title='', style='font-size: 9pt; font-weight: bold; color: darkgreen; padding-left: 2px; padding-right: 2px;')
+																	td(width='32')
+																		button#ButtonOpenResearch(width='24', height='24', data-hotkey='r', title='Open Research (hotkey: "r")') OR
+																	td#StubTradeTour(width='32')
+																		button#ButtonOpenTradingCenter(width='24', height='24', data-hotkey='d', title='Open Trading Center (hotkey: "d")') OTC
 											// end left hand status panel
 											td(width='621')
 												table(cellpadding='0', cellspacing='0')
@@ -588,13 +588,13 @@ head
 													td
 														table#BuildQueue(cellpadding='0', cellspacing='0', style='height: 270px; width: 400px;')
 															tr(height='15')
-																td(width='180')
+																td
 																	span#ItemsAvailableTextBlock Available Items to Build
-																td(width='200')
+																td
 																	span#BuildQueueTextBlock Items in Build Queue
 															tr
 																td
-																	table(cellpadding='0', cellspacing='0', style='height: 30px; width: 180px;')
+																	table(cellpadding='0', cellspacing='0', style='height: 30px;')
 																		tr(height='12')
 																			td(width='52')
 																				span(style='text-align: right;', class='colorGold') Gold
@@ -610,9 +610,9 @@ head
 																			td(width='52')
 																				span#TextBlockCurrentIridiumAmount(style='text-align: left;', class='colorIridium')
 																td
-																	table(cellpadding='0', cellspacing='0', style='width: 200px;')
+																	table(cellpadding='0', cellspacing='0')
 																		tr
-																			td(width='200')
+																			td
 																				table(cellpadding='0', cellspacing='0', style='display: inline; width: 200px;')
 																					tr(height='16')
 																						td(rowspan='2', width='28')
@@ -628,9 +628,9 @@ head
 																						td
 																							span#LastShipBuiltTextBlock(style='height: 12px; font-size: 10px; display: inline;')
 															tr(height='225')
-																td(width='180')
+																td
 																	#ItemsAvailableCardList(style='height: 225px;')
-																td(width='200')
+																td
 																	#BuildQueueListBox(style='height: 225px;')
 
 							#sendShipsDialog.screen(style='width: 380px; height: 240px; display: none;')
@@ -768,6 +768,52 @@ head
 									tr(height='50')
 										td
 											#TradesSubmittedListBox(style='height: 50px;')
+
+							#researchControlDialog.screen(style='width: 460px; height: 300px; display: none;')
+								table(cellpadding='0', cellspacing='0', width='450')
+									tr(height='25')
+										td
+											table(cellpadding='0', cellspacing='0', width='450')
+												tr
+													td(width='30')
+														button#ButtonIncreaseTaxes(width='24', height='24', data-hotkey='r', title='Increase Taxes (hotkey: "t")') IT
+													td(width='20')
+														span#TaxPercentDescription(style='width: 15px;')
+													td(width='350')
+														#SliderResearchPercent(style='width: 325px;margin: 5px 10px 0 10px;')
+													td(width='20')
+														span#ResearchPercentDescription(style='width: 15px;')
+													td(width='30')
+														button#ButtonIncreaseResearch(width='24', height='24', data-hotkey='r', title='Increase Research (hotkey: "r")') IR
+
+									tr(height='100')
+										td
+											#CurrentResearchProjectStatusArea
+											#CurrentResearchAreaCustomShipDetails
+												table
+													tr
+														td(colspan='2')
+															span#ResearchNewShipTypeHullType
+													tr
+														td
+															span
+																| Advantage Against:
+														td
+															span#ResearchNewShipTypeAdvantageBox
+													tr
+														td
+															span
+																| Disadvantage Against:
+														td
+															span#ResearchNewShipTypeDisadvantageBox
+													tr
+														td(colspan='2')
+															span(style='float:left;')
+																button#ButtonSubmitCustomShip(width='75', height='24', title='Research Custom Ship') Research Custom Ship
+
+									tr(height='180')
+										td
+											#ResearchTypeProgressCardList(style='height: 180px;')
 
 							#planetaryConflictDialog.screen(style='width: 380px; height: 220px; display: none;')
 								table

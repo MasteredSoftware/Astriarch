@@ -33,15 +33,17 @@ Astriarch.TurnEventMessage.TurnEventMessageType = {
 	ShipBuilt: 5,
 	ImprovementDemolished: 6,
 	BuildQueueEmpty: 7,
-	CitizensProtesting: 8,
-	InsufficientFood: 9,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
-	DefendedAgainstAttackingFleet: 10,
-	AttackingFleetLost: 11,
-	PlanetCaptured: 12,
-	PopulationStarvation: 13,
-	FoodShortageRiots: 14,
-	PlanetLostDueToStarvation: 15,//this is bad but you probably know it's bad
-	PlanetLost: 16
+	ResearchComplete: 8,
+	ResearchQueueEmpty: 9,
+	CitizensProtesting: 10,
+	InsufficientFood: 11,//either general food shortage or couldn't ship because of lack of gold, leads to population unrest
+	DefendedAgainstAttackingFleet: 12,
+	AttackingFleetLost: 13,
+	PlanetCaptured: 14,
+	PopulationStarvation: 15,
+	FoodShortageRiots: 16,
+	PlanetLostDueToStarvation: 17,//this is bad but you probably know it's bad
+	PlanetLost: 18
 };
 
 /**
@@ -75,15 +77,20 @@ Astriarch.SerializableTurnEventMessage = function(/*TurnEventMessageType*/ type,
 Astriarch.TurnEventMessage.SerializablePlanetaryConflictData = function(/*PlanetaryConflictData*/ pcd){
 	this.DefendingSerializableClientPlayer = null;
 	if(pcd.DefendingPlayer){
-		this.DefendingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.DefendingPlayer.Id, pcd.DefendingPlayer.Type, pcd.DefendingPlayer.Name, pcd.DefendingPlayer.Color, pcd.DefendingPlayer.Points, pcd.DefendingPlayer.CurrentTurnEnded, pcd.DefendingPlayer.Destroyed);
+		this.DefendingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.DefendingPlayer.Id, pcd.DefendingPlayer.Type, pcd.DefendingPlayer.Name, pcd.DefendingPlayer.Color, pcd.DefendingPlayer.Points, pcd.DefendingPlayer.CurrentTurnEnded, pcd.DefendingPlayer.Destroyed, pcd.DefendingPlayer.Research);
 	}
 	this.DefendingSerializableFleet = new Astriarch.SerializableFleet(pcd.DefendingFleet, false);
-	this.AttackingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.AttackingPlayer.Id, pcd.AttackingPlayer.Type, pcd.AttackingPlayer.Name, pcd.AttackingPlayer.Color, pcd.AttackingPlayer.Points, pcd.AttackingPlayer.CurrentTurnEnded, pcd.AttackingPlayer.Destroyed);
+	this.AttackingSerializableClientPlayer = new Astriarch.SerializableClientPlayer(pcd.AttackingPlayer.Id, pcd.AttackingPlayer.Type, pcd.AttackingPlayer.Name, pcd.AttackingPlayer.Color, pcd.AttackingPlayer.Points, pcd.AttackingPlayer.CurrentTurnEnded, pcd.AttackingPlayer.Destroyed, pcd.AttackingPlayer.Research);
 	this.AttackingSerializableFleet = new Astriarch.SerializableFleet(pcd.AttackingFleet, false);
 	this.WinningSerializableFleet = null;
 	if(pcd.WinningFleet){
 		this.WinningSerializableFleet = new Astriarch.SerializableFleet(pcd.WinningFleet, false);
 	}
+
+	this.AttackingFleetResearchBoostAttack = pcd.AttackingFleetResearchBoostAttack;
+	this.AttackingFleetResearchBoostDefense = pcd.AttackingFleetResearchBoostDefense;
+	this.DefendingFleetResearchBoostAttack = pcd.DefendingFleetResearchBoostAttack;
+	this.DefendingFleetResearchBoostDefense = pcd.DefendingFleetResearchBoostDefense;
 
 	this.AttackingFleetChances = pcd.AttackingFleetChances;//percentage chance the attacking fleet will win
 	this.GoldAmountLooted = pcd.GoldAmountLooted;//if there was gold looted from the planet

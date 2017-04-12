@@ -79,12 +79,12 @@ Astriarch.DrawnFleet = jCanvas.DrawnObject.extend({ // drawn object class
 	 * @this {Astriarch.DrawnFleet}
 	 */
 	updateTravelLine: function(){
-		if (this.Fleet.TurnsToDestination != 0)//draw the line
+		if (this.Fleet.ParsecsToDestination >= 0)//draw the line
 		{
 			this.TravelLine.X2 = this.Fleet.DestinationHex.MidPoint.X;
 			this.TravelLine.Y2 = this.Fleet.DestinationHex.MidPoint.Y;
 
-			var traveled = ((this.Fleet.totalTravelDistance - this.Fleet.TurnsToDestination) * 1.0) / (this.Fleet.totalTravelDistance * 1.0);
+			var traveled = ((this.Fleet.totalTravelDistance - this.Fleet.ParsecsToDestination) * 1.0) / (this.Fleet.totalTravelDistance * 1.0);
 
 			this.travelDistancePoint.X = this.Fleet.travelingFromHex.MidPoint.X - ((this.Fleet.travelingFromHex.MidPoint.X - this.TravelLine.X2) * traveled);
 			this.travelDistancePoint.Y = this.Fleet.travelingFromHex.MidPoint.Y - ((this.Fleet.travelingFromHex.MidPoint.Y - this.TravelLine.Y2) * traveled);
@@ -92,16 +92,17 @@ Astriarch.DrawnFleet = jCanvas.DrawnObject.extend({ // drawn object class
 			this.TravelLine.X1 = this.travelDistancePoint.X;
 			this.TravelLine.Y1 = this.travelDistancePoint.Y;
 
-			var turns = this.Fleet.TurnsToDestination > 1 ? " Turns" : " Turn";
-			this.TravelETATextBlockText = this.Fleet.TurnsToDestination + turns;
+			var turns = Math.ceil(this.Fleet.GetTurnsToDestination());
+			var turnText = turns > 1 ? " Turns" : " Turn";
+			this.TravelETATextBlockText = turns + turnText;
 
 			var offsetX = 8;
 			//if the travel line points from left to right, we will instead show the TravelETATextBlock to the left of the ship indicator
 			if (this.TravelLine.X2 > this.Fleet.travelingFromHex.MidPoint.X)
 			{
-				if (this.Fleet.TurnsToDestination > 9)
+				if (turns > 9)
 					offsetX = -40;
-				else if (this.Fleet.TurnsToDestination == 1)
+				else if (turns == 1)
 					offsetX = -30;
 				else
 					offsetX = -35;

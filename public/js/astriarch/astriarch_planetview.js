@@ -148,23 +148,11 @@ Astriarch.PlanetView = {
         Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Factory, 't');
         Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
 
-        Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SystemDefense, 'e');
-        Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Scout, 'S');
-        Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Destroyer, 'D');
-        Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Cruiser, 'C');
-        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Battleship, 'a');
-
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFarm);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiMine);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiColony);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFactory);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiSpacePlatform);
-		//Astriarch.PlanetView.ItemsAvailableCardList.addItem(new Separator());
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDefender);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiScout);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDestroyer);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiCruiser);
-		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiBattleship);
+        Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SystemDefense, false, 'e');
+        Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Scout, false, 'S');
+        Astriarch.PlanetView.lbiDestroyer = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Destroyer, false, 'D');
+        Astriarch.PlanetView.lbiCruiser = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Cruiser, false, 'C');
+        Astriarch.PlanetView.lbiBattleship = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Battleship, false, 'a');
 	 
 		Astriarch.PlanetView.dialog = new Astriarch.Dialog('#planetViewDialog', 'Planet View', 568, 485, Astriarch.PlanetView.OKClose);
 		
@@ -401,20 +389,67 @@ Astriarch.PlanetView = {
 	
 	refreshItemsAvailableCardList: function() {
 
+		Astriarch.PlanetView.itemsAvailable = [];
+
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFarm);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiMine);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiColony);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFactory);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiSpacePlatform);
+		//Astriarch.PlanetView.ItemsAvailableCardList.addItem(new Separator());
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDefender);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiScout);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDestroyer);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiCruiser);
+		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiBattleship);
+
+		var lbiDefenderCustom = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SystemDefense, true);
+		var lbiScoutCustom = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Scout, true);
+		var lbiDestroyerCustom = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Destroyer, true);
+		var lbiCruiserCustom = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Cruiser, true);
+		var lbiBattleshipCustom = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Battleship, true)
+
+		if(Astriarch.ClientGameModel.MainPlayer.Research.researchProgressByType[Astriarch.Research.ResearchType.NEW_SHIP_TYPE_DEFENDER].currentResearchLevel >= 0) {
+			Astriarch.PlanetView.itemsAvailable.push(lbiDefenderCustom);
+		}
+
+		if(Astriarch.ClientGameModel.MainPlayer.Research.researchProgressByType[Astriarch.Research.ResearchType.NEW_SHIP_TYPE_SCOUT].currentResearchLevel >= 0) {
+			Astriarch.PlanetView.itemsAvailable.push(lbiScoutCustom);
+		}
+
+		if(Astriarch.ClientGameModel.MainPlayer.Research.researchProgressByType[Astriarch.Research.ResearchType.NEW_SHIP_TYPE_DESTROYER].currentResearchLevel >= 0) {
+			Astriarch.PlanetView.itemsAvailable.push(lbiDestroyerCustom);
+		}
+
+		if(Astriarch.ClientGameModel.MainPlayer.Research.researchProgressByType[Astriarch.Research.ResearchType.NEW_SHIP_TYPE_CRUISER].currentResearchLevel >= 0) {
+			Astriarch.PlanetView.itemsAvailable.push(lbiCruiserCustom);
+		}
+
+		if(Astriarch.ClientGameModel.MainPlayer.Research.researchProgressByType[Astriarch.Research.ResearchType.NEW_SHIP_TYPE_BATTLESHIP].currentResearchLevel >= 0) {
+			Astriarch.PlanetView.itemsAvailable.push(lbiBattleshipCustom);
+		}
+
 		if(Astriarch.PlanetView.planetMain) {
 			Astriarch.PlanetView.disableOrEnableImprovementsBasedOnSlotsAvailable();
 
-			if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0)
+			if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0) {
 				Astriarch.PlanetView.lbiDestroyer.CanBuild = false;
-			else
+				lbiDestroyerCustom.CanBuild = false;
+			} else {
 				Astriarch.PlanetView.lbiDestroyer.CanBuild = true;
+				lbiDestroyerCustom.CanBuild = true;
+			}
 			if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0) {
 				Astriarch.PlanetView.lbiCruiser.CanBuild = false;
+				lbiCruiserCustom.CanBuild = false;
 				Astriarch.PlanetView.lbiBattleship.CanBuild = false;
+				lbiBattleshipCustom.CanBuild = false;
 			}
 			else {
-				Astriarch.PlanetView.lbiCruiser.CanBuild = true;
+				Astriarch.PlanetView.lbiCruiser.CanBuild = true
+				lbiCruiserCustom.CanBuild = true;
 				Astriarch.PlanetView.lbiBattleship.CanBuild = true;
+				lbiBattleshipCustom.CanBuild = true;
 			}
 
 			Astriarch.PlanetView.disableImprovementsBasedOnResourcesAvailable();
@@ -881,7 +916,7 @@ Astriarch.PlanetView = {
 						Astriarch.PlanetView.workingResources.GoldAmount -= lbiStarship.AvailableStarShip.GoldCost;
 						Astriarch.PlanetView.workingResources.IridiumAmount -= lbiStarship.AvailableStarShip.IridiumCost;
 						Astriarch.PlanetView.workingResources.OreAmount -= lbiStarship.AvailableStarShip.OreCost;
-						var ssip = new Astriarch.Planet.StarShipInProduction(lbiStarship.AvailableStarShip.Type);
+						var ssip = new Astriarch.Planet.StarShipInProduction(lbiStarship.AvailableStarShip.Type, lbiStarship.AvailableStarShip.CustomShip, lbiStarship.AvailableStarShip.AdvantageAgainstType, lbiStarship.AvailableStarShip.DisadvantageAgainstType);
 						Astriarch.PlanetView.workingBuildQueue.push(ssip);
 
 						if(window.tour.enabled) {
@@ -891,7 +926,11 @@ Astriarch.PlanetView = {
 							}
 						}
 
-						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload:{actionType:Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_STARSHIP, planetId:Astriarch.PlanetView.planetMain.Id, data:lbiStarship.AvailableStarShip.Type}});
+						var payloadData = {
+							hullType: lbiStarship.AvailableStarShip.Type,
+							customShip: lbiStarship.AvailableStarShip.CustomShip
+						};
+						Astriarch.server_comm.sendMessage({type:Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload:{actionType:Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_STARSHIP, planetId:Astriarch.PlanetView.planetMain.Id, data:payloadData}});
 					}
 					else
 					{
@@ -973,7 +1012,7 @@ Astriarch.PlanetView.BuildQueueListBoxItem = JSListBox.Item.extend({
 		//only show turns to complete if we've started building
 		//if (this.ProductionItem.ProductionCostComplete > 0)
 			turnsToCompleteString = " (" + (this.ProductionItem.TurnsToComplete) + ")";
-		name += " " + this.ProductionItem.ProductionCostComplete + "/" + this.ProductionItem.BaseProductionCost + turnsToCompleteString;
+		name += " " + Math.round(this.ProductionItem.ProductionCostComplete) + "/" + this.ProductionItem.BaseProductionCost + turnsToCompleteString;
 		return '<a href="#">' + name + '</a>';
 	},
 	
@@ -1075,9 +1114,13 @@ Astriarch.PlanetView.AvailableStarShipCardListItem = JSCardList.Item.extend({
 	 * initializes this AvailableStarShipCardListItem
 	 * @this {Astriarch.PlanetView.AvailableStarShipCardListItem}
 	 */
-	init: function(/*StarShipType*/ type, hotkey) {
-		this.Tooltip = Astriarch.GameTools.StarShipTypeToHelpText(type);
-		this.AvailableStarShip = new Astriarch.Planet.StarShipInProduction(type);
+	init: function(/*StarShipType*/ type, isCustomShip, hotkey) {
+		var data = {};
+		if(isCustomShip) {
+			data = Astriarch.ClientGameModel.MainPlayer.Research.getResearchData(type);
+		}
+		this.AvailableStarShip = new Astriarch.Planet.StarShipInProduction(type, isCustomShip, data.advantageAgainst, data.disadvantageAgainst);
+		this.Tooltip = Astriarch.GameTools.StarShipTypeToHelpText(this.AvailableStarShip);
 		this.Hotkey = hotkey;
 	},
 
@@ -1098,15 +1141,15 @@ Astriarch.PlanetView.AvailableStarShipCardListItem = JSCardList.Item.extend({
 			this.enabled = true;
 		}
 
-		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.AvailableStarShip.Type);
+		var imageClassName = Astriarch.GameTools.StarShipTypeToClassName(this.AvailableStarShip.Type, this.AvailableStarShip.CustomShip);
 		var text = Astriarch.View.GetUnderlinedHtmlForHotkey(Astriarch.GameTools.StarShipTypeToFriendlyName(this.AvailableStarShip.Type), this.Hotkey);
 
 		var element = '<span class="pvcItem">' +
 			'<span class="pvcItemName">' + text + '</span>' +
 			'<div class="pvcItemImg '+imageClassName+'" />' +
-			'<span class="pvcItemGoldCost colorGold">' + this.AvailableStarShip.GoldCost + '</span>' +
-			'<span class="pvcItemOreCost colorOre">' + this.AvailableStarShip.OreCost + '</span>' +
-			'<span class="pvcItemIridiumCost colorIridium">' + this.AvailableStarShip.IridiumCost + '</span>' +
+			'<span class="pvcItemGoldCost colorGold">' + Math.floor(this.AvailableStarShip.GoldCost) + '</span>' +
+			'<span class="pvcItemOreCost colorOre">' + Math.floor(this.AvailableStarShip.OreCost) + '</span>' +
+			'<span class="pvcItemIridiumCost colorIridium">' + Math.floor(this.AvailableStarShip.IridiumCost) + '</span>' +
 			'</span>';
 
 		return '<a class="pvcItemAnchor" ' + (this.enabled ? 'href="#" ' : '') + 'title="' + this.Tooltip + '" style="color:' + this.Foreground + '"' + (this.Hotkey ? ' data-hotkey="' + this.Hotkey + '"' : '') + '>' + element + '</a>';

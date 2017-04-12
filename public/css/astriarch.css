@@ -308,7 +308,7 @@ input[type=checkbox] {
     z-index:10001;
 }
 
-.pvcItemAnchor {
+.pvcItemAnchor, .rtpItemAnchor {
     position: relative;
     height: 46px;
     width: 46px;
@@ -320,7 +320,7 @@ input[type=checkbox] {
     width: 32px;
 }
 
-.sscItem *, .pvcItem *:not(.hotkeyChar) {
+.sscItem *, .rtpItem *, .pvcItem *:not(.hotkeyChar) {
     position: absolute;
 }
 
@@ -333,12 +333,12 @@ input[type=checkbox] {
     left:8px;
 }
 
-.pvcItemImg {
+.pvcItemImg, .rtpItemImg {
     left:12px;
     top:10px;
 }
 
-.pvcItemName {
+.pvcItemName, .rtpItemName {
     font-size: 0.9em;
     z-index:5;
 }
@@ -369,7 +369,7 @@ input[type=checkbox] {
     text-shadow: 1px 1px 1px black;
 }
 
-.sscHealthBarContainer {
+.sscHealthBarContainer, .rtpPercentCompleteContainer {
     z-index:4;
     position:absolute;
     width:3px;
@@ -378,12 +378,12 @@ input[type=checkbox] {
     left:2px;
 }
 
-.sscHealthBar {
+.sscHealthBar, .rtpHealthBar {
     width:100%;
     bottom:0;
 }
 
-.sscItemLevel {
+.sscItemLevel, .rtpItemLevel {
     color:#369;
     bottom:0;
     right:10px;

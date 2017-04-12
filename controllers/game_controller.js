@@ -544,7 +544,7 @@ exports.EndPlayerTurn = function(sessionId, payload, callback){
 					returnData.destroyedClientPlayers = [];
 					for(var ip in destroyedPlayers) {
 						var p = destroyedPlayers[ip];
-						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color, p.Points, true, true));
+						returnData.destroyedClientPlayers.push(new Astriarch.ClientPlayer(p.Id, p.Type, p.Name, p.Color, p.Points, true, true, p.Research));
 
 						//set destroyed players
 						for(var i = 0; i < doc.players.length; i++){
@@ -646,6 +646,78 @@ exports.CancelTrade = function(sessionId, payload, callback){
 		callback(err, doc);
 	});
 
+};
+
+exports.AdjustResearchPercent = function(sessionId, payload, callback){
+
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		if(payload.researchPercent == null){
+			cb("No Research Percent Submitted.");
+			return;
+		}
+
+		if(payload.researchPercent < 0 || payload.researchPercent > 1) {
+			cb("Invalid value for Research percent, it must be between 0% and 100%.");
+			return;
+		}
+
+		getPlayerAndGameModelFromDocumentBySessionId(doc, sessionId, function(err, player, gameModel){
+			if(err){
+				callback(err);
+				return;
+			}
+			player.Research.researchPercent = payload.researchPercent;
+
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
+		});
+	}, 0, function(err, doc){
+		callback(err, doc);
+	});
+
+};
+
+exports.SubmitResearchItem = function(sessionId, payload, callback) {
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		if(payload.researchItem == null){
+			cb("No Research Item Submitted.");
+			return;
+		}
+
+		getPlayerAndGameModelFromDocumentBySessionId(doc, sessionId, function(err, player, gameModel){
+			if(err){
+				callback(err);
+				return;
+			}
+			//TODO: need more validation here like parseIntDefaultIfNaN(payload.data.advantageAgainst, 1);
+			player.Research.setResearchTypeProgressInQueue(payload.researchItem.type, payload.researchItem.data);
+
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
+		});
+	}, 0, function(err, doc){
+		callback(err, doc);
+	});
+};
+
+exports.CancelResearchItem = function(sessionId, payload, callback) {
+	saveGameByIdWithConcurrencyProtection(payload.gameId, function(doc, cb){
+
+		getPlayerAndGameModelFromDocumentBySessionId(doc, sessionId, function(err, player, gameModel){
+			if(err){
+				callback(err);
+				return;
+			}
+			player.Research.researchTypeInQueue = null;
+
+			var data = {gameData: new Astriarch.SerializableModel(gameModel)};
+			cb(null, data);
+		});
+	}, 0, function(err, doc){
+		callback(err, doc);
+	});
 };
 
 exports.ExitResign = function(sessionId, payload, callback){
@@ -918,7 +990,7 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 					return;
 				}
 				if(!pvwdmExisting){
-					var msg = "Couldn't find ExistingPlanetViewWorkingDataModel in UpdatePlanetBuildQueue!";
+					var msg = "Couldn't execute last action in Planet Build Queue! Please retry your last action.";
 					console.error(msg);
 					callback(msg);
 					return;
@@ -982,15 +1054,23 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 						}
 						break;
 					case Astriarch.Shared.PLANET_BUILD_QUEUE_ACTION_TYPE.ADD_STARSHIP:
-						//payload.data is an Astriarch.Fleet.StarShipType
+						//payload.data is {hullType: Type, customShip: CustomShip}
 
-						var sstData = parseIntDefaultIfNaN(payload.data, 1);
+						var hullType = parseIntDefaultIfNaN(payload.data.hullType, 1);
+						var advantageAgainst = null;
+						var disadvantageAgainst = null;
+						var researchData = null;
+						if(payload.data.customShip) {
+							researchData = player.Research.getResearchDataByStarShipHullType(hullType);
+							advantageAgainst = researchData.advantageAgainst;
+							disadvantageAgainst = researchData.disadvantageAgainst;
+						}
 
 						var canBuild = true;
 
-						if (sstData == Astriarch.Fleet.StarShipType.Destroyer && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0){
+						if (hullType == Astriarch.Fleet.StarShipType.Destroyer && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0){
 							canBuild = false;
-						} else if((sstData == Astriarch.Fleet.StarShipType.Cruiser || sstData == Astriarch.Fleet.StarShipType.Battleship) && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0){
+						} else if((hullType == Astriarch.Fleet.StarShipType.Cruiser || hullType == Astriarch.Fleet.StarShipType.Battleship) && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0){
 							canBuild = false;
 						}
 
@@ -999,7 +1079,7 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 							return;
 						}
 
-						var availableStarShip = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.StarShipInProduction(sstData));
+						var availableStarShip = Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(new Astriarch.Planet.StarShipInProduction(hullType, payload.data.customShip, advantageAgainst, disadvantageAgainst));
 						if (pvwd.workingResources.GoldAmount >= availableStarShip.GoldCost &&
 							pvwd.workingResources.IridiumAmount >= availableStarShip.IridiumCost &&
 							pvwd.workingResources.OreAmount >= availableStarShip.OreCost)

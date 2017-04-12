@@ -34,7 +34,7 @@ Astriarch.ClientModelInterface = {
 
 	GetClientPlayerFromSerializableClientPlayer: function(scp){
 		var color = new Astriarch.Util.ColorRGBA(scp.Color.r, scp.Color.g, scp.Color.b, scp.Color.a);
-		return new Astriarch.ClientPlayer(scp.Id, scp.Type, scp.Name, color, scp.Points, scp.CurrentTurnEnded, scp.Destroyed);
+		return new Astriarch.ClientPlayer(scp.Id, scp.Type, scp.Name, color, scp.Points, scp.CurrentTurnEnded, scp.Destroyed, scp.Research);
 	},
 
 	GetClientPlanetFromSerializableClientPlanet: function(scp, gameGrid){
@@ -60,6 +60,12 @@ Astriarch.ClientModelInterface = {
 			tem.Data = new Astriarch.TurnEventMessage.PlanetaryConflictData(defendingCP, defendingFleet, attackingCP, attackingFleet);
 			//copy other properties not in constructor
 			tem.Data.WinningFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(null, stem.Data.WinningSerializableFleet, gameGrid);
+
+			tem.Data.AttackingFleetResearchBoostAttack = stem.Data.AttackingFleetResearchBoostAttack;
+			tem.Data.AttackingFleetResearchBoostDefense = stem.Data.AttackingFleetResearchBoostDefense;
+			tem.Data.DefendingFleetResearchBoostAttack = stem.Data.DefendingFleetResearchBoostAttack;
+			tem.Data.DefendingFleetResearchBoostDefense = stem.Data.DefendingFleetResearchBoostDefense;
+
 			tem.Data.AttackingFleetChances = stem.Data.AttackingFleetChances;//percentage chance the attacking fleet will win
 			tem.Data.GoldAmountLooted = stem.Data.GoldAmountLooted;//if there was gold looted from the planet
 			tem.Data.OreAmountLooted = stem.Data.OreAmountLooted;//if there was ore looted from the planet
@@ -94,7 +100,7 @@ Astriarch.ClientModel.prototype.getClientPlanetById = function(id){
 	return null;
 };
 
-Astriarch.ClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed){
+Astriarch.ClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed, research){
 	this.Id = id;
 	this.Type = playerType;//PlayerType
 	this.Name = name;
@@ -102,6 +108,7 @@ Astriarch.ClientPlayer = function(id, playerType, name, color, points, currentTu
 	this.Points = points;
 	this.CurrentTurnEnded = currentTurnEnded;
 	this.Destroyed = destroyed;
+	this.Research = research;
 };
 
 Astriarch.ClientPlanet = function(id, name, originPoint, gameGrid, boundingHex, type){
@@ -142,7 +149,7 @@ Astriarch.SerializableClientModel = function(turnNumber, serializableMainPlayer,
 	this.Options = options || {"TurnTimeLimitSeconds":0};
 };
 
-Astriarch.SerializableClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed){
+Astriarch.SerializableClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed, research){
 	this.Id = id;
 	this.Type = playerType;//PlayerType
 	this.Name = name;
@@ -150,6 +157,7 @@ Astriarch.SerializableClientPlayer = function(id, playerType, name, color, point
 	this.Points = points;
 	this.CurrentTurnEnded = currentTurnEnded;
 	this.Destroyed = destroyed;
+	this.Research = research;
 };
 
 Astriarch.SerializableClientPlanet = function(id, name, originPoint, type){

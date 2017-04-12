@@ -71,7 +71,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	{
 		var player = players[i];
 		playersById[player.Id] = player;
-		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed);
+		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed, player.Research);
 	}
 	
 	//look for serializable destroyed players
@@ -81,7 +81,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 		var player = Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer(newModel.GameGrid, sp, planetsById);
 		newModel.PlayersDestroyed.push(player);
 		playersById[player.Id] = player;
-		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed);
+		clientPlayersById[player.Id] = new Astriarch.ClientPlayer(player.Id, player.Type, player.Name, player.Color, player.Points, player.CurrentTurnEnded, player.Destroyed, player.Research);
 	}
 
 	//second pass serializable players
@@ -161,6 +161,7 @@ Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet = function(sp, gameGr
 	p.PlanetHappiness = sp.PlanetHappiness;//PlanetHappinessType
 
 	p.StarShipTypeLastBuilt = sp.StarShipTypeLastBuilt;//StarShipType
+	p.StarShipCustomShipLastBuilt = sp.StarShipCustomShipLastBuilt;
 	p.BuildLastStarShip = sp.BuildLastStarShip;
 	p.WayPointPlanetId = sp.WayPointPlanetId;
 
@@ -176,6 +177,13 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 	var p = new Astriarch.Player(sp.Id, /*PlayerType*/ sp.Type, /*string*/ sp.Name);
 
 	p.Resources = extend(true, p.Resources, sp.Resources);
+
+	p.Research = extend(true, p.Research, sp.Research);
+	for(var t in p.Research.researchProgressByType) {
+		var rpt = p.Research.researchProgressByType[t];
+		p.Research.researchProgressByType[t] = new Astriarch.Research.ResearchTypeProgress(rpt.type, rpt.researchPointsCompleted, rpt.data);
+	}
+
 	//for the main player we just want the color to be set, keep default image data
 	//maybe this logic should be in SetColor instead?
 	sp.Color = extend(true, new Astriarch.Util.ColorRGBA(0, 0, 0, 0), sp.Color);
@@ -199,6 +207,7 @@ Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer = function(gameGrid, 
 		for(var k in planet.OutgoingFleets){
 			planet.OutgoingFleets[k].Owner = p;
 		}
+		planet.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();//we have to do this here since the research affects resources per turn
 	}
 	
 	//player model has KnownClientPlanets:Dictionary<int, Planet>
@@ -248,7 +257,7 @@ Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProducti
 	}
 	else if (sppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.StarShipInProduction)//it's a ship
 	{
-		ppi = new Astriarch.Planet.StarShipInProduction(sppi.Type);
+		ppi = new Astriarch.Planet.StarShipInProduction(sppi.Type, sppi.CustomShip, sppi.AdvantageAgainstType, sppi.DisadvantageAgainstType);
 	}
 	else if(sppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.PlanetImprovementToDestroy)//it is a destroy improvement request
 	{
@@ -314,8 +323,8 @@ Astriarch.SavedGameInterface.getFleetFromSerializableFleet = function(/*ClientPl
 		var destinationHex = gameGrid.GetHexAt(serializedFleet.DestinationHexMidPoint);
 		var totalTravelDistance = gameGrid.GetHexDistance(travelingFromHex, destinationHex);
 
-		//f.CreateDrawnFleetAndSetDestination(travelingFromHex, destinationHex, serializedFleet.addDrawnFleetToCanvas, serializedFleet.TurnsToDestination, totalTravelDistance);
-		f.SetDestination(gameGrid, travelingFromHex, destinationHex, serializedFleet.TurnsToDestination, totalTravelDistance);
+		//f.CreateDrawnFleetAndSetDestination(travelingFromHex, destinationHex, serializedFleet.addDrawnFleetToCanvas, serializedFleet.ParsecsToDestination, totalTravelDistance);
+		f.SetDestination(gameGrid, travelingFromHex, destinationHex, serializedFleet.ParsecsToDestination, totalTravelDistance);
 	}
 	return f;
 };
@@ -371,6 +380,8 @@ Astriarch.SerializablePlayer = function(/*Astriarch.Player*/ player) {
 	this.Name = player.Name;
 
 	this.Resources = player.Resources;
+
+	this.Research = player.Research;
 
 	this.Color = player.Color;
 
@@ -453,7 +464,7 @@ Astriarch.SerializableFleet = function(/*Astriarch.Fleet*/ fleet) {
 		{
 			this.travelingFromHexMidPoint = fleet.travelingFromHex.MidPoint;
 			this.DestinationHexMidPoint = fleet.DestinationHex.MidPoint;
-			this.TurnsToDestination = fleet.TurnsToDestination;
+			this.ParsecsToDestination = fleet.ParsecsToDestination;
 		}
 };
 
@@ -520,6 +531,7 @@ Astriarch.SerializablePlanet = function(/*Astriarch.Planet*/ planet) {
 	this.BuiltImprovements = planet.BuiltImprovements;//Dictionary<PlanetImprovementType, List<PlanetImprovement>>
 	
 	this.StarShipTypeLastBuilt = planet.StarShipTypeLastBuilt;//StarShipType
+	this.StarShipCustomShipLastBuilt = planet.StarShipCustomShipLastBuilt;
     this.BuildLastStarShip = planet.BuildLastStarShip;
 	this.WayPointPlanetId = planet.WayPointPlanetId;
 

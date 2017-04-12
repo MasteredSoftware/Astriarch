@@ -240,7 +240,7 @@ Astriarch.View.ShowNewGameOptions = function() {
 Astriarch.View.ClearGameBackgroundControls = function() {
 	Astriarch.View.ClearPlanetsAndFleets();
 	$('#TurnDisplay,#OverallPlayerStatusGrid,#SelectedItemStatus,#SelectedItemPopulationPanel,#SelectedItemImprovementSlotsPanel,#SelectedItemPopulationAssignmentsPanel,#SelectedItemBuiltImprovementsGrid,#SelectedItemPlanetaryFleetGrid,#SelectedItemStatusDetails,#BottomStatusGrid,#TurnSummaryItemsListBox,#ButtonPanel').hide();
-	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton,#ButtonOpenTradingCenter').hide();
+	$('#PlanetViewButton,#SendShipsButton,#NextTurnButton,#ButtonOpenTradingCenter,#ButtonOpenResearch').hide();
 };
 
 Astriarch.View.SetupGraphicalDOMElements = function() {
@@ -275,6 +275,7 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 	Astriarch.PlanetaryConflictControl.init();
 	Astriarch.GameOverControl.init();
 	Astriarch.TradingControl.init();
+	Astriarch.ResearchControl.init();
 	Astriarch.ExitConfirmControl.init();
 	
 	$( "#PlanetViewButton" ).click(
@@ -350,7 +351,13 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
 		}
 	);
 
+	$("#ButtonOpenResearch").button({ icons: {primary:'icon-16x16-research'}, text: false });
 
+	$( "#ButtonOpenResearch" ).click(
+		function() {
+			Astriarch.ResearchControl.show();
+		}
+	);
 	
 	$("#SliderVolume").slider({value:1, step:0.1, min:0, max:1, orientation: 'vertical', slide: Astriarch.View.volumeSliderValueChanged});
 

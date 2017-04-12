@@ -14,6 +14,8 @@ Astriarch.Player = function(id, /*PlayerType*/ playerType, /*string*/ name) {
 
 	this.Resources = new Astriarch.Player.PlayerResources();
 
+	this.Research = new Astriarch.Research();
+
 	this.Color = new Astriarch.Util.ColorRGBA(0, 255, 0, 255);//green
 
 	this.LastTurnFoodNeededToBeShipped = 0;//this is for computers to know how much gold to keep in surplus for food shipments
@@ -64,6 +66,21 @@ Astriarch.Player.prototype.IncreasePoints = function(earnedPointsType, amount)	{
 	}
 	this.Points = Math.floor(this.Points);
 	return this.Points;
+};
+
+/**
+ * returns what the player would earn per turn in research and taxes
+ * @this {Astriarch.Player}
+ */
+Astriarch.Player.prototype.GetTaxRevenueAtMaxPercent = function() {
+	//determine tax revenue (gold)
+	var totalPop = 0;
+	for (var i in this.OwnedPlanets) {
+		var p = this.OwnedPlanets[i];//Planet
+		totalPop += p.Id == this.HomePlanetId ? p.Population.length * 2 : p.Population.length;
+	}
+
+	return (totalPop / 1.75);
 };
 
 /**

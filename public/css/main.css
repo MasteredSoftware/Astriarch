@@ -3,14 +3,14 @@
   background: url('/img/icon-10x16-sf4a6be44db.png') no-repeat;
 }
 
-/* line 178, icon-16x16/*.png */
-.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food, .icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore, .icon-16x16-population, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
-  background: url('/img/icon-16x16-s0916c1d2b2.png') no-repeat;
+/* line 186, icon-16x16/*.png */
+.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, #ButtonIncreaseTaxes > .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food, .icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore, .icon-16x16-population, .icon-16x16-research, #ButtonIncreaseResearch > .icon-16x16-research, #ButtonOpenResearch > .icon-16x16-research, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
+  background: url('/img/icon-16x16-s3575b47bff.png') no-repeat;
 }
 
-/* line 178, icon-32x32/*.png */
-.icon-32x32-sprite, .icon-32x32-BattleshipLarge, .icon-32x32-ColonyLarge, .icon-32x32-CruiserLarge, .icon-32x32-DefenderLarge, .icon-32x32-DestroyerLarge, .icon-32x32-FactoryLarge, .icon-32x32-FarmLarge, .icon-32x32-FoodLarge, .icon-32x32-IridiumLarge, .icon-32x32-MineLarge, .icon-32x32-OreLarge, .icon-32x32-PlanetAsteroid, .icon-32x32-PlanetClass1, .icon-32x32-PlanetClass2, .icon-32x32-PlanetDead, .icon-32x32-ProductionLarge, .icon-32x32-ScoutLarge, .icon-32x32-SpacePlatformLarge {
-  background: url('/img/icon-32x32-s09c42ab161.png') no-repeat;
+/* line 242, icon-32x32/*.png */
+.icon-32x32-sprite, .icon-32x32-BattleshipCustomLarge, .icon-32x32-BattleshipLarge, .icon-32x32-ColonyLarge, .icon-32x32-CruiserCustomLarge, .icon-32x32-CruiserLarge, .icon-32x32-DefenderCustomLarge, .icon-32x32-DefenderLarge, .icon-32x32-DestroyerCustomLarge, .icon-32x32-DestroyerLarge, .icon-32x32-FactoryLarge, .icon-32x32-FarmLarge, .icon-32x32-FoodLarge, .icon-32x32-IridiumLarge, .icon-32x32-MineLarge, .icon-32x32-OreLarge, .icon-32x32-PlanetAsteroid, .icon-32x32-PlanetClass1, .icon-32x32-PlanetClass2, .icon-32x32-PlanetDead, .icon-32x32-ProductionLarge, .icon-32x32-ResearchAttack, .icon-32x32-ResearchDefense, .icon-32x32-ResearchPropulsion, .icon-32x32-ScoutCustomLarge, .icon-32x32-ScoutLarge, .icon-32x32-SpacePlatformLarge {
+  background: url('/img/icon-32x32-sfa97d3fc7e.png') no-repeat;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
@@ -79,7 +79,7 @@
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-16x16-credits {
+.icon-16x16-credits, #ButtonIncreaseTaxes > .icon-16x16-credits {
   background-position: 0 -166px;
 }
 
@@ -100,7 +100,7 @@
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu {
-  background-position: 0 -262px;
+  background-position: 0 -278px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
@@ -111,6 +111,11 @@
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-16x16-population {
   background-position: 0 -134px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-16x16-research, #ButtonIncreaseResearch > .icon-16x16-research, #ButtonOpenResearch > .icon-16x16-research {
+  background-position: 0 -262px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
@@ -139,38 +144,58 @@
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-BattleshipCustomLarge {
+  background-position: 0 -288px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-BattleshipLarge {
-  background-position: 0 -128px;
+  background-position: 0 -512px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-ColonyLarge {
-  background-position: 0 -160px;
+  background-position: 0 -128px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-32x32-CruiserLarge {
-  background-position: 0 -224px;
-}
-
-/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-32x32-DefenderLarge {
-  background-position: 0 -320px;
-}
-
-/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-32x32-DestroyerLarge {
-  background-position: 0 -256px;
-}
-
-/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-32x32-FactoryLarge {
+.icon-32x32-CruiserCustomLarge {
   background-position: 0 -352px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
-.icon-32x32-FarmLarge {
+.icon-32x32-CruiserLarge {
+  background-position: 0 -576px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-DefenderCustomLarge {
+  background-position: 0 -480px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-DefenderLarge {
+  background-position: 0 -736px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-DestroyerCustomLarge {
+  background-position: 0 -416px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-DestroyerLarge {
+  background-position: 0 -608px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-FactoryLarge {
   background-position: 0 -192px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-FarmLarge {
+  background-position: 0 -160px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
@@ -180,17 +205,17 @@
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-IridiumLarge {
-  background-position: 0 -480px;
+  background-position: 0 -704px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-MineLarge {
-  background-position: 0 -512px;
+  background-position: 0 -768px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-OreLarge {
-  background-position: 0 -448px;
+  background-position: 0 -640px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
@@ -200,12 +225,12 @@
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-PlanetClass1 {
-  background-position: 0 -416px;
+  background-position: 0 -320px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-PlanetClass2 {
-  background-position: 0 -384px;
+  background-position: 0 -224px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
@@ -219,13 +244,33 @@
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-ResearchAttack {
+  background-position: 0 -544px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-ResearchDefense {
+  background-position: 0 -384px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-ResearchPropulsion {
+  background-position: 0 -256px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
+.icon-32x32-ScoutCustomLarge {
+  background-position: 0 -448px;
+}
+
+/* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-ScoutLarge {
-  background-position: 0 -288px;
+  background-position: 0 -672px;
 }
 
 /* line 60, C:/Ruby193/lib/ruby/gems/1.9.1/gems/compass-0.12.4/frameworks/compass/stylesheets/compass/utilities/sprites/_base.scss */
 .icon-32x32-SpacePlatformLarge {
-  background-position: 0 -544px;
+  background-position: 0 -800px;
 }
 
 /* line 10, main.scss */
@@ -235,13 +280,13 @@
 }
 
 /* line 19, main.scss */
-.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food, .icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore, .icon-16x16-population, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
+.icon-16x16-sprite, .icon-16x16-PlanetaryImprovementSlotEmpty, .icon-16x16-PlanetaryImprovementSlotFilled, .icon-16x16-build-queue-add, #ButtonBuildQueueAddSelectedItem > .icon-16x16-build-queue-add, .icon-16x16-build-queue-down, #ButtonBuildQueueMoveSelectedItemDown > .icon-16x16-build-queue-down, .icon-16x16-build-queue-remove, #ButtonBuildQueueRemoveSelectedItem > .icon-16x16-build-queue-remove, #ButtonTradesSubmittedRetractSelectedTrade > .icon-16x16-build-queue-remove, .icon-16x16-build-queue-up, #ButtonBuildQueueMoveSelectedItemUp > .icon-16x16-build-queue-up, .icon-16x16-credits, #ButtonIncreaseTaxes > .icon-16x16-credits, .icon-16x16-demolish, #ButtonDemolishFarm > .icon-16x16-demolish, #ButtonDemolishMine > .icon-16x16-demolish, #ButtonDemolishFactory > .icon-16x16-demolish, #ButtonDemolishColony > .icon-16x16-demolish, .icon-16x16-food, #TradeResourceLabelFood > .icon-16x16-food, .icon-16x16-iridium, #TradeResourceLabelIridium > .icon-16x16-iridium, .icon-16x16-main-menu, #MainMenuButton > .icon-16x16-main-menu, .icon-16x16-ore, #TradeResourceLabelOre > .icon-16x16-ore, .icon-16x16-population, .icon-16x16-research, #ButtonIncreaseResearch > .icon-16x16-research, #ButtonOpenResearch > .icon-16x16-research, .icon-16x16-spaceplatform, .icon-16x16-speaker-off, #ButtonSpeakerToggleMute > .icon-16x16-speaker-off, .icon-16x16-speaker-on, #ButtonSpeakerToggleMute > .icon-16x16-speaker-on, .icon-16x16-starship, .icon-16x16-trading, #ButtonOpenTradingCenter > .icon-16x16-trading {
   width: 16px;
   height: 16px;
 }
 
 /* line 28, main.scss */
-.icon-32x32-sprite, .icon-32x32-BattleshipLarge, .icon-32x32-ColonyLarge, .icon-32x32-CruiserLarge, .icon-32x32-DefenderLarge, .icon-32x32-DestroyerLarge, .icon-32x32-FactoryLarge, .icon-32x32-FarmLarge, .icon-32x32-FoodLarge, .icon-32x32-IridiumLarge, .icon-32x32-MineLarge, .icon-32x32-OreLarge, .icon-32x32-PlanetAsteroid, .icon-32x32-PlanetClass1, .icon-32x32-PlanetClass2, .icon-32x32-PlanetDead, .icon-32x32-ProductionLarge, .icon-32x32-ScoutLarge, .icon-32x32-SpacePlatformLarge {
+.icon-32x32-sprite, .icon-32x32-BattleshipCustomLarge, .icon-32x32-BattleshipLarge, .icon-32x32-ColonyLarge, .icon-32x32-CruiserCustomLarge, .icon-32x32-CruiserLarge, .icon-32x32-DefenderCustomLarge, .icon-32x32-DefenderLarge, .icon-32x32-DestroyerCustomLarge, .icon-32x32-DestroyerLarge, .icon-32x32-FactoryLarge, .icon-32x32-FarmLarge, .icon-32x32-FoodLarge, .icon-32x32-IridiumLarge, .icon-32x32-MineLarge, .icon-32x32-OreLarge, .icon-32x32-PlanetAsteroid, .icon-32x32-PlanetClass1, .icon-32x32-PlanetClass2, .icon-32x32-PlanetDead, .icon-32x32-ProductionLarge, .icon-32x32-ResearchAttack, .icon-32x32-ResearchDefense, .icon-32x32-ResearchPropulsion, .icon-32x32-ScoutCustomLarge, .icon-32x32-ScoutLarge, .icon-32x32-SpacePlatformLarge {
   width: 32px;
   height: 32px;
 }

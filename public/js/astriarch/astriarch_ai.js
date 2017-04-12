@@ -1000,9 +1000,9 @@ Astriarch.AI = {
 
 					//TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
 
-					var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
+					//var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
 
-					newFleet = pFriendly.PlanetaryFleet.SplitFleet(scouts, destroyers, cruisers, battleships);
+					var newFleet = pFriendly.PlanetaryFleet.SplitFleet(scouts, destroyers, cruisers, battleships);
 
 					newFleet.SetDestination(gameModel.GameGrid, pFriendly.BoundingHex, planetToReinforce.BoundingHex);
 

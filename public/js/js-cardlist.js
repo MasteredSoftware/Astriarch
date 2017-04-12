@@ -62,6 +62,8 @@ JSCardList.prototype.refresh = function() {
                     var item = ui.item.data( "jscardlist.item" );
 
                     if(!self.multiselect) {
+                        //set items unselected, no refresh
+                        self.selectNone(true);
                         item.selected = true;
                     } else {
                         //toggle
@@ -117,11 +119,13 @@ JSCardList.prototype.selectAll = function() {
     this.refresh();
 };
 
-JSCardList.prototype.selectNone = function() {
+JSCardList.prototype.selectNone = function(skipRefresh) {
     for(var i in this.items) {
         this.items[i].selected = false;
     }
-    this.refresh();
+    if(!skipRefresh) {
+        this.refresh();
+    }
 };
 
 JSCardList.prototype.getItemIndex = function(item) {

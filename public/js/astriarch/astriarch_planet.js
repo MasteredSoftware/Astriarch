@@ -54,6 +54,7 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	this.Resources = new Astriarch.Planet.PlanetResources();
 	
 	this.StarShipTypeLastBuilt = null;//StarShipType
+	this.StarShipCustomShipLastBuilt = false;
     this.BuildLastStarShip = true;
 	this.WayPointPlanetId = null;//string Planet Id
 
@@ -131,6 +132,10 @@ Astriarch.Planet.prototype.GetPopulationGrowthRate = function() {
 	if (popCount > 0 && this.PlanetHappiness != Astriarch.Planet.PlanetHappinessType.Riots && (popCount < this.MaxPopulation() || this.Population[popCount - 1].PopulationChange < 1.0)) {
 		var openSlots = this.MaxPopulation() - popCount;
 		var maxProcreation = popCount / 8.0;
+		var colonyCount = this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length;
+		if(this.Owner && colonyCount) {
+			maxProcreation *= this.Owner.Research.getResearchData(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES).percent * colonyCount;
+		}
 		//when there are 2 open slots per pop, then the maximum growth rate is achieved per population
 		growthRate = maxProcreation * Math.min(openSlots / popCount, 2.0);
 		if (this.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest slows pop growth
@@ -443,8 +448,10 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 			}
 			else if (nextItem instanceof Astriarch.Planet.StarShipInProduction)//it's a ship
 			{
-				var ship = new Astriarch.Fleet.StarShip(nextItem.Type);
+				var ship = new Astriarch.Fleet.StarShip(nextItem.Type, nextItem.CustomShip, nextItem.AdvantageAgainstType, nextItem.DisadvantageAgainstType);
+
 				this.StarShipTypeLastBuilt = nextItem.Type;
+				this.StarShipCustomShipLastBuilt = nextItem.CustomShip;
 
 				//if we have a waypoint set on the planet, send this new starship to the waypoint planet
 				var waypointPlanet = this.WayPointPlanetId ? gameModel.getPlanetById(this.WayPointPlanetId) : null;
@@ -1208,27 +1215,31 @@ Astriarch.Planet.PlanetPerTurnResourceGeneration.prototype.UpdateResourcesPerTur
 		var mineCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
 		var factoryCount = this.Planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 
+		var researchEffectiveness = null;
 		if (farmCount > 0) {
+			researchEffectiveness = this.Planet.Owner ? this.Planet.Owner.Research.getResearchData(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS).percent : 1.0;
 			if(pop.Farmers < farmCount) {
-				this.FoodAmountNextFarmerPerTurn += this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+				this.FoodAmountNextFarmerPerTurn = this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
 			}
 			if(pop.Farmers > 0) {
-				this.FoodAmountPerTurn += Math.min(farmCount, pop.Farmers) * this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+				this.FoodAmountPerTurn += Math.min(farmCount, pop.Farmers) * this.BaseFoodAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
 			}
 		}
 		if (mineCount > 0) {
+			researchEffectiveness = this.Planet.Owner ? this.Planet.Owner.Research.getResearchData(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES).percent : 1.0;
 			if(pop.Miners < mineCount) {
-				this.OreAmountNextMinerPerTurn += this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
-				this.IridiumAmountNextMinerPerTurn += this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+				this.OreAmountNextMinerPerTurn = this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
+				this.IridiumAmountNextMinerPerTurn = this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
 			}
 
 			if(pop.Miners > 0) {
-				this.OreAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
-				this.IridiumAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+				this.OreAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseOreAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
+				this.IridiumAmountPerTurn += Math.min(mineCount, pop.Miners) * this.BaseIridiumAmountPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
 			}
 		}
 		if (factoryCount > 0 && pop.Workers > 0) {
-			this.ProductionAmountPerTurn += Math.min(factoryCount, pop.Workers) * this.BaseProductionPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO;
+			researchEffectiveness = this.Planet.Owner ? this.Planet.Owner.Research.getResearchData(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES).percent : 1.0;
+			this.ProductionAmountPerTurn += Math.min(factoryCount, pop.Workers) * this.BaseProductionPerWorkerPerTurn * Astriarch.Planet.PlanetPerTurnResourceGeneration.Static.IMPROVEMENT_RATIO * researchEffectiveness;
 		}
 	}
 
@@ -1493,8 +1504,7 @@ Astriarch.Planet.PlanetImprovement = Astriarch.Planet.PlanetProductionItem.exten
 		this.Type = type;
 
 		//setup production costs
-		switch (this.Type)
-		{
+		switch (this.Type) {
 			case Astriarch.Planet.PlanetImprovementType.Colony:
 				this.BaseProductionCost = 16;
 				this.OreCost = 2;
@@ -1545,14 +1555,26 @@ Astriarch.Planet.StarShipInProduction = Astriarch.Planet.PlanetProductionItem.ex
 	 * initializes this StarShipInProduction
 	 * @this {Astriarch.Planet.StarShipInProduction}
 	 */
-	init: function(/*StarShipType*/ type)
-	{
+	init: function(/*StarShipType*/ type, isCustomShip, advantageAgainst, disadvantageAgainst) {
 		this._super();//invoke base class constructor
-		
+
 		this.Type = type;
 
-		switch (this.Type)
-		{
+		//make a new starship just to set the Advantage/Disadvantage Against Type properties
+		var ship = new Astriarch.Fleet.StarShip(type);
+		this.AdvantageAgainstType = ship.AdvantageAgainstType;
+		this.DisadvantageAgainstType = ship.DisadvantageAgainstType;
+
+		var baseShipAdvantageFactor = this.AdvantageAgainstType - (this.DisadvantageAgainstType - 1);
+
+		if(isCustomShip) {
+			this.CustomShip = true;
+			this.AdvantageAgainstType = advantageAgainst;
+			this.DisadvantageAgainstType = disadvantageAgainst;
+		}
+
+
+		switch (this.Type) {
 			case Astriarch.Fleet.StarShipType.Battleship:
 				this.BaseProductionCost = 104;
 				this.OreCost = 16;
@@ -1583,6 +1605,18 @@ Astriarch.Planet.StarShipInProduction = Astriarch.Planet.PlanetProductionItem.ex
 				this.GoldCost = 1;
 				break;
 		}
+
+
+		if(this.CustomShip) {
+			//increase cost based on advantages/disadvantages
+			var advantageFactorDifference = this.AdvantageAgainstType - (this.DisadvantageAgainstType - 1) - baseShipAdvantageFactor;
+			var costMultiplier = Math.max(1.0, 1 + (advantageFactorDifference/10));
+
+			this.BaseProductionCost *= costMultiplier;
+			this.OreCost *= costMultiplier;
+			this.GoldCost *= costMultiplier;
+		}
+
 	},
 
 	/**
