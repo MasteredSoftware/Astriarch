@@ -66,11 +66,12 @@ Astriarch.ClientModelInterface = {
 			tem.Data.DefendingFleetResearchBoostAttack = stem.Data.DefendingFleetResearchBoostAttack;
 			tem.Data.DefendingFleetResearchBoostDefense = stem.Data.DefendingFleetResearchBoostDefense;
 
-			tem.Data.AttackingFleetChances = stem.Data.AttackingFleetChances;//percentage chance the attacking fleet will win
-			tem.Data.GoldAmountLooted = stem.Data.GoldAmountLooted;//if there was gold looted from the planet
-			tem.Data.OreAmountLooted = stem.Data.OreAmountLooted;//if there was ore looted from the planet
-			tem.Data.IridiumAmountLooted = stem.Data.IridiumAmountLooted;//if there was Iridium looted from the planet
-			tem.Data.FoodAmountLooted = stem.Data.FoodAmountLooted;//if there was Food looted from the planet
+			tem.Data.AttackingFleetChances = stem.Data.AttackingFleetChances;
+			tem.Data.GoldAmountLooted = stem.Data.GoldAmountLooted;
+			tem.Data.OreAmountLooted = stem.Data.OreAmountLooted;
+			tem.Data.IridiumAmountLooted = stem.Data.IridiumAmountLooted;
+			tem.Data.FoodAmountLooted = stem.Data.FoodAmountLooted;
+            tem.Data.ResearchAmountLooted = stem.Data.ResearchAmountLooted;
 		}
 		return tem;
 	}

@@ -19,6 +19,18 @@ Astriarch.Research = function() {
     this.researchPercent = 0; // 0 - 1, the rest goes to gold/taxes
 };
 
+Astriarch.Research.prototype.getResearchProgressListSorted = function() {
+    var sortedList = [];
+    for(var t in this.researchProgressByType) {
+        sortedList.push(this.researchProgressByType[t]);
+    }
+
+    sortedList.sort(function(rptA, rptB) {
+        return rptA.currentResearchLevel - rptB.currentResearchLevel;
+    });
+    return sortedList;
+};
+
 Astriarch.Research.prototype.getResearchData = function(type) {
     return this.researchProgressByType[type].data;
 };

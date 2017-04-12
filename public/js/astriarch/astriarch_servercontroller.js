@@ -413,12 +413,25 @@ Astriarch.ServerController = {
 					//give the conquering player a chance to loot gold from the planet
 					//based on how good the planet it is (class) and the amount refunded when everything was taken out of the build queue
 					goldLootMax += Math.floor(Math.pow((destinationPlanet.Type + 1), 2));
-					if(player.Resources.GoldAmount < goldLootMax)
+					if(defendingPlayer.Resources.GoldAmount < goldLootMax)
 						goldLootMax = defendingPlayer.Resources.GoldAmount;
 
 					planetaryConflictData.GoldAmountLooted = Astriarch.NextRandom(0, Math.floor(goldLootMax + 1));
 					defendingPlayer.Resources.GoldAmount -= planetaryConflictData.GoldAmountLooted;
 					player.Resources.GoldAmount += planetaryConflictData.GoldAmountLooted;
+
+					//loot research if the defending player has a higher level of research than we do in an area
+					var potentialResearchToSteal = defendingPlayer.Research.getResearchProgressListSorted();
+					for(var i = 0; i < potentialResearchToSteal.length; i++) {
+						var rp = potentialResearchToSteal[i];
+						var attackingPlayerResearch = player.Research.researchProgressByType[rp.type];
+						//NOTE: currently you can't steal custom ship research
+						if(attackingPlayerResearch.canResearch() && !rp.isCustomShip && rp.currentResearchLevel > attackingPlayerResearch.currentResearchLevel && rp.researchPointsCompleted > attackingPlayerResearch.researchPointsCompleted) {
+							planetaryConflictData.ResearchAmountLooted = Astriarch.NextRandom(0, Math.floor(Math.min((goldLootMax * 4), rp.researchPointsCompleted - attackingPlayerResearch.researchPointsCompleted) + 1));
+							attackingPlayerResearch.setResearchPointsCompleted(attackingPlayerResearch.researchPointsCompleted + planetaryConflictData.ResearchAmountLooted);
+							break;
+						}
+					}
 				}
 
 				//add in the other resources looted since the new player is now the owner

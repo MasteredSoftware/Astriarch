@@ -61,6 +61,7 @@ Astriarch.TurnEventMessage.PlanetaryConflictData = function(/*Player*/ defending
 	this.OreAmountLooted = 0;//if there was ore looted from the planet
 	this.IridiumAmountLooted = 0;//if there was Iridium looted from the planet
 	this.FoodAmountLooted = 0;//if there was Food looted from the planet
+    this.ResearchAmountLooted = 0;//if there was Research discovered from the planet
 };
 
 Astriarch.SerializableTurnEventMessage = function(/*TurnEventMessageType*/ type, /*Planet*/ p, /*string*/ message){
@@ -92,10 +93,11 @@ Astriarch.TurnEventMessage.SerializablePlanetaryConflictData = function(/*Planet
 	this.DefendingFleetResearchBoostAttack = pcd.DefendingFleetResearchBoostAttack;
 	this.DefendingFleetResearchBoostDefense = pcd.DefendingFleetResearchBoostDefense;
 
-	this.AttackingFleetChances = pcd.AttackingFleetChances;//percentage chance the attacking fleet will win
-	this.GoldAmountLooted = pcd.GoldAmountLooted;//if there was gold looted from the planet
-	this.OreAmountLooted = pcd.OreAmountLooted;//if there was ore looted from the planet
-	this.IridiumAmountLooted = pcd.IridiumAmountLooted;//if there was Iridium looted from the planet
-	this.FoodAmountLooted = pcd.FoodAmountLooted;//if there was Food looted from the planet
+	this.AttackingFleetChances = pcd.AttackingFleetChances;
+	this.GoldAmountLooted = pcd.GoldAmountLooted;
+	this.OreAmountLooted = pcd.OreAmountLooted;
+	this.IridiumAmountLooted = pcd.IridiumAmountLooted;
+	this.FoodAmountLooted = pcd.FoodAmountLooted;
+    this.ResearchAmountLooted = pcd.ResearchAmountLooted;
 };
 

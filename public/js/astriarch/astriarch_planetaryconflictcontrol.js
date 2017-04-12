@@ -31,12 +31,14 @@ Astriarch.PlanetaryConflictControl = {
 			if(planetaryConflictMessage.Data.FoodAmountLooted != 0 ||
 			   planetaryConflictMessage.Data.GoldAmountLooted != 0 ||
 			   planetaryConflictMessage.Data.OreAmountLooted != 0 ||
-			   planetaryConflictMessage.Data.IridiumAmountLooted != 0) {
+			   planetaryConflictMessage.Data.IridiumAmountLooted != 0 ||
+               planetaryConflictMessage.Data.ResearchAmountLooted != 0) {
 			   resourcesLootedMessage = "";
-			   resourcesLootedMessage = resourcesLootedMessage + (planetaryConflictMessage.Data.FoodAmountLooted != 0 ? Astriarch.DecimalToFixed(planetaryConflictMessage.Data.FoodAmountLooted, 2) + " Food" : "");
-			   resourcesLootedMessage = resourcesLootedMessage + (planetaryConflictMessage.Data.GoldAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.GoldAmountLooted, 2) + " Gold") : "");
-			   resourcesLootedMessage = resourcesLootedMessage + (planetaryConflictMessage.Data.OreAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.OreAmountLooted, 2) + " Ore") : "");
-			   resourcesLootedMessage = resourcesLootedMessage + (planetaryConflictMessage.Data.IridiumAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.IridiumAmountLooted, 2) + " Iridium") : "");
+			   resourcesLootedMessage += (planetaryConflictMessage.Data.FoodAmountLooted != 0 ? Astriarch.DecimalToFixed(planetaryConflictMessage.Data.FoodAmountLooted, 2) + " Food" : "");
+			   resourcesLootedMessage += (planetaryConflictMessage.Data.GoldAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.GoldAmountLooted, 2) + " Gold") : "");
+			   resourcesLootedMessage += (planetaryConflictMessage.Data.OreAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.OreAmountLooted, 2) + " Ore") : "");
+			   resourcesLootedMessage += (planetaryConflictMessage.Data.IridiumAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.IridiumAmountLooted, 2) + " Iridium") : "");
+               resourcesLootedMessage += (planetaryConflictMessage.Data.ResearchAmountLooted != 0 ? ((resourcesLootedMessage ? ", " : "") + Astriarch.DecimalToFixed(planetaryConflictMessage.Data.ResearchAmountLooted, 2) + " Research") : "");
 			   
 			   resourcesLootedMessage = "Resources looted: " + resourcesLootedMessage;
 			}
