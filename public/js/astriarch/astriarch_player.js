@@ -245,11 +245,17 @@ Astriarch.Player.prototype.GetTotalPopulation = function() {
  * @return {Object}
  */
 Astriarch.Player.prototype.GetTotalResourceProductionPerTurn = function() {
-	var totalResourceProduction = {"food":0, "ore":0, "iridium":0};
+	var totalResourceProduction = {"gold":0, "research":0, "foodToShip":0, "food":0, "ore":0, "iridium":0};
+
+	var researchObj = this.Research.getGoldAndResearchAmountEarned(this.GetTaxRevenueAtMaxPercent());
+	totalResourceProduction.gold = researchObj.goldAmountEarned;
+	totalResourceProduction.research = researchObj.researchAmountEarned;
 
 	for (var i in this.OwnedPlanets) {
 		var p = this.OwnedPlanets[i];
-		totalResourceProduction.food += p.ResourcesPerTurn.GetFoodAmountPerTurn();
+		var foodProduced = p.ResourcesPerTurn.GetFoodAmountPerTurn();
+		totalResourceProduction.food += foodProduced;
+		totalResourceProduction.foodToShip += Math.max(0, p.Population.length - foodProduced);
 
 		totalResourceProduction.ore += p.ResourcesPerTurn.GetOreAmountPerTurn();
 

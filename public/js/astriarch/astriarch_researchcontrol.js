@@ -182,7 +182,8 @@ Astriarch.ResearchControl = {
         if(window.tour.enabled && (window.tour.step == 39)){
             window.tour.jqElm.joyride('nextTip');
         }
-        //Astriarch.View.SendShipsDialogWindowClosed(true);
+
+        Astriarch.View.updatePlayerStatusPanel();
     },
 
     Close: function() {

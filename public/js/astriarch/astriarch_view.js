@@ -593,15 +593,14 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 
 		var totalResourceProduction = mainPlayer.GetTotalResourceProductionPerTurn();
 
-		var totalFoodAmount = mainPlayer.TotalFoodAmount() + totalResourceProduction.food;
+		var totalFoodAmount = mainPlayer.TotalFoodAmount();
 		var foodDiffPerTurn = totalResourceProduction.food - totalPopulation;
 		var foodDiffPositiveIndicator = "";
 		if (foodDiffPerTurn >= 0)
 			foodDiffPositiveIndicator = "+";
 
 		var foodAmountColor = "green";
-		if (foodDiffPerTurn < 0)
-		{
+		if (foodDiffPerTurn < 0) {
 			if (foodDiffPerTurn + totalFoodAmount < totalPopulation) {
 				foodAmountColor = "red";
 			} else {//we're not going to starve
@@ -611,23 +610,42 @@ Astriarch.View.updatePlayerStatusPanel = function() {
 			foodAmountColor = "orange";//we're still gaining food but we'll still starve
 		}
 
-		var decimalPlaces = totalFoodAmount >= 100 ? 0 : totalFoodAmount >= 10 ? 1 : 2;
+		var decimalPlaces = totalFoodAmount >= 10 ? 0 : 1;
 		$('#TextBlockFoodAmount').css("color", foodAmountColor);
 		$('#TextBlockFoodAmount').text(Math.floor(totalFoodAmount) + " " + foodDiffPositiveIndicator + foodDiffPerTurn.toFixed(decimalPlaces));
-		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + mainPlayer.TotalFoodAmount() + " +" + totalResourceProduction.food + " -" + totalPopulation);
+		$('#TextBlockFoodAmount').prop("title", "Food Amount: " + totalFoodAmount.toFixed(1) + " +" + totalResourceProduction.food.toFixed(1) + " -" + totalPopulation);
 
-		$('#TextBlockGoldAmount').text(Math.floor(mainPlayer.Resources.GoldAmount));
-		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.Resources.GoldAmount);
+		var goldDiffPerTurn = totalResourceProduction.gold - totalResourceProduction.foodToShip;
+		var goldDiffPositiveIndicator = "";
+		if (goldDiffPerTurn >= 0)
+			goldDiffPositiveIndicator = "+";
+		var goldAmountColor = "green";
+		if (goldDiffPerTurn < 0) {
+			if (goldDiffPerTurn + mainPlayer.Resources.GoldAmount < 0) {
+				goldAmountColor = "red";
+			} else {
+				goldAmountColor = "yellow";
+			}
+		}
+
+		decimalPlaces = mainPlayer.Resources.GoldAmount >= 10 ? 0 : 1;
+		$('#TextBlockGoldAmount').css("color", goldAmountColor);
+		$('#TextBlockGoldAmount').text(Math.floor(mainPlayer.Resources.GoldAmount) + " " + goldDiffPositiveIndicator + goldDiffPerTurn.toFixed(decimalPlaces));
+		$('#TextBlockGoldAmount').prop("title", "Gold Amount: " + mainPlayer.Resources.GoldAmount.toFixed(1) + " +" + totalResourceProduction.gold.toFixed(1) + " -" + totalResourceProduction.foodToShip);
+
+		decimalPlaces = totalResourceProduction.research >= 10 ? 0 : 1;
+		$('#TextBlockResearchAmount').text("+" + totalResourceProduction.research.toFixed(decimalPlaces));
+		$('#TextBlockResearchAmount').prop("title", "Research Per Turn: " +totalResourceProduction.research.toFixed(2));
 
 		var oreAmount = mainPlayer.TotalOreAmount();
-		decimalPlaces = oreAmount >= 100 ? 0 : oreAmount >= 10 ? 1 : 2;
+		decimalPlaces = oreAmount >= 10 ? 0 : 1;
 		$('#TextBlockOreAmount').text(Math.floor(oreAmount) + " +" + totalResourceProduction.ore.toFixed(decimalPlaces));
-		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.TotalOreAmount() + " +" + totalResourceProduction.ore);
+		$('#TextBlockOreAmount').prop("title", "Ore Amount: " + mainPlayer.TotalOreAmount().toFixed(1) + " +" + totalResourceProduction.ore.toFixed(2));
 
 		var iridiumAmount = mainPlayer.TotalIridiumAmount();
-		decimalPlaces = iridiumAmount >= 100 ? 0 : iridiumAmount >= 10 ? 1 : 2;
+		decimalPlaces = iridiumAmount >= 10 ? 0 : 1;
 		$('#TextBlockIridiumAmount').text(Math.floor(iridiumAmount) + " +" + totalResourceProduction.iridium.toFixed(decimalPlaces));
-		$('#TextBlockIridiumAmount').prop("title", "Iridium Amount: " + mainPlayer.TotalIridiumAmount() + " +" + totalResourceProduction.iridium);
+		$('#TextBlockIridiumAmount').prop("title", "Iridium Amount: " + mainPlayer.TotalIridiumAmount().toFixed(1) + " +" + totalResourceProduction.iridium.toFixed(2));
 	}
 };
 

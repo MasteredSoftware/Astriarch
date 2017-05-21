@@ -271,8 +271,12 @@ head
 													span#TurnDisplay.smallStatusText(style='text-align:left;padding-left:5px;position:relative') Turn 1, Year 3001
 											td(width='16')
 												span.icon-16x16-population(title='Total Population')
-											td
+											td(width='64')
 												span#TextBlockPopulationAmount.playerSummaryStatusText
+											td(width='16')
+												span.icon-16x16-research(title='Research Per Turn')
+											td(width='64')
+												span#TextBlockResearchAmount.playerSummaryStatusText
 											td(width='16')
 												span.icon-16x16-credits(title='Gold Amount')
 											td
@@ -881,7 +885,7 @@ head
 					h2 New Game Screen
 					p From here we can wait for other human opponents to join and change game options. For the tutorial we'll just play against the computer.
 					a(href="#", class="joyride-next-tip") Next
-				li(data-id='NumberOfSystemsComboBox-button', data-options='tipLocation:bottom')
+				li(data-id='NumberOfSystemsComboBox-button', data-options='tipLocation:top')
 					h2 Change the number of systems to 2
 					p This option determines the maximum number of players a game can support.
 				li(data-id='Player2ComboBox-button', data-options='tipLocation:top')
@@ -1041,7 +1045,7 @@ head
 					p Let's add a factory to the build queue by clicking on the item labeled "Factory".
 				li(data-id='PopulationAssignments', data-options='tipLocation:bottom')
 					h2 Assign Builders
-					p Reassign citizens to be a builders to by dragging the slider next to builders to the right until we have four builders total.
+					p Reassign citizens to be builders to by dragging the slider next to builders to the right until we have four builders total.
 				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
 					h2 Click "Ok"
 					p We can now close the planet view screen.
@@ -1077,7 +1081,6 @@ head
 					a(href="#", class="joyride-next-tip") Ok
 				li(data-id='BuildLastShipCheckBoxLabel', data-options='tipLocation:top')
 					h2 Build Last Ship
-					p Once the scout is completed we will be able to explore other planets in the galaxy.
 					p Notice the Build Last Ship option for the planet, when this option is enabled, the planet will queue up the last ship built at the end of the turn (assuming the planet's build queue is empty and we have enough resources).
 					a(href="#", class="joyride-next-tip") Ok
 				li(data-id='SendShipsButton', data-options='tipLocation:top')
@@ -1092,9 +1095,10 @@ head
 					h2 Send Ships Screen
 					p This screen allows us to choose which ships we want to send to the destination planet we selected.
 					a(href="#", class="joyride-next-tip") Next
-				li(data-id='ButtonSendAllShips', data-options='tipLocation:top')
+				li
 					h2 Send a Scout
-					p Select the ship to send or simply click the "Send All" button to send all ships on the planet.
+					p The first ship is selected by default, you can click to toggle the selected ships or simply click the "Send All" button to send all ships on the planet.
+					a(href="#", class="joyride-next-tip") Next
 				li(data-class='ui-dialog-buttonset', data-options='tipLocation:top')
 					h2 Click "Ok"
 					p Accept your selected fleet to send by clicking the "Ok" button.
