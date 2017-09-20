@@ -396,13 +396,22 @@ Astriarch.Planet.prototype.GenerateResources = function()
 	}
 };
 
+Astriarch.Planet.prototype.AddBuiltImprovement = function(planetImprovementItem) {
+	if (planetImprovementItem instanceof Astriarch.Planet.PlanetImprovement) {
+		this.BuiltImprovements[planetImprovementItem.Type].push(planetImprovementItem);
+
+		if (planetImprovementItem.Type == Astriarch.Planet.PlanetImprovementType.SpacePlatform) {
+			this.PlanetaryFleet.HasSpacePlatform = true;
+		}
+	}
+};
+
 //buildQueueEmptyObject is just for an out parameter: {'buildQueueEmpty': false}
 /**
  * Builds improvements in the queue
  * @this {Astriarch.Planet}
  */
-Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmptyObject)//returns List<SerializableTurnEventMessage>
-{
+Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmptyObject) {//returns List<SerializableTurnEventMessage>
 	buildQueueEmptyObject.buildQueueEmpty = false;
 	var eotMessages = []; //List<SerializableTurnEventMessage>
 	if (this.BuildQueue.length > 0) {
@@ -414,20 +423,18 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 		nextItem.ProductionCostComplete += planetProductionPerTurn + this.RemainderProduction;
 		this.RemainderProduction = 0;
 
-		if (nextItem.ProductionCostComplete >= nextItem.BaseProductionCost)
-		{
+		if (nextItem.ProductionCostComplete >= nextItem.BaseProductionCost) {
 			//build it
 			nextItem = this.BuildQueue.shift();
 			nextItem.TurnsToComplete = 0;
 
 			//assign points
-			if(this.Owner){
+			if(this.Owner) {
 				this.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.PRODUCTION_UNIT_BUILT, nextItem.BaseProductionCost);
 			}
 
 			var nextItemInQueueName = "Nothing";
-			if (this.BuildQueue.length > 0)
-			{
+			if (this.BuildQueue.length > 0) {
 				var nextInQueue = this.BuildQueue.slice(0, 1)[0];//PlanetProductionItem
 				nextItemInQueueName = nextInQueue.ToString();
 
@@ -435,19 +442,12 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 				nextInQueue.EstimateTurnsToComplete(planetProductionPerTurn);
 			}
 
-			if (nextItem instanceof Astriarch.Planet.PlanetImprovement)
-			{
-				this.BuiltImprovements[nextItem.Type].push(nextItem);
-
-				if (nextItem.Type == Astriarch.Planet.PlanetImprovementType.SpacePlatform)
-				{
-					this.PlanetaryFleet.HasSpacePlatform = true;
-				}
+			if (nextItem instanceof Astriarch.Planet.PlanetImprovement) {
+				this.AddBuiltImprovement(nextItem);
 
 				eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ImprovementBuilt, this, nextItem.ToString() + " built on planet: " + this.Name + ", next in queue: " + nextItemInQueueName));
-			}
-			else if (nextItem instanceof Astriarch.Planet.StarShipInProduction)//it's a ship
-			{
+			} else if (nextItem instanceof Astriarch.Planet.StarShipInProduction) {
+				//it's a ship
 				var ship = new Astriarch.Fleet.StarShip(nextItem.Type, nextItem.CustomShip, nextItem.AdvantageAgainstType, nextItem.DisadvantageAgainstType);
 
 				this.StarShipTypeLastBuilt = nextItem.Type;
@@ -457,28 +457,26 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 				var waypointPlanet = this.WayPointPlanetId ? gameModel.getPlanetById(this.WayPointPlanetId) : null;
 				if(waypointPlanet && nextItem.Type != Astriarch.Fleet.StarShipType.SystemDefense) {
 					var newFleet = new Astriarch.Fleet(this.Owner);
-					newFleet.StarShips[nextItem.Type].push(ship);
+					newFleet.AddShip(ship);
 
 					newFleet.SetDestination(gameModel.GameGrid, this.BoundingHex, waypointPlanet.BoundingHex);
 
 					this.OutgoingFleets.push(newFleet);
 				} else {
-					this.PlanetaryFleet.StarShips[nextItem.Type].push(ship);
+					this.PlanetaryFleet.AddShip(ship);
 				}
 
 				eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ShipBuilt, this, nextItem.ToString() + " built on planet: " + this.Name + ", next in queue: " + nextItemInQueueName));
-			}
-			else if(nextItem instanceof Astriarch.Planet.PlanetImprovementToDestroy)//it is a destroy improvement request
-			{
-				if (this.BuiltImprovements[nextItem.TypeToDestroy].length > 0)//just to make sure
-				{
+			} else if(nextItem instanceof Astriarch.Planet.PlanetImprovementToDestroy) {
+				//it is a destroy improvement request
+				if (this.BuiltImprovements[nextItem.TypeToDestroy].length > 0) {
+
 					this.BuiltImprovements[nextItem.TypeToDestroy].pop();
 					eotMessages.push(new Astriarch.SerializableTurnEventMessage(Astriarch.TurnEventMessage.TurnEventMessageType.ImprovementDemolished, this, Astriarch.GameTools.PlanetImprovementTypeToFriendlyName(nextItem.TypeToDestroy) + " demolished on planet: " + this.Name + ", next in queue: " + nextItemInQueueName));
 
 					//TODO: there is probably a better place to handle this check for population overages
 					//TODO: should we also notify the user he/she lost a pop due to overcrowding or do this slower?
-					while(this.MaxPopulation() < this.Population.length)//pitd.TypeToDestroy == PlanetImprovementType.Colony)
-					{
+					while(this.MaxPopulation() < this.Population.length) {//pitd.TypeToDestroy == PlanetImprovementType.Colony)
 						this.Population.pop();
 					}
 				}
@@ -486,14 +484,12 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 
 			this.RemainderProduction = nextItem.ProductionCostComplete - nextItem.BaseProductionCost;
 			this.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();//now that we've built something, recalc production
-		}
-		else//not done yet, estimate turns to complete
-		{
+		} else {
+			//not done yet, estimate turns to complete
 			nextItem.EstimateTurnsToComplete(planetProductionPerTurn);
 		}
-	}
-	else//notify user of empty build queue
-	{
+	} else {
+		//notify user of empty build queue
 		buildQueueEmptyObject.buildQueueEmpty = true;
 	}
 

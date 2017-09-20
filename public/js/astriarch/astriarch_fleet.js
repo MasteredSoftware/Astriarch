@@ -459,6 +459,15 @@ Astriarch.Fleet.prototype.CloneFleet = function(){//returns Fleet
 };
 
 /**
+ * Adds a ship to this fleet
+ * @this {Astriarch.Fleet}
+ * @param ship {Astriarch.Fleet.StarShip} the ship to add
+ */
+Astriarch.Fleet.prototype.AddShip = function(ship) {
+	this.StarShips[ship.Type].push(ship);
+};
+
+/**
  * Repairs this fleet
  * @this {Astriarch.Fleet}
  */

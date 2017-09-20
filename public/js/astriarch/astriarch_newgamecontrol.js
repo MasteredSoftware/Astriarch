@@ -33,6 +33,10 @@ Astriarch.NewGameControl = {
 			Astriarch.NewGameControl.changedGameOptions();
 		});
 
+		$('input#QuickStartCheckBox').change(function(){
+			Astriarch.NewGameControl.changedGameOptions();
+		});
+
 		$('select#TurnTimeLimitComboBox').selectmenu({width:120, change: function(e, object){Astriarch.NewGameControl.changedGameOptions();} });
 
 		this.buildPlayerComboBoxes();
@@ -131,6 +135,7 @@ Astriarch.NewGameControl = {
 		$('select#GalaxySizeComboBox').parent().html('<span id="GalaxySizeValue"></span>');
 
 		$('input#DistributePlanetsEvenlyCheckBox').parent().html('<span id="DistributePlanetsEvenlyValue"></span>');
+		$('input#QuickStartCheckBox').parent().html('<span id="QuickStartValue"></span>');
 		$('select#TurnTimeLimitComboBox').parent().html('<span id="TurnTimeLimitValue"></span>');
 
 		$('select#Player2ComboBox').parent().html('<span id="Player2NamePanel"></span>');
@@ -176,6 +181,8 @@ Astriarch.NewGameControl = {
 			$("#GalaxySizeValue").text(gameOptions.galaxySize == Astriarch.Model.GalaxySizeOption.LARGE ? "Large" : (gameOptions.galaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM ? "Medium" : "Small" ));
 
 			$("#DistributePlanetsEvenlyValue").text("Distribute Planets Evenly: " + gameOptions.distributePlanetsEvenly);
+			$("#QuickStartValue").text("Quick Start: " + gameOptions.quickStart);
+
 			var turnTimeLimitMinutes = gameOptions.turnTimeLimitSeconds / 60;
 			$("#TurnTimeLimitValue").text("Turn Time Limit: " + (turnTimeLimitMinutes == 0 ? "None" : turnTimeLimitMinutes < 1 ? gameOptions.turnTimeLimitSeconds + " Seconds" : (turnTimeLimitMinutes == 1 ? "1 Minute" : turnTimeLimitMinutes + " Minutes")));
 
@@ -192,6 +199,8 @@ Astriarch.NewGameControl = {
 			$('select#GalaxySizeComboBox').val(gameOptions.galaxySize).selectmenu('refresh');
 
 			$('input#DistributePlanetsEvenlyCheckBox').prop( "checked", gameOptions.distributePlanetsEvenly);
+			$('input#QuickStartCheckBox').prop( "checked", gameOptions.distributePlanetsEvenly);
+
 			$('select#TurnTimeLimitComboBox').val(gameOptions.turnTimeLimitSeconds).selectmenu('refresh');
 
 			Astriarch.NewGameControl.UpdateStartupOptionsBasedOnOpponentCount();
@@ -241,6 +250,11 @@ Astriarch.NewGameControl = {
 			distributePlanetsEvenly = false;
 		}
 
+		var quickStart = false;
+		if($('#QuickStartCheckBox').attr('checked')){
+			quickStart = true;
+		}
+
 		var turnTimeLimitSeconds = Number($('select#TurnTimeLimitComboBox').val());
 
 		var gameOptions = {
@@ -250,6 +264,7 @@ Astriarch.NewGameControl = {
 			"planetsPerSystem":planetsPerSystem,
 			"galaxySize":galaxySize,
 			"distributePlanetsEvenly":distributePlanetsEvenly,
+			"quickStart":quickStart,
 			"turnTimeLimitSeconds": turnTimeLimitSeconds
 		};
 		return gameOptions;

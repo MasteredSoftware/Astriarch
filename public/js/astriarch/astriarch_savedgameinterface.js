@@ -40,7 +40,7 @@ Astriarch.SavedGameInterface.getModelFromSerializableModel = function(/*Astriarc
 	newModel.ShowUnexploredPlanetsAndEnemyPlayerStats = serializedModel.ShowUnexploredPlanetsAndEnemyPlayerStats;
 	newModel.Turn = extend(true, newModel.Turn, serializedModel.Turn);
 
-	newModel.TradingCenter = new Astriarch.TradingCenter();
+	newModel.TradingCenter = new Astriarch.TradingCenter(serializedModel.SerializablePlayers.length);
 	newModel.TradingCenter.goldAmount = serializedModel.TradingCenter.goldAmount;
 	newModel.TradingCenter.currentTrades = serializedModel.TradingCenter.currentTrades;
 	newModel.TradingCenter.foodResource = Astriarch.SavedGameInterface.getTradingCenterResourceFromSerializableTradingCenterResource(serializedModel.TradingCenter.foodResource);

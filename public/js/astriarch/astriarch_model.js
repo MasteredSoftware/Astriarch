@@ -12,7 +12,7 @@ Astriarch.Model = function(/*List<Player>*/ players, /*{SystemsToGenerate:4, Pla
 
 	this.Turn = new Astriarch.Model.Turn();
 
-	this.TradingCenter = new Astriarch.TradingCenter();
+	this.TradingCenter = new Astriarch.TradingCenter(players.length);
 
 	this.Players = players;
 	this.PlayersDestroyed = [];
@@ -42,6 +42,7 @@ Astriarch.Model.GameOptions = function(options) {
 	}
 
 	this.DistributePlanetsEvenly = options.DistributePlanetsEvenly;
+	this.QuickStart = options.QuickStart || false;
 
 	this.TurnTimeLimitSeconds = options.TurnTimeLimitSeconds || 0;
 	//public bool EnsureEachSystemContainsAllPlanetTypes = true;//TODO: implement if false every planet type (except home) will be randomly selected
@@ -154,19 +155,21 @@ Astriarch.Model.prototype.populatePlanets = function(){
 			var assignedPlayerIndex = 0;
 
 			//it's a home planet, we'll see if we should assign a player
-			if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
-				//TODO: make this more intelligent, based on # of players
-				if (q == 0) {
+			if (q == 0) {
+				if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
 					assignPlayer = true;
-				} else if (this.Players.length == 2) {
-					if (q == 2) {
+				}
+			} else if (this.Players.length == 2) {
+				if (q == 2) {
+					assignedPlayerIndex = 1;
+					if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
 						assignPlayer = true;
-						assignedPlayerIndex = 1;
-						
 					}
-				} else if (q < this.Players.length) {
+				}
+			} else if (q < this.Players.length) {
+				assignedPlayerIndex = q;
+				if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
 					assignPlayer = true;
-					assignedPlayerIndex = q;
 				}
 			}
 
@@ -181,6 +184,20 @@ Astriarch.Model.prototype.populatePlanets = function(){
 				initialPlanetOwner.HomePlanetId = p.Id;
 				p.Resources.OreAmount = 2;
 				p.Resources.IridiumAmount = 1;
+			}
+
+			if(this.GameOptions.QuickStart) {
+				p.SetPlanetExplored(this, this.Players[assignedPlayerIndex]);
+				if(initialPlanetOwner) {
+					p.Resources.OreAmount *= 2;
+					p.Resources.IridiumAmount *= 2;
+					p.AddBuiltImprovement(new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Farm));
+					p.AddBuiltImprovement(new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Farm));
+					p.AddBuiltImprovement(new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Farm));
+					p.AddBuiltImprovement(new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Colony));
+					p.AddBuiltImprovement(new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.Factory));
+					p.PlanetaryFleet.AddShip(new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Scout));
+				}
 			}
 
 			this.Planets.push(p);

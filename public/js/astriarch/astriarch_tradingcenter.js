@@ -1,7 +1,7 @@
 var Astriarch = Astriarch || require('./astriarch_base');
 
-Astriarch.TradingCenter = function(){
-	this.goldAmount = 1000;
+Astriarch.TradingCenter = function(playerCount){
+	this.goldAmount = playerCount ? playerCount * 50 : 100;
 	this.foodResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.FOOD, 320, 400, 0.1, 1.5, 40);
 	this.oreResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.ORE, 10, 200, 0.2, 3.0, 20);
 	this.iridiumResource = new Astriarch.TradingCenter.Resource(Astriarch.TradingCenter.ResourceType.IRIDIUM, 5, 100, 0.4, 6.0, 10);

@@ -470,6 +470,7 @@ exports.StartGame = function(options, callback){
 						PlanetsPerSystem:gameOptions.planetsPerSystem,
 						GalaxySize:gameOptions.galaxySize,
 						DistributePlanetsEvenly: gameOptions.distributePlanetsEvenly,
+						QuickStart: gameOptions.quickStart,
 						TurnTimeLimitSeconds:gameOptions.turnTimeLimitSeconds
 					}
 				);
