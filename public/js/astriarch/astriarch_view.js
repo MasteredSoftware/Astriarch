@@ -727,7 +727,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 				var mineCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine].length;
 				var colonyCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length;
 				var factoryCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
-				var spacePlatformCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length;
+				var spacePlatformCount = p.GetSpacePlatformCount();
 
 				var builtImprovementsCount = farmCount + mineCount + factoryCount + colonyCount;
 
@@ -821,10 +821,9 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
 
 				sb += "--- Known Fleet ---<br />";
 				sb += turnString + "<br />";
-				if (lastKnownPlanetFleet.HasSpacePlatform)
-					sb += "1 Space Platform<br />";
-				else
-					sb += "No Space Platform<br />";
+				spCount = lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].length;
+				sb += spCount > 1 ? spCount + " Space Platforms" : (spCount == 1 ? "1 Space Platform" : "No Space Platforms");
+				sb += "<br />";
 
 				//adjust canvas drawing based on last known enemy fleet
 				var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);

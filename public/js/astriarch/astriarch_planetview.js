@@ -146,7 +146,7 @@ Astriarch.PlanetView = {
         Astriarch.PlanetView.lbiMine = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Mine, 'i');
         Astriarch.PlanetView.lbiColony = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Colony, 'l');
         Astriarch.PlanetView.lbiFactory = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.Factory, 't');
-        Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableImprovementCardListItem(Astriarch.Planet.PlanetImprovementType.SpacePlatform, 'P');
+        Astriarch.PlanetView.lbiSpacePlatform = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SpacePlatform, false, 'P');
 
         Astriarch.PlanetView.lbiDefender = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.SystemDefense, false, 'e');
         Astriarch.PlanetView.lbiScout = new Astriarch.PlanetView.AvailableStarShipCardListItem(Astriarch.Fleet.StarShipType.Scout, false, 'S');
@@ -181,7 +181,7 @@ Astriarch.PlanetView = {
         $('#PlanetViewMineCount').text(Astriarch.PlanetView.mineCount);
         $('#PlanetViewFactoryCount').text(Astriarch.PlanetView.factoryCount);
         $('#PlanetViewColonyCount').text(Astriarch.PlanetView.colonyCount);
-        $('#PlanetViewSpacePlatformCount').text(p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length);
+        $('#PlanetViewSpacePlatformCount').text(p.GetSpacePlatformCount());
 
 		Astriarch.PlanetView.refreshResourcesPerTurnTextBoxes();
 
@@ -315,7 +315,7 @@ Astriarch.PlanetView = {
 		for (var i in Astriarch.PlanetView.workingBuildQueue)
 		{
 			var ppi = Astriarch.PlanetView.workingBuildQueue[i];//PlanetProductionItem
-			if (ppi instanceof Astriarch.Planet.PlanetImprovement && ppi.Type == Astriarch.Planet.PlanetImprovementType.SpacePlatform)
+			if (ppi instanceof Astriarch.Planet.StarShipInProduction && ppi.Type == Astriarch.Fleet.StarShipType.SpacePlatform)
 				return true;
 		}
 		return false;
@@ -327,7 +327,7 @@ Astriarch.PlanetView = {
 		for (var i in Astriarch.PlanetView.workingBuildQueue)
 		{
 			var ppi = Astriarch.PlanetView.workingBuildQueue[i];//PlanetProductionItem
-			if (ppi instanceof Astriarch.Planet.PlanetImprovement && ppi.Type != Astriarch.Planet.PlanetImprovementType.SpacePlatform)
+			if (ppi instanceof Astriarch.Planet.PlanetImprovement)
 				improvementCount++;
 		}
 
@@ -352,7 +352,7 @@ Astriarch.PlanetView = {
 			Astriarch.PlanetView.lbiSpacePlatform.CanBuild = true;
 
 		//we can only have one space platform
-		if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0 ||
+		if (Astriarch.PlanetView.planetMain.GetSpacePlatformCount() > 0 ||
 			Astriarch.PlanetView.workingQueueContainsSpacePlatform()) {
 			Astriarch.PlanetView.lbiSpacePlatform.CanBuild = false;
 		}
@@ -396,7 +396,7 @@ Astriarch.PlanetView = {
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiColony);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiFactory);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiSpacePlatform);
-		//Astriarch.PlanetView.ItemsAvailableCardList.addItem(new Separator());
+
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDefender);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiScout);
 		Astriarch.PlanetView.itemsAvailable.push(Astriarch.PlanetView.lbiDestroyer);
@@ -439,7 +439,7 @@ Astriarch.PlanetView = {
 				Astriarch.PlanetView.lbiDestroyer.CanBuild = true;
 				lbiDestroyerCustom.CanBuild = true;
 			}
-			if (Astriarch.PlanetView.planetMain.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0) {
+			if (Astriarch.PlanetView.planetMain.GetSpacePlatformCount() == 0) {
 				Astriarch.PlanetView.lbiCruiser.CanBuild = false;
 				lbiCruiserCustom.CanBuild = false;
 				Astriarch.PlanetView.lbiBattleship.CanBuild = false;

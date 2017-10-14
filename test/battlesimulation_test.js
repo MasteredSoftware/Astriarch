@@ -32,8 +32,8 @@ describe('#BattleSimulator', function () {
 			var battleTries = 100;
 
 			//scouts over defenders
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 1, 0, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 2, 0, 0, 0, 0, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 1, 0, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 2, 0, 0, 0, 0, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			if(fleet1WinCount < (battleTries * .9)){
@@ -41,32 +41,32 @@ describe('#BattleSimulator', function () {
 			}
 
 			//destroyers over scouts
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 2, 0, 0, 0, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 2, 0, 0, 0, 0, null);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			if(fleet1WinCount < (battleTries * .9)){
 				return done("Destroyer didn't win against two scouts!")
 			}
 
 			//cruisers over destroyers
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 1, 0, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 2, 0, 0, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 1, 0, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 2, 0, 0, 0, null);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			if(fleet1WinCount < (battleTries * .9)){
 				return done("Cruiser didn't win against two destroyers!")
 			}
 
 			//battleships over cruisers
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 2, 0, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 2, 0, 0, null);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			if(fleet1WinCount < (battleTries * .9)){
 				return done("Battleship didn't win against two cruisers!")
 			}
 
 			//defenders over battleships
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 16, 0, 0, 0, 0, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 16, 0, 0, 0, 0, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, 0, null);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			if(fleet1WinCount < (battleTries * .9)){
 				return done("Sixteen defenders didn't win against one battleship!")
@@ -79,8 +79,8 @@ describe('#BattleSimulator', function () {
 			var battleTries = 1000;
 
 			//scouts over destroyers
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 4, 0, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 1, 0, 0, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 4, 0, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 1, 0, 0, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			//console.log("f1: ", f1.DetermineFleetStrength(), "f2:", f2.DetermineFleetStrength());
@@ -90,8 +90,8 @@ describe('#BattleSimulator', function () {
 			}
 
 			//destroyers over cruisers
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 4, 0, 0, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 1, 0, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 4, 0, 0, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 1, 0, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			console.log("Destroyer fleet Win Count:", fleet1WinCount);
@@ -100,8 +100,8 @@ describe('#BattleSimulator', function () {
 			}
 
 			//cruisers over battleships
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 4, 0, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 4, 0, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			console.log("Cruiser fleet Win Count:", fleet1WinCount);
@@ -110,8 +110,8 @@ describe('#BattleSimulator', function () {
 			}
 
 			//battleships over defenders
-			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, null);
-			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 8, 0, 0, 0, 0, null);
+			f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, 0, null);
+			f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 8, 0, 0, 0, 0, 0, null);
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
 			console.log("Battleship fleet Win Count:", fleet1WinCount);
@@ -125,8 +125,8 @@ describe('#BattleSimulator', function () {
 		it('should allow defenders to win against another fleet with the same power about 50% of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 4, 0, 0, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 4, 0, 0, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, 0, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -142,8 +142,8 @@ describe('#BattleSimulator', function () {
 		it('should allow more defenders to win against another fleet with the same power about 50% of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 16, 0, 0, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 2, 1, 0, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 16, 0, 0, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 2, 1, 0, 0, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -163,9 +163,8 @@ describe('#BattleSimulator', function () {
 		it('should allow spaceplatforms to win against any other fleet, even if the other fleet has slightly more power', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 8, 4, 2, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, null);
-			f2.HasSpacePlatform = true;
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 8, 4, 2, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, 1, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 1.5);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -179,9 +178,8 @@ describe('#BattleSimulator', function () {
 		it('should allow spaceplatforms to win against a 1.5x strength fleet of battleships most of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 3, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, null);
-			f2.HasSpacePlatform = true;
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 3, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, 1, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 1.5);
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -194,9 +192,8 @@ describe('#BattleSimulator', function () {
 
 		it('should not allow the disadvantaged fleet to win', function(done){
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 16, 2, 0, 0, 0, null);
-			f1.HasSpacePlatform = true;
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 1, 4, 1, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 16, 2, 0, 0, 0, 1, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 1, 4, 1, 0, null);
 			console.log("f1: ", f1.DetermineFleetStrength(), "f2:", f2.DetermineFleetStrength());
 			var fleet1Wins = Astriarch.BattleSimulator.SimulateFleetBattle(f1, f2);
 			console.log("f1: ", f1.DetermineFleetStrength(), "f2:", f2.DetermineFleetStrength());
@@ -209,8 +206,8 @@ describe('#BattleSimulator', function () {
 		it('should allow identical fleets to win about 50% of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 2, 5, 4, 1, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 2, 5, 4, 1, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 2, 5, 4, 1, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 2, 5, 4, 1, 0, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -227,8 +224,8 @@ describe('#BattleSimulator', function () {
 		it('should allow a mixed fleet to win against another mixed fleet with the same power about 50% of the time', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, 0, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -245,8 +242,8 @@ describe('#BattleSimulator', function () {
 		it('should properly account for customized starship advantages and disadvantages', function(done) {
 			var battleTries = 1000;
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 4, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, 0, null);
 
 			f1.StarShips[Astriarch.Fleet.StarShipType.Destroyer].forEach(function(s) {
 				s.CustomShip = true;
@@ -272,8 +269,8 @@ describe('#BattleSimulator', function () {
 			playerNew.Research.researchProgressByType[Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_ATTACK].setResearchPointsCompleted(1000);
 			playerNew.Research.researchProgressByType[Astriarch.Research.ResearchType.COMBAT_IMPROVEMENT_DEFENSE].setResearchPointsCompleted(1000);
 
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(playerNew, 0, 0, 4, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(playerNew, 0, 0, 4, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, 0, null);
 
 			f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
 			var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
@@ -288,8 +285,8 @@ describe('#BattleSimulator', function () {
 		});
 
 		it('should properly assign experience points to the winning fleet', function(done){
-			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 6, 0, 0, 0, 0, null);
-			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 2, null);
+			var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 6, 0, 0, 0, 0, 0, null);
+			var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 2, 0, null);
 
 			var f1Strength = f1.DetermineFleetStrength();
 

@@ -273,35 +273,31 @@ Astriarch.SavedGameInterface.getPlanetProductionItemFromSerializedPlanetProducti
 
 Astriarch.SavedGameInterface.getFleetFromSerializableFleet = function(/*ClientPlayer*/cp, /*Astriarch.SerializableFleet*/ serializedFleet, gameGrid) {
 	var f = new Astriarch.Fleet(cp);
-		
-	f.HasSpacePlatform = serializedFleet.HasSpacePlatform;
-	f.SpacePlatformDamage = serializedFleet.SpacePlatformDamage;
 	
 	//populate starships, have to call constructors for all serialized starships because our methods won't be serialized
-	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense])
-	{
+	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]) {
 		var ship = extend(true, new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.SystemDefense), serializedFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense][i]);
 		f.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].push(ship);
 	}
-	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Scout])
-	{
+	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Scout]) {
 		var ship = extend(true, new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Scout), serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Scout][i]);
 		f.StarShips[Astriarch.Fleet.StarShipType.Scout].push(ship);
 	}
-	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer])
-	{
+	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer]) {
 		var ship = extend(true, new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Destroyer), serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer][i]);
 		f.StarShips[Astriarch.Fleet.StarShipType.Destroyer].push(ship);
 	}
-	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser])
-	{
+	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser]) {
 		var ship = extend(true, new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Cruiser), serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser][i]);
 		f.StarShips[Astriarch.Fleet.StarShipType.Cruiser].push(ship);
 	}
-	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship])
-	{
+	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]) {
 		var ship = extend(true, new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Battleship), serializedFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship][i]);
 		f.StarShips[Astriarch.Fleet.StarShipType.Battleship].push(ship);
+	}
+	for (var i in serializedFleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform]) {
+		var ship = extend(true, new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.SpacePlatform), serializedFleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform][i]);
+		f.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].push(ship);
 	}
 
 	f.LocationHex = null;//Hexagon
@@ -437,9 +433,6 @@ Astriarch.SerializablePlayer = function(/*Astriarch.Player*/ player) {
  */
 Astriarch.SerializableFleet = function(/*Astriarch.Fleet*/ fleet) {
         this.StarShips = fleet.StarShips;
-		
-        this.HasSpacePlatform = fleet.HasSpacePlatform;
-        this.SpacePlatformDamage = fleet.SpacePlatformDamage;
 
 		//NOTE: not serialized
         this.LocationHexMidPoint = null;//Fleet has LocationHex:Hexagon

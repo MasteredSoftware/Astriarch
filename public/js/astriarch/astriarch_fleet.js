@@ -11,9 +11,7 @@ Astriarch.Fleet = function(/*Player*/ p) {
 		this.StarShips[Astriarch.Fleet.StarShipType.Destroyer] = [];
 		this.StarShips[Astriarch.Fleet.StarShipType.Cruiser] = [];
 		this.StarShips[Astriarch.Fleet.StarShipType.Battleship] = [];
-		
-        this.HasSpacePlatform = false;
-        this.SpacePlatformDamage = 0;
+		this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform] = [];
 
         this.LocationHex = null;//Hexagon
 
@@ -25,8 +23,6 @@ Astriarch.Fleet = function(/*Player*/ p) {
 
         this.OnFleetMoved = null;//function pointer: FleetMoved(Fleet f);
         this.OnFleetMergedOrDestroyed = null;//function pointer: FleetMergedOrDestroyed(Fleet f)
-
-		this.SetFleetHasSpacePlatform();
 		
 		this.DrawnFleet = null;//backreference if we are drawing this fleet
 
@@ -60,32 +56,19 @@ Astriarch.Fleet.Static = {
 };
 
 /**
- * Sets the HasSpacePlatform var if there is a space platform at the fleet's planet.
- * @this {Astriarch.Fleet}
- */
-Astriarch.Fleet.prototype.SetFleetHasSpacePlatform = function() {
-	this.HasSpacePlatform = false;
-	if (this.LocationHex != null && this.LocationHex.PlanetContainedInHex != null && this.LocationHex.PlanetContainedInHex.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0)
-		this.HasSpacePlatform = true;
-};
-
-/**
  * Sets the destimation hex for a fleet
  * @this {Astriarch.Fleet}
  */
 Astriarch.Fleet.prototype.SetDestination = function(gameGrid, /*Hexagon*/ travelingFromHex, /*Hexagon*/ destinationHex, /*int?*/ parsecsToDestination, /*int?*/ totalTravelDistance) {
-	this.HasSpacePlatform = false;
 	this.DestinationHex = destinationHex;
 
 	this.travelingFromHex = travelingFromHex;
 	this.totalTravelDistance = totalTravelDistance;
-	if(!this.totalTravelDistance)
-	{
+	if(!this.totalTravelDistance) {
 		this.totalTravelDistance = gameGrid.GetHexDistance(this.travelingFromHex, this.DestinationHex);
 	}
 	this.ParsecsToDestination = this.totalTravelDistance;
-	if(parsecsToDestination)
-	{
+	if(parsecsToDestination) {
 		this.ParsecsToDestination = parsecsToDestination;
 	}
 };
@@ -158,8 +141,6 @@ Astriarch.Fleet.prototype.LandFleet = function(/*Fleet*/ landingFleet, /*Hexagon
 	this.LocationHex = newLocation;
 
 	this.MergeFleet(landingFleet);
-
-	this.SetFleetHasSpacePlatform();
 };
 
 /**
@@ -178,6 +159,8 @@ Astriarch.Fleet.prototype.MergeFleet = function(/*Fleet*/ mergingFleet)
 
 	this.StarShips[Astriarch.Fleet.StarShipType.Battleship] = this.StarShips[Astriarch.Fleet.StarShipType.Battleship].concat(mergingFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
 
+	this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform] = this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].concat(mergingFleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform]);
+
 	mergingFleet.SendFleetMergedOrDestroyed();
 };
 
@@ -185,13 +168,18 @@ Astriarch.Fleet.prototype.MergeFleet = function(/*Fleet*/ mergingFleet)
  * Gets a flat array of all starships in the fleet
  * @this {Astriarch.Fleet}
  */
-Astriarch.Fleet.prototype.GetAllStarShips = function() {//returns List<StarShip>
+Astriarch.Fleet.prototype.GetAllStarShips = function(mobileOnly) {//returns List<StarShip>
 	var ships = []; //List<StarShip>
+	if(!mobileOnly) {
+		ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform]);
+	}
 	ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
 	ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
 	ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.Destroyer]);
 	ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.Scout]);
-	ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
+	if(!mobileOnly) {
+		ships = ships.concat(this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
+	}
 	return ships;
 };
 
@@ -209,35 +197,19 @@ Astriarch.Fleet.prototype.SendFleetMergedOrDestroyed = function(){
 /// <summary>
 /// Simply remove ships with strength = 0
 /// </summary>
-/// <param name="spacePlatformDamage">amount the space platform was damaged</param>
 /**
  * Simply remove ships with strength = 0
  * @this {Astriarch.Fleet}
  */
-Astriarch.Fleet.prototype.ReduceFleet = function(spacePlatformDamage)
-{
+Astriarch.Fleet.prototype.ReduceFleet = function() {
 	//start by reducing the weakest ships first (they are sent to the front lines)
 	//if a starship's damage gets to it's strength level, it's destroyed
-	for(var key in this.StarShips)
-	{
+	for(var key in this.StarShips) {
 		var typeArray = this.StarShips[key];//StarShipType
-		for (var i = typeArray.length - 1; i >= 0; i--)
-		{
-			if (typeArray[i].Strength() <= 0){
+		for (var i = typeArray.length - 1; i >= 0; i--) {
+			if (typeArray[i].Strength() <= 0) {
 				typeArray.splice(i, 1);
 			}
-		}
-	}
-
-	this.SpacePlatformDamage += spacePlatformDamage;
-
-	if (this.SpacePlatformDamage != 0 && this.HasSpacePlatform && this.SpacePlatformDamage >= Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH)
-	{
-		//destroy the space platform
-		if (this.LocationHex != null && this.LocationHex.PlanetContainedInHex != null)
-		{
-			this.LocationHex.PlanetContainedInHex.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform] = [];
-			this.HasSpacePlatform = false;
 		}
 	}
 };
@@ -247,38 +219,14 @@ Astriarch.Fleet.prototype.ReduceFleet = function(spacePlatformDamage)
  * @this {Astriarch.Fleet}
  * @return {number} the fleet strength
  */
-Astriarch.Fleet.prototype.DetermineFleetStrength = function(includeSpacePlatformDefence)
-{
-	includeSpacePlatformDefence = includeSpacePlatformDefence || true;
+Astriarch.Fleet.prototype.DetermineFleetStrength = function(mobileOnly) {
 	var strength = 0;
 
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense])
-	{
-		strength += this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense][i].Strength();
-	}
+	var starships = this.GetAllStarShips(mobileOnly);
 
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Scout])
-	{
-		strength += this.StarShips[Astriarch.Fleet.StarShipType.Scout][i].Strength();
+	for (var i in starships) {
+		strength += starships[i].Strength();
 	}
-
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Destroyer])
-	{
-		strength += this.StarShips[Astriarch.Fleet.StarShipType.Destroyer][i].Strength();
-	}
-
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Cruiser])
-	{
-		strength += this.StarShips[Astriarch.Fleet.StarShipType.Cruiser][i].Strength();
-	}
-
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Battleship])
-	{
-		strength += this.StarShips[Astriarch.Fleet.StarShipType.Battleship][i].Strength();
-	}
-
-	if (includeSpacePlatformDefence && this.HasSpacePlatform)
-		strength += Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH - this.SpacePlatformDamage;
 
 	return strength;
 };
@@ -413,14 +361,8 @@ Astriarch.Fleet.prototype.SplitOffSmallestPossibleFleet = function(){//returns F
  * @return {number} the number of mobile ships
  */
 Astriarch.Fleet.prototype.GetPlanetaryFleetMobileStarshipCount = function(){
-	var mobileStarships = 0;
-
-	mobileStarships += this.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
-	mobileStarships += this.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length;
-	mobileStarships += this.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length;
-	mobileStarships += this.StarShips[Astriarch.Fleet.StarShipType.Battleship].length;
-
-	return mobileStarships;
+	var mobileStarships = this.GetAllStarShips(true);
+	return mobileStarships.length;
 };
 
 /**
@@ -432,27 +374,24 @@ Astriarch.Fleet.prototype.CloneFleet = function(){//returns Fleet
 	var f = new Astriarch.Fleet(this.Owner);
 
 	f.LocationHex = this.LocationHex;
-	f.HasSpacePlatform = this.HasSpacePlatform;
 
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense])
-	{
+	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]) {
 		f.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].push(this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense][i].CloneStarShip());
 	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Scout])
-	{
+	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Scout]) {
 		f.StarShips[Astriarch.Fleet.StarShipType.Scout].push(this.StarShips[Astriarch.Fleet.StarShipType.Scout][i].CloneStarShip());
 	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Destroyer])
-	{
+	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Destroyer]) {
 		f.StarShips[Astriarch.Fleet.StarShipType.Destroyer].push(this.StarShips[Astriarch.Fleet.StarShipType.Destroyer][i].CloneStarShip());
 	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Cruiser])
-	{
+	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Cruiser]) {
 		f.StarShips[Astriarch.Fleet.StarShipType.Cruiser].push(this.StarShips[Astriarch.Fleet.StarShipType.Cruiser][i].CloneStarShip());
 	}
-	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Battleship])
-	{
+	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Battleship]) {
 		f.StarShips[Astriarch.Fleet.StarShipType.Battleship].push(this.StarShips[Astriarch.Fleet.StarShipType.Battleship][i].CloneStarShip());
+	}
+	for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform]) {
+		f.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].push(this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform][i].CloneStarShip());
 	}
 
 	return f;
@@ -477,14 +416,9 @@ Astriarch.Fleet.prototype.RepairFleet = function(maxStrengthToRepair){
 	var allEligibleStarShips = [];
 
 	if(this.LocationHex.PlanetContainedInHex.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0){
-
-		//space platforms, cruisers and battleships all need a factory and a spaceplatform for repairs
-		if(this.LocationHex.PlanetContainedInHex.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0){
-			amountRepaired = Math.min(maxStrengthToRepair, this.SpacePlatformDamage);
-			this.SpacePlatformDamage -= amountRepaired;
-			maxStrengthToRepair -= amountRepaired;
-			totalStrengthRepaired += amountRepaired;
-
+		allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform]);
+		//cruisers and battleships need a factory and a spaceplatform for repairs
+		if(this.LocationHex.PlanetContainedInHex.GetSpacePlatformCount() > 0) {
 			allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Battleship]);
 			allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Cruiser]);
 		}
@@ -493,8 +427,7 @@ Astriarch.Fleet.prototype.RepairFleet = function(maxStrengthToRepair){
 	allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.Scout]);
 	allEligibleStarShips = allEligibleStarShips.concat(this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]);
 
-	for (var e in allEligibleStarShips)
-	{
+	for (var e in allEligibleStarShips) {
 		amountRepaired = allEligibleStarShips[e].RepairStarShip(maxStrengthToRepair);
 		totalStrengthRepaired += amountRepaired;
 		maxStrengthToRepair -= amountRepaired;
@@ -529,6 +462,7 @@ Astriarch.Fleet.prototype.CountShipsByType = function(){
 	returnData[Astriarch.Fleet.StarShipType.Destroyer] = countByType(Astriarch.Fleet.StarShipType.Destroyer);
 	returnData[Astriarch.Fleet.StarShipType.Cruiser] = countByType(Astriarch.Fleet.StarShipType.Cruiser);
 	returnData[Astriarch.Fleet.StarShipType.Battleship] = countByType(Astriarch.Fleet.StarShipType.Battleship);
+	returnData[Astriarch.Fleet.StarShipType.SpacePlatform] = countByType(Astriarch.Fleet.StarShipType.SpacePlatform);
 
 	return returnData;
 };
@@ -561,13 +495,7 @@ Astriarch.Fleet.prototype.ToString = function(){
 	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Destroyer);
 	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Cruiser);
 	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.Battleship);
-
-	if (this.HasSpacePlatform)
-	{
-		if (fleetSummary != "")
-			fleetSummary += ", ";
-		fleetSummary += "1 Space Platform";
-	}
+	appendToFleetSummaryByType(Astriarch.Fleet.StarShipType.SpacePlatform);
 
 	if (fleetSummary == "")
 		fleetSummary = "No Ships";
@@ -641,6 +569,9 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type, isCustomShip, advanta
 			this.BaseStarShipStrength = 32;
 			this.AdvantageAgainstType = Astriarch.Fleet.StarShipType.Cruiser;
 			this.DisadvantageAgainstType = Astriarch.Fleet.StarShipType.SystemDefense;
+			break;
+		case Astriarch.Fleet.StarShipType.SpacePlatform:
+			this.BaseStarShipStrength = 64;
 			break;
 	}
 
@@ -742,9 +673,8 @@ Astriarch.Fleet.StarShip.prototype.RepairStarShip = function(maxStrengthToRepair
  * StarShipAdvantageStrengthComparer is an object that allows array sorting of starships
  * @constructor
  */
-Astriarch.Fleet.StarShipAdvantageStrengthComparer = function(/*StarShip*/ ship, /*bool*/ isSpacePlatform, /*Dictionary<StarShip, int>*/ fleetDamagePending) {
+Astriarch.Fleet.StarShipAdvantageStrengthComparer = function(/*StarShip*/ ship, /*Dictionary<StarShip, int>*/ fleetDamagePending) {
 	this.ship = ship;
-	this.isSpacePlatform = isSpacePlatform;
 	this.fleetDamagePending = fleetDamagePending;
 	var self = this;
 	this.sortFunction = function(/*StarShip*/ a, /*StarShip*/ b) {
@@ -774,9 +704,9 @@ Astriarch.Fleet.StarShipAdvantageStrengthComparer.prototype.getStarShipAdvantage
 	if (this.fleetDamagePending[enemy])
 		adjustedStrength -= this.fleetDamagePending[enemy];
 
-	if (Astriarch.BattleSimulator.StarshipHasAdvantage(this.isSpacePlatform, this.ship, false, enemy.Type))
+	if (Astriarch.BattleSimulator.StarshipHasAdvantage(this.ship, enemy))
 		adjustedStrength *= 1;//this just ensures we're always attaking the enemy we have an advantage over
-	else if (Astriarch.BattleSimulator.StarshipHasDisadvantage(this.isSpacePlatform, this.ship, false, enemy.Type))
+	else if (Astriarch.BattleSimulator.StarshipHasDisadvantage(this.ship, enemy))
 		adjustedStrength *= 10000;
 	else
 		adjustedStrength *= 100;
@@ -799,7 +729,7 @@ Astriarch.Fleet.StarShipFactoryHelper = {
 		return f;
 	},
 
-	GenerateFleetWithShipCount: function(/*Player*/p, defenders, scouts, destroyers, cruisers, battleships, /*Hexagon*/ locationHex){//returns Fleet
+	GenerateFleetWithShipCount: function(/*Player*/p, defenders, scouts, destroyers, cruisers, battleships, spaceplatforms, /*Hexagon*/ locationHex){//returns Fleet
 		var f = new Astriarch.Fleet(p);
 		f.LocationHex = locationHex;
 
@@ -813,6 +743,8 @@ Astriarch.Fleet.StarShipFactoryHelper = {
 			f.StarShips[Astriarch.Fleet.StarShipType.Cruiser].push(new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Cruiser));
 		for (var i = 0; i < battleships; i++)
 			f.StarShips[Astriarch.Fleet.StarShipType.Battleship].push(new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.Battleship));
+		for (var i = 0; i < spaceplatforms; i++)
+			f.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].push(new Astriarch.Fleet.StarShip(Astriarch.Fleet.StarShipType.SpacePlatform));
 
 		return f;
 	}
@@ -823,5 +755,6 @@ Astriarch.Fleet.StarShipType = {
 	Scout: 2,
 	Destroyer: 3,
 	Cruiser: 4,
-	Battleship: 5
+	Battleship: 5,
+	SpacePlatform: 6 //provides defense for the planet, further speeds ship production and allows for cruiser and battleship production
 };

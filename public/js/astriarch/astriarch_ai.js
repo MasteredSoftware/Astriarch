@@ -421,7 +421,7 @@ Astriarch.AI = {
 					//always check for improvements in case we need to destroy some
 					planetCandidatesForNeedingImprovements.push(p);
 					if(ownedPlanetsSorted.length > 1){
-						if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
+						if (p.GetSpacePlatformCount() == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
 							planetCandidatesForNeedingSpacePlatforms.push(p);
 						} else {
 							planetCandidatesForNeedingShips.push(p);
@@ -430,7 +430,7 @@ Astriarch.AI = {
 						if (planetCountNeedingExploration != 0) {
 							//if we need to explore some planets before building a space platform, do so
 							planetCandidatesForNeedingShips.push(p);
-						} else if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
+						} else if (p.GetSpacePlatformCount() == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
 							planetCandidatesForNeedingSpacePlatforms.push(p);
 						} else {
 							planetCandidatesForNeedingShips.push(p);
@@ -443,8 +443,8 @@ Astriarch.AI = {
 		//space platforms
 		for (var i in planetCandidatesForNeedingSpacePlatforms) {
 			var p = planetCandidatesForNeedingSpacePlatforms[i];//Planet
-			if (p.BuiltAndBuildQueueImprovementTypeCount(Astriarch.Planet.PlanetImprovementType.SpacePlatform) == 0) {
-				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.PlanetImprovement(Astriarch.Planet.PlanetImprovementType.SpacePlatform);
+			if (p.GetSpacePlatformCount(true) == 0) {
+				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.SpacePlatform);
 			}
 		}
 		
@@ -539,7 +539,7 @@ Astriarch.AI = {
 				buildDestroyers = (!buildDefenders && Astriarch.NextRandom(0, 4) == 0);
 			}
 
-			if (p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0 && !buildDefenders) {
+			if (p.GetSpacePlatformCount() > 0 && !buildDefenders) {
 				var rand = Astriarch.NextRandom(4);
 				//build battleships at half the planets with spaceplatforms
 				if (rand < 2) {
@@ -744,7 +744,7 @@ Astriarch.AI = {
 						{
 							if (player.LastKnownPlanetFleetStrength[closestUnownedPlanet.Id])
 							{
-								strengthToDefend += player.LastKnownPlanetFleetStrength[closestUnownedPlanet.Id].Fleet.DetermineFleetStrength(false);
+								strengthToDefend += player.LastKnownPlanetFleetStrength[closestUnownedPlanet.Id].Fleet.DetermineFleetStrength(true);
 							}
 							else if (player.KnownClientPlanets[closestUnownedPlanet.Id])
 							{
@@ -933,8 +933,6 @@ Astriarch.AI = {
 				var lkpfs = player.LastKnownPlanetFleetStrength[pEnemyInbound.Id];
 				if (lkpfs) {
 					fleetStrength = lkpfs.Fleet.DetermineFleetStrength();
-					//include extra if the last known fleet has a space platform, since they are harder to kill
-					fleetStrength += lkpfs.Fleet.HasSpacePlatform ? Astriarch.Fleet.Static.SPACE_PLATFORM_STRENGTH : 0;
 				}
 
 				var scouts = pFriendly.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
@@ -945,7 +943,7 @@ Astriarch.AI = {
 				//TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
 
 				//generate this fleet just to ensure strength > destination fleet strength
-				var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
+				var newFleet = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, 0, pFriendly.BoundingHex);//Fleet
 				if (newFleet.DetermineFleetStrength() > (fleetStrength * additionalStrengthMultiplierNeededToAttack))
 				{
 					newFleet = pFriendly.PlanetaryFleet.SplitFleet(scouts, destroyers, cruisers, battleships);

@@ -266,7 +266,7 @@ Astriarch.GameController.UpdateUIForEndTurnMessage = function(message){
 	if(homePlanet && window.tour.enabled){
 		var factoryCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length;
 		var colonyCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length;
-		var spacePlatformCount = homePlanet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length;
+		var spacePlatformCount = homePlanet.GetSpacePlatformCount();
 		if((factoryCount == 1 && window.tour.step == 48) ||
 			(factoryCount == 2 && window.tour.step == 49) ||
 			(factoryCount == 3 && window.tour.step == 50) ||

@@ -49,7 +49,6 @@ Astriarch.Planet = function(/*PlanetType*/ type, /*string*/ name, /*Hexagon*/ bo
 	this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory] = [];//List<PlanetImprovement>
 	this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Farm] = [];//List<PlanetImprovement>
 	this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Mine] = [];//List<PlanetImprovement>
-	this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform] = [];//List<PlanetImprovement>
 
 	this.Resources = new Astriarch.Planet.PlanetResources();
 	
@@ -179,10 +178,8 @@ Astriarch.Planet.prototype.MaxPopulation = function(){
 Astriarch.Planet.prototype.BuiltImprovementCount = function() {
 	var improvementCount = 0;
 
-	for (var key in this.BuiltImprovements)
-	{
-		if(key != Astriarch.Planet.PlanetImprovementType.SpacePlatform)//space platforms don't count for a slot
-			improvementCount += this.BuiltImprovements[key].length;
+	for (var key in this.BuiltImprovements) {
+		improvementCount += this.BuiltImprovements[key].length;
 	}
 
 	return improvementCount;
@@ -221,19 +218,36 @@ Astriarch.Planet.prototype.RemoveBuildQueueItemForRefund = function(/*int*/ inde
 };
 
 /**
+ * Counts the SpacePlatforms in the fleet
+ * @this {Astriarch.Planet}
+ * @constructor
+ */
+Astriarch.Planet.prototype.GetSpacePlatformCount = function(includeQueue) {
+	var count = 0;
+	if(this.PlanetaryFleet) {
+		count = this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].length;
+	}
+	if(includeQueue) {
+		for (var i in this.BuildQueue) {
+			var ppi = this.BuildQueue[i];//PlanetProductionItem
+			if (ppi instanceof Astriarch.Planet.StarShipInProduction && ppi.Type == Astriarch.Fleet.StarShipType.SpacePlatform) {
+				count++;
+			}
+		}
+	}
+	return count;
+};
+
+/**
  * Counts the improvements built as well as the improvements in the queue
  * @this {Astriarch.Planet}
  * @return {number}
  */
-Astriarch.Planet.prototype.BuiltAndBuildQueueImprovementCount = function()
-{
+Astriarch.Planet.prototype.BuiltAndBuildQueueImprovementCount = function() {
 	var count = this.BuiltImprovementCount();
-	for (var i in this.BuildQueue)
-	{
+	for (var i in this.BuildQueue) {
 		var ppi = this.BuildQueue[i];//PlanetProductionItem
-		//space platforms don't count for slots used
-		if (ppi instanceof Astriarch.Planet.PlanetImprovement && ppi.Type != Astriarch.Planet.PlanetImprovementType.SpacePlatform)
-		{
+		if (ppi instanceof Astriarch.Planet.PlanetImprovement) {
 			count++;
 		}
 	}
@@ -245,14 +259,11 @@ Astriarch.Planet.prototype.BuiltAndBuildQueueImprovementCount = function()
  * @this {Astriarch.Planet}
  * @return {number}
  */
-Astriarch.Planet.prototype.BuiltAndBuildQueueImprovementTypeCount = function(/*PlanetImprovementType*/ type)
-{
+Astriarch.Planet.prototype.BuiltAndBuildQueueImprovementTypeCount = function(/*PlanetImprovementType*/ type) {
 	var count = this.BuiltImprovements[type].length;
-	for (var i in this.BuildQueue)
-	{
+	for (var i in this.BuildQueue) {
 		var ppi = this.BuildQueue[i];//PlanetProductionItem
-		if (ppi instanceof Astriarch.Planet.PlanetImprovement && ppi.Type == type)
-		{
+		if (ppi instanceof Astriarch.Planet.PlanetImprovement && ppi.Type == type) {
 			count++;
 		}
 	}
@@ -376,12 +387,10 @@ Astriarch.Planet.prototype.recomputeOriginPoint = function()
  * Generates resources on the planet
  * @this {Astriarch.Planet}
  */
-Astriarch.Planet.prototype.GenerateResources = function()
-{
+Astriarch.Planet.prototype.GenerateResources = function() {
 	this.ResourcesPerTurn.UpdateResourcesPerTurnBasedOnPlanetStats();
 
-	if (this.Owner !== null)
-	{
+	if (this.Owner !== null) {
 		var divisor = 1.0;
 		if (this.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest)//unrest causes 1/2 production
 			divisor = 2.0;
@@ -399,10 +408,6 @@ Astriarch.Planet.prototype.GenerateResources = function()
 Astriarch.Planet.prototype.AddBuiltImprovement = function(planetImprovementItem) {
 	if (planetImprovementItem instanceof Astriarch.Planet.PlanetImprovement) {
 		this.BuiltImprovements[planetImprovementItem.Type].push(planetImprovementItem);
-
-		if (planetImprovementItem.Type == Astriarch.Planet.PlanetImprovementType.SpacePlatform) {
-			this.PlanetaryFleet.HasSpacePlatform = true;
-		}
 	}
 };
 
@@ -450,8 +455,11 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 				//it's a ship
 				var ship = new Astriarch.Fleet.StarShip(nextItem.Type, nextItem.CustomShip, nextItem.AdvantageAgainstType, nextItem.DisadvantageAgainstType);
 
-				this.StarShipTypeLastBuilt = nextItem.Type;
-				this.StarShipCustomShipLastBuilt = nextItem.CustomShip;
+				//don't set last built option for space platforms
+				if(ship.Type != Astriarch.Fleet.StarShipType.SpacePlatform) {
+					this.StarShipTypeLastBuilt = nextItem.Type;
+					this.StarShipCustomShipLastBuilt = nextItem.CustomShip;
+				}
 
 				//if we have a waypoint set on the planet, send this new starship to the waypoint planet
 				var waypointPlanet = this.WayPointPlanetId ? gameModel.getPlanetById(this.WayPointPlanetId) : null;
@@ -526,9 +534,6 @@ Astriarch.Planet.prototype.SetPlanetOwner = function(/*Player*/ p){
 		}
 		//Also clear out any remainder production
 		this.RemainderProduction = 0;
-
-		//also remove space platforms because they were destroyed in combat (used for defense)
-		this.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform] = [];
 
 		if (this.Owner.PlanetBuildGoals[this.Id])
 			delete this.Owner.PlanetBuildGoals[this.Id];
@@ -607,9 +612,8 @@ Astriarch.Planet.prototype.SetPlayerLastKnownPlanetFleetStrength = function(game
 																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length,
 																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser].length,
 																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship].length,
+																			this.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].length,
 																			this.BoundingHex);
-
-	lastKnownFleet.SetFleetHasSpacePlatform();//if the planet has a space platform, mark that
 
 	var lastKnownFleetObject = new Astriarch.Fleet.LastKnownFleet(lastKnownFleet, this.Owner);
 	lastKnownFleetObject.TurnLastExplored = gameModel.Turn.Number;
@@ -1522,12 +1526,6 @@ Astriarch.Planet.PlanetImprovement = Astriarch.Planet.PlanetProductionItem.exten
 				this.OreCost = 1;
 				this.GoldCost = 2;
 				break;
-			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
-				this.BaseProductionCost = 162;//space platforms should take a while to build
-				this.OreCost = 12;
-				this.IridiumCost = 6;
-				this.GoldCost = 18;
-				break;
 		}
 	},
 
@@ -1571,6 +1569,12 @@ Astriarch.Planet.StarShipInProduction = Astriarch.Planet.PlanetProductionItem.ex
 
 
 		switch (this.Type) {
+			case Astriarch.Fleet.StarShipType.SpacePlatform:
+				this.BaseProductionCost = 162;//space platforms should take a while to build
+				this.OreCost = 12;
+				this.IridiumCost = 6;
+				this.GoldCost = 18;
+				break;
 			case Astriarch.Fleet.StarShipType.Battleship:
 				this.BaseProductionCost = 104;
 				this.OreCost = 16;
@@ -1629,8 +1633,7 @@ Astriarch.Planet.PlanetImprovementType = {
 	Factory: 1, //increases the speed of building other improvements and ships (and allows for building destroyers and the space platform)
 	Colony: 2, //increases the max population
 	Farm: 3, //increases food production
-	Mine: 4, //increases the rate of raw minerals production
-	SpacePlatform: 5 //provides defense for the planet, further speeds ship production and allows for cruiser and battleship production
+	Mine: 4 //increases the rate of raw minerals production
 };
 
 Astriarch.Planet.PlanetType = {

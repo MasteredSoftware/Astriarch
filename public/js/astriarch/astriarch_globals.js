@@ -107,9 +107,6 @@ Astriarch.GameTools = {
 			case Astriarch.Planet.PlanetImprovementType.Mine:
 				name = "Mine";
 				break;
-			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
-				name = "Space Platform";
-				break;
 		}
 		return name;
 	},
@@ -130,11 +127,6 @@ Astriarch.GameTools = {
 				break;
 			case Astriarch.Planet.PlanetImprovementType.Colony:
 				helpText = "Colonies increase the planet's maximum population by one.";
-				break;
-			case Astriarch.Planet.PlanetImprovementType.SpacePlatform:
-				helpText = "Space Platforms provide planetary defense.\r\n" +
-                           "Allows construction of Cruisers and Battleships.\r\n" +
-                           "Advantage against: All ships, Disadvantage Against: None";
 				break;
 		}
 
@@ -205,6 +197,9 @@ Astriarch.GameTools = {
 			case Astriarch.Fleet.StarShipType.Battleship:
 				name = "Battleship";
 				break;
+			case Astriarch.Fleet.StarShipType.SpacePlatform:
+				name = "Space Platform";
+				break;
 		}
 		return name;
 	},
@@ -228,9 +223,16 @@ Astriarch.GameTools = {
 			case Astriarch.Fleet.StarShipType.Battleship:
 				helpText = "Battleships require a Space Platform in order to build and are twice the strength of a Cruiser.\r\n";
 				break;
+			case Astriarch.Fleet.StarShipType.SpacePlatform:
+				helpText = "Space Platforms provide planetary defense.\r\n" +
+					"Allows construction of Cruisers and Battleships.\r\n" +
+					"Advantage against: All ships, Disadvantage Against: None";
+				break;
 		}
 
-		helpText += "Advantage against: " + Astriarch.GameTools.StarShipTypeToFriendlyName(ssip.AdvantageAgainstType) + ", Disadvantage Against: " + Astriarch.GameTools.StarShipTypeToFriendlyName(ssip.DisadvantageAgainstType);
+		if(ssip.Type != Astriarch.Fleet.StarShipType.SpacePlatform) {
+			helpText += "Advantage against: " + Astriarch.GameTools.StarShipTypeToFriendlyName(ssip.AdvantageAgainstType) + ", Disadvantage Against: " + Astriarch.GameTools.StarShipTypeToFriendlyName(ssip.DisadvantageAgainstType);
+		}
 
 		return helpText;
 	},

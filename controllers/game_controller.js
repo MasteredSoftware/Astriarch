@@ -1010,30 +1010,17 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 						//count items that take up slots in working queue
 						for (var i in pvwd.workingBuildQueue) {
 							var ppi = pvwd.workingBuildQueue[i];//PlanetProductionItem
-							if (ppi && ppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.PlanetImprovement && ppi.Type != Astriarch.Planet.PlanetImprovementType.SpacePlatform) {
+							if (ppi && ppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.PlanetImprovement) {
 								improvementCount++;
 							}
 						}
 
 						var slotsAvailable = planet.MaxImprovements - improvementCount;
-
-
-						if(pitData != Astriarch.Planet.PlanetImprovementType.SpacePlatform){
-							if (slotsAvailable <= 0) {//less than zero is a problem, but we'll just make sure they can't build more here
-								canBuild = false;
-							}
-						} else {
-							if (planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0) {
-								canBuild = false;
-							} else if (planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0 ||
-								workingQueueContainsSpacePlatform(pvwd))
-							{
-								//we can only have one space platform
-								canBuild = false;
-							}
+						if (slotsAvailable <= 0) {//less than zero is a problem, but we'll just make sure they can't build more here
+							canBuild = false;
 						}
 
-						if(!canBuild){
+						if(!canBuild) {
 							callback({'type':'UNABLE_TO_BUILD','message':'You cannot build that improvement at this time.'});
 							return;
 						}
@@ -1069,9 +1056,18 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 
 						var canBuild = true;
 
+						if(hullType == Astriarch.Fleet.StarShipType.SpacePlatform) {
+							if (planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0) {
+								canBuild = false;
+							} else if (planet.GetSpacePlatformCount() > 0 || workingQueueContainsSpacePlatform(pvwd)) {
+								//we can only have one space platform
+								canBuild = false;
+							}
+						}
+
 						if (hullType == Astriarch.Fleet.StarShipType.Destroyer && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0){
 							canBuild = false;
-						} else if((hullType == Astriarch.Fleet.StarShipType.Cruiser || hullType == Astriarch.Fleet.StarShipType.Battleship) && planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length == 0){
+						} else if((hullType == Astriarch.Fleet.StarShipType.Cruiser || hullType == Astriarch.Fleet.StarShipType.Battleship) && planet.GetSpacePlatformCount() == 0){
 							canBuild = false;
 						}
 
@@ -1165,10 +1161,9 @@ var moveItemInQueue = function(planetViewWorkingData, index, /*bool*/ moveUp){
 };
 
 var workingQueueContainsSpacePlatform = function(planetViewWorkingData) {
-	for (var i in planetViewWorkingData.workingBuildQueue)
-	{
+	for (var i in planetViewWorkingData.workingBuildQueue) {
 		var ppi = planetViewWorkingData.workingBuildQueue[i];//PlanetProductionItem
-		if (ppi instanceof Astriarch.Planet.PlanetImprovement && ppi.Type == Astriarch.Planet.PlanetImprovementType.SpacePlatform)
+		if (ppi instanceof Astriarch.Planet.StarShipInProduction && ppi.Type == Astriarch.Fleet.StarShipType.SpacePlatform)
 			return true;
 	}
 	return false;

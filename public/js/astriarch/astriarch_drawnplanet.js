@@ -248,7 +248,7 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 			}
 
 			//draw spaceplatform image if we have a space platform
-			if (planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.SpacePlatform].length > 0) {
+			if (planet.GetSpacePlatformCount() > 0) {
 				this.drawSpacePlatformRectangle = true;
 				this.spacePlatformRectangleImageData = Astriarch.Util.GetImageData(player.Color).spaceplatformImageData;
 			}
@@ -292,8 +292,7 @@ Astriarch.DrawnPlanet = jCanvas.DrawnObject.extend({ // drawn object class
 				this.fleetRectangleImageData = Astriarch.Util.GetImageData(lastKnownOwner.Color).starshipImageData;
 			}
 
-			if (lastKnownFleet.Fleet.HasSpacePlatform)
-			{
+			if (lastKnownFleet.Fleet.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].length > 0) {
 				this.drawSpacePlatformRectangle = true;
 				this.spacePlatformRectangleImageData = Astriarch.Util.GetImageData(lastKnownOwner.Color).spaceplatformImageData;
 			}
