@@ -305,6 +305,9 @@ Astriarch.GameTools = {
 			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
 				className = 'icon-32x32-FactoryLarge';
 				break;
+			case Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+				className = 'icon-32x32-SpacePlatformLarge';
+				break;
 		}
 		return className;
 	}

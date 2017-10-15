@@ -1059,8 +1059,8 @@ exports.UpdatePlanetBuildQueue = function(sessionId, payload, callback){
 						if(hullType == Astriarch.Fleet.StarShipType.SpacePlatform) {
 							if (planet.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length == 0) {
 								canBuild = false;
-							} else if (planet.GetSpacePlatformCount() > 0 || workingQueueContainsSpacePlatform(pvwd)) {
-								//we can only have one space platform
+							} else if (planet.GetSpacePlatformCount() + workingQueueSpacePlatformCount(pvwd) >= player.Research.getMaxSpacePlatformCount()) {
+								//we can only have a limited number of space platforms
 								canBuild = false;
 							}
 						}
@@ -1160,13 +1160,14 @@ var moveItemInQueue = function(planetViewWorkingData, index, /*bool*/ moveUp){
 	}
 };
 
-var workingQueueContainsSpacePlatform = function(planetViewWorkingData) {
+var workingQueueSpacePlatformCount = function(planetViewWorkingData) {
+	var count = 0;
 	for (var i in planetViewWorkingData.workingBuildQueue) {
 		var ppi = planetViewWorkingData.workingBuildQueue[i];//PlanetProductionItem
-		if (ppi instanceof Astriarch.Planet.StarShipInProduction && ppi.Type == Astriarch.Fleet.StarShipType.SpacePlatform)
-			return true;
+		if (ppi.PlanetProductionItemType == Astriarch.Planet.PlanetProductionItemType.StarShipInProduction && ppi.Type == Astriarch.Fleet.StarShipType.SpacePlatform)
+			count++;
 	}
-	return false;
+	return count;
 };
 
 var getExistingPlanetViewWorkingDataModel = function(gameId, sessionId, planetId, callback){

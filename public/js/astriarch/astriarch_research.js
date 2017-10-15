@@ -14,9 +14,14 @@ Astriarch.Research = function() {
     this.researchProgressByType[Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES] = new Astriarch.Research.ResearchTypeProgress(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES, 0, {percent:1.0});
     this.researchProgressByType[Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES] = new Astriarch.Research.ResearchTypeProgress(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES, 0, {percent:1.0});
     this.researchProgressByType[Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES] = new Astriarch.Research.ResearchTypeProgress(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES, 0, {percent:1.0});
+    this.researchProgressByType[Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT] = new Astriarch.Research.ResearchTypeProgress(Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT, 0, {max:1});
 
     this.researchTypeInQueue = null;//for now a player can only research one new item at a time
     this.researchPercent = 0; // 0 - 1, the rest goes to gold/taxes
+};
+
+Astriarch.Research.prototype.getMaxSpacePlatformCount = function() {
+    return this.researchProgressByType[Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT].data.max;
 };
 
 Astriarch.Research.prototype.getResearchProgressListSorted = function() {
@@ -168,7 +173,7 @@ Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted
             this.researchPointsBase = 3;
             break;
         case Astriarch.Research.ResearchType.PROPULSION_IMPROVEMENT:
-            this.researchPointsBase = 5;
+            this.researchPointsBase = 8;
             break;
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
             this.researchPointsBase = 2;
@@ -181,6 +186,9 @@ Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted
             break;
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
             this.researchPointsBase = 5;
+            break;
+        case Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+            this.researchPointsBase = 10;
             break;
     }
 
@@ -265,6 +273,9 @@ Astriarch.Research.ResearchTypeProgress.prototype.setDataBasedOnLevel = function
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
             this.data.percent = 1.0 + (this.currentResearchLevel + 1) / 10;
             break;
+        case Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+            this.data.max = Math.max(Math.floor((this.currentResearchLevel + 1) / 2), 1);
+            break;
     }
 };
 
@@ -298,7 +309,10 @@ Astriarch.Research.ResearchTypeProgress.prototype.GetCurrentLevelDataString = fu
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
-            returnString += "operating at " + (this.data.percent * 100) + "% efficiency.";
+            returnString += "Operating at " + (this.data.percent * 100) + "% efficiency.";
+            break;
+        case Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+            returnString += "Maximum " + (this.data.max) + " per planet.";
             break;
     }
     return returnString;
@@ -343,6 +357,9 @@ Astriarch.Research.ResearchTypeProgress.prototype.GetFriendlyName = function() {
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
             defaultName = "Factories";
             break;
+        case Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+            defaultName = "Space Platforms";
+            break;
     }
     return defaultName;
 };
@@ -372,6 +389,9 @@ Astriarch.Research.ResearchTypeProgress.prototype.ToString = function(nextLevel)
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
             defaultName = "Level " + level + " " + defaultName;
             break;
+        case Astriarch.Research.ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+            defaultName = "Level " + level + " " + defaultName;
+            break;
     }
     return defaultName;
 };
@@ -389,5 +409,6 @@ Astriarch.Research.ResearchType = {
     BUILDING_EFFICIENCY_IMPROVEMENT_FARMS: 9, //data key is "percent" 1 - 2 increased efficiency of farms
     BUILDING_EFFICIENCY_IMPROVEMENT_MINES: 10, //data key is "percent" 1 - 2 increased efficiency of mines
     BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES: 11,//data key is "percent" 1 - 2 increases population growth on planet
-    BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES: 12 //data key is "percent" 1 - 2 increased efficiency of factories
+    BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES: 12, //data key is "percent" 1 - 2 increased efficiency of factories
+    SPACE_PLATFORM_IMPROVEMENT: 13 //data key is "max" 1 - 5 maximum space platforms player can build on a planet
 };

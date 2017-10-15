@@ -421,7 +421,7 @@ Astriarch.AI = {
 					//always check for improvements in case we need to destroy some
 					planetCandidatesForNeedingImprovements.push(p);
 					if(ownedPlanetsSorted.length > 1){
-						if (p.GetSpacePlatformCount() == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
+						if (p.GetSpacePlatformCount() < player.Research.getMaxSpacePlatformCount() && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
 							planetCandidatesForNeedingSpacePlatforms.push(p);
 						} else {
 							planetCandidatesForNeedingShips.push(p);
@@ -430,7 +430,7 @@ Astriarch.AI = {
 						if (planetCountNeedingExploration != 0) {
 							//if we need to explore some planets before building a space platform, do so
 							planetCandidatesForNeedingShips.push(p);
-						} else if (p.GetSpacePlatformCount() == 0 && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
+						} else if (p.GetSpacePlatformCount() < player.Research.getMaxSpacePlatformCount() && p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Factory].length > 0) {
 							planetCandidatesForNeedingSpacePlatforms.push(p);
 						} else {
 							planetCandidatesForNeedingShips.push(p);
@@ -443,7 +443,7 @@ Astriarch.AI = {
 		//space platforms
 		for (var i in planetCandidatesForNeedingSpacePlatforms) {
 			var p = planetCandidatesForNeedingSpacePlatforms[i];//Planet
-			if (p.GetSpacePlatformCount(true) == 0) {
+			if (p.GetSpacePlatformCount(true) <= player.Research.getMaxSpacePlatformCount()) {
 				player.PlanetBuildGoals[p.Id] = new Astriarch.Planet.StarShipInProduction(Astriarch.Fleet.StarShipType.SpacePlatform);
 			}
 		}

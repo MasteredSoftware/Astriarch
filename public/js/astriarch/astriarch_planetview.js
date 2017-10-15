@@ -311,16 +311,16 @@ Astriarch.PlanetView = {
 		$('#PlanetImage').attr('title', "Planet Stats:\r\n" + ttText);
 	},
 	
-	workingQueueContainsSpacePlatform: function() {
-		for (var i in Astriarch.PlanetView.workingBuildQueue)
-		{
+	workingQueueSpacePlatformCount: function() {
+		var count = 0;
+		for (var i in Astriarch.PlanetView.workingBuildQueue) {
 			var ppi = Astriarch.PlanetView.workingBuildQueue[i];//PlanetProductionItem
 			if (ppi instanceof Astriarch.Planet.StarShipInProduction && ppi.Type == Astriarch.Fleet.StarShipType.SpacePlatform)
-				return true;
+				count++;
 		}
-		return false;
+		return count;
 	},
-	
+
 	disableOrEnableImprovementsBasedOnSlotsAvailable: function() {
 		var improvementCount = Astriarch.PlanetView.planetMain.BuiltImprovementCount();
 		//count items that take up slots in working queue
@@ -351,9 +351,9 @@ Astriarch.PlanetView = {
 		else
 			Astriarch.PlanetView.lbiSpacePlatform.CanBuild = true;
 
-		//we can only have one space platform
-		if (Astriarch.PlanetView.planetMain.GetSpacePlatformCount() > 0 ||
-			Astriarch.PlanetView.workingQueueContainsSpacePlatform()) {
+		//we can have a limited number of space platforms
+		if (Astriarch.PlanetView.planetMain.GetSpacePlatformCount() + Astriarch.PlanetView.workingQueueSpacePlatformCount()
+			>= Astriarch.ClientGameModel.MainPlayer.Research.getMaxSpacePlatformCount()) {
 			Astriarch.PlanetView.lbiSpacePlatform.CanBuild = false;
 		}
 	},
