@@ -33,6 +33,7 @@ body *:not(.ui-selectmenu-menu) .ui-menu .ui-menu-item {
     float: left;
     clear: left;
     width: 100%;
+    list-style-image: none;
 }
 
 .ui-menu .ui-menu-item a {

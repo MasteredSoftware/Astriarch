@@ -168,7 +168,7 @@ Astriarch.GameTools = {
 				helpText = "Boost Mine effectiveness to as much as 200% of normal";
 				break;
 			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
-				helpText = "Increase Population growth on planets with colonies";
+				helpText = "Increase Population growth and Gold generation on planets with colonies";
 				break;
 			case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
 				helpText = "Boost Farm effectiveness to as much as 200% of normal";

@@ -65,7 +65,7 @@ Astriarch.Research.prototype.getResearchDataByStarShipHullType = function(hullTy
 Astriarch.Research.prototype.setResearchTypeProgressInQueue = function(type, data) {
     this.researchTypeInQueue = type;
     if(data) {
-        this.researchProgressByType[type].data = data;
+        this.researchProgressByType[type].setData(data);
     }
 };
 
@@ -140,7 +140,6 @@ Astriarch.Research.GetResearchLevelCosts = function(baseValue) {
 Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted, data) {
     this.type = type;
 
-    this.data = data || {};//structure depends on type
     this.currentResearchLevel = -1;//
     this.researchPointsBase = 0;//based on the type and data, some types are intrinsically more expensive
     this.isCustomShip = false;
@@ -182,7 +181,7 @@ Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted
             this.researchPointsBase = 1;
             break;
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
-            this.researchPointsBase = 1;
+            this.researchPointsBase = 2;
             break;
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
             this.researchPointsBase = 5;
@@ -191,6 +190,14 @@ Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted
             this.researchPointsBase = 10;
             break;
     }
+
+    this.setData(data);
+    this.researchPointsCompleted = 0;
+    this.setResearchPointsCompleted(researchPointsCompleted);
+};
+
+Astriarch.Research.ResearchTypeProgress.prototype.setData = function(data) {
+    this.data = data || {};//structure depends on type
 
     if(this.isCustomShip) {
         this.maxResearchLevel = 0;
@@ -234,8 +241,6 @@ Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted
     }
 
     this.researchLevelCosts = Astriarch.Research.GetTotalResearchLevelCosts(this.researchPointsBase);
-    this.researchPointsCompleted = 0;
-    this.setResearchPointsCompleted(researchPointsCompleted);
 };
 
 Astriarch.Research.ResearchTypeProgress.prototype.canResearch = function() {

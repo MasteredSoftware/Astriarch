@@ -77,10 +77,14 @@ Astriarch.Player.prototype.GetTaxRevenueAtMaxPercent = function() {
 	var totalPop = 0;
 	for (var i in this.OwnedPlanets) {
 		var p = this.OwnedPlanets[i];//Planet
+        var colonyCount = p.BuiltImprovements[Astriarch.Planet.PlanetImprovementType.Colony].length;
+        if(colonyCount) {
+            totalPop += (this.Research.getResearchData(Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES).percent - 1.0) * colonyCount * 2;
+        }
 		totalPop += p.Id == this.HomePlanetId ? p.Population.length * 2 : p.Population.length;
 	}
 
-	return (totalPop / 1.75);
+	return (totalPop / 1.5);
 };
 
 /**
