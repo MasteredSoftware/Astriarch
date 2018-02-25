@@ -181,7 +181,7 @@ Astriarch.Research.ResearchTypeProgress = function(type, researchPointsCompleted
             this.researchPointsBase = 1;
             break;
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
-            this.researchPointsBase = 2;
+            this.researchPointsBase = 3;
             break;
         case Astriarch.Research.ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
             this.researchPointsBase = 5;
