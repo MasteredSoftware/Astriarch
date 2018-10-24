@@ -3,22 +3,22 @@
   "version": "1.8.4",
   "private": true,
   "dependencies": {
-	"express": "3.3.4",
-	"jade": "0.35.0",
-	"mongoose": "4.4.20",
-	"connect-mongo": "0.8.2",
-	"console-ten": "0.0.5",
-	"ws": "0.4.27",
-	"config": "0.4.34",
-	"async": "0.2.9",
-	"extend": "1.2.0"
+    "express": "3.3.4",
+    "jade": "0.35.0",
+    "mongoose": "4.4.20",
+    "connect-mongo": "0.8.2",
+    "console-ten": "0.0.5",
+    "ws": "0.4.27",
+    "config": "0.4.34",
+    "async": "0.2.9",
+    "extend": "1.2.0"
   },
-  "devDependencies":{
-	  "mocha":"2.1.0",
-	  "should":"4.6.0"
+  "devDependencies": {
+    "mocha": "2.1.0",
+    "should": "4.6.0"
   },
   "scripts": {
     "start": "node app.js",
-	"test": "./node_modules/.bin/mocha --reporter list"
+    "test": "./node_modules/.bin/mocha --reporter list"
   }
 }
