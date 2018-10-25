@@ -3,18 +3,24 @@
   "version": "1.8.4",
   "private": true,
   "dependencies": {
-    "express": "3.3.4",
-    "jade": "0.35.0",
-    "mongoose": "4.4.20",
-    "connect-mongo": "0.8.2",
-    "console-ten": "0.0.5",
-    "ws": "0.4.27",
-    "config": "0.4.34",
     "async": "0.2.9",
-    "extend": "1.2.0"
+    "body-parser": "^1.18.3",
+    "config": "0.4.34",
+    "connect-mongo": "^2.0.1",
+    "console-ten": "0.0.5",
+    "cookie-parser": "^1.4.3",
+    "errorhandler": "^1.5.0",
+    "express": "^4.16.4",
+    "express-session": "^1.15.6",
+    "extend": "1.2.0",
+    "mongoose": "^5.3.6",
+    "morgan": "^1.9.1",
+    "pug": "^2.0.3",
+    "serve-favicon": "^2.5.0",
+    "ws": "^6.1.0"
   },
   "devDependencies": {
-    "mocha": "2.1.0",
+    "mocha": "^5.2.0",
     "should": "4.6.0"
   },
   "scripts": {

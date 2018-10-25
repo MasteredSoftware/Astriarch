@@ -1,4 +1,6 @@
-FROM mhart/alpine-node:4.4.7
+FROM mhart/alpine-node:10
+
+ENV VERSION=v10.12.0 NPM_VERSION=6 YARN_VERSION=latest
 
 # Create app directory
 RUN mkdir -p /usr/src/app
