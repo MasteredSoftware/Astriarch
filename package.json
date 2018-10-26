@@ -21,9 +21,11 @@
   },
   "devDependencies": {
     "mocha": "^5.2.0",
+    "prettier": "^1.14.3",
     "should": "4.6.0"
   },
   "scripts": {
+    "prettier-write": "prettier --write \"!(ext|dist)**/*.js\" --print-width 120",
     "start": "node app.js",
     "test": "./node_modules/.bin/mocha --reporter list"
   }

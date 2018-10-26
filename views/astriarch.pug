@@ -10,8 +10,8 @@ head
 
 	link(type='text/css', href='css/joyride-2.1.css', rel='stylesheet')
 	if use_compressed_js
-		script(type='text/javascript', src='js/external.js')
-		script(type='text/javascript', src='js/astriarch.js')
+		script(type='text/javascript', src='js/dist/external.js')
+		script(type='text/javascript', src='js/dist/astriarch.js')
 	else
 		for file in file_list_external
 			script(type='text/javascript', src='#{file}')
