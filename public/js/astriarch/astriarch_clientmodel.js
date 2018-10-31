@@ -1,169 +1,247 @@
-var Astriarch = Astriarch || require('./astriarch_base');
+var Astriarch = Astriarch || require("./astriarch_base");
 
 Astriarch.ClientModelInterface = {
-	GetClientModelFromSerializableClientModel: function(scm, gameGrid){
+  GetClientModelFromSerializableClientModel: function(scm, gameGrid) {
+    var planetsById = {};
+    for (var sp in scm.MainPlayerOwnedSerializablePlanets) {
+      var planet = Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet(
+        scm.MainPlayerOwnedSerializablePlanets[sp],
+        gameGrid
+      );
+      planetsById[planet.Id] = planet;
+    }
 
-		var planetsById = {};
-		for(var sp in scm.MainPlayerOwnedSerializablePlanets) {
-			var planet = Astriarch.SavedGameInterface.getPlanetFromSerializedPlanet(scm.MainPlayerOwnedSerializablePlanets[sp], gameGrid);
-			planetsById[planet.Id] = planet;
-		}
+    var clientPlayersById = {};
+    var clientPlayers = [];
+    for (var plr in scm.SerializableClientPlayers) {
+      var cp = this.GetClientPlayerFromSerializableClientPlayer(scm.SerializableClientPlayers[plr]);
+      clientPlayers.push(cp);
+      clientPlayersById[cp.Id] = cp;
+    }
 
-		var clientPlayersById = {};
-		var clientPlayers = [];
-		for(var plr in scm.SerializableClientPlayers){
-			var cp = this.GetClientPlayerFromSerializableClientPlayer(scm.SerializableClientPlayers[plr]);
-			clientPlayers.push(cp);
-			clientPlayersById[cp.Id] = cp;
-		}
+    var clientPlanetsById = {};
+    var clientPlanets = [];
+    for (var pla in scm.SerializableClientPlanets) {
+      var clientPlanet = this.GetClientPlanetFromSerializableClientPlanet(scm.SerializableClientPlanets[pla], gameGrid);
+      clientPlanets.push(clientPlanet);
+      clientPlanetsById[clientPlanet.Id] = clientPlanet;
+    }
 
-		var clientPlanetsById = {};
-		var clientPlanets = [];
-		for(var pla in scm.SerializableClientPlanets){
-			var clientPlanet = this.GetClientPlanetFromSerializableClientPlanet(scm.SerializableClientPlanets[pla], gameGrid);
-			clientPlanets.push(clientPlanet);
-			clientPlanetsById[clientPlanet.Id] = clientPlanet;
-		}
+    var mainPlayer = Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer(
+      gameGrid,
+      scm.SerializableMainPlayer,
+      planetsById,
+      clientPlanetsById
+    );
 
-		var mainPlayer = Astriarch.SavedGameInterface.getPlayerFromSerializedPlayer(gameGrid, scm.SerializableMainPlayer, planetsById, clientPlanetsById);
+    Astriarch.SavedGameInterface.setPlayerLastKnownPlanetFleetStrength(
+      mainPlayer,
+      scm.SerializableMainPlayer,
+      gameGrid,
+      clientPlayersById
+    );
 
-		Astriarch.SavedGameInterface.setPlayerLastKnownPlanetFleetStrength(mainPlayer, scm.SerializableMainPlayer, gameGrid, clientPlayersById);
+    return new Astriarch.ClientModel(
+      scm.TurnNumber,
+      mainPlayer,
+      clientPlayers,
+      clientPlanets,
+      scm.ClientTradingCenter,
+      gameGrid,
+      scm.Options
+    );
+  },
 
-		return new Astriarch.ClientModel(scm.TurnNumber, mainPlayer, clientPlayers, clientPlanets, scm.ClientTradingCenter, gameGrid, scm.Options);
-	},
+  GetClientPlayerFromSerializableClientPlayer: function(scp) {
+    var color = new Astriarch.Util.ColorRGBA(scp.Color.r, scp.Color.g, scp.Color.b, scp.Color.a);
+    return new Astriarch.ClientPlayer(
+      scp.Id,
+      scp.Type,
+      scp.Name,
+      color,
+      scp.Points,
+      scp.CurrentTurnEnded,
+      scp.Destroyed,
+      scp.Research
+    );
+  },
 
-	GetClientPlayerFromSerializableClientPlayer: function(scp){
-		var color = new Astriarch.Util.ColorRGBA(scp.Color.r, scp.Color.g, scp.Color.b, scp.Color.a);
-		return new Astriarch.ClientPlayer(scp.Id, scp.Type, scp.Name, color, scp.Points, scp.CurrentTurnEnded, scp.Destroyed, scp.Research);
-	},
+  GetClientPlanetFromSerializableClientPlanet: function(scp, gameGrid) {
+    return new Astriarch.ClientPlanet(scp.Id, scp.Name, scp.OriginPoint, gameGrid, null, scp.Type);
+  },
 
-	GetClientPlanetFromSerializableClientPlanet: function(scp, gameGrid){
-		return new Astriarch.ClientPlanet(scp.Id, scp.Name, scp.OriginPoint, gameGrid, null, scp.Type);
-	},
+  GetTurnEventMessageFromSerializableTurnEventMessage: function(stem, gameGrid) {
+    var cp = null;
+    if (stem.SerializableClientPlanet) {
+      cp = Astriarch.ClientModelInterface.GetClientPlanetFromSerializableClientPlanet(
+        stem.SerializableClientPlanet,
+        gameGrid
+      );
+    }
+    var tem = new Astriarch.TurnEventMessage(stem.Type, cp, stem.Message);
+    if (stem.Data) {
+      //console.log("GetTurnEventMessageFromSerializableTurnEventMessage:", stem.Data);
+      //convert SerializablePlanetaryConflictData to PlanetaryConflictData
+      var defendingCP = null;
+      if (stem.Data.DefendingSerializableClientPlayer) {
+        defendingCP = Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(
+          stem.Data.DefendingSerializableClientPlayer
+        );
+      }
+      var defendingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(
+        defendingCP,
+        stem.Data.DefendingSerializableFleet,
+        gameGrid
+      );
+      var attackingCP = Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(
+        stem.Data.AttackingSerializableClientPlayer
+      );
+      var attackingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(
+        attackingCP,
+        stem.Data.AttackingSerializableFleet,
+        gameGrid
+      );
+      tem.Data = new Astriarch.TurnEventMessage.PlanetaryConflictData(
+        defendingCP,
+        defendingFleet,
+        attackingCP,
+        attackingFleet
+      );
+      //copy other properties not in constructor
+      tem.Data.WinningFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(
+        null,
+        stem.Data.WinningSerializableFleet,
+        gameGrid
+      );
 
-	GetTurnEventMessageFromSerializableTurnEventMessage:function(stem, gameGrid){
-		var cp = null;
-		if(stem.SerializableClientPlanet){
-			cp = Astriarch.ClientModelInterface.GetClientPlanetFromSerializableClientPlanet(stem.SerializableClientPlanet, gameGrid);
-		}
-		var tem = new Astriarch.TurnEventMessage(stem.Type, cp, stem.Message);
-		if(stem.Data){
-			//console.log("GetTurnEventMessageFromSerializableTurnEventMessage:", stem.Data);
-			//convert SerializablePlanetaryConflictData to PlanetaryConflictData
-			var defendingCP = null;
-			if(stem.Data.DefendingSerializableClientPlayer){
-				defendingCP = Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(stem.Data.DefendingSerializableClientPlayer);
-			}
-			var defendingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(defendingCP, stem.Data.DefendingSerializableFleet, gameGrid);
-			var attackingCP = Astriarch.ClientModelInterface.GetClientPlayerFromSerializableClientPlayer(stem.Data.AttackingSerializableClientPlayer);
-			var attackingFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(attackingCP, stem.Data.AttackingSerializableFleet, gameGrid);
-			tem.Data = new Astriarch.TurnEventMessage.PlanetaryConflictData(defendingCP, defendingFleet, attackingCP, attackingFleet);
-			//copy other properties not in constructor
-			tem.Data.WinningFleet = Astriarch.SavedGameInterface.getFleetFromSerializableFleet(null, stem.Data.WinningSerializableFleet, gameGrid);
+      tem.Data.AttackingFleetResearchBoostAttack = stem.Data.AttackingFleetResearchBoostAttack;
+      tem.Data.AttackingFleetResearchBoostDefense = stem.Data.AttackingFleetResearchBoostDefense;
+      tem.Data.DefendingFleetResearchBoostAttack = stem.Data.DefendingFleetResearchBoostAttack;
+      tem.Data.DefendingFleetResearchBoostDefense = stem.Data.DefendingFleetResearchBoostDefense;
 
-			tem.Data.AttackingFleetResearchBoostAttack = stem.Data.AttackingFleetResearchBoostAttack;
-			tem.Data.AttackingFleetResearchBoostDefense = stem.Data.AttackingFleetResearchBoostDefense;
-			tem.Data.DefendingFleetResearchBoostAttack = stem.Data.DefendingFleetResearchBoostAttack;
-			tem.Data.DefendingFleetResearchBoostDefense = stem.Data.DefendingFleetResearchBoostDefense;
-
-			tem.Data.AttackingFleetChances = stem.Data.AttackingFleetChances;
-			tem.Data.GoldAmountLooted = stem.Data.GoldAmountLooted;
-			tem.Data.OreAmountLooted = stem.Data.OreAmountLooted;
-			tem.Data.IridiumAmountLooted = stem.Data.IridiumAmountLooted;
-			tem.Data.FoodAmountLooted = stem.Data.FoodAmountLooted;
-            tem.Data.ResearchAmountLooted = stem.Data.ResearchAmountLooted;
-		}
-		return tem;
-	}
+      tem.Data.AttackingFleetChances = stem.Data.AttackingFleetChances;
+      tem.Data.GoldAmountLooted = stem.Data.GoldAmountLooted;
+      tem.Data.OreAmountLooted = stem.Data.OreAmountLooted;
+      tem.Data.IridiumAmountLooted = stem.Data.IridiumAmountLooted;
+      tem.Data.FoodAmountLooted = stem.Data.FoodAmountLooted;
+      tem.Data.ResearchAmountLooted = stem.Data.ResearchAmountLooted;
+    }
+    return tem;
+  }
 };
 
-Astriarch.ClientModel = function(turnNumber, mainPlayer, clientPlayers, clientPlanets, clientTradingCenter, gameGrid, options){
-	this.Turn = new Astriarch.Model.Turn();
-	this.Turn.Number = turnNumber;
+Astriarch.ClientModel = function(
+  turnNumber,
+  mainPlayer,
+  clientPlayers,
+  clientPlanets,
+  clientTradingCenter,
+  gameGrid,
+  options
+) {
+  this.Turn = new Astriarch.Model.Turn();
+  this.Turn.Number = turnNumber;
 
-	this.MainPlayer = mainPlayer;//Astriarch.Player
-	this.ClientPlayers = clientPlayers;
-	this.ClientPlanets = clientPlanets;
+  this.MainPlayer = mainPlayer; //Astriarch.Player
+  this.ClientPlayers = clientPlayers;
+  this.ClientPlanets = clientPlanets;
 
-	this.ClientTradingCenter = clientTradingCenter;
+  this.ClientTradingCenter = clientTradingCenter;
 
-	this.GameGrid = gameGrid;
+  this.GameGrid = gameGrid;
 
-	this.GameOptions = options || {"TurnTimeLimitSeconds":0};
+  this.GameOptions = options || { TurnTimeLimitSeconds: 0 };
 };
 
-Astriarch.ClientModel.prototype.getClientPlanetById = function(id){
-	for(var i = 0; i < this.ClientPlanets.length; i++){
-		if(this.ClientPlanets[i].Id == id){
-			return this.ClientPlanets[i];
-		}
-	}
-	return null;
+Astriarch.ClientModel.prototype.getClientPlanetById = function(id) {
+  for (var i = 0; i < this.ClientPlanets.length; i++) {
+    if (this.ClientPlanets[i].Id == id) {
+      return this.ClientPlanets[i];
+    }
+  }
+  return null;
 };
 
-Astriarch.ClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed, research){
-	this.Id = id;
-	this.Type = playerType;//PlayerType
-	this.Name = name;
-	this.Color = color;
-	this.Points = points;
-	this.CurrentTurnEnded = currentTurnEnded;
-	this.Destroyed = destroyed;
-	this.Research = research;
+Astriarch.ClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed, research) {
+  this.Id = id;
+  this.Type = playerType; //PlayerType
+  this.Name = name;
+  this.Color = color;
+  this.Points = points;
+  this.CurrentTurnEnded = currentTurnEnded;
+  this.Destroyed = destroyed;
+  this.Research = research;
 };
 
-Astriarch.ClientPlanet = function(id, name, originPoint, gameGrid, boundingHex, type){
-	this.Id = id;
-	this.Name = name;
-	this.OriginPoint = originPoint;
-	if(gameGrid) {
-		this.BoundingHex = gameGrid.GetHexAt(originPoint);
-	} else {
-		this.BoundingHex = boundingHex;
-	}
-	this.BoundingHex.ClientPlanetContainedInHex = this;
+Astriarch.ClientPlanet = function(id, name, originPoint, gameGrid, boundingHex, type) {
+  this.Id = id;
+  this.Name = name;
+  this.OriginPoint = originPoint;
+  if (gameGrid) {
+    this.BoundingHex = gameGrid.GetHexAt(originPoint);
+  } else {
+    this.BoundingHex = boundingHex;
+  }
+  this.BoundingHex.ClientPlanetContainedInHex = this;
 
-	this.Type = type; //NOTE: Populated when the main player explores the planet
+  this.Type = type; //NOTE: Populated when the main player explores the planet
 };
 
-Astriarch.ClientTradingCenter = function(goldAmount, foodResource, oreResource, iridiumResource, clientPlayerTrades){
-	this.goldAmount = goldAmount;
-	this.foodResource = foodResource;
-	this.oreResource = oreResource;
-	this.iridiumResource = iridiumResource;
+Astriarch.ClientTradingCenter = function(goldAmount, foodResource, oreResource, iridiumResource, clientPlayerTrades) {
+  this.goldAmount = goldAmount;
+  this.foodResource = foodResource;
+  this.oreResource = oreResource;
+  this.iridiumResource = iridiumResource;
 
-	this.clientPlayerTrades = clientPlayerTrades;
+  this.clientPlayerTrades = clientPlayerTrades;
 };
 
-Astriarch.SerializableClientModel = function(turnNumber, serializableMainPlayer, serializableClientPlayers, serializableClientPlanets, mainPlayerOwnedSerializablePlanets, clientTradingCenter, options){
-	this.TurnNumber = turnNumber;
+Astriarch.SerializableClientModel = function(
+  turnNumber,
+  serializableMainPlayer,
+  serializableClientPlayers,
+  serializableClientPlanets,
+  mainPlayerOwnedSerializablePlanets,
+  clientTradingCenter,
+  options
+) {
+  this.TurnNumber = turnNumber;
 
-	this.SerializableMainPlayer = serializableMainPlayer;//Astriarch.SerializablePlayer
-	this.SerializableClientPlayers = serializableClientPlayers;
-	this.SerializableClientPlanets = serializableClientPlanets;
+  this.SerializableMainPlayer = serializableMainPlayer; //Astriarch.SerializablePlayer
+  this.SerializableClientPlayers = serializableClientPlayers;
+  this.SerializableClientPlanets = serializableClientPlanets;
 
-	//we need serializable planets for the main player's owned planets, so that we can reconstruct the main player without sending all the serializable planet objects
-	this.MainPlayerOwnedSerializablePlanets = mainPlayerOwnedSerializablePlanets; //Dictionary<int, SerializablePlanet>
+  //we need serializable planets for the main player's owned planets, so that we can reconstruct the main player without sending all the serializable planet objects
+  this.MainPlayerOwnedSerializablePlanets = mainPlayerOwnedSerializablePlanets; //Dictionary<int, SerializablePlanet>
 
-	this.ClientTradingCenter = clientTradingCenter;
+  this.ClientTradingCenter = clientTradingCenter;
 
-	this.Options = options || {"TurnTimeLimitSeconds":0};
+  this.Options = options || { TurnTimeLimitSeconds: 0 };
 };
 
-Astriarch.SerializableClientPlayer = function(id, playerType, name, color, points, currentTurnEnded, destroyed, research){
-	this.Id = id;
-	this.Type = playerType;//PlayerType
-	this.Name = name;
-	this.Color = color;
-	this.Points = points;
-	this.CurrentTurnEnded = currentTurnEnded;
-	this.Destroyed = destroyed;
-	this.Research = research;
+Astriarch.SerializableClientPlayer = function(
+  id,
+  playerType,
+  name,
+  color,
+  points,
+  currentTurnEnded,
+  destroyed,
+  research
+) {
+  this.Id = id;
+  this.Type = playerType; //PlayerType
+  this.Name = name;
+  this.Color = color;
+  this.Points = points;
+  this.CurrentTurnEnded = currentTurnEnded;
+  this.Destroyed = destroyed;
+  this.Research = research;
 };
 
-Astriarch.SerializableClientPlanet = function(id, name, originPoint, type){
-	this.Id = id;
-	this.Name = name;
-	this.OriginPoint = originPoint;
-	this.Type = type;
+Astriarch.SerializableClientPlanet = function(id, name, originPoint, type) {
+  this.Id = id;
+  this.Name = name;
+  this.OriginPoint = originPoint;
+  this.Type = type;
 };

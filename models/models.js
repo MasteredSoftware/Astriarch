@@ -7,29 +7,15 @@ var Astriarch = require("./../public/js/astriarch/astriarch_loader");
 //connect to database
 //add username:password@ to url
 var un_pw = "";
-var un =
-  process.env.OPENSHIFT_MONGODB_DB_USERNAME ||
-  process.env.MONGODB_DB_USERNAME ||
-  config.mongodb.username;
-var pw =
-  process.env.OPENSHIFT_MONGODB_DB_PASSWORD ||
-  process.env.MONGODB_DB_PASSWORD ||
-  config.mongodb.password;
+var un = process.env.OPENSHIFT_MONGODB_DB_USERNAME || process.env.MONGODB_DB_USERNAME || config.mongodb.username;
+var pw = process.env.OPENSHIFT_MONGODB_DB_PASSWORD || process.env.MONGODB_DB_PASSWORD || config.mongodb.password;
 if (un && pw) {
   un_pw = un + ":" + pw + "@";
 }
-var host =
-  process.env.OPENSHIFT_MONGODB_DB_HOST ||
-  process.env.MONGODB_DB_HOST ||
-  config.mongodb.host;
-var port =
-  process.env.OPENSHIFT_MONGODB_DB_PORT ||
-  process.env.MONGODB_DB_PORT ||
-  config.mongodb.port;
+var host = process.env.OPENSHIFT_MONGODB_DB_HOST || process.env.MONGODB_DB_HOST || config.mongodb.host;
+var port = process.env.OPENSHIFT_MONGODB_DB_PORT || process.env.MONGODB_DB_PORT || config.mongodb.port;
 var gamedb = process.env.MONGODB_GAME_DB_NAME || config.mongodb.gamedb_name;
-var db = mongoose.connect(
-  "mongodb://" + un_pw + host + ":" + port + "/" + gamedb
-);
+var db = mongoose.connect("mongodb://" + un_pw + host + ":" + port + "/" + gamedb);
 
 exports.mongoose = mongoose;
 
@@ -55,10 +41,7 @@ var ChatRoomSessionSchema = new mongoose.Schema({
   dateJoined: { type: Date, default: Date.now },
   gameId: { type: ObjectId, index: true } //if this is null it is the lobby chat room
 });
-exports.ChatRoomSessionModel = mongoose.model(
-  "chatRoomSessions",
-  ChatRoomSessionSchema
-);
+exports.ChatRoomSessionModel = mongoose.model("chatRoomSessions", ChatRoomSessionSchema);
 
 var GameHighScoreBoardSchema = new mongoose.Schema({
   sessionId: String,
@@ -68,10 +51,7 @@ var GameHighScoreBoardSchema = new mongoose.Schema({
   gameId: { type: ObjectId },
   dateCreated: { type: Date, index: true, default: Date.now }
 });
-exports.GameHighScoreBoardModel = mongoose.model(
-  "gameHighScoreBoard",
-  GameHighScoreBoardSchema
-);
+exports.GameHighScoreBoardModel = mongoose.model("gameHighScoreBoard", GameHighScoreBoardSchema);
 
 //create schema for a game
 var GameSchema = new mongoose.Schema({
@@ -95,11 +75,7 @@ var GameSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.Mixed,
     default: {
       mainPlayerName: "Player",
-      opponentOptions: [
-        { name: "2", type: -1 },
-        { name: "3", type: -1 },
-        { name: "4", type: -1 }
-      ],
+      opponentOptions: [{ name: "2", type: -1 }, { name: "3", type: -1 }, { name: "4", type: -1 }],
       systemsToGenerate: 4,
       planetsPerSystem: 4,
       galaxySize: 3,
@@ -120,10 +96,7 @@ var PlanetViewWorkingDataSchema = new mongoose.Schema({
 });
 
 //compile schema to model
-exports.PlanetViewWorkingDataModel = mongoose.model(
-  "planet_view_working",
-  PlanetViewWorkingDataSchema
-);
+exports.PlanetViewWorkingDataModel = mongoose.model("planet_view_working", PlanetViewWorkingDataSchema);
 
 var PlanetViewWorkingData = function(player, planet) {
   this.planetId = planet.Id;
@@ -131,9 +104,7 @@ var PlanetViewWorkingData = function(player, planet) {
   this.workingBuildQueue = [];
   for (var i in planet.BuildQueue) {
     this.workingBuildQueue.push(
-      Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(
-        planet.BuildQueue[i]
-      )
+      Astriarch.SavedGameInterface.makePlanetProductionItemSerializable(planet.BuildQueue[i])
     );
   }
   var populationWorkerTypes = {};

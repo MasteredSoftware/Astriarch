@@ -32,17 +32,8 @@ var app = express();
 
 // all environments
 app.set("host", process.env.OPENSHIFT_NODEJS_IP || "localhost");
-app.set(
-  "port",
-  process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.port || 8000
-);
-app.set(
-  "ws_port",
-  process.env.OPENSHIFT_NODEJS_PORT ||
-    process.env.WS_PORT ||
-    config.ws_port ||
-    8000
-);
+app.set("port", process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.port || 8000);
+app.set("ws_port", process.env.OPENSHIFT_NODEJS_PORT || process.env.WS_PORT || config.ws_port || 8000);
 
 app.use(favicon(path.join(__dirname, "public", "img", "favicon.ico")));
 app.use(morgan("combined"));
@@ -74,9 +65,7 @@ app.use(
 );
 
 //app.use(express.compress());//NOTE: this ended up being slower on OPENSHIFT (probably because of increased cpu usage)
-app.use(
-  express.static(path.join(__dirname, "public"), { maxAge: 30 * 24 * 60 * 60 })
-);
+app.use(express.static(path.join(__dirname, "public"), { maxAge: 30 * 24 * 60 * 60 }));
 
 app.set("view engine", "pug");
 
@@ -133,9 +122,7 @@ app.get("/", function(req, res) {
 });
 
 var server = http.createServer(app).listen(app.get("port"), function() {
-  console.log(
-    "Express server listening at: " + app.get("host") + ":" + app.get("port")
-  );
+  console.log("Express server listening at: " + app.get("host") + ":" + app.get("port"));
   setupUncaughtExceptionHandler();
 });
 
@@ -196,16 +183,8 @@ wss.on("connection", function(ws, req) {
       var message = new Astriarch.Shared.Message();
       try {
         var parsedMessage = JSON.parse(data);
-        message = new Astriarch.Shared.Message(
-          parsedMessage.type,
-          parsedMessage.payload
-        );
-        console.info(
-          Astriarch.Shared.GetMessageType(message.type),
-          "Message received:",
-          data,
-          sessionId
-        );
+        message = new Astriarch.Shared.Message(parsedMessage.type, parsedMessage.payload);
+        console.info(Astriarch.Shared.GetMessageType(message.type), "Message received:", data, sessionId);
       } catch (e) {
         console.error("Issue parsing message:", data, e);
       }
@@ -224,19 +203,13 @@ wss.on("connection", function(ws, req) {
         case Astriarch.Shared.MESSAGE_TYPE.LOGOUT:
           break;
         case Astriarch.Shared.MESSAGE_TYPE.LIST_GAMES:
-          gameController.ListLobbyGames({ sessionId: sessionId }, function(
-            err,
-            docs
-          ) {
+          gameController.ListLobbyGames({ sessionId: sessionId }, function(err, docs) {
             message.payload = docs;
             wssInterface.wsSend(ws, message);
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS:
-          gameController.UpdateGameOptions(message.payload, function(
-            err,
-            game
-          ) {
+          gameController.UpdateGameOptions(message.payload, function(err, game) {
             //broadcast to other players
             broadcastMessageToOtherPlayers(game, sessionId, message);
 
@@ -252,10 +225,10 @@ wss.on("connection", function(ws, req) {
             },
             function(err, game) {
               //broadcast to other players
-              var broadcastMessage = new Astriarch.Shared.Message(
-                Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS,
-                { gameOptions: game.gameOptions, name: game.name }
-              );
+              var broadcastMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS, {
+                gameOptions: game.gameOptions,
+                name: game.name
+              });
               broadcastMessageToOtherPlayers(game, sessionId, broadcastMessage);
 
               wssInterface.wsSend(ws, broadcastMessage);
@@ -298,10 +271,7 @@ wss.on("connection", function(ws, req) {
                 message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
                 wssInterface.wsSend(ws, message);
               } else {
-                console.log(
-                  "Player" + playerPosition + " Joined, sessionId: ",
-                  sessionId
-                );
+                console.log("Player" + playerPosition + " Joined, sessionId: ", sessionId);
                 message.payload = {
                   gameOptions: game.gameOptions,
                   name: game.name,
@@ -315,11 +285,7 @@ wss.on("connection", function(ws, req) {
                   Astriarch.Shared.MESSAGE_TYPE.CHANGE_GAME_OPTIONS,
                   message.payload
                 );
-                broadcastMessageToOtherPlayers(
-                  game,
-                  sessionId,
-                  broadcastMessage
-                );
+                broadcastMessageToOtherPlayers(game, sessionId, broadcastMessage);
 
                 sendUpdatedGameListToLobbyPlayers(game);
               }
@@ -327,97 +293,85 @@ wss.on("connection", function(ws, req) {
           );
           break;
         case Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME:
-          gameController.ResumeGame(
-            { sessionId: sessionId, gameId: message.payload.gameId },
-            function(err, doc, player) {
-              if (err || !doc) {
-                var msg = err || "Unable to find Game to Resume.";
-                console.error("gameController.ResumeGame: ", msg);
-                message.payload = msg;
-                message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
-                wssInterface.wsSend(ws, message);
-              } else {
-                var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(
-                  doc.gameData,
-                  player.Id
-                );
-                message.payload = {
-                  gameData: serializableClientModel,
-                  playerPosition: player.position
-                };
-                wssInterface.wsSend(ws, message);
-              }
+          gameController.ResumeGame({ sessionId: sessionId, gameId: message.payload.gameId }, function(
+            err,
+            doc,
+            player
+          ) {
+            if (err || !doc) {
+              var msg = err || "Unable to find Game to Resume.";
+              console.error("gameController.ResumeGame: ", msg);
+              message.payload = msg;
+              message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+              wssInterface.wsSend(ws, message);
+            } else {
+              var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(
+                doc.gameData,
+                player.Id
+              );
+              message.payload = {
+                gameData: serializableClientModel,
+                playerPosition: player.position
+              };
+              wssInterface.wsSend(ws, message);
             }
-          );
+          });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.START_GAME:
-          gameController.StartGame(
-            { sessionId: sessionId, gameOptions: message.payload },
-            function(err, serializableModel, game) {
-              if (err) {
-                console.error("gameController.StartGame:", err);
-                message.payload = err;
-                message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
-                if (
-                  err.type == Astriarch.Shared.ERROR_TYPE.INVALID_GAME_OPTIONS
-                ) {
-                  message.payload = "Invalid Game Options!";
-                }
-                wssInterface.wsSend(ws, message);
-              } else {
-                //for each player we need to create a client model and send that model to the player
-                console.log("gameController.StartGame players: ", game.players);
-                for (var p = 0; p < game.players.length; p++) {
-                  var player = game.players[p];
-                  var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(
-                    serializableModel,
-                    player.Id
-                  );
-                  //player.sessionId
-                  message.payload = serializableClientModel;
-                  wss.broadcastToSession(player.sessionId, message);
-                }
+          gameController.StartGame({ sessionId: sessionId, gameOptions: message.payload }, function(
+            err,
+            serializableModel,
+            game
+          ) {
+            if (err) {
+              console.error("gameController.StartGame:", err);
+              message.payload = err;
+              message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+              if (err.type == Astriarch.Shared.ERROR_TYPE.INVALID_GAME_OPTIONS) {
+                message.payload = "Invalid Game Options!";
+              }
+              wssInterface.wsSend(ws, message);
+            } else {
+              //for each player we need to create a client model and send that model to the player
+              console.log("gameController.StartGame players: ", game.players);
+              for (var p = 0; p < game.players.length; p++) {
+                var player = game.players[p];
+                var serializableClientModel = getSerializableClientModelFromSerializableModelForPlayer(
+                  serializableModel,
+                  player.Id
+                );
+                //player.sessionId
+                message.payload = serializableClientModel;
+                wss.broadcastToSession(player.sessionId, message);
               }
             }
-          );
+          });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_START:
-          gameController.StartUpdatePlanet(
-            { sessionId: sessionId },
-            message.payload,
-            function(err) {
-              if (err) {
-                console.error("gameController.StartUpdatePlanet: ", err);
-              }
+          gameController.StartUpdatePlanet({ sessionId: sessionId }, message.payload, function(err) {
+            if (err) {
+              console.error("gameController.StartUpdatePlanet: ", err);
             }
-          );
+          });
 
           break;
         case Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_OPTIONS:
-          gameController.UpdatePlanetOptions(
-            { sessionId: sessionId },
-            message.payload,
-            function(err) {
-              if (err) {
-                console.error("gameController.FinishUpdatePlanet: ", err);
-              }
+          gameController.UpdatePlanetOptions({ sessionId: sessionId }, message.payload, function(err) {
+            if (err) {
+              console.error("gameController.FinishUpdatePlanet: ", err);
             }
-          );
+          });
 
           break;
         case Astriarch.Shared.MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
-          gameController.UpdatePlanetBuildQueue(
-            sessionId,
-            message.payload,
-            function(err) {
-              if (err) {
-                console.error("gameController.UpdatePlanetBuildQueue: ", err);
-                message.payload = err;
-                message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
-                wssInterface.wsSend(ws, message);
-              }
+          gameController.UpdatePlanetBuildQueue(sessionId, message.payload, function(err) {
+            if (err) {
+              console.error("gameController.UpdatePlanetBuildQueue: ", err);
+              message.payload = err;
+              message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+              wssInterface.wsSend(ws, message);
             }
-          );
+          });
 
           break;
         case Astriarch.Shared.MESSAGE_TYPE.SEND_SHIPS:
@@ -431,9 +385,7 @@ wss.on("connection", function(ws, req) {
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CLEAR_WAYPOINT:
-          gameController.ClearWaypoint(sessionId, message.payload, function(
-            err
-          ) {
+          gameController.ClearWaypoint(sessionId, message.payload, function(err) {
             if (err) {
               console.error("gameController.ClearWaypoint: ", err);
               message.payload = err;
@@ -443,10 +395,7 @@ wss.on("connection", function(ws, req) {
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.END_TURN:
-          gameController.EndPlayerTurn(sessionId, message.payload, function(
-            err,
-            data
-          ) {
+          gameController.EndPlayerTurn(sessionId, message.payload, function(err, data) {
             if (err) {
               console.error("gameController.EndPlayerTurn: ", err);
               message.payload = err;
@@ -476,23 +425,18 @@ wss.on("connection", function(ws, req) {
 
                 //check to see if there is only one player left
                 if (data.game.gameData.SerializablePlayers.length == 1) {
-                  winningSerializablePlayer =
-                    data.game.gameData.SerializablePlayers[0];
+                  winningSerializablePlayer = data.game.gameData.SerializablePlayers[0];
                 }
               }
 
               //broadcast turn ended to all players with a message per player for that player's end of turn event messages
-              var playersBySessionKey = getOtherPlayersBySessionKeyFromGame(
-                data.game,
-                null
-              ); //pass null as second arg to get all players
+              var playersBySessionKey = getOtherPlayersBySessionKeyFromGame(data.game, null); //pass null as second arg to get all players
               for (var sk in playersBySessionKey) {
                 var player = playersBySessionKey[sk];
                 var payload = JSON.parse(JSON.stringify(payloadOrig)); //poor man's clone
                 payload.endOfTurnMessages = [];
                 if (player.Id in data.endOfTurnMessagesByPlayerId) {
-                  payload.endOfTurnMessages =
-                    data.endOfTurnMessagesByPlayerId[player.Id];
+                  payload.endOfTurnMessages = data.endOfTurnMessagesByPlayerId[player.Id];
                 }
 
                 payload.gameData = getSerializableClientModelFromSerializableModelForPlayer(
@@ -501,13 +445,8 @@ wss.on("connection", function(ws, req) {
                 );
 
                 var playerMessage = null;
-                if (
-                  player.Id in destroyedHumanClientPlayersById ||
-                  winningSerializablePlayer
-                ) {
-                  var playerWon =
-                    winningSerializablePlayer &&
-                    winningSerializablePlayer.Id == player.Id;
+                if (player.Id in destroyedHumanClientPlayersById || winningSerializablePlayer) {
+                  var playerWon = winningSerializablePlayer && winningSerializablePlayer.Id == player.Id;
                   //calculate end of game score
                   var score = Astriarch.ServerController.CalculateEndGamePoints(
                     data.gameModel,
@@ -533,15 +472,9 @@ wss.on("connection", function(ws, req) {
                     endOfTurnMessages: payload.endOfTurnMessages,
                     gameData: payload.gameData
                   };
-                  playerMessage = new Astriarch.Shared.Message(
-                    Astriarch.Shared.MESSAGE_TYPE.GAME_OVER,
-                    payload
-                  );
+                  playerMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.GAME_OVER, payload);
                 } else {
-                  playerMessage = new Astriarch.Shared.Message(
-                    Astriarch.Shared.MESSAGE_TYPE.END_TURN,
-                    payload
-                  );
+                  playerMessage = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.END_TURN, payload);
                 }
 
                 if (sk != sessionId) {
@@ -551,9 +484,7 @@ wss.on("connection", function(ws, req) {
                 }
               }
             } else {
-              payloadOrig.clientPlayers = getSerializableClientPlayersFromSerializableModel(
-                data.game.gameData
-              );
+              payloadOrig.clientPlayers = getSerializableClientPlayersFromSerializableModel(data.game.gameData);
               message.payload = payloadOrig;
               wssInterface.wsSend(ws, message);
 
@@ -562,10 +493,7 @@ wss.on("connection", function(ws, req) {
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.SUBMIT_TRADE:
-          gameController.SubmitTrade(sessionId, message.payload, function(
-            err,
-            data
-          ) {
+          gameController.SubmitTrade(sessionId, message.payload, function(err, data) {
             if (err) {
               console.error("gameController.SubmitTrade: ", err);
               message.payload = err;
@@ -575,10 +503,7 @@ wss.on("connection", function(ws, req) {
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CANCEL_TRADE:
-          gameController.CancelTrade(sessionId, message.payload, function(
-            err,
-            data
-          ) {
+          gameController.CancelTrade(sessionId, message.payload, function(err, data) {
             if (err) {
               console.error("gameController.CancelTrade: ", err);
               message.payload = err;
@@ -588,55 +513,39 @@ wss.on("connection", function(ws, req) {
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT:
-          gameController.AdjustResearchPercent(
-            sessionId,
-            message.payload,
-            function(err, data) {
-              if (err) {
-                console.error("gameController.AdjustResearchPercent: ", err);
-                message.payload = err;
-                message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
-                wssInterface.wsSend(ws, message);
-              }
+          gameController.AdjustResearchPercent(sessionId, message.payload, function(err, data) {
+            if (err) {
+              console.error("gameController.AdjustResearchPercent: ", err);
+              message.payload = err;
+              message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+              wssInterface.wsSend(ws, message);
             }
-          );
+          });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM:
-          gameController.SubmitResearchItem(
-            sessionId,
-            message.payload,
-            function(err, data) {
-              if (err) {
-                console.error("gameController.SubmitResearchItem: ", err);
-                message.payload = err;
-                message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
-                wssInterface.wsSend(ws, message);
-              }
+          gameController.SubmitResearchItem(sessionId, message.payload, function(err, data) {
+            if (err) {
+              console.error("gameController.SubmitResearchItem: ", err);
+              message.payload = err;
+              message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+              wssInterface.wsSend(ws, message);
             }
-          );
+          });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CANCEL_RESEARCH_ITEM:
-          gameController.CancelResearchItem(
-            sessionId,
-            message.payload,
-            function(err, data) {
-              if (err) {
-                console.error("gameController.CancelResearchItem: ", err);
-                message.payload = err;
-                message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
-                wssInterface.wsSend(ws, message);
-              }
+          gameController.CancelResearchItem(sessionId, message.payload, function(err, data) {
+            if (err) {
+              console.error("gameController.CancelResearchItem: ", err);
+              message.payload = err;
+              message.type = Astriarch.Shared.MESSAGE_TYPE.ERROR;
+              wssInterface.wsSend(ws, message);
             }
-          );
+          });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE:
           //TODO: get the player name and player number from the existing chatRoom so they can't as easily spoof that
           message.payload.text = (message.payload.text || "").trim();
-          if (
-            message.payload.messageType ==
-              Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE &&
-            message.payload.text
-          ) {
+          if (message.payload.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE && message.payload.text) {
             var chatLogMessage = {
               messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE,
               text: message.payload.text,
@@ -649,10 +558,7 @@ wss.on("connection", function(ws, req) {
               chatLogMessage,
               sessionId
             );
-          } else if (
-            message.payload.messageType ==
-            Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER
-          ) {
+          } else if (message.payload.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.PLAYER_ENTER) {
             //we need to join the user to the lobby or requested game chat room
             var gameId = message.payload.gameId ? message.payload.gameId : null;
             var session = {
@@ -667,26 +573,15 @@ wss.on("connection", function(ws, req) {
               oldChatRoomWithSessions
             ) {
               //broadcast to all other sessions in the chat room that a player just logged in
-              wssInterface.sendChatRoomSessionListUpdates(
-                ws,
-                sessionId,
-                newChatRoomWithSessions
-              );
+              wssInterface.sendChatRoomSessionListUpdates(ws, sessionId, newChatRoomWithSessions);
               if (oldChatRoomWithSessions) {
-                wssInterface.sendChatRoomSessionListUpdates(
-                  ws,
-                  sessionId,
-                  oldChatRoomWithSessions
-                );
+                wssInterface.sendChatRoomSessionListUpdates(ws, sessionId, oldChatRoomWithSessions);
               }
             });
           }
           break;
         case Astriarch.Shared.MESSAGE_TYPE.EXIT_RESIGN:
-          gameController.ExitResign(sessionId, message.payload, function(
-            err,
-            data
-          ) {
+          gameController.ExitResign(sessionId, message.payload, function(err, data) {
             if (err) {
               console.error("gameController.ExitResign: ", err);
               message.payload = err;
@@ -726,17 +621,10 @@ wss.on("connection", function(ws, req) {
       var sessionId = ws.upgradeReq.signedCookies["connect.sid"];
       console.log("connection closed for session: ", sessionId);
       //TODO: if we are in the game and it hasn't started we should probably leave the game too?
-      gameController.LeaveChatRoom(sessionId, true, function(
-        err,
-        chatRoomWithSessions
-      ) {
+      gameController.LeaveChatRoom(sessionId, true, function(err, chatRoomWithSessions) {
         console.debug("Leaving Chat Room: ", err, chatRoomWithSessions);
         if (chatRoomWithSessions) {
-          wssInterface.sendChatRoomSessionListUpdates(
-            ws,
-            null,
-            chatRoomWithSessions
-          );
+          wssInterface.sendChatRoomSessionListUpdates(ws, null, chatRoomWithSessions);
         }
       });
     });
@@ -746,30 +634,19 @@ wss.on("connection", function(ws, req) {
 var sendUpdatedGameListToLobbyPlayers = function(gameDoc) {
   console.debug("sendUpdatedGameListToLobbyPlayers:", gameDoc);
   var gameSummary = gameController.GetGameSummaryFromGameDoc(gameDoc);
-  var messageForPlayers = new Astriarch.Shared.Message(
-    Astriarch.Shared.MESSAGE_TYPE.GAME_LIST_UPDATED,
-    gameSummary
-  );
+  var messageForPlayers = new Astriarch.Shared.Message(Astriarch.Shared.MESSAGE_TYPE.GAME_LIST_UPDATED, gameSummary);
   gameController.GetChatRoomWithSessions(null, function(err, chatRoom) {
     if (err) {
-      console.error(
-        "sendUpdatedGameListToLobbyPlayers.GetChatRoomWithSessions:",
-        err
-      );
+      console.error("sendUpdatedGameListToLobbyPlayers.GetChatRoomWithSessions:", err);
     } else {
       for (var s = 0; s < chatRoom.sessions.length; s++) {
-        wss.broadcastToSession(
-          chatRoom.sessions[s].sessionId,
-          messageForPlayers
-        );
+        wss.broadcastToSession(chatRoom.sessions[s].sessionId, messageForPlayers);
       }
     }
   });
 };
 
-var getSerializableClientPlayersFromSerializableModel = function(
-  serializableModel
-) {
+var getSerializableClientPlayersFromSerializableModel = function(serializableModel) {
   return serializableModel.SerializablePlayers.map(function(player) {
     return new Astriarch.SerializableClientPlayer(
       player.Id,
@@ -784,14 +661,9 @@ var getSerializableClientPlayersFromSerializableModel = function(
   });
 };
 
-var getSerializableClientModelFromSerializableModelForPlayer = function(
-  serializableModel,
-  targetPlayerId
-) {
+var getSerializableClientModelFromSerializableModelForPlayer = function(serializableModel, targetPlayerId) {
   var mainPlayerOwnedSerializablePlanets = {};
-  var serializableClientPlayers = getSerializableClientPlayersFromSerializableModel(
-    serializableModel
-  );
+  var serializableClientPlayers = getSerializableClientPlayersFromSerializableModel(serializableModel);
   var serializableMainPlayer = null;
   serializableModel.SerializablePlayers.forEach(function(player) {
     if (player.Id == targetPlayerId) {
@@ -827,12 +699,7 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(
     }
 
     serializableClientPlanets.push(
-      new Astriarch.SerializableClientPlanet(
-        planet.Id,
-        planet.Name,
-        planet.OriginPoint,
-        type
-      )
+      new Astriarch.SerializableClientPlanet(planet.Id, planet.Name, planet.OriginPoint, type)
     );
 
     //does main player own this planet?
@@ -876,17 +743,11 @@ var getSerializableClientModelFromSerializableModelForPlayer = function(
 };
 
 var broadcastMessageToOtherPlayers = function(game, sessionId, message) {
-  var playersBySessionKey = getOtherPlayersBySessionKeyFromGame(
-    game,
-    sessionId
-  );
+  var playersBySessionKey = getOtherPlayersBySessionKeyFromGame(game, sessionId);
   wss.broadcast(playersBySessionKey, message);
 };
 
-var getOtherPlayersBySessionKeyFromGame = function(
-  game,
-  currentPlayerSessionKey
-) {
+var getOtherPlayersBySessionKeyFromGame = function(game, currentPlayerSessionKey) {
   var playersBySessionKey = {};
   for (var p in game.players) {
     var player = game.players[p];

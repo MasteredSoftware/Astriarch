@@ -1,4 +1,3 @@
-
 //setup the "global" Astriarch namespace
 var Astriarch = require("./astriarch_base");
 
@@ -20,6 +19,5 @@ var ai = require("./astriarch_ai");
 var battlesimulator = require("./astriarch_battlesimulator");
 var shared = require("./astriarch_shared");
 var tem = require("./astriarch_turneventmessage");
-
 
 module.exports = Astriarch;
