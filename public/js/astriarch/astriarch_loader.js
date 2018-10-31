@@ -1,7 +1,7 @@
 //setup the "global" Astriarch namespace
 var Astriarch = require("./astriarch_base");
 
-var jCanvas = require("./../jCanvas");
+var jCanvas = require("./../ext/jCanvas");
 
 var globals = require("./astriarch_globals");
 var servercontroller = require("./astriarch_servercontroller");

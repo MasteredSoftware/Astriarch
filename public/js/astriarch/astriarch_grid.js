@@ -1,6 +1,6 @@
 var Astriarch = Astriarch || require("./astriarch_base");
 
-var jCanvas = jCanvas || require("./../jCanvas");
+var jCanvas = jCanvas || require("./../ext/jCanvas");
 
 /**
  * A Grid is the model of the playfield containing hexes

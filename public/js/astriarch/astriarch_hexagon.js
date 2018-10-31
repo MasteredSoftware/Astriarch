@@ -1,6 +1,6 @@
 var Astriarch = Astriarch || require("./astriarch_base");
 
-var jCanvas = jCanvas || require("./../jCanvas");
+var jCanvas = jCanvas || require("./../ext/jCanvas");
 
 /**
  * A Point is simply x and y coordinates
