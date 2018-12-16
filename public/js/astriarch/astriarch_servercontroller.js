@@ -298,6 +298,7 @@ Astriarch.ServerController = {
     }
 
     tc.currentTrades = [];
+    tc.earnInterest();
 
     return executedStatusListByPlayerId;
   },

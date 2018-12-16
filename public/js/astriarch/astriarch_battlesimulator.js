@@ -175,14 +175,16 @@ Astriarch.BattleSimulator = {
         }
 
         damage = Astriarch.NextRandom(0, maxDamage + 1);
-        totalDamage += damage;
 
         if (damage != 0) {
           if (!fleetDamagePending[target.id]) {
             fleetDamagePending[target.id] = { Starship: target, Damage: 0 };
           }
+          var strengthRemaining = target.Strength() - fleetDamagePending[target.id]["Damage"];
+          damage = Math.min(strengthRemaining, damage);
           fleetDamagePending[target.id]["Damage"] += damage;
         }
+        totalDamage += damage;
       }
     }
     return totalDamage;

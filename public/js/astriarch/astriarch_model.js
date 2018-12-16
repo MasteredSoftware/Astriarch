@@ -152,20 +152,24 @@ Astriarch.Model.prototype.populatePlanets = function() {
 
       var assignPlayer = false;
       var assignedPlayerIndex = 0;
+      var assignedPlayerIndexHomeQuadrant = false;
 
       //it's a home planet, we'll see if we should assign a player
       if (q == 0) {
+        assignedPlayerIndexHomeQuadrant = true;
         if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
           assignPlayer = true;
         }
       } else if (this.Players.length == 2) {
         if (q == 2) {
+          assignedPlayerIndexHomeQuadrant = true;
           assignedPlayerIndex = 1;
           if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
             assignPlayer = true;
           }
         }
       } else if (q < this.Players.length) {
+        assignedPlayerIndexHomeQuadrant = true;
         assignedPlayerIndex = q;
         if (pt == Astriarch.Planet.PlanetType.PlanetClass2) {
           assignPlayer = true;
@@ -185,7 +189,7 @@ Astriarch.Model.prototype.populatePlanets = function() {
         p.Resources.IridiumAmount = 1;
       }
 
-      if (this.GameOptions.QuickStart) {
+      if (this.GameOptions.QuickStart && assignedPlayerIndexHomeQuadrant) {
         p.SetPlanetExplored(this, this.Players[assignedPlayerIndex]);
         if (initialPlanetOwner) {
           p.Resources.OreAmount *= 2;

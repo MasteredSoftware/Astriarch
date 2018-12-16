@@ -1,7 +1,7 @@
 var Astriarch = Astriarch || require("./astriarch_base");
 
 Astriarch.TradingCenter = function(playerCount) {
-  this.goldAmount = playerCount ? playerCount * 50 : 100;
+  this.goldAmount = playerCount ? playerCount * 10 : 20;
   this.foodResource = new Astriarch.TradingCenter.Resource(
     Astriarch.TradingCenter.ResourceType.FOOD,
     320,
@@ -29,6 +29,7 @@ Astriarch.TradingCenter = function(playerCount) {
 
   this.currentTrades = [];
   this.transactionFeePercentage = 0.1;
+  this.interestPercentage = 0.01;
 };
 
 Astriarch.TradingCenter.prototype.recalculatePrices = function() {
@@ -112,6 +113,17 @@ Astriarch.TradingCenter.prototype.executeTrade = function(gameModel, player, pla
   }
 
   return executedStatus;
+};
+
+Astriarch.TradingCenter.prototype.earnInterest = function() {
+  this.goldAmount += this.getResourcesTotalValue() * this.interestPercentage;
+};
+
+Astriarch.TradingCenter.prototype.getResourcesTotalValue = function() {
+  var totalValue = this.goldAmount;
+  totalValue += this.oreResource.amount * this.oreResource.currentPrice;
+  totalValue += this.iridiumResource.amount * this.iridiumResource.currentPrice;
+  return totalValue;
 };
 
 Astriarch.TradingCenter.ResourceType = {

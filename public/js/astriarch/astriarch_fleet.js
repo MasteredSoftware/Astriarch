@@ -30,7 +30,6 @@ Astriarch.Fleet = function(/*Player*/ p) {
 };
 
 Astriarch.Fleet.Static = {
-  SPACE_PLATFORM_STRENGTH: 64, //TODO: twice the strength of a battleship, is this good?
   getStrengthDetailsForShips: function(ships) {
     var details = {
       strength: 0,

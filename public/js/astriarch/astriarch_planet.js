@@ -1707,9 +1707,9 @@ Astriarch.Planet.StarShipInProduction = Astriarch.Planet.PlanetProductionItem.ex
         this.AdvantageAgainstType - (this.DisadvantageAgainstType - 1) - baseShipAdvantageFactor;
       var costMultiplier = Math.max(1.0, 1 + advantageFactorDifference / 10);
 
-      this.BaseProductionCost *= costMultiplier;
-      this.OreCost *= costMultiplier;
-      this.GoldCost *= costMultiplier;
+      this.BaseProductionCost = Math.ceil(this.BaseProductionCost * costMultiplier);
+      this.OreCost = Math.ceil(this.OreCost * costMultiplier);
+      this.GoldCost = Math.ceil(this.GoldCost * costMultiplier);
     }
   },
 

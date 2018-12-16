@@ -14,9 +14,9 @@ head
 		script(type='text/javascript', src='js/dist/astriarch.js')
 	else
 		for file in file_list_external
-			script(type='text/javascript', src='#{file}')
+			script(type='text/javascript', src=file)
 		for file in file_list_internal
-			script(type='text/javascript', src='#{file}')
+			script(type='text/javascript', src=file)
 
 	script(src="/js/server_comm.js")
 	if external_resource_connect
@@ -413,7 +413,7 @@ head
 																	td(width='32')
 																		span.icon-32x32-ColonyLarge(title='Colony Count')
 																	td(width='32')
-																		span.icon-32x32-SpacePlatformLarge(title='Space Platform Count')
+																		canvas#CanvasSpacePlatformLarge(title='Space Platforms', width='32', height='32')
 																tr(height='32')
 																	td(width='32')
 																		span#TextBlockFarmCount.planetStatusTextCentered(title='Farm Count')

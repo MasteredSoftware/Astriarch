@@ -27,7 +27,8 @@ Astriarch.View = {
     starshipScoutY: null,
     starshipDestroyerY: null,
     starshipCruiserY: null,
-    starshipBattleshipY: null
+    starshipBattleshipY: null,
+    starshipSpacePlatformY: null
   },
   ImageCanvasStarships: {
     defender: null,
@@ -492,6 +493,8 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
     -1 * getPropertyValueFromCssClass("icon-32x32-CruiserLarge", "background-position");
   Astriarch.View.SpriteSheetInfo.starshipBattleshipY =
     -1 * getPropertyValueFromCssClass("icon-32x32-BattleshipLarge", "background-position");
+  Astriarch.View.SpriteSheetInfo.starshipSpacePlatformY =
+    -1 * getPropertyValueFromCssClass("icon-32x32-SpacePlatformLarge", "background-position");
 
   var shipColorRgbaArray = [
     Astriarch.View.ColorsRGBA["green"],
@@ -538,6 +541,14 @@ Astriarch.View.SetupGraphicalDOMElements = function() {
     32,
     shipColorRgbaArray,
     Astriarch.View.SpriteSheetInfo.starshipBattleshipY
+  );
+  Astriarch.View.ImageCanvasStarships.spacePlatform = new Astriarch.View.StarshipCanvas(
+    "#CanvasSpacePlatformLarge",
+    Astriarch.View.SpriteSheetInfo.filename,
+    32,
+    32,
+    shipColorRgbaArray,
+    Astriarch.View.SpriteSheetInfo.starshipSpacePlatformY
   );
 };
 
@@ -828,6 +839,52 @@ Astriarch.View.updatePlayerStatusPanel = function() {
   }
 };
 
+Astriarch.View.updateShipCanvasDataForPlanet = function(fleet, paintDamageDetails) {
+  var starshipCanvasData = [
+    {
+      type: Astriarch.Fleet.StarShipType.SystemDefense,
+      canvas: Astriarch.View.ImageCanvasStarships.defender,
+      title: "Defenders"
+    },
+    {
+      type: Astriarch.Fleet.StarShipType.Scout,
+      canvas: Astriarch.View.ImageCanvasStarships.scout,
+      title: "Scouts"
+    },
+    {
+      type: Astriarch.Fleet.StarShipType.Destroyer,
+      canvas: Astriarch.View.ImageCanvasStarships.destroyer,
+      title: "Destroyers"
+    },
+    {
+      type: Astriarch.Fleet.StarShipType.Cruiser,
+      canvas: Astriarch.View.ImageCanvasStarships.cruiser,
+      title: "Cruisers"
+    },
+    {
+      type: Astriarch.Fleet.StarShipType.Battleship,
+      canvas: Astriarch.View.ImageCanvasStarships.battleship,
+      title: "Battleships"
+    },
+    {
+      type: Astriarch.Fleet.StarShipType.SpacePlatform,
+      canvas: Astriarch.View.ImageCanvasStarships.spacePlatform,
+      title: "Space Platforms"
+    }
+  ];
+  for (var i in starshipCanvasData) {
+    var scd = starshipCanvasData[i];
+    var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(fleet.StarShips[scd.type]);
+    if (paintDamageDetails) {
+      scd.canvas.drawShip(Astriarch.View.ColorsRGBA[details.color], details.percentHealthText);
+    } else {
+      scd.canvas.drawShip(Astriarch.View.ColorsRGBA["green"], "");
+    }
+
+    $(scd.canvas.canvasSelector).prop("title", scd.title + (details.maxStrength ? ": " + details.damageText : ""));
+  }
+};
+
 Astriarch.View.updateSelectedItemPanelForPlanet = function() {
   $("#PlanetViewButton").button("disable");
   $("#SendShipsButton").button("disable");
@@ -922,65 +979,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
         $("#TextBlockSpacePlatformCount").text(spacePlatformCount);
 
         //adjust canvas drawing based on damage of ships
-        var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]
-        );
-        Astriarch.View.ImageCanvasStarships.defender.drawShip(
-          Astriarch.View.ColorsRGBA[details.color],
-          details.percentHealthText
-        );
-        $(Astriarch.View.ImageCanvasStarships.defender.canvasSelector).prop(
-          "title",
-          "Defenders" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout]
-        );
-        Astriarch.View.ImageCanvasStarships.scout.drawShip(
-          Astriarch.View.ColorsRGBA[details.color],
-          details.percentHealthText
-        );
-        $(Astriarch.View.ImageCanvasStarships.scout.canvasSelector).prop(
-          "title",
-          "Scouts" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer]
-        );
-        Astriarch.View.ImageCanvasStarships.destroyer.drawShip(
-          Astriarch.View.ColorsRGBA[details.color],
-          details.percentHealthText
-        );
-        $(Astriarch.View.ImageCanvasStarships.destroyer.canvasSelector).prop(
-          "title",
-          "Destroyers" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser]
-        );
-        Astriarch.View.ImageCanvasStarships.cruiser.drawShip(
-          Astriarch.View.ColorsRGBA[details.color],
-          details.percentHealthText
-        );
-        $(Astriarch.View.ImageCanvasStarships.cruiser.canvasSelector).prop(
-          "title",
-          "Cruisers" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]
-        );
-        Astriarch.View.ImageCanvasStarships.battleship.drawShip(
-          Astriarch.View.ColorsRGBA[details.color],
-          details.percentHealthText
-        );
-        $(Astriarch.View.ImageCanvasStarships.battleship.canvasSelector).prop(
-          "title",
-          "Battleships" + (details.maxStrength ? ": " + details.damageText : "")
-        );
+        Astriarch.View.updateShipCanvasDataForPlanet(p.PlanetaryFleet, true);
 
         var scoutCount = p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Scout].length;
         var destroyerCount = p.PlanetaryFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer].length;
@@ -1057,50 +1056,7 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
         sb += "<br />";
 
         //adjust canvas drawing based on last known enemy fleet
-        var details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]
-        );
-        Astriarch.View.ImageCanvasStarships.defender.drawShip(Astriarch.View.ColorsRGBA["green"], "");
-        $(Astriarch.View.ImageCanvasStarships.defender.canvasSelector).prop(
-          "title",
-          "Defenders" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Scout]
-        );
-        Astriarch.View.ImageCanvasStarships.scout.drawShip(Astriarch.View.ColorsRGBA["green"], "");
-        $(Astriarch.View.ImageCanvasStarships.scout.canvasSelector).prop(
-          "title",
-          "Scouts" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Destroyer]
-        );
-        Astriarch.View.ImageCanvasStarships.destroyer.drawShip(Astriarch.View.ColorsRGBA["green"], "");
-        $(Astriarch.View.ImageCanvasStarships.destroyer.canvasSelector).prop(
-          "title",
-          "Destroyers" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Cruiser]
-        );
-        Astriarch.View.ImageCanvasStarships.cruiser.drawShip(Astriarch.View.ColorsRGBA["green"], "");
-        $(Astriarch.View.ImageCanvasStarships.cruiser.canvasSelector).prop(
-          "title",
-          "Cruisers" + (details.maxStrength ? ": " + details.damageText : "")
-        );
-
-        details = Astriarch.Fleet.Static.getStrengthDetailsForShips(
-          lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.Battleship]
-        );
-        Astriarch.View.ImageCanvasStarships.battleship.drawShip(Astriarch.View.ColorsRGBA["green"], "");
-        $(Astriarch.View.ImageCanvasStarships.battleship.canvasSelector).prop(
-          "title",
-          "Battleships" + (details.maxStrength ? ": " + details.damageText : "")
-        );
+        Astriarch.View.updateShipCanvasDataForPlanet(lastKnownPlanetFleet, false);
 
         $("#TextBlockDefenderCount").text(
           lastKnownPlanetFleet.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].length
