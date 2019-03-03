@@ -7,7 +7,7 @@ var executeClosureCompiler = function(outputFile, fileList, outputDebugFile) {
   var command =
     "java -jar closure_compiler" +
     path.sep +
-    "compiler.jar --compilation_level SIMPLE_OPTIMIZATIONS --js_output_file " +
+    "compiler.jar --strict_mode_input=false --compilation_level SIMPLE_OPTIMIZATIONS --js_output_file " +
     outputFile +
     " ";
   for (var i = 0; i < fileList.length; i++) {
