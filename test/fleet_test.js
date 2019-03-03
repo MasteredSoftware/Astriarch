@@ -25,8 +25,8 @@ describe("#Astriarch.Fleet.StarShip", function() {
       ss1.Level().level.should.equal(1);
       var strengthBoost = ss1.StrengthBoostFromLevel();
       console.log("Boost for level 1: ", strengthBoost);
-      strengthBoost.should.equal(ss1.BaseStarShipStrength / 4);
-      var levelExpBoosts = [16, 32, 40, 47, 52, 57, 61, 64, 67];
+      strengthBoost.should.equal(ss1.BaseStarShipStrength / 8);
+      var levelExpBoosts = [8, 16, 20, 23, 26, 28, 30, 32, 34];
       for (var i = 0; i < levelExpBoosts.length; i++) {
         var levelExpBoost = levelExpBoosts[i];
         ss1.ExperienceAmount += ss1.ExperienceAmount + Math.round(ss1.ExperienceAmount / 2);

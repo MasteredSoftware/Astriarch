@@ -665,12 +665,12 @@ Astriarch.Fleet.StarShip.prototype.MaxStrength = function() {
 Astriarch.Fleet.StarShip.prototype.StrengthBoostFromLevel = function() {
   var level = this.Level().level;
   if (level <= 2) {
-    return level * (this.BaseStarShipStrength / 4);
+    return Math.round(level * (this.BaseStarShipStrength / 8.0));
   }
-  //at some level the ship's strength should be about 3 times it's base strength
+  //at some level the ship's strength should be about 2 times it's base strength
   //well use the log function to figure out at a given level for a certain ship what the proper boost should be
   var x = 9; //the target level (which is somewhat difficult to achieve)
-  var y = this.BaseStarShipStrength * 2;
+  var y = this.BaseStarShipStrength * 1.0;
   var b = Math.pow(x, 1 / y);
   return Math.round(Math.log(level) / Math.log(b)); //b^y=x
 };
