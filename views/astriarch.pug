@@ -114,7 +114,7 @@ head
 						div#chatLog(style='height:458px;')
 						div#chatLogPlayerNameArea(style='margin-top:4px;')
 							div#chatLogPlayerName(style='height:20px;')
-							input#chatPlayerNameTextBox(type='text', value='', style='width: 258px; display:none')
+							input#chatPlayerNameTextBox(type='text', value='', maxlength='20', style='width: 258px; display:none')
 						div#chatInputArea
 							input#chatInputTextBox(type='text', value='', style='width: 258px;')
 
@@ -176,7 +176,7 @@ head
 														label(style='width: 75px;')
 															| Your Name:
 													td(width='150')
-														input#PlayerNameTextBox(type='text', value='Player1', style='width: 147px;')
+														input#PlayerNameTextBox(type='text', value='Player1', maxlength="20" style='width: 147px;')
 												tr(height='40')
 													td(width='80')
 														label

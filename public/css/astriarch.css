@@ -73,6 +73,7 @@ td > span, td > img {
 #chatRoomInfo, #chatLog, #chatLogPlayerNameArea {
     width:260px;
     overflow:auto;
+    word-break: break-all;
     background-color: rgba(128,128,128,0.4);
 }
 #topRulersList, #topRulersListRecent {

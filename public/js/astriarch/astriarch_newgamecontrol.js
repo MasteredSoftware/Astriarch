@@ -17,6 +17,10 @@ Astriarch.NewGameControl = {
 
     $("#PlayerNameTextBox").change(function() {
       var playerName = $(this).val();
+      if (!playerName) {
+        $(this).val(Astriarch.LocalStorageInterface.Prefs.playerName);
+        return;
+      }
       //also update the chat log area and local storage
       Astriarch.CommControl.setPlayerNameDivAndLocalStorageToNewName(playerName);
       var payload = { playerName: playerName };

@@ -47,7 +47,12 @@ Astriarch.CommControl = {
   },
 
   submitPlayerNameChange: function() {
-    Astriarch.CommControl.setPlayerNameDivAndLocalStorageToNewName(Astriarch.CommControl.playerNameTextBox.val());
+    var playerName = Astriarch.CommControl.playerNameTextBox.val();
+    if (!playerName) {
+      Astriarch.CommControl.playerNameTextBox.val(Astriarch.CommControl.playerName);
+      return;
+    }
+    Astriarch.CommControl.setPlayerNameDivAndLocalStorageToNewName(playerName);
     Astriarch.CommControl.joinChatRoom(Astriarch.CommControl.playerName, Astriarch.CommControl.playerNumber);
     Astriarch.CommControl.playerNameTextBox.hide();
     Astriarch.CommControl.chatLogPlayerNameDiv.show();

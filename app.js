@@ -217,9 +217,17 @@ wss.on("connection", function(ws, req) {
           });
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CHANGE_PLAYER_NAME:
+          var newPlayerName = message.payload.playerName;
+          if (!newPlayerName) {
+            wssInterface.wsSend(ws, {
+              payload: "New name cannot be empty!",
+              type: Astriarch.Shared.MESSAGE_TYPE.ERROR
+            });
+            return;
+          }
           gameController.ChangePlayerName(
             {
-              playerName: message.payload.playerName,
+              playerName: newPlayerName.substring(0, 20),
               gameId: message.payload.gameId,
               sessionId: sessionId
             },
@@ -241,7 +249,7 @@ wss.on("connection", function(ws, req) {
               name: message.payload.name,
               players: [
                 {
-                  name: message.payload.playerName,
+                  name: message.payload.playerName.substring(0, 20),
                   sessionId: sessionId,
                   position: 0
                 }
@@ -261,7 +269,7 @@ wss.on("connection", function(ws, req) {
             {
               gameId: message.payload.gameId,
               sessionId: sessionId,
-              playerName: message.payload.playerName
+              playerName: message.payload.playerName.substring(0, 20)
             },
             function(err, game, playerPosition) {
               if (err || !game) {
@@ -544,12 +552,20 @@ wss.on("connection", function(ws, req) {
           break;
         case Astriarch.Shared.MESSAGE_TYPE.CHAT_MESSAGE:
           //TODO: get the player name and player number from the existing chatRoom so they can't as easily spoof that
+          var playerName = message.payload.sentByPlayerName;
+          if (!playerName) {
+            wssInterface.wsSend(ws, {
+              payload: "Player name cannot be empty!",
+              type: Astriarch.Shared.MESSAGE_TYPE.ERROR
+            });
+            return;
+          }
           message.payload.text = (message.payload.text || "").trim();
           if (message.payload.messageType == Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE && message.payload.text) {
             var chatLogMessage = {
               messageType: Astriarch.Shared.CHAT_MESSAGE_TYPE.TEXT_MESSAGE,
               text: message.payload.text,
-              sentByPlayerName: message.payload.sentByPlayerName,
+              sentByPlayerName: playerName.substring(0, 20),
               sentByPlayerNumber: message.payload.sentByPlayerNumber,
               sentBySessionId: sessionId
             };
