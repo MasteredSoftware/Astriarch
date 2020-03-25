@@ -41,6 +41,13 @@ Astriarch.SendShipsControl = {
     );
   },
 
+  calculateTurns: function(distance) {
+    var speed = Astriarch.ClientGameModel.MainPlayer.Research.getResearchData(
+      Astriarch.Research.ResearchType.PROPULSION_IMPROVEMENT
+    ).percent;
+    return Math.ceil(distance / speed);
+  },
+
   show: function(/*Planet*/ pSource, /*ClientPlanet*/ pDest, /*int*/ distance) {
     if (window.tour.enabled && window.tour.step == 56) {
       window.tour.jqElm.joyride("resume");
@@ -50,8 +57,9 @@ Astriarch.SendShipsControl = {
     Astriarch.SendShipsControl.pSource = pSource;
     Astriarch.SendShipsControl.pDest = pDest;
     Astriarch.SendShipsControl.distance = distance;
+    var turns = Astriarch.SendShipsControl.calculateTurns(distance);
 
-    $("#SendShipsDialogStatus").text(distance + " parsecs from " + pSource.Name + " to " + pDest.Name);
+    $("#SendShipsDialogStatus").text("Estimated turns: " + turns);
 
     var pf = pSource.PlanetaryFleet; //Fleet
     Astriarch.SendShipsControl.StarShipsAvailableCardList.clear();
@@ -78,7 +86,10 @@ Astriarch.SendShipsControl = {
       $("#SetWaypointCheckBox").prop("checked", false);
     }
 
-    Astriarch.SendShipsControl.dialog.setTitle("Sending Ships from " + pSource.Name + " to " + pDest.Name);
+    var parsecsAway = " (" + distance + (distance > 1 ? " parsecs" : " parsec") + ")";
+    Astriarch.SendShipsControl.dialog.setTitle(
+      "Sending Ships from " + pSource.Name + " to " + pDest.Name + parsecsAway
+    );
     Astriarch.SendShipsControl.dialog.open();
   },
 
