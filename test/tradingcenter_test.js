@@ -60,7 +60,7 @@ describe("#TradingCenter", function() {
     });
 
     it("should not execute a buy food trade for player1 given that player has insufficient gold", function(done) {
-      var tradeAmount = 20;
+      var tradeAmount = 30;
       var trade = new Astriarch.TradingCenter.Trade(
         -1,
         player1.HomePlanetId,
@@ -128,7 +128,7 @@ describe("#TradingCenter", function() {
           player1.HomePlanetId,
           Astriarch.TradingCenter.TradeType.BUY,
           Astriarch.TradingCenter.ResourceType.FOOD,
-          6,
+          15,
           Astriarch.TradingCenter.OrderType.MARKET,
           null
         )
@@ -139,7 +139,7 @@ describe("#TradingCenter", function() {
           player1.HomePlanetId,
           Astriarch.TradingCenter.TradeType.BUY,
           Astriarch.TradingCenter.ResourceType.FOOD,
-          6,
+          15,
           Astriarch.TradingCenter.OrderType.MARKET,
           null
         )

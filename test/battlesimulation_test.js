@@ -6,19 +6,25 @@ var player1 = new Astriarch.Player(1, Astriarch.Player.PlayerType.Computer_Exper
 var player2 = new Astriarch.Player(2, Astriarch.Player.PlayerType.Computer_Expert, "Player2");
 
 function checkFleetWinCount(fleet1, fleet2, battleTries) {
+  var winLoseDraw = {w:0, l: 0, d: 0};
   var i = 0;
   var f1 = null;
   var f2 = null;
-  var fleet1WinCount = 0;
+
   //try the battle multiple times to account for randomness/luck
   for (i = 0; i < battleTries; i++) {
     f1 = fleet1.CloneFleet();
     f2 = fleet2.CloneFleet();
-    if (Astriarch.BattleSimulator.SimulateFleetBattle(f1, f2)) {
-      fleet1WinCount++;
+    var fleet1Wins = Astriarch.BattleSimulator.SimulateFleetBattle(f1, f2);
+    if (fleet1Wins === null) {
+      winLoseDraw.d++;
+    } else if(fleet1Wins) {
+      winLoseDraw.w++;
+    } else {
+      winLoseDraw.l++;
     }
   }
-  return fleet1WinCount;
+  return winLoseDraw;
 }
 
 describe("#BattleSimulator", function() {
@@ -33,7 +39,7 @@ describe("#BattleSimulator", function() {
       var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 1, 0, 0, 0, 0, null);
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 2, 0, 0, 0, 0, 0, null);
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       if (fleet1WinCount < battleTries * 0.9) {
         return done("Scout didn't win against two defenders!");
       }
@@ -41,7 +47,7 @@ describe("#BattleSimulator", function() {
       //destroyers over scouts
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 2, 0, 0, 0, 0, null);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       if (fleet1WinCount < battleTries * 0.9) {
         return done("Destroyer didn't win against two scouts!");
       }
@@ -49,7 +55,7 @@ describe("#BattleSimulator", function() {
       //cruisers over destroyers
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 1, 0, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 2, 0, 0, 0, null);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       if (fleet1WinCount < battleTries * 0.9) {
         return done("Cruiser didn't win against two destroyers!");
       }
@@ -57,7 +63,7 @@ describe("#BattleSimulator", function() {
       //battleships over cruisers
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 2, 0, 0, null);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       if (fleet1WinCount < battleTries * 0.9) {
         return done("Battleship didn't win against two cruisers!");
       }
@@ -65,7 +71,7 @@ describe("#BattleSimulator", function() {
       //defenders over battleships
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 16, 0, 0, 0, 0, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, 0, null);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       if (fleet1WinCount < battleTries * 0.9) {
         return done("Sixteen defenders didn't win against one battleship!");
       }
@@ -80,7 +86,7 @@ describe("#BattleSimulator", function() {
       var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 4, 0, 0, 0, 0, null);
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 1, 0, 0, 0, null);
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       //console.log("f1: ", f1.DetermineFleetStrength(), "f2:", f2.DetermineFleetStrength());
       console.log("Scout fleet Win Count:", fleet1WinCount);
       if (fleet1WinCount < battleTries * 0.5) {
@@ -91,7 +97,7 @@ describe("#BattleSimulator", function() {
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 4, 0, 0, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 1, 0, 0, null);
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       console.log("Destroyer fleet Win Count:", fleet1WinCount);
       if (fleet1WinCount < battleTries * 0.5) {
         return done("Four Destroyers won less than 50% of the time against a Cruiser!");
@@ -101,7 +107,7 @@ describe("#BattleSimulator", function() {
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 4, 0, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 0, 0, 1, 0, null);
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       console.log("Cruiser fleet Win Count:", fleet1WinCount);
       if (fleet1WinCount < battleTries * 0.5) {
         return done("Four Cruisers won less than 50% of the time against a Battleship!");
@@ -111,12 +117,83 @@ describe("#BattleSimulator", function() {
       f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, 0, null);
       f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 8, 0, 0, 0, 0, 0, null);
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 2);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       console.log("Battleship fleet Win Count:", fleet1WinCount);
       if (fleet1WinCount < battleTries * 0.5) {
         return done("A Battleship won less than 50% of the time against 4 Scouts!");
       }
 
+      done();
+    });
+
+    it("StarshipFireWeapons should evenly assign damage between 0, 1, and two for each gun", function(done) {
+      var battleTries = 10000;
+      var totalDamage = 0;
+
+      for(var i = 0; i < battleTries; i++) {
+        var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 1, 0, 0, 0, 0, 0, null);
+        var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 1, 0, 0, 0, 0, 0, null);
+        f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
+
+        var f1BonusChance = { attack: 0, defense: 0 };
+        var f2BonusChance = { attack: 0, defense: 0 };
+        var f1StarShips = f1.GetAllStarShips();
+        var f2StarShips = f2.GetAllStarShips();
+        var fleet1DamagePending = {};
+        var s = f2StarShips[0];
+        Astriarch.BattleSimulator.StarshipFireWeapons(
+          f2BonusChance.attack,
+          f1BonusChance.defense,
+          s,
+          f1StarShips,
+          fleet1DamagePending
+        );
+        if(f1StarShips[0].id in fleet1DamagePending) {
+          totalDamage += fleet1DamagePending[f1StarShips[0].id]["Damage"]
+        }
+
+      }
+
+      console.log("StarshipFireWeapons test totalDamage:", totalDamage);
+      if (totalDamage > battleTries * 1.05) {
+        return done("totalDamage > 105%!");
+      } else if (totalDamage < battleTries * 0.95) {
+        return done("totalDamage < 95%!");
+      }
+
+      done();
+    });
+
+    it("should give even odds to identical fleets independent of if attacking or defending", function(done) {
+      var battleTries = 1000;
+
+      var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 0, 1, 0, 0, 0, null);
+      var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, 0, null);
+
+      f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
+      var winLoseDraw = checkFleetWinCount(f1, f2, battleTries);
+      console.log("Fleet 1 (identical fleet) Win Count:", winLoseDraw);
+      if (winLoseDraw.w > battleTries * 0.55) {
+        return done("Fleet1 won more than 55% of the time!");
+      } else if (winLoseDraw.w < battleTries * 0.45) {
+        return done("Fleet1 won less than 45% of the time!");
+      }
+      done();
+    });
+
+    it("should give a slight home system advantage to ships defending on a planet", function(done) {
+      var battleTries = 1000;
+
+      var f1 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player2, 0, 1, 0, 0, 0, 0, null);
+      var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 1, 0, 0, 0, 0, null);
+      f2.LocationHex = "C2";
+
+      f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
+      var winLoseDraw = checkFleetWinCount(f1, f2, battleTries);
+      console.log("System Attacking fleet Win Count:", winLoseDraw);
+      if (winLoseDraw.w > battleTries * 0.45) {
+        return done("System Attacking Fleet won more than 45% of the time!");
+      }
       done();
     });
 
@@ -127,7 +204,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 1, 0, 0, 0, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       console.log("Defender fleet Win Count:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.56) {
         return done("Defender Fleet won more than 56% of the time!");
@@ -144,7 +221,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 2, 1, 0, 0, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       //Note: when there are lots of little ships like scouts and defenders without advantages or disadvantages against a fleet with the same power, the fleet with lots of little ships wins about 60% of the time
       //	This is caused by "overkill" since each gun has 2 power, each time a ship has one strength left it's possible that the gun will damage 2, leaving an extra damage that could have been assigned to another ship
       //  this side effect actually seems realistic and is a reason to keep tougher ships relative costs the same, even though they can repair
@@ -164,7 +241,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, 1, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 1.5);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       console.log("fleet1WinCount against Space Platform:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.15) {
         return done("Fleet won more than 15% of the time against a Space Platform!");
@@ -179,7 +256,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 0, 1, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength() * 1.5);
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
       console.log("Battleship fleet Win Count:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.15) {
         return done("Battleship Fleet won more than 15% of the time against a Space Platform!");
@@ -206,7 +283,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 2, 5, 4, 1, 0, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
 
       console.log("fleet1WinCount:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.53) {
@@ -224,7 +301,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 0, 1, 0, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
 
       console.log("fleet1WinCount:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.58) {
@@ -247,7 +324,7 @@ describe("#BattleSimulator", function() {
       });
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
 
       console.log("fleet1WinCount:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.58) {
@@ -273,7 +350,7 @@ describe("#BattleSimulator", function() {
       var f2 = Astriarch.Fleet.StarShipFactoryHelper.GenerateFleetWithShipCount(player1, 0, 0, 0, 2, 0, 0, null);
 
       f1.DetermineFleetStrength().should.equal(f2.DetermineFleetStrength());
-      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries);
+      var fleet1WinCount = checkFleetWinCount(f1, f2, battleTries).w;
 
       console.log("fleet1WinCount:", fleet1WinCount);
       if (fleet1WinCount > battleTries * 0.58) {

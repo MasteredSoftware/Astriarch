@@ -411,34 +411,28 @@ Astriarch.Fleet.prototype.CloneFleet = function() {
   f.LocationHex = this.LocationHex;
 
   for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense]) {
-    f.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].push(
-      this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense][i].CloneStarShip()
-    );
+    var s = this.StarShips[Astriarch.Fleet.StarShipType.SystemDefense][i].CloneStarShip();
+    f.StarShips[Astriarch.Fleet.StarShipType.SystemDefense].push(s);
   }
   for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Scout]) {
-    f.StarShips[Astriarch.Fleet.StarShipType.Scout].push(
-      this.StarShips[Astriarch.Fleet.StarShipType.Scout][i].CloneStarShip()
-    );
+    var s = this.StarShips[Astriarch.Fleet.StarShipType.Scout][i].CloneStarShip();
+    f.StarShips[Astriarch.Fleet.StarShipType.Scout].push(s);
   }
   for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Destroyer]) {
-    f.StarShips[Astriarch.Fleet.StarShipType.Destroyer].push(
-      this.StarShips[Astriarch.Fleet.StarShipType.Destroyer][i].CloneStarShip()
-    );
+    var s = this.StarShips[Astriarch.Fleet.StarShipType.Destroyer][i].CloneStarShip();
+    f.StarShips[Astriarch.Fleet.StarShipType.Destroyer].push(s);
   }
   for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Cruiser]) {
-    f.StarShips[Astriarch.Fleet.StarShipType.Cruiser].push(
-      this.StarShips[Astriarch.Fleet.StarShipType.Cruiser][i].CloneStarShip()
-    );
+    var s = this.StarShips[Astriarch.Fleet.StarShipType.Cruiser][i].CloneStarShip();
+    f.StarShips[Astriarch.Fleet.StarShipType.Cruiser].push(s);
   }
   for (var i in this.StarShips[Astriarch.Fleet.StarShipType.Battleship]) {
-    f.StarShips[Astriarch.Fleet.StarShipType.Battleship].push(
-      this.StarShips[Astriarch.Fleet.StarShipType.Battleship][i].CloneStarShip()
-    );
+    var s = this.StarShips[Astriarch.Fleet.StarShipType.Battleship][i].CloneStarShip();
+    f.StarShips[Astriarch.Fleet.StarShipType.Battleship].push(s);
   }
   for (var i in this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform]) {
-    f.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].push(
-      this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform][i].CloneStarShip()
-    );
+    var s = this.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform][i].CloneStarShip();
+    f.StarShips[Astriarch.Fleet.StarShipType.SpacePlatform].push(s);
   }
 
   return f;
@@ -638,6 +632,21 @@ Astriarch.Fleet.StarShip = function(/*StarShipType*/ type, isCustomShip, advanta
 };
 
 Astriarch.Fleet.StarShip.Static = { NEXT_STARSHIP_ID: 1 };
+
+/**
+ * Reduce a ship's strength / health
+ * @param damageAmount
+ * @constructor
+ */
+Astriarch.Fleet.StarShip.prototype.Damage = function(damageAmount) {
+  var damageInflicted = Math.min(this.Health, damageAmount);
+  this.Health -= damageInflicted;
+  //assign points
+  if (this.Owner) {
+    this.Owner.IncreasePoints(Astriarch.Player.EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, damageInflicted);
+  }
+  return damageInflicted;
+};
 
 /**
  * Get a starships's total Strength

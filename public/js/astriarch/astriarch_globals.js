@@ -6,10 +6,14 @@ Astriarch.NextRandom = function(lowInclusive, highExclusive) {
     lowInclusive = 0;
   }
 
-  if (lowInclusive < 0) highExclusive += Math.abs(lowInclusive);
-  else highExclusive -= lowInclusive;
+  if (lowInclusive < 0) {
+    highExclusive += Math.abs(lowInclusive);
+  } else {
+    highExclusive -= lowInclusive;
+  }
 
-  return Math.floor(Math.random() * highExclusive) + lowInclusive;
+  var val = Math.floor(Math.random() * highExclusive) + lowInclusive;
+  return val;
 };
 
 Astriarch.NextRandomFloat = function(lowInclusive, highExclusive) {
