@@ -121,11 +121,12 @@ Astriarch.Model.prototype.populatePlanets = function() {
 
     if (this.GameOptions.SystemsToGenerate == 2 && (q == 1 || q == 3)) continue;
 
-    var possiblePlanetTypes = []; //new List<PlanetType>
-    possiblePlanetTypes.push(Astriarch.Planet.PlanetType.PlanetClass1);
-    possiblePlanetTypes.push(Astriarch.Planet.PlanetType.DeadPlanet);
-    possiblePlanetTypes.push(Astriarch.Planet.PlanetType.AsteroidBelt);
-
+    var possiblePlanetTypes = [
+      Astriarch.Planet.PlanetType.PlanetClass1,
+      Astriarch.Planet.PlanetType.DeadPlanet,
+      Astriarch.Planet.PlanetType.AsteroidBelt
+    ];
+    var playerHomePlanetHex = null;
     for (var iSQ = 0; iSQ < r.Children.length; iSQ++) {
       var chosenPlanetSubQuadrant = iSQ;
       if (!this.GameOptions.DistributePlanetsEvenly) {
@@ -133,10 +134,35 @@ Astriarch.Model.prototype.populatePlanets = function() {
           chosenPlanetSubQuadrant = Astriarch.NextRandom(0, r.Children.length);
         } while (subQuadrantHexes[chosenPlanetSubQuadrant].length == 0);
       }
-      //pick a planet bounding hex at random from the sub-quadrant (at least for now)
-      var hexPos = Astriarch.NextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
-      var planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos]; //Hexagon
-      subQuadrantHexes[chosenPlanetSubQuadrant].splice(hexPos, 1); //remove this hex as an option
+      // pick a planet bounding hex at random from the sub-quadrant (at least for now)
+      // if we are choosing one of the first 4 planets make sure it is within the min distance from the home planet
+      var hexFound = false;
+      while (!hexFound) {
+        var maxDistanceFromHome =
+          this.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.LARGE
+            ? 5
+            : this.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM
+            ? 4
+            : this.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.SMALL
+            ? 3
+            : 2;
+        var hexPos = Astriarch.NextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
+        var planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos]; //Hexagon
+        if (playerHomePlanetHex) {
+          // get distance from home
+          var distanceFromHome = this.GameGrid.GetHexDistance(planetBoundingHex, playerHomePlanetHex);
+          if (distanceFromHome > maxDistanceFromHome) {
+            console.log("Chosen location for planet too far from Home, picking again:", iSQ, distanceFromHome);
+          } else {
+            hexFound = true;
+          }
+        } else {
+          hexFound = true;
+        }
+        if (hexFound) {
+          subQuadrantHexes[chosenPlanetSubQuadrant].splice(hexPos, 1); //remove this hex as an option
+        }
+      }
 
       //get at least one planet of each type, prefer the highest class planet
       //int type = (Model.PLANETS_PER_QUADRANT - 1) - iSQ;
@@ -184,6 +210,7 @@ Astriarch.Model.prototype.populatePlanets = function() {
       var p = new Astriarch.Planet(pt, planetBoundingHex.Id, planetBoundingHex, initialPlanetOwner);
       //if we set an initial owner, give the planet 2 ore and 1 iridium
       if (initialPlanetOwner) {
+        playerHomePlanetHex = planetBoundingHex;
         initialPlanetOwner.HomePlanetId = p.Id;
         p.Resources.OreAmount = 2;
         p.Resources.IridiumAmount = 1;
