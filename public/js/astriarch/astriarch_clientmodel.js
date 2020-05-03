@@ -182,7 +182,11 @@ Astriarch.ClientPlanet = function(id, name, originPoint, gameGrid, boundingHex, 
   } else {
     this.BoundingHex = boundingHex;
   }
-  this.BoundingHex.ClientPlanetContainedInHex = this;
+  if (!this.BoundingHex) {
+    console.warn("Couldn't find Hex At:", originPoint);
+  } else {
+    this.BoundingHex.ClientPlanetContainedInHex = this;
+  }
 
   this.Type = type; //NOTE: Populated when the main player explores the planet
 };

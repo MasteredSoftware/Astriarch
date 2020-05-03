@@ -139,11 +139,11 @@ Astriarch.NewGameControl = {
     selectedPlanetsPerSystem = selectedPlanetsPerSystem || Number($("select#PlanetsPerSystemComboBox").val());
     selectedGalaxySize = selectedGalaxySize || Number($("select#GalaxySizeComboBox").val());
 
-    //rebuild planets per system dropdown, if SMALL then we shouldn't have > 6 an option
+    //rebuild planets per system dropdown, if TINY then we shouldn't have > 6 an option
     var planetsPerSystemComboBoxOptions = "";
     for (var i = 4; i <= Astriarch.Model.PlanetsPerSystemOption.EIGHT; i++) {
       if (
-        selectedGalaxySize == Astriarch.Model.GalaxySizeOption.SMALL &&
+        selectedGalaxySize == Astriarch.Model.GalaxySizeOption.TINY &&
         i > Astriarch.Model.PlanetsPerSystemOption.SIX
       ) {
         break;
@@ -281,8 +281,10 @@ Astriarch.NewGameControl = {
         gameOptions.galaxySize == Astriarch.Model.GalaxySizeOption.LARGE
           ? "Large"
           : gameOptions.galaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM
-            ? "Medium"
-            : "Small"
+          ? "Medium"
+          : gameOptions.galaxySize == Astriarch.Model.GalaxySizeOption.SMALL
+          ? "Small"
+          : "Tiny"
       );
 
       $("#DistributePlanetsEvenlyValue").text("Distribute Planets Evenly: " + gameOptions.distributePlanetsEvenly);
@@ -294,10 +296,10 @@ Astriarch.NewGameControl = {
           (turnTimeLimitMinutes == 0
             ? "None"
             : turnTimeLimitMinutes < 1
-              ? gameOptions.turnTimeLimitSeconds + " Seconds"
-              : turnTimeLimitMinutes == 1
-                ? "1 Minute"
-                : turnTimeLimitMinutes + " Minutes")
+            ? gameOptions.turnTimeLimitSeconds + " Seconds"
+            : turnTimeLimitMinutes == 1
+            ? "1 Minute"
+            : turnTimeLimitMinutes + " Minutes")
       );
 
       $("#Player1NamePanel").text(gameOptions.mainPlayerName);

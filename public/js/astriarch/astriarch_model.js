@@ -38,9 +38,9 @@ Astriarch.Model.GameOptions = function(options) {
   this.GalaxySize = options.GalaxySize || Astriarch.Model.GalaxySizeOption.LARGE;
 
   this.PlanetsPerSystem = options.PlanetsPerSystem;
-  //limit planets per system to 6 if GalaxySize is SMALL
+  //limit planets per system to 6 if GalaxySize is TINY
   if (
-    this.GalaxySize == Astriarch.Model.GalaxySizeOption.SMALL &&
+    this.GalaxySize == Astriarch.Model.GalaxySizeOption.TINY &&
     this.PlanetsPerSystem > Astriarch.Model.PlanetsPerSystemOption.SIX
   ) {
     this.PlanetsPerSystem = Astriarch.Model.PlanetsPerSystemOption.SIX;
@@ -294,13 +294,18 @@ Astriarch.Model.Turn.prototype.Next = function() {
 
 Astriarch.Model.PlanetsPerSystemOption = { FOUR: 4, FIVE: 5, SIX: 6, SEVEN: 7, EIGHT: 8 };
 
-Astriarch.Model.GalaxySizeOption = { SMALL: 1, MEDIUM: 2, LARGE: 3 }; //multiplier for Astriarch.Hexagon.Static
+Astriarch.Model.GalaxySizeOption = { TINY: 1, SMALL: 2, MEDIUM: 3, LARGE: 4 }; //multiplier for Astriarch.Hexagon.Static
 
 Astriarch.Model.GalaxySizeOptionToHexSizeMultiplier = function(galaxySize) {
   if (galaxySize == Astriarch.Model.GalaxySizeOption.LARGE) {
     return 1;
   }
-  var hexesInRow = galaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM ? 4 : 3;
+  var hexesInRow =
+    galaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM
+      ? 5
+      : galaxySize == Astriarch.Model.GalaxySizeOption.SMALL
+      ? 4
+      : 3;
 
   var galaxyWidth = 621;
   //calculate hex multiplier

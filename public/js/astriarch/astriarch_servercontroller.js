@@ -1129,11 +1129,13 @@ Astriarch.ServerController = {
 
     minTurns += playerWon
       ? ownedPlanets *
-        (gameModel.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.SMALL
+        (gameModel.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.TINY
+          ? 0.25
+          : gameModel.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.SMALL
           ? 0.5
           : gameModel.GameOptions.GalaxySize == Astriarch.Model.GalaxySizeOption.MEDIUM
-            ? 0.75
-            : 1.0)
+          ? 0.75
+          : 1.0)
       : 6;
     var speedFactor = minTurns / turnsTaken;
 
