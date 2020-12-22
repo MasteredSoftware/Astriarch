@@ -15,7 +15,10 @@ if (un && pw) {
 var host = process.env.OPENSHIFT_MONGODB_DB_HOST || process.env.MONGODB_DB_HOST || config.mongodb.host;
 var port = process.env.OPENSHIFT_MONGODB_DB_PORT || process.env.MONGODB_DB_PORT || config.mongodb.port;
 var gamedb = process.env.MONGODB_GAME_DB_NAME || config.mongodb.gamedb_name;
-var connectionString = process.env.MONGODB_CONNECTION_STRING || "mongodb://" + un_pw + host + ":" + port + "/" + gamedb;
+var connectionString =
+  process.env.MONGODB_CONNECTION_STRING ||
+  config.mongodb.connection_string ||
+  "mongodb://" + un_pw + host + ":" + port + "/" + gamedb;
 var db = mongoose.connect(connectionString);
 
 exports.mongoose = mongoose;

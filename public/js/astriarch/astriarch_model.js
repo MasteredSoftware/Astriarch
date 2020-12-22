@@ -354,11 +354,15 @@ Astriarch.Model.WorkingPlayerResources = function(player, workingPlayerResources
     this.OreAmount = player.TotalOreAmount();
 
     this.IridiumAmount = player.TotalIridiumAmount();
-  } else {
+  } else if (workingPlayerResources) {
     this.GoldAmount = workingPlayerResources.GoldAmount;
 
     this.OreAmount = workingPlayerResources.OreAmount;
 
     this.IridiumAmount = workingPlayerResources.IridiumAmount;
+  } else {
+    this.GoldAmount = 0;
+    this.OreAmount = 0;
+    this.IridiumAmount = 0;
   }
 };
