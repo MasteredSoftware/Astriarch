@@ -11,7 +11,7 @@ Astriarch.server_comm = {
     this.pingFreq = serverConfig.ping_freq || 30000;
     var host = window.document.location.host.replace(/:.*/, "");
     var portString = !serverConfig.port ? "" : ":" + serverConfig.port;
-    this.ws = new WebSocket("ws://" + host + portString);
+    this.ws = new WebSocket((serverConfig.ws_protocol || "ws") + "://" + host + portString);
     this.ws.onmessage = this.receivedMessage;
     this.ws.onclose = function(e) {
       console.log("onclose:", e, arguments);

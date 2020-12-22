@@ -1,24 +1,25 @@
 {
-	"loglevel":"INFO",
-	"use_compressed_js":true,
-	"external_resource_connect":true,
-	"mongodb":{
-		"gamedb_name":"astriarch",
-		"sessiondb_name":"astriarch",
-		"host":"127.0.0.1",
-		"port":"27017",
-		"username":null,
-		"password":null
-	},
-	"cookie":{
-		"secret":"astriarch-node"
-	},
-	"port":8000,
-	"ws_port":8000,
-	"ws_ping_freq":30000,
-	"client_timeout":120000,
-	"cleanup_old_games":{
-		"enabled":true,
-		"check_interval_seconds":7200
-	}
+  "loglevel": "INFO",
+  "use_compressed_js": true,
+  "external_resource_connect": true,
+  "mongodb": {
+    "gamedb_name": "astriarch",
+    "sessiondb_name": "astriarch",
+    "host": "127.0.0.1",
+    "port": "27017",
+    "username": null,
+    "password": null
+  },
+  "cookie": {
+    "secret": "astriarch-node"
+  },
+  "port": 8000,
+  "ws_port": 8000,
+  "ws_protocol": "ws",
+  "ws_ping_freq": 30000,
+  "client_timeout": 120000,
+  "cleanup_old_games": {
+    "enabled": true,
+    "check_interval_seconds": 7200
+  }
 }

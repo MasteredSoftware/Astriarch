@@ -34,6 +34,7 @@ var app = express();
 app.set("host", process.env.OPENSHIFT_NODEJS_IP || "localhost");
 app.set("port", process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.port || 8000);
 app.set("ws_port", process.env.OPENSHIFT_NODEJS_PORT || process.env.WS_PORT || config.ws_port || 8000);
+app.set("ws_protocol", process.env.WS_PROTOCOL || config.ws_protocol || "ws");
 
 app.use(favicon(path.join(__dirname, "public", "img", "favicon.ico")));
 app.use(morgan("combined"));
@@ -109,6 +110,7 @@ app.get("/", function(req, res) {
     function(err, results) {
       res.render("astriarch", {
         port: app.get("ws_port"),
+        ws_protocol: app.get("ws_protocol"),
         ping_freq: config.ws_ping_freq,
         use_compressed_js: config.use_compressed_js,
         external_resource_connect: config.external_resource_connect,
