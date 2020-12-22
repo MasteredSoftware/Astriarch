@@ -508,7 +508,11 @@ Astriarch.Planet.prototype.BuildImprovements = function(gameModel, buildQueueEmp
 
         //if we have a waypoint set on the planet, send this new starship to the waypoint planet
         var waypointPlanet = this.WayPointPlanetId ? gameModel.getPlanetById(this.WayPointPlanetId) : null;
-        if (waypointPlanet && nextItem.Type != Astriarch.Fleet.StarShipType.SystemDefense) {
+        if (
+          waypointPlanet &&
+          nextItem.Type != Astriarch.Fleet.StarShipType.SystemDefense &&
+          nextItem.Type != Astriarch.Fleet.StarShipType.SpacePlatform
+        ) {
           var newFleet = new Astriarch.Fleet(this.Owner);
           newFleet.AddShip(ship);
 
