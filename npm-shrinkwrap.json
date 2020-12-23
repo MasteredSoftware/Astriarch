@@ -1,6 +1,6 @@
 {
   "name": "Astriarch",
-  "version": "1.8.4",
+  "version": "1.8.7",
   "lockfileVersion": 1,
   "requires": true,
   "dependencies": {
@@ -28,7 +28,7 @@
     },
     "acorn": {
       "version": "3.3.0",
-      "resolved": "http://registry.npmjs.org/acorn/-/acorn-3.3.0.tgz",
+      "resolved": "https://registry.npmjs.org/acorn/-/acorn-3.3.0.tgz",
       "integrity": "sha1-ReN/s56No/JbruP/U2niu18iAXo="
     },
     "acorn-globals": {
@@ -68,7 +68,7 @@
     },
     "async": {
       "version": "0.2.9",
-      "resolved": "http://registry.npmjs.org/async/-/async-0.2.9.tgz",
+      "resolved": "https://registry.npmjs.org/async/-/async-0.2.9.tgz",
       "integrity": "sha1-32MGD789Myhqdqr21Vophtn/hhk="
     },
     "async-limiter": {
@@ -463,9 +463,9 @@
       }
     },
     "extend": {
-      "version": "1.2.0",
-      "resolved": "https://registry.npmjs.org/extend/-/extend-1.2.0.tgz",
-      "integrity": "sha512-4P25JutzkpENEx6zAf/bsu8fpIfx6fvB3JNXAsaS6nHMJN8p+tGGaAKuOZfd8pOL+VP6Q/XqXTdzymwW4iG1MQ=="
+      "version": "2.0.2",
+      "resolved": "https://registry.npmjs.org/extend/-/extend-2.0.2.tgz",
+      "integrity": "sha512-AgFD4VU+lVLP6vjnlNfF7OeInLTyeyckCNPEsuxz1vi786UuK/nk6ynPuhn/h+Ju9++TQyr5EpLRI14fc1QtTQ=="
     },
     "finalhandler": {
       "version": "1.1.1",
