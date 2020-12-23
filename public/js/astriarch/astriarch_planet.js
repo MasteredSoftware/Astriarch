@@ -817,6 +817,21 @@ Astriarch.Planet.prototype.UpdatePopulationWorkerTypes = function(targetFarmers,
   var currentMiners = pop.Miners;
   var currentWorkers = pop.Workers;
 
+  // check for sum of current != sum of target
+  if (currentFarmers + currentMiners + currentWorkers != targetFarmers + targetMiners + targetWorkers) {
+    console.error(
+      "Population Sum Issue in Planet.UpdatePopulationWorkerTypes! targets: ",
+      targetFarmers,
+      targetMiners,
+      targetWorkers,
+      "currents:",
+      currentFarmers,
+      currentMiners,
+      currentWorkers
+    );
+    return;
+  }
+
   //first check for farmers
   var diff = targetFarmers - currentFarmers;
   while (currentFarmers != targetFarmers) {
