@@ -17,7 +17,7 @@
     "morgan": "^1.9.1",
     "pug": "^2.0.3",
     "serve-favicon": "^2.5.0",
-    "ws": "^6.1.0"
+    "ws": "^7.4.5"
   },
   "devDependencies": {
     "mocha": "^5.2.0",
