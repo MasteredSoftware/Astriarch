@@ -61,9 +61,9 @@
       "integrity": "sha512-TaTivMB6pYI1kXwrFlEhLeGfOqoDNdTxjCdwRfFFkEA30Eu+k48W34nlok2EYWJfFFzqaEmichdNM7th6M5HNw=="
     },
     "async": {
-      "version": "0.2.9",
-      "resolved": "https://registry.npmjs.org/async/-/async-0.2.9.tgz",
-      "integrity": "sha1-32MGD789Myhqdqr21Vophtn/hhk="
+      "version": "3.2.2",
+      "resolved": "https://registry.npmjs.org/async/-/async-3.2.2.tgz",
+      "integrity": "sha512-H0E+qZaDEfx/FY4t7iLRv1W2fFI6+pyCeTw1uN20AQPiwqwM6ojPxHxdLv4z8hi2DtnW9BOckSspLucW7pIE5g=="
     },
     "async-limiter": {
       "version": "1.0.1",
