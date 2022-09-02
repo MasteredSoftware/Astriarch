@@ -3,7 +3,7 @@
   "version": "1.9.2",
   "private": true,
   "dependencies": {
-    "async": "0.2.9",
+    "async": "2.6.4",
     "body-parser": "^1.18.3",
     "config": "0.4.34",
     "connect-mongo": "^2.0.1",
