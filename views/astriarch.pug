@@ -1192,6 +1192,11 @@ head
 					var serverConfig = {"port":#{port}, "ws_protocol":"#{ws_protocol}", "ping_freq":#{ping_freq}};
 
 					Astriarch.View.PageLoadInit(serverConfig);
+
+					// keep alive server call for render.com
+					setInterval(function() {
+						$.getJSON("/healthcheck");
+					}, 5 * 60 * 1000)
 				});
 
 		if external_resource_connect

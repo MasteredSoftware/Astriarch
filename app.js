@@ -1,6 +1,7 @@
 /**
  * Module dependencies.
  */
+var package = require("./package.json");
 var config = require("config");
 
 //add timestamps to each console function
@@ -74,6 +75,10 @@ app.set("view engine", "pug");
 if ("development" == app.get("env")) {
   app.use(errorHandler());
 }
+
+app.get("/healthcheck", function(req, res) {
+  res.send({ status: "OK", version: package.version });
+});
 
 app.get("/test", function(req, res) {
   res.render("test", {
