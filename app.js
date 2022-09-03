@@ -31,9 +31,9 @@ var clientFiles = require("./client_file_registry.js");
 var app = express();
 
 // all environments
-app.set("host", process.env.OPENSHIFT_NODEJS_IP || "localhost");
-app.set("port", process.env.OPENSHIFT_NODEJS_PORT || process.env.PORT || config.port || 8000);
-app.set("ws_port", process.env.OPENSHIFT_NODEJS_PORT || process.env.WS_PORT || config.ws_port || 8000);
+app.set("host", process.env.HOST || "localhost");
+app.set("port", process.env.PORT || config.port || 8000);
+app.set("ws_port", process.env.WS_PORT || config.ws_port || 8000);
 app.set("ws_protocol", process.env.WS_PROTOCOL || config.ws_protocol || "ws");
 
 app.use(favicon(path.join(__dirname, "public", "img", "favicon.ico")));
