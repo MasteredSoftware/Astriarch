@@ -43,5 +43,6 @@ exports.clientFilesExternal = [
   "js/ext/js-cardlist.js",
   "js/ext/audio-interface.js",
   "js/ext/jquery.joyride-2.1.js",
-  "js/ext/mousetrap.min.js"
+  "js/ext/mousetrap.min.js",
+  "js/ext/reconnecting-websocket.js"
 ];

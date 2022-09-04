@@ -11,15 +11,19 @@ Astriarch.server_comm = {
     this.pingFreq = serverConfig.ping_freq || 30000;
     var host = window.document.location.host.replace(/:.*/, "");
     var portString = !serverConfig.port ? "" : ":" + serverConfig.port;
-    this.ws = new WebSocket((serverConfig.ws_protocol || "ws") + "://" + host + portString);
+    // https://github.com/joewalnes/reconnecting-websocket
+    this.ws = new ReconnectingWebSocket((serverConfig.ws_protocol || "ws") + "://" + host + portString, null, {
+      debug: true
+    });
     this.ws.onmessage = this.receivedMessage;
     this.ws.onclose = function(e) {
       console.log("onclose:", e, arguments);
-      //TODO: eventually try to reconnect automatically?
-      new Astriarch.Alert(
-        "Connection Lost",
-        '<span style="color:red">Communication with the server was interrupted, please refresh the browser and reconnect to your game to continue playing.</span>'
-      );
+      // ReconnectingWebSocket will try to reconnect automatically...
+      // TODO: show some sort of error if we eventually give up
+      // new Astriarch.Alert(
+      //   "Connection Lost",
+      //   '<span style="color:red">Communication with the server was interrupted, please refresh the browser and reconnect to your game to continue playing.</span>'
+      // );
     };
     this.ws.onerror = function(e) {
       console.log("onerror:", e, arguments);
