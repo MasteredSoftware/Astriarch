@@ -6,8 +6,10 @@ Astriarch.server_comm = {
   messageQueue: [],
   pingFreq: 30000,
   pingInterval: null,
+  reconnecting: false,
 
   init: function(serverConfig) {
+    var self = this;
     this.pingFreq = serverConfig.ping_freq || 30000;
     var host = window.document.location.host.replace(/:.*/, "");
     var portString = !serverConfig.port ? "" : ":" + serverConfig.port;
@@ -19,6 +21,8 @@ Astriarch.server_comm = {
     this.ws.onclose = function(e) {
       console.log("onclose:", e, arguments);
       // ReconnectingWebSocket will try to reconnect automatically...
+      self.reconnecting = true;
+      $("#loadingSpinner").show();
       // TODO: show some sort of error if we eventually give up
       // new Astriarch.Alert(
       //   "Connection Lost",
@@ -34,6 +38,24 @@ Astriarch.server_comm = {
     };
     this.ws.onopen = function(e) {
       console.log("onopen:", e, arguments);
+      if (self.reconnecting) {
+        $("#loadingSpinner").hide();
+        if (!Astriarch.GameId) {
+          Astriarch.View.ShowMainMenu();
+        } else if (Astriarch.GameStarted) {
+          self.sendMessage({ type: Astriarch.Shared.MESSAGE_TYPE.RESUME_GAME });
+        } else {
+          self.sendMessage({
+            type: Astriarch.Shared.MESSAGE_TYPE.JOIN_GAME,
+            payload: { playerName: Astriarch.LocalStorageInterface.Prefs.playerName }
+          });
+        }
+        self.reconnecting = false;
+      }
+      for (var i = 0; i < self.messageQueue.length; i++) {
+        self.ws.send(JSON.stringify(self.messageQueue[i]));
+      }
+      self.messageQueue = [];
     };
 
     for (var mt in Astriarch.Shared.MESSAGE_TYPE) {
@@ -48,12 +70,6 @@ Astriarch.server_comm = {
       this.ws.send(JSON.stringify(message));
     } else {
       this.messageQueue.push(message);
-      this.ws.onopen = function(e) {
-        for (var i = 0; i < Astriarch.server_comm.messageQueue.length; i++) {
-          Astriarch.server_comm.ws.send(JSON.stringify(Astriarch.server_comm.messageQueue[i]));
-        }
-        Astriarch.server_comm.messageQueue = [];
-      };
     }
     if (this.pingInterval) {
       clearInterval(this.pingInterval);

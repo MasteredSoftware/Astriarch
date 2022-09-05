@@ -46,6 +46,7 @@ Astriarch.LobbyControl = {
   },
 
   OnGameResumeMessageResponse: function(message) {
+    Astriarch.GameStarted = true;
     Astriarch.CommControl.joinChatRoom(
       Astriarch.LocalStorageInterface.Prefs.playerName,
       message.payload.playerPosition + 1

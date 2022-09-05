@@ -560,6 +560,7 @@ Astriarch.View.NextTurn = function() {
 
 Astriarch.View.ShowMainMenu = function() {
   Astriarch.GameId = null;
+  Astriarch.GameStarted = false;
 
   Astriarch.View.audioInterface.StartMenu();
 
@@ -1046,8 +1047,8 @@ Astriarch.View.updateSelectedItemPanelForPlanet = function() {
           turnSinceExplored == 0
             ? "Explored this turn."
             : turnSinceExplored == 1
-              ? "Explored last turn."
-              : "As of " + turnSinceExplored + " turns ago.";
+            ? "Explored last turn."
+            : "As of " + turnSinceExplored + " turns ago.";
 
         sb += "--- Known Fleet ---<br />";
         sb += turnString + "<br />";
@@ -1086,8 +1087,8 @@ Astriarch.View.updateSelectedItemPopulationPanel = function(planet) {
     planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Riots
       ? ", population rioting"
       : planet.PlanetHappiness == Astriarch.Planet.PlanetHappinessType.Unrest
-        ? ", population unrest"
-        : "";
+      ? ", population unrest"
+      : "";
   var popGrowthInText = "";
   if (popGrowthIn < 999) {
     popGrowthInText = ", Growth in " + popGrowthIn + " turn";
