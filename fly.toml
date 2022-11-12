@@ -19,3 +19,9 @@ app = "astriarch"
   [[services.tcp_checks]]
     interval = 10000
     timeout = 2000
+
+[env]
+  HOST = "127.0.0.1"
+  PORT = "8080"
+  WS_PORT = "443"
+  WS_PROTOCOL = "wss"
