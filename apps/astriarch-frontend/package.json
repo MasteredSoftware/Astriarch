@@ -9,13 +9,20 @@
     "start": "remix-serve build"
   },
   "dependencies": {
+    "@babel/core": "^7",
+    "@chakra-ui/react": "^2.3.7",
+    "@emotion/cache": "^11.10.5",
+    "@emotion/react": "^11",
+    "@emotion/server": "^11",
+    "@emotion/styled": "^11",
     "@remix-run/node": "^1.7.5",
     "@remix-run/react": "^1.7.5",
     "@remix-run/serve": "^1.7.5",
+    "astriarch-ui": "workspace:*",
+    "framer-motion": "^6",
     "isbot": "^3.5.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "astriarch-ui": "workspace:*"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@remix-run/dev": "^1.7.5",

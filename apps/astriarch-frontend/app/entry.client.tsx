@@ -1,13 +1,16 @@
 import { RemixBrowser } from "@remix-run/react";
 import { startTransition, StrictMode } from "react";
 import { hydrateRoot } from "react-dom/client";
+import ClientCacheProvider from "./clientCacheProvider";
 
 function hydrate() {
   startTransition(() => {
     hydrateRoot(
       document,
       <StrictMode>
-        <RemixBrowser />
+        <ClientCacheProvider>
+          <RemixBrowser />
+        </ClientCacheProvider>
       </StrictMode>
     );
   });

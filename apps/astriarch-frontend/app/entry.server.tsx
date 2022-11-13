@@ -3,7 +3,11 @@ import type { EntryContext } from "@remix-run/node";
 import { Response } from "@remix-run/node";
 import { RemixServer } from "@remix-run/react";
 import isbot from "isbot";
-import { renderToPipeableStream } from "react-dom/server";
+import { renderToPipeableStream, renderToString } from "react-dom/server";
+import createEmotionCache from "./createEmotionCache";
+import createEmotionServer from "@emotion/server/create-instance";
+import { CacheProvider } from '@emotion/react'
+import { ServerStyleContext } from './context'
 
 const ABORT_DELAY = 5000;
 
@@ -28,6 +32,29 @@ export default function handleRequest(
       );
 }
 
+function wrapWithEmotionCache(request: Request,remixContext: EntryContext) {
+  const cache = createEmotionCache()
+  const { extractCriticalToChunks } = createEmotionServer(cache)
+
+  const html = renderToString(
+    <ServerStyleContext.Provider value={null}>
+      <CacheProvider value={cache}>
+        <RemixServer context={remixContext} url={request.url} />
+      </CacheProvider>
+    </ServerStyleContext.Provider>,
+  )
+
+  const chunks = extractCriticalToChunks(html)
+
+  return (
+    <ServerStyleContext.Provider value={chunks.styles}>
+      <CacheProvider value={cache}>
+        <RemixServer context={remixContext} url={request.url} />
+      </CacheProvider>
+    </ServerStyleContext.Provider>
+  )
+}
+
 function handleBotRequest(
   request: Request,
   responseStatusCode: number,
@@ -38,7 +65,7 @@ function handleBotRequest(
     let didError = false;
 
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer context={remixContext} url={request.url} />,
+      wrapWithEmotionCache(request, remixContext),
       {
         onAllReady() {
           const body = new PassThrough();
@@ -79,7 +106,7 @@ function handleBrowserRequest(
     let didError = false;
 
     const { pipe, abort } = renderToPipeableStream(
-      <RemixServer context={remixContext} url={request.url} />,
+      wrapWithEmotionCache(request, remixContext),
       {
         onShellReady() {
           const body = new PassThrough();
