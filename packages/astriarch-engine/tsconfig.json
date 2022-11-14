@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "ES6",
+      "declaration": true,
+      "declarationMap": true,
+      "skipLibCheck": true,
+      "strict": true,
+      "outDir": "./dist"
+    },
+    "include": ["."],
+    "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+  }

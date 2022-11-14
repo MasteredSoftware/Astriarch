@@ -1,0 +1,16 @@
+{
+    "private": true,
+    "name": "astriarch-engine",
+    "description": "Astriarch game engine",
+    "scripts": {
+        "build": "rm -rf ./dist && tsc"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+    },
+    "devDependencies": {
+        "typescript": "^4.7.4"
+    }
+  }
