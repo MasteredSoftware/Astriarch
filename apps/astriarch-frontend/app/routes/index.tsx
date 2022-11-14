@@ -1,4 +1,5 @@
 import React, { useContext, useEffect } from 'react'
+import {startNewGame, advanceGameModelTime} from 'astriarch-engine';
 
 import { Tabs, TabList, TabPanels, Tab, TabPanel, useToast, Button } from '@chakra-ui/react'
 import {
@@ -33,7 +34,7 @@ const useAnimationFrame = (callback:any) => {
 }
 
 const Counter = () => {
-  const [count, setCount] = React.useState(0)
+  const [count, setCount] = React.useState(0);
   
   useAnimationFrame((deltaTime:number) => {
     // Pass on a function to the setter of the state
@@ -42,6 +43,26 @@ const Counter = () => {
   })
     
   return <div>{Math.round(count)}</div>
+}
+
+const AstriarchResources = () => {
+  const [gameModel, setGameModel] = React.useState(startNewGame());
+  
+  useAnimationFrame((deltaTime:number) => {
+    const newGameModel = advanceGameModelTime(gameModel);
+    const { resources } = newGameModel.players[0];
+    for(const [resource, val] of Object.entries(resources)) {
+      resources[resource] = val.toFixed(2);
+    }
+    //console.log("Advanced time:", newGameModel.players[0].resources);
+    setGameModel(() => ({...newGameModel}));
+  });
+
+  return (
+  <Tag size={'sm'} key={'sm-food'} variant='outline' colorScheme='blue'>
+    <TagLabel>{gameModel.players[0].resources.food}</TagLabel>
+    <TagRightIcon />
+  </Tag>)
 }
 
 export default function Index() {
@@ -89,6 +110,7 @@ export default function Index() {
         ))}
       </HStack>
       <Counter />
+      <AstriarchResources />
     </div>
   );
 }
