@@ -52,17 +52,28 @@ const AstriarchResources = () => {
     const newGameModel = advanceGameModelTime(gameModel);
     const { resources } = newGameModel.players[0];
     for(const [resource, val] of Object.entries(resources)) {
-      resources[resource] = val.toFixed(2);
+      resources[resource] = val.toFixed(1);
     }
     //console.log("Advanced time:", newGameModel.players[0].resources);
     setGameModel(() => ({...newGameModel}));
   });
 
   return (
-  <Tag size={'sm'} key={'sm-food'} variant='outline' colorScheme='blue'>
-    <TagLabel>{gameModel.players[0].resources.food}</TagLabel>
-    <TagRightIcon />
-  </Tag>)
+  <HStack spacing={4}>
+    <Tag size={'sm'} key={'sm-food'} variant='outline' colorScheme='green' width={100}>
+      <TagLeftIcon />
+      <TagLabel>{gameModel.players[0].resources.food}</TagLabel>
+    </Tag>
+    <Tag size={'sm'} key={'sm-food'} variant='outline' colorScheme='blue' width={100}>
+      <TagLabel>{gameModel.players[0].resources.gold}</TagLabel>
+    </Tag>
+    <Tag size={'sm'} key={'sm-food'} variant='outline' colorScheme='blue' width={100}>
+      <TagLabel>{gameModel.players[0].resources.ore}</TagLabel>
+    </Tag>
+    <Tag size={'sm'} key={'sm-food'} variant='outline' colorScheme='blue'  width={100}>
+      <TagLabel>{gameModel.players[0].resources.iridium}</TagLabel>
+    </Tag>
+  </HStack>)
 }
 
 export default function Index() {

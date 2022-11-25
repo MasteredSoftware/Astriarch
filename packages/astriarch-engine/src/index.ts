@@ -4,7 +4,7 @@ import { Player, ServerGameModel } from "./types/gameModel";
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
 
-const engine = {serverGameModels:[]} as Engine;
+const engine = new Engine({serverGameModels:[]});
 
 export const startNewGame = () => {
     const player = {resources: {food: 0, gold: 0, ore: 0, iridium: 0}} as Player;
