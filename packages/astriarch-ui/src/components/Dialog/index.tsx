@@ -1,16 +1,16 @@
-import {forwardRef, ReactNode} from 'react';
-import { styled } from '../../stitches.config';
-import { Cross1Icon } from '@radix-ui/react-icons';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { forwardRef, ReactNode } from "react";
+import { styled } from "../../stitches.config";
+import { Cross1Icon } from "@radix-ui/react-icons";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 
 const StyledOverlay = styled(DialogPrimitive.Overlay, {
   // overlay styles
 });
 
 const StyledContent = styled(DialogPrimitive.Content, {
-  backgroundColor: 'white',
+  backgroundColor: "white",
   borderRadius: 6,
-  boxShadow: 'hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px',
+  boxShadow: "hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
 });
 
 interface DialogProps extends React.ComponentProps<typeof StyledContent> {

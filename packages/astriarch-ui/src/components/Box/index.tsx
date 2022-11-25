@@ -1,3 +1,3 @@
-import { styled } from '@stitches/react';
+import { styled } from "@stitches/react";
 
-export const Box = styled('div');
+export const Box = styled("div");

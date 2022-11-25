@@ -1,21 +1,21 @@
 {
-    "include": ["."],
-    "exclude": ["dist", "node_modules", "**/*.spec.ts"],
-    "compilerOptions": {
-      "declaration": true,
-      "declarationMap": true,
-      "jsx": "react-jsx",
-      "allowJs": true,
-      "esModuleInterop": true,
-      "forceConsistentCasingInFileNames": true,
-      "inlineSources": false,
-      "isolatedModules": true,
-      "skipLibCheck": true,
-      "strict": true,
-      "moduleResolution": "node",
-      "lib": ["dom", "ES2015"],
-      "module": "ESNext",
-      "target": "ES6",
-      "outDir": "./dist"
-    }
+  "include": ["."],
+  "exclude": ["dist", "node_modules", "**/*.spec.ts"],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "jsx": "react-jsx",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": false,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "lib": ["dom", "ES2015"],
+    "module": "ESNext",
+    "target": "ES6",
+    "outDir": "./dist"
+  }
 }
