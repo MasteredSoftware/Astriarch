@@ -1,3 +1,4 @@
+import { StarShipType } from "../model/fleet";
 import {
   Citizen,
   CitizenWorkerType,
@@ -8,7 +9,11 @@ import {
   PlanetType,
 } from "../model/planet";
 import { PlayerData } from "../model/player";
+import { ResearchType } from "../model/research";
+import { Utils } from "../utils/utils";
+import { Fleet } from "./fleet";
 import { GridHex } from "./grid";
+import { Research } from "./research";
 
 export interface PlanetPerTurnResourceGeneration {
   baseAmountPerWorkerPerTurn: PlanetResources;
@@ -17,7 +22,11 @@ export interface PlanetPerTurnResourceGeneration {
   amountNextWorkerPerTurn: PlanetResources;
 }
 
-export type PopulationAssignments = { [T in CitizenWorkerType]: number };
+export type PopulationAssignments = {
+  farmers: number;
+  miners: number;
+  builders: number;
+};
 
 export interface PopulationByContentment {
   protesting: Citizen[];
@@ -27,6 +36,8 @@ export interface PopulationByContentment {
 export class Planet {
   private static NEXT_PLANET_ID = 1;
   private static PLANET_SIZE = 20.0;
+  private static IMPROVEMENT_RATIO = 2.0;
+
   public static constructPlanet(
     type: PlanetType,
     name: string,
@@ -48,9 +59,31 @@ export class Planet {
       population.push(Planet.constructCitizen(type, initialOwner.id));
       resources.food = 4;
     }
-    let maxImprovements = 0;
 
-    return {
+    let maxImprovements = 0;
+    let planetaryFleet;
+
+    //set our max slots for improvements and build an initial defense fleet
+    switch (type) {
+      case PlanetType.AsteroidBelt:
+        maxImprovements = 3;
+        planetaryFleet = Fleet.generateInitialFleet(0, boundingHex.midPoint);
+        break;
+      case PlanetType.DeadPlanet:
+        maxImprovements = 5;
+        planetaryFleet = Fleet.generateInitialFleet(Utils.nextRandom(3, 5), boundingHex.midPoint);
+        break;
+      case PlanetType.PlanetClass1:
+        maxImprovements = 6;
+        planetaryFleet = Fleet.generateInitialFleet(Utils.nextRandom(4, 6), boundingHex.midPoint);
+        break;
+      case PlanetType.PlanetClass2:
+        maxImprovements = 9;
+        planetaryFleet = Fleet.generateInitialFleet(Utils.nextRandom(10, 15), boundingHex.midPoint);
+        break;
+    }
+
+    const planetData = {
       id: Planet.NEXT_PLANET_ID++,
       name,
       type,
@@ -60,7 +93,7 @@ export class Planet {
       maxImprovements,
       resources,
       originPoint,
-      planetaryFleet: FleetData,
+      planetaryFleet: planetaryFleet!,
       outgoingFleets: [],
       planetHappiness: PlanetHappinessType.Normal,
       starshipTypeLastBuilt: null,
@@ -68,6 +101,10 @@ export class Planet {
       buildLastStarShip: true,
       waypointPlanetId: null,
     };
+
+    Planet.generateResources(planetData, initialOwner);
+
+    return planetData;
   }
 
   public static constructPlanetResources(
@@ -84,6 +121,25 @@ export class Planet {
       iridium,
       production,
     };
+  }
+
+  public static generateResources(p: PlanetData, owner?: PlayerData) {
+    const rpt = Planet.getPlanetPerTurnResourceGeneration(p);
+
+    if (owner) {
+      let divisor = 1.0;
+      if (p.planetHappiness == PlanetHappinessType.Unrest) {
+        //unrest causes 1/2 production
+        divisor = 2.0;
+      } else if (p.planetHappiness == PlanetHappinessType.Riots) {
+        //riots cause 1/4 production
+        divisor = 4.0;
+      }
+      p.resources.food += rpt.amountPerTurn.food / divisor;
+      p.resources.ore += rpt.amountPerTurn.ore / divisor;
+      p.resources.iridium += rpt.amountPerTurn.iridium / divisor;
+      p.resources.production += rpt.amountPerTurn.production / divisor;
+    }
   }
 
   public static constructCitizen(planetType: PlanetType, loyalToPlayerId: string): Citizen {
@@ -132,42 +188,99 @@ export class Planet {
         break;
     }
 
-    const pop = Planet.countPopulationWorkerTypes(p);
+    const { farmers, miners, builders } = Planet.countPopulationWorkerTypes(p);
 
-    if (pop[CitizenWorkerType.Farmer] < p.population.length) {
+    if (farmers < p.population.length) {
       rpt.amountNextWorkerPerTurn.food = rpt.baseAmountPerWorkerPerTurn.food;
     }
 
-    if (pop[CitizenWorkerType.Miner] < p.population.length) {
+    if (miners < p.population.length) {
       rpt.amountNextWorkerPerTurn.ore = rpt.baseAmountPerWorkerPerTurn.ore;
       rpt.amountNextWorkerPerTurn.iridium = rpt.baseAmountPerWorkerPerTurn.iridium;
     }
 
-    if (pop[CitizenWorkerType.Builder] < p.population.length) {
+    if (builders < p.population.length) {
       rpt.amountNextWorkerPerTurn.production = rpt.baseAmountPerWorkerPerTurn.production;
     }
 
     //determine production per turn
-    rpt.amountPerTurn.food = rpt.baseAmountPerWorkerPerTurn.food * pop[CitizenWorkerType.Farmer];
-    rpt.amountPerTurn.ore = rpt.baseAmountPerWorkerPerTurn.ore * pop[CitizenWorkerType.Miner];
-    rpt.amountPerTurn.iridium = rpt.baseAmountPerWorkerPerTurn.iridium * pop[CitizenWorkerType.Miner];
-    rpt.amountPerTurn.production = rpt.baseAmountPerWorkerPerTurn.production * pop[CitizenWorkerType.Builder];
+    rpt.amountPerTurn.food = rpt.baseAmountPerWorkerPerTurn.food * farmers;
+    rpt.amountPerTurn.ore = rpt.baseAmountPerWorkerPerTurn.ore * miners;
+    rpt.amountPerTurn.iridium = rpt.baseAmountPerWorkerPerTurn.iridium * miners;
+    rpt.amountPerTurn.production = rpt.baseAmountPerWorkerPerTurn.production * builders;
 
     if (Planet.builtImprovementCount(p) > 0) {
+      let farmCount = p.builtImprovements[PlanetImprovementType.Farm];
+      let mineCount = p.builtImprovements[PlanetImprovementType.Mine];
+      let factoryCount = p.builtImprovements[PlanetImprovementType.Factory];
+
+      let researchEffectiveness = null;
+      if (farmCount > 0) {
+        researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
+          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS
+        );
+        if (farmers < farmCount) {
+          rpt.amountNextWorkerPerTurn.food =
+            rpt.baseAmountPerWorkerPerTurn.food * Planet.IMPROVEMENT_RATIO * researchEffectiveness;
+        }
+
+        if (farmers > 0) {
+          rpt.amountPerTurn.food +=
+            Math.min(farmCount, farmers) *
+            rpt.baseAmountPerWorkerPerTurn.food *
+            Planet.IMPROVEMENT_RATIO *
+            researchEffectiveness;
+        }
+      }
+      if (mineCount > 0) {
+        researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
+          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES
+        );
+        if (miners < mineCount) {
+          rpt.amountNextWorkerPerTurn.ore =
+            rpt.baseAmountPerWorkerPerTurn.ore * Planet.IMPROVEMENT_RATIO * researchEffectiveness;
+          rpt.amountNextWorkerPerTurn.iridium =
+            rpt.baseAmountPerWorkerPerTurn.iridium * Planet.IMPROVEMENT_RATIO * researchEffectiveness;
+        }
+
+        if (miners > 0) {
+          rpt.amountPerTurn.ore +=
+            Math.min(mineCount, miners) *
+            rpt.baseAmountPerWorkerPerTurn.ore *
+            Planet.IMPROVEMENT_RATIO *
+            researchEffectiveness;
+          rpt.amountPerTurn.iridium +=
+            Math.min(mineCount, miners) *
+            rpt.baseAmountPerWorkerPerTurn.iridium *
+            Planet.IMPROVEMENT_RATIO *
+            researchEffectiveness;
+        }
+      }
+      if (factoryCount > 0) {
+        researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
+          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES
+        );
+        if (builders < factoryCount) {
+          rpt.amountNextWorkerPerTurn.production =
+            rpt.baseAmountPerWorkerPerTurn.production * Planet.IMPROVEMENT_RATIO * researchEffectiveness;
+        }
+
+        if (builders > 0) {
+          rpt.amountPerTurn.production +=
+            Math.min(factoryCount, builders) *
+            rpt.baseAmountPerWorkerPerTurn.production *
+            Planet.IMPROVEMENT_RATIO *
+            researchEffectiveness;
+        }
+      }
     }
 
-    rpt.amountPerWorkerPerTurn.food = pop[CitizenWorkerType.Farmer]
-      ? rpt.amountPerTurn.food / pop[CitizenWorkerType.Farmer]
-      : 0;
-    rpt.amountPerWorkerPerTurn.ore = pop[CitizenWorkerType.Miner]
-      ? rpt.amountPerTurn.ore / pop[CitizenWorkerType.Miner]
-      : 0;
-    rpt.amountPerWorkerPerTurn.iridium = pop[CitizenWorkerType.Miner]
-      ? rpt.amountPerTurn.iridium / pop[CitizenWorkerType.Miner]
-      : 0;
-    rpt.amountPerWorkerPerTurn.production = pop[CitizenWorkerType.Builder]
-      ? rpt.amountPerTurn.production / pop[CitizenWorkerType.Builder]
-      : 0;
+    rpt.amountPerWorkerPerTurn.food = farmers ? rpt.amountPerTurn.food / farmers : 0;
+    rpt.amountPerWorkerPerTurn.ore = miners ? rpt.amountPerTurn.ore / miners : 0;
+    rpt.amountPerWorkerPerTurn.iridium = miners ? rpt.amountPerTurn.iridium / miners : 0;
+    rpt.amountPerWorkerPerTurn.production = builders ? rpt.amountPerTurn.production / builders : 0;
+
+    return rpt;
   }
 
   public static builtImprovementCount(p: PlanetData): number {
@@ -181,15 +294,21 @@ export class Planet {
 
   public static countPopulationWorkerTypes(p: PlanetData): PopulationAssignments {
     const pop: PopulationAssignments = {
-      [CitizenWorkerType.Farmer]: 0,
-      [CitizenWorkerType.Miner]: 0,
-      [CitizenWorkerType.Builder]: 0,
+      farmers: 0,
+      miners: 0,
+      builders: 0,
     };
 
     const citizens = Planet.getPopulationByContentment(p);
 
     return citizens.content.reduce((accum, curr) => {
-      accum[curr.workerType]++;
+      if (curr.workerType === CitizenWorkerType.Farmer) {
+        accum.farmers++;
+      } else if (curr.workerType === CitizenWorkerType.Miner) {
+        accum.miners++;
+      } else if (curr.workerType === CitizenWorkerType.Builder) {
+        accum.builders++;
+      }
       return accum;
     }, pop);
   }

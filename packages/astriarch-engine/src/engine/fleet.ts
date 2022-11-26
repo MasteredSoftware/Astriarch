@@ -30,6 +30,10 @@ export class Fleet {
     };
   }
 
+  public static generateInitialFleet(defenders: number, locationHexMidPoint: PointData): FleetData {
+    return Fleet.generateFleetWithShipCount(defenders, 0, 0, 0, 0, 0, locationHexMidPoint);
+  }
+
   public static generateStarships(type: StarShipType, count: number): StarshipData[] {
     const ships = [];
     for (let i = 0; i < count; i++) {

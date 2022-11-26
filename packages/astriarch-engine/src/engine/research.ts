@@ -111,11 +111,14 @@ export class Research {
     rtp.data = data;
   }
 
-  public static getResearchEffectiveness(researchType: ResearchType, player?: PlayerData): number {
+  public static getResearchBoostForBuildingEfficiencyImprovement(
+    researchType: ResearchType,
+    player?: PlayerData
+  ): number {
     if (!player) {
       return 1.0;
     }
-    return player.research.researchPercent;
+    return player.research.researchProgressByType[researchType].data.percent!;
   }
 
   private static constructResearchTypeIndex(): ResearchTypeIndex {
