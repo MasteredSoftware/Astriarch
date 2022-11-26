@@ -32,8 +32,8 @@ export interface PlayerData {
   color: ColorRgbaData;
   lastTurnFoodNeededToBeShipped: number; //this is for computers to know how much gold to keep in surplus for food shipments
   options: PlayerGameOptions;
-  ownedPlanetIds: string[];
-  knownPlanetIds: string[];
+  ownedPlanetIds: number[];
+  knownPlanetIds: number[];
   lastKnownPlanetFleetStrength: { [T in number]: LastKnownFleetData };
   planetBuildGoals: { [T in number]: PlanetProductionItemData };
   homePlanetId: number | null;

@@ -1,5 +1,16 @@
-import { FleetData, StarshipData, StarShipType } from "../model/fleet";
+import { FleetData, LastKnownFleetData, StarshipData, StarShipType } from "../model/fleet";
 import { PointData } from "../shapes/shapes";
+
+export type StarshipsByType = {[T in StarShipType]: StarshipData[]};
+
+export interface StarshipTypeCounts {
+    defenders: number;
+    scouts: number;
+    destroyers: number;
+    cruisers: number;
+    battleships: number;
+    spaceplatforms: number;
+}
 
 export class Fleet {
   private static NEXT_STARSHIP_ID = 1;
@@ -99,5 +110,35 @@ export class Fleet {
       health: baseStarShipStrength, //starships will heal between turns if the planet has the necessary building and the player has the requisite resources
       experienceAmount: 0, //each time a starship damages an opponent the experience amount increases by the damage amount
     };
+  }
+
+  public static getStarshipsByType(fleet: FleetData):StarshipsByType {
+    return fleet.starships.reduce((accum, curr) => {
+        if(!(curr.type in accum)) {
+            accum[curr.type] = [];
+        }
+        accum[curr.type].push(curr);
+        return accum;
+    }, {} as StarshipsByType);
+  }
+
+  public static countStarshipsByType(fleet: FleetData): StarshipTypeCounts {
+    const ships = Fleet.getStarshipsByType(fleet);
+    return {
+        defenders: ships[StarShipType.SystemDefense].length,
+        scouts:ships[StarShipType.Scout].length,
+        destroyers:ships[StarShipType.Destroyer].length,
+        cruisers:ships[StarShipType.Cruiser].length,
+        battleships:ships[StarShipType.Battleship].length,
+        spaceplatforms:ships[StarShipType.SpacePlatform].length,
+    }
+  }
+
+  public static constructLastKnownFleet(cycleLastExplored: number, fleetData: FleetData, lastKnownOwnerId: string | null) : LastKnownFleetData {
+    return {
+        cycleLastExplored,
+        fleetData,
+        lastKnownOwnerId
+    }
   }
 }

@@ -68,6 +68,7 @@ export interface PlanetData {
   maxImprovements: number;
   resources: PlanetResources;
   originPoint: PointData;
+  boundingHexMidPoint: PointData;
   planetaryFleet: FleetData;
   outgoingFleets: FleetData[];
   planetHappiness: PlanetHappinessType;

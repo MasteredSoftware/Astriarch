@@ -58,6 +58,8 @@ export class Planet {
     if (initialOwner) {
       population.push(Planet.constructCitizen(type, initialOwner.id));
       resources.food = 4;
+      resources.ore = 2;
+      resources.iridium = 1;
     }
 
     let maxImprovements = 0;
@@ -93,6 +95,7 @@ export class Planet {
       maxImprovements,
       resources,
       originPoint,
+      boundingHexMidPoint: boundingHex.midPoint,
       planetaryFleet: planetaryFleet!,
       outgoingFleets: [],
       planetHappiness: PlanetHappinessType.Normal,
