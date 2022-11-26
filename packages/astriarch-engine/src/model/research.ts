@@ -1,3 +1,5 @@
+import { StarShipType } from "./fleet";
+
 export enum ResearchType {
   UNKNOWN = 0,
   NEW_SHIP_TYPE_DEFENDER = 1,
@@ -15,17 +17,27 @@ export enum ResearchType {
   SPACE_PLATFORM_IMPROVEMENT = 13, //data key is "max" 1 - 5 maximum space platforms player can build on a planet
 }
 
-export interface ResearchTypeProgress {
-  type: ResearchType;
-  currentResearchLevel: number;
-  researchPointsBase: number; //based on the type and data, some types are intrinsically more expensive
-  isCustomShip: boolean;
-  maxResearchLevel: number;
-  researchPointsCompleted: number;
+export interface ResearchTypeData {
+    chance?: number; // applies to combat improvements
+    percent?: number; // applies to building and propulsion improvements
+    max?: number; // applies to space platforms
+    advantageAgainst?: StarShipType; // applies to custom ships
+    disadvantageAgainst?: StarShipType; // applies to custom ships
 }
 
+export interface ResearchTypeProgress {
+  type: ResearchType;
+  maxResearchLevel: number;
+  currentResearchLevel: number;
+  researchPointsBase: number;
+  researchPointsCompleted: number;
+  data: ResearchTypeData;
+}
+
+export type ResearchProgressByType = { [T in ResearchType]: ResearchTypeProgress }
+
 export interface ResearchData {
-  researchProgressByType: { [T in ResearchType]: ResearchTypeProgress };
+  researchProgressByType: ResearchProgressByType;
   researchTypeInQueue: ResearchType | null; //for now a player can only research one new item at a time
   researchPercent: number; // 0 - 1, the rest goes to gold/taxes
 }

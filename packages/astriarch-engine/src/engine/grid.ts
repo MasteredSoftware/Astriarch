@@ -4,7 +4,11 @@ import { HexagonData, PointData } from "../shapes/shapes";
 const HexProperties = { HEIGHT: 40.0, WIDTH: 71.0, SIDE: 29.0, X: 21 };
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
-class Grid {
+/**
+ * Grid is a proper instantiated class since it has deterministic generation
+ *  therefore it doesn't have to be transfered between the database, client and server and can be generated as needed
+ */
+export class Grid {
   quadrants: GridRect[];
   hexes: GridHex[];
 
@@ -133,7 +137,7 @@ class Grid {
   }
 }
 
-class GridRect {
+export class GridRect {
   x: number;
   y: number;
   width: number;
@@ -161,7 +165,7 @@ class GridRect {
   }
 }
 
-class GridHex {
+export class GridHex {
   data: HexagonData;
   points: PointData[];
 

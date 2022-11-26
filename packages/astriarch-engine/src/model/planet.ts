@@ -13,6 +13,7 @@ export interface PlanetResources {
   energy: number;
   ore: number;
   iridium: number;
+  production: number;
 }
 
 export enum PlanetImprovementType {
@@ -38,7 +39,7 @@ export enum PlanetHappinessType {
 export enum CitizenWorkerType {
   Farmer = 1,
   Miner = 2,
-  Worker = 3,
+  Builder = 3,
 }
 
 export enum PlanetProductionItemType {
@@ -58,11 +59,10 @@ export interface PlanetProductionItemData {
 }
 
 export interface PlanetData {
-  id: string;
+  id: number;
   name: string;
   type: PlanetType;
   population: Citizen[];
-  remainderProduction: number; //if we finished building something we may have remainder to apply to the next item
   buildQueue: PlanetProductionItemData[];
   builtImprovements: { [T in PlanetImprovementType]: number };
   maxImprovements: number;
@@ -74,5 +74,5 @@ export interface PlanetData {
   starshipTypeLastBuilt: StarShipType | null;
   starshipCustomShipLastBuilt: boolean;
   buildLastStarShip: boolean;
-  waypointPlanetId: string;
+  waypointPlanetId: number | null;
 }

@@ -17,7 +17,7 @@ export interface ClientPlayer {
 }
 
 export interface ClientPlanet {
-  id: string;
+  id: number;
   name: string;
   originPoint: PointData;
   boundingHex: HexagonData;

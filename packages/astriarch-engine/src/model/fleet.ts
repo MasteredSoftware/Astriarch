@@ -13,8 +13,8 @@ export interface StarshipData {
   id: number;
   type: StarShipType;
   customShip: boolean;
-  advantageAgainstType: StarShipType;
-  disadvantageAgainstType: StarShipType;
+  advantageAgainstType: StarShipType | null;
+  disadvantageAgainstType: StarShipType | null;
   health: number;
   experienceAmount: number;
 }

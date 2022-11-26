@@ -22,21 +22,22 @@ export interface ColorRgbaData {
   a: number; // alpha
 }
 
+export type EarnedPointsByType = { [T in EarnedPointsType]: number };
+
 export interface PlayerData {
   id: string;
   type: PlayerType;
   name: string;
-  resources: PlanetResources;
   research: ResearchData;
   color: ColorRgbaData;
   lastTurnFoodNeededToBeShipped: number; //this is for computers to know how much gold to keep in surplus for food shipments
   options: PlayerGameOptions;
   ownedPlanetIds: string[];
   knownPlanetIds: string[];
-  lastKnownPlanetFleetStrength: { [T in string]: LastKnownFleetData };
-  planetBuildGoals: { [T in string]: PlanetProductionItemData };
-  homePlanetId: string;
-  earnedPointsByType: { [T in EarnedPointsType]: number };
+  lastKnownPlanetFleetStrength: { [T in number]: LastKnownFleetData };
+  planetBuildGoals: { [T in number]: PlanetProductionItemData };
+  homePlanetId: number | null;
+  earnedPointsByType: EarnedPointsByType;
   points: number;
   fleetsInTransit: FleetData[];
   destroyed: boolean;
