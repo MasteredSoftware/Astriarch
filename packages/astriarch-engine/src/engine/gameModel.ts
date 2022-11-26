@@ -122,7 +122,7 @@ export class GameModel {
           possiblePlanetTypes.splice(type, 1);
         }
 
-        let initialPlanetOwner:PlayerData | undefined = undefined;
+        let initialPlanetOwner: PlayerData | undefined = undefined;
 
         let assignPlayer = false;
         let assignedPlayerIndex = 0;
