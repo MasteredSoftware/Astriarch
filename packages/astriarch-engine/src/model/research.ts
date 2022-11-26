@@ -18,11 +18,11 @@ export enum ResearchType {
 }
 
 export interface ResearchTypeData {
-    chance?: number; // applies to combat improvements
-    percent?: number; // applies to building and propulsion improvements
-    max?: number; // applies to space platforms
-    advantageAgainst?: StarShipType; // applies to custom ships
-    disadvantageAgainst?: StarShipType; // applies to custom ships
+  chance?: number; // applies to combat improvements
+  percent?: number; // applies to building and propulsion improvements
+  max?: number; // applies to space platforms
+  advantageAgainst?: StarShipType; // applies to custom ships
+  disadvantageAgainst?: StarShipType; // applies to custom ships
 }
 
 export interface ResearchTypeProgress {
@@ -34,7 +34,7 @@ export interface ResearchTypeProgress {
   data: ResearchTypeData;
 }
 
-export type ResearchProgressByType = { [T in ResearchType]: ResearchTypeProgress }
+export type ResearchProgressByType = { [T in ResearchType]: ResearchTypeProgress };
 
 export interface ResearchData {
   researchProgressByType: ResearchProgressByType;
