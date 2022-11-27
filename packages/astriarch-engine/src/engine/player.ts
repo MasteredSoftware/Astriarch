@@ -8,6 +8,7 @@ export class Player {
   public static constructPlayer(id: string, type: PlayerType, name: string, color: ColorRgbaData): PlayerData {
     const research = Research.constructResearch();
     const earnedPointsByType = Object.values(EarnedPointsType).reduce((accum, curr) => {
+      accum[curr as EarnedPointsType] = 0;
       return accum;
     }, {} as EarnedPointsByType);
     return {

@@ -30,8 +30,8 @@ export class GameModel {
     const currentCycle = 0;
     const tradingCenter = TradingCenter.constructData(players.length);
 
-    const galaxyWidth = 1920.0; //TODO: externalize later
-    const galaxyHeight = 1080.0; //TODO: externalize later
+    const galaxyWidth = 621.0; //1920.0; //TODO: externalize later
+    const galaxyHeight = 480.0; //1080.0; //TODO: externalize later
     const grid = new Grid(galaxyWidth, galaxyHeight, gameOptions);
     const planets = GameModel.populatePlanets(grid, players, gameOptions);
 
@@ -178,7 +178,7 @@ export class GameModel {
         planets.push(p);
       }
 
-      if (gameOptions.planetsPerSystem !== PlanetsPerSystemOption.FOUR) {
+      if (gameOptions.planetsPerSystem > PlanetsPerSystemOption.FOUR) {
         let quadrantChances = [25, 25, 25, 25];
 
         let chanceToGetAsteroid = 40;
@@ -193,12 +193,13 @@ export class GameModel {
 
             let planetBoundingHex: GridHex | undefined = undefined;
             for (let iSQ = 0; iSQ < quadrantChances.length; iSQ++) {
+              console.log("subQuadrantHexes[iSQ].length", subQuadrantHexes[iSQ].length, quadrantChances);
               if (!subQuadrantHexes[iSQ].length) {
                 continue;
               }
               let chance = quadrantChances[iSQ];
               let max = quadrantChances.reduce(function (a, b) {
-                return a + b;
+                return Math.max(a, b);
               }, 0);
               if (Utils.nextRandom(0, max) < chance) {
                 //pick a planet bounding hex at random from the sub-quadrant (at lest for now)

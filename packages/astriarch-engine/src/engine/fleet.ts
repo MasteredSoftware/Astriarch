@@ -113,13 +113,14 @@ export class Fleet {
   }
 
   public static getStarshipsByType(fleet: FleetData): StarshipsByType {
-    return fleet.starships.reduce((accum, curr) => {
-      if (!(curr.type in accum)) {
-        accum[curr.type] = [];
-      }
-      accum[curr.type].push(curr);
+    const starshipsByType = Object.values(StarShipType).reduce((accum, curr) => {
+      accum[curr as StarShipType] = [];
       return accum;
     }, {} as StarshipsByType);
+    return fleet.starships.reduce((accum, curr) => {
+      accum[curr.type].push(curr);
+      return accum;
+    }, starshipsByType);
   }
 
   public static countStarshipsByType(fleet: FleetData): StarshipTypeCounts {
