@@ -1,11 +1,13 @@
+import { PlanetById } from "../model/clientModel";
 import { StarShipType } from "../model/fleet";
 import { GalaxySizeOption, GameOptions, ModelData, PlanetsPerSystemOption } from "../model/model";
-import { PlanetData, PlanetImprovementType, PlanetType } from "../model/planet";
+import { PlanetData, PlanetImprovementType, PlanetResourceData, PlanetType } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { Utils } from "../utils/utils";
 import { Fleet } from "./fleet";
 import { Grid, GridHex } from "./grid";
 import { Planet } from "./planet";
+import { PlanetResources } from "./planetResources";
 import { Player } from "./player";
 import { TradingCenter } from "./tradingCenter";
 
@@ -239,5 +241,23 @@ export class GameModel {
     } //foreach quadrant
 
     return planets;
+  }
+
+  public static getPlayerTotalResources(player: PlayerData, planetById: PlanetById): PlanetResourceData {
+    const resources = {
+      food: 0,
+      energy: 0,
+      ore: 0,
+      iridium: 0,
+      production: 0,
+    };
+
+    return player.ownedPlanetIds.reduce((accum, curr) => {
+      if (curr in planetById) {
+        const planet = planetById[curr];
+        accum = PlanetResources.addPlanetResources(accum, planet.resources);
+      }
+      return accum;
+    }, resources);
   }
 }

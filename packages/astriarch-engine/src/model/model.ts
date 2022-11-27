@@ -35,11 +35,14 @@ export interface GameOptions {
   version: string;
 }
 
-export interface ModelData {
+export interface ModelBase {
   gameOptions: GameOptions;
   gameStartedAtTime: number;
   lastSnapshotTime: number;
   currentCycle: number;
+}
+
+export interface ModelData extends ModelBase {
   tradingCenter: TradingCenterData;
   players: PlayerData[];
   planets: PlanetData[];

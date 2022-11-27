@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import { startNewGame, advanceGameModelTime } from "astriarch-engine";
+import { startNewGame, advanceClientGameModelTime, getPlayerTotalResources } from "astriarch-engine";
 
 import { Tabs, TabList, TabPanels, Tab, TabPanel, useToast, Button } from "@chakra-ui/react";
 import { Tag, TagLabel, TagLeftIcon, TagRightIcon, TagCloseButton, HStack } from "@chakra-ui/react";
@@ -39,32 +39,38 @@ const Counter = () => {
 };
 
 const AstriarchResources = () => {
-  const [gameModel, setGameModel] = React.useState(startNewGame());
+  const { gameModel, clientGameModel } = startNewGame();
+  const [clientGameModelState, setClientGameModelState] = React.useState(clientGameModel);
+
+  const formattedResources: Record<string, string> = {};
+  const [formattedResourcesState, setFormattedResourcesState] = React.useState(formattedResources);
 
   useAnimationFrame((deltaTime: number) => {
-    const newGameModel = advanceGameModelTime(gameModel);
-    const { resources } = newGameModel.players[0];
+    const newClientGameModel = advanceClientGameModelTime(clientGameModelState);
+    const resources = getPlayerTotalResources(newClientGameModel.mainPlayer, newClientGameModel.mainPlayerOwnedPlanets);
+
     for (const [resource, val] of Object.entries(resources)) {
-      resources[resource] = val.toFixed(1);
+      formattedResources[resource] = val.toFixed(1);
     }
-    //console.log("Advanced time:", newGameModel.players[0].resources);
-    setGameModel(() => ({ ...newGameModel }));
+
+    setClientGameModelState(() => ({ ...newClientGameModel }));
+    setFormattedResourcesState(formattedResources);
   });
 
   return (
     <HStack spacing={4}>
       <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="green" width={100}>
         <TagLeftIcon />
-        <TagLabel>{gameModel.players[0].resources.food}</TagLabel>
+        <TagLabel>{formattedResourcesState.food}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{gameModel.players[0].resources.gold}</TagLabel>
+        <TagLabel>{formattedResourcesState.gold}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{gameModel.players[0].resources.ore}</TagLabel>
+        <TagLabel>{formattedResourcesState.ore}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{gameModel.players[0].resources.iridium}</TagLabel>
+        <TagLabel>{formattedResourcesState.iridium}</TagLabel>
       </Tag>
     </HStack>
   );

@@ -1,11 +1,10 @@
-import { StarShipType } from "../model/fleet";
 import {
   Citizen,
   CitizenWorkerType,
   PlanetData,
   PlanetHappinessType,
   PlanetImprovementType,
-  PlanetResources,
+  PlanetResourceData,
   PlanetType,
 } from "../model/planet";
 import { PlayerData } from "../model/player";
@@ -13,13 +12,14 @@ import { ResearchType } from "../model/research";
 import { Utils } from "../utils/utils";
 import { Fleet } from "./fleet";
 import { GridHex } from "./grid";
+import { PlanetResources } from "./planetResources";
 import { Research } from "./research";
 
 export interface PlanetPerTurnResourceGeneration {
-  baseAmountPerWorkerPerTurn: PlanetResources;
-  amountPerTurn: PlanetResources;
-  amountPerWorkerPerTurn: PlanetResources;
-  amountNextWorkerPerTurn: PlanetResources;
+  baseAmountPerWorkerPerTurn: PlanetResourceData;
+  amountPerTurn: PlanetResourceData;
+  amountPerWorkerPerTurn: PlanetResourceData;
+  amountNextWorkerPerTurn: PlanetResourceData;
 }
 
 export type PopulationAssignments = {
@@ -54,7 +54,7 @@ export class Planet {
     };
 
     const population: Citizen[] = [];
-    const resources = Planet.constructPlanetResources(0, 0, 0, 0, 0);
+    const resources = PlanetResources.constructPlanetResources(0, 0, 0, 0, 0);
     if (initialOwner) {
       population.push(Planet.constructCitizen(type, initialOwner.id));
       resources.food = 4;
@@ -110,22 +110,6 @@ export class Planet {
     return planetData;
   }
 
-  public static constructPlanetResources(
-    food: number,
-    energy: number,
-    ore: number,
-    iridium: number,
-    production: number
-  ): PlanetResources {
-    return {
-      food,
-      energy,
-      ore,
-      iridium,
-      production,
-    };
-  }
-
   public static generateResources(p: PlanetData, cyclesElapsed: number, owner?: PlayerData) {
     const rpt = Planet.getPlanetPerTurnResourceGeneration(p);
 
@@ -160,10 +144,10 @@ export class Planet {
 
   public static getPlanetPerTurnResourceGeneration(p: PlanetData): PlanetPerTurnResourceGeneration {
     const rpt = {
-      baseAmountPerWorkerPerTurn: Planet.constructPlanetResources(0, 0, 0, 0, 2.0),
-      amountPerTurn: Planet.constructPlanetResources(0, 0, 0, 0, 0),
-      amountPerWorkerPerTurn: Planet.constructPlanetResources(0, 0, 0, 0, 0),
-      amountNextWorkerPerTurn: Planet.constructPlanetResources(0, 0, 0, 0, 0), // Potential extra resources if player adds a farmer or miner
+      baseAmountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 2.0),
+      amountPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0),
+      amountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0),
+      amountNextWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0), // Potential extra resources if player adds a farmer or miner
     };
 
     //this is the initial/base planet resource production

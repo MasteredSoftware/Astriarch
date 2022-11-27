@@ -8,7 +8,7 @@ export interface Citizen {
   workerType: CitizenWorkerType;
 }
 
-export interface PlanetResources {
+export interface PlanetResourceData {
   food: number;
   energy: number;
   ore: number;
@@ -66,7 +66,7 @@ export interface PlanetData {
   buildQueue: PlanetProductionItemData[];
   builtImprovements: { [T in PlanetImprovementType]: number };
   maxImprovements: number;
-  resources: PlanetResources;
+  resources: PlanetResourceData;
   originPoint: PointData;
   boundingHexMidPoint: PointData;
   planetaryFleet: FleetData;

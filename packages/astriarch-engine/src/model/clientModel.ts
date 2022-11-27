@@ -1,9 +1,11 @@
-import { HexagonData, PointData } from "../shapes/shapes";
-import { GameOptions } from "./model";
-import { PlanetType } from "./planet";
+import { PointData } from "../shapes/shapes";
+import { GameOptions, ModelBase } from "./model";
+import { PlanetData, PlanetType } from "./planet";
 import { ColorRgbaData, PlayerData, PlayerType } from "./player";
 import { ResearchData } from "./research";
 import { TradeData, TradingCenterResource } from "./tradingCenter";
+
+export type PlanetById = { [T in number]: PlanetData };
 
 export interface ClientPlayer {
   id: string;
@@ -11,7 +13,6 @@ export interface ClientPlayer {
   name: string;
   color: ColorRgbaData;
   points: number;
-  currentTurnEnded: boolean;
   destroyed: boolean;
   research: ResearchData;
 }
@@ -20,7 +21,7 @@ export interface ClientPlanet {
   id: number;
   name: string;
   originPoint: PointData;
-  boundingHex: HexagonData;
+  boundingHexMidPoint: PointData;
   type: PlanetType | null; //NOTE: Populated when the main player explores the planet
 }
 
@@ -32,11 +33,10 @@ export interface ClientTradingCenter {
   mainPlayerTrades: TradeData[];
 }
 
-export interface ClientModelData {
-  currentCycle: number;
+export interface ClientModelData extends ModelBase {
+  clientTradingCenter: ClientTradingCenter;
   mainPlayer: PlayerData;
+  mainPlayerOwnedPlanets: PlanetById;
   clientPlayers: ClientPlayer[];
   clientPlanets: ClientPlanet[];
-  clientTradingCenter: ClientTradingCenter;
-  gameOptions: GameOptions;
 }
