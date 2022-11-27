@@ -22,11 +22,11 @@ const playerColors = [
 ];
 
 export class GameModel {
-  private static buildData(players: PlayerData[], gameOptions: GameOptions): GameModelData {
+  private static constructData(players: PlayerData[], gameOptions: GameOptions): GameModelData {
     const gameStartedAtTime = new Date().getTime();
     const lastSnapshotTime = gameStartedAtTime;
     const currentCycle = 0;
-    const tradingCenter = TradingCenter.buildData(players.length);
+    const tradingCenter = TradingCenter.constructData(players.length);
 
     const galaxyWidth = 1920.0; //TODO: externalize later
     const galaxyHeight = 1080.0; //TODO: externalize later

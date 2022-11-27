@@ -1,9 +1,9 @@
 import { TradingCenterData, TradingCenterResource, TradingCenterResourceType } from "../model/tradingCenter";
 
 export class TradingCenter {
-  public static buildData(playerCount: number): TradingCenterData {
+  public static constructData(playerCount: number): TradingCenterData {
     const creditAmount = playerCount ? playerCount * 5 : 10;
-    const foodResource = TradingCenter.buildResource(
+    const foodResource = TradingCenter.constructResource(
       TradingCenterResourceType.FOOD,
       (playerCount || 2) * 200,
       400,
@@ -11,7 +11,7 @@ export class TradingCenter {
       1.5,
       40
     );
-    const oreResource = TradingCenter.buildResource(
+    const oreResource = TradingCenter.constructResource(
       TradingCenterResourceType.ORE,
       (playerCount || 2) * 10,
       200,
@@ -19,7 +19,7 @@ export class TradingCenter {
       3.0,
       20
     );
-    const iridiumResource = TradingCenter.buildResource(
+    const iridiumResource = TradingCenter.constructResource(
       TradingCenterResourceType.IRIDIUM,
       (playerCount || 2) * 5,
       100,
@@ -38,7 +38,7 @@ export class TradingCenter {
     };
   }
 
-  public static buildResource(
+  public static constructResource(
     type: TradingCenterResourceType,
     amount: number,
     desiredAmount: number,
