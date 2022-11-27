@@ -163,6 +163,7 @@ export class GameModel {
         if (initialPlanetOwner) {
           playerHomePlanetHex = planetBoundingHex;
           initialPlanetOwner.homePlanetId = p.id;
+          initialPlanetOwner.ownedPlanetIds.push(p.id);
         }
 
         if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant && initialPlanetOwner) {
