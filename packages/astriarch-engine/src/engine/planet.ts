@@ -105,7 +105,7 @@ export class Planet {
       waypointPlanetId: null,
     };
 
-    Planet.generateResources(planetData, initialOwner);
+    Planet.generateResources(planetData, 1.0, initialOwner);
 
     return planetData;
   }
@@ -126,7 +126,7 @@ export class Planet {
     };
   }
 
-  public static generateResources(p: PlanetData, owner?: PlayerData) {
+  public static generateResources(p: PlanetData, cyclesElapsed: number, owner?: PlayerData) {
     const rpt = Planet.getPlanetPerTurnResourceGeneration(p);
 
     if (owner) {
@@ -138,10 +138,10 @@ export class Planet {
         //riots cause 1/4 production
         divisor = 4.0;
       }
-      p.resources.food += rpt.amountPerTurn.food / divisor;
-      p.resources.ore += rpt.amountPerTurn.ore / divisor;
-      p.resources.iridium += rpt.amountPerTurn.iridium / divisor;
-      p.resources.production += rpt.amountPerTurn.production / divisor;
+      p.resources.food += (rpt.amountPerTurn.food * cyclesElapsed) / divisor;
+      p.resources.ore += (rpt.amountPerTurn.ore * cyclesElapsed) / divisor;
+      p.resources.iridium += (rpt.amountPerTurn.iridium * cyclesElapsed) / divisor;
+      p.resources.production += (rpt.amountPerTurn.production * cyclesElapsed) / divisor;
     }
   }
 

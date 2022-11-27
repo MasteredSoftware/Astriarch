@@ -1,39 +1,39 @@
-import { Engine } from "./types/engine";
-import { Player, ServerGameModel } from "./types/gameModel";
+import { Engine } from "./engine/engine";
+import { GameController } from "./engine/gameController";
+import { GameModel, GameModelData, playerColors } from "./engine/gameModel";
+import { Player } from "./engine/player";
+import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from "./model/model";
+import { PlayerType } from "./model/player";
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
 
-const engine = new Engine({ serverGameModels: [] });
+const engine = new Engine([]);
 
 export const startNewGame = () => {
-  const player = { resources: { food: 0, gold: 0, ore: 0, iridium: 0 } } as Player;
-  const gameModel = { gameStartedAtTime: new Date().getTime(), players: [player] } as ServerGameModel;
+  const players = [];
+  players.push(Player.constructPlayer("me", PlayerType.Human, "Matt", playerColors[0]));
+  players.push(Player.constructPlayer("c1", PlayerType.Computer_Hard, "Computer1", playerColors[1]));
+
+  const gameOptions = {
+    systemsToGenerate: 2,
+    planetsPerSystem: PlanetsPerSystemOption.FIVE,
+    galaxySize: GalaxySizeOption.SMALL,
+    distributePlanetsEvenly: true,
+    quickStart: true,
+    gameSpeed: GameSpeed.NORMAL,
+    version: "2.0",
+  };
+
+  const gameModel = GameModel.constructData(players, gameOptions);
 
   engine.serverGameModels.push(gameModel);
   return gameModel;
 };
 
-export const advanceGameModelTime = (gameModel: ServerGameModel) => {
+export const advanceGameModelTime = (gameModel: GameModelData) => {
   // this is all just for testing / POC right now
-  const foodPerCycle = 10.0;
-  const goldPerCycle = 3.0;
-  const orePerCycle = 5.0;
-  const iridiumPerCycle = 2.5;
-
-  const nowTime = new Date().getTime();
-
-  const elapsedSinceStart = nowTime - gameModel.gameStartedAtTime;
-
-  const advancedCyclesTotal = elapsedSinceStart / MS_PER_CYCLE;
-  gameModel.currentCycle = Math.trunc(advancedCyclesTotal);
-
-  const { resources } = gameModel.players[0];
-
-  resources.food = foodPerCycle * advancedCyclesTotal;
-  resources.gold = goldPerCycle * advancedCyclesTotal;
-  resources.ore = orePerCycle * advancedCyclesTotal;
-  resources.iridium = iridiumPerCycle * advancedCyclesTotal;
+  GameController.advanceGameClock(gameModel.modelData);
 
   return gameModel;
 };

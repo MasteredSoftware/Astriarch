@@ -14,7 +14,7 @@ export interface GameModelData {
   grid: Grid;
 }
 
-const playerColors = [
+export const playerColors = [
   Utils.ColorRgba(0, 255, 0, 255), //Light Green
   Utils.ColorRgba(200, 0, 200, 255), //Light Purple
   Utils.ColorRgba(0, 128, 255, 255), //Light Blue
@@ -22,7 +22,7 @@ const playerColors = [
 ];
 
 export class GameModel {
-  private static constructData(players: PlayerData[], gameOptions: GameOptions): GameModelData {
+  public static constructData(players: PlayerData[], gameOptions: GameOptions): GameModelData {
     const gameStartedAtTime = new Date().getTime();
     const lastSnapshotTime = gameStartedAtTime;
     const currentCycle = 0;

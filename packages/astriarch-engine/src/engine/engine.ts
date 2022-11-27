@@ -1,8 +1,8 @@
-import { ModelData } from "../model/model";
+import { GameModelData } from "./gameModel";
 
 export class Engine {
-  serverGameModels: ModelData[] = [];
-  constructor(data: ModelData[]) {
+  serverGameModels: GameModelData[] = [];
+  constructor(data: GameModelData[]) {
     this.serverGameModels = data;
   }
 }

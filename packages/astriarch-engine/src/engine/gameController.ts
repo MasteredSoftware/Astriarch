@@ -8,9 +8,11 @@ export class GameController {
   public static advanceGameClock(model: ModelData) {
     const newSnapshotTime = new Date().getTime();
     const lastSnapshotTime = model.lastSnapshotTime;
-    const elapsedSinceLastSnapshot = newSnapshotTime - lastSnapshotTime;
-    const elapsedSinceStart = newSnapshotTime - model.gameStartedAtTime;
 
+    const elapsedSinceLastSnapshot = newSnapshotTime - lastSnapshotTime;
+    const cyclesElapsed = elapsedSinceLastSnapshot / GameController.MS_PER_CYCLE;
+
+    const elapsedSinceStart = newSnapshotTime - model.gameStartedAtTime;
     const advancedCyclesTotal = elapsedSinceStart / GameController.MS_PER_CYCLE;
 
     model.lastSnapshotTime = newSnapshotTime;

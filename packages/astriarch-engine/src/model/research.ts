@@ -17,7 +17,7 @@ export enum ResearchType {
   SPACE_PLATFORM_IMPROVEMENT = 13, //data key is "max" 1 - 5 maximum space platforms player can build on a planet
 }
 
-export interface ResearchTypeData {
+export interface ResearchTypeProgressData {
   chance?: number; // applies to combat improvements
   percent?: number; // applies to building and propulsion improvements
   max?: number; // applies to space platforms
@@ -31,7 +31,7 @@ export interface ResearchTypeProgress {
   currentResearchLevel: number;
   researchPointsBase: number;
   researchPointsCompleted: number;
-  data: ResearchTypeData;
+  data: ResearchTypeProgressData;
 }
 
 export type ResearchProgressByType = { [T in ResearchType]: ResearchTypeProgress };
