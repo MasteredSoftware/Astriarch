@@ -3,6 +3,7 @@ import { startNewGame, advanceClientGameModelTime, getPlayerTotalResources } fro
 
 import { Tabs, TabList, TabPanels, Tab, TabPanel, useToast, Button } from "@chakra-ui/react";
 import { Tag, TagLabel, TagLeftIcon, TagRightIcon, TagCloseButton, HStack } from "@chakra-ui/react";
+import { ClientModelData } from "astriarch-engine/src/model/clientModel";
 
 // REF: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 const useAnimationFrame = (callback: any) => {
@@ -38,8 +39,11 @@ const Counter = () => {
   return <div>{Math.round(count)}</div>;
 };
 
-const AstriarchResources = () => {
-  const { gameModel, clientGameModel } = startNewGame();
+interface AstriarchResourcesProps {
+  clientGameModel: ClientModelData;
+}
+
+const AstriarchResources = ({ clientGameModel }: AstriarchResourcesProps) => {
   const [clientGameModelState, setClientGameModelState] = React.useState(clientGameModel);
 
   const formattedResources: Record<string, string> = {};
@@ -49,6 +53,7 @@ const AstriarchResources = () => {
     const newClientGameModel = advanceClientGameModelTime(clientGameModelState);
     const resources = getPlayerTotalResources(newClientGameModel.mainPlayer, newClientGameModel.mainPlayerOwnedPlanets);
 
+    console.log("resources:", resources);
     for (const [resource, val] of Object.entries(resources)) {
       formattedResources[resource] = val.toFixed(1);
     }
@@ -63,13 +68,13 @@ const AstriarchResources = () => {
         <TagLeftIcon />
         <TagLabel>{formattedResourcesState.food}</TagLabel>
       </Tag>
-      <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{formattedResourcesState.gold}</TagLabel>
+      <Tag size={"sm"} key={"sm-energy"} variant="outline" colorScheme="blue" width={100}>
+        <TagLabel>{formattedResourcesState.energy}</TagLabel>
       </Tag>
-      <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="blue" width={100}>
+      <Tag size={"sm"} key={"sm-ore"} variant="outline" colorScheme="blue" width={100}>
         <TagLabel>{formattedResourcesState.ore}</TagLabel>
       </Tag>
-      <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="blue" width={100}>
+      <Tag size={"sm"} key={"sm-iridium"} variant="outline" colorScheme="blue" width={100}>
         <TagLabel>{formattedResourcesState.iridium}</TagLabel>
       </Tag>
     </HStack>
@@ -77,6 +82,7 @@ const AstriarchResources = () => {
 };
 
 export default function Index() {
+  const { gameModel, clientGameModel } = startNewGame();
   const toast = useToast();
   return (
     <div>
@@ -121,7 +127,7 @@ export default function Index() {
         ))}
       </HStack>
       <Counter />
-      <AstriarchResources />
+      <AstriarchResources clientGameModel={clientGameModel} />
     </div>
   );
 }

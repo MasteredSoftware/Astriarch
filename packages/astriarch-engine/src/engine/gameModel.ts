@@ -193,7 +193,6 @@ export class GameModel {
 
             let planetBoundingHex: GridHex | undefined = undefined;
             for (let iSQ = 0; iSQ < quadrantChances.length; iSQ++) {
-              console.log("subQuadrantHexes[iSQ].length", subQuadrantHexes[iSQ].length, quadrantChances);
               if (!subQuadrantHexes[iSQ].length) {
                 continue;
               }
