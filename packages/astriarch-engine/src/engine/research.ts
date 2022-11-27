@@ -121,6 +121,12 @@ export class Research {
     return player.research.researchProgressByType[researchType].data.percent!;
   }
 
+  public static getCreditAndResearchAmountEarnedPerTurn(researchData: ResearchData, creditAmountAtMaxPercent: number) {
+    const researchAmountEarnedPerTurn = creditAmountAtMaxPercent * researchData.researchPercent;
+    const creditAmountEarnedPerTurn = creditAmountAtMaxPercent - researchAmountEarnedPerTurn;
+    return { researchAmountEarnedPerTurn, creditAmountEarnedPerTurn };
+  }
+
   private static constructResearchTypeIndex(): ResearchTypeIndex {
     return Object.values(ResearchType).reduce((accum, curr) => {
       const type = curr as ResearchType;

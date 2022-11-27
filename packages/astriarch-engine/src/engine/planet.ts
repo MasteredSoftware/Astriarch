@@ -111,7 +111,7 @@ export class Planet {
   }
 
   public static generateResources(p: PlanetData, cyclesElapsed: number, owner?: PlayerData) {
-    const rpt = Planet.getPlanetPerTurnResourceGeneration(p);
+    const rpt = Planet.getPlanetPerTurnResourceGeneration(p, owner);
 
     if (owner) {
       let divisor = 1.0;
@@ -126,7 +126,30 @@ export class Planet {
       p.resources.ore += (rpt.amountPerTurn.ore * cyclesElapsed) / divisor;
       p.resources.iridium += (rpt.amountPerTurn.iridium * cyclesElapsed) / divisor;
       p.resources.production += (rpt.amountPerTurn.production * cyclesElapsed) / divisor;
+      let maxCredits = Planet.getTaxRevenueAtMaxPercent(p, owner);
+      const { creditAmountEarnedPerTurn } = Research.getCreditAndResearchAmountEarnedPerTurn(
+        owner.research,
+        maxCredits
+      );
+      p.resources.energy += (creditAmountEarnedPerTurn * cyclesElapsed) / divisor;
     }
+  }
+
+  public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
+    //determine tax revenue (energy credits)
+    let baseAmountPerPopPerTurn = p.id === owner.homePlanetId ? 2.0 : 1.0;
+    let amountPerTurn = p.population.length * baseAmountPerPopPerTurn;
+    let colonyCount = p.builtImprovements[PlanetImprovementType.Colony];
+    if (colonyCount) {
+      let colonyBoost = Research.getResearchBoostForBuildingEfficiencyImprovement(
+        ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES,
+        owner
+      );
+      amountPerTurn +=
+        Math.min(colonyCount, p.population.length) * baseAmountPerPopPerTurn * colonyBoost * Planet.IMPROVEMENT_RATIO;
+    }
+
+    return amountPerTurn / 1.5;
   }
 
   public static constructCitizen(planetType: PlanetType, loyalToPlayerId: string): Citizen {
@@ -142,7 +165,7 @@ export class Planet {
     };
   }
 
-  public static getPlanetPerTurnResourceGeneration(p: PlanetData): PlanetPerTurnResourceGeneration {
+  public static getPlanetPerTurnResourceGeneration(p: PlanetData, owner?: PlayerData): PlanetPerTurnResourceGeneration {
     const rpt = {
       baseAmountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 2.0),
       amountPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0),
@@ -204,7 +227,8 @@ export class Planet {
       let researchEffectiveness = null;
       if (farmCount > 0) {
         researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
-          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS
+          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS,
+          owner
         );
         if (farmers < farmCount) {
           rpt.amountNextWorkerPerTurn.food =
@@ -221,7 +245,8 @@ export class Planet {
       }
       if (mineCount > 0) {
         researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
-          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES
+          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES,
+          owner
         );
         if (miners < mineCount) {
           rpt.amountNextWorkerPerTurn.ore =
@@ -245,7 +270,8 @@ export class Planet {
       }
       if (factoryCount > 0) {
         researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
-          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES
+          ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES,
+          owner
         );
         if (builders < factoryCount) {
           rpt.amountNextWorkerPerTurn.production =

@@ -1,6 +1,7 @@
 import { EarnedPointsType } from "../model/earnedPoints";
-import { PlanetData } from "../model/planet";
+import { PlanetData, PlanetImprovementType } from "../model/planet";
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from "../model/player";
+import { ResearchType } from "../model/research";
 import { Fleet } from "./fleet";
 import { Research } from "./research";
 
