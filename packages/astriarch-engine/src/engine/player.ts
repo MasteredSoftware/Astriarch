@@ -1,8 +1,10 @@
+import { PlanetById } from "../model/clientModel";
 import { EarnedPointsType } from "../model/earnedPoints";
 import { PlanetData, PlanetImprovementType } from "../model/planet";
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from "../model/player";
 import { ResearchType } from "../model/research";
 import { Fleet } from "./fleet";
+import { Planet } from "./planet";
 import { Research } from "./research";
 
 export class Player {
@@ -58,5 +60,17 @@ export class Player {
     );
     let lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
     p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
+  }
+
+  public static advanceGameClockForPlayer(p: PlayerData, ownedPlanets: PlanetById, cyclesElapsed: number) {
+    Player.generatePlayerResources(p, ownedPlanets, cyclesElapsed);
+
+    Research.advanceResearchForPlayer(p, ownedPlanets);
+  }
+
+  public static generatePlayerResources(p: PlayerData, ownedPlanets: PlanetById, cyclesElapsed: number) {
+    for (const planet of Object.values(ownedPlanets)) {
+      Planet.generateResources(planet, cyclesElapsed, p);
+    }
   }
 }

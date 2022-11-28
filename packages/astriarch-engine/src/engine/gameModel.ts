@@ -248,6 +248,7 @@ export class GameModel {
     const resources = {
       food: 0,
       energy: 0,
+      research: 0,
       ore: 0,
       iridium: 0,
       production: 0,

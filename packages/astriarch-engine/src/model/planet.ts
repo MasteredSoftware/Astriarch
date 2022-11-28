@@ -11,6 +11,7 @@ export interface Citizen {
 export interface PlanetResourceData {
   food: number;
   energy: number;
+  research: number;
   ore: number;
   iridium: number;
   production: number;

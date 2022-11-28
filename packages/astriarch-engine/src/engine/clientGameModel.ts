@@ -12,8 +12,7 @@ export class ClientGameModel {
     if (!mainPlayer) {
       throw new Error("Unable to find target player in constructClientGameModel!");
     }
-    const ownedPlanets = ClientGameModel.getPlanets(mainPlayer?.ownedPlanetIds, model.planets);
-    const mainPlayerOwnedPlanets = ClientGameModel.getPlanetByIdIndex(ownedPlanets);
+    const mainPlayerOwnedPlanets = ClientGameModel.getOwnedPlanets(mainPlayer?.ownedPlanetIds, model.planets);
     const otherPlayers = model.players.filter((player) => player.id !== targetPlayerId);
     const clientPlayers = otherPlayers.map((player) => ClientGameModel.constructClientPlayer(player));
     const mainPlayerExploredPlanetIds = new Set(mainPlayer?.knownPlanetIds);
@@ -86,5 +85,9 @@ export class ClientGameModel {
       accum[curr.id] = curr;
       return accum;
     }, {} as PlanetById);
+  }
+
+  public static getOwnedPlanets(planetIds: number[], planets: PlanetData[]) {
+    return ClientGameModel.getPlanetByIdIndex(ClientGameModel.getPlanets(planetIds, planets));
   }
 }

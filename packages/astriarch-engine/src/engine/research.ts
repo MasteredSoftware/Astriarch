@@ -1,3 +1,5 @@
+import { PlanetById } from "../model/clientModel";
+import { EventNotificationType } from "../model/eventNotification";
 import { StarShipType } from "../model/fleet";
 import { PlayerData } from "../model/player";
 import {
@@ -7,6 +9,8 @@ import {
   ResearchTypeProgress,
   ResearchTypeProgressData,
 } from "../model/research";
+import { GameTools } from "../utils/gameTools";
+import { Events } from "./events";
 
 const MAX_RESEARCH_LEVEL = 9;
 
@@ -125,6 +129,153 @@ export class Research {
     const researchAmountEarnedPerTurn = creditAmountAtMaxPercent * researchData.researchPercent;
     const creditAmountEarnedPerTurn = creditAmountAtMaxPercent - researchAmountEarnedPerTurn;
     return { researchAmountEarnedPerTurn, creditAmountEarnedPerTurn };
+  }
+
+  public static canResearch(researchProgress: ResearchTypeProgress): boolean {
+    return researchProgress.currentResearchLevel < researchProgress.maxResearchLevel;
+  }
+
+  public static advanceResearchForPlayer(player: PlayerData, ownedPlanets: PlanetById) {
+    if (player.research.researchTypeInQueue) {
+      let totalResearch = 0;
+      Object.values(ownedPlanets).forEach((planet) => {
+        totalResearch += planet.resources.research;
+        planet.resources.research = 0;
+      });
+      let rtpInQueue = player.research.researchProgressByType[player.research.researchTypeInQueue];
+      let levelIncrease = Research.setResearchPointsCompleted(
+        rtpInQueue,
+        rtpInQueue.researchPointsCompleted + totalResearch
+      );
+      if (levelIncrease) {
+        //we've gained a level
+        const message =
+          "Our Scientists and Engineers have finished researching and developing: " +
+          Research.researchProgressToString(rtpInQueue);
+        Events.enqueueNewEvent(player.id, EventNotificationType.ResearchComplete, message);
+
+        if (!Research.canResearch(rtpInQueue)) {
+          player.research.researchTypeInQueue = null;
+        }
+      }
+    }
+    // else notifiy the player at some point?
+  }
+
+  public static researchProgressToString(researchProgress: ResearchTypeProgress, nextLevel?: number) {
+    let level = researchProgress.currentResearchLevel + (nextLevel ? 2 : 1);
+    let defaultName = Research.researchProgressFriendlyName(researchProgress);
+    switch (researchProgress.type) {
+      case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
+        defaultName += " Level " + level;
+        break;
+      case ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
+        defaultName += " Level " + level;
+        break;
+      case ResearchType.PROPULSION_IMPROVEMENT:
+        defaultName += " Level " + level;
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
+        defaultName = "Level " + level + " " + defaultName;
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
+        defaultName = "Level " + level + " " + defaultName;
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
+        defaultName = "Level " + level + " " + defaultName;
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
+        defaultName = "Level " + level + " " + defaultName;
+        break;
+      case ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+        defaultName = "Level " + level + " " + defaultName;
+        break;
+    }
+    return defaultName;
+  }
+
+  public static researchProgressFriendlyName(researchProgress: ResearchTypeProgress) {
+    let defaultName = "Unknown";
+    switch (researchProgress.type) {
+      case ResearchType.NEW_SHIP_TYPE_DEFENDER:
+        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.SystemDefense);
+        break;
+      case ResearchType.NEW_SHIP_TYPE_SCOUT:
+        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Scout);
+        break;
+      case ResearchType.NEW_SHIP_TYPE_DESTROYER:
+        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Destroyer);
+        break;
+      case ResearchType.NEW_SHIP_TYPE_CRUISER:
+        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Cruiser);
+        break;
+      case ResearchType.NEW_SHIP_TYPE_BATTLESHIP:
+        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Battleship);
+        break;
+      case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
+        defaultName = "Ship Attack";
+        break;
+      case ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
+        defaultName = "Ship Defense";
+        break;
+      case ResearchType.PROPULSION_IMPROVEMENT:
+        defaultName = "Ship Propulsion";
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
+        defaultName = "Farms";
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
+        defaultName = "Mines";
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
+        defaultName = "Colonies";
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
+        defaultName = "Factories";
+        break;
+      case ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+        defaultName = "Space Platforms";
+        break;
+    }
+    return defaultName;
+  }
+
+  private static setResearchPointsCompleted(researchProgress: ResearchTypeProgress, pointsCompleted: number): number {
+    let originalLevel = researchProgress.currentResearchLevel;
+    researchProgress.researchPointsCompleted = pointsCompleted;
+    const { researchLevelCosts } = Research.researchTypeIndex[researchProgress.type];
+    //set current level based on completed points
+    for (let i = 0; i < researchLevelCosts.length; i++) {
+      let researchCost = researchLevelCosts[i];
+      if (researchProgress.researchPointsCompleted >= researchCost) {
+        researchProgress.currentResearchLevel = i;
+      } else {
+        break;
+      }
+    }
+    Research.setDataBasedOnLevel(researchProgress);
+    return researchProgress.currentResearchLevel - originalLevel; //returns level increase
+  }
+
+  private static setDataBasedOnLevel(researchProgress: ResearchTypeProgress) {
+    switch (researchProgress.type) {
+      case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
+      case ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
+        researchProgress.data.chance = (researchProgress.currentResearchLevel + 1) / 10;
+        break;
+      case ResearchType.PROPULSION_IMPROVEMENT:
+        researchProgress.data.percent = 1.0 + (researchProgress.currentResearchLevel + 1) * 0.5;
+        break;
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
+      case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
+        researchProgress.data.percent = 1.0 + (researchProgress.currentResearchLevel + 1) / 10;
+        break;
+      case ResearchType.SPACE_PLATFORM_IMPROVEMENT:
+        researchProgress.data.max = Math.max(Math.floor((researchProgress.currentResearchLevel + 1) / 2), 1);
+        break;
+    }
   }
 
   private static constructResearchTypeIndex(): ResearchTypeIndex {

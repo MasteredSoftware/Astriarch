@@ -3,8 +3,10 @@ import { ModelBase, ModelData } from "../model/model";
 import { PlanetData } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { ClientGameModel } from "./clientGameModel";
+import { Events } from "./events";
 import { GameModel } from "./gameModel";
 import { Planet } from "./planet";
+import { Player } from "./player";
 
 export class GameController {
   private static BATTLE_RANDOMNESS_FACTOR: 4.0; //the amount randomness (chance) when determining fleet conflict outcomes, it is the strength multiplyer where the winner is guaranteed to win
@@ -30,29 +32,25 @@ export class GameController {
 
   public static advanceGameClock(model: ModelData) {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(model);
-    const planetById = ClientGameModel.getPlanetByIdIndex(model.planets);
+    //const planetById = ClientGameModel.getPlanetByIdIndex(model.planets);
 
     for (const p of model.players) {
-      GameController.generatePlayerResources(p, planetById, cyclesElapsed);
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, model.planets);
+      Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed);
     }
 
     model.lastSnapshotTime = newSnapshotTime;
     model.currentCycle = currentCycle;
+    Events.publish();
   }
 
   public static advanceClientGameClock(clientModel: ClientModelData) {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
-    GameController.generatePlayerResources(clientModel.mainPlayer, clientModel.mainPlayerOwnedPlanets, cyclesElapsed);
+    Player.advanceGameClockForPlayer(clientModel.mainPlayer, clientModel.mainPlayerOwnedPlanets, cyclesElapsed);
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;
-  }
-
-  public static generatePlayerResources(p: PlayerData, planetById: PlanetById, cyclesElapsed: number) {
-    for (const planetId of p.ownedPlanetIds) {
-      const planet = planetById[planetId];
-      Planet.generateResources(planet, cyclesElapsed, p);
-    }
+    Events.publish();
   }
 }

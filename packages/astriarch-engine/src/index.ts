@@ -1,11 +1,13 @@
 import { ClientGameModel } from "./engine/clientGameModel";
 import { Engine } from "./engine/engine";
+import { Events, Subscription } from "./engine/events";
 import { GameController } from "./engine/gameController";
 import { GameModel, GameModelData, playerColors } from "./engine/gameModel";
 import { Player } from "./engine/player";
 import { ClientModelData, PlanetById } from "./model/clientModel";
 import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from "./model/model";
 import { PlayerData, PlayerType } from "./model/player";
+import { ResearchType } from "./model/research";
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
@@ -17,6 +19,9 @@ export const startNewGame = () => {
   const players = [];
   players.push(Player.constructPlayer("me", PlayerType.Human, "Matt", playerColors[0]));
   players.push(Player.constructPlayer("c1", PlayerType.Computer_Hard, "Computer1", playerColors[1]));
+
+  players[0].research.researchPercent = 0.1;
+  players[0].research.researchTypeInQueue = ResearchType.PROPULSION_IMPROVEMENT;
 
   const gameOptions = {
     systemsToGenerate: 2,
@@ -47,6 +52,10 @@ export const advanceClientGameModelTime = (clientGameModel: ClientModelData) => 
   GameController.advanceClientGameClock(clientGameModel);
 
   return clientGameModel;
+};
+
+export const subscribeToEvents = (playerId: string, callback: Subscription) => {
+  Events.subscribe(playerId, callback);
 };
 
 export const getPlayerTotalResources = (player: PlayerData, planetById: PlanetById) => {

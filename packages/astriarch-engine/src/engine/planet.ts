@@ -54,7 +54,7 @@ export class Planet {
     };
 
     const population: Citizen[] = [];
-    const resources = PlanetResources.constructPlanetResources(0, 0, 0, 0, 0);
+    const resources = PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0);
     if (initialOwner) {
       population.push(Planet.constructCitizen(type, initialOwner.id));
       resources.food = 4;
@@ -111,7 +111,7 @@ export class Planet {
   }
 
   public static generateResources(p: PlanetData, cyclesElapsed: number, owner?: PlayerData) {
-    const rpt = Planet.getPlanetPerTurnResourceGeneration(p, owner);
+    const rpt = Planet.getPlanetWorkerResourceGeneration(p, owner);
 
     if (owner) {
       let divisor = 1.0;
@@ -126,12 +126,14 @@ export class Planet {
       p.resources.ore += (rpt.amountPerTurn.ore * cyclesElapsed) / divisor;
       p.resources.iridium += (rpt.amountPerTurn.iridium * cyclesElapsed) / divisor;
       p.resources.production += (rpt.amountPerTurn.production * cyclesElapsed) / divisor;
-      let maxCredits = Planet.getTaxRevenueAtMaxPercent(p, owner);
-      const { creditAmountEarnedPerTurn } = Research.getCreditAndResearchAmountEarnedPerTurn(
-        owner.research,
-        maxCredits
-      );
+      const maxCredits = Planet.getTaxRevenueAtMaxPercent(p, owner);
+      const { creditAmountEarnedPerTurn, researchAmountEarnedPerTurn } =
+        Research.getCreditAndResearchAmountEarnedPerTurn(owner.research, maxCredits);
       p.resources.energy += (creditAmountEarnedPerTurn * cyclesElapsed) / divisor;
+      //add a bit more research completed based on a random factor
+      const additionalResearchBreakthrough = Utils.nextRandom(0, researchAmountEarnedPerTurn * 0.1);
+      p.resources.research +=
+        ((researchAmountEarnedPerTurn + additionalResearchBreakthrough) * cyclesElapsed) / divisor;
     }
   }
 
@@ -165,12 +167,12 @@ export class Planet {
     };
   }
 
-  public static getPlanetPerTurnResourceGeneration(p: PlanetData, owner?: PlayerData): PlanetPerTurnResourceGeneration {
+  public static getPlanetWorkerResourceGeneration(p: PlanetData, owner?: PlayerData): PlanetPerTurnResourceGeneration {
     const rpt = {
-      baseAmountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 2.0),
-      amountPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0),
-      amountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0),
-      amountNextWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0), // Potential extra resources if player adds a farmer or miner
+      baseAmountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 2.0),
+      amountPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0),
+      amountPerWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0),
+      amountNextWorkerPerTurn: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0), // Potential extra resources if player adds a farmer or miner
     };
 
     //this is the initial/base planet resource production
