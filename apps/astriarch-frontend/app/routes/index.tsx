@@ -5,6 +5,7 @@ import { Tabs, TabList, TabPanels, Tab, TabPanel, useToast, Button } from "@chak
 import { Tag, TagLabel, TagLeftIcon, TagRightIcon, TagCloseButton, HStack } from "@chakra-ui/react";
 import { ClientModelData } from "astriarch-engine/src/model/clientModel";
 import { EventNotification } from "astriarch-engine/dist/model/eventNotification";
+import { Research } from "astriarch-engine";
 
 // REF: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 const useAnimationFrame = (callback: any) => {
@@ -63,23 +64,33 @@ const AstriarchResources = ({ clientGameModel }: AstriarchResourcesProps) => {
     setFormattedResourcesState(formattedResources);
   });
 
+  let currentlyResearching = "Nothing";
+  if (clientGameModelState.mainPlayer.research.researchTypeInQueue) {
+    currentlyResearching = Research.researchProgressToString(
+      clientGameModelState.mainPlayer.research.researchProgressByType[
+        clientGameModelState.mainPlayer.research.researchTypeInQueue
+      ]
+    );
+  }
+
   return (
     <HStack spacing={4}>
       <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="green" width={100}>
         <TagLeftIcon />
-        <TagLabel>{formattedResourcesState.food}</TagLabel>
+        <TagLabel>Food: {formattedResourcesState.food}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-energy"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{formattedResourcesState.energy}</TagLabel>
+        <TagLabel>Energy: {formattedResourcesState.energy}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-research"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{formattedResourcesState.research}</TagLabel>
+        <TagLabel>Research: {formattedResourcesState.research}</TagLabel>
       </Tag>
+      <div>Researching: {currentlyResearching}</div>
       <Tag size={"sm"} key={"sm-ore"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{formattedResourcesState.ore}</TagLabel>
+        <TagLabel>Ore: {formattedResourcesState.ore}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-iridium"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>{formattedResourcesState.iridium}</TagLabel>
+        <TagLabel>Iridium: {formattedResourcesState.iridium}</TagLabel>
       </Tag>
     </HStack>
   );

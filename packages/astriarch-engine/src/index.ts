@@ -8,6 +8,7 @@ import { ClientModelData, PlanetById } from "./model/clientModel";
 import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from "./model/model";
 import { PlayerData, PlayerType } from "./model/player";
 import { ResearchType } from "./model/research";
+import { CitizenWorkerType } from "./model/planet";
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
@@ -16,11 +17,11 @@ const engine = new Engine([]);
 
 export const startNewGame = () => {
   // NOTE: just for testing right now
-  const players = [];
+  const players = [] as PlayerData[];
   players.push(Player.constructPlayer("me", PlayerType.Human, "Matt", playerColors[0]));
   players.push(Player.constructPlayer("c1", PlayerType.Computer_Hard, "Computer1", playerColors[1]));
 
-  players[0].research.researchPercent = 0.1;
+  players[0].research.researchPercent = 0.9;
   players[0].research.researchTypeInQueue = ResearchType.PROPULSION_IMPROVEMENT;
 
   const gameOptions = {
@@ -34,6 +35,9 @@ export const startNewGame = () => {
   };
 
   const gameModel = GameModel.constructData(players, gameOptions);
+
+  const homePlanet = gameModel.modelData.planets.find((p) => p.id === players[0].homePlanetId);
+  homePlanet!.population[0].workerType = CitizenWorkerType.Miner;
 
   engine.serverGameModels.push(gameModel);
 
@@ -61,3 +65,6 @@ export const subscribeToEvents = (playerId: string, callback: Subscription) => {
 export const getPlayerTotalResources = (player: PlayerData, planetById: PlanetById) => {
   return GameModel.getPlayerTotalResources(player, planetById);
 };
+
+// TODO: decide what the engine should actually export
+export * from "./engine";
