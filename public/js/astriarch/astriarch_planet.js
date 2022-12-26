@@ -384,7 +384,7 @@ Astriarch.Planet.prototype.SpendResources = function(
     ownedPlanets.sort(planetDistanceComparer.sortFunction);
 
     for (var i in ownedPlanets) {
-      if (foodNeeded != 0) foodNeeded -= ownedPlanets[i].Resources.SpendFoodAsPossible(oreNeeded);
+      if (foodNeeded != 0) foodNeeded -= ownedPlanets[i].Resources.SpendFoodAsPossible(foodNeeded);
       if (oreNeeded != 0) oreNeeded -= ownedPlanets[i].Resources.SpendOreAsPossible(oreNeeded);
       if (iridiumNeeded != 0) iridiumNeeded -= ownedPlanets[i].Resources.SpendIridiumAsPossible(iridiumNeeded);
 
