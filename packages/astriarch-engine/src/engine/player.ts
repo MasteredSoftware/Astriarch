@@ -66,6 +66,12 @@ export class Player {
     Player.generatePlayerResources(p, ownedPlanets, cyclesElapsed);
 
     Research.advanceResearchForPlayer(p, ownedPlanets);
+
+    // TODO:
+    // eatAndStarve
+    // adjustPlayerPlanetProtestLevels
+    // buildPlayerPlanetImprovements
+    // growPlayerPlanetPopulation
   }
 
   public static generatePlayerResources(p: PlayerData, ownedPlanets: PlanetById, cyclesElapsed: number) {

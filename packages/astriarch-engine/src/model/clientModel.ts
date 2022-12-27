@@ -26,7 +26,7 @@ export interface ClientPlanet {
 }
 
 export interface ClientTradingCenter {
-  creditAmount: number;
+  energyAmount: number;
   foodResource: TradingCenterResource;
   oreResource: TradingCenterResource;
   iridiumResource: TradingCenterResource;

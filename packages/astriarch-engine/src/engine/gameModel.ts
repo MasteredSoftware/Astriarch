@@ -262,4 +262,8 @@ export class GameModel {
       return accum;
     }, resources);
   }
+
+  public static getPlanetById(gameModel: GameModelData, planetId:number): PlanetData|undefined {
+    return gameModel.modelData.planets.find(p => p.id === planetId);
+  }
 }

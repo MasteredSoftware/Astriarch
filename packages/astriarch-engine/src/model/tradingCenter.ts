@@ -11,7 +11,7 @@ export enum TradeType {
 
 export interface TradeData {
   playerId: string;
-  planetId: string;
+  planetId: number;
   tradeType: TradeType;
   resourceType: TradingCenterResourceType;
   amount: number;
@@ -28,7 +28,7 @@ export interface TradingCenterResource {
 }
 
 export interface TradingCenterData {
-  creditAmount: number;
+  energyAmount: number;
   foodResource: TradingCenterResource;
   oreResource: TradingCenterResource;
   iridiumResource: TradingCenterResource;

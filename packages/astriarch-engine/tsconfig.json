@@ -7,8 +7,9 @@
     "declarationMap": true,
     "skipLibCheck": true,
     "strict": true,
+    "types": ["node", "jest"],
     "outDir": "./dist"
   },
   "include": ["."],
-  "exclude": ["dist", "node_modules", "**/*.spec.ts"]
+  "exclude": ["dist", "node_modules"]
 }

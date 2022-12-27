@@ -12,6 +12,8 @@ export class Grid {
   quadrants: GridRect[];
   hexes: GridHex[];
 
+  hexByMidPoint: {[T in string]:GridHex} = {}; // indexed by x.y
+
   constructor(width: number, height: number, options: GameOptions) {
     this.quadrants = [];
     this.hexes = [];
@@ -115,7 +117,32 @@ export class Grid {
         h.pathCoOrdY = yCoOrd++;
       }
     }
+
+    // build our hexByMidPoint index
+    for (const h of this.hexes) {
+      this.hexByMidPoint[this.getHexByMidPointKey(h.midPoint)] = h;
+    }
   }
+
+  private getHexByMidPointKey(p:PointData):string {
+    return `${p.x}.${p.y}`;
+  }
+
+  public getHexAt(p:PointData) {
+    const key = this.getHexByMidPointKey(p);
+    if(key in this.hexByMidPoint) {
+      return this.hexByMidPoint[key];
+    }
+
+    //find the hex that contains this point
+    for (const h of this.hexes) {
+      if (h.contains(p)) {
+        return h;
+      }
+    }
+  
+    return null;
+  };
 
   public static galaxySizeOptionToHexSizeMultiplier(width: number, galaxySize: GalaxySizeOption) {
     if (galaxySize === GalaxySizeOption.LARGE) {

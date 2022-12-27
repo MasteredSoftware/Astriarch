@@ -62,12 +62,12 @@ export class ClientGameModel {
     tradingCender: TradingCenterData,
     targetPlayerId: string
   ): ClientTradingCenter {
-    const { creditAmount, foodResource, oreResource, iridiumResource } = tradingCender;
+    const { energyAmount, foodResource, oreResource, iridiumResource } = tradingCender;
 
     const mainPlayerTrades = tradingCender.currentTrades.filter((trade) => trade.playerId === targetPlayerId);
 
     return {
-      creditAmount,
+      energyAmount,
       foodResource,
       oreResource,
       iridiumResource,

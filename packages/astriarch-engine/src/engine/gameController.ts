@@ -34,10 +34,19 @@ export class GameController {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(model);
     //const planetById = ClientGameModel.getPlanetByIdIndex(model.planets);
 
+    // TODO: server side operations prior to advancing game clock for the player
+    // ComputerTakeTurn
+    // executeCurrentTrades
+    // moveShips
+
     for (const p of model.players) {
       const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, model.planets);
       Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed);
     }
+
+    // TODO: server side operations after advancing game clock for player
+    // repair fleets on planets
+    // resolvePlanetaryConflicts
 
     model.lastSnapshotTime = newSnapshotTime;
     model.currentCycle = currentCycle;
