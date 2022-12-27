@@ -6,7 +6,7 @@
     "async": "2.6.4",
     "body-parser": "^1.18.3",
     "config": "0.4.34",
-    "connect-mongo": "^2.0.1",
+    "connect-mongo": "^4.6.0",
     "console-ten": "0.0.5",
     "cookie-parser": "^1.4.3",
     "errorhandler": "^1.5.0",
