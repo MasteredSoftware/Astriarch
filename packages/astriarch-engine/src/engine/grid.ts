@@ -12,7 +12,7 @@ export class Grid {
   quadrants: GridRect[];
   hexes: GridHex[];
 
-  hexByMidPoint: {[T in string]:GridHex} = {}; // indexed by x.y
+  hexByMidPoint: { [T in string]: GridHex } = {}; // indexed by x.y
 
   constructor(width: number, height: number, options: GameOptions) {
     this.quadrants = [];
@@ -124,13 +124,13 @@ export class Grid {
     }
   }
 
-  private getHexByMidPointKey(p:PointData):string {
+  private getHexByMidPointKey(p: PointData): string {
     return `${p.x}.${p.y}`;
   }
 
-  public getHexAt(p:PointData) {
+  public getHexAt(p: PointData) {
     const key = this.getHexByMidPointKey(p);
-    if(key in this.hexByMidPoint) {
+    if (key in this.hexByMidPoint) {
       return this.hexByMidPoint[key];
     }
 
@@ -140,9 +140,9 @@ export class Grid {
         return h;
       }
     }
-  
+
     return null;
-  };
+  }
 
   public static galaxySizeOptionToHexSizeMultiplier(width: number, galaxySize: GalaxySizeOption) {
     if (galaxySize === GalaxySizeOption.LARGE) {

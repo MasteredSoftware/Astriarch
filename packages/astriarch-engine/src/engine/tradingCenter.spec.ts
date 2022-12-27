@@ -1,21 +1,38 @@
-import { ClientModelData } from '../model/clientModel';
-import { PlayerData } from '../model/player';
-import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
-import {startNewTestGame, TestGameData} from '../test/testUtils';
-import { ClientGameModel } from './clientGameModel';
-import { GameModel, GameModelData } from './gameModel';
-import { TradingCenter } from './tradingCenter';
+import { ClientModelData } from "../model/clientModel";
+import { PlayerData } from "../model/player";
+import { TradeType, TradingCenterResourceType } from "../model/tradingCenter";
+import { startNewTestGame, TestGameData } from "../test/testUtils";
+import { ClientGameModel } from "./clientGameModel";
+import { GameModel, GameModelData } from "./gameModel";
+import { TradingCenter } from "./tradingCenter";
 
 let testGameData: TestGameData;
 let player1: PlayerData;
 let player2: PlayerData;
 
-const checkTrade = function(gameModel: GameModelData, clientGameModel: ClientModelData, player: PlayerData, tradeType: TradeType, resourceType: TradingCenterResourceType, tradeAmount: number) {
-  const {tradingCenter} = gameModel.modelData;
+const checkTrade = function (
+  gameModel: GameModelData,
+  clientGameModel: ClientModelData,
+  player: PlayerData,
+  tradeType: TradeType,
+  resourceType: TradingCenterResourceType,
+  tradeAmount: number
+) {
+  const { tradingCenter } = gameModel.modelData;
   const totalResources = GameModel.getPlayerTotalResources(player, clientGameModel.mainPlayerOwnedPlanets);
   const origEnergyAmount = totalResources.energy;
-  const origResourceAmount = resourceType === TradingCenterResourceType.FOOD ? totalResources.food : resourceType === TradingCenterResourceType.ORE ? totalResources.ore : totalResources.iridium;
-  const origResourcePrice = resourceType === TradingCenterResourceType.FOOD ? tradingCenter.foodResource.currentPrice : resourceType === TradingCenterResourceType.ORE ? tradingCenter.foodResource.currentPrice : tradingCenter.iridiumResource.currentPrice;
+  const origResourceAmount =
+    resourceType === TradingCenterResourceType.FOOD
+      ? totalResources.food
+      : resourceType === TradingCenterResourceType.ORE
+      ? totalResources.ore
+      : totalResources.iridium;
+  const origResourcePrice =
+    resourceType === TradingCenterResourceType.FOOD
+      ? tradingCenter.foodResource.currentPrice
+      : resourceType === TradingCenterResourceType.ORE
+      ? tradingCenter.foodResource.currentPrice
+      : tradingCenter.iridiumResource.currentPrice;
   const trade = TradingCenter.constructTrade(player.id, player.homePlanetId!, tradeType, resourceType, tradeAmount);
   //{executed:false, foodAmount:0, oreAmount:0, iridiumAmount:0, tradeGoldAmount:0}
   const homePlanet = GameModel.getPlanetById(gameModel, player.homePlanetId!);
@@ -31,12 +48,18 @@ const checkTrade = function(gameModel: GameModelData, clientGameModel: ClientMod
   tradeEnergyAmount -= tradeEnergyAmount * tradingCenter.transactionFeePercentage;
   const totalResourcesNew = GameModel.getPlayerTotalResources(player, clientGameModel.mainPlayerOwnedPlanets);
   expect(executedStatus.tradeEnergyAmount).toEqual(tradeEnergyAmount);
-  expect(resourceType === TradingCenterResourceType.FOOD ? executedStatus.foodAmount : resourceType === TradingCenterResourceType.ORE ? executedStatus.oreAmount : executedStatus.iridiumAmount).toEqual(tradeAmount);
+  expect(
+    resourceType === TradingCenterResourceType.FOOD
+      ? executedStatus.foodAmount
+      : resourceType === TradingCenterResourceType.ORE
+      ? executedStatus.oreAmount
+      : executedStatus.iridiumAmount
+  ).toEqual(tradeAmount);
   expect(origEnergyAmount + tradeEnergyAmount).toEqual(totalResourcesNew.energy);
   expect(origResourceAmount - tradeAmount).toEqual(totalResourcesNew.food);
 };
 
-describe('tradingCenter', () => {
+describe("tradingCenter", () => {
   beforeEach(() => {
     testGameData = startNewTestGame();
     player1 = testGameData.gameModel.modelData.players[0];
@@ -44,7 +67,7 @@ describe('tradingCenter', () => {
   });
 
   describe("executeTrade", () => {
-    it("should execute a sell food trade for player1 given that player has sufficient resources", function() {
+    it("should execute a sell food trade for player1 given that player has sufficient resources", function () {
       const tradeAmount = 1;
       const clientGameModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, player1.id);
       checkTrade(
@@ -194,7 +217,4 @@ describe('tradingCenter', () => {
     });
     */
   });
-  
 });
-
-

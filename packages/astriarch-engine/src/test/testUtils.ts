@@ -14,7 +14,6 @@ export interface TestGameData {
 }
 
 export const startNewTestGame = (): TestGameData => {
-  
   const players = [] as PlayerData[];
   players.push(Player.constructPlayer("me", PlayerType.Human, "Matt", playerColors[0]));
   players.push(Player.constructPlayer("c1", PlayerType.Computer_Hard, "Computer1", playerColors[1]));

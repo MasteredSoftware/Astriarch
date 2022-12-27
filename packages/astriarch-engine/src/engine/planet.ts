@@ -140,16 +140,25 @@ export class Planet {
     }
   }
 
-  public static spendResources(gameModel:GameModelData, player: PlayerData, planetById: PlanetById, planet: PlanetData, energy: number, food: number, ore: number, iridium: number) {
-    const {resources} = planet;
+  public static spendResources(
+    gameModel: GameModelData,
+    player: PlayerData,
+    planetById: PlanetById,
+    planet: PlanetData,
+    energy: number,
+    food: number,
+    ore: number,
+    iridium: number
+  ) {
+    const { resources } = planet;
     //first check for required energy, food, ore and iridium on this planet
     let energyNeeded = energy - PlanetResources.spendEnergyAsPossible(resources, energy);
     let foodNeeded = food - PlanetResources.spendFoodAsPossible(resources, food);
     let oreNeeded = ore - PlanetResources.spendOreAsPossible(resources, ore);
     let iridiumNeeded = iridium - PlanetResources.spendIridiumAsPossible(resources, iridium);
-  
+
     if (energyNeeded !== 0 || foodNeeded !== 0 || oreNeeded !== 0 || iridiumNeeded !== 0) {
-      let ownedPlanets:PlanetData[] = [];
+      let ownedPlanets: PlanetData[] = [];
       for (const id of player.ownedPlanetIds) {
         const ownedPlanet = planetById[id];
         if (planet.id != ownedPlanet.id) {
@@ -159,13 +168,13 @@ export class Planet {
       //get closest planets to source resources for, we don't charge for shipping ore or iridium
       let planetDistanceComparer = new PlanetDistanceComparer(gameModel, planet);
       ownedPlanets.sort(planetDistanceComparer.sortFunction);
-  
+
       for (const p of ownedPlanets) {
         if (energyNeeded !== 0) energyNeeded -= PlanetResources.spendEnergyAsPossible(p.resources, energyNeeded);
         if (foodNeeded !== 0) foodNeeded -= PlanetResources.spendFoodAsPossible(p.resources, foodNeeded);
         if (oreNeeded !== 0) oreNeeded -= PlanetResources.spendFoodAsPossible(p.resources, oreNeeded);
         if (iridiumNeeded !== 0) iridiumNeeded -= PlanetResources.spendFoodAsPossible(p.resources, iridiumNeeded);
-  
+
         if (energyNeeded === 0 && foodNeeded === 0 && oreNeeded === 0 && iridiumNeeded === 0) break;
       }
       if (energyNeeded !== 0 || foodNeeded !== 0 || oreNeeded !== 0 || iridiumNeeded !== 0) {
@@ -180,7 +189,7 @@ export class Planet {
         );
       }
     }
-  };
+  }
 
   public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
     //determine tax revenue (energy credits)
