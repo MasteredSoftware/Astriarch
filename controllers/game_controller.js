@@ -1399,6 +1399,10 @@ var getPlayerPlanetAndGameModelFromDocumentBySessionId = function(doc, sessionId
 };
 
 var getPlayerFromDocumentBySessionId = function(doc, sessionId) {
+  if(!doc || !doc.players) {
+    console.warn('Problem processing doc in getPlayerFromDocumentBySessionId');
+    return null;
+  }
   var retPlayer = null;
   for (var i = 0; i < doc.players.length; i++) {
     var player = doc.players[i];
