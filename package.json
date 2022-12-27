@@ -1,6 +1,6 @@
 {
   "name": "Astriarch",
-  "version": "1.9.2",
+  "version": "1.9.3",
   "private": true,
   "dependencies": {
     "async": "2.6.4",
