@@ -20,7 +20,7 @@
     "ws": "^6.2.2"
   },
   "devDependencies": {
-    "mocha": "^5.2.0",
+    "mocha": "^10.2.0",
     "prettier": "^1.14.3",
     "should": "4.6.0"
   },
