@@ -1,26 +1,24 @@
-import { ClientModelData, PlanetById } from "../model/clientModel";
-import { ModelBase, ModelData } from "../model/model";
-import { PlanetData } from "../model/planet";
-import { PlayerData } from "../model/player";
+import { ClientModelData } from "../model/clientModel";
+import { ModelBase } from "../model/model";
 import { ClientGameModel } from "./clientGameModel";
 import { Events } from "./events";
-import { GameModel } from "./gameModel";
-import { Planet } from "./planet";
+import { GameModelData } from "./gameModel";
 import { Player } from "./player";
+import { TradingCenter } from "./tradingCenter";
 
 export class GameController {
   private static BATTLE_RANDOMNESS_FACTOR: 4.0; //the amount randomness (chance) when determining fleet conflict outcomes, it is the strength multiplyer where the winner is guaranteed to win
 
   public static MS_PER_CYCLE = 30 * 1000; // Time per cycle (or "turn")
 
-  public static startModelSnapshot(modelBase: ModelBase) {
+  public static startModelSnapshot(modelDataBase: ModelBase) {
     const newSnapshotTime = new Date().getTime();
-    const lastSnapshotTime = modelBase.lastSnapshotTime;
+    const lastSnapshotTime = modelDataBase.lastSnapshotTime;
 
     const elapsedSinceLastSnapshot = newSnapshotTime - lastSnapshotTime;
     const cyclesElapsed = elapsedSinceLastSnapshot / GameController.MS_PER_CYCLE;
 
-    const elapsedSinceStart = newSnapshotTime - modelBase.gameStartedAtTime;
+    const elapsedSinceStart = newSnapshotTime - modelDataBase.gameStartedAtTime;
     const advancedCyclesTotal = elapsedSinceStart / GameController.MS_PER_CYCLE;
 
     return {
@@ -30,17 +28,18 @@ export class GameController {
     };
   }
 
-  public static advanceGameClock(model: ModelData) {
-    const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(model);
-    //const planetById = ClientGameModel.getPlanetByIdIndex(model.planets);
+  public static advanceGameClock(gameModel: GameModelData) {
+    const { modelData } = gameModel;
+    const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(modelData);
+    const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
 
     // TODO: server side operations prior to advancing game clock for the player
     // ComputerTakeTurn
-    // executeCurrentTrades
+    TradingCenter.executeCurrentTrades(gameModel, planetById);
     // moveShips
 
-    for (const p of model.players) {
-      const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, model.planets);
+    for (const p of modelData.players) {
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
       Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed);
     }
 
@@ -48,8 +47,8 @@ export class GameController {
     // repair fleets on planets
     // resolvePlanetaryConflicts
 
-    model.lastSnapshotTime = newSnapshotTime;
-    model.currentCycle = currentCycle;
+    modelData.lastSnapshotTime = newSnapshotTime;
+    modelData.currentCycle = currentCycle;
     Events.publish();
   }
 

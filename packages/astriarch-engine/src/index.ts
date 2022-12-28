@@ -47,7 +47,7 @@ export const startNewGame = () => {
 };
 
 export const advanceGameModelTime = (gameModel: GameModelData) => {
-  GameController.advanceGameClock(gameModel.modelData);
+  GameController.advanceGameClock(gameModel);
 
   return gameModel;
 };
