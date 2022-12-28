@@ -1,4 +1,4 @@
-import { ClientModelData } from "../model/clientModel";
+import { ClientModelData, PlanetById } from "../model/clientModel";
 import { PlayerData } from "../model/player";
 import { TradeType, TradingCenterResourceType } from "../model/tradingCenter";
 import { startNewTestGame, TestGameData } from "../test/testUtils";
@@ -9,9 +9,11 @@ import { TradingCenter } from "./tradingCenter";
 let testGameData: TestGameData;
 let player1: PlayerData;
 let player2: PlayerData;
+let planetById: PlanetById;
 
 const checkTrade = function (
   gameModel: GameModelData,
+  planetById: PlanetById,
   clientGameModel: ClientModelData,
   player: PlayerData,
   tradeType: TradeType,
@@ -36,7 +38,7 @@ const checkTrade = function (
   const trade = TradingCenter.constructTrade(player.id, player.homePlanetId!, tradeType, resourceType, tradeAmount);
   //{executed:false, foodAmount:0, oreAmount:0, iridiumAmount:0, tradeGoldAmount:0}
   const homePlanet = GameModel.getPlanetById(gameModel, player.homePlanetId!);
-  const executedStatus = TradingCenter.executeTrade(gameModel, player, homePlanet!, trade);
+  const executedStatus = TradingCenter.executeTrade(gameModel, planetById, player, homePlanet!, trade);
   if (executedStatus.executed) {
     //recalculate current prices in trading center for each trade executed
     TradingCenter.recalculatePrices(tradingCenter);
@@ -64,6 +66,7 @@ describe("tradingCenter", () => {
     testGameData = startNewTestGame();
     player1 = testGameData.gameModel.modelData.players[0];
     player2 = testGameData.gameModel.modelData.players[1];
+    planetById = ClientGameModel.getPlanetByIdIndex(testGameData.gameModel.modelData.planets);
   });
 
   describe("executeTrade", () => {
@@ -72,6 +75,7 @@ describe("tradingCenter", () => {
       const clientGameModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, player1.id);
       checkTrade(
         testGameData.gameModel,
+        planetById,
         clientGameModel,
         player1,
         TradeType.SELL,
@@ -85,6 +89,7 @@ describe("tradingCenter", () => {
       const clientGameModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, player2.id);
       checkTrade(
         testGameData.gameModel,
+        planetById,
         clientGameModel,
         player2,
         TradeType.SELL,
@@ -93,128 +98,110 @@ describe("tradingCenter", () => {
       );
     });
 
-    /*
-    it("should not execute a sell food trade for player1 given that player has insufficient resources", (done) => {
+    it("should not execute a sell food trade for player1 given that player has insufficient resources", () => {
       const tradeAmount = 20;
-      const trade = new Astriarch.TradingCenter.Trade(
-        -1,
-        player1.HomePlanetId,
-        Astriarch.TradingCenter.TradeType.SELL,
-        Astriarch.TradingCenter.ResourceType.FOOD,
-        tradeAmount,
-        Astriarch.TradingCenter.OrderType.MARKET,
-        null
+      const trade = TradingCenter.constructTrade(
+        player1.id,
+        player1.homePlanetId!,
+        TradeType.SELL,
+        TradingCenterResourceType.FOOD,
+        tradeAmount
       );
-      const homePlanet = gameModel.getPlanetById(player1.HomePlanetId);
-      const executedStatus = gameModel.TradingCenter.executeTrade(gameModel, player1, homePlanet, trade);
-      executedStatus.executed.should.equal(false);
-
-      done();
+      const homePlanet = GameModel.getPlanetById(testGameData.gameModel, player1.homePlanetId!);
+      const executedStatus = TradingCenter.executeTrade(
+        testGameData.gameModel,
+        planetById,
+        player1,
+        homePlanet!,
+        trade
+      );
+      expect(executedStatus.executed).toEqual(false);
     });
 
-    it("should not execute a buy food trade for player1 given that player has insufficient gold", (done) => {
+    it("should not execute a buy food trade for player1 given that player has insufficient gold", () => {
       const tradeAmount = 30;
-      const trade = new Astriarch.TradingCenter.Trade(
-        -1,
-        player1.HomePlanetId,
-        Astriarch.TradingCenter.TradeType.BUY,
-        Astriarch.TradingCenter.ResourceType.FOOD,
-        tradeAmount,
-        Astriarch.TradingCenter.OrderType.MARKET,
-        null
+      const trade = TradingCenter.constructTrade(
+        player1.id,
+        player1.homePlanetId!,
+        TradeType.BUY,
+        TradingCenterResourceType.FOOD,
+        tradeAmount
       );
-      const homePlanet = gameModel.getPlanetById(player1.HomePlanetId);
-      const executedStatus = gameModel.TradingCenter.executeTrade(gameModel, player1, homePlanet, trade);
-      executedStatus.executed.should.equal(false);
-
-      done();
+      const homePlanet = GameModel.getPlanetById(testGameData.gameModel, player1.homePlanetId!);
+      const executedStatus = TradingCenter.executeTrade(
+        testGameData.gameModel,
+        planetById,
+        player1,
+        homePlanet!,
+        trade
+      );
+      expect(executedStatus.executed).toEqual(false);
     });
   });
 
-  describe("executeCurrentTrades()", () => {
-    it("should execute all current trades when trades are valid", (done) => {
+  describe("executeCurrentTrades", () => {
+    it("should execute all current trades when trades are valid", () => {
       const newTrades = [];
       newTrades.push(
-        new Astriarch.TradingCenter.Trade(
-          player1.Id,
-          player1.HomePlanetId,
-          Astriarch.TradingCenter.TradeType.SELL,
-          Astriarch.TradingCenter.ResourceType.FOOD,
-          1,
-          Astriarch.TradingCenter.OrderType.MARKET,
-          null
+        TradingCenter.constructTrade(
+          player1.id,
+          player1.homePlanetId!,
+          TradeType.SELL,
+          TradingCenterResourceType.FOOD,
+          1
         )
       );
       newTrades.push(
-        new Astriarch.TradingCenter.Trade(
-          player2.Id,
-          player2.HomePlanetId,
-          Astriarch.TradingCenter.TradeType.BUY,
-          Astriarch.TradingCenter.ResourceType.FOOD,
-          1,
-          Astriarch.TradingCenter.OrderType.MARKET,
-          null
+        TradingCenter.constructTrade(
+          player2.id,
+          player2.homePlanetId!,
+          TradeType.BUY,
+          TradingCenterResourceType.FOOD,
+          1
         )
       );
-      gameModel.TradingCenter.currentTrades = gameModel.TradingCenter.currentTrades.concat(newTrades);
-      const endOfTurnMessagesByPlayerId = {};
-      const executedStatusListByPlayerId = Astriarch.ServerController.executeCurrentTrades(
-        gameModel,
-        endOfTurnMessagesByPlayerId
-      );
 
-      Object.keys(executedStatusListByPlayerId).forEach(function(key) {
-        executedStatusListByPlayerId[key].forEach(function(executedStatus) {
-          if (!executedStatus.executed) {
-            done("Not all trades executed!" + JSON.stringify(executedStatus.trade));
-          }
-        });
-      });
-      done();
+      testGameData.gameModel.modelData.tradingCenter.currentTrades =
+        testGameData.gameModel.modelData.tradingCenter.currentTrades.concat(newTrades);
+      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById);
+
+      const executed = Object.values(executedStatusListByPlayerId).reduce(
+        (accum, curr) => accum.concat(curr.filter((t) => t.results.executed)),
+        []
+      );
+      expect(executed.length).toEqual(newTrades.length);
     });
 
-    it("should not execute all current trades when some trades are invalid", (done) => {
+    it("should not execute all current trades when some trades are invalid", () => {
       const newTrades = [];
       newTrades.push(
-        new Astriarch.TradingCenter.Trade(
-          player1.Id,
-          player1.HomePlanetId,
-          Astriarch.TradingCenter.TradeType.BUY,
-          Astriarch.TradingCenter.ResourceType.FOOD,
-          15,
-          Astriarch.TradingCenter.OrderType.MARKET,
-          null
+        TradingCenter.constructTrade(
+          player1.id,
+          player1.homePlanetId!,
+          TradeType.BUY,
+          TradingCenterResourceType.FOOD,
+          15
         )
       );
       newTrades.push(
-        new Astriarch.TradingCenter.Trade(
-          player1.Id,
-          player1.HomePlanetId,
-          Astriarch.TradingCenter.TradeType.BUY,
-          Astriarch.TradingCenter.ResourceType.FOOD,
-          15,
-          Astriarch.TradingCenter.OrderType.MARKET,
-          null
+        TradingCenter.constructTrade(
+          player1.id,
+          player1.homePlanetId!,
+          TradeType.BUY,
+          TradingCenterResourceType.FOOD,
+          15
         )
       );
-      gameModel.TradingCenter.currentTrades = gameModel.TradingCenter.currentTrades.concat(newTrades);
-      const endOfTurnMessagesByPlayerId = {};
-      const executedStatusListByPlayerId = Astriarch.ServerController.executeCurrentTrades(
-        gameModel,
-        endOfTurnMessagesByPlayerId
+
+      testGameData.gameModel.modelData.tradingCenter.currentTrades =
+        testGameData.gameModel.modelData.tradingCenter.currentTrades.concat(newTrades);
+      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById);
+
+      const executed = Object.values(executedStatusListByPlayerId).reduce(
+        (accum, curr) => accum.concat(curr.filter((t) => t.results.executed)),
+        []
       );
-      //console.log("executedStatusListByPlayerId:", executedStatusListByPlayerId);
-      const tradeExecutedCount = 0;
-      Object.keys(executedStatusListByPlayerId).forEach(function(key) {
-        executedStatusListByPlayerId[key].forEach(function(executedStatus) {
-          if (executedStatus.executed) {
-            tradeExecutedCount++;
-          }
-        });
-      });
-      tradeExecutedCount.should.equal(1);
-      done();
+      expect(executed.length).toEqual(1);
     });
-    */
   });
 });
