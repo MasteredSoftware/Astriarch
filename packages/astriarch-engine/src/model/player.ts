@@ -24,6 +24,8 @@ export interface ColorRgbaData {
 
 export type EarnedPointsByType = { [T in EarnedPointsType]: number };
 
+export type LastKnownPlanetFleetStrength = { [T in number]: LastKnownFleetData };
+
 export interface PlayerData {
   id: string;
   type: PlayerType;
@@ -34,7 +36,7 @@ export interface PlayerData {
   options: PlayerGameOptions;
   ownedPlanetIds: number[];
   knownPlanetIds: number[];
-  lastKnownPlanetFleetStrength: { [T in number]: LastKnownFleetData };
+  lastKnownPlanetFleetStrength: LastKnownPlanetFleetStrength;
   planetBuildGoals: { [T in number]: PlanetProductionItemData };
   homePlanetId: number | null;
   earnedPointsByType: EarnedPointsByType;

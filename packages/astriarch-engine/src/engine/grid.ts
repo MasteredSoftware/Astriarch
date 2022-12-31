@@ -155,12 +155,25 @@ export class Grid {
     return width / multiplier;
   }
 
+  public static getHexDistanceForMidPoints(grid: Grid, mp1: PointData, mp2: PointData):number {
+    const h1 = grid.getHexAt(mp1);
+    const h2 = grid.getHexAt(mp2);
+    if(!h1 || !h2) {
+      throw new Error(`Cannot find hex in getHexDistanceForMidPoints ${this.pointDataToString(mp1)}, ${this.pointDataToString(mp2)}`);
+    }
+    return this.getHexDistance(h1, h2);
+  }
+
   public static getHexDistance(h1: GridHex, h2: GridHex) {
     //a good explanation of this calc can be found here:
     //http://playtechs.blogspot.com/2007/04/hex-grids.html
     let deltaX = h1.pathCoOrdX! - h2.pathCoOrdX!;
     let deltaY = h1.pathCoOrdY! - h2.pathCoOrdY!;
     return (Math.abs(deltaX) + Math.abs(deltaY) + Math.abs(deltaX - deltaY)) / 2;
+  }
+
+  public static pointDataToString(p: PointData):string {
+    return `(${p.x},${p.y})`;
   }
 }
 

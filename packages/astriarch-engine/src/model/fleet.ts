@@ -9,12 +9,15 @@ export enum StarShipType {
   SpacePlatform = 6, //provides defense for the planet, further speeds ship production and allows for cruiser and battleship production
 }
 
+export interface StarshipAdvantageData {
+  advantageAgainst: StarShipType;
+  disadvantageAgainst: StarShipType;
+}
+
 export interface StarshipData {
   id: number;
   type: StarShipType;
-  customShip: boolean;
-  advantageAgainstType: StarShipType | null;
-  disadvantageAgainstType: StarShipType | null;
+  customShipData?: StarshipAdvantageData;
   health: number;
   experienceAmount: number;
 }
@@ -25,6 +28,7 @@ export interface FleetData {
   travelingFromHexMidPoint: PointData | null;
   destinationHexMidPoint: PointData | null;
   parsecsToDestination: number | null;
+  totalTravelDistance: number | null;
 }
 
 export interface LastKnownFleetData {

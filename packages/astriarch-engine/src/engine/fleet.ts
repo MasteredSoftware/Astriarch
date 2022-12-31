@@ -1,5 +1,6 @@
-import { FleetData, LastKnownFleetData, StarshipData, StarShipType } from "../model/fleet";
+import { FleetData, LastKnownFleetData, StarshipAdvantageData, StarshipData, StarShipType } from "../model/fleet";
 import { PointData } from "../shapes/shapes";
+import { Grid } from "./grid";
 
 export type StarshipsByType = { [T in StarShipType]: StarshipData[] };
 
@@ -38,6 +39,7 @@ export class Fleet {
       travelingFromHexMidPoint: null,
       destinationHexMidPoint: null,
       parsecsToDestination: null,
+      totalTravelDistance: null,
     };
   }
 
@@ -67,34 +69,22 @@ export class Fleet {
     //space platforms -> all
     //battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
     let baseStarShipStrength = 0;
-    let advantageAgainstType = null;
-    let disadvantageAgainstType = null;
 
     switch (type) {
       case StarShipType.SystemDefense:
         baseStarShipStrength = 2;
-        advantageAgainstType = StarShipType.Battleship;
-        disadvantageAgainstType = StarShipType.Scout;
         break;
       case StarShipType.Scout:
         baseStarShipStrength = 4;
-        advantageAgainstType = StarShipType.SystemDefense;
-        disadvantageAgainstType = StarShipType.Destroyer;
         break;
       case StarShipType.Destroyer:
         baseStarShipStrength = 8;
-        advantageAgainstType = StarShipType.Scout;
-        disadvantageAgainstType = StarShipType.Cruiser;
         break;
       case StarShipType.Cruiser:
         baseStarShipStrength = 16;
-        advantageAgainstType = StarShipType.Destroyer;
-        disadvantageAgainstType = StarShipType.Battleship;
         break;
       case StarShipType.Battleship:
         baseStarShipStrength = 32;
-        advantageAgainstType = StarShipType.Cruiser;
-        disadvantageAgainstType = StarShipType.SystemDefense;
         break;
       case StarShipType.SpacePlatform:
         baseStarShipStrength = 64;
@@ -104,13 +94,64 @@ export class Fleet {
     return {
       id: Fleet.NEXT_STARSHIP_ID++,
       type,
-      customShip: false,
-      advantageAgainstType,
-      disadvantageAgainstType,
       health: baseStarShipStrength, //starships will heal between turns if the planet has the necessary building and the player has the requisite resources
       experienceAmount: 0, //each time a starship damages an opponent the experience amount increases by the damage amount
     };
   }
+
+  public static getStarshipStandardAdvantageByType(type: StarShipType): StarshipAdvantageData | undefined {
+
+    let advantageAgainst = null;
+    let disadvantageAgainst = null;
+
+    switch (type) {
+      case StarShipType.SystemDefense:
+        advantageAgainst = StarShipType.Battleship;
+        disadvantageAgainst = StarShipType.Scout;
+        break;
+      case StarShipType.Scout:
+        advantageAgainst = StarShipType.SystemDefense;
+        disadvantageAgainst = StarShipType.Destroyer;
+        break;
+      case StarShipType.Destroyer:
+        advantageAgainst = StarShipType.Scout;
+        disadvantageAgainst = StarShipType.Cruiser;
+        break;
+      case StarShipType.Cruiser:
+        advantageAgainst = StarShipType.Destroyer;
+        disadvantageAgainst = StarShipType.Battleship;
+        break;
+      case StarShipType.Battleship:
+        advantageAgainst = StarShipType.Cruiser;
+        disadvantageAgainst = StarShipType.SystemDefense;
+        break;
+      case StarShipType.SpacePlatform:
+        return undefined;
+        break;
+    }
+    return {
+      advantageAgainst,
+      disadvantageAgainst
+    }
+  }
+
+  public static starshipTypeIsMobile(type: StarShipType):boolean {
+    return ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type);
+  }
+
+  /**
+   * Calculates the strength of the fleet
+   */
+  public static determineFleetStrength(fleet: FleetData, mobileOnly?:boolean) {
+    let starships = fleet.starships;
+    if(mobileOnly) {
+      starships = starships.filter(s => this.starshipTypeIsMobile(s.type));
+    }
+
+    const strength = starships.reduce((accum, curr) => accum + curr.health, 0);
+
+    return strength;
+  };
 
   public static getStarshipsByType(fleet: FleetData): StarshipsByType {
     const starshipsByType = Object.values(StarShipType).reduce((accum, curr) => {
@@ -134,6 +175,81 @@ export class Fleet {
       spaceplatforms: ships[StarShipType.SpacePlatform].length,
     };
   }
+
+  public static countMobileStarships(fleet:FleetData): number {
+    const counts = this.countStarshipsByType(fleet);
+    return counts.scouts + counts.destroyers + counts.cruisers + counts.battleships;
+  }
+
+  /**
+   * Creates a new fleet with the number of ships specified, removing the ships from the fleet passed in
+   */
+  public static splitFleet(fleet: FleetData, scouts:number, destoyers:number, cruisers:number, battleships:number):FleetData {
+    const newFleet = this.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, fleet.locationHexMidPoint);
+    const starshipsByType = this.getStarshipsByType(fleet);
+
+    for (let i = 0; i < Math.min(scouts, starshipsByType[StarShipType.Scout].length); i++) {
+      newFleet.starships.push(starshipsByType[StarShipType.Scout].shift()!);
+    }
+    for (let i = 0; i < Math.min(destoyers, starshipsByType[StarShipType.Destroyer].length); i++) {
+      newFleet.starships.push(starshipsByType[StarShipType.Destroyer].shift()!);
+    }
+    for (let i = 0; i < Math.min(cruisers, starshipsByType[StarShipType.Cruiser].length); i++) {
+      newFleet.starships.push(starshipsByType[StarShipType.Cruiser].shift()!);
+    }
+    for (let i = 0; i < Math.min(battleships, starshipsByType[StarShipType.Battleship].length); i++) {
+      newFleet.starships.push(starshipsByType[StarShipType.Battleship].shift()!);
+    }
+
+    fleet.starships = [
+      ...starshipsByType[StarShipType.SystemDefense],
+      ...starshipsByType[StarShipType.Scout],
+      ...starshipsByType[StarShipType.Destroyer],
+      ...starshipsByType[StarShipType.Cruiser],
+      ...starshipsByType[StarShipType.Battleship],
+      ...starshipsByType[StarShipType.SpacePlatform],
+    ]
+
+    return newFleet;
+  };
+
+  /**
+   * Splits this fleet off in a fleet that contains one weak ship
+   */
+  public static splitOffSmallestPossibleFleet(fleet: FleetData):FleetData | undefined {
+    let newFleet;
+    let scoutCount = 0;
+    let destroyerCount = 0;
+    let cruiserCount = 0;
+    let battleshipCount = 0;
+    const starshipCounts = this.countStarshipsByType(fleet);
+
+    if (starshipCounts.scouts !== 0) scoutCount = 1;
+    else if (starshipCounts.destroyers !== 0) destroyerCount = 1;
+    else if (starshipCounts.cruisers !== 0) cruiserCount = 1;
+    else if (starshipCounts.battleships !== 0) battleshipCount = 1;
+
+    if (scoutCount !== 0 || destroyerCount !== 0 || cruiserCount !== 0 || battleshipCount !== 0)
+      newFleet = this.splitFleet(fleet, scoutCount, destroyerCount, cruiserCount, battleshipCount);
+
+    return newFleet;
+  };
+
+  /**
+   * Sets the destimation hex for a fleet
+   */
+  public static setDestination(
+    fleet: FleetData,
+    gameGrid: Grid,
+    locationHexMidPoint: PointData,
+    destinationHexMidPoint: PointData,
+  ) {
+    fleet.locationHexMidPoint = locationHexMidPoint;
+    fleet.destinationHexMidPoint = destinationHexMidPoint;
+
+    fleet.totalTravelDistance = Grid.getHexDistanceForMidPoints(gameGrid, locationHexMidPoint, destinationHexMidPoint);
+    fleet.parsecsToDestination = fleet.totalTravelDistance;
+  };
 
   public static constructLastKnownFleet(
     cycleLastExplored: number,

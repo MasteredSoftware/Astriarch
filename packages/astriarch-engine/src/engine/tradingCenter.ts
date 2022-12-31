@@ -116,7 +116,7 @@ export class TradingCenter {
     this.adjustCurrentPrice(tradingCenterData.iridiumResource);
   }
 
-  public static getResourceByType = function (
+  public static getResourceByType(
     tradingCenterData: TradingCenterData,
     resourceType: TradingCenterResourceType
   ) {

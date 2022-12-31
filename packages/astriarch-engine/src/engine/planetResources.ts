@@ -30,7 +30,7 @@ export class PlanetResources {
     };
   }
 
-  public static spendEnergyAsPossible = function (r: PlanetResourceData, amount: number) {
+  public static spendEnergyAsPossible(r: PlanetResourceData, amount: number) {
     if (r.energy >= amount) {
       r.energy = r.energy - amount;
       return amount;
@@ -40,7 +40,7 @@ export class PlanetResources {
     return spent;
   };
 
-  public static spendFoodAsPossible = function (r: PlanetResourceData, amount: number) {
+  public static spendFoodAsPossible(r: PlanetResourceData, amount: number) {
     if (r.food >= amount) {
       r.food = r.food - amount;
       return amount;
@@ -50,7 +50,7 @@ export class PlanetResources {
     return spent;
   };
 
-  public static spendOreAsPossible = function (r: PlanetResourceData, amount: number) {
+  public static spendOreAsPossible(r: PlanetResourceData, amount: number) {
     if (r.ore >= amount) {
       r.ore = r.ore - amount;
       return amount;
@@ -60,7 +60,7 @@ export class PlanetResources {
     return spent;
   };
 
-  public static spendIridiumAsPossible = function (r: PlanetResourceData, amount: number) {
+  public static spendIridiumAsPossible(r: PlanetResourceData, amount: number) {
     if (r.iridium >= amount) {
       r.iridium = r.iridium - amount;
       return amount;

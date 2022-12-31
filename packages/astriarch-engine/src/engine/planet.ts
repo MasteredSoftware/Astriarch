@@ -1,10 +1,13 @@
 import { PlanetById } from "../model/clientModel";
+import { StarShipType } from "../model/fleet";
 import {
   Citizen,
   CitizenWorkerType,
   PlanetData,
   PlanetHappinessType,
   PlanetImprovementType,
+  PlanetProductionItemData,
+  PlanetProductionItemType,
   PlanetResourceData,
   PlanetType,
 } from "../model/planet";
@@ -15,6 +18,7 @@ import { Fleet } from "./fleet";
 import { GameModelData } from "./gameModel";
 import { GridHex } from "./grid";
 import { PlanetDistanceComparer } from "./planetDistanceComparer";
+import { PlanetProductionItem } from "./planetProductionItem";
 import { PlanetResources } from "./planetResources";
 import { Research } from "./research";
 
@@ -118,26 +122,29 @@ export class Planet {
     const rpt = Planet.getPlanetWorkerResourceGeneration(p, owner);
 
     if (owner) {
-      let divisor = 1.0;
+      let resourceDivisor = 1.0;
+      let developmentDivisor = 1.0;
       if (p.planetHappiness == PlanetHappinessType.Unrest) {
-        //unrest causes 1/2 production
-        divisor = 2.0;
+        //unrest causes 1/2 resource production & 1/4 development
+        resourceDivisor = 2.0;
+        developmentDivisor = 4.0;
       } else if (p.planetHappiness == PlanetHappinessType.Riots) {
-        //riots cause 1/4 production
-        divisor = 4.0;
+        //riots cause 1/4 resource production & 1/8 development
+        resourceDivisor = 4.0;
+        developmentDivisor = 8.0;
       }
-      p.resources.food += (rpt.amountPerTurn.food * cyclesElapsed) / divisor;
-      p.resources.ore += (rpt.amountPerTurn.ore * cyclesElapsed) / divisor;
-      p.resources.iridium += (rpt.amountPerTurn.iridium * cyclesElapsed) / divisor;
-      p.resources.production += (rpt.amountPerTurn.production * cyclesElapsed) / divisor;
+      p.resources.food += (rpt.amountPerTurn.food * cyclesElapsed) / resourceDivisor;
+      p.resources.ore += (rpt.amountPerTurn.ore * cyclesElapsed) / resourceDivisor;
+      p.resources.iridium += (rpt.amountPerTurn.iridium * cyclesElapsed) / resourceDivisor;
+      p.resources.production += (rpt.amountPerTurn.production * cyclesElapsed) / developmentDivisor;
       const maxCredits = Planet.getTaxRevenueAtMaxPercent(p, owner);
       const { creditAmountEarnedPerTurn, researchAmountEarnedPerTurn } =
         Research.getCreditAndResearchAmountEarnedPerTurn(owner.research, maxCredits);
-      p.resources.energy += (creditAmountEarnedPerTurn * cyclesElapsed) / divisor;
+      p.resources.energy += (creditAmountEarnedPerTurn * cyclesElapsed) / resourceDivisor;
       //add a bit more research completed based on a random factor
       const additionalResearchBreakthrough = Utils.nextRandom(0, researchAmountEarnedPerTurn * 0.1);
       p.resources.research +=
-        ((researchAmountEarnedPerTurn + additionalResearchBreakthrough) * cyclesElapsed) / divisor;
+        ((researchAmountEarnedPerTurn + additionalResearchBreakthrough) * cyclesElapsed) / developmentDivisor;
     }
   }
 
@@ -191,6 +198,21 @@ export class Planet {
       }
     }
   }
+
+  /**
+   * Adds an item to the build queue and reduces the players resources based on the cost
+   */
+  public static enqueueProductionItemAndSpendResources(
+    gameModel: GameModelData,
+    player: PlayerData,
+    planetById: PlanetById,
+    planet: PlanetData,
+    item: PlanetProductionItemData
+  ) {
+      planet.buildQueue.push(item);
+
+      this.spendResources(gameModel, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
+  };
 
   public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
     //determine tax revenue (energy credits)
@@ -394,5 +416,137 @@ export class Planet {
       }
     }
     return { protesting, content };
+  }
+
+  public static getCitizenByType(p: PlanetData, desiredType:CitizenWorkerType):Citizen {
+    const citizens = this.getPopulationByContentment(p);
+    for (const c of citizens.content) {
+      if (c.workerType === desiredType) return c;
+    }
+    for (const c of citizens.protesting) {
+      if (c.workerType === desiredType) {
+        console.warn("No content citizens found in Planet.getCitizenByType! Returning protesting citizen.");
+        return c;
+      }
+    }
+    throw new Error("No matching citizens found in Planet.getCitizenByType!");
+  };
+
+  public static maxPopulation(p: PlanetData) {
+    return p.maxImprovements + p.builtImprovements[PlanetImprovementType.Colony];
+  };
+
+  /**
+   * updates the population worker assignments based on the differences passed in
+   * @this {Astriarch.Planet}
+   */
+  public static updatePopulationWorkerTypesByDiff(p: PlanetData, owner: PlayerData, farmerDiff:number, minerDiff:number, builderDiff:number) {
+    while (farmerDiff !== 0) {
+      if (farmerDiff > 0) {
+        //move miners and workers to be farmers
+        if (minerDiff < 0) {
+          this.getCitizenByType(p, CitizenWorkerType.Miner).workerType = CitizenWorkerType.Farmer;
+          farmerDiff--;
+          minerDiff++;
+        }
+        if (farmerDiff !== 0 && builderDiff < 0) {
+          this.getCitizenByType(p, CitizenWorkerType.Builder).workerType = CitizenWorkerType.Farmer;
+          farmerDiff--;
+          builderDiff++;
+        }
+      } else {
+        //make farmers to miners and workers
+        if (minerDiff > 0) {
+          this.getCitizenByType(p, CitizenWorkerType.Farmer).workerType = CitizenWorkerType.Miner;
+          farmerDiff++;
+          minerDiff--;
+        }
+        if (farmerDiff !== 0 && builderDiff > 0) {
+          this.getCitizenByType(p, CitizenWorkerType.Farmer).workerType = CitizenWorkerType.Builder;
+          farmerDiff++;
+          builderDiff--;
+        }
+      }
+    }
+
+    //next check miners, don't touch farmers
+    while (minerDiff !== 0) {
+      if (minerDiff > 0) {
+        //move workers to be miners
+        if (builderDiff < 0) {
+          this.getCitizenByType(p, CitizenWorkerType.Builder).workerType = CitizenWorkerType.Miner;
+          minerDiff--;
+          builderDiff++;
+        }
+      } else {
+        //make miners to workers
+        if (builderDiff > 0) {
+          this.getCitizenByType(p, CitizenWorkerType.Miner).workerType = CitizenWorkerType.Builder;
+          minerDiff++;
+          builderDiff--;
+        }
+      }
+    }
+
+    //check for problems
+    if (farmerDiff !== 0 || minerDiff !== 0 || builderDiff !== 0) {
+      console.error(
+        "Couldn't move workers in Planet.updatePopulationWorkerTypesByDiff!",
+        farmerDiff,
+        minerDiff,
+        builderDiff
+      );
+    }
+    return this.getPlanetWorkerResourceGeneration(p, owner);
+  }
+
+  /**
+   * Counts the SpacePlatforms in the fleet
+   */
+  public static getSpacePlatformCount(p:PlanetData, includeQueue:boolean) {
+    let count = Fleet.countStarshipsByType(p.planetaryFleet).spaceplatforms;
+    if (includeQueue) {
+      for (const ppi of p.buildQueue) {
+        if (ppi.itemType == PlanetProductionItemType.StarShipInProduction && ppi.starshipData?.type == StarShipType.SpacePlatform) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Counts the improvements built as well as the improvements in the queue by type
+   */
+  public static builtAndBuildQueueImprovementTypeCount(p: PlanetData, type: PlanetImprovementType) {
+    let count = p.builtImprovements[type];
+    for (const ppi of p.buildQueue) {
+      if (ppi.itemType === PlanetProductionItemType.PlanetImprovement && ppi.improvementData?.type == type) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  /**
+   * Returns data if there is a mobile starship in the queue
+   */
+  public static buildQueueContainsMobileStarship(p: PlanetData):{turnsToComplete:number, starshipStrength: number}|undefined {
+    for (const ppi of p.buildQueue) {
+      if ( ppi.starshipData && Fleet.starshipTypeIsMobile(ppi.starshipData.type)) {
+        const starship = Fleet.generateStarship(ppi.starshipData.type);
+        return {turnsToComplete: ppi.turnsToComplete, starshipStrength: starship.health};
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * A sort function to prefer planets with higher pop and number of improvements
+   */
+  public static planetPopulationImprovementCountComparerSortFunction(a:PlanetData, b:PlanetData) {
+    let ret = Utils.compareNumbers(b.population.length, a.population.length);
+    if (ret == 0) ret = Utils.compareNumbers(this.builtImprovementCount(b), this.builtImprovementCount(a));
+    return ret;
   }
 }
