@@ -27,7 +27,7 @@ export class GameTools {
     return name;
   }
 
-  public static planetImprovementTypeToFriendlyName(t:PlanetImprovementType):string {
+  public static planetImprovementTypeToFriendlyName(t: PlanetImprovementType): string {
     let name = "";
     switch (t) {
       case PlanetImprovementType.Factory:

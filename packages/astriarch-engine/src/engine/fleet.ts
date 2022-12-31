@@ -100,7 +100,6 @@ export class Fleet {
   }
 
   public static getStarshipStandardAdvantageByType(type: StarShipType): StarshipAdvantageData | undefined {
-
     let advantageAgainst = null;
     let disadvantageAgainst = null;
 
@@ -131,27 +130,27 @@ export class Fleet {
     }
     return {
       advantageAgainst,
-      disadvantageAgainst
-    }
+      disadvantageAgainst,
+    };
   }
 
-  public static starshipTypeIsMobile(type: StarShipType):boolean {
+  public static starshipTypeIsMobile(type: StarShipType): boolean {
     return ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type);
   }
 
   /**
    * Calculates the strength of the fleet
    */
-  public static determineFleetStrength(fleet: FleetData, mobileOnly?:boolean) {
+  public static determineFleetStrength(fleet: FleetData, mobileOnly?: boolean) {
     let starships = fleet.starships;
-    if(mobileOnly) {
-      starships = starships.filter(s => this.starshipTypeIsMobile(s.type));
+    if (mobileOnly) {
+      starships = starships.filter((s) => this.starshipTypeIsMobile(s.type));
     }
 
     const strength = starships.reduce((accum, curr) => accum + curr.health, 0);
 
     return strength;
-  };
+  }
 
   public static getStarshipsByType(fleet: FleetData): StarshipsByType {
     const starshipsByType = Object.values(StarShipType).reduce((accum, curr) => {
@@ -176,7 +175,7 @@ export class Fleet {
     };
   }
 
-  public static countMobileStarships(fleet:FleetData): number {
+  public static countMobileStarships(fleet: FleetData): number {
     const counts = this.countStarshipsByType(fleet);
     return counts.scouts + counts.destroyers + counts.cruisers + counts.battleships;
   }
@@ -184,7 +183,13 @@ export class Fleet {
   /**
    * Creates a new fleet with the number of ships specified, removing the ships from the fleet passed in
    */
-  public static splitFleet(fleet: FleetData, scouts:number, destoyers:number, cruisers:number, battleships:number):FleetData {
+  public static splitFleet(
+    fleet: FleetData,
+    scouts: number,
+    destoyers: number,
+    cruisers: number,
+    battleships: number
+  ): FleetData {
     const newFleet = this.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, fleet.locationHexMidPoint);
     const starshipsByType = this.getStarshipsByType(fleet);
 
@@ -208,15 +213,15 @@ export class Fleet {
       ...starshipsByType[StarShipType.Cruiser],
       ...starshipsByType[StarShipType.Battleship],
       ...starshipsByType[StarShipType.SpacePlatform],
-    ]
+    ];
 
     return newFleet;
-  };
+  }
 
   /**
    * Splits this fleet off in a fleet that contains one weak ship
    */
-  public static splitOffSmallestPossibleFleet(fleet: FleetData):FleetData | undefined {
+  public static splitOffSmallestPossibleFleet(fleet: FleetData): FleetData | undefined {
     let newFleet;
     let scoutCount = 0;
     let destroyerCount = 0;
@@ -233,7 +238,7 @@ export class Fleet {
       newFleet = this.splitFleet(fleet, scoutCount, destroyerCount, cruiserCount, battleshipCount);
 
     return newFleet;
-  };
+  }
 
   /**
    * Sets the destimation hex for a fleet
@@ -242,14 +247,14 @@ export class Fleet {
     fleet: FleetData,
     gameGrid: Grid,
     locationHexMidPoint: PointData,
-    destinationHexMidPoint: PointData,
+    destinationHexMidPoint: PointData
   ) {
     fleet.locationHexMidPoint = locationHexMidPoint;
     fleet.destinationHexMidPoint = destinationHexMidPoint;
 
     fleet.totalTravelDistance = Grid.getHexDistanceForMidPoints(gameGrid, locationHexMidPoint, destinationHexMidPoint);
     fleet.parsecsToDestination = fleet.totalTravelDistance;
-  };
+  }
 
   public static constructLastKnownFleet(
     cycleLastExplored: number,

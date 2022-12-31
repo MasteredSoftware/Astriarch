@@ -371,7 +371,7 @@ export class Research {
     return levelCosts;
   }
 
-  public static getMaxSpacePlatformCount(data: ResearchData):number {
+  public static getMaxSpacePlatformCount(data: ResearchData): number {
     return data.researchProgressByType[ResearchType.SPACE_PLATFORM_IMPROVEMENT].data.max || 0;
-  };
+  }
 }

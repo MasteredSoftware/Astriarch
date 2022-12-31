@@ -16,15 +16,14 @@ import { Player } from "./player";
 import { Research } from "./research";
 import { TradingCenter } from "./tradingCenter";
 
-export type PlanetResourcesPerTurn = {[T in number]:PlanetPerTurnResourceGeneration};
+export type PlanetResourcesPerTurn = { [T in number]: PlanetPerTurnResourceGeneration };
 
 export class ComputerPlayer {
-  
   private static onComputerSentFleet(fleet: FleetData) {
     console.debug("Computer Sent Fleet:", fleet);
   }
 
-  public static computerTakeTurn(gameModel: GameModelData, player:PlayerData, ownedPlanets: PlanetById) {
+  public static computerTakeTurn(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById) {
     //determine highest priority for resource usage
     //early game should be building developments and capturing/exploring planets while keeping up food production
     //mid game should be building space-platforms, high-class ships and further upgrading planets
@@ -57,18 +56,27 @@ export class ComputerPlayer {
     this.computerSendShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
   }
 
-  public static computerAdjustPopulationAssignments(player:PlayerData, ownedPlanets: PlanetById, ownedPlanetsSorted: PlanetData[]) {
-    const planetPopulationWorkerTypes: {[T in number]:PopulationAssignments} = {};
+  public static computerAdjustPopulationAssignments(
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[]
+  ) {
+    const planetPopulationWorkerTypes: { [T in number]: PopulationAssignments } = {};
     const planetResourcesPerTurn: PlanetResourcesPerTurn = {};
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
-    const allPlanets:PlanetData[] = []; //this list will be for sorting
+    const allPlanets: PlanetData[] = []; //this list will be for sorting
 
     for (const planet of ownedPlanetsSorted) {
       planetPopulationWorkerTypes[planet.id] = Planet.countPopulationWorkerTypes(planet);
       planetResourcesPerTurn[planet.id] = Planet.getPlanetWorkerResourceGeneration(planet, player);
       allPlanets.push(planet);
 
-      console.debug(player.name, "Population Assignment for planet:", planet.name, planetPopulationWorkerTypes[planet.id]);
+      console.debug(
+        player.name,
+        "Population Assignment for planet:",
+        planet.name,
+        planetPopulationWorkerTypes[planet.id]
+      );
     }
 
     const totalPopulation = Player.getTotalPopulation(player, ownedPlanets);
@@ -148,11 +156,13 @@ export class ComputerPlayer {
     }
 
     let oreAmountNeeded = Math.round(oreAmountRecommended * mineralOverestimation) - totalResources.ore;
-    let iridiumAmountNeeded =
-      Math.round(iridiumAmountRecommended * mineralOverestimation) - totalResources.iridium;
+    let iridiumAmountNeeded = Math.round(iridiumAmountRecommended * mineralOverestimation) - totalResources.iridium;
     let foodDiff = 0;
     console.debug(player.name, "Mineral Needs:", oreAmountNeeded, iridiumAmountNeeded);
-    const foodResourcePotentialComparer = new PlanetResourcePotentialComparer(planetResourcesPerTurn, PlanetResourceType.FOOD);
+    const foodResourcePotentialComparer = new PlanetResourcePotentialComparer(
+      planetResourcesPerTurn,
+      PlanetResourceType.FOOD
+    );
 
     if (totalPopulation > totalFoodProduction + totalFoodAmountOnPlanets) {
       //check to see if we can add farmers to class 1 and class 2 planets
@@ -165,17 +175,13 @@ export class ComputerPlayer {
       allPlanets.sort(foodResourcePotentialComparer.sortFunction);
 
       let neededFarmers = foodDiff;
-      const planetCandidatesForAddingFarmers:PlanetData[] = [];
+      const planetCandidatesForAddingFarmers: PlanetData[] = [];
 
       if (neededFarmers > 0) {
         for (const p of allPlanets) {
           const rpt = planetResourcesPerTurn[p.id];
           const pw = planetPopulationWorkerTypes[p.id];
-          if (
-            neededFarmers > 0 &&
-            rpt.amountNextWorkerPerTurn.food > 0 &&
-            (pw.miners > 0 || pw.builders > 0)
-          ) {
+          if (neededFarmers > 0 && rpt.amountNextWorkerPerTurn.food > 0 && (pw.miners > 0 || pw.builders > 0)) {
             planetCandidatesForAddingFarmers.push(p);
             neededFarmers -= rpt.amountNextWorkerPerTurn.food;
             if (neededFarmers <= 0) break;
@@ -226,16 +232,12 @@ export class ComputerPlayer {
       allPlanets.reverse();
 
       let unneededFarmers = foodDiff;
-      const planetCandidatesForRemovingFarmers:PlanetData[] = [];
+      const planetCandidatesForRemovingFarmers: PlanetData[] = [];
       if (unneededFarmers > 0) {
         for (const p of allPlanets) {
           const rpt = planetResourcesPerTurn[p.id];
           const pw = planetPopulationWorkerTypes[p.id];
-          if (
-            unneededFarmers > 0 &&
-            unneededFarmers > rpt.amountPerWorkerPerTurn.food &&
-            pw.farmers > 0
-          ) {
+          if (unneededFarmers > 0 && unneededFarmers > rpt.amountPerWorkerPerTurn.food && pw.farmers > 0) {
             planetCandidatesForRemovingFarmers.push(p);
             unneededFarmers -= rpt.amountPerWorkerPerTurn.food;
             if (unneededFarmers <= 0) break;
@@ -276,14 +278,18 @@ export class ComputerPlayer {
       } //while (foodDiff > 0)
     }
 
-    const mineralResourceNeeded = oreAmountNeeded > iridiumAmountNeeded ? PlanetResourceType.ORE : PlanetResourceType.IRIDIUM;
-      const mineralResourcePotentialComparer = new PlanetResourcePotentialComparer(planetResourcesPerTurn, mineralResourceNeeded);
+    const mineralResourceNeeded =
+      oreAmountNeeded > iridiumAmountNeeded ? PlanetResourceType.ORE : PlanetResourceType.IRIDIUM;
+    const mineralResourcePotentialComparer = new PlanetResourcePotentialComparer(
+      planetResourcesPerTurn,
+      mineralResourceNeeded
+    );
     let oreAmountNeededWorking = oreAmountNeeded * 1.0;
     let iridumAmountNeededWorking = iridiumAmountNeeded * 1.0;
     //next see if we need miners, look for workers to reassign (don't reassign farmers at this point)
     if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) {
       const planetCandidatesForRemovingWorkers = []; //List<Planet>
-      
+
       allPlanets.sort(mineralResourcePotentialComparer.sortFunction);
 
       for (const p of allPlanets) {
@@ -360,8 +366,8 @@ export class ComputerPlayer {
           //double check we still have miners and that we don't over compensate
           if (
             pw.miners > 0 &&
-            (oreAmountNeeded + rpt.amountPerWorkerPerTurn.ore < 0 &&
-              iridiumAmountNeeded + rpt.amountPerWorkerPerTurn.iridium < 0)
+            oreAmountNeeded + rpt.amountPerWorkerPerTurn.ore < 0 &&
+            iridiumAmountNeeded + rpt.amountPerWorkerPerTurn.iridium < 0
           ) {
             planetResourcesPerTurn[p.id] = Planet.updatePopulationWorkerTypesByDiff(p, player, 0, -1, 1);
             pw.miners--;
@@ -380,12 +386,17 @@ export class ComputerPlayer {
     }
   }
 
-  public static computerSetPlanetBuildGoals(gameModel: GameModelData, player:PlayerData, ownedPlanets: PlanetById, ownedPlanetsSorted: PlanetData[]) {
+  public static computerSetPlanetBuildGoals(
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[]
+  ) {
     //first look for planets that need build goals set, either for ships or for improvements
 
-    const planetCandidatesForNeedingImprovements:PlanetData[] = [];
-    const planetCandidatesForNeedingSpacePlatforms:PlanetData[] = [];
-    const planetCandidatesForNeedingShips:PlanetData[] = [];
+    const planetCandidatesForNeedingImprovements: PlanetData[] = [];
+    const planetCandidatesForNeedingSpacePlatforms: PlanetData[] = [];
+    const planetCandidatesForNeedingShips: PlanetData[] = [];
 
     const planetCountNeedingExploration = this.countPlanetsNeedingExploration(gameModel, player, ownedPlanets);
 
@@ -394,7 +405,9 @@ export class ComputerPlayer {
       if (!(p.id in player.planetBuildGoals)) {
         if (p.buildQueue.length) console.debug(player.name, "build queue on:", p.name, p.buildQueue[0]);
         if (p.buildQueue.length <= 1) {
-          const canBuildSpacePlatform = Planet.getSpacePlatformCount(p, true) < Research.getMaxSpacePlatformCount(player.research) && p.builtImprovements[PlanetImprovementType.Factory] > 0;
+          const canBuildSpacePlatform =
+            Planet.getSpacePlatformCount(p, true) < Research.getMaxSpacePlatformCount(player.research) &&
+            p.builtImprovements[PlanetImprovementType.Factory] > 0;
           //even if we have something in queue we might want to set a goal to save up resources?
 
           //always check for improvements in case we need to destroy some
@@ -421,7 +434,7 @@ export class ComputerPlayer {
 
     //space platforms
     for (const p of planetCandidatesForNeedingSpacePlatforms) {
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SpacePlatform);
+      player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SpacePlatform);
     }
 
     const origRecommendedMines = 2;
@@ -470,21 +483,13 @@ export class ComputerPlayer {
       if (farmCount < recommendedFarms) {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Farm);
       } else if (mineCount < recommendedMines) {
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(
-          PlanetImprovementType.Mine
-        );
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Mine);
       } else if (factoryCount == 0 && recommendedFactories > 0) {
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(
-          PlanetImprovementType.Factory
-        );
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Factory);
       } else if (colonyCount < recommendedColonies) {
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(
-          PlanetImprovementType.Colony
-        );
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Colony);
       } else if (factoryCount < recommendedFactories) {
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(
-          PlanetImprovementType.Factory
-        );
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Factory);
       } else if (farmCount > recommendedFarms) {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructPlanetImprovementToDestroy(
           PlanetImprovementType.Farm
@@ -503,13 +508,7 @@ export class ComputerPlayer {
         );
       }
       if (player.planetBuildGoals[p.id]) {
-        console.debug(
-          player.name,
-          "Planet:",
-          p.name,
-          "Improvement Build Goal:",
-          player.planetBuildGoals[p.id]
-        );
+        console.debug(player.name, "Planet:", p.name, "Improvement Build Goal:", player.planetBuildGoals[p.id]);
       }
 
       //after all that we should be ready to set fleet goals
@@ -545,23 +544,15 @@ export class ComputerPlayer {
         if (rand < 2) {
           if (rand % 2 == 0)
             //1/4 the time we build battleships 1/2 time build destroyers
-            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
-              StarShipType.Battleship
-            );
+            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Battleship);
           else
-            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
-              StarShipType.Destroyer
-            );
+            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
         } else {
           if (rand % 2 == 1)
             //1/4 the time we build cruisers 1/2 time build destroyers
-            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
-              StarShipType.Cruiser
-            );
+            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Cruiser);
           else
-            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
-              StarShipType.Destroyer
-            );
+            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
         }
       } else if (planetCountNeedingExploration != 0) {
         //if there are unexplored planets still, build some scouts
@@ -569,28 +560,23 @@ export class ComputerPlayer {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Scout);
       } else if (p.builtImprovements[PlanetImprovementType.Factory] > 0 && buildDestroyers) {
         //NOTE: this actually never gets hit because right now we're always building scouts, then spaceplatforms, then above applies
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
-          StarShipType.Destroyer
-        );
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
       } else if (gameModel.modelData.currentCycle % 4 == 0 && buildDefenders) {
         //else create defender (but only sometimes so we save gold)
-        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
-          StarShipType.SystemDefense
-        );
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
       }
       if (player.planetBuildGoals[p.id]) {
-        console.debug(
-          player.name,
-          "Planet:",
-          p.name,
-          "StarShip Build Goal:",
-          player.planetBuildGoals[p.id]
-        );
+        console.debug(player.name, "Planet:", p.name, "StarShip Build Goal:", player.planetBuildGoals[p.id]);
       }
     }
   }
 
-  public static computerSubmitTrades(gameModel:GameModelData, player: PlayerData, ownedPlanets: PlanetById, ownedPlanetsSorted: PlanetData[]) {
+  public static computerSubmitTrades(
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[]
+  ) {
     //first decide if we want to trade based on resource prices and needed resources (based on planet build goals)
     const totalPopulation = Player.getTotalPopulation(player, ownedPlanets);
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
@@ -614,38 +600,20 @@ export class ComputerPlayer {
         //sell some food
         amount = Math.floor(totalResources.food * purchaseMultiplier);
         tradesToExecute.push(
-         TradingCenter.constructTrade(
-            player.id,
-            planetId,
-            TradeType.SELL,
-            TradingCenterResourceType.FOOD,
-            amount,
-          )
+          TradingCenter.constructTrade(player.id, planetId, TradeType.SELL, TradingCenterResourceType.FOOD, amount)
         );
       }
       if (totalResources.ore >= oreDesired * 2) {
         amount = Math.floor(totalResources.ore * purchaseMultiplier);
         tradesToExecute.push(
-          TradingCenter.constructTrade(
-            player.id,
-            planetId,
-            TradeType.SELL,
-            TradingCenterResourceType.ORE,
-            amount,
-          )
+          TradingCenter.constructTrade(player.id, planetId, TradeType.SELL, TradingCenterResourceType.ORE, amount)
         );
       }
 
       if (totalResources.iridium >= iridiumDesired * 2) {
         amount = Math.floor(totalResources.iridium * purchaseMultiplier);
         tradesToExecute.push(
-          TradingCenter.constructTrade(
-            player.id,
-            planetId,
-            TradeType.SELL,
-            TradingCenterResourceType.IRIDIUM,
-            amount,
-          )
+          TradingCenter.constructTrade(player.id, planetId, TradeType.SELL, TradingCenterResourceType.IRIDIUM, amount)
         );
       }
     } else if (totalResources.energy > energyDesired * 1.2) {
@@ -654,38 +622,20 @@ export class ComputerPlayer {
         //buy some food
         const amount = Math.floor(totalPopulation * purchaseMultiplier);
         tradesToExecute.push(
-          TradingCenter.constructTrade(
-            player.id,
-            planetId,
-            TradeType.BUY,
-            TradingCenterResourceType.FOOD,
-            amount,
-          )
+          TradingCenter.constructTrade(player.id, planetId, TradeType.BUY, TradingCenterResourceType.FOOD, amount)
         );
       }
 
       if (totalResources.ore <= oreDesired * 1.2) {
         const amount = Math.floor(oreDesired * purchaseMultiplier);
         tradesToExecute.push(
-          TradingCenter.constructTrade(
-            player.id,
-            planetId,
-            TradeType.BUY,
-            TradingCenterResourceType.ORE,
-            amount,
-          )
+          TradingCenter.constructTrade(player.id, planetId, TradeType.BUY, TradingCenterResourceType.ORE, amount)
         );
       }
       if (totalResources.iridium <= iridiumDesired * 1.2) {
         const amount = Math.floor(iridiumDesired * purchaseMultiplier);
         tradesToExecute.push(
-          TradingCenter.constructTrade(
-            player.id,
-            planetId,
-            TradeType.BUY,
-            TradingCenterResourceType.IRIDIUM,
-            amount,
-          )
+          TradingCenter.constructTrade(player.id, planetId, TradeType.BUY, TradingCenterResourceType.IRIDIUM, amount)
         );
       }
     }
@@ -700,7 +650,12 @@ export class ComputerPlayer {
     }
   }
 
-  public static computerBuildImprovementsAndShips(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById, ownedPlanetsSorted: PlanetData[]) {
+  public static computerBuildImprovementsAndShips(
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[]
+  ) {
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
     //determine energy surplus needed to ship food
     let energySurplus = player.lastTurnFoodNeededToBeShipped;
@@ -742,9 +697,13 @@ export class ComputerPlayer {
       }
     }
   }
-  
 
-  public static computerSendShips(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById, ownedPlanetsSorted: PlanetData[]) {
+  public static computerSendShips(
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[]
+  ) {
     //easy computer sends ships to closest planet at random
     //normal computers keep detachments of ships as defence as deemed necessary based on scouted enemy forces and planet value
     //hard computers also prefer planets based on class, location, and fleet defence
@@ -772,10 +731,7 @@ export class ComputerPlayer {
             strengthToDefend = Math.floor(Math.pow(p.type, 2) * 4); //defense based on planet type
           }
 
-          if (
-            player.type == PlayerType.Computer_Hard ||
-            player.type == PlayerType.Computer_Expert
-          ) {
+          if (player.type == PlayerType.Computer_Hard || player.type == PlayerType.Computer_Expert) {
             //base defense upon enemy fleet strength within a certain range of last known planets
             // as well as if there are ships in queue and estimated time till production
 
@@ -783,9 +739,10 @@ export class ComputerPlayer {
             const closestUnownedPlanetResults = this.getClosestUnownedPlanet(gameModel, ownedPlanets, p);
             if (closestUnownedPlanetResults.planet) {
               if (closestUnownedPlanetResults.planet.id in player.lastKnownPlanetFleetStrength) {
-                strengthToDefend += Fleet.determineFleetStrength(player.lastKnownPlanetFleetStrength[
-                  closestUnownedPlanetResults.planet.id
-                ].fleetData, true);
+                strengthToDefend += Fleet.determineFleetStrength(
+                  player.lastKnownPlanetFleetStrength[closestUnownedPlanetResults.planet.id].fleetData,
+                  true
+                );
               } else if (closestUnownedPlanetResults.planet.id in player.knownPlanetIds) {
                 strengthToDefend += Math.floor(Math.pow(closestUnownedPlanetResults.planet.type, 2) * 4);
               }
@@ -836,10 +793,7 @@ export class ComputerPlayer {
     if (player.homePlanetId && player.homePlanetId in ownedPlanets) {
       //just to make sure
       const homePlanet = ownedPlanets[player.homePlanetId];
-      if (
-        player.type == PlayerType.Computer_Easy ||
-        player.type == PlayerType.Computer_Normal
-      ) {
+      if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel, homePlanet);
         planetCandidatesForInboundAttackingFleets.sort(planetDistanceComparer.sortFunction);
         planetCandidatesForInboundScouts.sort(planetDistanceComparer.sortFunction);
@@ -880,10 +834,7 @@ export class ComputerPlayer {
       for (let i = planetCandidatesForInboundScouts.length - 1; i >= 0; i--) {
         const pEnemyInbound = planetCandidatesForInboundScouts[i];
 
-        if (
-          player.type == PlayerType.Computer_Easy ||
-          player.type == PlayerType.Computer_Normal
-        ) {
+        if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
           const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
           planetCandidatesForSendingShips.sort(planetDistanceComparer.sortFunction);
         } else {
@@ -906,9 +857,14 @@ export class ComputerPlayer {
           const inboundPlanet = planetCandidatesForInboundScouts[i];
           const newFleet = Fleet.splitOffSmallestPossibleFleet(pFriendly.planetaryFleet);
           //if we do this right newFleet should never be null
-          if(newFleet) {
-            Fleet.setDestination(newFleet, gameModel.grid, pFriendly.boundingHexMidPoint, inboundPlanet.boundingHexMidPoint)
-            
+          if (newFleet) {
+            Fleet.setDestination(
+              newFleet,
+              gameModel.grid,
+              pFriendly.boundingHexMidPoint,
+              inboundPlanet.boundingHexMidPoint
+            );
+
             pFriendly.outgoingFleets.push(newFleet);
             this.onComputerSentFleet(newFleet);
 
@@ -933,10 +889,7 @@ export class ComputerPlayer {
     for (let i = planetCandidatesForInboundAttackingFleets.length - 1; i >= 0; i--) {
       const pEnemyInbound = planetCandidatesForInboundAttackingFleets[i];
 
-      if (
-        player.type == PlayerType.Computer_Easy ||
-        player.type == PlayerType.Computer_Normal
-      ) {
+      if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
         planetCandidatesForSendingShips.sort(planetDistanceComparer.sortFunction);
       } // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
@@ -1004,9 +957,20 @@ export class ComputerPlayer {
           pFriendly.boundingHexMidPoint
         );
         if (Fleet.determineFleetStrength(newFleet) > fleetStrength * additionalStrengthMultiplierNeededToAttack) {
-          newFleet = Fleet.splitFleet(pFriendly.planetaryFleet, starshipCounts.scouts, starshipCounts.destroyers, starshipCounts.cruisers, starshipCounts.battleships);
+          newFleet = Fleet.splitFleet(
+            pFriendly.planetaryFleet,
+            starshipCounts.scouts,
+            starshipCounts.destroyers,
+            starshipCounts.cruisers,
+            starshipCounts.battleships
+          );
 
-          Fleet.setDestination(newFleet, gameModel.grid, pFriendly.boundingHexMidPoint, pEnemyInbound.boundingHexMidPoint);
+          Fleet.setDestination(
+            newFleet,
+            gameModel.grid,
+            pFriendly.boundingHexMidPoint,
+            pEnemyInbound.boundingHexMidPoint
+          );
 
           pFriendly.outgoingFleets.push(newFleet);
 
@@ -1032,7 +996,8 @@ export class ComputerPlayer {
         planetCandidatesForInboundReinforcements.sort(planetDistanceComparer.sortFunction);
         const planetToReinforce =
           planetCandidatesForInboundReinforcements[planetCandidatesForInboundReinforcements.length - 1];
-        const distanceFromPlanetToReinforceToEnemy = Grid.getHexDistanceForMidPoints(gameModel.grid,
+        const distanceFromPlanetToReinforceToEnemy = Grid.getHexDistanceForMidPoints(
+          gameModel.grid,
           pEnemyInbound.boundingHexMidPoint,
           planetToReinforce.boundingHexMidPoint
         );
@@ -1046,8 +1011,11 @@ export class ComputerPlayer {
 
           //also make sure the friendly planet is further from our target than the planet to reinforce
           if (
-            Grid.getHexDistanceForMidPoints(gameModel.grid, pEnemyInbound.boundingHexMidPoint, pFriendly.boundingHexMidPoint) <
-            distanceFromPlanetToReinforceToEnemy
+            Grid.getHexDistanceForMidPoints(
+              gameModel.grid,
+              pEnemyInbound.boundingHexMidPoint,
+              pFriendly.boundingHexMidPoint
+            ) < distanceFromPlanetToReinforceToEnemy
           )
             break;
 
@@ -1057,9 +1025,20 @@ export class ComputerPlayer {
 
           //const newFleet = StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
 
-          const newFleet = Fleet.splitFleet(pFriendly.planetaryFleet, starshipCounts.scouts, starshipCounts.destroyers, starshipCounts.cruisers, starshipCounts.battleships);
+          const newFleet = Fleet.splitFleet(
+            pFriendly.planetaryFleet,
+            starshipCounts.scouts,
+            starshipCounts.destroyers,
+            starshipCounts.cruisers,
+            starshipCounts.battleships
+          );
 
-          Fleet.setDestination(newFleet, gameModel.grid, pFriendly.boundingHexMidPoint, planetToReinforce.boundingHexMidPoint);
+          Fleet.setDestination(
+            newFleet,
+            gameModel.grid,
+            pFriendly.boundingHexMidPoint,
+            planetToReinforce.boundingHexMidPoint
+          );
 
           pFriendly.outgoingFleets.push(newFleet);
 
@@ -1094,9 +1073,14 @@ export class ComputerPlayer {
   }
 
   /**
-  * returns true if it has been enough turns since this planet was explored
-  */
-  public static planetNeedsExploration(planet: PlanetData, gameModel:GameModelData, player: PlayerData, ownedPlanets: PlanetById) {
+   * returns true if it has been enough turns since this planet was explored
+   */
+  public static planetNeedsExploration(
+    planet: PlanetData,
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById
+  ) {
     if (!player.knownPlanetIds.includes(planet.id)) {
       return true;
     } else if (player.type === PlayerType.Computer_Easy) {
@@ -1108,7 +1092,8 @@ export class ComputerPlayer {
         ? gameModel.modelData.currentCycle - player.lastKnownPlanetFleetStrength[planet.id].cycleLastExplored
         : 0;
     //the more planets and larger the galaxy, the longer the time till new intelligence is needed
-    const turnLastExploredCutoff = (gameModel.modelData.planets.length / 2) * gameModel.modelData.gameOptions.galaxySize; //range: 4 - 48
+    const turnLastExploredCutoff =
+      (gameModel.modelData.planets.length / 2) * gameModel.modelData.gameOptions.galaxySize; //range: 4 - 48
     if (turnsSinceLastExplored > turnLastExploredCutoff) {
       //this is just a quick short circuit
       return true;
@@ -1117,7 +1102,11 @@ export class ComputerPlayer {
       const distanceCutoff = turnLastExploredCutoff / 2;
       let totalDistance = player.ownedPlanetIds.length || 1;
       for (const ownedPlanet of Object.values(ownedPlanets)) {
-        totalDistance += Grid.getHexDistanceForMidPoints(gameModel.grid, planet.boundingHexMidPoint, ownedPlanet.boundingHexMidPoint);
+        totalDistance += Grid.getHexDistanceForMidPoints(
+          gameModel.grid,
+          planet.boundingHexMidPoint,
+          ownedPlanet.boundingHexMidPoint
+        );
       }
       const averageDistance = totalDistance / (player.ownedPlanetIds.length || 1);
       if (averageDistance <= distanceCutoff && turnsSinceLastExplored > averageDistance) {
@@ -1127,12 +1116,20 @@ export class ComputerPlayer {
     return false;
   }
 
-  public static getClosestUnownedPlanet(gameModel:GameModelData, ownedPlanets: PlanetById, ownedPlanet:PlanetData):{minDistance:number, planet: PlanetData|null} {
-    const returnVal:{minDistance:number, planet: PlanetData|null} = {minDistance:999, planet: null};
+  public static getClosestUnownedPlanet(
+    gameModel: GameModelData,
+    ownedPlanets: PlanetById,
+    ownedPlanet: PlanetData
+  ): { minDistance: number; planet: PlanetData | null } {
+    const returnVal: { minDistance: number; planet: PlanetData | null } = { minDistance: 999, planet: null };
 
     for (const p of gameModel.modelData.planets) {
       if (!(p.id in ownedPlanets)) {
-        const distance = Grid.getHexDistanceForMidPoints(gameModel.grid, p.boundingHexMidPoint, ownedPlanet.boundingHexMidPoint);
+        const distance = Grid.getHexDistanceForMidPoints(
+          gameModel.grid,
+          p.boundingHexMidPoint,
+          ownedPlanet.boundingHexMidPoint
+        );
         if (distance < returnVal.minDistance) {
           returnVal.minDistance = distance;
           returnVal.planet = p;
@@ -1142,5 +1139,4 @@ export class ComputerPlayer {
 
     return returnVal;
   }
-  
-};
+}

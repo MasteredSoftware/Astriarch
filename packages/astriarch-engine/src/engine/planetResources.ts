@@ -38,7 +38,7 @@ export class PlanetResources {
     let spent = r.energy;
     r.energy = 0;
     return spent;
-  };
+  }
 
   public static spendFoodAsPossible(r: PlanetResourceData, amount: number) {
     if (r.food >= amount) {
@@ -48,7 +48,7 @@ export class PlanetResources {
     let spent = r.food;
     r.food = 0;
     return spent;
-  };
+  }
 
   public static spendOreAsPossible(r: PlanetResourceData, amount: number) {
     if (r.ore >= amount) {
@@ -58,7 +58,7 @@ export class PlanetResources {
     let spent = r.ore;
     r.ore = 0;
     return spent;
-  };
+  }
 
   public static spendIridiumAsPossible(r: PlanetResourceData, amount: number) {
     if (r.iridium >= amount) {
@@ -68,5 +68,5 @@ export class PlanetResources {
     let spent = r.iridium;
     r.iridium = 0;
     return spent;
-  };
+  }
 }

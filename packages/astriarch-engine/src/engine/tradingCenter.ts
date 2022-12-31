@@ -116,16 +116,13 @@ export class TradingCenter {
     this.adjustCurrentPrice(tradingCenterData.iridiumResource);
   }
 
-  public static getResourceByType(
-    tradingCenterData: TradingCenterData,
-    resourceType: TradingCenterResourceType
-  ) {
+  public static getResourceByType(tradingCenterData: TradingCenterData, resourceType: TradingCenterResourceType) {
     return resourceType === TradingCenterResourceType.FOOD
       ? tradingCenterData.foodResource
       : resourceType === TradingCenterResourceType.ORE
       ? tradingCenterData.oreResource
       : tradingCenterData.iridiumResource;
-  };
+  }
 
   public static executeTrade(
     gameModel: GameModelData,

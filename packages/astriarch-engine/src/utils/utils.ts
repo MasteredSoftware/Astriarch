@@ -27,15 +27,15 @@ export class Utils {
         ? number.toFixed(maxDecimalPlaces).replace(/0+$/, "")
         : number
       : number;
-  };
+  }
 
   public static ColorRgba(r: number, g: number, b: number, a: number): ColorRgbaData {
     return { r, g, b, a };
   }
 
-  public static compareNumbers(a:number, b:number) {  
+  public static compareNumbers(a: number, b: number) {
     if (b < a) return 1;
     else if (b > a) return -1;
     else return 0;
-  };
+  }
 }

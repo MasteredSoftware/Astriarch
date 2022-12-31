@@ -13,7 +13,11 @@ export class PlanetDistanceComparer {
   sourceHex: GridHex;
   lastKnownPlanetFleetStrength: LastKnownPlanetFleetStrength | undefined;
 
-  constructor(gameModel: GameModelData, source: PlanetData, lastKnownPlanetFleetStrength?:LastKnownPlanetFleetStrength) {
+  constructor(
+    gameModel: GameModelData,
+    source: PlanetData,
+    lastKnownPlanetFleetStrength?: LastKnownPlanetFleetStrength
+  ) {
     this.gameModel = gameModel;
     this.source = source;
     this.lastKnownPlanetFleetStrength = lastKnownPlanetFleetStrength;
@@ -50,7 +54,7 @@ export class PlanetDistanceComparer {
 
     if (ret !== 0) {
       //NOTE: this sorts in decending order or distance because we start at the end of the list
-      if(this.lastKnownPlanetFleetStrength) {
+      if (this.lastKnownPlanetFleetStrength) {
         distanceA += this.increasedDistanceBasedOnPlanetValueAndFleetStrength(a);
         distanceB += this.increasedDistanceBasedOnPlanetValueAndFleetStrength(b);
       }
@@ -66,7 +70,7 @@ export class PlanetDistanceComparer {
   /**
    * returns the distance to increase a planet for sorting based on strength
    */
-  private increasedDistanceBasedOnPlanetValueAndFleetStrength(p:PlanetData) {
+  private increasedDistanceBasedOnPlanetValueAndFleetStrength(p: PlanetData) {
     //to normalize distance, value and strength we increase the distance as follows
     //Based on Value (could eventually base this on what we need so if we need more minerals we prefer asteroids:
     // Class 2 planets add +0 distance
@@ -105,5 +109,5 @@ export class PlanetDistanceComparer {
     }
 
     return distance;
-  };
+  }
 }

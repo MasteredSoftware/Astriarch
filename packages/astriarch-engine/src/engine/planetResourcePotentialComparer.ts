@@ -23,7 +23,7 @@ export class PlanetResourcePotentialComparer {
   public sortFunction(a: PlanetData, b: PlanetData): number {
     const nextWorkerPlanetA = this.planetResourcesPerTurn[a.id].amountNextWorkerPerTurn;
     const nextWorkerPlanetB = this.planetResourcesPerTurn[b.id].amountNextWorkerPerTurn;
-    switch(this.resourceTypeToPrefer) {
+    switch (this.resourceTypeToPrefer) {
       case PlanetResourceType.FOOD:
         return Utils.compareNumbers(nextWorkerPlanetB.food, nextWorkerPlanetA.food);
         break;

@@ -3,10 +3,7 @@ import { PlanetImprovementType, PlanetProductionItemData, PlanetProductionItemTy
 import { Fleet } from "./fleet";
 
 export class PlanetProductionItem {
-
-  private static constructPlanetProductionItem(
-    itemType: PlanetProductionItemType,
-  ): PlanetProductionItemData {
+  private static constructPlanetProductionItem(itemType: PlanetProductionItemType): PlanetProductionItemData {
     return {
       itemType,
       improvementData: undefined,
@@ -16,13 +13,13 @@ export class PlanetProductionItem {
       baseProductionCost: 0,
       energyCost: 0,
       oreCost: 0,
-      iridiumCost: 0
-    }
+      iridiumCost: 0,
+    };
   }
 
-  public static constructPlanetImprovement(type: PlanetImprovementType):PlanetProductionItemData {
+  public static constructPlanetImprovement(type: PlanetImprovementType): PlanetProductionItemData {
     const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovement);
-    base.improvementData = {type};
+    base.improvementData = { type };
     //setup production costs
     switch (type) {
       case PlanetImprovementType.Colony:
@@ -50,17 +47,20 @@ export class PlanetProductionItem {
     return base;
   }
 
-  public static constructPlanetImprovementToDestroy(type: PlanetImprovementType):PlanetProductionItemData {
+  public static constructPlanetImprovementToDestroy(type: PlanetImprovementType): PlanetProductionItemData {
     const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovement);
-    base.improvementData = {type};
+    base.improvementData = { type };
 
     base.baseProductionCost = base.baseProductionCost / 4;
     return base;
   }
 
-  public static constructStarShipInProduction(type: StarShipType, customShipData?:StarshipAdvantageData):PlanetProductionItemData {
+  public static constructStarShipInProduction(
+    type: StarShipType,
+    customShipData?: StarshipAdvantageData
+  ): PlanetProductionItemData {
     const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovement);
-    base.starshipData = {type, customShipData};
+    base.starshipData = { type, customShipData };
 
     switch (type) {
       case StarShipType.SpacePlatform:
@@ -104,7 +104,8 @@ export class PlanetProductionItem {
     if (customShipData && baseShipAdvantage) {
       let baseShipAdvantageFactor = baseShipAdvantage.advantageAgainst - (baseShipAdvantage.disadvantageAgainst - 1);
       //increase cost based on advantages/disadvantages
-      let advantageFactorDifference = customShipData.advantageAgainst - (customShipData.disadvantageAgainst - 1) - baseShipAdvantageFactor;
+      let advantageFactorDifference =
+        customShipData.advantageAgainst - (customShipData.disadvantageAgainst - 1) - baseShipAdvantageFactor;
       let costMultiplier = Math.max(1.0, 1 + advantageFactorDifference / 10);
 
       base.baseProductionCost = Math.ceil(base.baseProductionCost * costMultiplier);

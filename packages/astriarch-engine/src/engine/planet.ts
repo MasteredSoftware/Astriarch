@@ -209,10 +209,10 @@ export class Planet {
     planet: PlanetData,
     item: PlanetProductionItemData
   ) {
-      planet.buildQueue.push(item);
+    planet.buildQueue.push(item);
 
-      this.spendResources(gameModel, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
-  };
+    this.spendResources(gameModel, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
+  }
 
   public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
     //determine tax revenue (energy credits)
@@ -418,7 +418,7 @@ export class Planet {
     return { protesting, content };
   }
 
-  public static getCitizenByType(p: PlanetData, desiredType:CitizenWorkerType):Citizen {
+  public static getCitizenByType(p: PlanetData, desiredType: CitizenWorkerType): Citizen {
     const citizens = this.getPopulationByContentment(p);
     for (const c of citizens.content) {
       if (c.workerType === desiredType) return c;
@@ -430,17 +430,23 @@ export class Planet {
       }
     }
     throw new Error("No matching citizens found in Planet.getCitizenByType!");
-  };
+  }
 
   public static maxPopulation(p: PlanetData) {
     return p.maxImprovements + p.builtImprovements[PlanetImprovementType.Colony];
-  };
+  }
 
   /**
    * updates the population worker assignments based on the differences passed in
    * @this {Astriarch.Planet}
    */
-  public static updatePopulationWorkerTypesByDiff(p: PlanetData, owner: PlayerData, farmerDiff:number, minerDiff:number, builderDiff:number) {
+  public static updatePopulationWorkerTypesByDiff(
+    p: PlanetData,
+    owner: PlayerData,
+    farmerDiff: number,
+    minerDiff: number,
+    builderDiff: number
+  ) {
     while (farmerDiff !== 0) {
       if (farmerDiff > 0) {
         //move miners and workers to be farmers
@@ -503,11 +509,14 @@ export class Planet {
   /**
    * Counts the SpacePlatforms in the fleet
    */
-  public static getSpacePlatformCount(p:PlanetData, includeQueue:boolean) {
+  public static getSpacePlatformCount(p: PlanetData, includeQueue: boolean) {
     let count = Fleet.countStarshipsByType(p.planetaryFleet).spaceplatforms;
     if (includeQueue) {
       for (const ppi of p.buildQueue) {
-        if (ppi.itemType == PlanetProductionItemType.StarShipInProduction && ppi.starshipData?.type == StarShipType.SpacePlatform) {
+        if (
+          ppi.itemType == PlanetProductionItemType.StarShipInProduction &&
+          ppi.starshipData?.type == StarShipType.SpacePlatform
+        ) {
           count++;
         }
       }
@@ -531,11 +540,13 @@ export class Planet {
   /**
    * Returns data if there is a mobile starship in the queue
    */
-  public static buildQueueContainsMobileStarship(p: PlanetData):{turnsToComplete:number, starshipStrength: number}|undefined {
+  public static buildQueueContainsMobileStarship(
+    p: PlanetData
+  ): { turnsToComplete: number; starshipStrength: number } | undefined {
     for (const ppi of p.buildQueue) {
-      if ( ppi.starshipData && Fleet.starshipTypeIsMobile(ppi.starshipData.type)) {
+      if (ppi.starshipData && Fleet.starshipTypeIsMobile(ppi.starshipData.type)) {
         const starship = Fleet.generateStarship(ppi.starshipData.type);
-        return {turnsToComplete: ppi.turnsToComplete, starshipStrength: starship.health};
+        return { turnsToComplete: ppi.turnsToComplete, starshipStrength: starship.health };
       }
     }
     return undefined;
@@ -544,7 +555,7 @@ export class Planet {
   /**
    * A sort function to prefer planets with higher pop and number of improvements
    */
-  public static planetPopulationImprovementCountComparerSortFunction(a:PlanetData, b:PlanetData) {
+  public static planetPopulationImprovementCountComparerSortFunction(a: PlanetData, b: PlanetData) {
     let ret = Utils.compareNumbers(b.population.length, a.population.length);
     if (ret == 0) ret = Utils.compareNumbers(this.builtImprovementCount(b), this.builtImprovementCount(a));
     return ret;

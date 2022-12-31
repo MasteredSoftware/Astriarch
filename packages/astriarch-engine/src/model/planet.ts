@@ -14,7 +14,7 @@ export enum PlanetResourceType {
   RESEARCH,
   ORE,
   IRIDIUM,
-  PRODUCTION
+  PRODUCTION,
 }
 
 export interface PlanetResourceData {
@@ -60,8 +60,8 @@ export enum PlanetProductionItemType {
 
 export interface PlanetProductionItemData {
   itemType: PlanetProductionItemType;
-  improvementData?: {type: PlanetImprovementType};
-  starshipData?: {type: StarShipType, customShipData?:StarshipAdvantageData};
+  improvementData?: { type: PlanetImprovementType };
+  starshipData?: { type: StarShipType; customShipData?: StarshipAdvantageData };
   turnsToComplete: number; //once this is built turns to complete will be 0 and will go into the built improvements for the planet
   productionCostComplete: number; //this is how much of the BaseProductionCost we've completed
   baseProductionCost: number; //this will translate into Turns to Complete based on population, factories, etc...
