@@ -274,18 +274,17 @@ export class Fleet {
     const damageInflicted = Math.min(starship.health, damageAmount);
     starship.health -= damageInflicted;
     //assign points
-    if(owner) {
+    if (owner) {
       Player.increasePoints(owner, EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, damageInflicted);
     }
     return damageInflicted;
   }
 
-
   /**
    * Lands a fleet on a planet
    *  the caller is responsible for removing the landing fleet
    */
-  public static landFleet = function(planetaryFleet: FleetData, landingFleet: FleetData) {
+  public static landFleet = function (planetaryFleet: FleetData, landingFleet: FleetData) {
     // NOTE: this isn't technically necessary since we're going to merge these fleets
     landingFleet.travelingFromHexMidPoint = null;
     landingFleet.destinationHexMidPoint = null;

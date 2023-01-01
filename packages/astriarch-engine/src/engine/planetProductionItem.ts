@@ -14,7 +14,7 @@ export class PlanetProductionItem {
       energyCost: 0,
       oreCost: 0,
       iridiumCost: 0,
-      resourcesSpent: false
+      resourcesSpent: false,
     };
   }
 

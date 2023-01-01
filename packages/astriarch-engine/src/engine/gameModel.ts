@@ -1,7 +1,13 @@
 import { PlanetById } from "../model/clientModel";
 import { StarShipType } from "../model/fleet";
 import { GalaxySizeOption, GameOptions, ModelData, PlanetsPerSystemOption } from "../model/model";
-import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetResourceData, PlanetType } from "../model/planet";
+import {
+  PlanetData,
+  PlanetHappinessType,
+  PlanetImprovementType,
+  PlanetResourceData,
+  PlanetType,
+} from "../model/planet";
 import { PlayerData } from "../model/player";
 import { Utils } from "../utils/utils";
 import { Fleet } from "./fleet";
@@ -268,28 +274,32 @@ export class GameModel {
   }
 
   public static findPlanetOwner(gameModel: GameModelData, planetId: number): PlayerData | undefined {
-    for(const player of gameModel.modelData.players) {
-      if(player.ownedPlanetIds.includes(planetId)) {
+    for (const player of gameModel.modelData.players) {
+      if (player.ownedPlanetIds.includes(planetId)) {
         return player;
       }
     }
     return undefined;
   }
 
-  public static changePlanetOwner(oldOwner: PlayerData | undefined, newOwner: PlayerData | undefined, planet: PlanetData) {
-    if(newOwner) {
+  public static changePlanetOwner(
+    oldOwner: PlayerData | undefined,
+    newOwner: PlayerData | undefined,
+    planet: PlanetData
+  ) {
+    if (newOwner) {
       newOwner.ownedPlanetIds.push(planet.id);
       newOwner.knownPlanetIds = [...new Set([...newOwner.knownPlanetIds, planet.id])];
     }
-    
-    if(oldOwner) {
-      for(let i = 0; i < oldOwner.ownedPlanetIds.length; i++) {
-        if(oldOwner.ownedPlanetIds[i] === planet.id) {
+
+    if (oldOwner) {
+      for (let i = 0; i < oldOwner.ownedPlanetIds.length; i++) {
+        if (oldOwner.ownedPlanetIds[i] === planet.id) {
           oldOwner.ownedPlanetIds.splice(i, 1);
           break;
         }
       }
-      if(planet.id in oldOwner.planetBuildGoals) {
+      if (planet.id in oldOwner.planetBuildGoals) {
         delete oldOwner.planetBuildGoals[planet.id];
       }
 

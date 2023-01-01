@@ -212,7 +212,7 @@ export class Planet {
     item: PlanetProductionItemData
   ) {
     planet.buildQueue.push(item);
-    
+
     this.spendResources(gameModel, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
     item.resourcesSpent = true;
   }
@@ -220,8 +220,8 @@ export class Planet {
   /**
    * Removes an item from the build queue and returns resources to the planet based on how far the item is along in being built
    */
-  public static removeBuildQueueItemForRefund(planet: PlanetData, index: number):boolean {
-    if(index < 0 || index > planet.buildQueue.length) {
+  public static removeBuildQueueItemForRefund(planet: PlanetData, index: number): boolean {
+    if (index < 0 || index > planet.buildQueue.length) {
       return false;
     }
     const [item] = planet.buildQueue.splice(index, 1);
@@ -236,19 +236,19 @@ export class Planet {
   /**
    * returns how many resources should be refunded when this improvement is canceled
    */
-  public static getRefundAmount(item:PlanetProductionItemData):ProductionItemResources {
+  public static getRefundAmount(item: PlanetProductionItemData): ProductionItemResources {
     let energyCost = 0;
     let oreCost = 0;
     let iridiumCost = 0;
-    if(item.resourcesSpent) {
+    if (item.resourcesSpent) {
       //give refund
       const refundPercent = 1 - item.productionCostComplete / (item.baseProductionCost * 1.0);
       energyCost = item.energyCost * refundPercent;
       oreCost = item.oreCost * refundPercent;
       iridiumCost = item.iridiumCost * refundPercent;
     }
-    
-    return {energyCost, oreCost, iridiumCost};
+
+    return { energyCost, oreCost, iridiumCost };
   }
 
   public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
@@ -473,12 +473,12 @@ export class Planet {
     return p.maxImprovements + p.builtImprovements[PlanetImprovementType.Colony];
   }
 
-  public static getPlanetAtMidPoint(planets: PlanetData[], midPoint:PointData): PlanetData | undefined {
-    return planets.find(p => Grid.pointsAreEqual(p.boundingHexMidPoint, midPoint));
+  public static getPlanetAtMidPoint(planets: PlanetData[], midPoint: PointData): PlanetData | undefined {
+    return planets.find((p) => Grid.pointsAreEqual(p.boundingHexMidPoint, midPoint));
   }
 
   public static recallOutgoingFleets(p: PlanetData) {
-    for(const f of p.outgoingFleets) {
+    for (const f of p.outgoingFleets) {
       Fleet.landFleet(p.planetaryFleet, f);
     }
     p.outgoingFleets = [];

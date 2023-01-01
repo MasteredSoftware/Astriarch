@@ -125,8 +125,8 @@ export class Research {
     return player.research.researchProgressByType[researchType].data.percent!;
   }
 
-  public static getResearchBoostForStarshipImprovement(researchType: ResearchType, player: PlayerData):number {
-    return player.research.researchProgressByType[researchType].data.chance!
+  public static getResearchBoostForStarshipImprovement(researchType: ResearchType, player: PlayerData): number {
+    return player.research.researchProgressByType[researchType].data.chance!;
   }
 
   public static getCreditAndResearchAmountEarnedPerTurn(researchData: ResearchData, creditAmountAtMaxPercent: number) {
@@ -381,10 +381,10 @@ export class Research {
 
   public static getResearchProgressListSorted(data: ResearchData) {
     const sortedList = Object.values(data.researchProgressByType);
-  
+
     sortedList.sort((rptA, rptB) => {
       return rptA.currentResearchLevel - rptB.currentResearchLevel;
     });
     return sortedList;
-  };
+  }
 }

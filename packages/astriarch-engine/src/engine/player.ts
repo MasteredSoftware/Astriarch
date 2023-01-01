@@ -36,7 +36,12 @@ export class Player {
     };
   }
 
-  public static setPlanetExplored(p: PlayerData, planet: PlanetData, cycle: number, lastKnownOwnerId: string | undefined) {
+  public static setPlanetExplored(
+    p: PlayerData,
+    planet: PlanetData,
+    cycle: number,
+    lastKnownOwnerId: string | undefined
+  ) {
     p.knownPlanetIds.push(planet.id);
     p.knownPlanetIds = [...new Set(p.knownPlanetIds)];
     Player.setPlanetLastKnownFleetStrength(p, planet, cycle, lastKnownOwnerId);

@@ -55,15 +55,15 @@ export class Events {
     return {
       defendingClientPlayer,
       defendingFleet: Fleet.cloneFleet(defendingFleet),
-      defendingFleetResearchBoost: {attack: 0, defense: 0},
+      defendingFleetResearchBoost: { attack: 0, defense: 0 },
       attackingClientPlayer,
       attackingFleet: Fleet.cloneFleet(attackingFleet),
-      attackingFleetResearchBoost: {attack: 0, defense: 0},
+      attackingFleetResearchBoost: { attack: 0, defense: 0 },
       attackingFleetChances: null,
       winningFleet: null,
-      resourcesLooted: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0)
-    }
-  };
+      resourcesLooted: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0),
+    };
+  }
 
   public static publish() {
     for (const [key, value] of Object.entries(Events.eventNotificationQueue)) {
