@@ -240,7 +240,7 @@ export class Research {
     return defaultName;
   }
 
-  private static setResearchPointsCompleted(researchProgress: ResearchTypeProgress, pointsCompleted: number): number {
+  public static setResearchPointsCompleted(researchProgress: ResearchTypeProgress, pointsCompleted: number): number {
     let originalLevel = researchProgress.currentResearchLevel;
     researchProgress.researchPointsCompleted = pointsCompleted;
     const { researchLevelCosts } = Research.researchTypeIndex[researchProgress.type];

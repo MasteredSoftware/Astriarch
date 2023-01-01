@@ -3,7 +3,6 @@ import { FleetData, StarShipType } from "../model/fleet";
 import { PlanetData, PlanetImprovementType, PlanetResourceType, PlanetType } from "../model/planet";
 import { PlayerData, PlayerType } from "../model/player";
 import { TradeType, TradingCenterResourceType } from "../model/tradingCenter";
-import { GameTools } from "../utils/gameTools";
 import { Utils } from "../utils/utils";
 import { Fleet } from "./fleet";
 import { GameModelData } from "./gameModel";
@@ -172,7 +171,7 @@ export class ComputerPlayer {
 
       //gather potential planets for adding farmers to
       //TODO: this should order by planets with farms as well as planets who's population demands more food than it produces (more potential for growth)
-      allPlanets.sort(foodResourcePotentialComparer.sortFunction);
+      allPlanets.sort((a, b) => foodResourcePotentialComparer.sortFunction(a, b));
 
       let neededFarmers = foodDiff;
       const planetCandidatesForAddingFarmers: PlanetData[] = [];
@@ -228,7 +227,7 @@ export class ComputerPlayer {
 
       //gather potential planets for removing farmers from
       //TODO: this should order by planets without farms and planets which have more food production than it's population demands (less potential for growth)
-      allPlanets.sort(foodResourcePotentialComparer.sortFunction);
+      allPlanets.sort((a, b) => foodResourcePotentialComparer.sortFunction(a, b));
       allPlanets.reverse();
 
       let unneededFarmers = foodDiff;
@@ -290,7 +289,7 @@ export class ComputerPlayer {
     if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) {
       const planetCandidatesForRemovingWorkers = []; //List<Planet>
 
-      allPlanets.sort(mineralResourcePotentialComparer.sortFunction);
+      allPlanets.sort((a, b) => mineralResourcePotentialComparer.sortFunction(a,b));
 
       for (const p of allPlanets) {
         if (oreAmountNeededWorking < 0 && iridumAmountNeededWorking < 0) {
@@ -342,7 +341,7 @@ export class ComputerPlayer {
 
       const planetCandidatesForRemovingMiners = []; //List<Planet>
 
-      allPlanets.sort(mineralResourcePotentialComparer.sortFunction);
+      allPlanets.sort((a, b) => mineralResourcePotentialComparer.sortFunction(a, b));
       allPlanets.reverse();
 
       for (const p of allPlanets) {
@@ -795,8 +794,8 @@ export class ComputerPlayer {
       const homePlanet = ownedPlanets[player.homePlanetId];
       if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel, homePlanet);
-        planetCandidatesForInboundAttackingFleets.sort(planetDistanceComparer.sortFunction);
-        planetCandidatesForInboundScouts.sort(planetDistanceComparer.sortFunction);
+        planetCandidatesForInboundAttackingFleets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
+        planetCandidatesForInboundScouts.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } else {
         //hard and expert computer will sort with a bit of complexly (based on value and last known strength as well as distance)
         const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
@@ -804,8 +803,8 @@ export class ComputerPlayer {
           homePlanet,
           player.lastKnownPlanetFleetStrength
         );
-        planetCandidatesForInboundAttackingFleets.sort(planetValueDistanceStrengthComparer.sortFunction);
-        planetCandidatesForInboundScouts.sort(planetValueDistanceStrengthComparer.sortFunction);
+        planetCandidatesForInboundAttackingFleets.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
+        planetCandidatesForInboundScouts.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
       }
     }
 
@@ -836,7 +835,7 @@ export class ComputerPlayer {
 
         if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
           const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
-          planetCandidatesForSendingShips.sort(planetDistanceComparer.sortFunction);
+          planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         } else {
           // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
           const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
@@ -844,7 +843,7 @@ export class ComputerPlayer {
             pEnemyInbound,
             player.lastKnownPlanetFleetStrength
           );
-          planetCandidatesForSendingShips.sort(planetValueDistanceStrengthComparer.sortFunction);
+          planetCandidatesForSendingShips.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
           //because the PlanetValueDistanceStrengthComparer prefers weakest planets, we want the opposite in this case
           //so we want to prefer sending from asteroid belts with high strength value
           planetCandidatesForSendingShips.reverse();
@@ -891,7 +890,7 @@ export class ComputerPlayer {
 
       if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
-        planetCandidatesForSendingShips.sort(planetDistanceComparer.sortFunction);
+        planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
       else {
         const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
@@ -899,7 +898,7 @@ export class ComputerPlayer {
           pEnemyInbound,
           player.lastKnownPlanetFleetStrength
         );
-        planetCandidatesForSendingShips.sort(planetValueDistanceStrengthComparer.sortFunction);
+        planetCandidatesForSendingShips.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
         //because the PlanetValueDistanceStrengthComparer prefers weakest planets, we want the opposite in this case
         //so we want to prefer sending from asteroid belts with high strength value
         planetCandidatesForSendingShips.reverse();
@@ -993,7 +992,7 @@ export class ComputerPlayer {
         //  find closest planet capable of building better ships (has at least one factory) to enemy planet
         //  send a detachment from each planetCandidatesForSendingShips other than closest ship builder to reinforce and amass for later
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
-        planetCandidatesForInboundReinforcements.sort(planetDistanceComparer.sortFunction);
+        planetCandidatesForInboundReinforcements.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         const planetToReinforce =
           planetCandidatesForInboundReinforcements[planetCandidatesForInboundReinforcements.length - 1];
         const distanceFromPlanetToReinforceToEnemy = Grid.getHexDistanceForMidPoints(

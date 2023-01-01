@@ -1,5 +1,5 @@
 import { PlanetById } from "../model/clientModel";
-import { EarnedPointsType } from "../model/earnedPoints";
+import { EarnedPointsType, earnedPointsConfigByType } from "../model/earnedPoints";
 import { PlanetData, PlanetImprovementType } from "../model/planet";
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from "../model/player";
 import { ResearchType } from "../model/research";
@@ -125,4 +125,17 @@ export class Player {
     sortedOwnedPlanets.sort(Planet.planetPopulationImprovementCountComparerSortFunction);
     return sortedOwnedPlanets;
   }
+
+  /**
+   * Increases the players points
+   */
+  public static increasePoints(p: PlayerData, type:EarnedPointsType, amount: number) {
+    const config = earnedPointsConfigByType[type];
+  
+    const additionalPoints = config.pointsPer * amount;
+    p.earnedPointsByType[type] = Math.min(p.earnedPointsByType[type] + additionalPoints, config.maxPoints);
+  
+    p.points = Object.values(p.earnedPointsByType).reduce((accum, curr) => accum + curr, 0);
+    return p.points;
+  };
 }

@@ -175,7 +175,7 @@ export class Planet {
       }
       //get closest planets to source resources for, we don't charge for shipping ore or iridium
       let planetDistanceComparer = new PlanetDistanceComparer(gameModel, planet);
-      ownedPlanets.sort(planetDistanceComparer.sortFunction);
+      ownedPlanets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
 
       for (const p of ownedPlanets) {
         if (energyNeeded !== 0) energyNeeded -= PlanetResources.spendEnergyAsPossible(p.resources, energyNeeded);
