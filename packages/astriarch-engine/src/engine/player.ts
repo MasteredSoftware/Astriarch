@@ -129,13 +129,13 @@ export class Player {
   /**
    * Increases the players points
    */
-  public static increasePoints(p: PlayerData, type:EarnedPointsType, amount: number) {
+  public static increasePoints(p: PlayerData, type: EarnedPointsType, amount: number) {
     const config = earnedPointsConfigByType[type];
-  
+
     const additionalPoints = config.pointsPer * amount;
     p.earnedPointsByType[type] = Math.min(p.earnedPointsByType[type] + additionalPoints, config.maxPoints);
-  
+
     p.points = Object.values(p.earnedPointsByType).reduce((accum, curr) => accum + curr, 0);
     return p.points;
-  };
+  }
 }

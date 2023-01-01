@@ -13,8 +13,14 @@ let player1: PlayerData;
 let player2: PlayerData;
 let planetById: PlanetById;
 
-const checkFleetWinCount = (fleet1: FleetData, fleet1Owner: PlayerData, fleet2:FleetData, fleet2Owner: PlayerData, battleTries:number) => {
-  const winLoseDraw = {w:0, l: 0, d: 0};
+const checkFleetWinCount = (
+  fleet1: FleetData,
+  fleet1Owner: PlayerData,
+  fleet2: FleetData,
+  fleet2Owner: PlayerData,
+  battleTries: number
+) => {
+  const winLoseDraw = { w: 0, l: 0, d: 0 };
 
   //try the battle multiple times to account for randomness/luck
   for (let i = 0; i < battleTries; i++) {
@@ -23,14 +29,14 @@ const checkFleetWinCount = (fleet1: FleetData, fleet1Owner: PlayerData, fleet2:F
     const fleet1Wins = BattleSimulator.simulateFleetBattle(f1, fleet1Owner, f2, fleet2Owner);
     if (fleet1Wins === null) {
       winLoseDraw.d++;
-    } else if(fleet1Wins) {
+    } else if (fleet1Wins) {
       winLoseDraw.w++;
     } else {
       winLoseDraw.l++;
     }
   }
   return winLoseDraw;
-}
+};
 
 describe("BattleSimulator", () => {
   beforeEach(() => {
@@ -144,7 +150,7 @@ describe("BattleSimulator", () => {
       const battleTries = 10000;
       let totalDamage = 0;
 
-      for(let i = 0; i < battleTries; i++) {
+      for (let i = 0; i < battleTries; i++) {
         const f2 = Fleet.generateFleetWithShipCount(1, 0, 0, 0, 0, 0, null);
         const f1 = Fleet.generateFleetWithShipCount(1, 0, 0, 0, 0, 0, null);
         expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
@@ -153,7 +159,7 @@ describe("BattleSimulator", () => {
         const f2BonusChance = { attack: 0, defense: 0 };
         const f1StarShips = f1.starships;
         const f2StarShips = f2.starships;
-        const fleet1DamagePending:FleetDamagePending = {};
+        const fleet1DamagePending: FleetDamagePending = {};
         const s = f2StarShips[0];
         BattleSimulator.starshipFireWeapons(
           f2BonusChance.attack,
@@ -162,10 +168,9 @@ describe("BattleSimulator", () => {
           f1StarShips,
           fleet1DamagePending
         );
-        if(f1StarShips[0].id in fleet1DamagePending) {
+        if (f1StarShips[0].id in fleet1DamagePending) {
           totalDamage += BattleSimulator.getTotalPendingDamage(fleet1DamagePending[f1StarShips[0].id].hits);
         }
-
       }
 
       console.log("StarshipFireWeapons test totalDamage:", totalDamage);
@@ -200,7 +205,7 @@ describe("BattleSimulator", () => {
 
       const f1 = Fleet.generateFleetWithShipCount(0, 1, 0, 0, 0, 0, null);
       const f2 = Fleet.generateFleetWithShipCount(0, 1, 0, 0, 0, 0, null);
-      f2.locationHexMidPoint = {x: 0, y: 0};
+      f2.locationHexMidPoint = { x: 0, y: 0 };
 
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       const winLoseDraw = checkFleetWinCount(f1, player1, f2, player2, battleTries);
@@ -333,8 +338,11 @@ describe("BattleSimulator", () => {
       const f2 = Fleet.generateFleetWithShipCount(0, 0, 0, 2, 0, 0, null);
 
       f1.starships.forEach((s) => {
-        if(s.type === StarShipType.Destroyer) {
-          s.customShipData = {advantageAgainst:StarShipType.Cruiser, disadvantageAgainst: StarShipType.SystemDefense};
+        if (s.type === StarShipType.Destroyer) {
+          s.customShipData = {
+            advantageAgainst: StarShipType.Cruiser,
+            disadvantageAgainst: StarShipType.SystemDefense,
+          };
         }
       });
 
@@ -353,8 +361,14 @@ describe("BattleSimulator", () => {
     it("should properly account for starship research bonuses", (done) => {
       const battleTries = 1000;
 
-      Research.setResearchPointsCompleted(player1.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK], 1000);
-      Research.setResearchPointsCompleted(player1.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_DEFENSE], 1000);
+      Research.setResearchPointsCompleted(
+        player1.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK],
+        1000
+      );
+      Research.setResearchPointsCompleted(
+        player1.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_DEFENSE],
+        1000
+      );
 
       const f1 = Fleet.generateFleetWithShipCount(0, 0, 4, 0, 0, 0, null);
       const f2 = Fleet.generateFleetWithShipCount(0, 0, 0, 2, 0, 0, null);

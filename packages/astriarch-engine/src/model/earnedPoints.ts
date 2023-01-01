@@ -11,11 +11,10 @@ export interface EarnedPointsConfigData {
   maxPoints: number;
 }
 
-export const earnedPointsConfigByType:{ [T in EarnedPointsType]: EarnedPointsConfigData } = {
+export const earnedPointsConfigByType: { [T in EarnedPointsType]: EarnedPointsConfigData } = {
   [EarnedPointsType.POPULATION_GROWTH]: { pointsPer: 4, maxPoints: 100000 },
   [EarnedPointsType.PRODUCTION_UNIT_BUILT]: { pointsPer: 0.25, maxPoints: 500 },
   [EarnedPointsType.REPAIRED_STARSHIP_STRENGTH]: { pointsPer: 2, maxPoints: 4000 },
   [EarnedPointsType.DAMAGED_STARSHIP_STRENGTH]: { pointsPer: 0.5, maxPoints: 1000 },
   [EarnedPointsType.CITIZEN_ON_CAPTURED_PLANET]: { pointsPer: 10, maxPoints: 10000 },
 };
-

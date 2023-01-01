@@ -289,7 +289,7 @@ export class ComputerPlayer {
     if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) {
       const planetCandidatesForRemovingWorkers = []; //List<Planet>
 
-      allPlanets.sort((a, b) => mineralResourcePotentialComparer.sortFunction(a,b));
+      allPlanets.sort((a, b) => mineralResourcePotentialComparer.sortFunction(a, b));
 
       for (const p of allPlanets) {
         if (oreAmountNeededWorking < 0 && iridumAmountNeededWorking < 0) {
@@ -803,7 +803,9 @@ export class ComputerPlayer {
           homePlanet,
           player.lastKnownPlanetFleetStrength
         );
-        planetCandidatesForInboundAttackingFleets.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
+        planetCandidatesForInboundAttackingFleets.sort((a, b) =>
+          planetValueDistanceStrengthComparer.sortFunction(a, b)
+        );
         planetCandidatesForInboundScouts.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
       }
     }

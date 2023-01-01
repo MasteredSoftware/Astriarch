@@ -15,8 +15,8 @@ interface PendingHit {
   source: StarshipData;
 }
 
-export type FleetDamagePending = {[T in number]: {starship: StarshipData, hits: PendingHit[] }};
-type ExperiencePending = {[T in number]: {starship: StarshipData, damageDealt: number}};
+export type FleetDamagePending = { [T in number]: { starship: StarshipData; hits: PendingHit[] } };
+type ExperiencePending = { [T in number]: { starship: StarshipData; damageDealt: number } };
 
 //new simulate fleet battle logic:
 //this will support choosing a target and allowing ships to have an advantage over other types
@@ -30,18 +30,23 @@ export class BattleSimulator {
   private static STARSHIP_WEAPON_POWER_HALF = 1;
   private static HOME_SYSTEM_ADVANTAGE = 0.05;
 
-  public static simulateFleetBattle(f1:FleetData, f1Owner: PlayerData, f2:FleetData, f2Owner: PlayerData):boolean|null {
+  public static simulateFleetBattle(
+    f1: FleetData,
+    f1Owner: PlayerData,
+    f2: FleetData,
+    f2Owner: PlayerData
+  ): boolean | null {
     let fleet1Wins = null; // null means draw which shouldn't happen unless two fleets meet in mid-space (neither has locationHex)
 
-    const f1BonusChance:FleetBonusChance = { attack: 0, defense: 0 };
-    const f2BonusChance:FleetBonusChance = { attack: 0, defense: 0 };
+    const f1BonusChance: FleetBonusChance = { attack: 0, defense: 0 };
+    const f2BonusChance: FleetBonusChance = { attack: 0, defense: 0 };
 
     //fleet damage pending structures are so we can have both fleets fire simultaneously without damaging each-other till the end of each round
-    let fleet1DamagePending:FleetDamagePending = {};
-    let fleet2DamagePending:FleetDamagePending = {};
+    let fleet1DamagePending: FleetDamagePending = {};
+    let fleet2DamagePending: FleetDamagePending = {};
 
     //We don't award experience points until the end of battle so that ships can't level up in the heat of conflict
-    const experiencedGainedByStarShipId:ExperiencePending = {};
+    const experiencedGainedByStarShipId: ExperiencePending = {};
 
     f1BonusChance.attack =
       f1Owner.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK].data.chance! +
@@ -58,29 +63,15 @@ export class BattleSimulator {
       (f2.locationHexMidPoint ? this.HOME_SYSTEM_ADVANTAGE : 0);
 
     while (Fleet.determineFleetStrength(f1) > 0 && Fleet.determineFleetStrength(f2) > 0) {
-
       // fire weapons
       for (const s of f1.starships) {
-        this.starshipFireWeapons(
-          f1BonusChance.attack,
-          f2BonusChance.defense,
-          s,
-          f2.starships,
-          fleet2DamagePending,
-        );
+        this.starshipFireWeapons(f1BonusChance.attack, f2BonusChance.defense, s, f2.starships, fleet2DamagePending);
       }
 
       for (const s of f2.starships) {
-        this.starshipFireWeapons(
-          f2BonusChance.attack,
-          f1BonusChance.defense,
-          s,
-          f1.starships,
-          fleet1DamagePending,
-        );
+        this.starshipFireWeapons(f2BonusChance.attack, f1BonusChance.defense, s, f1.starships, fleet1DamagePending);
       }
 
-      
       // deal damage
       this.dealDamage(f1Owner, fleet1DamagePending, experiencedGainedByStarShipId);
       this.dealDamage(f2Owner, fleet2DamagePending, experiencedGainedByStarShipId);
@@ -94,11 +85,11 @@ export class BattleSimulator {
     // if both fleets are destroyed, choose fleet with a planet on the hex
     const f1Strength = Fleet.determineFleetStrength(f1);
     const f2Strength = Fleet.determineFleetStrength(f2);
-    if(f1Strength <= 0 && f2Strength <= 0) {
-      if(f1.locationHexMidPoint){
+    if (f1Strength <= 0 && f2Strength <= 0) {
+      if (f1.locationHexMidPoint) {
         fleet1Wins = true;
       }
-      if(f2.locationHexMidPoint){
+      if (f2.locationHexMidPoint) {
         fleet1Wins = false;
       }
     } else if (f1Strength > 0) {
@@ -107,7 +98,7 @@ export class BattleSimulator {
       fleet1Wins = false;
     }
 
-    if(fleet1Wins != null) {
+    if (fleet1Wins != null) {
       //assign experience
       (fleet1Wins ? f1 : f2).starships.forEach((s) => {
         if (s.id in experiencedGainedByStarShipId) {
@@ -119,12 +110,16 @@ export class BattleSimulator {
     return fleet1Wins;
   }
 
-  public static dealDamage(owner: PlayerData, fleetDamagePending:FleetDamagePending, experiencedGainedByStarShipId:ExperiencePending) {
+  public static dealDamage(
+    owner: PlayerData,
+    fleetDamagePending: FleetDamagePending,
+    experiencedGainedByStarShipId: ExperiencePending
+  ) {
     for (const dp of Object.values(fleetDamagePending)) {
-      for(const hit of dp.hits) {
+      for (const hit of dp.hits) {
         const sourceId = hit.source.id;
-        if(!(sourceId in experiencedGainedByStarShipId)) {
-          experiencedGainedByStarShipId[sourceId] = {starship: hit.source, damageDealt: 0};
+        if (!(sourceId in experiencedGainedByStarShipId)) {
+          experiencedGainedByStarShipId[sourceId] = { starship: hit.source, damageDealt: 0 };
         }
         experiencedGainedByStarShipId[sourceId].damageDealt += Fleet.damageStarship(owner, dp.starship, hit.damage);
       }
@@ -136,11 +131,11 @@ export class BattleSimulator {
     defenseBonusChance: number,
     ship: StarshipData,
     enemyFleet: StarshipData[],
-    fleetDamagePending: FleetDamagePending,
+    fleetDamagePending: FleetDamagePending
   ) {
     let damage = 0;
     let maxDamage = 0;
-    let workingEnemyFleet:StarshipData[] = [];
+    let workingEnemyFleet: StarshipData[] = [];
     workingEnemyFleet = workingEnemyFleet.concat(enemyFleet);
     const strengthComparer = new StarShipAdvantageStrengthComparer(ship, fleetDamagePending);
     workingEnemyFleet.sort((a, b) => strengthComparer.sortFunction(a, b));
@@ -185,17 +180,19 @@ export class BattleSimulator {
 
         if (damage != 0) {
           if (!(target.id in fleetDamagePending)) {
-            fleetDamagePending[target.id] = { starship: target, hits:[] };
+            fleetDamagePending[target.id] = { starship: target, hits: [] };
           }
-          fleetDamagePending[target.id].hits.push({damage, source: ship});
+          fleetDamagePending[target.id].hits.push({ damage, source: ship });
         }
       }
     }
   }
 
-  public static starshipHasAdvantage(ssAttacker:StarshipData, ssDefender: StarshipData) {
+  public static starshipHasAdvantage(ssAttacker: StarshipData, ssDefender: StarshipData) {
     //space platforms have advantages over everything
-    const attackerAdvantage = ssAttacker.customShipData ? ssAttacker.customShipData.advantageAgainst : Fleet.getStarshipStandardAdvantageByType(ssAttacker.type)?.advantageAgainst;
+    const attackerAdvantage = ssAttacker.customShipData
+      ? ssAttacker.customShipData.advantageAgainst
+      : Fleet.getStarshipStandardAdvantageByType(ssAttacker.type)?.advantageAgainst;
     if (ssAttacker.type == StarShipType.SpacePlatform) {
       return true;
     } else if (ssDefender.type == StarShipType.SpacePlatform) {
@@ -207,7 +204,9 @@ export class BattleSimulator {
   }
 
   public static starshipHasDisadvantage(ssAttacker: StarshipData, ssDefender: StarshipData) {
-    const attackerDisadvantage = ssAttacker.customShipData ? ssAttacker.customShipData.disadvantageAgainst : Fleet.getStarshipStandardAdvantageByType(ssAttacker.type)?.disadvantageAgainst;
+    const attackerDisadvantage = ssAttacker.customShipData
+      ? ssAttacker.customShipData.disadvantageAgainst
+      : Fleet.getStarshipStandardAdvantageByType(ssAttacker.type)?.disadvantageAgainst;
     if (ssAttacker.type == StarShipType.SpacePlatform) {
       return false;
     } else if (ssDefender.type == StarShipType.SpacePlatform) {
@@ -219,6 +218,6 @@ export class BattleSimulator {
   }
 
   public static getTotalPendingDamage(hits: PendingHit[]) {
-    return hits.reduce((accum, curr)=> accum + curr.damage, 0);
+    return hits.reduce((accum, curr) => accum + curr.damage, 0);
   }
 }

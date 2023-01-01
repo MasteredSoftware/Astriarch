@@ -262,31 +262,30 @@ export class Fleet {
   /**
    * Simply remove ships with strength <= 0
    */
-  public static reduceFleet = function(fleet: FleetData) {
+  public static reduceFleet = function (fleet: FleetData) {
     //if a starship's health is at 0 it's destroyed
-    fleet.starships = fleet.starships.filter(s => s.health > 0);
+    fleet.starships = fleet.starships.filter((s) => s.health > 0);
   };
 
   /**
    * Reduce a ship's strength / health
    */
-  public static damageStarship(owner: PlayerData, starship: StarshipData, damageAmount:number):number {
+  public static damageStarship(owner: PlayerData, starship: StarshipData, damageAmount: number): number {
     var damageInflicted = Math.min(starship.health, damageAmount);
     starship.health -= damageInflicted;
     //assign points
     Player.increasePoints(owner, EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, damageInflicted);
-    
-    return damageInflicted;
-  };
 
+    return damageInflicted;
+  }
 
   /**
    * Copies this fleet
    */
-  public static cloneFleet(fleet: FleetData):FleetData {
+  public static cloneFleet(fleet: FleetData): FleetData {
     const f = this.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, fleet.locationHexMidPoint);
 
-    for(const s of fleet.starships) {
+    for (const s of fleet.starships) {
       f.starships.push(this.cloneStarship(s));
     }
 
@@ -296,15 +295,15 @@ export class Fleet {
   /**
    * Copies the properties of this starship
    */
-  public static cloneStarship(starship: StarshipData):StarshipData {
+  public static cloneStarship(starship: StarshipData): StarshipData {
     const s = this.generateStarship(starship.type);
     s.health = starship.health;
     s.experienceAmount = starship.experienceAmount;
-    if(starship.customShipData) {
-      s.customShipData = {...starship.customShipData};
+    if (starship.customShipData) {
+      s.customShipData = { ...starship.customShipData };
     }
     return s;
-  };
+  }
 
   public static constructLastKnownFleet(
     cycleLastExplored: number,
