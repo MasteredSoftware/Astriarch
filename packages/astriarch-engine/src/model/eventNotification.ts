@@ -2,12 +2,20 @@ import { ClientPlayer } from "./clientModel";
 import { FleetData } from "./fleet";
 import { PlanetData, PlanetResourceData } from "./planet";
 
+export interface ResearchBoost {
+  attack: number;
+  defense: number;
+}
+
 export interface PlanetaryConflictData {
-  defendingClientPlayer: ClientPlayer;
+  defendingClientPlayer: ClientPlayer | null;
   defendingFleet: FleetData;
+  defendingFleetResearchBoost: ResearchBoost;
   attackingClientPlayer: ClientPlayer;
   attackingFleet: FleetData;
-  winningFleet: FleetData; // Fleet remaining
+  attackingFleetResearchBoost: ResearchBoost;
+  attackingFleetChances: number | null;
+  winningFleet: FleetData | null; // Fleet remaining
   resourcesLooted: PlanetResourceData;
 }
 

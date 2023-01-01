@@ -1,5 +1,9 @@
+import { ClientPlayer } from "../model/clientModel";
 import { EventNotification, EventNotificationType, PlanetaryConflictData } from "../model/eventNotification";
+import { FleetData } from "../model/fleet";
 import { PlanetData } from "../model/planet";
+import { Fleet } from "./fleet";
+import { PlanetResources } from "./planetResources";
 
 export type Subscription = (playerId: string, enList: EventNotification[]) => void;
 
@@ -41,6 +45,25 @@ export class Events {
     Events.eventNotificationQueue[en.playerId].push(en);
     return en;
   }
+
+  public static constructPlanetaryConflictData(
+    defendingClientPlayer: ClientPlayer | null,
+    defendingFleet: FleetData,
+    attackingClientPlayer: ClientPlayer,
+    attackingFleet: FleetData
+  ): PlanetaryConflictData {
+    return {
+      defendingClientPlayer,
+      defendingFleet: Fleet.cloneFleet(defendingFleet),
+      defendingFleetResearchBoost: {attack: 0, defense: 0},
+      attackingClientPlayer,
+      attackingFleet: Fleet.cloneFleet(attackingFleet),
+      attackingFleetResearchBoost: {attack: 0, defense: 0},
+      attackingFleetChances: null,
+      winningFleet: null,
+      resourcesLooted: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0)
+    }
+  };
 
   public static publish() {
     for (const [key, value] of Object.entries(Events.eventNotificationQueue)) {

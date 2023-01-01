@@ -29,12 +29,13 @@ export class BattleSimulator {
   private static STARSHIP_WEAPON_POWER = 2; //defenders have one gun and battleships have 16
   private static STARSHIP_WEAPON_POWER_HALF = 1;
   private static HOME_SYSTEM_ADVANTAGE = 0.05;
+  private static BATTLE_RANDOMNESS_FACTOR: 4.0; //the amount randomness (chance) when determining fleet conflict outcomes, it is the strength multiplyer where the winner is guaranteed to win
 
   public static simulateFleetBattle(
     f1: FleetData,
     f1Owner: PlayerData,
     f2: FleetData,
-    f2Owner: PlayerData
+    f2Owner?: PlayerData
   ): boolean | null {
     let fleet1Wins = null; // null means draw which shouldn't happen unless two fleets meet in mid-space (neither has locationHex)
 
@@ -56,10 +57,10 @@ export class BattleSimulator {
       (f1.locationHexMidPoint ? this.HOME_SYSTEM_ADVANTAGE : 0);
 
     f2BonusChance.attack =
-      f2Owner.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK].data.chance! +
+      (f2Owner?.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK].data.chance || 0) +
       (f2.locationHexMidPoint ? this.HOME_SYSTEM_ADVANTAGE : 0);
     f2BonusChance.defense =
-      f2Owner.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_DEFENSE].data.chance! +
+      (f2Owner?.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_DEFENSE].data.chance || 0) +
       (f2.locationHexMidPoint ? this.HOME_SYSTEM_ADVANTAGE : 0);
 
     while (Fleet.determineFleetStrength(f1) > 0 && Fleet.determineFleetStrength(f2) > 0) {
@@ -111,7 +112,7 @@ export class BattleSimulator {
   }
 
   public static dealDamage(
-    owner: PlayerData,
+    owner: PlayerData | undefined,
     fleetDamagePending: FleetDamagePending,
     experiencedGainedByStarShipId: ExperiencePending
   ) {
@@ -219,5 +220,36 @@ export class BattleSimulator {
 
   public static getTotalPendingDamage(hits: PendingHit[]) {
     return hits.reduce((accum, curr) => accum + curr.damage, 0);
+  }
+
+  public static getAttackingFleetChances(playerFleetStrength: number, enemyFleetStrength: number): number {
+    let attackingFleetChances = 0;
+    if (enemyFleetStrength > playerFleetStrength * this.BATTLE_RANDOMNESS_FACTOR) {
+      attackingFleetChances = 1;
+    } else if (playerFleetStrength > enemyFleetStrength * this.BATTLE_RANDOMNESS_FACTOR) {
+      attackingFleetChances = enemyFleetStrength == 0 ? 100 : 99;
+    } else {
+      //algorithm for estimated chance: BATTLE_RANDOMNESS_FACTOR here = 4
+      // % chance = 50 + LOG base 4(greater fleet strength / lesser fleet strength)
+      let randomnessUpperBounds = 0;
+      if (playerFleetStrength > enemyFleetStrength) {
+        //prefer player
+        const extraPercentageChance =
+          (Math.log(playerFleetStrength / (enemyFleetStrength * 1.0)) /
+            Math.log(Math.pow(this.BATTLE_RANDOMNESS_FACTOR, 2))) *
+          100; //((playerFleetStrength - enemyFleetStrength) / (double)enemyFleetStrength) * 50;
+        randomnessUpperBounds = 50 + Math.round(extraPercentageChance);
+        attackingFleetChances = randomnessUpperBounds;
+      } else {
+        //prefer enemy
+        const extraPercentageChanceEnemy =
+          (Math.log(enemyFleetStrength / (playerFleetStrength * 1.0)) /
+            Math.log(Math.pow(this.BATTLE_RANDOMNESS_FACTOR, 2))) *
+          100; //((enemyFleetStrength - playerFleetStrength) / (double)playerFleetStrength) * 50;
+        randomnessUpperBounds = 50 + Math.round(extraPercentageChanceEnemy);
+        attackingFleetChances = 100 - randomnessUpperBounds;
+      }
+    }
+    return attackingFleetChances;
   }
 }

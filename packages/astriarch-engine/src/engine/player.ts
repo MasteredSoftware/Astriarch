@@ -36,7 +36,7 @@ export class Player {
     };
   }
 
-  public static setPlanetExplored(p: PlayerData, planet: PlanetData, cycle: number, lastKnownOwnerId: string | null) {
+  public static setPlanetExplored(p: PlayerData, planet: PlanetData, cycle: number, lastKnownOwnerId: string | undefined) {
     p.knownPlanetIds.push(planet.id);
     p.knownPlanetIds = [...new Set(p.knownPlanetIds)];
     Player.setPlanetLastKnownFleetStrength(p, planet, cycle, lastKnownOwnerId);
@@ -46,7 +46,7 @@ export class Player {
     p: PlayerData,
     planet: PlanetData,
     cycle: number,
-    lastKnownOwnerId: string | null
+    lastKnownOwnerId: string | undefined
   ) {
     const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } = Fleet.countStarshipsByType(
       planet.planetaryFleet
@@ -106,10 +106,7 @@ export class Player {
    */
   public static planetContainsFriendlyInboundFleet(p: PlayerData, planet: PlanetData) {
     for (var f of p.fleetsInTransit) {
-      if (
-        f.destinationHexMidPoint?.x === planet.boundingHexMidPoint.x &&
-        f.destinationHexMidPoint.y === planet.boundingHexMidPoint.y
-      ) {
+      if (Grid.pointsAreEqual(f.destinationHexMidPoint, planet.boundingHexMidPoint)) {
         return true;
       }
     }

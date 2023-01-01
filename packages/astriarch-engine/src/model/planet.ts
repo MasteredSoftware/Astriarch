@@ -3,7 +3,7 @@ import { StarshipAdvantageData, FleetData, StarShipType } from "./fleet";
 
 export interface Citizen {
   populationChange: number; //between -1 and 1, when this gets >= -1 then we loose one pop, > 1 we gain one pop
-  loyalToPlayerId: string; //this allows us to remove the protest level when ownership of the planet reverts to this player, after protest level hits 0, this should be reset to the current owner
+  loyalToPlayerId: string | undefined; //this allows us to remove the protest level when ownership of the planet reverts to this player, after protest level hits 0, this should be reset to the current owner
   protestLevel: number; //between 0 and 1, 0 means they are able to work, anything above this means they are busy protesting the government rule
   workerType: CitizenWorkerType;
 }
@@ -58,17 +58,20 @@ export enum PlanetProductionItemType {
   PlanetImprovementToDestroy = 3,
 }
 
-export interface PlanetProductionItemData {
+export interface ProductionItemResources {
+  energyCost: number;
+  oreCost: number;
+  iridiumCost: number;
+}
+
+export interface PlanetProductionItemData extends ProductionItemResources {
   itemType: PlanetProductionItemType;
   improvementData?: { type: PlanetImprovementType };
   starshipData?: { type: StarShipType; customShipData?: StarshipAdvantageData };
   turnsToComplete: number; //once this is built turns to complete will be 0 and will go into the built improvements for the planet
   productionCostComplete: number; //this is how much of the BaseProductionCost we've completed
   baseProductionCost: number; //this will translate into Turns to Complete based on population, factories, etc...
-
-  energyCost: number;
-  oreCost: number;
-  iridiumCost: number;
+  resourcesSpent: boolean; //once this item is at the front of the queue we spend resources on it
 }
 
 export interface PlanetData {

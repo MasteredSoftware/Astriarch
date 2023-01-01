@@ -270,14 +270,30 @@ export class Fleet {
   /**
    * Reduce a ship's strength / health
    */
-  public static damageStarship(owner: PlayerData, starship: StarshipData, damageAmount: number): number {
-    var damageInflicted = Math.min(starship.health, damageAmount);
+  public static damageStarship(owner: PlayerData | undefined, starship: StarshipData, damageAmount: number): number {
+    const damageInflicted = Math.min(starship.health, damageAmount);
     starship.health -= damageInflicted;
     //assign points
-    Player.increasePoints(owner, EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, damageInflicted);
-
+    if(owner) {
+      Player.increasePoints(owner, EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, damageInflicted);
+    }
     return damageInflicted;
   }
+
+
+  /**
+   * Lands a fleet on a planet
+   *  the caller is responsible for removing the landing fleet
+   */
+  public static landFleet = function(planetaryFleet: FleetData, landingFleet: FleetData) {
+    // NOTE: this isn't technically necessary since we're going to merge these fleets
+    landingFleet.travelingFromHexMidPoint = null;
+    landingFleet.destinationHexMidPoint = null;
+    landingFleet.parsecsToDestination = 0;
+
+    // merge fleet
+    planetaryFleet.starships = planetaryFleet.starships.concat(landingFleet.starships);
+  };
 
   /**
    * Copies this fleet
@@ -308,7 +324,7 @@ export class Fleet {
   public static constructLastKnownFleet(
     cycleLastExplored: number,
     fleetData: FleetData,
-    lastKnownOwnerId: string | null
+    lastKnownOwnerId: string | undefined
   ): LastKnownFleetData {
     return {
       cycleLastExplored,

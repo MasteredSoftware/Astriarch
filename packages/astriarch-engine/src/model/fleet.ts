@@ -34,5 +34,5 @@ export interface FleetData {
 export interface LastKnownFleetData {
   cycleLastExplored: number;
   fleetData: FleetData;
-  lastKnownOwnerId: string | null;
+  lastKnownOwnerId: string | undefined;
 }

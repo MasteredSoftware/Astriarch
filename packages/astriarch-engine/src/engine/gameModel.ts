@@ -1,7 +1,7 @@
 import { PlanetById } from "../model/clientModel";
 import { StarShipType } from "../model/fleet";
 import { GalaxySizeOption, GameOptions, ModelData, PlanetsPerSystemOption } from "../model/model";
-import { PlanetData, PlanetImprovementType, PlanetResourceData, PlanetType } from "../model/planet";
+import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetResourceData, PlanetType } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { Utils } from "../utils/utils";
 import { Fleet } from "./fleet";
@@ -265,5 +265,72 @@ export class GameModel {
 
   public static getPlanetById(gameModel: GameModelData, planetId: number): PlanetData | undefined {
     return gameModel.modelData.planets.find((p) => p.id === planetId);
+  }
+
+  public static findPlanetOwner(gameModel: GameModelData, planetId: number): PlayerData | undefined {
+    for(const player of gameModel.modelData.players) {
+      if(player.ownedPlanetIds.includes(planetId)) {
+        return player;
+      }
+    }
+    return undefined;
+  }
+
+  public static changePlanetOwner(oldOwner: PlayerData | undefined, newOwner: PlayerData | undefined, planet: PlanetData) {
+    if(newOwner) {
+      newOwner.ownedPlanetIds.push(planet.id);
+      newOwner.knownPlanetIds = [...new Set([...newOwner.knownPlanetIds, planet.id])];
+    }
+    
+    if(oldOwner) {
+      for(let i = 0; i < oldOwner.ownedPlanetIds.length; i++) {
+        if(oldOwner.ownedPlanetIds[i] === planet.id) {
+          oldOwner.ownedPlanetIds.splice(i, 1);
+          break;
+        }
+      }
+      if(planet.id in oldOwner.planetBuildGoals) {
+        delete oldOwner.planetBuildGoals[planet.id];
+      }
+
+      //set Protest Levels for citizens
+      let contentCitizenCount = 0;
+      for (const citizen of planet.population) {
+        //they were loyal to this player before, they won't be protesting now
+        //there is a 1 in 3 chance that a citizen won't protest the new ruler
+        if ((citizen.loyalToPlayerId && citizen.loyalToPlayerId === newOwner?.id) || Utils.nextRandom(0, 3) == 0) {
+          citizen.protestLevel = 0;
+          citizen.loyalToPlayerId = newOwner?.id;
+          contentCitizenCount++;
+          continue;
+        }
+
+        const minProtestLevel = citizen.loyalToPlayerId ? 0.5 : 0; //if the planet was run by natives they won't be protesting as much
+        const maxProtestLevel = citizen.loyalToPlayerId ? 1 : 0.5; //if the planet was run by natives they won't be protesting as much
+        citizen.protestLevel = Utils.nextRandomFloat(minProtestLevel, maxProtestLevel);
+      }
+
+      if (contentCitizenCount == 0 && planet.population.length > 0) {
+        //ensure we have at least one loyal, non-protesting citizen (they were in awe of the new leadership's ability to take the planet)
+        planet.population[0].protestLevel = 0;
+        planet.population[0].loyalToPlayerId = newOwner?.id;
+      }
+
+      //when a planet changes hands it should initially be in unrest
+      planet.planetHappiness = PlanetHappinessType.Riots;
+    }
+
+    planet.waypointPlanetId = null;
+    planet.starshipTypeLastBuilt = null;
+    planet.starshipCustomShipLastBuilt = false;
+
+    //if this planet has items in the build queue we should remove them now
+    for (let i = planet.buildQueue.length - 1; i >= 0; i--) {
+      Planet.removeBuildQueueItemForRefund(planet, i);
+    }
+
+    if (planet.population.length === 0) {
+      planet.population.push(Planet.constructCitizen(planet.type, newOwner?.id));
+    }
   }
 }

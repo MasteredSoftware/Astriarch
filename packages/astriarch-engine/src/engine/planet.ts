@@ -10,13 +10,15 @@ import {
   PlanetProductionItemType,
   PlanetResourceData,
   PlanetType,
+  ProductionItemResources,
 } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { ResearchType } from "../model/research";
+import { PointData } from "../shapes/shapes";
 import { Utils } from "../utils/utils";
 import { Fleet } from "./fleet";
 import { GameModelData } from "./gameModel";
-import { GridHex } from "./grid";
+import { Grid, GridHex } from "./grid";
 import { PlanetDistanceComparer } from "./planetDistanceComparer";
 import { PlanetProductionItem } from "./planetProductionItem";
 import { PlanetResources } from "./planetResources";
@@ -210,8 +212,43 @@ export class Planet {
     item: PlanetProductionItemData
   ) {
     planet.buildQueue.push(item);
-
+    
     this.spendResources(gameModel, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
+    item.resourcesSpent = true;
+  }
+
+  /**
+   * Removes an item from the build queue and returns resources to the planet based on how far the item is along in being built
+   */
+  public static removeBuildQueueItemForRefund(planet: PlanetData, index: number):boolean {
+    if(index < 0 || index > planet.buildQueue.length) {
+      return false;
+    }
+    const [item] = planet.buildQueue.splice(index, 1);
+    const refundAmount = this.getRefundAmount(item);
+
+    planet.resources.energy += refundAmount.energyCost;
+    planet.resources.ore += refundAmount.oreCost;
+    planet.resources.iridium += refundAmount.iridiumCost;
+    return true;
+  }
+
+  /**
+   * returns how many resources should be refunded when this improvement is canceled
+   */
+  public static getRefundAmount(item:PlanetProductionItemData):ProductionItemResources {
+    let energyCost = 0;
+    let oreCost = 0;
+    let iridiumCost = 0;
+    if(item.resourcesSpent) {
+      //give refund
+      const refundPercent = 1 - item.productionCostComplete / (item.baseProductionCost * 1.0);
+      energyCost = item.energyCost * refundPercent;
+      oreCost = item.oreCost * refundPercent;
+      iridiumCost = item.iridiumCost * refundPercent;
+    }
+    
+    return {energyCost, oreCost, iridiumCost};
   }
 
   public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
@@ -231,7 +268,7 @@ export class Planet {
     return amountPerTurn / 1.5;
   }
 
-  public static constructCitizen(planetType: PlanetType, loyalToPlayerId: string): Citizen {
+  public static constructCitizen(planetType: PlanetType, loyalToPlayerId: string | undefined): Citizen {
     const workerType = [PlanetType.AsteroidBelt, PlanetType.DeadPlanet].includes(planetType)
       ? CitizenWorkerType.Miner
       : CitizenWorkerType.Farmer;
@@ -434,6 +471,17 @@ export class Planet {
 
   public static maxPopulation(p: PlanetData) {
     return p.maxImprovements + p.builtImprovements[PlanetImprovementType.Colony];
+  }
+
+  public static getPlanetAtMidPoint(planets: PlanetData[], midPoint:PointData): PlanetData | undefined {
+    return planets.find(p => Grid.pointsAreEqual(p.boundingHexMidPoint, midPoint));
+  }
+
+  public static recallOutgoingFleets(p: PlanetData) {
+    for(const f of p.outgoingFleets) {
+      Fleet.landFleet(p.planetaryFleet, f);
+    }
+    p.outgoingFleets = [];
   }
 
   /**
