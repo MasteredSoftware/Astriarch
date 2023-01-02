@@ -100,7 +100,7 @@ export default function Index() {
   const { gameModel, clientGameModel } = startNewGame();
   const toast = useToast();
   const eventCallback = (playerId: string, enList: EventNotification[]) => {
-    for (var en of enList) {
+    for (const en of enList) {
       toast({
         title: "Event Notification",
         description: en.message,

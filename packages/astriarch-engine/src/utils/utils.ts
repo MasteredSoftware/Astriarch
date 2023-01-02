@@ -13,7 +13,7 @@ export class Utils {
       highExclusive -= lowInclusive;
     }
 
-    var val = Math.floor(Math.random() * highExclusive) + lowInclusive;
+    const val = Math.floor(Math.random() * highExclusive) + lowInclusive;
     return val;
   }
 

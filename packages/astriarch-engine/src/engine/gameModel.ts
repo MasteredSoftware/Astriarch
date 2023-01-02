@@ -173,7 +173,7 @@ export class GameModel {
         }
 
         if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant && initialPlanetOwner) {
-          Player.setPlanetExplored(initialPlanetOwner, p, 0, null);
+          Player.setPlanetExplored(initialPlanetOwner, p, 0, undefined);
           p.resources.ore *= 2;
           p.resources.iridium *= 2;
           p.builtImprovements[PlanetImprovementType.Farm] = 3;
@@ -285,7 +285,8 @@ export class GameModel {
   public static changePlanetOwner(
     oldOwner: PlayerData | undefined,
     newOwner: PlayerData | undefined,
-    planet: PlanetData
+    planet: PlanetData,
+    currentCycle: number
   ) {
     if (newOwner) {
       newOwner.ownedPlanetIds.push(planet.id);
@@ -328,6 +329,14 @@ export class GameModel {
 
       //when a planet changes hands it should initially be in unrest
       planet.planetHappiness = PlanetHappinessType.Riots;
+
+      //set last known fleet strength
+      Player.setPlanetLastKnownFleetStrength(
+        oldOwner,
+        planet,
+        currentCycle,
+        newOwner?.id
+      );
     }
 
     planet.waypointPlanetId = null;

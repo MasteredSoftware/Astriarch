@@ -50,15 +50,13 @@ export class GameController {
     }
 
     TradingCenter.executeCurrentTrades(gameModel, planetById);
-    // moveShips (should this be in advanceGameClockForPlayer and notify the server when fleets land?)
 
     for (const p of modelData.players) {
       const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
-      Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed);
+      Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed, modelData.currentCycle);
     }
 
     // TODO: server side operations after advancing game clock for player
-    // repair fleets on planets
     // resolvePlanetaryConflicts
 
     modelData.lastSnapshotTime = newSnapshotTime;
@@ -69,7 +67,7 @@ export class GameController {
   public static advanceClientGameClock(clientModel: ClientModelData) {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
-    Player.advanceGameClockForPlayer(clientModel.mainPlayer, clientModel.mainPlayerOwnedPlanets, cyclesElapsed);
+    Player.advanceGameClockForPlayer(clientModel.mainPlayer, clientModel.mainPlayerOwnedPlanets, cyclesElapsed, clientModel.currentCycle);
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;
@@ -199,7 +197,7 @@ export class GameController {
         const defendingPlayer = planetOwner;
 
         //change planet ownership
-        GameModel.changePlanetOwner(defendingPlayer, player, destinationPlanet);
+        GameModel.changePlanetOwner(defendingPlayer, player, destinationPlanet, gameModel.modelData.currentCycle);
 
         if (defendingPlayer) {
           //give the conquering player a chance to loot research from the planet / defending player
@@ -256,16 +254,6 @@ export class GameController {
 
         //merge/land fleet
         Fleet.landFleet(destinationPlanet.planetaryFleet, playerFleet);
-
-        if (defendingPlayer) {
-          //set last known fleet strength
-          Player.setPlanetLastKnownFleetStrength(
-            defendingPlayer,
-            destinationPlanet,
-            gameModel.modelData.currentCycle,
-            player.id
-          );
-        }
 
         //notify user of planet capture or loss
         if (player.type == PlayerType.Human) {
