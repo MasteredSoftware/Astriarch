@@ -67,7 +67,12 @@ export class GameController {
   public static advanceClientGameClock(clientModel: ClientModelData) {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
-    Player.advanceGameClockForPlayer(clientModel.mainPlayer, clientModel.mainPlayerOwnedPlanets, cyclesElapsed, clientModel.currentCycle);
+    Player.advanceGameClockForPlayer(
+      clientModel.mainPlayer,
+      clientModel.mainPlayerOwnedPlanets,
+      cyclesElapsed,
+      clientModel.currentCycle
+    );
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;

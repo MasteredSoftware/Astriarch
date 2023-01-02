@@ -73,7 +73,12 @@ export class Player {
     p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
   }
 
-  public static advanceGameClockForPlayer(p: PlayerData, ownedPlanets: PlanetById, cyclesElapsed: number, currentCycle: number) {
+  public static advanceGameClockForPlayer(
+    p: PlayerData,
+    ownedPlanets: PlanetById,
+    cyclesElapsed: number,
+    currentCycle: number
+  ) {
     Player.generatePlayerResources(p, ownedPlanets, cyclesElapsed);
 
     Research.advanceResearchForPlayer(p, ownedPlanets);
@@ -86,7 +91,6 @@ export class Player {
     // repair fleets on planets
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
-    
   }
 
   public static generatePlayerResources(p: PlayerData, ownedPlanets: PlanetById, cyclesElapsed: number) {
@@ -149,7 +153,12 @@ export class Player {
     return p.points;
   }
 
-  public static eatAndStarve(player: PlayerData, ownedPlanets: PlanetById, cyclesElapsed: number, currentCycle: number) {
+  public static eatAndStarve(
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    cyclesElapsed: number,
+    currentCycle: number
+  ) {
     const totalPop = this.getTotalPopulation(player, ownedPlanets);
     const totalResources = this.getTotalResourceAmount(player, ownedPlanets);
     //for each planet player controls
@@ -161,14 +170,14 @@ export class Player {
 
     player.lastTurnFoodNeededToBeShipped = 0;
 
-    const foodDeficitByPlanet: {[T in number]: number} = {}; //for calculating starvation later
-    const foodSurplusPlanets:PlanetData[] = []; //for costing shipments and starvation later
+    const foodDeficitByPlanet: { [T in number]: number } = {}; //for calculating starvation later
+    const foodSurplusPlanets: PlanetData[] = []; //for costing shipments and starvation later
 
     //calculate surpluses and deficits
     for (const p of Object.values(ownedPlanets)) {
       p.planetHappiness = PlanetHappinessType.Normal; //reset our happiness
 
-      p.resources.food = p.resources.food - (p.population.length * cyclesElapsed); //eat
+      p.resources.food = p.resources.food - p.population.length * cyclesElapsed; //eat
 
       if (p.resources.food < 0) {
         const deficit = Math.abs(p.resources.food);
@@ -199,10 +208,13 @@ export class Player {
         //it will cost one energy per resource shipped
         //look for a planet to send food from
         for (const pSurplus of foodSurplusPlanets) {
-          if(pSurplus.resources.food === 0) {
+          if (pSurplus.resources.food === 0) {
             continue;
           }
-          const amountSpent = PlanetResources.spendEnergyAsPossible(pSurplus.resources, Math.min(foodShortageTotal, pSurplus.resources.food));
+          const amountSpent = PlanetResources.spendEnergyAsPossible(
+            pSurplus.resources,
+            Math.min(foodShortageTotal, pSurplus.resources.food)
+          );
 
           totalFoodShipped += amountSpent;
 

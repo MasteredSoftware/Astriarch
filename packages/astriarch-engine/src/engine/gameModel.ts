@@ -331,12 +331,7 @@ export class GameModel {
       planet.planetHappiness = PlanetHappinessType.Riots;
 
       //set last known fleet strength
-      Player.setPlanetLastKnownFleetStrength(
-        oldOwner,
-        planet,
-        currentCycle,
-        newOwner?.id
-      );
+      Player.setPlanetLastKnownFleetStrength(oldOwner, planet, currentCycle, newOwner?.id);
     }
 
     planet.waypointPlanetId = null;
