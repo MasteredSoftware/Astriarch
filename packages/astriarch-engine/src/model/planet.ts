@@ -91,5 +91,5 @@ export interface PlanetData {
   starshipTypeLastBuilt: StarShipType | null;
   starshipCustomShipLastBuilt: boolean;
   buildLastStarShip: boolean;
-  waypointPlanetId: number | null;
+  waypointBoundingHexMidPoint: PointData | null;
 }

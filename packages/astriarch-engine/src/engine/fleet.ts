@@ -18,6 +18,17 @@ export interface StarshipTypeCounts {
 
 export class Fleet {
   private static NEXT_STARSHIP_ID = 1;
+  public static generateFleet(starships: StarshipData[], locationHexMidPoint: PointData | null) {
+    return {
+      starships,
+      locationHexMidPoint,
+      travelingFromHexMidPoint: null,
+      destinationHexMidPoint: null,
+      parsecsToDestination: null,
+      totalTravelDistance: null,
+    };
+  }
+
   public static generateFleetWithShipCount(
     defenders: number,
     scouts: number,
@@ -36,14 +47,7 @@ export class Fleet {
       ...Fleet.generateStarships(StarShipType.SpacePlatform, spaceplatforms),
     ];
 
-    return {
-      starships,
-      locationHexMidPoint,
-      travelingFromHexMidPoint: null,
-      destinationHexMidPoint: null,
-      parsecsToDestination: null,
-      totalTravelDistance: null,
-    };
+    return this.generateFleet(starships, locationHexMidPoint);
   }
 
   public static generateInitialFleet(defenders: number, locationHexMidPoint: PointData): FleetData {
@@ -58,7 +62,7 @@ export class Fleet {
     return ships;
   }
 
-  public static generateStarship(type: StarShipType): StarshipData {
+  public static generateStarship(type: StarShipType, customShipData?: StarshipAdvantageData): StarshipData {
     //ship strength is based on ship cost
     //  right now it is double the value of the next lower ship class
     //maybe later: + 50% (rounded up) of the next lower ship cost
@@ -97,6 +101,7 @@ export class Fleet {
     return {
       id: Fleet.NEXT_STARSHIP_ID++,
       type,
+      customShipData,
       health: baseStarShipStrength, //starships will heal between turns if the planet has the necessary building and the player has the requisite resources
       experienceAmount: 0, //each time a starship damages an opponent the experience amount increases by the damage amount
     };
@@ -193,7 +198,7 @@ export class Fleet {
     cruisers: number,
     battleships: number
   ): FleetData {
-    const newFleet = this.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, fleet.locationHexMidPoint);
+    const newFleet = this.generateFleet([], fleet.locationHexMidPoint);
     const starshipsByType = this.getStarshipsByType(fleet);
 
     for (let i = 0; i < Math.min(scouts, starshipsByType[StarShipType.Scout].length); i++) {
@@ -298,7 +303,7 @@ export class Fleet {
    * Copies this fleet
    */
   public static cloneFleet(fleet: FleetData): FleetData {
-    const f = this.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, fleet.locationHexMidPoint);
+    const f = this.generateFleet([], fleet.locationHexMidPoint);
 
     for (const s of fleet.starships) {
       f.starships.push(this.cloneStarship(s));

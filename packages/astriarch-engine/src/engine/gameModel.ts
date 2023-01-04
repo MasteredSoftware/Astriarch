@@ -334,7 +334,7 @@ export class GameModel {
       Player.setPlanetLastKnownFleetStrength(oldOwner, planet, currentCycle, newOwner?.id);
     }
 
-    planet.waypointPlanetId = null;
+    planet.waypointBoundingHexMidPoint = null;
     planet.starshipTypeLastBuilt = null;
     planet.starshipCustomShipLastBuilt = false;
 

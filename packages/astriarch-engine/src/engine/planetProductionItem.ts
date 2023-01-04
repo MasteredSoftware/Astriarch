@@ -1,5 +1,6 @@
 import { StarshipAdvantageData, StarShipType } from "../model/fleet";
 import { PlanetImprovementType, PlanetProductionItemData, PlanetProductionItemType } from "../model/planet";
+import { GameTools } from "../utils/gameTools";
 import { Fleet } from "./fleet";
 
 export class PlanetProductionItem {
@@ -115,5 +116,24 @@ export class PlanetProductionItem {
       base.energyCost = Math.ceil(base.energyCost * costMultiplier);
     }
     return base;
+  }
+
+  public static toString(item: PlanetProductionItemData) {
+    if (
+      [PlanetProductionItemType.PlanetImprovement, PlanetProductionItemType.PlanetImprovementToDestroy].includes(
+        item.itemType
+      )
+    ) {
+      if (!item.improvementData) {
+        throw new Error("No improvementData for PlanetProductionItemData");
+      }
+      return item.itemType === PlanetProductionItemType.PlanetImprovementToDestroy
+        ? "Demolish "
+        : "" + GameTools.planetImprovementTypeToFriendlyName(item.improvementData?.type);
+    }
+    if (!item.starshipData) {
+      throw new Error("No starshipData for PlanetProductionItemData");
+    }
+    return GameTools.starShipTypeToFriendlyName(item.starshipData.type);
   }
 }

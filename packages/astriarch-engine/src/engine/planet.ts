@@ -1,4 +1,6 @@
 import { PlanetById } from "../model/clientModel";
+import { EarnedPointsType } from "../model/earnedPoints";
+import { EventNotificationType } from "../model/eventNotification";
 import { StarShipType } from "../model/fleet";
 import {
   Citizen,
@@ -15,13 +17,16 @@ import {
 import { PlayerData } from "../model/player";
 import { ResearchType } from "../model/research";
 import { PointData } from "../shapes/shapes";
+import { GameTools } from "../utils/gameTools";
 import { Utils } from "../utils/utils";
+import { Events } from "./events";
 import { Fleet } from "./fleet";
 import { GameModelData } from "./gameModel";
 import { Grid, GridHex } from "./grid";
 import { PlanetDistanceComparer } from "./planetDistanceComparer";
 import { PlanetProductionItem } from "./planetProductionItem";
 import { PlanetResources } from "./planetResources";
+import { Player } from "./player";
 import { Research } from "./research";
 
 export interface PlanetPerTurnResourceGeneration {
@@ -112,7 +117,7 @@ export class Planet {
       starshipTypeLastBuilt: null,
       starshipCustomShipLastBuilt: false,
       buildLastStarShip: true,
-      waypointPlanetId: null,
+      waypointBoundingHexMidPoint: null,
     };
 
     Planet.generateResources(planetData, 1.0, initialOwner);
@@ -455,6 +460,35 @@ export class Planet {
     return { protesting, content };
   }
 
+  /**
+   * Gets the speed that population is currently growing on this planet
+   * @returns {number} a decimal value of the fraction added to the population each turn
+   * @constructor
+   */
+  public static getPopulationGrowthRate(p: PlanetData, owner?: PlayerData) {
+    const popCount = p.population.length;
+    const maxPop = Planet.maxPopulation(p);
+    let growthRate = 0;
+    //check if we can grow
+    if (popCount > 0 && p.planetHappiness != PlanetHappinessType.Riots && popCount < maxPop) {
+      const openSlots = maxPop - popCount;
+      let maxProcreation = popCount / 8.0;
+      const colonyCount = p.builtImprovements[PlanetImprovementType.Colony];
+      if (owner && colonyCount) {
+        maxProcreation *=
+          Research.getResearchBoostForBuildingEfficiencyImprovement(
+            ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES
+          ) * colonyCount;
+      }
+      //when there are 2 open slots per pop, then the maximum growth rate is achieved per population
+      growthRate = maxProcreation * Math.min(openSlots / popCount, 2.0);
+      if (p.planetHappiness === PlanetHappinessType.Unrest)
+        //unrest slows pop growth
+        growthRate = growthRate / 2.0;
+    }
+    return growthRate;
+  }
+
   public static getCitizenByType(p: PlanetData, desiredType: CitizenWorkerType): Citizen {
     const citizens = this.getPopulationByContentment(p);
     for (const c of citizens.content) {
@@ -583,6 +617,145 @@ export class Planet {
       }
     }
     return count;
+  }
+
+  /**
+   * sets the turns to complete based on production
+   */
+  public static estimateTurnsToComplete(
+    planet: PlanetData,
+    item: PlanetProductionItemData,
+    resourceGeneration: PlanetPerTurnResourceGeneration
+  ) {
+    if (resourceGeneration.amountPerTurn.production !== 0) {
+      const productionCostLeft = item.baseProductionCost - item.productionCostComplete - planet.resources.production;
+      item.turnsToComplete = Math.ceil(productionCostLeft / resourceGeneration.amountPerTurn.production);
+    } else {
+      item.turnsToComplete = 999; //if there are no workers
+    }
+    //We at least need one turn to build it, even if we have stockpile greater than the production cost
+    if (item.turnsToComplete <= 0) {
+      item.turnsToComplete = 1;
+    }
+  }
+
+  /**
+   * Builds improvements in the queue
+   */
+  public static buildImprovements(
+    planet: PlanetData,
+    owner: PlayerData,
+    gameGrid: Grid,
+    resourceGeneration: PlanetPerTurnResourceGeneration
+  ): { buildQueueEmpty: boolean } {
+    const returnVal = { buildQueueEmpty: false };
+
+    if (planet.buildQueue.length > 0) {
+      const nextItem = planet.buildQueue[0];
+
+      nextItem.productionCostComplete += planet.resources.production;
+      planet.resources.production = 0;
+
+      if (nextItem.productionCostComplete >= nextItem.baseProductionCost) {
+        //build it
+        planet.buildQueue.shift();
+        nextItem.turnsToComplete = 0;
+
+        //assign points
+        Player.increasePoints(owner, EarnedPointsType.PRODUCTION_UNIT_BUILT, nextItem.baseProductionCost);
+
+        let nextItemInQueueName = "Nothing";
+        if (planet.buildQueue.length > 0) {
+          const nextInQueue = planet.buildQueue[0];
+          nextItemInQueueName = PlanetProductionItem.toString(nextInQueue);
+
+          //estimate turns left for next item so that we display it correctly on the main screen
+          this.estimateTurnsToComplete(planet, nextInQueue, resourceGeneration);
+        }
+
+        if (nextItem.itemType === PlanetProductionItemType.PlanetImprovement) {
+          planet.builtImprovements[nextItem.improvementData!.type] += 1;
+
+          Events.enqueueNewEvent(
+            owner.id,
+            EventNotificationType.ImprovementBuilt,
+            PlanetProductionItem.toString(nextItem) +
+              " built on planet: " +
+              planet.name +
+              ", next in queue: " +
+              nextItemInQueueName,
+            planet
+          );
+        } else if (nextItem.itemType === PlanetProductionItemType.StarShipInProduction) {
+          if (!nextItem.starshipData) {
+            throw new Error("No starshipData in PlanetProductionItem");
+          }
+          const { type, customShipData } = nextItem.starshipData;
+          const ship = Fleet.generateStarship(type, customShipData);
+
+          //don't set last built option for space platforms
+          if (type != StarShipType.SpacePlatform) {
+            planet.starshipTypeLastBuilt = type;
+            planet.starshipCustomShipLastBuilt = Boolean(customShipData);
+          }
+
+          //if we have a waypoint set on the planet, send this new starship to the waypoint planet
+          if (
+            planet.waypointBoundingHexMidPoint &&
+            ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type)
+          ) {
+            const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint);
+            newFleet.starships.push(ship);
+            Fleet.setDestination(newFleet, gameGrid, planet.boundingHexMidPoint, planet.waypointBoundingHexMidPoint);
+
+            planet.outgoingFleets.push(newFleet);
+          } else {
+            planet.planetaryFleet.starships.push(ship);
+          }
+          Events.enqueueNewEvent(
+            owner.id,
+            EventNotificationType.ShipBuilt,
+            PlanetProductionItem.toString(nextItem) +
+              " built on planet: " +
+              planet.name +
+              ", next in queue: " +
+              nextItemInQueueName,
+            planet
+          );
+        } else if (nextItem.itemType === PlanetProductionItemType.PlanetImprovementToDestroy) {
+          if (planet.builtImprovements[nextItem.improvementData!.type] > 0) {
+            planet.builtImprovements[nextItem.improvementData!.type]--;
+            Events.enqueueNewEvent(
+              owner.id,
+              EventNotificationType.ImprovementDemolished,
+              GameTools.planetImprovementTypeToFriendlyName(nextItem.improvementData!.type) +
+                " demolished on planet: " +
+                planet.name +
+                ", next in queue: " +
+                nextItemInQueueName,
+              planet
+            );
+
+            //TODO: there is probably a better place to handle this check for population overages
+            //TODO: should we also notify the user he/she lost a pop due to overcrowding or do this slower?
+            while (Planet.maxPopulation(planet) < planet.population.length) {
+              //pitd.TypeToDestroy == PlanetImprovementType.Colony)
+              planet.population.pop();
+            }
+          }
+        }
+
+        // return remainder production back to the planet
+        planet.resources.production = nextItem.productionCostComplete - nextItem.baseProductionCost;
+      } else {
+        //not done yet, estimate turns to complete
+        this.estimateTurnsToComplete(planet, nextItem, resourceGeneration);
+      }
+    } else {
+      //notify user of empty build queue
+      returnVal.buildQueueEmpty = true;
+    }
+    return returnVal;
   }
 
   /**

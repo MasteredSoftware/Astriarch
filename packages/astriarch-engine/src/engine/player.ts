@@ -335,4 +335,126 @@ export class Player {
       );
     }
   }
+
+  public static buildPlayerPlanetImprovements(
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    gameGrid: Grid,
+  ) {
+    //build planet improvements
+    const planetNameBuildQueueEmptyList = [];
+    let totalEnergyProduced = 0;
+    let buildQueueEmptyPlanetTarget;
+    for (const p of Object.values(ownedPlanets)) {
+      const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, player);
+      const results = Planet.buildImprovements(p, player, gameGrid, resourceGeneration);
+
+      if (results.buildQueueEmpty) {
+        //if the build queue was empty we'll increase gold based on planet production
+        buildQueueEmptyPlanetTarget = p;
+        planetNameBuildQueueEmptyList.push(p.name);
+
+        const energyProduced = resourceGeneration.amountPerTurn.production / 4.0;
+        p.resources.energy += energyProduced;
+        totalEnergyProduced += energyProduced;
+      }
+    }
+
+    let energyProducedMessage = "";
+    if (totalEnergyProduced) {
+      energyProducedMessage = ", " + Math.floor(totalEnergyProduced) + " Energy generated";
+    }
+    if (planetNameBuildQueueEmptyList.length > 0) {
+      Events.enqueueNewEvent(
+        player.id,
+        EventNotificationType.BuildQueueEmpty,
+        "Build queue empty on " +
+          (planetNameBuildQueueEmptyList.length == 1 ? "planet" : "planets") +
+          ": " +
+          planetNameBuildQueueEmptyList.join(", ") +
+          energyProducedMessage,
+        buildQueueEmptyPlanetTarget
+      );
+    }
+  }
+
+  public static adjustPlayerPlanetProtestLevels(player: PlayerData, ownedPlanets: PlanetById) {
+    //if we have a normal PlanetHappiness (meaning we didn't cause unrest from starvation)
+    //	we'll slowly reduce the amount of protest on the planet
+
+    //if half the population or more is protesting, we'll set the planet happiness to unrest
+    for (const p of Object.values(ownedPlanets)) {
+      if (p.planetHappiness === PlanetHappinessType.Normal) {
+        const citizens = Planet.getPopulationByContentment(p);
+        let protestingCitizenCount = 0;
+        const contentCitizenRatio = citizens.content.length / p.population.length;
+
+        for (const citizen of citizens.protesting) {
+          //protest reduction algorithm:
+          //	each turn reduce a random amount of protest for each citizen
+          //  the amount of reduction is based on the percentage of the total population protesting (to a limit)
+          //   (the more people protesting the more likely others will keep protesting)
+          let protestReduction = Utils.nextRandomFloat(0, Math.max(0.25, contentCitizenRatio));
+          //citizens are more quickly content on the home planet
+          if (p.id == player.homePlanetId) {
+            protestReduction *= 2.0;
+          }
+          citizen.protestLevel -= protestReduction;
+
+          if (citizen.protestLevel <= 0) {
+            citizen.protestLevel = 0;
+            citizen.loyalToPlayerId = player.id;
+          } else {
+            protestingCitizenCount++;
+            //console.log("Planet: ", p.Name, "citizen["+c+"]", citizen);
+          }
+        }
+        const citizenText = protestingCitizenCount > 1 ? " Citizens" : " Citizen";
+        if (protestingCitizenCount >= p.population.length / 2) {
+          p.planetHappiness = PlanetHappinessType.Unrest;
+          Events.enqueueNewEvent(
+            player.id,
+            EventNotificationType.CitizensProtesting,
+            "Population unrest on " + p.name + " due to " + protestingCitizenCount + citizenText + " protesting",
+            p
+          );
+        } else if (protestingCitizenCount > 0) {
+          Events.enqueueNewEvent(
+            player.id,
+            EventNotificationType.CitizensProtesting,
+            protestingCitizenCount + citizenText + " protesting your rule on " + p.name,
+            p
+          );
+        }
+      }
+    }
+  }
+
+  public static growPlayerPlanetPopulation(player: PlayerData, ownedPlanets: PlanetById) {
+    //population growth rate is based on available space at the planet and the amount currently there
+    //as we fill up the planet, growth rate slows
+    for (const p of Object.values(ownedPlanets)) {
+      const growthRate = Planet.getPopulationGrowthRate(p);
+      //check if we are growing
+      if (growthRate > 0) {
+        const lastCitizen = p.population[p.population.length - 1];
+        lastCitizen.populationChange += growthRate;
+        if (lastCitizen.populationChange >= 1.0) {
+          //notify user of growth
+          Events.enqueueNewEvent(
+            player.id,
+            EventNotificationType.PopulationGrowth,
+            "Population growth on planet: " + p.name,
+            p
+          );
+          //grow
+          lastCitizen.populationChange = 0;
+          p.population.push(Planet.constructCitizen(p.type, player.id));
+
+          //assign points
+          Player.increasePoints(player, EarnedPointsType.POPULATION_GROWTH, 1);
+        }
+      }
+    }
+  }
 }
