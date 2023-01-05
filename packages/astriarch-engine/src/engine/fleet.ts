@@ -1,5 +1,6 @@
 import { EarnedPointsType } from "../model/earnedPoints";
 import { FleetData, LastKnownFleetData, StarshipAdvantageData, StarshipData, StarShipType } from "../model/fleet";
+import { PlanetData, PlanetImprovementType } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { PointData } from "../shapes/shapes";
 import { Grid } from "./grid";
@@ -62,19 +63,7 @@ export class Fleet {
     return ships;
   }
 
-  public static generateStarship(type: StarShipType, customShipData?: StarshipAdvantageData): StarshipData {
-    //ship strength is based on ship cost
-    //  right now it is double the value of the next lower ship class
-    //maybe later: + 50% (rounded up) of the next lower ship cost
-    //each system defender is worth 2
-    //each scout is worth 4 points
-    //each destroyer is worth 8
-    //each cruiser is worth 16
-    //each battleship is worth 32
-
-    //here are the advantages (-> means has an advantage over):
-    //space platforms -> all
-    //battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
+  public static getStarshipTypeBaseStrength(type: StarShipType) {
     let baseStarShipStrength = 0;
 
     switch (type) {
@@ -97,12 +86,28 @@ export class Fleet {
         baseStarShipStrength = 64;
         break;
     }
+    return baseStarShipStrength;
+  }
+
+  public static generateStarship(type: StarShipType, customShipData?: StarshipAdvantageData): StarshipData {
+    //ship strength is based on ship cost
+    //  right now it is double the value of the next lower ship class
+    //maybe later: + 50% (rounded up) of the next lower ship cost
+    //each system defender is worth 2
+    //each scout is worth 4 points
+    //each destroyer is worth 8
+    //each cruiser is worth 16
+    //each battleship is worth 32
+
+    //here are the advantages (-> means has an advantage over):
+    //space platforms -> all
+    //battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
 
     return {
       id: Fleet.NEXT_STARSHIP_ID++,
       type,
       customShipData,
-      health: baseStarShipStrength, //starships will heal between turns if the planet has the necessary building and the player has the requisite resources
+      health: this.getStarshipTypeBaseStrength(type), //starships will heal between turns if the planet has the necessary building and the player has the requisite resources
       experienceAmount: 0, //each time a starship damages an opponent the experience amount increases by the damage amount
     };
   }
@@ -283,6 +288,93 @@ export class Fleet {
       Player.increasePoints(owner, EarnedPointsType.DAMAGED_STARSHIP_STRENGTH, damageInflicted);
     }
     return damageInflicted;
+  }
+
+  /**
+   * Repairs a fleet
+   */
+  public static repairPlanetaryFleet(planet: PlanetData, maxStrengthToRepair: number) {
+    let totalStrengthRepaired = 0;
+    let amountRepaired = 0;
+    let allEligibleStarShips: StarshipData[] = [];
+
+    const starshipsByType = this.getStarshipsByType(planet.planetaryFleet);
+
+    if (planet.builtImprovements[PlanetImprovementType.Factory] > 0) {
+      allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.Destroyer]);
+      //cruisers and battleships need a factory and a spaceplatform for repairs
+      if (starshipsByType[StarShipType.SpacePlatform].length > 0) {
+        allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.Battleship]);
+        allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.Cruiser]);
+      }
+      allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.SpacePlatform]);
+    }
+    allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.Scout]);
+    allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.SystemDefense]);
+
+    for (const s of allEligibleStarShips) {
+      amountRepaired = this.repairStarShip(s, maxStrengthToRepair);
+      totalStrengthRepaired += amountRepaired;
+      maxStrengthToRepair -= amountRepaired;
+      if (maxStrengthToRepair <= 0) {
+        break;
+      }
+    }
+
+    return totalStrengthRepaired;
+  }
+
+  /**
+   * Repairs a starship up to max strength to repair
+   */
+  public static repairStarShip(ship: StarshipData, maxStrengthToRepair: number) {
+    const damageAmount = this.maxStrength(ship) - ship.health;
+    const amountRepaired = Math.min(maxStrengthToRepair, damageAmount);
+    ship.health += amountRepaired;
+    return amountRepaired;
+  }
+
+  /**
+   * Get a starships's maximum Strength (not including damage)
+   */
+  public static maxStrength(ship: StarshipData) {
+    const baseStrength = this.getStarshipTypeBaseStrength(ship.type);
+    return baseStrength + this.strengthBoostFromLevel(ship, baseStrength);
+  }
+
+  /**
+   * Get a starships's level strength boost
+   */
+  public static strengthBoostFromLevel(ship: StarshipData, baseStrength: number) {
+    const level = this.starShipLevel(ship, baseStrength).level;
+    if (level <= 2) {
+      return Math.round(level * (baseStrength / 8.0));
+    }
+    //at some level the ship's strength should be about 2 times it's base strength
+    //well use the log function to figure out at a given level for a certain ship what the proper boost should be
+    const x = 9; //the target level (which is somewhat difficult to achieve)
+    const y = baseStrength * 1.0;
+    const b = Math.pow(x, 1 / y);
+    return Math.round(Math.log(level) / Math.log(b)); //b^y=x
+  }
+
+  /**
+   * Get a starships's level based on experience points
+   */
+  public static starShipLevel(ship: StarshipData, baseStrength: number) {
+    let level = -1;
+    let levelExpRequirement = baseStrength / 2;
+    //for the ship to make it to level 1 it must have 1/2 the base strength in experience points
+    // after that the experience needed for each level = previous level exp + round((previous level exp)/2);
+    let foundLevel = false;
+    while (!foundLevel) {
+      if (ship.experienceAmount < levelExpRequirement) {
+        foundLevel = true;
+      }
+      levelExpRequirement += levelExpRequirement + Math.round(levelExpRequirement / 2);
+      level++;
+    }
+    return { level, nextLevelExpRequirement: levelExpRequirement };
   }
 
   /**

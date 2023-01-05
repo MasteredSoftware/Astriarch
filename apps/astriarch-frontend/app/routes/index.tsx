@@ -6,6 +6,7 @@ import { Tag, TagLabel, TagLeftIcon, TagRightIcon, TagCloseButton, HStack } from
 import { ClientModelData } from "astriarch-engine/src/model/clientModel";
 import { EventNotification } from "astriarch-engine/dist/model/eventNotification";
 import { Research } from "astriarch-engine";
+import { Grid } from "astriarch-engine/dist/engine/grid";
 
 // REF: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 const useAnimationFrame = (callback: any) => {
@@ -43,16 +44,17 @@ const Counter = () => {
 
 interface AstriarchResourcesProps {
   clientGameModel: ClientModelData;
+  grid: Grid;
 }
 
-const AstriarchResources = ({ clientGameModel }: AstriarchResourcesProps) => {
+const AstriarchResources = ({ clientGameModel, grid }: AstriarchResourcesProps) => {
   const [clientGameModelState, setClientGameModelState] = React.useState(clientGameModel);
 
   const formattedResources: Record<string, string> = {};
   const [formattedResourcesState, setFormattedResourcesState] = React.useState(formattedResources);
 
   useAnimationFrame((deltaTime: number) => {
-    const newClientGameModel = advanceClientGameModelTime(clientGameModelState);
+    const newClientGameModel = advanceClientGameModelTime(clientGameModelState, grid);
     const resources = getPlayerTotalResources(newClientGameModel.mainPlayer, newClientGameModel.mainPlayerOwnedPlanets);
 
     console.log("resources:", resources);
@@ -154,7 +156,7 @@ export default function Index() {
         ))}
       </HStack>
       <Counter />
-      <AstriarchResources clientGameModel={clientGameModel} />
+      <AstriarchResources clientGameModel={clientGameModel} grid={gameModel.grid} />
     </div>
   );
 }

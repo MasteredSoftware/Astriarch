@@ -38,7 +38,7 @@ export class GameController {
   }
 
   public static advanceGameClock(gameModel: GameModelData) {
-    const { modelData } = gameModel;
+    const { modelData, grid } = gameModel;
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(modelData);
     const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
 
@@ -53,7 +53,7 @@ export class GameController {
 
     for (const p of modelData.players) {
       const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
-      Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed, modelData.currentCycle);
+      Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed, modelData.currentCycle, grid);
     }
 
     // TODO: server side operations after advancing game clock for player
@@ -64,15 +64,11 @@ export class GameController {
     Events.publish();
   }
 
-  public static advanceClientGameClock(clientModel: ClientModelData) {
+  public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid) {
+    const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
-    Player.advanceGameClockForPlayer(
-      clientModel.mainPlayer,
-      clientModel.mainPlayerOwnedPlanets,
-      cyclesElapsed,
-      clientModel.currentCycle
-    );
+    Player.advanceGameClockForPlayer(mainPlayer, mainPlayerOwnedPlanets, cyclesElapsed, currentCycle, grid);
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;

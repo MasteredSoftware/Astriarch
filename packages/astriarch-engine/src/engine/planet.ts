@@ -156,7 +156,7 @@ export class Planet {
   }
 
   public static spendResources(
-    gameModel: GameModelData,
+    grid: Grid,
     player: PlayerData,
     planetById: PlanetById,
     planet: PlanetData,
@@ -181,7 +181,7 @@ export class Planet {
         }
       }
       //get closest planets to source resources for, we don't charge for shipping ore or iridium
-      let planetDistanceComparer = new PlanetDistanceComparer(gameModel, planet);
+      let planetDistanceComparer = new PlanetDistanceComparer(grid, planet);
       ownedPlanets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
 
       for (const p of ownedPlanets) {
@@ -210,7 +210,7 @@ export class Planet {
    * Adds an item to the build queue and reduces the players resources based on the cost
    */
   public static enqueueProductionItemAndSpendResources(
-    gameModel: GameModelData,
+    grid: Grid,
     player: PlayerData,
     planetById: PlanetById,
     planet: PlanetData,
@@ -218,7 +218,7 @@ export class Planet {
   ) {
     planet.buildQueue.push(item);
 
-    this.spendResources(gameModel, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
+    this.spendResources(grid, player, planetById, planet, item.energyCost, 0, item.oreCost, item.iridiumCost);
     item.resourcesSpent = true;
   }
 
@@ -766,8 +766,8 @@ export class Planet {
   ): { turnsToComplete: number; starshipStrength: number } | undefined {
     for (const ppi of p.buildQueue) {
       if (ppi.starshipData && Fleet.starshipTypeIsMobile(ppi.starshipData.type)) {
-        const starship = Fleet.generateStarship(ppi.starshipData.type);
-        return { turnsToComplete: ppi.turnsToComplete, starshipStrength: starship.health };
+        const starshipStrength = Fleet.getStarshipTypeBaseStrength(ppi.starshipData.type);
+        return { turnsToComplete: ppi.turnsToComplete, starshipStrength };
       }
     }
     return undefined;

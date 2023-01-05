@@ -686,7 +686,7 @@ export class ComputerPlayer {
             totalResources.ore - ppi.oreCost >= 0 &&
             totalResources.iridium - ppi.iridiumCost >= 0
           ) {
-            Planet.enqueueProductionItemAndSpendResources(gameModel, player, ownedPlanets, p, ppi);
+            Planet.enqueueProductionItemAndSpendResources(gameModel.grid, player, ownedPlanets, p, ppi);
             delete player.planetBuildGoals[p.id];
           }
         } //could this be a problem?
@@ -793,13 +793,13 @@ export class ComputerPlayer {
       //just to make sure
       const homePlanet = ownedPlanets[player.homePlanetId];
       if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
-        const planetDistanceComparer = new PlanetDistanceComparer(gameModel, homePlanet);
+        const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, homePlanet);
         planetCandidatesForInboundAttackingFleets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         planetCandidatesForInboundScouts.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } else {
         //hard and expert computer will sort with a bit of complexly (based on value and last known strength as well as distance)
         const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
-          gameModel,
+          gameModel.grid,
           homePlanet,
           player.lastKnownPlanetFleetStrength
         );
@@ -836,12 +836,12 @@ export class ComputerPlayer {
         const pEnemyInbound = planetCandidatesForInboundScouts[i];
 
         if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
-          const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
+          const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
           planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         } else {
           // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
           const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
-            gameModel,
+            gameModel.grid,
             pEnemyInbound,
             player.lastKnownPlanetFleetStrength
           );
@@ -891,12 +891,12 @@ export class ComputerPlayer {
       const pEnemyInbound = planetCandidatesForInboundAttackingFleets[i];
 
       if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
-        const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
+        const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
         planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
       else {
         const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
-          gameModel,
+          gameModel.grid,
           pEnemyInbound,
           player.lastKnownPlanetFleetStrength
         );
@@ -993,7 +993,7 @@ export class ComputerPlayer {
         //logic:
         //  find closest planet capable of building better ships (has at least one factory) to enemy planet
         //  send a detachment from each planetCandidatesForSendingShips other than closest ship builder to reinforce and amass for later
-        const planetDistanceComparer = new PlanetDistanceComparer(gameModel, pEnemyInbound);
+        const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
         planetCandidatesForInboundReinforcements.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         const planetToReinforce =
           planetCandidatesForInboundReinforcements[planetCandidatesForInboundReinforcements.length - 1];

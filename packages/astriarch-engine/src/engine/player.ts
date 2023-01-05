@@ -77,18 +77,20 @@ export class Player {
     p: PlayerData,
     ownedPlanets: PlanetById,
     cyclesElapsed: number,
-    currentCycle: number
+    currentCycle: number,
+    gameGrid: Grid
   ) {
+    // addLastStarShipToQueueOnPlanets
+
     Player.generatePlayerResources(p, ownedPlanets, cyclesElapsed);
 
     Research.advanceResearchForPlayer(p, ownedPlanets);
 
     this.eatAndStarve(p, ownedPlanets, cyclesElapsed, currentCycle);
-    // TODO:
-    // adjustPlayerPlanetProtestLevels
-    // buildPlayerPlanetImprovements
-    // growPlayerPlanetPopulation
-    // repair fleets on planets
+    this.adjustPlayerPlanetProtestLevels(p, ownedPlanets); // has randomness can't use client side, probably should change this
+    this.buildPlayerPlanetImprovements(p, ownedPlanets, gameGrid); // deterministic
+    this.growPlayerPlanetPopulation(p, ownedPlanets); // deterministic
+    this.repairPlanetaryFleets(gameGrid, p, ownedPlanets); // deterministic
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
   }
@@ -336,11 +338,7 @@ export class Player {
     }
   }
 
-  public static buildPlayerPlanetImprovements(
-    player: PlayerData,
-    ownedPlanets: PlanetById,
-    gameGrid: Grid,
-  ) {
+  public static buildPlayerPlanetImprovements(player: PlayerData, ownedPlanets: PlanetById, gameGrid: Grid) {
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
     let totalEnergyProduced = 0;
@@ -456,5 +454,55 @@ export class Player {
         }
       }
     }
+  }
+
+  public static repairPlanetaryFleets(grid: Grid, player: PlayerData, ownedPlanets: PlanetById) {
+    const resourcesAutoSpent = { energy: 0, ore: 0, iridium: 0 };
+    const totalResources = this.getTotalResourceAmount(player, ownedPlanets);
+    let planetTarget;
+
+    //repair fleets on planets
+    for (const p of Object.values(ownedPlanets)) {
+      //Require a colony and a happy population to even consider repairing a fleet
+      if (p.planetHappiness === PlanetHappinessType.Normal && p.builtImprovements[PlanetImprovementType.Colony] > 0) {
+        //charge the user a bit for repairing the fleets
+        //i.e. 2 gold per 3 damage, 1 ore per 2 damage, 1 iridium per 4 damage
+        const maxStrengthToRepair = Math.min(
+          Math.floor((totalResources.energy / 2) * 3),
+          Math.floor(totalResources.ore * 2),
+          Math.floor(totalResources.iridium * 4)
+        );
+
+        const totalStrengthRepaired = Fleet.repairPlanetaryFleet(p, maxStrengthToRepair);
+        if (totalStrengthRepaired > 0) {
+          const energyCost = Math.floor((totalStrengthRepaired * 2) / 3);
+          const oreCost = Math.floor(totalStrengthRepaired / 2);
+          const iridiumCost = Math.floor(totalStrengthRepaired / 4);
+          if (energyCost || oreCost || iridiumCost) {
+            Planet.spendResources(grid, player, ownedPlanets, p, energyCost, 0, oreCost, iridiumCost);
+            resourcesAutoSpent.energy += energyCost;
+            resourcesAutoSpent.ore += oreCost;
+            resourcesAutoSpent.iridium += iridiumCost;
+            planetTarget = p;
+          }
+
+          //assign points
+          Player.increasePoints(player, EarnedPointsType.REPAIRED_STARSHIP_STRENGTH, totalStrengthRepaired);
+        }
+      }
+    }
+
+    Events.enqueueNewEvent(
+      player.id,
+      EventNotificationType.ResourcesAutoSpent,
+      resourcesAutoSpent.energy +
+        " Energy, " +
+        resourcesAutoSpent.ore +
+        " Ore, " +
+        resourcesAutoSpent.iridium +
+        " Iridium spent repairing fleets.",
+      planetTarget
+    );
+    return resourcesAutoSpent;
   }
 }

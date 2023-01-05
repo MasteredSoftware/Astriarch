@@ -9,6 +9,7 @@ import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from "./model/mod
 import { PlayerData, PlayerType } from "./model/player";
 import { ResearchType } from "./model/research";
 import { CitizenWorkerType } from "./model/planet";
+import { Grid } from "./engine/grid";
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
@@ -52,8 +53,8 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
   return gameModel;
 };
 
-export const advanceClientGameModelTime = (clientGameModel: ClientModelData) => {
-  GameController.advanceClientGameClock(clientGameModel);
+export const advanceClientGameModelTime = (clientGameModel: ClientModelData, grid: Grid) => {
+  GameController.advanceClientGameClock(clientGameModel, grid);
 
   return clientGameModel;
 };

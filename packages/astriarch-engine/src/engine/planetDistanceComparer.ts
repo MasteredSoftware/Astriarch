@@ -8,20 +8,16 @@ import { Grid, GridHex } from "./grid";
  * A sort function object to prefer planets with less distance
  */
 export class PlanetDistanceComparer {
-  gameModel: GameModelData;
+  grid: Grid;
   source: PlanetData;
   sourceHex: GridHex;
   lastKnownPlanetFleetStrength: LastKnownPlanetFleetStrength | undefined;
 
-  constructor(
-    gameModel: GameModelData,
-    source: PlanetData,
-    lastKnownPlanetFleetStrength?: LastKnownPlanetFleetStrength
-  ) {
-    this.gameModel = gameModel;
+  constructor(grid: Grid, source: PlanetData, lastKnownPlanetFleetStrength?: LastKnownPlanetFleetStrength) {
+    this.grid = grid;
     this.source = source;
     this.lastKnownPlanetFleetStrength = lastKnownPlanetFleetStrength;
-    const hex = gameModel.grid.getHexAt(source.boundingHexMidPoint);
+    const hex = this.grid.getHexAt(source.boundingHexMidPoint);
     if (!hex) {
       throw new Error(`PlanetDistanceComparer could not find hex for source planet: ${source.id}`);
     }
@@ -39,13 +35,13 @@ export class PlanetDistanceComparer {
     let ret = 0;
     let distanceA = 0;
     let distanceB = 0;
-    const hexA = this.gameModel.grid.getHexAt(a.boundingHexMidPoint);
+    const hexA = this.grid.getHexAt(a.boundingHexMidPoint);
     if (hexA && a !== this.source) {
       //just to be sure
       distanceA = Grid.getHexDistance(this.sourceHex, hexA);
       ret = 1;
     }
-    const hexB = this.gameModel.grid.getHexAt(b.boundingHexMidPoint);
+    const hexB = this.grid.getHexAt(b.boundingHexMidPoint);
     if (hexB && b !== this.source) {
       //just to be sure
       distanceB = Grid.getHexDistance(this.sourceHex, hexB);

@@ -163,7 +163,7 @@ export class TradingCenter {
         marketResource.amount += trade.amount;
 
         Planet.spendResources(
-          gameModel,
+          gameModel.grid,
           player,
           planetById,
           planet,
@@ -183,7 +183,7 @@ export class TradingCenter {
       if (playerTotalResources.energy >= executedStatus.tradeEnergyAmount && marketResource.amount >= trade.amount) {
         //execute trade
         tradingCenter.energyAmount += executedStatus.tradeEnergyAmount;
-        Planet.spendResources(gameModel, player, planetById, planet, executedStatus.tradeEnergyAmount, 0, 0, 0);
+        Planet.spendResources(gameModel.grid, player, planetById, planet, executedStatus.tradeEnergyAmount, 0, 0, 0);
 
         marketResource.amount -= trade.amount;
         if (trade.resourceType === TradingCenterResourceType.FOOD) {
