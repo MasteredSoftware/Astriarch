@@ -1,4 +1,4 @@
-import { PlanetById } from "../model/clientModel";
+import { ClientModelData, PlanetById } from "../model/clientModel";
 import { StarShipType } from "../model/fleet";
 import { GalaxySizeOption, GameOptions, ModelData, PlanetsPerSystemOption } from "../model/model";
 import {
@@ -19,6 +19,13 @@ import { TradingCenter } from "./tradingCenter";
 
 export interface GameModelData {
   modelData: ModelData;
+  grid: Grid;
+}
+
+export interface AdvanceGameClockForPlayerData {
+  clientModel: ClientModelData;
+  cyclesElapsed: number;
+  currentCycle: number;
   grid: Grid;
 }
 

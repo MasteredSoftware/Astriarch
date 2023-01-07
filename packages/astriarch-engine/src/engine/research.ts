@@ -11,6 +11,7 @@ import {
 } from "../model/research";
 import { GameTools } from "../utils/gameTools";
 import { Events } from "./events";
+import { AdvanceGameClockForPlayerData } from "./gameModel";
 
 const MAX_RESEARCH_LEVEL = 9;
 
@@ -115,18 +116,15 @@ export class Research {
     rtp.data = data;
   }
 
-  public static getResearchBoostForBuildingEfficiencyImprovement(
-    researchType: ResearchType,
-    player?: PlayerData
-  ): number {
+  public static getResearchBoostForEfficiencyImprovement(researchType: ResearchType, player?: PlayerData): number {
     if (!player) {
       return 1.0;
     }
-    return player.research.researchProgressByType[researchType].data.percent!;
+    return player.research.researchProgressByType[researchType].data.percent ?? 1.0;
   }
 
-  public static getResearchBoostForStarshipImprovement(researchType: ResearchType, player: PlayerData): number {
-    return player.research.researchProgressByType[researchType].data.chance!;
+  public static getResearchBoostForStarshipCombatImprovement(researchType: ResearchType, player: PlayerData): number {
+    return player.research.researchProgressByType[researchType].data.chance ?? 0;
   }
 
   public static getCreditAndResearchAmountEarnedPerTurn(researchData: ResearchData, creditAmountAtMaxPercent: number) {
@@ -139,14 +137,15 @@ export class Research {
     return researchProgress.currentResearchLevel < researchProgress.maxResearchLevel;
   }
 
-  public static advanceResearchForPlayer(player: PlayerData, ownedPlanets: PlanetById) {
-    if (player.research.researchTypeInQueue) {
+  public static advanceResearchForPlayer(data: AdvanceGameClockForPlayerData) {
+    const { mainPlayer, mainPlayerOwnedPlanets } = data.clientModel;
+    if (mainPlayer.research.researchTypeInQueue) {
       let totalResearch = 0;
-      Object.values(ownedPlanets).forEach((planet) => {
+      Object.values(mainPlayerOwnedPlanets).forEach((planet) => {
         totalResearch += planet.resources.research;
         planet.resources.research = 0;
       });
-      let rtpInQueue = player.research.researchProgressByType[player.research.researchTypeInQueue];
+      let rtpInQueue = mainPlayer.research.researchProgressByType[mainPlayer.research.researchTypeInQueue];
       let levelIncrease = Research.setResearchPointsCompleted(
         rtpInQueue,
         rtpInQueue.researchPointsCompleted + totalResearch
@@ -156,10 +155,10 @@ export class Research {
         const message =
           "Our Scientists and Engineers have finished researching and developing: " +
           Research.researchProgressToString(rtpInQueue);
-        Events.enqueueNewEvent(player.id, EventNotificationType.ResearchComplete, message);
+        Events.enqueueNewEvent(mainPlayer.id, EventNotificationType.ResearchComplete, message);
 
         if (!Research.canResearch(rtpInQueue)) {
-          player.research.researchTypeInQueue = null;
+          mainPlayer.research.researchTypeInQueue = null;
         }
       }
     }

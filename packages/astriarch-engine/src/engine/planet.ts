@@ -1,4 +1,4 @@
-import { PlanetById } from "../model/clientModel";
+import { ClientPlanet, PlanetById } from "../model/clientModel";
 import { EarnedPointsType } from "../model/earnedPoints";
 import { EventNotificationType } from "../model/eventNotification";
 import { StarShipType } from "../model/fleet";
@@ -262,7 +262,7 @@ export class Planet {
     let amountPerTurn = p.population.length * baseAmountPerPopPerTurn;
     let colonyCount = p.builtImprovements[PlanetImprovementType.Colony];
     if (colonyCount) {
-      let colonyBoost = Research.getResearchBoostForBuildingEfficiencyImprovement(
+      let colonyBoost = Research.getResearchBoostForEfficiencyImprovement(
         ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES,
         owner
       );
@@ -347,7 +347,7 @@ export class Planet {
 
       let researchEffectiveness = null;
       if (farmCount > 0) {
-        researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
+        researchEffectiveness = Research.getResearchBoostForEfficiencyImprovement(
           ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS,
           owner
         );
@@ -365,7 +365,7 @@ export class Planet {
         }
       }
       if (mineCount > 0) {
-        researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
+        researchEffectiveness = Research.getResearchBoostForEfficiencyImprovement(
           ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES,
           owner
         );
@@ -390,7 +390,7 @@ export class Planet {
         }
       }
       if (factoryCount > 0) {
-        researchEffectiveness = Research.getResearchBoostForBuildingEfficiencyImprovement(
+        researchEffectiveness = Research.getResearchBoostForEfficiencyImprovement(
           ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES,
           owner
         );
@@ -465,7 +465,7 @@ export class Planet {
    * @returns {number} a decimal value of the fraction added to the population each turn
    * @constructor
    */
-  public static getPopulationGrowthRate(p: PlanetData, owner?: PlayerData) {
+  public static getPopulationGrowthRate(p: PlanetData, owner: PlayerData, cyclesElapsed: number) {
     const popCount = p.population.length;
     const maxPop = Planet.maxPopulation(p);
     let growthRate = 0;
@@ -476,9 +476,8 @@ export class Planet {
       const colonyCount = p.builtImprovements[PlanetImprovementType.Colony];
       if (owner && colonyCount) {
         maxProcreation *=
-          Research.getResearchBoostForBuildingEfficiencyImprovement(
-            ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES
-          ) * colonyCount;
+          Research.getResearchBoostForEfficiencyImprovement(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES) *
+          colonyCount;
       }
       //when there are 2 open slots per pop, then the maximum growth rate is achieved per population
       growthRate = maxProcreation * Math.min(openSlots / popCount, 2.0);
@@ -486,7 +485,7 @@ export class Planet {
         //unrest slows pop growth
         growthRate = growthRate / 2.0;
     }
-    return growthRate;
+    return growthRate * cyclesElapsed;
   }
 
   public static getCitizenByType(p: PlanetData, desiredType: CitizenWorkerType): Citizen {
@@ -508,6 +507,10 @@ export class Planet {
   }
 
   public static getPlanetAtMidPoint(planets: PlanetData[], midPoint: PointData): PlanetData | undefined {
+    return planets.find((p) => Grid.pointsAreEqual(p.boundingHexMidPoint, midPoint));
+  }
+
+  public static getClientPlanetAtMidPoint(planets: ClientPlanet[], midPoint: PointData): ClientPlanet | undefined {
     return planets.find((p) => Grid.pointsAreEqual(p.boundingHexMidPoint, midPoint));
   }
 
@@ -646,14 +649,15 @@ export class Planet {
     planet: PlanetData,
     owner: PlayerData,
     gameGrid: Grid,
-    resourceGeneration: PlanetPerTurnResourceGeneration
+    resourceGeneration: PlanetPerTurnResourceGeneration,
+    cyclesElapsed: number
   ): { buildQueueEmpty: boolean } {
     const returnVal = { buildQueueEmpty: false };
 
     if (planet.buildQueue.length > 0) {
       const nextItem = planet.buildQueue[0];
 
-      nextItem.productionCostComplete += planet.resources.production;
+      nextItem.productionCostComplete += planet.resources.production * cyclesElapsed;
       planet.resources.production = 0;
 
       if (nextItem.productionCostComplete >= nextItem.baseProductionCost) {

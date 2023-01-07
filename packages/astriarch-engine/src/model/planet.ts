@@ -1,4 +1,5 @@
 import { PointData } from "../shapes/shapes";
+import { ClientPlanet } from "./clientModel";
 import { StarshipAdvantageData, FleetData, StarShipType } from "./fleet";
 
 export interface Citizen {
@@ -74,17 +75,13 @@ export interface PlanetProductionItemData extends ProductionItemResources {
   resourcesSpent: boolean; //once this item is at the front of the queue we spend resources on it
 }
 
-export interface PlanetData {
-  id: number;
-  name: string;
+export interface PlanetData extends ClientPlanet {
   type: PlanetType;
   population: Citizen[];
   buildQueue: PlanetProductionItemData[];
   builtImprovements: { [T in PlanetImprovementType]: number };
   maxImprovements: number;
   resources: PlanetResourceData;
-  originPoint: PointData;
-  boundingHexMidPoint: PointData;
   planetaryFleet: FleetData;
   outgoingFleets: FleetData[];
   planetHappiness: PlanetHappinessType;

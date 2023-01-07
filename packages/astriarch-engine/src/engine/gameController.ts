@@ -10,7 +10,7 @@ import { ClientGameModel } from "./clientGameModel";
 import { ComputerPlayer } from "./computerPlayer";
 import { Events } from "./events";
 import { Fleet } from "./fleet";
-import { GameModel, GameModelData } from "./gameModel";
+import { AdvanceGameClockForPlayerData, GameModel, GameModelData } from "./gameModel";
 import { Grid } from "./grid";
 import { Planet } from "./planet";
 import { Player } from "./player";
@@ -51,13 +51,26 @@ export class GameController {
 
     TradingCenter.executeCurrentTrades(gameModel, planetById);
 
+    // NOTE: advanceGameClockForPlayer contains all methods that can run client-side to keep the ui updating w/o trips to the server
+    const fleetsArrivingOnUnownedPlanetsByPlayerId: { [T: string]: FleetData[] } = {};
     for (const p of modelData.players) {
-      const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
-      Player.advanceGameClockForPlayer(p, ownedPlanets, cyclesElapsed, modelData.currentCycle, grid);
+      const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
+      const data: AdvanceGameClockForPlayerData = {
+        clientModel,
+        cyclesElapsed,
+        currentCycle,
+        grid,
+      };
+      fleetsArrivingOnUnownedPlanetsByPlayerId[p.id] = Player.advanceGameClockForPlayer(data);
     }
 
     // TODO: server side operations after advancing game clock for player
-    // resolvePlanetaryConflicts
+    for (const p of modelData.players) {
+      const arrivingFleets = fleetsArrivingOnUnownedPlanetsByPlayerId[p.id];
+      if (arrivingFleets.length) {
+        this.resolvePlanetaryConflicts(gameModel, p, arrivingFleets);
+      }
+    }
 
     modelData.lastSnapshotTime = newSnapshotTime;
     modelData.currentCycle = currentCycle;
@@ -65,10 +78,15 @@ export class GameController {
   }
 
   public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid) {
-    const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
-    Player.advanceGameClockForPlayer(mainPlayer, mainPlayerOwnedPlanets, cyclesElapsed, currentCycle, grid);
+    const data: AdvanceGameClockForPlayerData = {
+      clientModel,
+      cyclesElapsed,
+      currentCycle,
+      grid,
+    };
+    Player.advanceGameClockForPlayer(data);
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;
@@ -79,7 +97,6 @@ export class GameController {
   //  right now one player will attack, then the next one will, which prefers the 2nd player to attack
   public static resolvePlanetaryConflicts(
     gameModel: GameModelData,
-    planetById: PlanetById,
     player: PlayerData,
     fleetsArrivingOnUnownedPlanets: FleetData[]
   ) {
@@ -130,20 +147,20 @@ export class GameController {
 
       //July 21st 2010, changed from pure statistics to BattleSimulator, still have this AttackingFleetChances code to show a percentage (for now as an estimation)
 
-      planetaryConflictData.attackingFleetResearchBoost.attack = Research.getResearchBoostForStarshipImprovement(
+      planetaryConflictData.attackingFleetResearchBoost.attack = Research.getResearchBoostForStarshipCombatImprovement(
         ResearchType.COMBAT_IMPROVEMENT_ATTACK,
         player
       );
-      planetaryConflictData.attackingFleetResearchBoost.defense = Research.getResearchBoostForStarshipImprovement(
+      planetaryConflictData.attackingFleetResearchBoost.defense = Research.getResearchBoostForStarshipCombatImprovement(
         ResearchType.COMBAT_IMPROVEMENT_DEFENSE,
         player
       );
 
       planetaryConflictData.defendingFleetResearchBoost.attack = planetOwner
-        ? Research.getResearchBoostForStarshipImprovement(ResearchType.COMBAT_IMPROVEMENT_ATTACK, planetOwner)
+        ? Research.getResearchBoostForStarshipCombatImprovement(ResearchType.COMBAT_IMPROVEMENT_ATTACK, planetOwner)
         : 0;
       planetaryConflictData.defendingFleetResearchBoost.defense = planetOwner
-        ? Research.getResearchBoostForStarshipImprovement(ResearchType.COMBAT_IMPROVEMENT_DEFENSE, planetOwner)
+        ? Research.getResearchBoostForStarshipCombatImprovement(ResearchType.COMBAT_IMPROVEMENT_DEFENSE, planetOwner)
         : 0;
 
       planetaryConflictData.attackingFleetChances = BattleSimulator.getAttackingFleetChances(

@@ -2,9 +2,11 @@ import { EarnedPointsType } from "../model/earnedPoints";
 import { FleetData, LastKnownFleetData, StarshipAdvantageData, StarshipData, StarShipType } from "../model/fleet";
 import { PlanetData, PlanetImprovementType } from "../model/planet";
 import { PlayerData } from "../model/player";
+import { ResearchType } from "../model/research";
 import { PointData } from "../shapes/shapes";
 import { Grid } from "./grid";
 import { Player } from "./player";
+import { Research } from "./research";
 
 export type StarshipsByType = { [T in StarShipType]: StarshipData[] };
 
@@ -293,7 +295,7 @@ export class Fleet {
   /**
    * Repairs a fleet
    */
-  public static repairPlanetaryFleet(planet: PlanetData, maxStrengthToRepair: number) {
+  public static repairPlanetaryFleet(planet: PlanetData, maxStrengthToRepair: number, cyclesElapsed: number) {
     let totalStrengthRepaired = 0;
     let amountRepaired = 0;
     let allEligibleStarShips: StarshipData[] = [];
@@ -313,7 +315,9 @@ export class Fleet {
     allEligibleStarShips = allEligibleStarShips.concat(starshipsByType[StarShipType.SystemDefense]);
 
     for (const s of allEligibleStarShips) {
-      amountRepaired = this.repairStarShip(s, maxStrengthToRepair);
+      // ships should only be able to repair at most 50% of their base strength per turn
+      const maxToRepairForShip = this.getStarshipTypeBaseStrength(s.type) * 0.5 * cyclesElapsed;
+      amountRepaired = this.repairStarShip(s, Math.min(maxToRepairForShip, maxStrengthToRepair));
       totalStrengthRepaired += amountRepaired;
       maxStrengthToRepair -= amountRepaired;
       if (maxStrengthToRepair <= 0) {
@@ -390,6 +394,30 @@ export class Fleet {
     // merge fleet
     planetaryFleet.starships = planetaryFleet.starships.concat(landingFleet.starships);
   };
+
+  /**
+   * Gets parsec / cycle speed based on research
+   */
+  public static getSpeed(owner: PlayerData) {
+    return Research.getResearchBoostForEfficiencyImprovement(ResearchType.PROPULSION_IMPROVEMENT, owner);
+  }
+
+  public static getTurnsToDestination(fleet: FleetData, owner: PlayerData) {
+    return (fleet.parsecsToDestination || 0) / this.getSpeed(owner);
+  }
+
+  /**
+   * Moves a fleet
+   */
+  public static moveFleet(fleet: FleetData, owner: PlayerData, cyclesElapsed: number) {
+    if (!fleet.parsecsToDestination) {
+      throw new Error("Unable to move fleet until parsecsToDestination is set");
+    }
+    fleet.locationHexMidPoint = null;
+    //TODO: should this update the location hex to a closer hex as well?
+
+    fleet.parsecsToDestination -= this.getSpeed(owner) * cyclesElapsed;
+  }
 
   /**
    * Copies this fleet
