@@ -33,10 +33,27 @@ export interface ClientTradingCenter {
   mainPlayerTrades: TradeData[];
 }
 
+export type TaskNotificationByPlanetId = { [T in number]: TaskNotification };
+
+export interface TaskNotification {
+  type: TaskNotificationType;
+  planetId: number;
+  planetName: string;
+  data: { energyGenerated: number };
+}
+
+export enum TaskNotificationType {
+  BuildQueueEmpty = 0,
+}
+
+export type TaskNotificationIndex = { [T in TaskNotificationType]: TaskNotificationByPlanetId };
+
 export interface ClientModelData extends ModelBase {
   clientTradingCenter: ClientTradingCenter;
   mainPlayer: PlayerData;
   mainPlayerOwnedPlanets: PlanetById;
   clientPlayers: ClientPlayer[];
   clientPlanets: ClientPlanet[];
+
+  taskNotifications: TaskNotificationIndex;
 }

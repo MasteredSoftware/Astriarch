@@ -1,4 +1,4 @@
-import { ClientModelData, PlanetById } from "../model/clientModel";
+import { ClientModelData, PlanetById, TaskNotificationType } from "../model/clientModel";
 import { EarnedPointsType, earnedPointsConfigByType } from "../model/earnedPoints";
 import { EventNotificationType } from "../model/eventNotification";
 import { FleetData } from "../model/fleet";
@@ -13,6 +13,7 @@ import { Grid } from "./grid";
 import { Planet } from "./planet";
 import { PlanetResources } from "./planetResources";
 import { Research } from "./research";
+import { TaskNotifications } from "./taskNotifications";
 
 export class Player {
   public static constructPlayer(id: string, type: PlayerType, name: string, color: ColorRgbaData): PlayerData {
@@ -339,7 +340,6 @@ export class Player {
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
-    let totalEnergyProduced = 0;
     let buildQueueEmptyPlanetTarget;
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
       const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, mainPlayer);
@@ -352,25 +352,13 @@ export class Player {
 
         const energyProduced = (resourceGeneration.amountPerTurn.production / 4.0) * cyclesElapsed;
         p.resources.energy += energyProduced;
-        totalEnergyProduced += energyProduced;
+        TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
+          type: TaskNotificationType.BuildQueueEmpty,
+          planetId: p.id,
+          planetName: p.name,
+          data: { energyGenerated: energyProduced },
+        });
       }
-    }
-
-    let energyProducedMessage = "";
-    if (totalEnergyProduced) {
-      energyProducedMessage = ", " + Math.floor(totalEnergyProduced) + " Energy generated";
-    }
-    if (planetNameBuildQueueEmptyList.length > 0) {
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.BuildQueueEmpty,
-        "Build queue empty on " +
-          (planetNameBuildQueueEmptyList.length == 1 ? "planet" : "planets") +
-          ": " +
-          planetNameBuildQueueEmptyList.join(", ") +
-          energyProducedMessage,
-        buildQueueEmptyPlanetTarget
-      );
     }
   }
 
@@ -496,17 +484,19 @@ export class Player {
       }
     }
 
-    Events.enqueueNewEvent(
-      mainPlayer.id,
-      EventNotificationType.ResourcesAutoSpent,
-      resourcesAutoSpent.energy +
-        " Energy, " +
-        resourcesAutoSpent.ore +
-        " Ore, " +
-        resourcesAutoSpent.iridium +
-        " Iridium spent repairing fleets.",
-      planetTarget
-    );
+    if (planetTarget) {
+      Events.enqueueNewEvent(
+        mainPlayer.id,
+        EventNotificationType.ResourcesAutoSpent,
+        resourcesAutoSpent.energy +
+          " Energy, " +
+          resourcesAutoSpent.ore +
+          " Ore, " +
+          resourcesAutoSpent.iridium +
+          " Iridium spent repairing fleets.",
+        planetTarget
+      );
+    }
     return resourcesAutoSpent;
   }
 

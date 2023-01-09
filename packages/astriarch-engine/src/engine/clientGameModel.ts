@@ -3,6 +3,7 @@ import { ModelData } from "../model/model";
 import { PlanetData } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { TradeData, TradingCenterData } from "../model/tradingCenter";
+import { TaskNotifications } from "./taskNotifications";
 
 export class ClientGameModel {
   public static constructClientGameModel(model: ModelData, targetPlayerId: string): ClientModelData {
@@ -20,6 +21,7 @@ export class ClientGameModel {
       ClientGameModel.constructClientPlanet(p, mainPlayerExploredPlanetIds.has(p.id))
     );
 
+    const taskNotifications = TaskNotifications.constructTaskNotifications();
     return {
       gameOptions,
       gameStartedAtTime,
@@ -30,6 +32,7 @@ export class ClientGameModel {
       mainPlayerOwnedPlanets,
       clientPlayers,
       clientPlanets,
+      taskNotifications,
     };
   }
 

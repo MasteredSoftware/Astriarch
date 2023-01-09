@@ -7,6 +7,7 @@ import { ClientModelData } from "astriarch-engine/src/model/clientModel";
 import { EventNotification } from "astriarch-engine/dist/model/eventNotification";
 import { Research } from "astriarch-engine";
 import { Grid } from "astriarch-engine/dist/engine/grid";
+import { PlanetResourceData } from "astriarch-engine/src/model/planet";
 
 // REF: https://css-tricks.com/using-requestanimationframe-with-react-hooks/
 const useAnimationFrame = (callback: any) => {
@@ -42,28 +43,22 @@ const Counter = () => {
   return <div>{Math.round(count)}</div>;
 };
 
-interface AstriarchResourcesProps {
+interface AstriarchFrameProps {
   clientGameModel: ClientModelData;
   grid: Grid;
 }
 
-const AstriarchResources = ({ clientGameModel, grid }: AstriarchResourcesProps) => {
+const AstriarchFrame = ({ clientGameModel, grid }: AstriarchFrameProps) => {
   const [clientGameModelState, setClientGameModelState] = React.useState(clientGameModel);
-
-  const formattedResources: Record<string, string> = {};
-  const [formattedResourcesState, setFormattedResourcesState] = React.useState(formattedResources);
+  const initialResources = getPlayerTotalResources(clientGameModel.mainPlayer, clientGameModel.mainPlayerOwnedPlanets);
+  const [resourcesState, setResourcesState] = React.useState<PlanetResourceData>(initialResources);
 
   useAnimationFrame((deltaTime: number) => {
     const newClientGameModel = advanceClientGameModelTime(clientGameModelState, grid);
     const resources = getPlayerTotalResources(newClientGameModel.mainPlayer, newClientGameModel.mainPlayerOwnedPlanets);
-
-    console.log("resources:", resources);
-    for (const [resource, val] of Object.entries(resources)) {
-      formattedResources[resource] = val.toFixed(1);
-    }
+    setResourcesState(resources);
 
     setClientGameModelState(() => ({ ...newClientGameModel }));
-    setFormattedResourcesState(formattedResources);
   });
 
   let currentlyResearching = "Nothing";
@@ -75,24 +70,38 @@ const AstriarchResources = ({ clientGameModel, grid }: AstriarchResourcesProps) 
     );
   }
 
+  return <AstriarchHeader resources={resourcesState} currentlyResearching={currentlyResearching}></AstriarchHeader>;
+};
+
+interface AstriarchProps {
+  resources: PlanetResourceData;
+  currentlyResearching: string;
+}
+
+const AstriarchHeader = ({ resources, currentlyResearching }: AstriarchProps) => {
+  const formattedResources: Record<string, string> = {};
+  for (const [resource, val] of Object.entries(resources)) {
+    formattedResources[resource] = val.toFixed(1);
+  }
+
   return (
     <HStack spacing={4}>
       <Tag size={"sm"} key={"sm-food"} variant="outline" colorScheme="green" width={100}>
         <TagLeftIcon />
-        <TagLabel>Food: {formattedResourcesState.food}</TagLabel>
+        <TagLabel>Food: {formattedResources.food}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-energy"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>Energy: {formattedResourcesState.energy}</TagLabel>
+        <TagLabel>Energy: {formattedResources.energy}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-research"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>Research: {formattedResourcesState.research}</TagLabel>
+        <TagLabel>Research: {formattedResources.research}</TagLabel>
       </Tag>
       <div>Researching: {currentlyResearching}</div>
       <Tag size={"sm"} key={"sm-ore"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>Ore: {formattedResourcesState.ore}</TagLabel>
+        <TagLabel>Ore: {formattedResources.ore}</TagLabel>
       </Tag>
       <Tag size={"sm"} key={"sm-iridium"} variant="outline" colorScheme="blue" width={100}>
-        <TagLabel>Iridium: {formattedResourcesState.iridium}</TagLabel>
+        <TagLabel>Iridium: {formattedResources.iridium}</TagLabel>
       </Tag>
     </HStack>
   );
@@ -156,7 +165,7 @@ export default function Index() {
         ))}
       </HStack>
       <Counter />
-      <AstriarchResources clientGameModel={clientGameModel} grid={gameModel.grid} />
+      <AstriarchFrame clientGameModel={clientGameModel} grid={gameModel.grid} />
     </div>
   );
 }
