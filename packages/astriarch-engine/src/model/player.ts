@@ -32,7 +32,7 @@ export interface PlayerData {
   name: string;
   research: ResearchData;
   color: ColorRgbaData;
-  lastTurnFoodNeededToBeShipped: number; //this is for computers to know how much gold to keep in surplus for food shipments
+  lastTurnFoodNeededToBeShipped: number; //this is to know how much energy to keep in surplus for food shipments
   options: PlayerGameOptions;
   ownedPlanetIds: number[];
   knownPlanetIds: number[];

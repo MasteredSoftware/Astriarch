@@ -4,6 +4,7 @@ import { PlanetData, PlanetImprovementType } from "../model/planet";
 import { PlayerData } from "../model/player";
 import { ResearchType } from "../model/research";
 import { PointData } from "../shapes/shapes";
+import { GameTools } from "../utils/gameTools";
 import { Grid } from "./grid";
 import { Player } from "./player";
 import { Research } from "./research";
@@ -430,6 +431,39 @@ export class Fleet {
     }
 
     return f;
+  }
+
+  /**
+   * A printable version of the fleet
+   */
+  public static toString(fleet: FleetData) {
+    const shipsByType = Fleet.getStarshipsByType(fleet);
+    const customCountsByType = Object.entries(shipsByType).reduce((accum, [currType, currShips]) => {
+      const key = currType as unknown as StarShipType;
+      if (!(key in accum)) {
+        accum[key] = { standard: 0, custom: 0 };
+      }
+      accum[key].custom = currShips.filter((s) => !!s.customShipData).length;
+      accum[key].standard = currShips.length - accum[key].custom;
+      return accum;
+    }, {} as { [T in StarShipType]: { standard: Number; custom: number } });
+
+    const fleetSummary = Object.entries(customCountsByType).reduce((accum, [currType, currCounts]) => {
+      const key = currType as unknown as StarShipType;
+      if (currCounts.standard) {
+        if (accum != "") accum += ", ";
+        accum += `${currCounts.standard} ${GameTools.starShipTypeToFriendlyName(key)}${
+          currCounts.standard > 1 ? "s" : ""
+        }`;
+      }
+      if (currCounts.custom) {
+        if (accum != "") accum += ", ";
+        accum += `${currCounts.custom} ${GameTools.starShipTypeToFriendlyName(key)}${currCounts.custom > 1 ? "s" : ""}`;
+      }
+      return accum;
+    }, "");
+
+    return fleetSummary ?? "No Ships";
   }
 
   /**

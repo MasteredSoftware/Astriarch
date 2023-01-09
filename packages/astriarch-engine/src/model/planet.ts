@@ -87,6 +87,6 @@ export interface PlanetData extends ClientPlanet {
   planetHappiness: PlanetHappinessType;
   starshipTypeLastBuilt: StarShipType | null;
   starshipCustomShipLastBuilt: boolean;
-  buildLastStarShip: boolean;
+  buildLastStarship: boolean;
   waypointBoundingHexMidPoint: PointData | null;
 }

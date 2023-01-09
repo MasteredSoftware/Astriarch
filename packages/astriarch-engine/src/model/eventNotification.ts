@@ -27,7 +27,7 @@ export enum EventNotificationType {
   ImprovementBuilt = 4,
   ShipBuilt = 5,
   ImprovementDemolished = 6,
-  BuildQueueEmpty = 7,
+  //BuildQueueEmpty = 7,
   ResearchComplete = 8,
   ResearchQueueEmpty = 9,
   ResearchStolen = 10,

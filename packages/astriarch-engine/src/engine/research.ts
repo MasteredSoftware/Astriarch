@@ -1,6 +1,6 @@
 import { PlanetById } from "../model/clientModel";
 import { EventNotificationType } from "../model/eventNotification";
-import { StarShipType } from "../model/fleet";
+import { StarshipAdvantageData, StarShipType } from "../model/fleet";
 import { PlayerData } from "../model/player";
 import {
   ResearchData,
@@ -116,15 +116,41 @@ export class Research {
     rtp.data = data;
   }
 
+  public static getResearchData(player: PlayerData, researchType: ResearchType) {
+    return player.research.researchProgressByType[researchType].data;
+  }
+
   public static getResearchBoostForEfficiencyImprovement(researchType: ResearchType, player?: PlayerData): number {
     if (!player) {
       return 1.0;
     }
-    return player.research.researchProgressByType[researchType].data.percent ?? 1.0;
+    return this.getResearchData(player, researchType).percent ?? 1.0;
   }
 
   public static getResearchBoostForStarshipCombatImprovement(researchType: ResearchType, player: PlayerData): number {
-    return player.research.researchProgressByType[researchType].data.chance ?? 0;
+    return this.getResearchData(player, researchType).chance ?? 0;
+  }
+
+  public static getResearchDataByStarshipHullType(hullType: StarShipType, player: PlayerData) {
+    var researchData;
+    switch (hullType) {
+      case StarShipType.SystemDefense:
+        researchData = this.getResearchData(player, ResearchType.NEW_SHIP_TYPE_DEFENDER);
+        break;
+      case StarShipType.Scout:
+        researchData = this.getResearchData(player, ResearchType.NEW_SHIP_TYPE_SCOUT);
+        break;
+      case StarShipType.Destroyer:
+        researchData = this.getResearchData(player, ResearchType.NEW_SHIP_TYPE_DESTROYER);
+        break;
+      case StarShipType.Cruiser:
+        researchData = this.getResearchData(player, ResearchType.NEW_SHIP_TYPE_CRUISER);
+        break;
+      case StarShipType.Battleship:
+        researchData = this.getResearchData(player, ResearchType.NEW_SHIP_TYPE_BATTLESHIP);
+        break;
+    }
+    return researchData ? (researchData as StarshipAdvantageData) : undefined;
   }
 
   public static getCreditAndResearchAmountEarnedPerTurn(researchData: ResearchData, creditAmountAtMaxPercent: number) {

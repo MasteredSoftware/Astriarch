@@ -116,7 +116,7 @@ export class Planet {
       planetHappiness: PlanetHappinessType.Normal,
       starshipTypeLastBuilt: null,
       starshipCustomShipLastBuilt: false,
-      buildLastStarShip: true,
+      buildLastStarship: true,
       waypointBoundingHexMidPoint: null,
     };
 

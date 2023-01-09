@@ -1,7 +1,7 @@
 import { ClientModelData, PlanetById, TaskNotificationType } from "../model/clientModel";
 import { EarnedPointsType, earnedPointsConfigByType } from "../model/earnedPoints";
 import { EventNotificationType } from "../model/eventNotification";
-import { FleetData } from "../model/fleet";
+import { FleetData, StarshipAdvantageData } from "../model/fleet";
 import { PlanetData, PlanetHappinessType, PlanetImprovementType } from "../model/planet";
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from "../model/player";
 import { ResearchType } from "../model/research";
@@ -11,6 +11,7 @@ import { Fleet } from "./fleet";
 import { AdvanceGameClockForPlayerData, GameModel } from "./gameModel";
 import { Grid } from "./grid";
 import { Planet } from "./planet";
+import { PlanetProductionItem } from "./planetProductionItem";
 import { PlanetResources } from "./planetResources";
 import { Research } from "./research";
 import { TaskNotifications } from "./taskNotifications";
@@ -155,6 +156,53 @@ export class Player {
     return p.points;
   }
 
+  public static addLastStarShipToQueueOnPlanets(data: AdvanceGameClockForPlayerData) {
+    const { clientModel, cyclesElapsed, currentCycle, grid } = data;
+    const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
+    let autoQueuedCount = 0;
+    const autoQueuedFleet = Fleet.generateFleet([], null);
+    let focusPlanet;
+    for (const p of Object.values(mainPlayerOwnedPlanets)) {
+      if (p.buildLastStarship && p.buildQueue.length == 0 && p.starshipTypeLastBuilt != null) {
+        focusPlanet = p;
+        //check resources
+        let customShipData: StarshipAdvantageData | undefined;
+        if (p.starshipCustomShipLastBuilt) {
+          customShipData = Research.getResearchDataByStarshipHullType(p.starshipTypeLastBuilt, mainPlayer)!;
+        }
+        const s = PlanetProductionItem.constructStarShipInProduction(p.starshipTypeLastBuilt, customShipData);
+        let canBuild = true;
+        if (totalResources.energy - s.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
+          canBuild = false;
+        }
+
+        if (totalResources.ore - s.oreCost < 0) {
+          canBuild = false;
+        }
+
+        if (totalResources.iridium - s.iridiumCost < 0) {
+          canBuild = false;
+        }
+
+        if (canBuild) {
+          autoQueuedCount++;
+          autoQueuedFleet.starships.push(Fleet.generateStarship(p.starshipTypeLastBuilt, customShipData));
+          Planet.enqueueProductionItemAndSpendResources(grid, mainPlayer, mainPlayerOwnedPlanets, p, s);
+        }
+      }
+    }
+
+    if (autoQueuedCount) {
+      Events.enqueueNewEvent(
+        mainPlayer.id,
+        EventNotificationType.ResourcesAutoSpent,
+        "Auto-queued: " + Fleet.toString(autoQueuedFleet),
+        focusPlanet
+      );
+    }
+  }
+
   public static eatAndStarve(data: AdvanceGameClockForPlayerData) {
     const { clientModel, cyclesElapsed, currentCycle, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
@@ -183,7 +231,7 @@ export class Player {
         foodDeficitByPlanet[p.id] = deficit; //signify deficit for starvation
         p.resources.food = 0;
 
-        mainPlayer.lastTurnFoodNeededToBeShipped += deficit; //increment our food shipments needed so next turn we can ensure we have surplus gold
+        mainPlayer.lastTurnFoodNeededToBeShipped += deficit / cyclesElapsed; //increment our food shipments needed so next turn we can ensure we have surplus gold
       } else if (p.resources.food > 0) {
         //signify surplus for this planet for shipments
         foodSurplusPlanets.push(p);
@@ -340,14 +388,12 @@ export class Player {
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
-    let buildQueueEmptyPlanetTarget;
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
       const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, mainPlayer);
       const results = Planet.buildImprovements(p, mainPlayer, grid, resourceGeneration, cyclesElapsed);
 
       if (results.buildQueueEmpty) {
-        //if the build queue was empty we'll increase gold based on planet production
-        buildQueueEmptyPlanetTarget = p;
+        //if the build queue was empty we'll increase energy based on planet production
         planetNameBuildQueueEmptyList.push(p.name);
 
         const energyProduced = (resourceGeneration.amountPerTurn.production / 4.0) * cyclesElapsed;
