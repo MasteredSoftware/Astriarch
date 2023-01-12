@@ -523,7 +523,6 @@ export class Planet {
 
   /**
    * updates the population worker assignments based on the differences passed in
-   * @this {Astriarch.Planet}
    */
   public static updatePopulationWorkerTypesByDiff(
     p: PlanetData,

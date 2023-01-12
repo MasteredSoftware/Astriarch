@@ -1,7 +1,7 @@
 import { ClientModelData, PlanetById } from "../model/clientModel";
 import { EventNotificationType } from "../model/eventNotification";
 import { FleetData } from "../model/fleet";
-import { ModelBase } from "../model/model";
+import { GalaxySizeOption, ModelBase, ModelData } from "../model/model";
 import { PlayerData, PlayerType } from "../model/player";
 import { ResearchType } from "../model/research";
 import { Utils } from "../utils/utils";
@@ -306,5 +306,153 @@ export class GameController {
         }
       }
     }
+  }
+
+  public static calculateEndGamePoints(
+    model: ModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    playerWon: boolean
+  ) {
+    return this.getEndGamePlayerPoints(model, player, ownedPlanets, playerWon);
+  }
+
+  public static getEndGamePlayerPoints(
+    model: ModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    playerWon: boolean
+  ) {
+    let turnsTaken = model.currentCycle;
+    if (turnsTaken > 1000) {
+      //some max, nobody should play this long?
+      turnsTaken = 1000;
+    }
+
+    const { systemsToGenerate, planetsPerSystem } = model.gameOptions;
+    let minTurns = systemsToGenerate * planetsPerSystem - 8;
+    let difficultyRating = minTurns;
+
+    for (const p of model.players) {
+      if (p.id === player.id) {
+        continue;
+      }
+      switch (p.type) {
+        case PlayerType.Computer_Easy:
+          difficultyRating += 1;
+          break;
+        case PlayerType.Computer_Normal:
+          difficultyRating += 2;
+          break;
+        case PlayerType.Computer_Hard:
+          difficultyRating += 3;
+          break;
+        case PlayerType.Computer_Expert:
+          difficultyRating += 4;
+          break;
+        case PlayerType.Human:
+          difficultyRating += 8;
+          break;
+      }
+    }
+
+    let ownedPlanetCount = player.ownedPlanetIds.length;
+    if (ownedPlanetCount == 0) {
+      ownedPlanetCount = 1; //so that we have points for loosers too
+    }
+    let totalPopulation = Player.getTotalPopulation(player, ownedPlanets);
+    if (totalPopulation == 0) {
+      totalPopulation = 1; //so that we have points for loosers too
+    }
+
+    let maxPopulation = 0;
+    for (const p of Object.values(ownedPlanets)) {
+      maxPopulation += p.maxImprovements; //only count max pop w/o colonies
+    }
+    //prevent divide by zero
+    if (maxPopulation == 0) {
+      maxPopulation = 100;
+    }
+
+    //max difficulty right now is (4 * 8) - 8 + (3 * 8) = 48
+    //min is 1
+    difficultyRating = difficultyRating / 48;
+
+    minTurns += playerWon
+      ? ownedPlanetCount *
+        (model.gameOptions.galaxySize == GalaxySizeOption.TINY
+          ? 0.25
+          : model.gameOptions.galaxySize == GalaxySizeOption.SMALL
+          ? 0.5
+          : model.gameOptions.galaxySize == GalaxySizeOption.MEDIUM
+          ? 0.75
+          : 1.0)
+      : 6;
+    const speedFactor = minTurns / turnsTaken;
+
+    const additionalPoints = this.calculateAdditionalPoints(
+      player.points,
+      ownedPlanetCount,
+      totalPopulation,
+      maxPopulation,
+      systemsToGenerate,
+      planetsPerSystem,
+      difficultyRating,
+      speedFactor,
+      playerWon
+    );
+    console.log(
+      "CalculateEndGamePoints: points:",
+      player.points,
+      "additionalPoints:",
+      additionalPoints,
+      "speedFactor:",
+      speedFactor,
+      "difficultyRating:",
+      difficultyRating,
+      "percentageOwned:",
+      ownedPlanetCount / (systemsToGenerate * planetsPerSystem),
+      "ownedPlanetCount:",
+      ownedPlanetCount,
+      "totalPopulation:",
+      totalPopulation,
+      "maxPopulation:",
+      maxPopulation,
+      "systemsToGenerate:",
+      systemsToGenerate,
+      "planetsPerSystem:",
+      planetsPerSystem,
+      "playerWon:",
+      playerWon,
+      "minTurns:",
+      minTurns,
+      "model.currentCycle:",
+      model.currentCycle
+    );
+
+    return Math.floor(player.points + additionalPoints);
+  }
+
+  public static calculateAdditionalPoints(
+    points: number,
+    ownedPlanetCount: number,
+    totalPopulation: number,
+    maxPopulation: number,
+    systemsToGenerate: number,
+    planetsPerSystem: number,
+    difficultyRating: number,
+    speedFactor: number,
+    playerWon: boolean
+  ) {
+    const percentageOwned = ownedPlanetCount / (systemsToGenerate * planetsPerSystem);
+    const percentagePopulated = totalPopulation / maxPopulation;
+
+    let additionalPoints = points * (playerWon ? 2 : 0.25);
+    additionalPoints = Math.round(
+      additionalPoints *
+        (percentageOwned * difficultyRating * speedFactor + percentagePopulated * difficultyRating * speedFactor)
+    );
+
+    return additionalPoints;
   }
 }

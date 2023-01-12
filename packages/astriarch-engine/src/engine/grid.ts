@@ -207,7 +207,11 @@ export class GridRect {
   }
 
   public contains(point: PointData) {
-    return this.left < point.x && this.right > point.y && this.bottom > point.y && this.top < point.y;
+    return this.left < point.x && this.right > point.x && this.top < point.y && this.bottom > point.y;
+  }
+
+  public toString() {
+    return `(x: ${this.x}, y: ${this.y}, w: ${this.width}, h: ${this.height}, children: ${this.children.length})`;
   }
 }
 

@@ -66,14 +66,12 @@ export class GameModel {
     const usedPlanetBoundingHexes = new Set();
     for (let q = 0; q < grid.quadrants.length; q++) {
       let r = grid.quadrants[q];
-
       //get a list of hexes inside this quadrant
-      let subQuadrantHexes: GridHex[][] = []; //List<List<Hexagon>>
+      let subQuadrantHexes: GridHex[][] = [];
 
       for (let iSQ = 0; iSQ < r.children.length; iSQ++) {
-        let sub = r.children[iSQ]; //Rect
+        let sub = r.children[iSQ];
         subQuadrantHexes[iSQ] = [];
-
         for (let i in grid.hexes) {
           let h = grid.hexes[i];
           //let testPoint = q == 0 ? h.TopLeftPoint : q == 1 ? h.TopRightPoint : q == 3 ? h.BottomLeftPoint : h.BottomRightPoint;
@@ -88,8 +86,8 @@ export class GameModel {
       if (gameOptions.systemsToGenerate == 2 && (q == 1 || q == 3)) continue;
 
       let possiblePlanetTypes = [PlanetType.PlanetClass1, PlanetType.DeadPlanet, PlanetType.AsteroidBelt];
-      let playerHomePlanetHex = null;
-      let planetBoundingHex: GridHex | undefined = undefined;
+      let playerHomePlanetHex: GridHex | undefined;
+      let planetBoundingHex: GridHex | undefined;
       for (let iSQ = 0; iSQ < r.children.length; iSQ++) {
         let chosenPlanetSubQuadrant = iSQ;
         if (!gameOptions.distributePlanetsEvenly) {
@@ -101,7 +99,7 @@ export class GameModel {
         // if we are choosing one of the first 4 planets make sure it is within the min distance from the home planet
         let hexFound = false;
         while (!hexFound) {
-          let maxDistanceFromHome =
+          const maxDistanceFromHome =
             gameOptions.galaxySize == GalaxySizeOption.LARGE
               ? 5
               : gameOptions.galaxySize == GalaxySizeOption.MEDIUM
@@ -110,7 +108,7 @@ export class GameModel {
               ? 3
               : 2;
           let hexPos = Utils.nextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
-          planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos]; //Hexagon
+          planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos];
           if (playerHomePlanetHex) {
             // get distance from home
             let distanceFromHome = Grid.getHexDistance(planetBoundingHex, playerHomePlanetHex);
@@ -128,7 +126,6 @@ export class GameModel {
         }
 
         //get at least one planet of each type, prefer the highest class planet
-        //int type = (Model.PLANETS_PER_QUADRANT - 1) - iSQ;
         let type = 3;
         let pt = PlanetType.PlanetClass2;
         if (iSQ > 0 && possiblePlanetTypes.length <= 3) {
