@@ -48,20 +48,20 @@ export const startNewTestGameWithOptions = (
   systemsToGenerate: number,
   planetsPerSystem: number,
   ownedPlanetCount: number,
-  playerCount: number
+  playerCount: number,
+  playerType: PlayerType
 ): TestGameData => {
   const players = [] as PlayerData[];
-  players.push(Player.constructPlayer("me", PlayerType.Computer_Expert, "Player1", playerColors[0]));
-  Player.increasePoints(players[0], EarnedPointsType.POPULATION_GROWTH, points);
-  for (let i = 1; i < playerCount; i++) {
-    players.push(Player.constructPlayer(`c${i}`, PlayerType.Computer_Expert, `Player${i + 1}`, playerColors[i]));
-    Player.increasePoints(players[i], EarnedPointsType.POPULATION_GROWTH, points);
+  for (let i = 0; i < playerCount; i++) {
+    const player = Player.constructPlayer(`p${i}`, playerType, `Player${i + 1}`, playerColors[i]);
+    players.push(player);
+    Player.increasePoints(player, EarnedPointsType.POPULATION_GROWTH, points);
   }
 
   const gameOptions = {
     systemsToGenerate,
     planetsPerSystem,
-    galaxySize: GalaxySizeOption.SMALL,
+    galaxySize: GalaxySizeOption.LARGE,
     distributePlanetsEvenly: true,
     quickStart: true,
     gameSpeed: GameSpeed.NORMAL,
@@ -71,16 +71,26 @@ export const startNewTestGameWithOptions = (
   const gameModel = GameModel.constructData(players, gameOptions);
   gameModel.modelData.currentCycle = turnNumber;
 
-  const ownedPlanetsPlayer1 = ClientGameModel.getOwnedPlanets(players[0].ownedPlanetIds, gameModel.modelData.planets);
-  //const ownedPlanetsPlayer2 = ClientGameModel.getOwnedPlanets(players[1].ownedPlanetIds, gameModel.modelData.planets);
+  const [firstPlayer] = players;
+  const ownedPlanetsPlayer1 = ClientGameModel.getOwnedPlanets(firstPlayer.ownedPlanetIds, gameModel.modelData.planets);
+
+  if (ownedPlanetCount === 0) {
+    GameModel.changePlanetOwner(
+      firstPlayer,
+      undefined,
+      ownedPlanetsPlayer1[firstPlayer.ownedPlanetIds[0]],
+      gameModel.modelData.currentCycle
+    );
+  }
 
   let assignedPlanets = 1;
   for (const p of gameModel.modelData.planets) {
     if (assignedPlanets >= ownedPlanetCount) {
       break;
     }
-    if (!(p.id in ownedPlanetsPlayer1) /* && !(p.id in ownedPlanetsPlayer2)*/) {
-      GameModel.changePlanetOwner(undefined, players[0], p, gameModel.modelData.currentCycle);
+    if (!(p.id in ownedPlanetsPlayer1)) {
+      const oldOwner = GameModel.findPlanetOwner(gameModel, p.id);
+      GameModel.changePlanetOwner(oldOwner, firstPlayer, p, gameModel.modelData.currentCycle);
       assignedPlanets++;
     }
   }

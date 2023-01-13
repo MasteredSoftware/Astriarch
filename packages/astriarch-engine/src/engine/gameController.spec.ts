@@ -1,3 +1,4 @@
+import { PlayerType } from "../model/player";
 import { startNewTestGameWithOptions } from "../test/testUtils";
 import { ClientGameModel } from "./clientGameModel";
 import { GameController } from "./gameController";
@@ -10,7 +11,8 @@ const assertPointsBasedOnGameOptions = (
   planetsPerSystem: number,
   ownedPlanetCount: number,
   playerCount: number,
-  playerWins: boolean
+  playerWins: boolean,
+  playerType: PlayerType = PlayerType.Computer_Expert
 ) => {
   const testGameData = startNewTestGameWithOptions(
     turnNumber,
@@ -18,7 +20,8 @@ const assertPointsBasedOnGameOptions = (
     systemsToGenerate,
     planetsPerSystem,
     ownedPlanetCount,
-    playerCount
+    playerCount,
+    playerType
   );
   const { modelData } = testGameData.gameModel;
   const [player] = modelData.players;
@@ -32,7 +35,7 @@ describe("GameController", () => {
 
   describe("CalculateEndGamePoints()", () => {
     it("should base points on total points at the end of the game", () => {
-      assertPointsBasedOnGameOptions(438, 100, 100, 4, 4, 8, 4, true);
+      assertPointsBasedOnGameOptions(436, 100, 100, 4, 4, 8, 4, true);
     });
 
     it("should award less points if the player loses", () => {
@@ -44,11 +47,11 @@ describe("GameController", () => {
     });
 
     it("should give bonus points for a quick game", () => {
-      assertPointsBasedOnGameOptions(477, 50, 100, 4, 4, 8, 4, true);
+      assertPointsBasedOnGameOptions(472, 50, 100, 4, 4, 8, 4, true);
     });
 
     it("should give less points for an easier game", () => {
-      assertPointsBasedOnGameOptions(444, 100, 100, 2, 4, 8, 2, true);
+      assertPointsBasedOnGameOptions(413, 100, 100, 2, 4, 8, 2, true, PlayerType.Human);
     });
   });
 });
