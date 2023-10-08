@@ -1,3 +1,3 @@
-import { styled } from "@stitches/react";
+import { Box } from '@chakra-ui/react'
 
-export const Box = styled("div");
+//export const Box = styled("div");
