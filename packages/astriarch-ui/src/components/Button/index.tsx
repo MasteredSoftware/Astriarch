@@ -3,7 +3,7 @@ import React from "react";
 import Text from "../Text";
 
 //import mySvg from "../../assets/test.svg";
-import { SvgTest } from "../SvgTest";
+import { ButtonSvg } from "../svg/ButtonSvg";
 
 export interface ButtonProps extends ChakraButtonProps {
   // Your additional props go here
@@ -14,7 +14,7 @@ export interface ButtonProps extends ChakraButtonProps {
 const additionalCss = {
   width: '207px',
   height: '48px',
-  backgroundColor: 'transparent'
+  backgroundColor: 'transparent',
   // flexShrink: 0,
   // fill: '#0FF',
   // strokeWidth: '2px',
@@ -25,9 +25,9 @@ const additionalCss = {
 const Button: React.FC<ButtonProps> = ({ children, label, ...rest }) => {
   return (
     <>
-    <ChakraButton {...rest} css={{...additionalCss, borderRadius: 0 }}>
+    <ChakraButton {...rest} css={{...additionalCss, borderRadius: 0 }} _hover={{backgroundColor: 'transparent', opacity: 0.9}} _active={{backgroundColor: 'transparent', opacity: 1.0}}>
       <Text css={{zIndex: 100}}>{label}</Text>
-      <SvgTest />
+      <ButtonSvg />
       {children}
     </ChakraButton>
     </>

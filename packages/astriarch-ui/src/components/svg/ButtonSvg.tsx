@@ -1,6 +1,6 @@
 import { Box } from "@chakra-ui/react";
 
-export const SvgTest = () => {
+export const ButtonSvg = () => {
 
     return (
         <Box css={{position:'absolute'}}>
