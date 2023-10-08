@@ -14,6 +14,19 @@ const preview: Preview = {
     chakra: {
       theme,
     },
+    backgrounds: {
+      default: "space",
+      values: [
+        {
+          name: "space",
+          value: "#000000",
+        },
+        {
+          name: "light",
+          value: "#FFFFFF",
+        },
+      ],
+    },
   },
 };
 

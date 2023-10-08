@@ -7,7 +7,7 @@ export interface TextProps extends ChakraTextProps {
 
 const Text: React.FC<TextProps> = ({ children, ...rest }) => {
   return (
-    <ChakraText fontFamily={"Orbitron"} {...rest}>
+    <ChakraText fontFamily={"Orbitron"} textAlign={"center"} textTransform={"uppercase"} {...rest}>
       {children}
     </ChakraText>
   );

@@ -30,6 +30,7 @@ export const Secondary: Story = {
   args: {
     isActive: false,
     label: "Button",
+    variant: "outline",
   },
 };
 
@@ -40,6 +41,14 @@ export const Large: Story = {
   },
 };
 
+export const LargeSecondary: Story = {
+  args: {
+    size: "lg",
+    label: "Button",
+    variant: "outline",
+  },
+};
+
 export const Medium: Story = {
   args: {
     size: "md",
@@ -47,9 +56,25 @@ export const Medium: Story = {
   },
 };
 
+export const MediumSecondary: Story = {
+  args: {
+    size: "md",
+    label: "Button",
+    variant: "outline",
+  },
+};
+
 export const Small: Story = {
   args: {
     size: "sm",
     label: "Button",
+  },
+};
+
+export const SmallSecondary: Story = {
+  args: {
+    size: "sm",
+    label: "Button",
+    variant: "outline",
   },
 };
