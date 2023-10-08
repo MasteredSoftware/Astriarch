@@ -1,4 +1,4 @@
-import { Box, Button as ChakraButton, ButtonProps as ChakraButtonProps } from "@chakra-ui/react";  
+import { Box, Button as ChakraButton, ButtonProps as ChakraButtonProps } from "@chakra-ui/react";
 import React from "react";
 import Text from "../Text";
 
@@ -32,7 +32,7 @@ const Button: React.FC<ButtonProps> = ({ children, label, size, ...rest }) => {
         _active={{ backgroundColor: "transparent", opacity: 1.0 }}
       >
         <Text css={{ zIndex: 100 }}>{label}</Text>
-        <ButtonSvg size={size || 'lg' as any} />
+        <ButtonSvg size={size || ("lg" as any)} />
         {children}
       </ChakraButton>
     </>
