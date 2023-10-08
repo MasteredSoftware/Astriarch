@@ -40,6 +40,13 @@ export const Large: Story = {
   },
 };
 
+export const Medium: Story = {
+  args: {
+    size: "md",
+    label: "Button",
+  },
+};
+
 export const Small: Story = {
   args: {
     size: "sm",

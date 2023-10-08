@@ -1,10 +1,23 @@
-import { Box } from "@chakra-ui/react";
+import { Box, ButtonProps as ChakraButtonProps  } from "@chakra-ui/react";
 
-export const ButtonSvg = () => {
+const widthBySize = {
+   lg: 211,
+   md: 161,
+   sm: 91,
+   xs: 91
+};
+
+export interface ButtonSvgProps {
+   size: 'lg' | 'md' | 'sm' | 'xs';//Pick<ChakraButtonProps, 'size'>;
+}
+
+export const ButtonSvg = (props: ButtonSvgProps) => {
+  const size = props.size;
+  const width = widthBySize[size] || 211;
   return (
     <Box css={{ position: "absolute" }}>
       <svg
-        width="211"
+        width={width}
         height="52"
         viewBox="0 0 211 52"
         fill="none"
