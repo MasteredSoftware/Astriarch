@@ -11,25 +11,6 @@ export interface ButtonProps extends ChakraButtonProps {
   onClick?: () => void;
 }
 
-const additionalButtonCss = {
-  width: "207px",
-  height: "48px",
-  backgroundColor: "transparent",
-  // flexShrink: 0,
-  // fill: '#0FF',
-  // strokeWidth: '2px',
-  // stroke: '#000',
-  // filter: 'drop-shadow(0px 16px 32px rgba(0, 0, 0, 0.60))',
-};
-
-const additionalTextCss = {
-  color: "#1B1F25",
-  fontSize: "14px",
-  fontWeight: 800,
-  lineHeight: "20px",
-  letterSpacing: "2px",
-};
-
 const Button: React.FC<ButtonProps> = ({ children, label, size, variant, ...rest }) => {
   const buttonSize = (size || "lg") as Size;
   const widthBySize = {
@@ -38,6 +19,26 @@ const Button: React.FC<ButtonProps> = ({ children, label, size, variant, ...rest
     sm: "87px",
     xs: "87px",
   };
+
+  const additionalButtonCss = {
+    width: "207px",
+    height: "48px",
+    backgroundColor: "transparent",
+    // flexShrink: 0,
+    // fill: '#0FF',
+    // strokeWidth: '2px',
+    // stroke: '#000',
+    // filter: 'drop-shadow(0px 16px 32px rgba(0, 0, 0, 0.60))',
+  };
+
+  const additionalTextCss = {
+    color: "#1B1F25",
+    fontSize: "14px",
+    fontWeight: 800,
+    lineHeight: "20px",
+    letterSpacing: "2px",
+  };
+
   additionalButtonCss.width = widthBySize[buttonSize];
   if (variant === "outline") {
     additionalTextCss.color = "#0FF";
