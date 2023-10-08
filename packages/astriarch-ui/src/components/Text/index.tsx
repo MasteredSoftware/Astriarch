@@ -3,7 +3,6 @@ import React from "react";
 
 export interface TextProps extends ChakraTextProps {
   // Your additional props go here
-
 }
 
 const Text: React.FC<TextProps> = ({ children, ...rest }) => {

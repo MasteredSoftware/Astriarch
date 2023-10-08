@@ -12,24 +12,29 @@ export interface ButtonProps extends ChakraButtonProps {
 }
 
 const additionalCss = {
-  width: '207px',
-  height: '48px',
-  backgroundColor: 'transparent',
+  width: "207px",
+  height: "48px",
+  backgroundColor: "transparent",
   // flexShrink: 0,
   // fill: '#0FF',
   // strokeWidth: '2px',
   // stroke: '#000',
   // filter: 'drop-shadow(0px 16px 32px rgba(0, 0, 0, 0.60))',
-}
+};
 
 const Button: React.FC<ButtonProps> = ({ children, label, ...rest }) => {
   return (
     <>
-    <ChakraButton {...rest} css={{...additionalCss, borderRadius: 0 }} _hover={{backgroundColor: 'transparent', opacity: 0.9}} _active={{backgroundColor: 'transparent', opacity: 1.0}}>
-      <Text css={{zIndex: 100}}>{label}</Text>
-      <ButtonSvg />
-      {children}
-    </ChakraButton>
+      <ChakraButton
+        {...rest}
+        css={{ ...additionalCss, borderRadius: 0 }}
+        _hover={{ backgroundColor: "transparent", opacity: 0.9 }}
+        _active={{ backgroundColor: "transparent", opacity: 1.0 }}
+      >
+        <Text css={{ zIndex: 100 }}>{label}</Text>
+        <ButtonSvg />
+        {children}
+      </ChakraButton>
     </>
   );
 };

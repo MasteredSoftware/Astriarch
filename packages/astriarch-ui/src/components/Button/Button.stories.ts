@@ -22,27 +22,27 @@ export const Primary: Story = {
   // More on args: https://storybook.js.org/docs/react/writing-stories/args
   args: {
     isActive: true,
-    label: 'Button',
+    label: "Button",
   },
 };
 
 export const Secondary: Story = {
   args: {
     isActive: false,
-    label: 'Button',
+    label: "Button",
   },
 };
 
 export const Large: Story = {
   args: {
     size: "lg",
-    label: 'Button',
+    label: "Button",
   },
 };
 
 export const Small: Story = {
   args: {
     size: "sm",
-    label: 'Button',
+    label: "Button",
   },
 };

@@ -21,6 +21,6 @@ type Story = StoryObj<typeof Text>;
 export const Primary: Story = {
   // More on args: https://storybook.js.org/docs/react/writing-stories/args
   args: {
-    children: 'Test'
+    children: "Test",
   },
 };
