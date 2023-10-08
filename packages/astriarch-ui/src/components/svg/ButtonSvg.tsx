@@ -6,35 +6,22 @@ export interface ButtonSvgProps {
 
 const ButtonSvgLarge = () => {
   return (
-    <svg
-      width="211"
-      height="52"
-      viewBox="0 0 211 52`"
-      fill="none"
-      version="1.1"
-      id="svg8"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* <rect id="rect1" width="235.77846" height="81.998787" x="-9.196126" y="-7.9188862" /> */}
-      <g filter="url(#filter0_d_206_13299)" id="g2" transform="translate(-18,-16)">
+    <svg xmlns="http://www.w3.org/2000/svg" width="211" height="52" viewBox="0 0 211 52" fill="none">
+      <g filter="url(#filter0_d_206_13299)" transform="translate(-18,-16)">
         <path
-          id="rect8"
-          style={{ display: "inline", fill: "#00ffff", strokeWidth: 0.798868 }}
-          d="m 2,2 h 207 l 0.032,27.727969 -9.41703,11.350568 -7.92405,8.918029 L 2,50 Z"
-          transform="translate(18,16)"
+          d="M20 19C20 18.4477 20.4477 18 21 18H226C226.552 18 227 18.4477 227 19V45.3883C227 45.622 226.918 45.8484 226.769 46.028L217.638 57L210.014 65.6607C209.824 65.8764 209.551 66 209.264 66H21C20.4477 66 20 65.5523 20 65V19Z"
+          fill="#00FFFF"
           shape-rendering="crispEdges"
         />
         <path
-          d="m 218.388,57.6607 0.009,-0.0104 0.009,-0.0106 9.131,-10.972 C 227.836,46.3084 228,45.8558 228,45.3883 V 19 c 0,-1.1046 -0.895,-2 -2,-2 H 21 c -1.1046,0 -2,0.8954 -2,2 v 46 c 0,1.1046 0.8954,2 2,2 h 188.264 c 0.574,0 1.121,-0.2472 1.501,-0.6785 z"
+          d="M218.388 57.6607L218.397 57.6503L218.406 57.6397L227.537 46.6677C227.836 46.3084 228 45.8558 228 45.3883V19C228 17.8954 227.105 17 226 17H21C19.8954 17 19 17.8954 19 19V65C19 66.1046 19.8954 67 21 67H209.264C209.838 67 210.385 66.7528 210.765 66.3215L218.388 57.6607Z"
           stroke="url(#paint0_linear_206_13299)"
           stroke-opacity="0.75"
           stroke-width="2"
           shape-rendering="crispEdges"
-          style={{ display: "inline", fill: "none", stroke: "url(#paint0_linear_206_13299)" }}
-          id="path2"
         />
       </g>
-      <defs id="defs8">
+      <defs>
         <filter
           id="filter0_d_206_13299"
           x="-14"
@@ -44,32 +31,33 @@ const ButtonSvgLarge = () => {
           filterUnits="userSpaceOnUse"
           color-interpolation-filters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" id="feFlood2" />
-          {/* <feColorMatrix
-       in="SourceAlpha"
-       type="matrix"
-       values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-       result="hardAlpha"
-       id="feColorMatrix2" /> */}
-          <feOffset dy="16" id="feOffset2" />
-          <feGaussianBlur stdDeviation="16" id="feGaussianBlur2" />
-          <feComposite in2="hardAlpha" operator="out" id="feComposite2" />
-          <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" id="feColorMatrix3" />
-          <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_206_13299" id="feBlend3" />
-          <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_206_13299" result="shape" id="feBlend4" />
+          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy="16" />
+          <feGaussianBlur stdDeviation="16" />
+          <feComposite in2="hardAlpha" operator="out" />
+          {/* <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0" /> */}
+          <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_206_13299" />
+          <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_206_13299" result="shape" />
         </filter>
         <linearGradient
           id="paint0_linear_206_13299"
           x1="20"
           y1="42"
-          x2="180.26401"
-          y2="128.54601"
+          x2="180.264"
+          y2="128.546"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="white" id="stop4" />
-          <stop offset="0.244808" stop-opacity="0.25" id="stop5" />
-          <stop offset="0.761963" stop-opacity="0.25" id="stop7" />
-          <stop offset="1" stop-color="white" id="stop8" />
+          <stop stop-color="white" />
+          <stop offset="0.244808" stop-opacity="0.25" />
+          <stop offset="0.500575" stop-opacity="0.5" />
+          <stop offset="0.761963" stop-opacity="0.25" />
+          <stop offset="1" stop-color="white" />
         </linearGradient>
       </defs>
     </svg>
@@ -105,11 +93,11 @@ const ButtonSvgMedium = () => {
         >
           <feFlood flood-opacity="0" result="BackgroundImageFix" />
           {/* <feColorMatrix
-            in="SourceAlpha"
-            type="matrix"
-            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
-            result="hardAlpha"
-          /> */}
+             in="SourceAlpha"
+             type="matrix"
+             values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+             result="hardAlpha"
+           /> */}
           <feOffset dy="16" />
           <feGaussianBlur stdDeviation="16" />
           <feComposite in2="hardAlpha" operator="out" />
