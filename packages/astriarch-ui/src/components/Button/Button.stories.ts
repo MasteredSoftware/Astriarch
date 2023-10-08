@@ -37,14 +37,14 @@ export const Secondary: Story = {
 export const Large: Story = {
   args: {
     size: "lg",
-    label: "Button",
+    label: "Large Primary",
   },
 };
 
 export const LargeSecondary: Story = {
   args: {
     size: "lg",
-    label: "Button",
+    label: "Secondary",
     variant: "outline",
   },
 };
@@ -52,14 +52,14 @@ export const LargeSecondary: Story = {
 export const Medium: Story = {
   args: {
     size: "md",
-    label: "Button",
+    label: "Medium",
   },
 };
 
 export const MediumSecondary: Story = {
   args: {
     size: "md",
-    label: "Button",
+    label: "Medium",
     variant: "outline",
   },
 };
@@ -67,14 +67,14 @@ export const MediumSecondary: Story = {
 export const Small: Story = {
   args: {
     size: "sm",
-    label: "Button",
+    label: "Small",
   },
 };
 
 export const SmallSecondary: Story = {
   args: {
     size: "sm",
-    label: "Button",
+    label: "Small",
     variant: "outline",
   },
 };

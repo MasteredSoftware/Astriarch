@@ -20,12 +20,12 @@ export const ButtonSvgLargeSecondary = () => {
           color-interpolation-filters="sRGB"
         >
           <feFlood flood-opacity="0" result="BackgroundImageFix" />
-          <feColorMatrix
+          {/* <feColorMatrix
             in="SourceAlpha"
             type="matrix"
             values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
             result="hardAlpha"
-          />
+          /> */}
           <feOffset dy="16" />
           <feGaussianBlur stdDeviation="16" />
           <feComposite in2="hardAlpha" operator="out" />
@@ -60,12 +60,12 @@ export const ButtonSvgMediumSecondary = () => {
           color-interpolation-filters="sRGB"
         >
           <feFlood flood-opacity="0" result="BackgroundImageFix" />
-          <feColorMatrix
+          {/* <feColorMatrix
             in="SourceAlpha"
             type="matrix"
             values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
             result="hardAlpha"
-          />
+          /> */}
           <feOffset dy="15" />
           <feGaussianBlur stdDeviation="8" />
           <feComposite in2="hardAlpha" operator="out" />
@@ -100,12 +100,12 @@ export const ButtonSvgSmallSecondary = () => {
           color-interpolation-filters="sRGB"
         >
           <feFlood flood-opacity="0" result="BackgroundImageFix" />
-          <feColorMatrix
+          {/* <feColorMatrix
             in="SourceAlpha"
             type="matrix"
             values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
             result="hardAlpha"
-          />
+          /> */}
           <feOffset dy="16" />
           <feGaussianBlur stdDeviation="16" />
           <feComposite in2="hardAlpha" operator="out" />
