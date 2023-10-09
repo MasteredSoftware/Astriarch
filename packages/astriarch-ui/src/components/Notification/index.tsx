@@ -2,14 +2,16 @@ import { Box } from "@chakra-ui/react";
 import React from "react";
 import Text from "../Text";
 import { NotificationSvg } from "./svg/NotificationSvg";
+import { Size } from "../component.types";
 
 export interface NotificationProps {
   children?: React.ReactNode;
   label: string;
+  size?: Size;
   onClick?: () => void;
 }
 
-const Notification: React.FC<NotificationProps> = ({ children, label, ...rest }) => {
+const Notification: React.FC<NotificationProps> = ({ children, label, size, ...rest }) => {
   const additionalNotificationCss = {
     width: "277px",
     height: "64px",
@@ -28,7 +30,7 @@ const Notification: React.FC<NotificationProps> = ({ children, label, ...rest })
       <Text pt="20px" pl="16px" css={{ zIndex: 100, position: "relative", ...additionalTextCss }}>
         {label}
       </Text>
-      <NotificationSvg />
+      <NotificationSvg size={size || "sm"} />
       {children}
     </Box>
   );

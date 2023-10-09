@@ -1,9 +1,8 @@
 import { Button as ChakraButton, ButtonProps as ChakraButtonProps } from "@chakra-ui/react";
 import React from "react";
 import Text from "../Text";
-
-//import mySvg from "../../assets/test.svg";
-import { ButtonSvg, Size } from "./svg/ButtonSvg";
+import { ButtonSvg } from "./svg/ButtonSvg";
+import { Size } from "../component.types";
 
 export interface ButtonProps extends ChakraButtonProps {
   label: string;

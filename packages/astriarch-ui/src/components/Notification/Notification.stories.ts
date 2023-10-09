@@ -22,3 +22,24 @@ export const Primary: Story = {
     label: "Building 1 mine on planet H6",
   },
 };
+
+export const Large: Story = {
+  args: {
+    size: "lg",
+    label: "Large Notification",
+  },
+};
+
+export const Medium: Story = {
+  args: {
+    size: "md",
+    label: "Medium Notification",
+  },
+};
+
+export const Small: Story = {
+  args: {
+    size: "sm",
+    label: "Small Notification",
+  },
+};

@@ -1,8 +1,7 @@
 import { Box, ButtonProps as ChakraButtonProps } from "@chakra-ui/react";
 import { ButtonSvgLargePrimary, ButtonSvgMediumPrimary, ButtonSvgSmallPrimary } from "./ButtonSvgPrimary";
 import { ButtonSvgLargeSecondary, ButtonSvgMediumSecondary, ButtonSvgSmallSecondary } from "./ButtonSvgSecondary";
-
-export type Size = "lg" | "md" | "sm" | "xs";
+import { Size } from "../../component.types";
 
 export interface ButtonSvgProps {
   size: Size; //Pick<ChakraButtonProps, 'size'>;
