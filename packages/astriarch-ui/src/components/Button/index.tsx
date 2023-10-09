@@ -3,10 +3,9 @@ import React from "react";
 import Text from "../Text";
 
 //import mySvg from "../../assets/test.svg";
-import { ButtonSvg, Size } from "../svg/ButtonSvg";
+import { ButtonSvg, Size } from "./svg/ButtonSvg";
 
 export interface ButtonProps extends ChakraButtonProps {
-  // Your additional props go here
   label: string;
   onClick?: () => void;
 }
@@ -51,7 +50,9 @@ const Button: React.FC<ButtonProps> = ({ children, label, size, variant, ...rest
         _hover={{ backgroundColor: "transparent", opacity: 0.9 }}
         _active={{ backgroundColor: "transparent", opacity: 1.0 }}
       >
-        <Text css={{ zIndex: 100, ...additionalTextCss }}>{label}</Text>
+        <Text css={{ zIndex: 100, ...additionalTextCss }} textTransform={"uppercase"} textAlign={"center"}>
+          {label}
+        </Text>
         <ButtonSvg size={buttonSize as any} variant={variant || ("primary" as any)} />
         {children}
       </ChakraButton>
