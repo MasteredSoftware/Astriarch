@@ -5,8 +5,8 @@ export const ButtonSvgLargeSecondary = () => {
         <path
           d="M218.388 57.6607L218.397 57.6503L218.406 57.6397L227.537 46.6677C227.836 46.3084 228 45.8558 228 45.3883V19C228 17.8954 227.105 17 226 17H21C19.8954 17 19 17.8954 19 19V65C19 66.1046 19.8954 67 21 67H209.264C209.838 67 210.385 66.7528 210.765 66.3215L218.388 57.6607Z"
           stroke="#00FFFF"
-          stroke-width="2"
-          shape-rendering="crispEdges"
+          strokeWidth="2"
+          shapeRendering="crispEdges"
         />
       </g>
       <defs>
@@ -17,9 +17,9 @@ export const ButtonSvgLargeSecondary = () => {
           width="275"
           height="116"
           filterUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
+          colorInterpolationFilters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
           {/* <feColorMatrix
             in="SourceAlpha"
             type="matrix"
@@ -45,8 +45,8 @@ export const ButtonSvgMediumSecondary = () => {
         <path
           d="M166.388 42.6607L166.397 42.6503L166.406 42.6397L175.537 31.6677C175.836 31.3084 176 30.8558 176 30.3883V4C176 2.89544 175.105 2 174 2H19C17.8954 2 17 2.89543 17 4V50C17 51.1046 17.8954 52 19 52H157.264C157.838 52 158.385 51.7528 158.765 51.3214L166.388 42.6607Z"
           stroke="#00FFFF"
-          stroke-width="2"
-          shape-rendering="crispEdges"
+          strokeWidth="2"
+          shapeRendering="crispEdges"
         />
       </g>
       <defs>
@@ -57,9 +57,9 @@ export const ButtonSvgMediumSecondary = () => {
           width="193"
           height="84"
           filterUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
+          colorInterpolationFilters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
           {/* <feColorMatrix
             in="SourceAlpha"
             type="matrix"
@@ -85,8 +85,8 @@ export const ButtonSvgSmallSecondary = () => {
         <path
           d="M98.3883 57.6607L98.3974 57.6503L98.4063 57.6397L107.537 46.6677C107.836 46.3084 108 45.8557 108 45.3883V19C108 17.8954 107.105 17 106 17H21C19.8954 17 19 17.8954 19 19V65C19 66.1046 19.8954 67 21 67H89.2636C89.8383 67 90.3852 66.7528 90.7649 66.3214L98.3883 57.6607Z"
           stroke="#00FFFF"
-          stroke-width="2"
-          shape-rendering="crispEdges"
+          strokeWidth="2"
+          shapeRendering="crispEdges"
         />
       </g>
       <defs>
@@ -97,9 +97,9 @@ export const ButtonSvgSmallSecondary = () => {
           width="155"
           height="116"
           filterUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
+          colorInterpolationFilters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
           {/* <feColorMatrix
             in="SourceAlpha"
             type="matrix"

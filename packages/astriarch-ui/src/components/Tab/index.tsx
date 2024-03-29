@@ -21,7 +21,7 @@ const Tab: React.FC<TabProps> = ({ label, selected, zIndex, ...rest }) => {
       ? {}
       : {
           textShadow: "0px 4px 4px rgba(0, 0, 0, 0.25)",
-          "-webkit-text-stroke": "1px #000",
+          WebkitTextStroke: "1px #000",
         }),
   };
 

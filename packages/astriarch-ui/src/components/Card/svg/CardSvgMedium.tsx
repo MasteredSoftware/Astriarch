@@ -5,14 +5,14 @@ export const CardSvgMedium = ({ enabled }: { enabled: boolean }) => {
         <path
           d="M106.707 65.2071L106.719 65.1949L106.731 65.1823L113.462 57.9705C113.808 57.6001 114 57.1124 114 56.6058V3C114 1.89543 113.105 1 112 1H3C1.89543 1 1 1.89543 1 3V73C1 74.1046 1.89543 75 3 75H96.0858C96.6162 75 97.1249 74.7893 97.5 74.4142L106.707 65.2071Z"
           fill="white"
-          fill-opacity="0.1"
+          fillOpacity="0.1"
           stroke="url(#paint0_linear_278_58)"
-          stroke-width="2"
+          strokeWidth="2"
         />
         <defs>
           <linearGradient id="paint0_linear_278_58" x1="2" y1="38" x2="113" y2="38" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#15181F" />
-            <stop offset="1" stop-color="#313E46" />
+            <stop stopColor="#15181F" />
+            <stop offset="1" stopColor="#313E46" />
           </linearGradient>
         </defs>
       </svg>
@@ -24,14 +24,14 @@ export const CardSvgMedium = ({ enabled }: { enabled: boolean }) => {
         <path
           d="M42 21C42 20.4477 42.4477 20 43 20H152C152.552 20 153 20.4477 153 21V74.6058C153 74.8591 152.904 75.103 152.731 75.2882L146 82.5L136.793 91.7071C136.605 91.8946 136.351 92 136.086 92H43C42.4477 92 42 91.5523 42 91V21Z"
           fill="#1B1F25"
-          fill-opacity="0.5"
-          shape-rendering="crispEdges"
+          fillOpacity="0.5"
+          shapeRendering="crispEdges"
         />
         <path
           d="M146.707 83.2071L146.719 83.1949L146.731 83.1823L153.462 75.9705C153.808 75.6001 154 75.1124 154 74.6058V21C154 19.8954 153.105 19 152 19H43C41.8954 19 41 19.8954 41 21V91C41 92.1046 41.8954 93 43 93H136.086C136.616 93 137.125 92.7893 137.5 92.4142L146.707 83.2071Z"
           stroke="#00FFFF"
-          stroke-width="2"
-          shape-rendering="crispEdges"
+          strokeWidth="2"
+          shapeRendering="crispEdges"
         />
       </g>
       <defs>
@@ -42,9 +42,9 @@ export const CardSvgMedium = ({ enabled }: { enabled: boolean }) => {
           width="195"
           height="156"
           filterUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
+          colorInterpolationFilters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
           <feColorMatrix
             in="SourceAlpha"
             type="matrix"

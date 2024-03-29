@@ -18,14 +18,13 @@ const TabController: React.FC<TabControllerProps> = ({ children, tabs, size, ...
       <Tabs variant="unstyled" defaultIndex={tabIndex} onChange={(index) => setTabIndex(index)}>
         <TabList border={'none'}>
           {tabs.map((tab, i) => (
-            <Tab label={tab.label} selected={i === tabIndex} zIndex={i === tabIndex ? tabs.length : tabs.length - i} />
+            <Tab key={`tab-${i}`} label={tab.label} selected={i === tabIndex} zIndex={i === tabIndex ? tabs.length : tabs.length - i} />
           ))}
         </TabList>
         <TabControllerSvg size={size || "sm"} />
         <TabPanels>
-          
-          {tabs.map((tab) => (
-            <TabPanel>{tab.children}</TabPanel>
+          {tabs.map((tab, i) => (
+            <TabPanel key={`tabPanel-${i}`}>{tab.children}</TabPanel>
           ))}
         </TabPanels>
       </Tabs>

@@ -5,9 +5,9 @@ export const TabControllerSvgBaselineLarge = () => {
         <path
           d="M1 1H1331"
           stroke="url(#paint0_linear_206_11932)"
-          stroke-opacity="0.65"
-          stroke-width="2"
-          stroke-linecap="round"
+          strokeOpacity="0.65"
+          strokeWidth="2"
+          strokeLinecap="round"
         />
       </g>
       <defs>
@@ -18,9 +18,9 @@ export const TabControllerSvgBaselineLarge = () => {
           width="1364"
           height="34"
           filterUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
+          colorInterpolationFilters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
           <feGaussianBlur in="BackgroundImageFix" stdDeviation="8" />
           <feComposite in2="SourceAlpha" operator="in" result="effect1_backgroundBlur_206_11932" />
           <feBlend mode="normal" in="SourceGraphic" in2="effect1_backgroundBlur_206_11932" result="shape" />
@@ -33,9 +33,9 @@ export const TabControllerSvgBaselineLarge = () => {
           y2="1.00001"
           gradientUnits="userSpaceOnUse"
         >
-          <stop stop-color="white" stop-opacity="0" />
-          <stop offset="0.681822" stop-color="#13F3FB" />
-          <stop offset="1" stop-color="white" />
+          <stop stopColor="white" stopOpacity="0" />
+          <stop offset="0.681822" stopColor="#13F3FB" />
+          <stop offset="1" stopColor="white" />
         </linearGradient>
       </defs>
     </svg>

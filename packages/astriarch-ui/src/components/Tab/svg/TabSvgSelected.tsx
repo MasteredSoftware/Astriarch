@@ -9,7 +9,7 @@ export const TabSvgSelected = () => {
         <path
           d="M15 17V48C15 49.1046 15.8954 50 17 50H215C216.105 50 217 49.1046 217 48V33.0126C217 32.369 216.69 31.7647 216.168 31.3889L193.903 15.3763C193.563 15.1316 193.154 15 192.735 15H17C15.8954 15 15 15.8954 15 17Z"
           stroke="#00FFFF"
-          stroke-width="2"
+          strokeWidth="2"
         />
       </g>
       <defs>
@@ -20,9 +20,9 @@ export const TabSvgSelected = () => {
           width="232"
           height="65"
           filterUnits="userSpaceOnUse"
-          color-interpolation-filters="sRGB"
+          colorInterpolationFilters="sRGB"
         >
-          <feFlood flood-opacity="0" result="BackgroundImageFix" />
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
           <feColorMatrix
             in="SourceAlpha"
             type="matrix"
