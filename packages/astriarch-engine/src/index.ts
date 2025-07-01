@@ -67,5 +67,13 @@ export const getPlayerTotalResources = (player: PlayerData, planetById: PlanetBy
   return GameModel.getPlayerTotalResources(player, planetById);
 };
 
+export const getPlayerTotalResourceProductionPerTurn = (player: PlayerData, planetById: PlanetById) => {
+  return GameModel.getPlayerTotalResourceProductionPerTurn(player, planetById);
+};
+
+export const getPlayerTotalPopulation = (player: PlayerData, planetById: PlanetById) => {
+  return GameModel.getPlayerTotalPopulation(player, planetById);
+};
+
 // TODO: decide what the engine should actually export
 export * from "./engine";

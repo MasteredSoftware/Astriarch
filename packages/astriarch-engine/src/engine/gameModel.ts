@@ -273,6 +273,36 @@ export class GameModel {
     }, resources);
   }
 
+  public static getPlayerTotalResourceProductionPerTurn(player: PlayerData, planetById: PlanetById): PlanetResourceData  {
+    const resources = {
+      food: 0,
+      energy: 0,
+      research: 0,
+      ore: 0,
+      iridium: 0,
+      production: 0,
+    };
+
+    return player.ownedPlanetIds.reduce((accum, curr) => {
+      if (curr in planetById) {
+        const planet = planetById[curr];
+        const {amountPerTurn} = Planet.getPlanetWorkerResourceGeneration(planet, player);
+        accum = PlanetResources.addPlanetResources(accum, amountPerTurn);
+      }
+      return accum;
+    }, resources);
+  }
+
+  public static getPlayerTotalPopulation(player: PlayerData, planetById: PlanetById): number {
+    return player.ownedPlanetIds.reduce((accum, curr) => {
+      if (curr in planetById) {
+        const planet = planetById[curr];
+        accum += planet.population.length;
+      }
+      return accum;
+    }, 0);
+  }
+
   public static getPlanetById(gameModel: GameModelData, planetId: number): PlanetData | undefined {
     return gameModel.modelData.planets.find((p) => p.id === planetId);
   }

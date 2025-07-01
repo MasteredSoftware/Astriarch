@@ -12,7 +12,7 @@ export interface CardProps {
   onClick?: () => void;
 }
 
-const Notification: React.FC<CardProps> = ({ children, label, size, enabled, ...rest }) => {
+const Card: React.FC<CardProps> = ({ children, label, size, enabled, ...rest }) => {
   const additionalCardCss = {
     width: size === "lg" ? "109px" : "115px",
     height: size === "lg" ? "136px" : "76px",
@@ -37,4 +37,4 @@ const Notification: React.FC<CardProps> = ({ children, label, size, enabled, ...
   );
 };
 
-export default Notification;
+export default Card;
