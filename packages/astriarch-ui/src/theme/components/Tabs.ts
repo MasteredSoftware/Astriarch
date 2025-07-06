@@ -15,10 +15,10 @@ const baseStyle = definePartsStyle({
   },
   tablist: {
     mb: "-1px",
-  }
+  },
 });
 
-type TabsStyle = {baseStyle?: typeof baseStyle};
+type TabsStyle = { baseStyle?: typeof baseStyle };
 
 // export the component theme
 export const tabsTheme: TabsStyle = defineMultiStyleConfig({ baseStyle });

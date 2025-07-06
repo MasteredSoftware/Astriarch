@@ -25,14 +25,14 @@ const NavigationTab: React.FC<NavigationTabProps> = ({ label, selected, zIndex, 
   };
 
   return (
-    <Box position={"relative"} width={172} pointerEvents={'none'}>
+    <Box position={"relative"} width={172} pointerEvents={"none"}>
       <Text
         css={{ zIndex: 100, ...additionalTextCss }}
         position={"relative"}
         textTransform={"uppercase"}
         textAlign={"center"}
         verticalAlign={"baseline"}
-        pointerEvents={'none'}
+        pointerEvents={"none"}
       >
         {label}
       </Text>

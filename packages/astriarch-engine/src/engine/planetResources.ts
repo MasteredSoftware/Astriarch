@@ -35,7 +35,7 @@ export class PlanetResources {
       r.energy = r.energy - amount;
       return amount;
     }
-    let spent = r.energy;
+    const spent = r.energy;
     r.energy = 0;
     return spent;
   }
@@ -45,7 +45,7 @@ export class PlanetResources {
       r.food = r.food - amount;
       return amount;
     }
-    let spent = r.food;
+    const spent = r.food;
     r.food = 0;
     return spent;
   }
@@ -55,7 +55,7 @@ export class PlanetResources {
       r.ore = r.ore - amount;
       return amount;
     }
-    let spent = r.ore;
+    const spent = r.ore;
     r.ore = 0;
     return spent;
   }
@@ -65,7 +65,7 @@ export class PlanetResources {
       r.iridium = r.iridium - amount;
       return amount;
     }
-    let spent = r.iridium;
+    const spent = r.iridium;
     r.iridium = 0;
     return spent;
   }

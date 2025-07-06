@@ -15,8 +15,8 @@ interface PendingHit {
   source: StarshipData;
 }
 
-export type FleetDamagePending = { [T in number]: { starship: StarshipData; hits: PendingHit[] } };
-type ExperiencePending = { [T in number]: { starship: StarshipData; damageDealt: number } };
+export type FleetDamagePending = Record<number, { starship: StarshipData; hits: PendingHit[] }>;
+type ExperiencePending = Record<number, { starship: StarshipData; damageDealt: number }>;
 
 //new simulate fleet battle logic:
 //this will support choosing a target and allowing ships to have an advantage over other types

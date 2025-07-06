@@ -1,15 +1,20 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "ES6",
-    "sourceMap": true,
-    "declaration": true,
-    "declarationMap": true,
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "skipLibCheck": true,
+    "declaration": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "importHelpers": true,
+    "outDir": "./dist",
+
+    /* Linting */
     "strict": true,
-    "types": ["node", "jest"],
-    "outDir": "./dist"
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["."],
-  "exclude": ["dist", "node_modules"]
+  "include": ["src/**/*"],
 }

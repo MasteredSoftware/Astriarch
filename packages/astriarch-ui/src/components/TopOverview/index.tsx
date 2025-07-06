@@ -26,7 +26,7 @@ export interface TopOverviewProps {
 const TopOverview: React.FC<TopOverviewProps> = (props) => {
   const { children, resourceData, population, ...rest } = props;
   return (
-    <Box {...rest} position={"relative"} display={'inline-flex'} gap={'26px'}>
+    <Box {...rest} position={"relative"} display={"inline-flex"} gap={"26px"}>
       <TopOverviewItem type="population" amount={population} />
       <TopOverviewItem
         type="research"
@@ -41,7 +41,9 @@ const TopOverview: React.FC<TopOverviewProps> = (props) => {
         amount={resourceData.total.iridium}
         amountPerTurn={resourceData.perTurn.iridium}
       />
-      <Box css={{ position: "absolute", top: 0, left: 0, zIndex: 2 }}><TopOverviewFrameSvg /></Box>
+      <Box css={{ position: "absolute", top: 0, left: 0, zIndex: 2 }}>
+        <TopOverviewFrameSvg />
+      </Box>
       {children}
     </Box>
   );

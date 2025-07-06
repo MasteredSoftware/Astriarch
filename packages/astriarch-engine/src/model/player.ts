@@ -22,9 +22,9 @@ export interface ColorRgbaData {
   a: number; // alpha
 }
 
-export type EarnedPointsByType = { [T in EarnedPointsType]: number };
+export type EarnedPointsByType = Record<EarnedPointsType, number>;
 
-export type LastKnownPlanetFleetStrength = { [T in number]: LastKnownFleetData };
+export type LastKnownPlanetFleetStrength = Record<number, LastKnownFleetData>;
 
 export interface PlayerData {
   id: string;
@@ -37,7 +37,7 @@ export interface PlayerData {
   ownedPlanetIds: number[];
   knownPlanetIds: number[];
   lastKnownPlanetFleetStrength: LastKnownPlanetFleetStrength;
-  planetBuildGoals: { [T in number]: PlanetProductionItemData };
+  planetBuildGoals: Record<number, PlanetProductionItemData>;
   homePlanetId: number | null;
   earnedPointsByType: EarnedPointsByType;
   points: number;

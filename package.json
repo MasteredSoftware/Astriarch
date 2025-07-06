@@ -3,14 +3,20 @@
   "version": "1.0.0",
   "description": "Astriarch space strategy game monorepo",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "format": "nx format",
-    "build": "nx run-many --target=build --all"
+    "clean": "rm -rf node_modules && pnpm run -r clean",
+    "build": "pnpm run -r build",
+    "test": "pnpm run -r test",
+    "format": "pnpm run -r format",
+    "format:check": "pnpm run -r format:check",
+    "lint": "pnpm run -r lint",
+    "lint:check": "pnpm run -r lint:check",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "packageManager": "pnpm@10.11.1+sha512.e519b9f7639869dc8d5c3c5dfef73b3f091094b0a006d7317353c72b124e80e1afd429732e28705ad6bfa1ee879c1fce46c128ccebd3192101f43dd67c667912",
   "devDependencies": {
-    "nx": "^15.0.13"
+    "husky": "^9.1.7"
   }
 }

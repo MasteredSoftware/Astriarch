@@ -1,46 +1,55 @@
-import { forwardRef, ReactNode } from "react";
-import { styled } from "../../stitches.config";
-import { Cross1Icon } from "@radix-ui/react-icons";
-import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { ReactNode } from "react";
+import { Button, CloseButton, Dialog, Portal } from "@chakra-ui/react";
 
-const StyledOverlay = styled(DialogPrimitive.Overlay, {
-  // overlay styles
-});
-
-const StyledContent = styled(DialogPrimitive.Content, {
-  backgroundColor: "white",
-  borderRadius: 6,
-  boxShadow: "hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px",
-});
-
-interface DialogProps extends React.ComponentProps<typeof StyledContent> {
-  as?: React.ElementType;
+export interface DialogProps {
+  onChange?: (index: number) => void;
+  placement?: React.ComponentProps<typeof Dialog.Root>["placement"];
+  title?: string;
+  children?: ReactNode;
+  onCancel?: () => void;
+  onSave?: () => void;
+  cancelButtonText?: string;
+  saveButtonText?: string;
 }
 
-const StyledCloseButton = styled(DialogPrimitive.Close, {
-  // close button styles
-});
-
-export function Dialog({ children, ...props }: DialogProps) {
+/**
+ * Dialog component using Chakra UI v3 Dialog component
+ */
+const DialogComponent: React.FC<DialogProps> = ({
+  placement = "top",
+  title = "Dialog Title",
+  cancelButtonText = "Cancel",
+  saveButtonText = "Save",
+  onChange,
+  onCancel,
+  onSave,
+  ...rest
+}) => {
   return (
-    <DialogPrimitive.Root {...props}>
-      <StyledOverlay />
-      {children}
-    </DialogPrimitive.Root>
+    <Dialog.Root placement={placement} motionPreset="slide-in-bottom">
+      <Portal>
+        <Dialog.Backdrop />
+        <Dialog.Positioner>
+          <Dialog.Content>
+            <Dialog.Header>
+              <Dialog.Title>{title}</Dialog.Title>
+            </Dialog.Header>
+            <Dialog.Body>{rest.children}</Dialog.Body>
+            <Dialog.Footer>
+              <Button variant="outline" onClick={onCancel}>
+                {cancelButtonText}
+              </Button>
+              <Button onClick={onSave}>{saveButtonText}</Button>
+            </Dialog.Footer>
+            <CloseButton position="absolute" top="3" right="3" size="sm" />
+          </Dialog.Content>
+        </Dialog.Positioner>
+      </Portal>
+    </Dialog.Root>
   );
-}
+};
 
-interface DialogContentProps extends React.ComponentProps<typeof StyledContent> {
-  as?: React.ElementType;
-}
+export default DialogComponent;
 
-export const DialogContent = forwardRef(({ children, ...props }: DialogContentProps, forwardedRef) => (
-  <StyledContent {...props} ref={forwardedRef}>
-    {children}
-    <StyledCloseButton>
-      <Cross1Icon />
-    </StyledCloseButton>
-  </StyledContent>
-));
-
-export const DialogTrigger = DialogPrimitive.Trigger;
+// Export additional Dialog sub-components for more flexibility
+export { Dialog };

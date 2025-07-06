@@ -65,15 +65,15 @@ export class GameModel {
     const planets: PlanetData[] = [];
     const usedPlanetBoundingHexes = new Set();
     for (let q = 0; q < grid.quadrants.length; q++) {
-      let r = grid.quadrants[q];
+      const r = grid.quadrants[q];
       //get a list of hexes inside this quadrant
-      let subQuadrantHexes: GridHex[][] = [];
+      const subQuadrantHexes: GridHex[][] = [];
 
       for (let iSQ = 0; iSQ < r.children.length; iSQ++) {
-        let sub = r.children[iSQ];
+        const sub = r.children[iSQ];
         subQuadrantHexes[iSQ] = [];
-        for (let i in grid.hexes) {
-          let h = grid.hexes[i];
+        for (const i in grid.hexes) {
+          const h = grid.hexes[i];
           //let testPoint = q == 0 ? h.TopLeftPoint : q == 1 ? h.TopRightPoint : q == 3 ? h.BottomLeftPoint : h.BottomRightPoint;
           if (sub.contains(h.midPoint)) {
             //the hex is inside the quadrant and possibly an outlier on the edge
@@ -85,7 +85,7 @@ export class GameModel {
 
       if (gameOptions.systemsToGenerate == 2 && (q == 1 || q == 3)) continue;
 
-      let possiblePlanetTypes = [PlanetType.PlanetClass1, PlanetType.DeadPlanet, PlanetType.AsteroidBelt];
+      const possiblePlanetTypes = [PlanetType.PlanetClass1, PlanetType.DeadPlanet, PlanetType.AsteroidBelt];
       let playerHomePlanetHex: GridHex | undefined;
       let planetBoundingHex: GridHex | undefined;
       for (let iSQ = 0; iSQ < r.children.length; iSQ++) {
@@ -107,11 +107,11 @@ export class GameModel {
               : gameOptions.galaxySize == GalaxySizeOption.SMALL
               ? 3
               : 2;
-          let hexPos = Utils.nextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
+          const hexPos = Utils.nextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
           planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos];
           if (playerHomePlanetHex) {
             // get distance from home
-            let distanceFromHome = Grid.getHexDistance(planetBoundingHex, playerHomePlanetHex);
+            const distanceFromHome = Grid.getHexDistance(planetBoundingHex, playerHomePlanetHex);
             if (distanceFromHome > maxDistanceFromHome) {
               console.log("Chosen location for planet too far from Home, picking again:", iSQ, distanceFromHome);
             } else {
@@ -167,7 +167,7 @@ export class GameModel {
           initialPlanetOwner.color = playerColors[assignedPlayerIndex];
         }
 
-        let p = Planet.constructPlanet(pt, planetBoundingHex!.data.id, planetBoundingHex!, initialPlanetOwner);
+        const p = Planet.constructPlanet(pt, planetBoundingHex!.data.id, planetBoundingHex!, initialPlanetOwner);
         usedPlanetBoundingHexes.add(planetBoundingHex?.data.id);
         //if we set an initial owner
         if (initialPlanetOwner) {
@@ -190,7 +190,7 @@ export class GameModel {
       }
 
       if (gameOptions.planetsPerSystem > PlanetsPerSystemOption.FOUR) {
-        let quadrantChances = [25, 25, 25, 25];
+        const quadrantChances = [25, 25, 25, 25];
 
         let chanceToGetAsteroid = 40;
         let chanceToGetDead = 34;
@@ -207,13 +207,13 @@ export class GameModel {
               if (!subQuadrantHexes[iSQ].length) {
                 continue;
               }
-              let chance = quadrantChances[iSQ];
-              let max = quadrantChances.reduce(function (a, b) {
+              const chance = quadrantChances[iSQ];
+              const max = quadrantChances.reduce(function (a, b) {
                 return Math.max(a, b);
               }, 0);
               if (Utils.nextRandom(0, max) < chance) {
                 //pick a planet bounding hex at random from the sub-quadrant (at lest for now)
-                let hexPos = Utils.nextRandom(0, subQuadrantHexes[iSQ].length);
+                const hexPos = Utils.nextRandom(0, subQuadrantHexes[iSQ].length);
                 planetBoundingHex = subQuadrantHexes[iSQ][hexPos]; //Hexagon
                 subQuadrantHexes[iSQ].splice(hexPos, 1); //remove this hex as an option
                 //now that we've picked a quadrant, subtract some off the chances for next time
@@ -228,7 +228,7 @@ export class GameModel {
             //this logic prefers asteroids then dead then class1 and decreases our chances each time
 
             let pt = PlanetType.PlanetClass1;
-            let max = chanceToGetAsteroid + chanceToGetDead + chanceToGetClass1;
+            const max = chanceToGetAsteroid + chanceToGetDead + chanceToGetClass1;
             if (Utils.nextRandom(0, max) > chanceToGetClass1) {
               pt = PlanetType.DeadPlanet;
               if (Utils.nextRandom(0, max) > chanceToGetDead) {
@@ -241,7 +241,7 @@ export class GameModel {
               chanceToGetClass1 -= 15;
             }
 
-            let p = Planet.constructPlanet(pt, planetBoundingHex!.data.id, planetBoundingHex!);
+            const p = Planet.constructPlanet(pt, planetBoundingHex!.data.id, planetBoundingHex!);
             usedPlanetBoundingHexes.add(planetBoundingHex!.data.id);
             planets.push(p);
 

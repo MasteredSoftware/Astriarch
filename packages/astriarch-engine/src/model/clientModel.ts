@@ -5,7 +5,7 @@ import { ColorRgbaData, PlayerData, PlayerType } from "./player";
 import { ResearchData } from "./research";
 import { TradeData, TradingCenterResource } from "./tradingCenter";
 
-export type PlanetById = { [T in number]: PlanetData };
+export type PlanetById = Record<number, PlanetData>;
 
 export interface ClientPlayer {
   id: string;
@@ -33,7 +33,7 @@ export interface ClientTradingCenter {
   mainPlayerTrades: TradeData[];
 }
 
-export type TaskNotificationByPlanetId = { [T in number]: TaskNotification };
+export type TaskNotificationByPlanetId = Record<number, TaskNotification>;
 
 export interface TaskNotification {
   type: TaskNotificationType;
@@ -46,7 +46,7 @@ export enum TaskNotificationType {
   BuildQueueEmpty = 0,
 }
 
-export type TaskNotificationIndex = { [T in TaskNotificationType]: TaskNotificationByPlanetId };
+export type TaskNotificationIndex = Record<TaskNotificationType, TaskNotificationByPlanetId>;
 
 export interface ClientModelData extends ModelBase {
   clientTradingCenter: ClientTradingCenter;

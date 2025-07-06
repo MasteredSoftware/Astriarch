@@ -12,7 +12,7 @@ export class Grid {
   quadrants: GridRect[];
   hexes: GridHex[];
 
-  hexByMidPoint: { [T in string]: GridHex } = {}; // indexed by x.y
+  hexByMidPoint: Record<string, GridHex> = {}; // indexed by x.y
 
   constructor(width: number, height: number, options: GameOptions) {
     this.quadrants = [];
@@ -50,37 +50,37 @@ export class Grid {
 
     //build sub-quadrants for each quadrant
     for (let q = 0; q < this.quadrants.length; q++) {
-      let r = this.quadrants[q];
+      const r = this.quadrants[q];
 
-      let subWidth = r.width / 2.0;
-      let subHeight = r.height / 2.0;
+      const subWidth = r.width / 2.0;
+      const subHeight = r.height / 2.0;
       //insert for the corner sub-quadrants
       //this will prefer this sub-quadrant for the home planet
 
-      let r0Sub = new GridRect(r.x, r.y, subWidth, subHeight);
+      const r0Sub = new GridRect(r.x, r.y, subWidth, subHeight);
       r.children.push(r0Sub);
 
-      let r1Sub = new GridRect(r.x + subWidth, r.y, subWidth, subHeight);
+      const r1Sub = new GridRect(r.x + subWidth, r.y, subWidth, subHeight);
       if (q == 1) r.children.splice(0, 0, r1Sub);
       else r.children.push(r1Sub);
 
-      let r2Sub = new GridRect(r.x + subWidth, r.y + subHeight, subWidth, subHeight);
+      const r2Sub = new GridRect(r.x + subWidth, r.y + subHeight, subWidth, subHeight);
       if (q == 2) r.children.splice(0, 0, r2Sub);
       else r.children.push(r2Sub);
 
-      let r3Sub = new GridRect(r.x, r.y + subHeight, subWidth, subHeight);
+      const r3Sub = new GridRect(r.x, r.y + subHeight, subWidth, subHeight);
       if (q == 3) r.children.splice(0, 0, r3Sub);
       else r.children.push(r3Sub);
     }
 
     //setup a dictionary for use later for assigning the Y CoOrd
-    let hexagonsByXCoOrd: { [T in number]: GridHex[] } = {};
+    const hexagonsByXCoOrd: Record<number, GridHex[]> = {};
 
-    let galaxySizeMultiplier = Grid.galaxySizeOptionToHexSizeMultiplier(width, options.galaxySize);
+    const galaxySizeMultiplier = Grid.galaxySizeOptionToHexSizeMultiplier(width, options.galaxySize);
 
-    let hexWidth = HexProperties.WIDTH * galaxySizeMultiplier;
-    let hexHeight = HexProperties.HEIGHT * galaxySizeMultiplier;
-    let hexSide = HexProperties.SIDE * galaxySizeMultiplier;
+    const hexWidth = HexProperties.WIDTH * galaxySizeMultiplier;
+    const hexHeight = HexProperties.HEIGHT * galaxySizeMultiplier;
+    const hexSide = HexProperties.SIDE * galaxySizeMultiplier;
 
     let row = 0;
     for (y = 0.0; y + hexHeight <= height; y += hexHeight / 2) {
@@ -94,7 +94,7 @@ export class Grid {
       }
 
       for (x = offset; x + hexWidth <= width; x += hexWidth + hexSide) {
-        let hexData = { id: LETTERS[row] + (colId + 1), x, y, width: hexWidth, height: hexHeight, side: hexSide };
+        const hexData = { id: LETTERS[row] + (colId + 1), x, y, width: hexWidth, height: hexHeight, side: hexSide };
         h = new GridHex(hexData);
         h.pathCoOrdX = colId; //the column is the x coordinate of the hex, for the y coordinate we need to get more fancy
         this.hexes.push(h);
@@ -148,10 +148,10 @@ export class Grid {
     if (galaxySize === GalaxySizeOption.LARGE) {
       return 1;
     }
-    let hexesInRow = galaxySize == GalaxySizeOption.MEDIUM ? 5 : galaxySize == GalaxySizeOption.SMALL ? 4 : 3;
+    const hexesInRow = galaxySize == GalaxySizeOption.MEDIUM ? 5 : galaxySize == GalaxySizeOption.SMALL ? 4 : 3;
 
     //calculate hex multiplier
-    let multiplier = hexesInRow * HexProperties.WIDTH + hexesInRow * HexProperties.SIDE + HexProperties.X;
+    const multiplier = hexesInRow * HexProperties.WIDTH + hexesInRow * HexProperties.SIDE + HexProperties.X;
     return width / multiplier;
   }
 
@@ -169,8 +169,8 @@ export class Grid {
   public static getHexDistance(h1: GridHex, h2: GridHex) {
     //a good explanation of this calc can be found here:
     //http://playtechs.blogspot.com/2007/04/hex-grids.html
-    let deltaX = h1.pathCoOrdX! - h2.pathCoOrdX!;
-    let deltaY = h1.pathCoOrdY! - h2.pathCoOrdY!;
+    const deltaX = h1.pathCoOrdX! - h2.pathCoOrdX!;
+    const deltaY = h1.pathCoOrdY! - h2.pathCoOrdY!;
     return (Math.abs(deltaX) + Math.abs(deltaY) + Math.abs(deltaX - deltaY)) / 2;
   }
 
@@ -232,8 +232,8 @@ export class GridHex {
     this.data = data;
     this.points = [];
     const { x, y, width, height, side } = data;
-    let x1 = (width - side) / 2;
-    let y1 = height / 2;
+    const x1 = (width - side) / 2;
+    const y1 = height / 2;
 
     this.points.push({ x: x1 + x, y });
     this.points.push({ x: x1 + side + x, y });
@@ -270,8 +270,8 @@ export class GridHex {
       let i,
         j = 0;
       for (i = 0, j = this.points.length - 1; i < this.points.length; j = i++) {
-        let iP = this.points[i];
-        let jP = this.points[j];
+        const iP = this.points[i];
+        const jP = this.points[j];
         if (
           ((iP.y <= p.y && p.y < jP.y) || (jP.y <= p.y && p.y < iP.y)) &&
           //((iP.y > p.y) != (jP.y > p.y))

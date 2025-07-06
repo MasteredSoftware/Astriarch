@@ -26,8 +26,8 @@ const assertPointsBasedOnGameOptions = (
   const { modelData } = testGameData.gameModel;
   const [player] = modelData.players;
   const ownedPlanets = ClientGameModel.getOwnedPlanets(player.ownedPlanetIds, modelData.planets);
-  var points = GameController.calculateEndGamePoints(modelData, player, ownedPlanets, playerWins);
-  expect(points).toEqual(expectedPoints);
+  const calculatedPoints = GameController.calculateEndGamePoints(modelData, player, ownedPlanets, playerWins);
+  expect(calculatedPoints).toEqual(expectedPoints);
 };
 
 describe("GameController", () => {

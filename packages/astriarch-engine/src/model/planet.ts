@@ -79,7 +79,7 @@ export interface PlanetData extends ClientPlanet {
   type: PlanetType;
   population: Citizen[];
   buildQueue: PlanetProductionItemData[];
-  builtImprovements: { [T in PlanetImprovementType]: number };
+  builtImprovements: Record<PlanetImprovementType, number>;
   maxImprovements: number;
   resources: PlanetResourceData;
   planetaryFleet: FleetData;

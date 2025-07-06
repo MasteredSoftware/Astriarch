@@ -34,7 +34,7 @@ export interface ResearchTypeProgress {
   data: ResearchTypeProgressData;
 }
 
-export type ResearchProgressByType = { [T in ResearchType]: ResearchTypeProgress };
+export type ResearchProgressByType = Record<ResearchType, ResearchTypeProgress>;
 
 export interface ResearchData {
   researchProgressByType: ResearchProgressByType;

@@ -10,5 +10,5 @@ export interface NavigationTabSvgProps {
 export const NavigationTabSvg = (props: NavigationTabSvgProps) => {
   const { selected, onClick } = props;
   const component = selected ? NavigationTabSvgSelected : NavigationTabSvgUnselected;
-  return <Box css={{ position: "absolute", top: 0, left: 0 }}>{component({onClick})}</Box>;
+  return <Box css={{ position: "absolute", top: 0, left: 0 }}>{component({ onClick })}</Box>;
 };

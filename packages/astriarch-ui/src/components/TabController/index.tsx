@@ -16,9 +16,14 @@ const TabController: React.FC<TabControllerProps> = ({ children, tabs, size, ...
   return (
     <Box {...rest} position={"relative"}>
       <Tabs variant="unstyled" defaultIndex={tabIndex} onChange={(index) => setTabIndex(index)}>
-        <TabList border={'none'}>
+        <TabList border={"none"}>
           {tabs.map((tab, i) => (
-            <Tab key={`tab-${i}`} label={tab.label} selected={i === tabIndex} zIndex={i === tabIndex ? tabs.length : tabs.length - i} />
+            <Tab
+              key={`tab-${i}`}
+              label={tab.label}
+              selected={i === tabIndex}
+              zIndex={i === tabIndex ? tabs.length : tabs.length - i}
+            />
           ))}
         </TabList>
         <TabControllerSvg size={size || "sm"} />
@@ -28,7 +33,7 @@ const TabController: React.FC<TabControllerProps> = ({ children, tabs, size, ...
           ))}
         </TabPanels>
       </Tabs>
-      
+
       {children}
     </Box>
   );

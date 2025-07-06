@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
 
 import TabController from "./index";
 
@@ -19,31 +19,41 @@ type Story = StoryObj<typeof TabController>;
 export const Primary: Story = {
   // More on args: https://storybook.js.org/docs/react/writing-stories/args
   args: {
-    tabs: [{label: "TabController"}],
+    tabs: [{ label: "TabController" }],
   },
 };
 
-const children1 = (<p>Test Panel Content 1</p>);
-const children2 = (<p>Test Panel Content 2</p>);
-const children3 = (<p>Test Panel Content 3</p>);
+const children1 = <p>Test Panel Content 1</p>;
+const children2 = <p>Test Panel Content 2</p>;
+const children3 = <p>Test Panel Content 3</p>;
 
 export const Large: Story = {
   args: {
     size: "lg",
-    tabs: [{label: "Large", children: children1}, {label: "Tab1", children: children2}, {label: "Tab2", children: children3}],
+    tabs: [
+      { label: "Large", children: children1 },
+      { label: "Tab1", children: children2 },
+      { label: "Tab2", children: children3 },
+    ],
   },
 };
 
 export const Medium: Story = {
   args: {
     size: "md",
-    tabs: [{label: "Medium", children: children1}, {label: "Tab", children: children2}],
+    tabs: [
+      { label: "Medium", children: children1 },
+      { label: "Tab", children: children2 },
+    ],
   },
 };
 
 export const Small: Story = {
   args: {
     size: "sm",
-    tabs: [{label: "Small", children: children1}, {label: "Tab", children: children2}],
+    tabs: [
+      { label: "Small", children: children1 },
+      { label: "Tab", children: children2 },
+    ],
   },
 };

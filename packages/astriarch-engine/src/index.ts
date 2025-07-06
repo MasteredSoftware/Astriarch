@@ -77,3 +77,4 @@ export const getPlayerTotalPopulation = (player: PlayerData, planetById: PlanetB
 
 // TODO: decide what the engine should actually export
 export * from "./engine";
+export * from "./model";

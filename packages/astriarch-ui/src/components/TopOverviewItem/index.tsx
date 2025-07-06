@@ -7,16 +7,18 @@ export interface TopOverviewItemProps {
   children?: React.ReactNode;
   amount: number;
   amountPerTurn?: number;
-  type: 'population' | 'food' | 'energy' | 'research' | 'ore' | 'iridium';
+  type: "population" | "food" | "energy" | "research" | "ore" | "iridium";
   onClick?: () => void;
 }
 
 const TopOverviewItem: React.FC<TopOverviewItemProps> = (props) => {
-  const { children, amount, amountPerTurn, type,  ...rest } = props;
+  const { children, amount, amountPerTurn, type, ...rest } = props;
   const amountFormatted = Math.floor(amount);
   const amountPerTurnFormatted = amountPerTurn ? amountPerTurn.toFixed(1) : null;
   const amountPerTurnSign = amountPerTurn ? (amountPerTurn > 0 ? "+" : "") : "";
-  const amountContent = amountPerTurn ? `${amountFormatted}  ${amountPerTurnSign}${amountPerTurnFormatted}` : amountFormatted;
+  const amountContent = amountPerTurn
+    ? `${amountFormatted}  ${amountPerTurnSign}${amountPerTurnFormatted}`
+    : amountFormatted;
   const additionalTextCss = {
     color: "#FFF",
     fontSize: "18px",
@@ -26,12 +28,12 @@ const TopOverviewItem: React.FC<TopOverviewItemProps> = (props) => {
   };
 
   return (
-    <Box {...rest} position={"relative"} display={'flex'} css={{ zIndex: 100}}>
+    <Box {...rest} position={"relative"} display={"flex"} css={{ zIndex: 100 }}>
       <IconImage type={type} size={32} />
       <Text css={{ marginLeft: 4, display: "inline-block", ...additionalTextCss }} verticalAlign={"bottom"}>
         {amountContent}
       </Text>
-      
+
       {children}
     </Box>
   );

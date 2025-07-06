@@ -22,7 +22,7 @@ export interface ResearchTypeData {
   researchLevelCosts: number[];
 }
 
-export type ResearchTypeIndex = { [T in ResearchType]: ResearchTypeData };
+export type ResearchTypeIndex = Record<ResearchType, ResearchTypeData>;
 
 export class Research {
   public static researchTypeIndex: ResearchTypeIndex = Research.constructResearchTypeIndex();
@@ -132,7 +132,7 @@ export class Research {
   }
 
   public static getResearchDataByStarshipHullType(hullType: StarShipType, player: PlayerData) {
-    var researchData;
+    let researchData;
     switch (hullType) {
       case StarShipType.SystemDefense:
         researchData = this.getResearchData(player, ResearchType.NEW_SHIP_TYPE_DEFENDER);
@@ -171,8 +171,8 @@ export class Research {
         totalResearch += planet.resources.research;
         planet.resources.research = 0;
       });
-      let rtpInQueue = mainPlayer.research.researchProgressByType[mainPlayer.research.researchTypeInQueue];
-      let levelIncrease = Research.setResearchPointsCompleted(
+      const rtpInQueue = mainPlayer.research.researchProgressByType[mainPlayer.research.researchTypeInQueue];
+      const levelIncrease = Research.setResearchPointsCompleted(
         rtpInQueue,
         rtpInQueue.researchPointsCompleted + totalResearch
       );
@@ -192,7 +192,7 @@ export class Research {
   }
 
   public static researchProgressToString(researchProgress: ResearchTypeProgress, nextLevel?: number) {
-    let level = researchProgress.currentResearchLevel + (nextLevel ? 2 : 1);
+    const level = researchProgress.currentResearchLevel + (nextLevel ? 2 : 1);
     let defaultName = Research.researchProgressFriendlyName(researchProgress);
     switch (researchProgress.type) {
       case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
@@ -270,12 +270,12 @@ export class Research {
   }
 
   public static setResearchPointsCompleted(researchProgress: ResearchTypeProgress, pointsCompleted: number): number {
-    let originalLevel = researchProgress.currentResearchLevel;
+    const originalLevel = researchProgress.currentResearchLevel;
     researchProgress.researchPointsCompleted = pointsCompleted;
     const { researchLevelCosts } = Research.researchTypeIndex[researchProgress.type];
     //set current level based on completed points
     for (let i = 0; i < researchLevelCosts.length; i++) {
-      let researchCost = researchLevelCosts[i];
+      const researchCost = researchLevelCosts[i];
       if (researchProgress.researchPointsCompleted >= researchCost) {
         researchProgress.currentResearchLevel = i;
       } else {
@@ -376,8 +376,8 @@ export class Research {
   }
 
   private static getTotalResearchLevelCosts(baseValue: number) {
-    let totalResearchLevelCosts = [];
-    let researchLevelCosts = Research.getResearchLevelCosts(baseValue);
+    const totalResearchLevelCosts = [];
+    const researchLevelCosts = Research.getResearchLevelCosts(baseValue);
     let accum = 0;
     for (let i = 0; i <= MAX_RESEARCH_LEVEL; i++) {
       accum += researchLevelCosts[i];
@@ -390,9 +390,9 @@ export class Research {
     baseValue = baseValue || 1;
     let curr = baseValue;
     let prev = 0;
-    let levelCosts = [];
+    const levelCosts = [];
     for (let i = 0; i <= MAX_RESEARCH_LEVEL; i++) {
-      let temp = curr;
+      const temp = curr;
       curr += prev;
       levelCosts.push(curr);
       prev = temp;

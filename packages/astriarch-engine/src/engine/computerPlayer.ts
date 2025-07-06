@@ -15,7 +15,7 @@ import { Player } from "./player";
 import { Research } from "./research";
 import { TradingCenter } from "./tradingCenter";
 
-export type PlanetResourcesPerTurn = { [T in number]: PlanetPerTurnResourceGeneration };
+export type PlanetResourcesPerTurn = Record<number, PlanetPerTurnResourceGeneration>;
 
 export class ComputerPlayer {
   private static onComputerSentFleet(fleet: FleetData) {
@@ -60,7 +60,7 @@ export class ComputerPlayer {
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[]
   ) {
-    const planetPopulationWorkerTypes: { [T in number]: PopulationAssignments } = {};
+    const planetPopulationWorkerTypes: Record<number, PopulationAssignments> = {};
     const planetResourcesPerTurn: PlanetResourcesPerTurn = {};
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
     const allPlanets: PlanetData[] = []; //this list will be for sorting
@@ -452,7 +452,7 @@ export class ComputerPlayer {
       let recommendedFarms = 0;
       let recommendedMines = 0;
       let recommendedFactories = 1;
-      let recommendedColonies = 1;
+      const recommendedColonies = 1;
 
       const farmCount = Planet.builtAndBuildQueueImprovementTypeCount(p, PlanetImprovementType.Farm);
       const mineCount = Planet.builtAndBuildQueueImprovementTypeCount(p, PlanetImprovementType.Mine);

@@ -104,7 +104,7 @@ export class TradingCenter {
     } else if (resource.amount <= 0) {
       resource.currentPrice = resource.priceMax;
     } else {
-      let priceChangePerUnit = (resource.priceMax - resource.priceMin) / resource.desiredAmount;
+      const priceChangePerUnit = (resource.priceMax - resource.priceMin) / resource.desiredAmount;
       resource.currentPrice = resource.priceMin + priceChangePerUnit * (resource.desiredAmount - resource.amount);
     }
     return resource;
@@ -205,8 +205,8 @@ export class TradingCenter {
     //go through the current trades and deduct from the stockpile for buy orders and add to the stockpile for sell orders
     const tc = gameModel.modelData.tradingCenter;
 
-    const playersById: { [T in string]: PlayerData } = {};
-    const executedTradeResultsByPlayerId: { [T in string]: { trade: TradeData; results: ExecuteTradeResults }[] } = {};
+    const playersById: Record<string, PlayerData> = {};
+    const executedTradeResultsByPlayerId: Record<string, { trade: TradeData; results: ExecuteTradeResults }[]> = {};
     for (const p of gameModel.modelData.players) {
       playersById[p.id] = p;
       executedTradeResultsByPlayerId[p.id] = [];
@@ -215,7 +215,7 @@ export class TradingCenter {
     for (const trade of tc.currentTrades) {
       const player = playersById[trade.playerId];
       if (player) {
-        let planet = planetById[trade.planetId];
+        const planet = planetById[trade.planetId];
         if (planet) {
           //{executed:false, foodAmount:0, oreAmount:0, iridiumAmount:0, tradeGoldAmount:0}
           const results = TradingCenter.executeTrade(gameModel, planetById, player, planet, trade);
@@ -260,7 +260,7 @@ export class TradingCenter {
         }
       }
       if (resourcesBought.tradeCount || resourcesSold.tradeCount) {
-        let tradeCount = resourcesBought.tradeCount + resourcesSold.tradeCount;
+        const tradeCount = resourcesBought.tradeCount + resourcesSold.tradeCount;
         let message = tradeCount > 1 ? tradeCount + " Trades Executed," : tradeCount + " Trade Executed,";
         if (resourcesBought.energySpent) {
           message +=
@@ -286,7 +286,7 @@ export class TradingCenter {
       }
 
       if (resourcesNotBought.tradeCount || resourcesNotSold.tradeCount) {
-        let tradeCount = resourcesNotBought.tradeCount + resourcesNotSold.tradeCount;
+        const tradeCount = resourcesNotBought.tradeCount + resourcesNotSold.tradeCount;
         let message = tradeCount > 1 ? tradeCount + " Trades Not Executed," : tradeCount + " Trade Not Executed,";
         if (resourcesNotBought.energySpent) {
           message +=

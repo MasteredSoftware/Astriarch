@@ -63,7 +63,7 @@ export class Player {
     const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } = Fleet.countStarshipsByType(
       planet.planetaryFleet
     );
-    let lastKnownFleet = Fleet.generateFleetWithShipCount(
+    const lastKnownFleet = Fleet.generateFleetWithShipCount(
       defenders,
       scouts,
       destroyers,
@@ -72,7 +72,7 @@ export class Player {
       spaceplatforms,
       planet.boundingHexMidPoint
     );
-    let lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
+    const lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
     p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
   }
 
@@ -217,7 +217,7 @@ export class Player {
 
     mainPlayer.lastTurnFoodNeededToBeShipped = 0;
 
-    const foodDeficitByPlanet: { [T in number]: number } = {}; //for calculating starvation later
+    const foodDeficitByPlanet: Record<number, number> = {}; //for calculating starvation later
     const foodSurplusPlanets: PlanetData[] = []; //for costing shipments and starvation later
 
     //calculate surpluses and deficits

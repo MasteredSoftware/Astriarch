@@ -36,11 +36,11 @@ export interface PlanetPerTurnResourceGeneration {
   amountNextWorkerPerTurn: PlanetResourceData;
 }
 
-export type PopulationAssignments = {
+export interface PopulationAssignments {
   farmers: number;
   miners: number;
   builders: number;
-};
+}
 
 export interface PopulationByContentment {
   protesting: Citizen[];
@@ -173,7 +173,7 @@ export class Planet {
     let iridiumNeeded = iridium - PlanetResources.spendIridiumAsPossible(resources, iridium);
 
     if (energyNeeded !== 0 || foodNeeded !== 0 || oreNeeded !== 0 || iridiumNeeded !== 0) {
-      let ownedPlanets: PlanetData[] = [];
+      const ownedPlanets: PlanetData[] = [];
       for (const id of player.ownedPlanetIds) {
         const ownedPlanet = planetById[id];
         if (planet.id != ownedPlanet.id) {
@@ -181,7 +181,7 @@ export class Planet {
         }
       }
       //get closest planets to source resources for, we don't charge for shipping ore or iridium
-      let planetDistanceComparer = new PlanetDistanceComparer(grid, planet);
+      const planetDistanceComparer = new PlanetDistanceComparer(grid, planet);
       ownedPlanets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
 
       for (const p of ownedPlanets) {
@@ -258,11 +258,11 @@ export class Planet {
 
   public static getTaxRevenueAtMaxPercent(p: PlanetData, owner: PlayerData) {
     //determine tax revenue (energy credits)
-    let baseAmountPerPopPerTurn = p.id === owner.homePlanetId ? 2.0 : 1.0;
+    const baseAmountPerPopPerTurn = p.id === owner.homePlanetId ? 2.0 : 1.0;
     let amountPerTurn = p.population.length * baseAmountPerPopPerTurn;
-    let colonyCount = p.builtImprovements[PlanetImprovementType.Colony];
+    const colonyCount = p.builtImprovements[PlanetImprovementType.Colony];
     if (colonyCount) {
-      let colonyBoost = Research.getResearchBoostForEfficiencyImprovement(
+      const colonyBoost = Research.getResearchBoostForEfficiencyImprovement(
         ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES,
         owner
       );
@@ -341,9 +341,9 @@ export class Planet {
     rpt.amountPerTurn.production = rpt.baseAmountPerWorkerPerTurn.production * builders;
 
     if (Planet.builtImprovementCount(p) > 0) {
-      let farmCount = p.builtImprovements[PlanetImprovementType.Farm];
-      let mineCount = p.builtImprovements[PlanetImprovementType.Mine];
-      let factoryCount = p.builtImprovements[PlanetImprovementType.Factory];
+      const farmCount = p.builtImprovements[PlanetImprovementType.Farm];
+      const mineCount = p.builtImprovements[PlanetImprovementType.Mine];
+      const factoryCount = p.builtImprovements[PlanetImprovementType.Factory];
 
       let researchEffectiveness = null;
       if (farmCount > 0) {

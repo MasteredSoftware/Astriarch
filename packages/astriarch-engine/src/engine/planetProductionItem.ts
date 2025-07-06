@@ -104,11 +104,11 @@ export class PlanetProductionItem {
 
     const baseShipAdvantage = Fleet.getStarshipStandardAdvantageByType(type);
     if (customShipData && baseShipAdvantage) {
-      let baseShipAdvantageFactor = baseShipAdvantage.advantageAgainst - (baseShipAdvantage.disadvantageAgainst - 1);
+      const baseShipAdvantageFactor = baseShipAdvantage.advantageAgainst - (baseShipAdvantage.disadvantageAgainst - 1);
       //increase cost based on advantages/disadvantages
-      let advantageFactorDifference =
+      const advantageFactorDifference =
         customShipData.advantageAgainst - (customShipData.disadvantageAgainst - 1) - baseShipAdvantageFactor;
-      let costMultiplier = Math.max(1.0, 1 + advantageFactorDifference / 10);
+      const costMultiplier = Math.max(1.0, 1 + advantageFactorDifference / 10);
 
       base.baseProductionCost = Math.ceil(base.baseProductionCost * costMultiplier);
       base.oreCost = Math.ceil(base.oreCost * costMultiplier);

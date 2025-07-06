@@ -8,9 +8,9 @@ import { PlanetResources } from "./planetResources";
 export type Subscription = (playerId: string, enList: EventNotification[]) => void;
 
 export class Events {
-  private static subscribers: { [T in string]: Subscription } = {}; // key is player id
+  private static subscribers: Record<string, Subscription> = {}; // key is player id
 
-  private static eventNotificationQueue: { [T in string]: EventNotification[] } = {};
+  private static eventNotificationQueue: Record<string, EventNotification[]> = {};
 
   public static constructEvent(
     playerId: string,
