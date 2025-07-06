@@ -446,7 +446,7 @@ export class Fleet {
       accum[key].custom = currShips.filter((s) => !!s.customShipData).length;
       accum[key].standard = currShips.length - accum[key].custom;
       return accum;
-    }, {} as { [T in StarShipType]: { standard: Number; custom: number } });
+    }, {} as { [T in StarShipType]: { standard: number; custom: number } });
 
     const fleetSummary = Object.entries(customCountsByType).reduce((accum, [currType, currCounts]) => {
       const key = currType as unknown as StarShipType;
