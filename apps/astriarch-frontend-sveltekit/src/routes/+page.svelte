@@ -42,6 +42,14 @@
       ore: 670,
       iridium: 45,
       production: 125
+    },
+    perTurn: {
+      food: 45,
+      energy: -20,
+      research: 125,
+      ore: 78,
+      iridium: 5,
+      production: 35
     }
   };
   
@@ -78,9 +86,9 @@
   ];
 </script>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-900 to-black text-white p-8">
+<div class="min-h-screen bg-gradient-to-b from-slate-900 to-black text-white p-8 font-orbitron">
   <div class="max-w-6xl mx-auto">
-    <h1 class="text-4xl font-bold text-center mb-8 text-cyan-400">
+    <h1 class="text-4xl font-bold text-center mb-8 text-cyan-400 font-orbitron">
       Astriarch - Ruler of the Stars
     </h1>
 
@@ -142,6 +150,116 @@
             </div>
           </div>
           <AstriarchButton label="Upgrade" size="md" variant="outline" />
+        </div>
+      </div>
+
+      <!-- TopOverview Component Demo -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">TopOverview Component</h3>
+        <div class="flex justify-center">
+          <TopOverview resourceData={resourceData} population={1250000} />
+        </div>
+      </div>
+
+      <!-- Individual TopOverviewItem Demo -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">Individual TopOverviewItem Components</h3>
+        <div class="flex justify-center gap-6 flex-wrap">
+          <TopOverviewItem 
+            type="food" 
+            amount={resourceData.total.food} 
+            amountPerTurn={45} 
+            onClick={() => console.log("Food clicked")}
+          />
+          <TopOverviewItem 
+            type="energy" 
+            amount={resourceData.total.energy} 
+            amountPerTurn={-20} 
+          />
+          <TopOverviewItem 
+            type="research" 
+            amount={resourceData.total.research} 
+            amountPerTurn={125} 
+          />
+          <TopOverviewItem 
+            type="ore" 
+            amount={resourceData.total.ore} 
+            amountPerTurn={78} 
+          />
+          <TopOverviewItem 
+            type="iridium" 
+            amount={resourceData.total.iridium} 
+            amountPerTurn={5} 
+          />
+        </div>
+      </div>
+
+      <!-- Text and Box Components Demo -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
+          <h3 class="text-xl font-bold text-cyan-400 mb-4">Text Component</h3>
+          <div class="space-y-4">
+            <Text style="color: #FFF; font-size: 24px; font-weight: bold;">
+              Large Bold Title
+            </Text>
+            <Text style="color: #00FFFF; font-size: 18px; font-weight: 600;">
+              Cyan Subtitle Text
+            </Text>
+            <Text style="color: #94A3B8; font-size: 14px; line-height: 1.6;">
+              This is regular body text that demonstrates the Text component's ability to render styled content with proper spacing and readability.
+            </Text>
+            <Text style="color: #FDE047; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">
+              Small Caps Warning Text
+            </Text>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
+          <h3 class="text-xl font-bold text-cyan-400 mb-4">Box Component</h3>
+          <div class="space-y-4">
+            <Box style="background: linear-gradient(135deg, #1e293b, #0f172a); padding: 16px; border-radius: 8px; border: 1px solid #00FFFF;">
+              <Text style="color: #FFF; font-size: 16px; font-weight: 600;">
+                Styled Box Container
+              </Text>
+              <Text style="color: #94A3B8; font-size: 14px; margin-top: 8px;">
+                This Box component can contain any content and be styled with custom CSS.
+              </Text>
+            </Box>
+            
+            <Box style="background: #1f2937; padding: 12px; border-radius: 6px; border-left: 4px solid #10b981;">
+              <Text style="color: #10b981; font-size: 14px; font-weight: 600;">
+                Success Message Box
+              </Text>
+            </Box>
+            
+            <Box style="background: #7c2d12; padding: 12px; border-radius: 6px; border-left: 4px solid #ef4444;">
+              <Text style="color: #fca5a5; font-size: 14px; font-weight: 600;">
+                Warning Message Box
+              </Text>
+            </Box>
+          </div>
+        </div>
+      </div>
+
+      <!-- Individual Tab Components Demo -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">Individual Tab Components</h3>
+        <div class="flex justify-center space-x-4">
+          <Tab 
+            label="Fleet Management" 
+            selected={true}
+            onclick={() => console.log("Fleet tab clicked")}
+          />
+          <Tab 
+            label="Research Lab" 
+            selected={false}
+            onclick={() => console.log("Research tab clicked")}
+          />
+          <Tab 
+            label="Planet Overview" 
+            selected={false}
+            onclick={() => console.log("Planet tab clicked")}
+          />
         </div>
       </div>
     </div>

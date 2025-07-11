@@ -117,5 +117,31 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Orbitron', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Default font family for all elements */
+  html {
+    font-family: 'Orbitron', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Ensure buttons and inputs use Orbitron */
+  button, input, select, textarea {
+    font-family: 'Orbitron', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Headings use Orbitron with appropriate weights */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Orbitron', system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+  }
+  
+  /* Utility classes for font family */
+  .font-orbitron {
+    font-family: 'Orbitron', system-ui, -apple-system, sans-serif;
+  }
+  
+  .font-game {
+    font-family: 'Orbitron', system-ui, -apple-system, sans-serif;
   }
 }
