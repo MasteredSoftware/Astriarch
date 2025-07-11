@@ -1,5 +1,6 @@
 <script lang="ts">
   import TopOverviewItem from '../top-overview-item/TopOverviewItem.svelte';
+  import TopOverviewFrameSvg from './TopOverviewFrameSvg.svelte';
   import type { ResourceData } from '../types.js';
 
   export let resourceData: ResourceData;
@@ -40,5 +41,11 @@
     amount={resourceData.total.iridium}
     amountPerTurn={resourceData.perTurn.iridium}
   />
+  
+  <!-- SVG Background Frame -->
+  <div class="absolute top-0 left-0 pointer-events-none" style="z-index: 2;">
+    <TopOverviewFrameSvg />
+  </div>
+  
   <slot />
 </div>

@@ -25,6 +25,7 @@
     Dialog as AstriarchDialog,
     Notification,
     NavigationController,
+    NavigationTab,
     TabController,
     Tab
   } from "$lib/components/astriarch";
@@ -238,6 +239,28 @@
               </Text>
             </Box>
           </div>
+        </div>
+      </div>
+
+      <!-- Navigation Tab Components Demo -->
+      <div class="mb-8">
+        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">Navigation Tab Components</h3>
+        <div class="flex justify-center space-x-2 bg-black/60 p-4 rounded-lg">
+          <NavigationTab 
+            label="Fleet Command" 
+            selected={true}
+            onclick={() => console.log('Fleet Command clicked')}
+          />
+          <NavigationTab 
+            label="Planet Overview" 
+            selected={false}
+            onclick={() => console.log('Planet Overview clicked')}
+          />
+          <NavigationTab 
+            label="Research Lab" 
+            selected={false}
+            onclick={() => console.log('Research Lab clicked')}
+          />
         </div>
       </div>
 

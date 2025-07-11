@@ -21,6 +21,7 @@ export { default as Notification } from './notification/Notification.svelte';
 
 // Navigation and Tab components
 export { default as NavigationController } from './navigation-controller/NavigationController.svelte';
+export { default as NavigationTab } from './navigation-tab/NavigationTab.svelte';
 export { default as TabController } from './tab-controller/TabController.svelte';
 export { default as Tab } from './tab/Tab.svelte';
 
