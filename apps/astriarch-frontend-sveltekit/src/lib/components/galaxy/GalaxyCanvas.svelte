@@ -1,10 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import Konva from 'konva';
   import { clientGameModel, gameModel } from '$lib/stores/gameStore';
-  import { DrawnPlanet } from './DrawnPlanet';
-  import { DrawnFleet } from './DrawnFleet';
   import type { ClientModelData, PlanetHappinessType, PlanetImprovementType, Grid } from 'astriarch-engine';
+  import type Konva from 'konva';
+
+  // Only import Konva and canvas components on the client side
+  let KonvaLib: typeof Konva;
+  let DrawnPlanet: any;
+  let DrawnFleet: any;
 
   let canvasContainer: HTMLDivElement;
   let stage: Konva.Stage;
@@ -12,15 +15,30 @@
   let fleetLayer: Konva.Layer;
   let uiLayer: Konva.Layer;
   
-  let drawnPlanets: Map<number, DrawnPlanet> = new Map();
-  let drawnFleets: Map<number, DrawnFleet> = new Map();
+  let drawnPlanets: Map<number, any> = new Map();
+  let drawnFleets: Map<number, any> = new Map();
   let currentGrid: Grid | null = null;
   
   let animationFrameId: number;
+  let isInitialized = false;
 
-  onMount(() => {
-    initializeCanvas();
-    startRenderLoop();
+  onMount(async () => {
+    // Dynamically import Konva and canvas components only on client side
+    try {
+      const konvaModule = await import('konva');
+      const drawnPlanetModule = await import('./DrawnPlanet');
+      const drawnFleetModule = await import('./DrawnFleet');
+      
+      KonvaLib = konvaModule.default;
+      DrawnPlanet = drawnPlanetModule.DrawnPlanet;
+      DrawnFleet = drawnFleetModule.DrawnFleet;
+      
+      initializeCanvas();
+      startRenderLoop();
+      isInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize GalaxyCanvas:', error);
+    }
   });
 
   onDestroy(() => {
@@ -31,17 +49,22 @@
   });
 
   function initializeCanvas() {
+    console.log('Initializing GalaxyCanvas...');
+    
     // Get galaxy dimensions from the grid when available
     const gm = $gameModel;
     const galaxyWidth = gm?.grid ? 621 : 800; // Default fallback
     const galaxyHeight = gm?.grid ? 480 : 600; // Default fallback
     
+    console.log('Galaxy dimensions:', { galaxyWidth, galaxyHeight, hasGrid: !!gm?.grid });
+    
     if (gm?.grid) {
       currentGrid = gm.grid;
+      console.log('Grid loaded with', gm.grid.hexes.length, 'hexes');
     }
 
     // Create Konva stage with proper galaxy dimensions
-    stage = new Konva.Stage({
+    stage = new KonvaLib.Stage({
       container: canvasContainer,
       width: window.innerWidth - 300, // Account for UI panels
       height: window.innerHeight - 200, // Account for top bar and navigation
@@ -49,9 +72,9 @@
     });
 
     // Create layers (back to front rendering order)
-    galaxyLayer = new Konva.Layer();
-    fleetLayer = new Konva.Layer();
-    uiLayer = new Konva.Layer();
+    galaxyLayer = new KonvaLib.Layer();
+    fleetLayer = new KonvaLib.Layer();
+    uiLayer = new KonvaLib.Layer();
 
     stage.add(galaxyLayer);
     stage.add(fleetLayer);
@@ -74,11 +97,13 @@
 
     // Handle window resize
     window.addEventListener('resize', handleResize);
+    
+    console.log('GalaxyCanvas initialization complete');
   }
 
   function createSpaceBackground(galaxyWidth = 1000, galaxyHeight = 800) {
     // Create background that covers the entire galaxy area
-    const background = new Konva.Rect({
+    const background = new KonvaLib.Rect({
       x: 0,
       y: 0,
       width: galaxyWidth,
@@ -94,7 +119,7 @@
 
     // Add some stars for atmosphere
     for (let i = 0; i < 100; i++) {
-      const star = new Konva.Circle({
+      const star = new KonvaLib.Circle({
         x: Math.random() * galaxyWidth,
         y: Math.random() * galaxyHeight,
         radius: Math.random() * 1.5 + 0.5,
@@ -111,7 +136,7 @@
 
     // Draw hex grid as subtle overlay
     for (const hex of currentGrid.hexes) {
-      const hexShape = new Konva.RegularPolygon({
+      const hexShape = new KonvaLib.RegularPolygon({
         x: hex.midPoint.x,
         y: hex.midPoint.y,
         sides: 6,
@@ -123,7 +148,7 @@
       galaxyLayer.add(hexShape);
 
       // Add hex labels for debugging (optional)
-      const label = new Konva.Text({
+      const label = new KonvaLib.Text({
         x: hex.midPoint.x - 10,
         y: hex.midPoint.y - 5,
         text: hex.data.id,
@@ -151,12 +176,18 @@
   }
 
   function updateGameObjects() {
-    if (!$clientGameModel) return;
+    if (!$clientGameModel) {
+      console.log('No client game model available');
+      return;
+    }
+
+    console.log('Updating game objects...');
 
     // Update grid reference if changed
     const gm = $gameModel;
     if (gm?.grid && currentGrid !== gm.grid) {
       currentGrid = gm.grid;
+      console.log('Grid updated, recreating background');
       // Recreate background with hex grid
       galaxyLayer.destroyChildren();
       const galaxyWidth = 621;
@@ -178,6 +209,11 @@
   function updatePlanets(gameModel: ClientModelData) {
     const allPlanetsToRender = new Set<number>();
 
+    console.log('Updating planets:', { 
+      ownedPlanets: Object.keys(gameModel.mainPlayerOwnedPlanets).length,
+      clientPlanets: gameModel.clientPlanets.length 
+    });
+
     // First, render all owned planets (these have full PlanetData)
     for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
       allPlanetsToRender.add(planet.id);
@@ -185,12 +221,13 @@
       let drawnPlanet = drawnPlanets.get(planet.id);
       
       if (!drawnPlanet) {
-        drawnPlanet = new DrawnPlanet(planet);
+        console.log('Creating new DrawnPlanet for owned planet:', planet.id, planet.name);
+        drawnPlanet = new DrawnPlanet(KonvaLib, planet, gameModel);
         drawnPlanets.set(planet.id, drawnPlanet);
-        galaxyLayer.add(drawnPlanet);
+        galaxyLayer.add(drawnPlanet.group);
       }
       
-      drawnPlanet.updateForGameState(gameModel);
+      drawnPlanet.update(gameModel);
     }
 
     // Then, render known but unowned planets (ClientPlanet data)
@@ -203,6 +240,7 @@
       let drawnPlanet = drawnPlanets.get(clientPlanet.id);
       
       if (!drawnPlanet) {
+        console.log('Creating new DrawnPlanet for client planet:', clientPlanet.id, clientPlanet.name);
         // Convert ClientPlanet to PlanetData with sensible defaults
         const planetData = {
           ...clientPlanet,
@@ -233,19 +271,19 @@
           waypointBoundingHexMidPoint: null
         };
         
-        drawnPlanet = new DrawnPlanet(planetData);
+        drawnPlanet = new DrawnPlanet(KonvaLib, planetData, gameModel);
         drawnPlanets.set(clientPlanet.id, drawnPlanet);
-        galaxyLayer.add(drawnPlanet);
+        galaxyLayer.add(drawnPlanet.group);
       }
       
-      drawnPlanet.updateForGameState(gameModel);
+      drawnPlanet.update(gameModel);
     }
 
     // Clean up planets that are no longer visible
     for (const [planetId, drawnPlanet] of drawnPlanets.entries()) {
       if (!allPlanetsToRender.has(planetId)) {
-        drawnPlanet.remove();
-        drawnPlanet.destroy();
+        drawnPlanet.group.remove();
+        drawnPlanet.group.destroy();
         drawnPlanets.delete(planetId);
       }
     }
@@ -263,18 +301,18 @@
       let drawnFleet = drawnFleets.get(fleetId);
       
       if (!drawnFleet) {
-        drawnFleet = new DrawnFleet(fleet);
+        drawnFleet = new DrawnFleet(KonvaLib, fleet, gameModel);
         drawnFleets.set(fleetId, drawnFleet);
-        fleetLayer.add(drawnFleet);
+        fleetLayer.add(drawnFleet.group);
       }
       
-      drawnFleet.updateForGameState(gameModel);
+      drawnFleet.update(gameModel);
     });
     
     // Remove fleets that are no longer active
     for (const [fleetId, drawnFleet] of drawnFleets.entries()) {
       if (!activeFleetIds.has(fleetId)) {
-        drawnFleet.remove();
+        drawnFleet.group.remove();
         drawnFleet.destroyFleet();
         drawnFleets.delete(fleetId);
       }
@@ -294,9 +332,9 @@
   class="galaxy-canvas w-full h-full bg-black rounded-lg border border-cyan-500/20"
   on:click={handleStageClick}
   on:keydown
-  role="application"
+  role="button"
   tabindex="0"
-  aria-label="Galaxy map"
+  aria-label="Galaxy map - Click to interact with planets and fleets"
 ></div>
 
 <style>

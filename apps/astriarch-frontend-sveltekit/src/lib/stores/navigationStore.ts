@@ -1,8 +1,8 @@
 import { writable } from 'svelte/store';
 
-export type GameView = 'fleet' | 'planets' | 'research' | 'diplomacy';
+export type GameView = 'galaxy' | 'fleet' | 'planets' | 'research' | 'diplomacy';
 
-export const currentView = writable<GameView>('fleet');
+export const currentView = writable<GameView>('galaxy');
 
 export const navigationActions = {
   setView(view: GameView) {

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { browser } from '$app/environment';
   import { 
     gameStarted, 
     notifications, 
@@ -23,8 +24,10 @@
   import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
   import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
   import DiplomacyView from '$lib/components/game-views/DiplomacyView.svelte';
+  import GalaxyCanvas from '$lib/components/galaxy/GalaxyCanvas.svelte';
 
   let navigationItems = [
+    { label: "Galaxy View", onclick: () => navigationActions.setView('galaxy') },
     { label: "Fleet Command", onclick: () => navigationActions.setView('fleet') },
     { label: "Planet Overview", onclick: () => navigationActions.setView('planets') },
     { label: "Research Lab", onclick: () => navigationActions.setView('research') },
@@ -105,28 +108,31 @@
     {#if $gameStarted}
       <!-- Game View -->
       <div class="h-[calc(100vh-200px)] flex flex-col">
-        <!-- Central Game Content Area -->
-        <div class="flex-1 bg-black/20 mx-4 rounded-lg border border-cyan-500/20 overflow-hidden">
+        <!-- Central Game Content Area with Galaxy Canvas as background -->
+        <div class="flex-1 relative mx-4 rounded-lg overflow-hidden">
+          <!-- Galaxy Canvas - Always visible as background (client-side only) -->
+          <div class="absolute inset-0">
+            {#if browser}
+              <GalaxyCanvas />
+            {/if}
+          </div>
+          
+          <!-- Overlay Panels for different views -->
           {#if $currentView === 'fleet'}
-            <FleetCommandView />
+            <div class="absolute top-4 right-4 w-96 max-h-[calc(100%-2rem)] bg-black/80 backdrop-blur-sm border border-cyan-500/40 rounded-lg overflow-hidden">
+              <FleetCommandView />
+            </div>
           {:else if $currentView === 'planets'}
-            <PlanetOverviewView />
+            <div class="absolute top-4 right-4 w-96 max-h-[calc(100%-2rem)] bg-black/80 backdrop-blur-sm border border-cyan-500/40 rounded-lg overflow-hidden">
+              <PlanetOverviewView />
+            </div>
           {:else if $currentView === 'research'}
-            <ResearchLabView />
+            <div class="absolute top-4 right-4 w-96 max-h-[calc(100%-2rem)] bg-black/80 backdrop-blur-sm border border-cyan-500/40 rounded-lg overflow-hidden">
+              <ResearchLabView />
+            </div>
           {:else if $currentView === 'diplomacy'}
-            <DiplomacyView />
-          {:else}
-            <!-- Fallback galaxy map view -->
-            <div class="flex justify-center items-center h-full">
-              <div class="text-center">
-                <Text style="font-size: 24px; color: #00FFFF; margin-bottom: 16px;">
-                  Galaxy Map
-                </Text>
-                <Text style="color: #94A3B8;">
-                  Game canvas will be rendered here<br />
-                  Planets, ships, and strategic overlay
-                </Text>
-              </div>
+            <div class="absolute top-4 right-4 w-96 max-h-[calc(100%-2rem)] bg-black/80 backdrop-blur-sm border border-cyan-500/40 rounded-lg overflow-hidden">
+              <DiplomacyView />
             </div>
           {/if}
         </div>

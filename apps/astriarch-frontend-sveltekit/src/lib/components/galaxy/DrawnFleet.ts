@@ -1,12 +1,19 @@
-import Konva from 'konva';
 import type { FleetData, PlayerData, ClientModelData } from 'astriarch-engine';
+import type Konva from 'konva';
 
 const FLEET_ICON_SIZE = 11;
 const ETA_TEXT_SIZE = 8;
 const TRAVEL_LINE_WIDTH = 1.5;
 
-export class DrawnFleet extends Konva.Group {
+export function createDrawnFleet(KonvaLib: typeof Konva, fleetData: FleetData, gameModel: ClientModelData) {
+  return new DrawnFleet(KonvaLib, fleetData, gameModel);
+}
+
+export class DrawnFleet {
+  private Konva: typeof Konva;
+  public group: Konva.Group;
   private fleetData: FleetData;
+  private gameModel: ClientModelData;
   private owner: PlayerData | null = null;
   
   // Visual elements
@@ -17,26 +24,28 @@ export class DrawnFleet extends Konva.Group {
   // Calculated position properties
   private travelDistancePoint = { x: 0, y: 0 };
 
-  constructor(fleetData: FleetData) {
-    super();
+  constructor(KonvaLib: typeof Konva, fleetData: FleetData, gameModel: ClientModelData) {
+    this.Konva = KonvaLib;
+    this.group = new KonvaLib.Group();
     this.fleetData = fleetData;
+    this.gameModel = gameModel;
     
     this.createVisualElements();
-    this.updateTravelLine();
+    this.update(gameModel);
   }
 
   private createVisualElements() {
     // Travel line from origin to destination
-    this.travelLine = new Konva.Line({
+    this.travelLine = new this.Konva.Line({
       points: [0, 0, 0, 0],
       stroke: 'green',
       strokeWidth: TRAVEL_LINE_WIDTH,
       visible: false
     });
-    this.add(this.travelLine);
+    this.group.add(this.travelLine);
 
     // Fleet icon (starship representation)
-    this.fleetIcon = new Konva.Rect({
+    this.fleetIcon = new this.Konva.Rect({
       x: -FLEET_ICON_SIZE / 2,
       y: -FLEET_ICON_SIZE / 2,
       width: FLEET_ICON_SIZE,
@@ -46,10 +55,10 @@ export class DrawnFleet extends Konva.Group {
       strokeWidth: 1,
       visible: false
     });
-    this.add(this.fleetIcon);
+    this.group.add(this.fleetIcon);
 
     // ETA text showing turns remaining
-    this.etaText = new Konva.Text({
+    this.etaText = new this.Konva.Text({
       x: 8,
       y: -4,
       text: 'ETA',
@@ -59,10 +68,12 @@ export class DrawnFleet extends Konva.Group {
       fill: 'green',
       visible: false
     });
-    this.add(this.etaText);
+    this.group.add(this.etaText);
   }
 
-  public updateForGameState(clientGameModel: ClientModelData) {
+  public update(clientGameModel: ClientModelData) {
+    this.gameModel = clientGameModel;
+    
     // Find the owner of this fleet by looking through fleetsInTransit
     this.owner = null;
     
@@ -185,7 +196,7 @@ export class DrawnFleet extends Konva.Group {
 
   public destroyFleet() {
     // Clean up Konva objects
-    this.destroyChildren();
-    super.destroy();
+    this.group.destroyChildren();
+    this.group.destroy();
   }
 }
