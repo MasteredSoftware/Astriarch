@@ -1,560 +1,172 @@
 <script lang="ts">
-  import "../app.css";
-  import { Button } from "$lib/components/ui/button";
-  import * as Card from "$lib/components/ui/card";
-  import { Badge } from "$lib/components/ui/badge";
-  import * as Dialog from "$lib/components/ui/dialog";
-  import { Input } from "$lib/components/ui/input";
-  import { Label } from "$lib/components/ui/label";
-
-  // Destructure Card components
-  const { Root: ShadcnCard, Header: CardHeader, Title: CardTitle, Description: CardDescription, Content: CardContent, Footer: CardFooter } = Card;
-  
-  // Destructure Dialog components
-  const { Dialog: ShadcnDialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } = Dialog;
-  
-  // Import Astriarch components
+  import { onMount } from 'svelte';
   import { 
-    Button as AstriarchButton, 
-    Card as AstriarchCard,
-    IconImage,
-    Text,
-    Box,
+    gameStarted, 
+    notifications, 
+    resourceData, 
+    population, 
+    currentTurn, 
+    gameActions 
+  } from '$lib/stores/gameStore';
+  import { currentView, navigationActions } from '$lib/stores/navigationStore';
+  
+  import {
     TopOverview,
-    TopOverviewItem,
-    Dialog as AstriarchDialog,
-    Notification,
     NavigationController,
-    NavigationTab,
-    TabController,
-    Tab
-  } from "$lib/components/astriarch";
-  import type { IconImageType, TabControllerTab } from "$lib/components/astriarch";
-  
-  let showDialog = $state(false);
-  let showAstriarchDialog = $state(false);
-  
-  // Sample data for TopOverview
-  const resourceData = {
-    total: {
-      food: 1250,
-      energy: 890,
-      research: 340,
-      ore: 670,
-      iridium: 45,
-      production: 125
-    },
-    perTurn: {
-      food: 45,
-      energy: -20,
-      research: 125,
-      ore: 78,
-      iridium: 5,
-      production: 35
-    }
-  };
-  
-  // Sample navigation items
-  const navigationItems = [
-    { 
-      label: "Fleet", 
-      content: () => `<div class="p-4 text-white">Fleet management content here</div>`,
-      onclick: () => console.log("Fleet clicked")
-    },
-    { 
-      label: "Research", 
-      content: () => `<div class="p-4 text-white">Research content here</div>`,
-      onclick: () => console.log("Research clicked")
-    },
-    { 
-      label: "Planets", 
-      content: () => `<div class="p-4 text-white">Planets content here</div>`,
-      onclick: () => console.log("Planets clicked")
-    }
+    Button,
+    Text
+  } from '$lib/components/astriarch';
+
+  // Import game view components
+  import FleetCommandView from '$lib/components/game-views/FleetCommandView.svelte';
+  import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
+  import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
+  import DiplomacyView from '$lib/components/game-views/DiplomacyView.svelte';
+
+  let navigationItems = [
+    { label: "Fleet Command", onclick: () => navigationActions.setView('fleet') },
+    { label: "Planet Overview", onclick: () => navigationActions.setView('planets') },
+    { label: "Research Lab", onclick: () => navigationActions.setView('research') },
+    { label: "Diplomacy", onclick: () => navigationActions.setView('diplomacy') }
   ];
-  
-  // Sample tab data
-  const tabData: TabControllerTab[] = [
-    {
-      label: "Ships"
-    },
-    {
-      label: "Buildings"
-    },
-    {
-      label: "Resources"
-    }
-  ];
+
+  onMount(() => {
+    console.log('Astriarch game component mounted');
+  });
 </script>
 
-<div class="min-h-screen bg-gradient-to-b from-slate-900 to-black text-white p-8 font-orbitron">
-  <div class="max-w-6xl mx-auto">
-    <h1 class="text-4xl font-bold text-center mb-8 text-cyan-400 font-orbitron">
-      Astriarch - Ruler of the Stars
-    </h1>
+<svelte:head>
+  <title>Astriarch - Space Strategy Game</title>
+  <meta name="description" content="Command fleets, manage planets, and conquer the galaxy in this epic space strategy game." />
+</svelte:head>
 
-    <!-- Astriarch Custom Components Demo -->
-    <div class="mb-12">
-      <h2 class="text-2xl font-bold text-center mb-6 text-cyan-300">
-        🚀 Astriarch Custom SVG Components
-      </h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <!-- Astriarch Button Examples -->
-        <div class="flex flex-col items-center space-y-4">
-          <h3 class="text-lg font-semibold text-cyan-400">Buttons</h3>
-          <AstriarchButton label="Large Primary" size="lg" variant="primary" />
-          <AstriarchButton label="Medium Primary" size="md" variant="primary" />
-          <AstriarchButton label="Small" size="sm" variant="primary" />
-          <AstriarchButton label="Large Outline" size="lg" variant="outline" />
-        </div>
-
-        <!-- Astriarch Card Examples -->
-        <div class="flex flex-col items-center space-y-4">
-          <h3 class="text-lg font-semibold text-cyan-400">Cards</h3>
-          <AstriarchCard label="Planet Alpha" size="lg" enabled={true} />
-          <AstriarchCard label="Station Beta" size="md" enabled={true} />
-          <AstriarchCard label="Disabled" size="lg" enabled={false} />
-        </div>
-
-        <!-- Icon Examples -->
-        <div class="flex flex-col items-center space-y-4">
-          <h3 class="text-lg font-semibold text-cyan-400">Resource Icons</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="flex flex-col items-center">
-              <IconImage type="energy" size={32} />
-              <span class="text-xs text-cyan-200 mt-1">Energy</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <IconImage type="population" size={32} />
-              <span class="text-xs text-cyan-200 mt-1">Population</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <IconImage type="research" size={32} />
-              <span class="text-xs text-cyan-200 mt-1">Research</span>
-            </div>
-            <div class="flex flex-col items-center">
-              <IconImage type="ore" size={32} />
-              <span class="text-xs text-cyan-200 mt-1">Ore</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Mixed Example -->
-        <div class="flex flex-col items-center space-y-4">
-          <h3 class="text-lg font-semibold text-cyan-400">Game UI Sample</h3>
-          <div class="relative">
-            <AstriarchCard label="Mining Station" size="lg" enabled={true} />
-            <div class="absolute top-12 left-4 flex space-x-2">
-              <IconImage type="ore" size={20} />
-              <span class="text-xs text-yellow-400">+50/turn</span>
-            </div>
-          </div>
-          <AstriarchButton label="Upgrade" size="md" variant="outline" />
-        </div>
-      </div>
-
-      <!-- TopOverview Component Demo -->
-      <div class="mb-8">
-        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">TopOverview Component</h3>
-        <div class="flex justify-center">
-          <TopOverview resourceData={resourceData} population={1250000} />
-        </div>
-      </div>
-
-      <!-- Individual TopOverviewItem Demo -->
-      <div class="mb-8">
-        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">Individual TopOverviewItem Components</h3>
-        <div class="flex justify-center gap-6 flex-wrap">
-          <TopOverviewItem 
-            type="food" 
-            amount={resourceData.total.food} 
-            amountPerTurn={45} 
-            onClick={() => console.log("Food clicked")}
-          />
-          <TopOverviewItem 
-            type="energy" 
-            amount={resourceData.total.energy} 
-            amountPerTurn={-20} 
-          />
-          <TopOverviewItem 
-            type="research" 
-            amount={resourceData.total.research} 
-            amountPerTurn={125} 
-          />
-          <TopOverviewItem 
-            type="ore" 
-            amount={resourceData.total.ore} 
-            amountPerTurn={78} 
-          />
-          <TopOverviewItem 
-            type="iridium" 
-            amount={resourceData.total.iridium} 
-            amountPerTurn={5} 
-          />
-        </div>
-      </div>
-
-      <!-- Text and Box Components Demo -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
-          <h3 class="text-xl font-bold text-cyan-400 mb-4">Text Component</h3>
-          <div class="space-y-4">
-            <Text style="color: #FFF; font-size: 24px; font-weight: bold;">
-              Large Bold Title
-            </Text>
-            <Text style="color: #00FFFF; font-size: 18px; font-weight: 600;">
-              Cyan Subtitle Text
-            </Text>
-            <Text style="color: #94A3B8; font-size: 14px; line-height: 1.6;">
-              This is regular body text that demonstrates the Text component's ability to render styled content with proper spacing and readability.
-            </Text>
-            <Text style="color: #FDE047; font-size: 12px; text-transform: uppercase; letter-spacing: 2px;">
-              Small Caps Warning Text
-            </Text>
-          </div>
-        </div>
-
-        <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
-          <h3 class="text-xl font-bold text-cyan-400 mb-4">Box Component</h3>
-          <div class="space-y-4">
-            <Box style="background: linear-gradient(135deg, #1e293b, #0f172a); padding: 16px; border-radius: 8px; border: 1px solid #00FFFF;">
-              <Text style="color: #FFF; font-size: 16px; font-weight: 600;">
-                Styled Box Container
-              </Text>
-              <Text style="color: #94A3B8; font-size: 14px; margin-top: 8px;">
-                This Box component can contain any content and be styled with custom CSS.
-              </Text>
-            </Box>
-            
-            <Box style="background: #1f2937; padding: 12px; border-radius: 6px; border-left: 4px solid #10b981;">
-              <Text style="color: #10b981; font-size: 14px; font-weight: 600;">
-                Success Message Box
-              </Text>
-            </Box>
-            
-            <Box style="background: #7c2d12; padding: 12px; border-radius: 6px; border-left: 4px solid #ef4444;">
-              <Text style="color: #fca5a5; font-size: 14px; font-weight: 600;">
-                Warning Message Box
-              </Text>
-            </Box>
-          </div>
-        </div>
-      </div>
-
-      <!-- Navigation Tab Components Demo -->
-      <div class="mb-8">
-        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">Navigation Tab Components</h3>
-        <div class="flex justify-center space-x-2 bg-black/60 p-4 rounded-lg">
-          <NavigationTab 
-            label="Fleet Command" 
-            selected={true}
-            onclick={() => console.log('Fleet Command clicked')}
-          />
-          <NavigationTab 
-            label="Planet Overview" 
-            selected={false}
-            onclick={() => console.log('Planet Overview clicked')}
-          />
-          <NavigationTab 
-            label="Research Lab" 
-            selected={false}
-            onclick={() => console.log('Research Lab clicked')}
-          />
-        </div>
-      </div>
-
-      <!-- Individual Tab Components Demo -->
-      <div class="mb-8">
-        <h3 class="text-lg font-semibold text-cyan-400 mb-4 text-center">Individual Tab Components</h3>
-        <div class="flex justify-center space-x-4">
-          <Tab 
-            label="Fleet Management" 
-            selected={true}
-            onclick={() => console.log("Fleet tab clicked")}
-          />
-          <Tab 
-            label="Research Lab" 
-            selected={false}
-            onclick={() => console.log("Research tab clicked")}
-          />
-          <Tab 
-            label="Planet Overview" 
-            selected={false}
-            onclick={() => console.log("Planet tab clicked")}
-          />
-        </div>
-      </div>
-    </div>
-
-    <h2 class="text-2xl font-bold text-center mb-6 text-cyan-300">
-      🎨 shadcn-svelte Components Integration
-    </h2>
-    
-    <!-- Demo UI Components -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      
-      <!-- Planet Card Example -->
-      <ShadcnCard class="bg-slate-800 border-cyan-500/20">
-        <CardHeader>
-          <CardTitle class="text-cyan-400 flex items-center justify-between">
-            Planet Xerion
-            <Badge variant="outline" class="border-green-500 text-green-400">Inhabited</Badge>
-          </CardTitle>
-          <CardDescription class="text-slate-300">
-            A thriving world in the outer rim
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <span class="text-slate-400">Population:</span>
-              <span class="text-yellow-400">12.5M</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Production:</span>
-              <span class="text-green-400">+450/turn</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Energy:</span>
-              <span class="text-blue-400">+120/turn</span>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button class="w-full bg-cyan-600 hover:bg-cyan-700">
-            Manage Planet
-          </Button>
-        </CardFooter>
-      </ShadcnCard>
-
-      <!-- Ship Card Example -->
-      <ShadcnCard class="bg-slate-800 border-cyan-500/20">
-        <CardHeader>
-          <CardTitle class="text-cyan-400 flex items-center justify-between">
-            Battleship Alpha
-            <Badge variant="destructive">Combat Ready</Badge>
-          </CardTitle>
-          <CardDescription class="text-slate-300">
-            Heavy assault vessel
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <span class="text-slate-400">Attack:</span>
-              <span class="text-red-400">85</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Defense:</span>
-              <span class="text-blue-400">67</span>
-            </div>
-            <div class="flex justify-between">
-              <span class="text-slate-400">Health:</span>
-              <span class="text-green-400">100%</span>
-            </div>
-          </div>
-        </CardContent>
-        <CardFooter class="gap-2">
-          <Button variant="outline" class="flex-1 border-cyan-500 text-cyan-400 hover:bg-cyan-500/10">
-            Move
-          </Button>
-          <Button variant="destructive" class="flex-1">
-            Attack
-          </Button>
-        </CardFooter>
-      </ShadcnCard>
-
-      <!-- Dialog Example -->
-      <ShadcnCard class="bg-slate-800 border-cyan-500/20">
-        <CardHeader>
-          <CardTitle class="text-cyan-400">Game Controls</CardTitle>
-          <CardDescription class="text-slate-300">
-            Interact with the galaxy
-          </CardDescription>
-        </CardHeader>
-        <CardContent class="space-y-4">
-          <Button class="w-full bg-green-600 hover:bg-green-700">
-            End Turn
-          </Button>
-          
-          <ShadcnDialog>
-            <DialogTrigger class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition-colors">
-              Research Tech
-            </DialogTrigger>
-            <DialogContent class="bg-slate-800 border-cyan-500/20">
-              <DialogHeader>
-                <DialogTitle class="text-cyan-400">Research Laboratory</DialogTitle>
-                <DialogDescription class="text-slate-300">
-                  Choose your next technological advancement
-                </DialogDescription>
-              </DialogHeader>
-              <div class="grid gap-4 py-4">
-                <div class="grid grid-cols-4 items-center gap-4">
-                  <Label for="tech" class="text-right text-slate-300">Technology</Label>
-                  <Input
-                    id="tech"
-                    placeholder="Advanced Propulsion"
-                    class="col-span-3 bg-slate-700 border-cyan-500/20 text-white"
-                  />
-                </div>
-                <div class="grid grid-cols-4 items-center gap-4">
-                  <Label for="cost" class="text-right text-slate-300">Research Cost</Label>
-                  <Input
-                    id="cost"
-                    placeholder="1,250 RP"
-                    class="col-span-3 bg-slate-700 border-cyan-500/20 text-white"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button class="bg-cyan-600 hover:bg-cyan-700">
-                  Begin Research
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </ShadcnDialog>
-
-          <Button variant="outline" class="w-full border-cyan-500 text-cyan-400 hover:bg-cyan-500/10">
-            Galaxy Map
-          </Button>
-        </CardContent>
-      </ShadcnCard>
-    </div>
-
-    <!-- Status Bar -->
-    <div class="mt-8 p-4 bg-slate-800 rounded-lg border border-cyan-500/20">
-      <div class="flex flex-wrap gap-6 justify-center">
-        <div class="flex items-center gap-2">
-          <Badge variant="outline" class="border-yellow-500 text-yellow-400">Credits</Badge>
-          <span class="text-yellow-400 font-bold">15,750</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <Badge variant="outline" class="border-green-500 text-green-400">Energy</Badge>
-          <span class="text-green-400 font-bold">+450/turn</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <Badge variant="outline" class="border-blue-500 text-blue-400">Research</Badge>
-          <span class="text-blue-400 font-bold">+125/turn</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <Badge variant="outline" class="border-purple-500 text-purple-400">Turn</Badge>
-          <span class="text-purple-400 font-bold">42</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- New Astriarch Components Section -->
-    <h2 class="text-2xl font-bold text-center mb-6 text-cyan-300 mt-12">
-      🚀 New Astriarch Components
-    </h2>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-      
-      <!-- Astriarch Dialog Component -->
-      <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
-        <h3 class="text-xl font-bold text-cyan-400 mb-4">Astriarch Dialog</h3>
-        <p class="text-slate-300 mb-4">Custom game-themed dialog with SVG styling.</p>
-        <button 
-          class="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors"
-          onclick={() => { showAstriarchDialog = true; }}
-        >
-          Open Astriarch Dialog
-        </button>
-        
-        {#if showAstriarchDialog}
-          <AstriarchDialog 
-            title="Fleet Command" 
-            open={showAstriarchDialog}
-            onCancel={() => { showAstriarchDialog = false; }}
-          >
-            <div class="text-white p-4">
-              <p class="mb-4">Your fleet is ready for deployment, Admiral.</p>
-              <div class="space-y-2">
-                <div class="flex justify-between">
-                  <span>Battleships:</span>
-                  <span class="text-cyan-400">12</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Cruisers:</span>
-                  <span class="text-cyan-400">25</span>
-                </div>
-                <div class="flex justify-between">
-                  <span>Fighters:</span>
-                  <span class="text-cyan-400">150</span>
-                </div>
-              </div>
-            </div>
-          </AstriarchDialog>
-        {/if}
-      </div>
-
-      <!-- Notification Component -->
-      <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
-        <h3 class="text-xl font-bold text-cyan-400 mb-4">Notifications</h3>
-        <p class="text-slate-300 mb-4">Game notifications with different sizes.</p>
-        <div class="space-y-3">
-          <Notification 
-            label="Research completed: Advanced Propulsion" 
-            size="sm" 
-          />
-          <Notification 
-            label="New planet discovered in sector 7" 
-            size="md" 
-          />
-          <Notification 
-            label="Warning: Enemy fleet detected approaching!" 
-            size="lg" 
-          />
-        </div>
-      </div>
-
-      <!-- Navigation Controller -->
-      <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
-        <h3 class="text-xl font-bold text-cyan-400 mb-4">Navigation Controller</h3>
-        <p class="text-slate-300 mb-4">Game navigation with custom styling.</p>
-        <NavigationController items={navigationItems} />
-      </div>
-
-      <!-- Tab Controller -->
-      <div class="bg-slate-800/50 p-6 rounded-lg border border-cyan-500/20">
-        <h3 class="text-xl font-bold text-cyan-400 mb-4">Tab Controller</h3>
-        <p class="text-slate-300 mb-4">Tabbed interface for game sections.</p>
-        <TabController 
-          tabs={tabData} 
-          size="md" 
-        >
-          <div class="p-4 bg-slate-700/50 rounded-b-lg">
-            <div class="text-white">
-              <p class="mb-2">Selected tab content:</p>
-              <div class="grid grid-cols-3 gap-4 text-center">
-                <div class="bg-slate-600 p-3 rounded">
-                  <div class="text-cyan-400 font-bold">Ships</div>
-                  <div class="text-sm">42 vessels</div>
-                </div>
-                <div class="bg-slate-600 p-3 rounded">
-                  <div class="text-green-400 font-bold">Buildings</div>
-                  <div class="text-sm">15 structures</div>
-                </div>
-                <div class="bg-slate-600 p-3 rounded">
-                  <div class="text-yellow-400 font-bold">Resources</div>
-                  <div class="text-sm">Abundant</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </TabController>
-      </div>
-      
-    </div>
-
-    <div class="mt-8 text-center">
-      <p class="text-slate-400">
-        ✨ Built with <strong class="text-cyan-400">SvelteKit</strong> + <strong class="text-cyan-400">shadcn-svelte</strong>
-      </p>
-      <p class="text-slate-500 mt-2">
-        No more SVG containment issues! Professional UI components out of the box.
-      </p>
-    </div>
+<main class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white overflow-hidden">
+  <!-- Space Background Effect -->
+  <div class="fixed inset-0 opacity-20">
+    <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-900 via-slate-900 to-black"></div>
+    <!-- Add some "stars" -->
+    <div class="absolute top-10 left-10 w-1 h-1 bg-white rounded-full opacity-60"></div>
+    <div class="absolute top-32 left-64 w-1 h-1 bg-white rounded-full opacity-40"></div>
+    <div class="absolute top-48 right-32 w-1 h-1 bg-cyan-400 rounded-full opacity-80"></div>
+    <div class="absolute bottom-32 left-32 w-1 h-1 bg-white rounded-full opacity-50"></div>
+    <div class="absolute bottom-48 right-48 w-1 h-1 bg-white rounded-full opacity-70"></div>
   </div>
-</div>
+
+  <!-- Top HUD -->
+  <header class="relative z-10 p-4">
+    <div class="flex justify-between items-center mb-4">
+      <div class="flex items-center space-x-4">
+        <Text style="font-size: 32px; font-weight: bold; color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);">
+          ASTRIARCH
+        </Text>
+        <Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
+          Turn {$currentTurn} • Stardate 2387.042
+        </Text>
+      </div>
+      
+      {#if $gameStarted}
+        <Button 
+          label="Next Turn" 
+          size="md" 
+          variant="primary"
+          onclick={gameActions.nextTurn}
+        />
+      {:else}
+        <Button 
+          label="Start New Game" 
+          size="lg" 
+          variant="primary"
+          onclick={gameActions.startNewGame}
+        />
+      {/if}
+    </div>
+
+    <!-- Resource Overview -->
+    {#if $gameStarted}
+      <div class="flex justify-center mb-6">
+        <TopOverview resourceData={$resourceData} population={$population} />
+      </div>
+    {/if}
+  </header>
+
+  <!-- Main Game Area -->
+  <div class="relative z-10 flex-1">
+    {#if $gameStarted}
+      <!-- Game View -->
+      <div class="h-[calc(100vh-200px)] flex flex-col">
+        <!-- Central Game Content Area -->
+        <div class="flex-1 bg-black/20 mx-4 rounded-lg border border-cyan-500/20 overflow-hidden">
+          {#if $currentView === 'fleet'}
+            <FleetCommandView />
+          {:else if $currentView === 'planets'}
+            <PlanetOverviewView />
+          {:else if $currentView === 'research'}
+            <ResearchLabView />
+          {:else if $currentView === 'diplomacy'}
+            <DiplomacyView />
+          {:else}
+            <!-- Fallback galaxy map view -->
+            <div class="flex justify-center items-center h-full">
+              <div class="text-center">
+                <Text style="font-size: 24px; color: #00FFFF; margin-bottom: 16px;">
+                  Galaxy Map
+                </Text>
+                <Text style="color: #94A3B8;">
+                  Game canvas will be rendered here<br />
+                  Planets, ships, and strategic overlay
+                </Text>
+              </div>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="mt-4">
+          <NavigationController items={navigationItems} />
+        </div>
+      </div>
+    {:else}
+      <!-- Welcome Screen -->
+      <div class="flex items-center justify-center h-[calc(100vh-200px)]">
+        <div class="text-center max-w-2xl mx-auto p-8">
+          <Text style="font-size: 48px; font-weight: bold; color: #00FFFF; margin-bottom: 24px; text-shadow: 0 0 20px rgba(0,255,255,0.5);">
+            ASTRIARCH
+          </Text>
+          <Text style="font-size: 20px; color: #94A3B8; margin-bottom: 32px; line-height: 1.6;">
+            Command vast fleets across the galaxy. Manage planetary resources and populations. 
+            Research advanced technologies. Forge alliances or crush your enemies.
+          </Text>
+          <Text style="font-size: 16px; color: #64748B; margin-bottom: 48px;">
+            The galaxy awaits your strategic genius.
+          </Text>
+          <Button 
+            label="Begin Your Conquest" 
+            size="lg" 
+            variant="primary"
+            onclick={gameActions.startNewGame}
+          />
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <!-- Notifications Panel -->
+  {#if $notifications.length > 0}
+    <div class="fixed bottom-4 right-4 max-w-sm space-y-2 z-20">
+      {#each $notifications.slice(-5) as notification, i}
+        <div class="bg-black/80 border border-cyan-500/40 rounded-lg p-3 backdrop-blur-sm">
+          <Text style="color: #00FFFF; font-size: 12px;">
+            {notification}
+          </Text>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
+  <!-- Debug: Test page link -->
+  <div class="fixed bottom-4 left-4 z-20">
+    <a href="/test" class="text-xs text-slate-500 hover:text-cyan-400 transition-colors">
+      Component Test Page
+    </a>
+  </div>
+</main>
