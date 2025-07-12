@@ -5,7 +5,7 @@
     notifications, 
     resourceData, 
     population, 
-    currentTurn, 
+    gameTime, 
     isGameRunning,
     gameActions 
   } from '$lib/stores/gameStore';
@@ -66,7 +66,7 @@
           ASTRIARCH
         </Text>
         <Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
-          Turn {$currentTurn} • Stardate 2387.042
+          Cycle {$gameTime.cycle} • {$gameTime.timeString} • Stardate {$gameTime.stardate}
         </Text>
         {#if $gameStarted}
           <Text style="font-size: 12px; color: {$isGameRunning ? '#10B981' : '#EF4444'}; margin-left: 8px;">
@@ -76,20 +76,12 @@
       </div>
       
       {#if $gameStarted}
-        <div class="flex space-x-2">
-          <Button 
-            label={$isGameRunning ? "Pause Game" : "Resume Game"} 
-            size="sm" 
-            variant={$isGameRunning ? "outline" : "primary"}
-            onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
-          />
-          <Button 
-            label="Next Turn" 
-            size="md" 
-            variant="primary"
-            onclick={gameActions.nextTurn}
-          />
-        </div>
+        <Button 
+          label={$isGameRunning ? "Pause Game" : "Resume Game"} 
+          size="md" 
+          variant={$isGameRunning ? "outline" : "primary"}
+          onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
+        />
       {:else}
         <Button 
           label="Start New Game" 
@@ -152,11 +144,11 @@
             ASTRIARCH
           </Text>
           <Text style="font-size: 20px; color: #94A3B8; margin-bottom: 32px; line-height: 1.6;">
-            Command vast fleets across the galaxy. Manage planetary resources and populations. 
+            Command vast fleets across the galaxy in real-time. Manage planetary resources and populations. 
             Research advanced technologies. Forge alliances or crush your enemies.
           </Text>
           <Text style="font-size: 16px; color: #64748B; margin-bottom: 48px;">
-            The galaxy awaits your strategic genius.
+            The galaxy awaits your strategic genius in this real-time space conquest.
           </Text>
           <Button 
             label="Begin Your Conquest" 

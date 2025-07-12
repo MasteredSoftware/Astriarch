@@ -18,7 +18,6 @@ export const gameModel = writable<GameModelData | null>(null);
 export const clientGameModel = writable<ClientModelData | null>(null);
 export const notifications = writable<string[]>([]);
 export const gameStarted = writable<boolean>(false);
-export const currentTurn = writable<number>(1);
 export const isGameRunning = writable<boolean>(false);
 
 // Resource data derived from client game model
@@ -67,7 +66,29 @@ export const population = derived(
   }
 );
 
-// Current research derived from client game model
+// Current cycle derived from client game model
+export const currentCycle = derived(
+  clientGameModel,
+  ($clientGameModel) => {
+    if (!$clientGameModel) return 0;
+    return $clientGameModel.currentCycle;
+  }
+);
+
+// Friendly time display derived from current cycle
+export const gameTime = derived(
+  currentCycle,
+  ($currentCycle) => {
+    // Convert cycles to a more meaningful time representation
+    const hours = Math.floor($currentCycle / 100); // Rough conversion
+    const minutes = Math.floor(($currentCycle % 100) * 0.6); // Convert to 60-minute scale
+    return {
+      cycle: $currentCycle,
+      timeString: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+      stardate: (2387 + ($currentCycle * 0.001)).toFixed(3)
+    };
+  }
+);
 export const currentResearch = derived(
   clientGameModel,
   ($clientGameModel) => {
@@ -104,7 +125,6 @@ export const gameActions = {
     clientGameModel.set(cgm);
     gameStarted.set(true);
     isGameRunning.set(true);
-    currentTurn.set(1);
     
     // Subscribe to game events
     subscribeToEvents("me", (playerId: string, enList: EventNotification[]) => {
@@ -119,17 +139,6 @@ export const gameActions = {
     
     // Start the animation frame loop
     startGameLoop();
-  },
-
-  nextTurn() {
-    const cgm = get(clientGameModel);
-    const gm = get(gameModel);
-    if (cgm && gm) {
-      const updatedClientGameModel = advanceClientGameModelTime(cgm, gm.grid);
-      clientGameModel.set(updatedClientGameModel);
-      currentTurn.update(turn => turn + 1);
-      notifications.update(prev => [...prev, `Turn ${get(currentTurn)} begins.`]);
-    }
   },
 
   pauseGame() {
