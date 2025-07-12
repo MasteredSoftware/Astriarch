@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { 
     gameStarted, 
     notifications, 
     resourceData, 
     population, 
     currentTurn, 
+    isGameRunning,
     gameActions 
   } from '$lib/stores/gameStore';
   import { currentView, navigationActions } from '$lib/stores/navigationStore';
@@ -32,6 +33,11 @@
 
   onMount(() => {
     console.log('Astriarch game component mounted');
+  });
+
+  onDestroy(() => {
+    // Pause the game when component is destroyed to stop animation frame
+    gameActions.pauseGame();
   });
 </script>
 
@@ -62,15 +68,28 @@
         <Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
           Turn {$currentTurn} • Stardate 2387.042
         </Text>
+        {#if $gameStarted}
+          <Text style="font-size: 12px; color: {$isGameRunning ? '#10B981' : '#EF4444'}; margin-left: 8px;">
+            {$isGameRunning ? '● RUNNING' : '⏸ PAUSED'}
+          </Text>
+        {/if}
       </div>
       
       {#if $gameStarted}
-        <Button 
-          label="Next Turn" 
-          size="md" 
-          variant="primary"
-          onclick={gameActions.nextTurn}
-        />
+        <div class="flex space-x-2">
+          <Button 
+            label={$isGameRunning ? "Pause Game" : "Resume Game"} 
+            size="sm" 
+            variant={$isGameRunning ? "outline" : "primary"}
+            onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
+          />
+          <Button 
+            label="Next Turn" 
+            size="md" 
+            variant="primary"
+            onclick={gameActions.nextTurn}
+          />
+        </div>
       {:else}
         <Button 
           label="Start New Game" 

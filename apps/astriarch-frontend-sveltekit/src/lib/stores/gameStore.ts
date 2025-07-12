@@ -9,6 +9,7 @@ import {
   type ClientModelData,
   type EventNotification,
   type GameModelData,
+  type Grid,
   ResearchType
 } from 'astriarch-engine';
 
@@ -18,6 +19,7 @@ export const clientGameModel = writable<ClientModelData | null>(null);
 export const notifications = writable<string[]>([]);
 export const gameStarted = writable<boolean>(false);
 export const currentTurn = writable<number>(1);
+export const isGameRunning = writable<boolean>(false);
 
 // Resource data derived from client game model
 export const resourceData = derived(
@@ -101,6 +103,7 @@ export const gameActions = {
     gameModel.set(gm);
     clientGameModel.set(cgm);
     gameStarted.set(true);
+    isGameRunning.set(true);
     currentTurn.set(1);
     
     // Subscribe to game events
@@ -113,6 +116,9 @@ export const gameActions = {
 
     // Add initial notification
     notifications.update(prev => [...prev, "New game started! Welcome to Astriarch."]);
+    
+    // Start the animation frame loop
+    startGameLoop();
   },
 
   nextTurn() {
@@ -126,6 +132,19 @@ export const gameActions = {
     }
   },
 
+  pauseGame() {
+    isGameRunning.set(false);
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+  },
+
+  resumeGame() {
+    isGameRunning.set(true);
+    startGameLoop();
+  },
+
   clearNotifications() {
     notifications.set([]);
   }
@@ -137,4 +156,33 @@ function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T
   const unsubscribe = store.subscribe(v => value = v);
   unsubscribe();
   return value!;
+}
+
+// Animation frame loop for continuous game time advancement
+let animationFrameId: number | null = null;
+
+function startGameLoop() {
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId);
+  }
+  
+  function gameLoop() {
+    if (!get(isGameRunning) || !get(gameStarted)) {
+      animationFrameId = null;
+      return;
+    }
+    
+    const cgm = get(clientGameModel);
+    const gm = get(gameModel);
+    
+    if (cgm && gm) {
+      // Advance the client game model time continuously
+      const updatedClientGameModel = advanceClientGameModelTime(cgm, gm.grid);
+      clientGameModel.set(updatedClientGameModel);
+    }
+    
+    animationFrameId = requestAnimationFrame(gameLoop);
+  }
+  
+  animationFrameId = requestAnimationFrame(gameLoop);
 }
