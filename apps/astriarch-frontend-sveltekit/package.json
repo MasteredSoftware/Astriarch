@@ -18,7 +18,8 @@
 		"build-storybook": "storybook build"
 	},
 	"dependencies": {
-		"astriarch-engine": "workspace:*"
+		"astriarch-engine": "workspace:*",
+		"konva": "^9.3.22"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^1.2.5",
