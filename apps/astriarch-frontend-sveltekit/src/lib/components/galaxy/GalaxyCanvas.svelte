@@ -134,27 +134,49 @@
   function createHexGrid() {
     if (!currentGrid) return;
 
-    // Draw hex grid as subtle overlay
+    // Draw hex grid using the original hexagon point calculation
+
     for (const hex of currentGrid.hexes) {
-      const hexShape = new KonvaLib.RegularPolygon({
-        x: hex.midPoint.x,
-        y: hex.midPoint.y,
-        sides: 6,
-        radius: hex.data.height / 2,
-        stroke: 'rgba(0, 255, 255, 0.1)',
+      // Use the hex data or fall back to original constants
+      const width = hex.data.width ;
+      const height = hex.data.height;
+      const side = hex.data.side;
+      const x = hex.data.x;
+      const y = hex.data.y;
+      
+      // Calculate hexagon points using the original algorithm
+      // This creates the non-regular hexagon shape that tessellates properly
+      const x1 = (width - side) / 2;
+      const y1 = height / 2;
+      
+      const points = [
+        x1 + x, y,                    // Top left point
+        x1 + side + x, y,            // Top right point  
+        width + x, y1 + y,           // Right point
+        x1 + side + x, height + y,   // Bottom right point
+        x1 + x, height + y,          // Bottom left point
+        x, y1 + y                    // Left point
+      ];
+
+      // Create the hexagon outline
+      const hexShape = new KonvaLib.Line({
+        points: points,
+        stroke: 'rgba(0, 255, 255, 0.15)',
         strokeWidth: 1,
-        fill: 'transparent'
+        fill: 'transparent',
+        closed: true
       });
       galaxyLayer.add(hexShape);
 
-      // Add hex labels for debugging (optional)
+      // Add hex labels for debugging (smaller and more subtle)
       const label = new KonvaLib.Text({
-        x: hex.midPoint.x - 10,
-        y: hex.midPoint.y - 5,
-        text: hex.data.id,
-        fontSize: 8,
-        fill: 'rgba(0, 255, 255, 0.3)',
-        align: 'center'
+        x: hex.midPoint.x - 8,
+        y: hex.midPoint.y - 4,
+        text: hex.data.id.toString(),
+        fontSize: 7,
+        fill: 'rgba(0, 255, 255, 0.2)',
+        align: 'center',
+        fontFamily: 'monospace'
       });
       galaxyLayer.add(label);
     }
