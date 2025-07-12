@@ -1,16 +1,15 @@
 import type { FleetData, PlayerData, ClientModelData } from 'astriarch-engine';
-import type Konva from 'konva';
+import Konva from 'konva';
 
 const FLEET_ICON_SIZE = 11;
 const ETA_TEXT_SIZE = 8;
 const TRAVEL_LINE_WIDTH = 1.5;
 
-export function createDrawnFleet(KonvaLib: typeof Konva, fleetData: FleetData, gameModel: ClientModelData) {
-  return new DrawnFleet(KonvaLib, fleetData, gameModel);
+export function createDrawnFleet(fleetData: FleetData, gameModel: ClientModelData) {
+  return new DrawnFleet(fleetData, gameModel);
 }
 
 export class DrawnFleet {
-  private Konva: typeof Konva;
   public group: Konva.Group;
   private fleetData: FleetData;
   private gameModel: ClientModelData;
@@ -24,9 +23,8 @@ export class DrawnFleet {
   // Calculated position properties
   private travelDistancePoint = { x: 0, y: 0 };
 
-  constructor(KonvaLib: typeof Konva, fleetData: FleetData, gameModel: ClientModelData) {
-    this.Konva = KonvaLib;
-    this.group = new KonvaLib.Group();
+  constructor(fleetData: FleetData, gameModel: ClientModelData) {
+    this.group = new Konva.Group();
     this.fleetData = fleetData;
     this.gameModel = gameModel;
     
@@ -36,7 +34,7 @@ export class DrawnFleet {
 
   private createVisualElements() {
     // Travel line from origin to destination
-    this.travelLine = new this.Konva.Line({
+    this.travelLine = new Konva.Line({
       points: [0, 0, 0, 0],
       stroke: 'green',
       strokeWidth: TRAVEL_LINE_WIDTH,
@@ -45,7 +43,7 @@ export class DrawnFleet {
     this.group.add(this.travelLine);
 
     // Fleet icon (starship representation)
-    this.fleetIcon = new this.Konva.Rect({
+    this.fleetIcon = new Konva.Rect({
       x: -FLEET_ICON_SIZE / 2,
       y: -FLEET_ICON_SIZE / 2,
       width: FLEET_ICON_SIZE,
@@ -58,7 +56,7 @@ export class DrawnFleet {
     this.group.add(this.fleetIcon);
 
     // ETA text showing turns remaining
-    this.etaText = new this.Konva.Text({
+    this.etaText = new Konva.Text({
       x: 8,
       y: -4,
       text: 'ETA',

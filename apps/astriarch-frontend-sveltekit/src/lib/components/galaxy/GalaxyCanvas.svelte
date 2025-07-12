@@ -2,12 +2,9 @@
   import { onMount, onDestroy } from 'svelte';
   import { clientGameModel, gameModel } from '$lib/stores/gameStore';
   import type { ClientModelData, PlanetHappinessType, PlanetImprovementType, Grid } from 'astriarch-engine';
-  import type Konva from 'konva';
-
-  // Only import Konva and canvas components on the client side
-  let KonvaLib: typeof Konva;
-  let DrawnPlanet: any;
-  let DrawnFleet: any;
+  import Konva from 'konva';
+  import { DrawnPlanet } from './DrawnPlanet';
+  import { DrawnFleet } from './DrawnFleet';
 
   let canvasContainer: HTMLDivElement;
   let stage: Konva.Stage;
@@ -15,30 +12,17 @@
   let fleetLayer: Konva.Layer;
   let uiLayer: Konva.Layer;
   
-  let drawnPlanets: Map<number, any> = new Map();
-  let drawnFleets: Map<number, any> = new Map();
+  let drawnPlanets: Map<number, DrawnPlanet> = new Map();
+  let drawnFleets: Map<number, DrawnFleet> = new Map();
   let currentGrid: Grid | null = null;
   
   let animationFrameId: number;
   let isInitialized = false;
 
-  onMount(async () => {
-    // Dynamically import Konva and canvas components only on client side
-    try {
-      const konvaModule = await import('konva');
-      const drawnPlanetModule = await import('./DrawnPlanet');
-      const drawnFleetModule = await import('./DrawnFleet');
-      
-      KonvaLib = konvaModule.default;
-      DrawnPlanet = drawnPlanetModule.DrawnPlanet;
-      DrawnFleet = drawnFleetModule.DrawnFleet;
-      
-      initializeCanvas();
-      startRenderLoop();
-      isInitialized = true;
-    } catch (error) {
-      console.error('Failed to initialize GalaxyCanvas:', error);
-    }
+  onMount(() => {
+    initializeCanvas();
+    startRenderLoop();
+    isInitialized = true;
   });
 
   onDestroy(() => {
@@ -64,7 +48,7 @@
     }
 
     // Create Konva stage with proper galaxy dimensions
-    stage = new KonvaLib.Stage({
+    stage = new Konva.Stage({
       container: canvasContainer,
       width: window.innerWidth - 300, // Account for UI panels
       height: window.innerHeight - 200, // Account for top bar and navigation
@@ -72,9 +56,9 @@
     });
 
     // Create layers (back to front rendering order)
-    galaxyLayer = new KonvaLib.Layer();
-    fleetLayer = new KonvaLib.Layer();
-    uiLayer = new KonvaLib.Layer();
+    galaxyLayer = new Konva.Layer();
+    fleetLayer = new Konva.Layer();
+    uiLayer = new Konva.Layer();
 
     stage.add(galaxyLayer);
     stage.add(fleetLayer);
@@ -103,7 +87,7 @@
 
   function createSpaceBackground(galaxyWidth = 1000, galaxyHeight = 800) {
     // Create background that covers the entire galaxy area
-    const background = new KonvaLib.Rect({
+    const background = new Konva.Rect({
       x: 0,
       y: 0,
       width: galaxyWidth,
@@ -119,7 +103,7 @@
 
     // Add some stars for atmosphere
     for (let i = 0; i < 100; i++) {
-      const star = new KonvaLib.Circle({
+      const star = new Konva.Circle({
         x: Math.random() * galaxyWidth,
         y: Math.random() * galaxyHeight,
         radius: Math.random() * 1.5 + 0.5,
@@ -159,7 +143,7 @@
       ];
 
       // Create the hexagon outline
-      const hexShape = new KonvaLib.Line({
+      const hexShape = new Konva.Line({
         points: points,
         stroke: 'rgba(0, 255, 255, 0.15)',
         strokeWidth: 1,
@@ -169,7 +153,7 @@
       galaxyLayer.add(hexShape);
 
       // Add hex labels for debugging (smaller and more subtle)
-      const label = new KonvaLib.Text({
+      const label = new Konva.Text({
         x: hex.midPoint.x - 8,
         y: hex.midPoint.y - 4,
         text: hex.data.id.toString(),
@@ -244,7 +228,7 @@
       
       if (!drawnPlanet) {
         console.log('Creating new DrawnPlanet for owned planet:', planet.id, planet.name);
-        drawnPlanet = new DrawnPlanet(KonvaLib, planet, gameModel);
+        drawnPlanet = new DrawnPlanet(planet, gameModel);
         drawnPlanets.set(planet.id, drawnPlanet);
         galaxyLayer.add(drawnPlanet.group);
       }
@@ -293,7 +277,7 @@
           waypointBoundingHexMidPoint: null
         };
         
-        drawnPlanet = new DrawnPlanet(KonvaLib, planetData, gameModel);
+        drawnPlanet = new DrawnPlanet(planetData, gameModel);
         drawnPlanets.set(clientPlanet.id, drawnPlanet);
         galaxyLayer.add(drawnPlanet.group);
       }
@@ -323,7 +307,7 @@
       let drawnFleet = drawnFleets.get(fleetId);
       
       if (!drawnFleet) {
-        drawnFleet = new DrawnFleet(KonvaLib, fleet, gameModel);
+        drawnFleet = new DrawnFleet(fleet, gameModel);
         drawnFleets.set(fleetId, drawnFleet);
         fleetLayer.add(drawnFleet.group);
       }

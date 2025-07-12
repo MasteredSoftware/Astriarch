@@ -1,16 +1,14 @@
 import type { PlanetData, PlanetType, ClientModelData, PlayerData } from 'astriarch-engine';
-import type Konva from 'konva';
+import Konva from 'konva';
 
 const PLANET_SIZE = 20; // Base planet size matching original
 const FLEET_ICON_SIZE = 11;
-const PLATFORM_ICON_SIZE = 11;
 
-export function createDrawnPlanet(KonvaLib: typeof Konva, planetData: PlanetData, gameModel: ClientModelData) {
-  return new DrawnPlanet(KonvaLib, planetData, gameModel);
+export function createDrawnPlanet(planetData: PlanetData, gameModel: ClientModelData) {
+  return new DrawnPlanet(planetData, gameModel);
 }
 
 export class DrawnPlanet {
-  private Konva: typeof Konva;
   public group: Konva.Group;
   private planetData: PlanetData;
   private knownPlanetType: PlanetType | null = null;
@@ -31,9 +29,8 @@ export class DrawnPlanet {
   private statusIndicator: Konva.Circle | null = null;
   private waypointLine: Konva.Line | null = null;
 
-  constructor(KonvaLib: typeof Konva, planetData: PlanetData, gameModel: ClientModelData) {
-    this.Konva = KonvaLib;
-    this.group = new KonvaLib.Group();
+  constructor(planetData: PlanetData, gameModel: ClientModelData) {
+    this.group = new Konva.Group();
     this.planetData = planetData;
     this.gameModel = gameModel;
     
@@ -47,7 +44,7 @@ export class DrawnPlanet {
 
   private createVisualElements() {
     // Main planet circle (fallback when no sprite is available)
-    this.planetCircle = new this.Konva.Circle({
+    this.planetCircle = new Konva.Circle({
       x: 0,
       y: 0,
       radius: PLANET_SIZE / 2,
@@ -59,7 +56,7 @@ export class DrawnPlanet {
     this.group.add(this.planetCircle);
 
     // Planet name text - positioned below planet
-    this.nameText = new this.Konva.Text({
+    this.nameText = new Konva.Text({
       x: -30,
       y: PLANET_SIZE / 2 + 5,
       width: 60,
@@ -73,7 +70,7 @@ export class DrawnPlanet {
     this.group.add(this.nameText);
 
     // Fleet strength text - positioned above planet
-    this.strengthText = new this.Konva.Text({
+    this.strengthText = new Konva.Text({
       x: -20,
       y: -20,
       width: 40,
@@ -180,7 +177,7 @@ export class DrawnPlanet {
   }
 
   private createFleetIcon(): void {
-    this.fleetIcon = new this.Konva.Rect({
+    this.fleetIcon = new Konva.Rect({
       x: -FLEET_ICON_SIZE / 2,
       y: -FLEET_ICON_SIZE / 2,
       width: FLEET_ICON_SIZE,
@@ -208,7 +205,7 @@ export class DrawnPlanet {
 
   private showProductionIndicator(): void {
     if (!this.statusIndicator) {
-      this.statusIndicator = new this.Konva.Circle({
+      this.statusIndicator = new Konva.Circle({
         x: PLANET_SIZE / 2 - 3,
         y: -PLANET_SIZE / 2 + 3,
         radius: 3,

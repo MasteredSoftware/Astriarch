@@ -24,7 +24,15 @@
   import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
   import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
   import DiplomacyView from '$lib/components/game-views/DiplomacyView.svelte';
-  import GalaxyCanvas from '$lib/components/galaxy/GalaxyCanvas.svelte';
+
+  // Dynamically import GalaxyCanvas to avoid SSR issues with Konva
+  let GalaxyCanvas: any = null;
+
+  $: if (browser && !GalaxyCanvas) {
+    import('$lib/components/galaxy/GalaxyCanvas.svelte').then(module => {
+      GalaxyCanvas = module.default;
+    });
+  }
 
   let navigationItems = [
     { label: "Galaxy View", onclick: () => navigationActions.setView('galaxy') },
@@ -112,8 +120,8 @@
         <div class="flex-1 relative mx-4 rounded-lg overflow-hidden">
           <!-- Galaxy Canvas - Always visible as background (client-side only) -->
           <div class="absolute inset-0">
-            {#if browser}
-              <GalaxyCanvas />
+            {#if GalaxyCanvas}
+              <svelte:component this={GalaxyCanvas} />
             {/if}
           </div>
           
