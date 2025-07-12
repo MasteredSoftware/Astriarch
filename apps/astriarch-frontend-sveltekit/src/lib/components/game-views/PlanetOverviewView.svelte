@@ -28,19 +28,19 @@
           <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
             <div>
               <Text style="color: #94A3B8;">Food:</Text>
-              <Text style="color: #FFFFFF;">{Math.round(planet.resources?.food || 0)}</Text>
+              <Text style="color: #FFFFFF;">{(planet.resources?.food || 0).toFixed(1)}</Text>
             </div>
             <div>
               <Text style="color: #94A3B8;">Energy:</Text>
-              <Text style="color: #FFFFFF;">{Math.round(planet.resources?.energy || 0)}</Text>
+              <Text style="color: #FFFFFF;">{(planet.resources?.energy || 0).toFixed(1)}</Text>
             </div>
             <div>
               <Text style="color: #94A3B8;">Ore:</Text>
-              <Text style="color: #FFFFFF;">{Math.round(planet.resources?.ore || 0)}</Text>
+              <Text style="color: #FFFFFF;">{(planet.resources?.ore || 0).toFixed(1)}</Text>
             </div>
             <div>
               <Text style="color: #94A3B8;">Iridium:</Text>
-              <Text style="color: #FFFFFF;">{Math.round(planet.resources?.iridium || 0)}</Text>
+              <Text style="color: #FFFFFF;">{(planet.resources?.iridium || 0).toFixed(1)}</Text>
             </div>
           </div>
           

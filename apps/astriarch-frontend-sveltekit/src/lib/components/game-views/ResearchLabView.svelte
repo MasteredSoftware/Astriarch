@@ -38,14 +38,14 @@
           <div>
             <Text style="color: #94A3B8;">Research Points per Turn:</Text>
             <Text style="color: #FFFFFF;">
-              {Math.round($resourceData.perTurn.research)}
+              {$resourceData.perTurn.research.toFixed(1)}
             </Text>
           </div>
           
           <div>
             <Text style="color: #94A3B8;">Total Research Points:</Text>
             <Text style="color: #FFFFFF;">
-              {Math.round($resourceData.total.research)}
+              {$resourceData.total.research.toFixed(1)}
             </Text>
           </div>
         </div>
