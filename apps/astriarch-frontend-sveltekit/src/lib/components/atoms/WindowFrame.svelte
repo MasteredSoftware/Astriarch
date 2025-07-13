@@ -1,15 +1,15 @@
 <script lang="ts">
+  import Background from './window-frame/Background.svelte';
+  import Stroke1 from './window-frame/Stroke1.svelte';
+  import Stroke2 from './window-frame/Stroke2.svelte';
+  import Stroke3 from './window-frame/Stroke3.svelte';
+
   export let className: string = '';
   export let showLogo: boolean = true;
   export let version: string = 'v2.0';
-  export let fallbackMode: boolean = true; // Use CSS fallback if SVGs aren't available
+  export let strokeColor: string = 'var(--astriarch-primary)';
+  export let useFallback: boolean = false; // Use CSS fallback instead of SVG components
 
-  // SVG assets for the window frame layers (when available)
-  const bgSvg = 'window-frame/bg.svg';
-  const stroke1Svg = 'window-frame/stroke-1.svg';
-  const stroke2Svg = 'window-frame/stroke-2.svg';
-  const stroke3Svg = 'window-frame/stroke-3.svg';
-  
   // Logo asset
   const logoSrc = 'logo/astriarch-logo.png';
 </script>
@@ -19,7 +19,7 @@
   role="presentation"
   aria-label="Window Frame"
 >
-  {#if fallbackMode}
+  {#if useFallback}
     <!-- CSS Fallback Mode - Styled with design system -->
     <div class="absolute inset-0 bg-astriarch-ui-dark-blue rounded-lg border-2 border-astriarch-ui-light-grey/30"></div>
     <div class="absolute inset-1 border border-astriarch-primary/50 rounded"></div>
@@ -30,15 +30,11 @@
       <slot />
     </div>
   {:else}
-    <!-- SVG Mode - Uses actual Figma assets -->
+    <!-- SVG Component Mode - Uses Svelte components with design system integration -->
+    
     <!-- Background Layer -->
     <div class="absolute inset-0">
-      <img 
-        src={bgSvg}
-        alt=""
-        class="w-full h-full object-fill"
-        aria-hidden="true"
-      />
+      <Background />
     </div>
 
     <!-- Content Slot Area -->
@@ -51,36 +47,21 @@
     <!-- Stroke 3 (Outermost) -->
     <div class="absolute inset-[5.73%_2.894%_5.819%_2.894%]">
       <div class="absolute inset-[-3.239%_-2.211%_-4.049%_-2.211%]">
-        <img 
-          src={stroke3Svg}
-          alt=""
-          class="w-full h-full object-fill"
-          aria-hidden="true"
-        />
+        <Stroke3 {strokeColor} />
       </div>
     </div>
 
     <!-- Stroke 2 (Middle) -->
     <div class="absolute inset-[5.73%_2.894%_5.819%_2.894%]">
       <div class="absolute inset-[-1.619%_-1.228%_-2.429%_-1.228%]">
-        <img 
-          src={stroke2Svg}
-          alt=""
-          class="w-full h-full object-fill"
-          aria-hidden="true"
-        />
+        <Stroke2 {strokeColor} />
       </div>
     </div>
 
     <!-- Stroke 1 (Innermost) -->
     <div class="absolute inset-[5.73%_2.894%_5.819%_2.894%]">
       <div class="absolute inset-[0_-0.246%_-0.81%_-0.246%]">
-        <img 
-          src={stroke1Svg}
-          alt=""
-          class="w-full h-full object-fill"
-          aria-hidden="true"
-        />
+        <Stroke1 {strokeColor} />
       </div>
     </div>
   {/if}

@@ -191,9 +191,9 @@
 
         <!-- Window Frame with Game Content -->
         <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
-          <h3 class="text-lg font-semibold text-cyan-400 mb-4">With Game Content and SVG</h3>
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">SVG Components Mode</h3>
           <div class="w-full h-64">
-            <WindowFrame showLogo={true} fallbackMode={false}>
+            <WindowFrame useFallback={false} strokeColor="var(--astriarch-primary)">
               <div class="w-full h-full bg-gradient-to-br from-astriarch-ui-dark-blue to-black p-4 rounded">
                 <h4 class="text-astriarch-headline-24 text-astriarch-primary mb-2">Planet Overview</h4>
                 <div class="grid grid-cols-2 gap-2 text-sm">
@@ -208,39 +208,66 @@
         </div>
       </div>
 
-      <!-- Different Window Frame Variations -->
+      <!-- Different Window Frame Variations with Custom Colors -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Small Window Frame -->
+        <!-- Orange Theme Frame -->
         <div class="bg-astriarch-ui-dark-grey p-4 rounded-lg">
-          <h3 class="text-md font-semibold text-cyan-400 mb-3">Small Frame</h3>
+          <h3 class="text-md font-semibold text-cyan-400 mb-3">Orange Theme</h3>
           <div class="w-full h-32">
-            <WindowFrame showLogo={false}>
+            <WindowFrame showLogo={false} useFallback={false} strokeColor="var(--astriarch-orange-theme)">
               <div class="w-full h-full bg-astriarch-bg-glass rounded flex items-center justify-center">
-                <p class="text-astriarch-caption-12 text-astriarch-ui-light-grey">Mini Panel</p>
+                <p class="text-astriarch-caption-12 text-astriarch-orange-theme">Orange Panel</p>
               </div>
             </WindowFrame>
           </div>
         </div>
 
-        <!-- Medium Window Frame -->
+        <!-- Green Theme Frame -->
         <div class="bg-astriarch-ui-dark-grey p-4 rounded-lg">
-          <h3 class="text-md font-semibold text-cyan-400 mb-3">Medium Frame</h3>
+          <h3 class="text-md font-semibold text-cyan-400 mb-3">Green Theme</h3>
           <div class="w-full h-32">
-            <WindowFrame version="v2.1">
+            <WindowFrame version="v2.1" useFallback={false} strokeColor="var(--astriarch-green-theme)">
               <div class="w-full h-full bg-astriarch-bg-glass rounded flex items-center justify-center">
-                <p class="text-astriarch-body-14 text-astriarch-ui-white">Medium Panel</p>
+                <p class="text-astriarch-body-14 text-astriarch-green-theme">Green Panel</p>
               </div>
             </WindowFrame>
           </div>
         </div>
 
-        <!-- Large Window Frame -->
+        <!-- Purple Theme Frame -->
         <div class="bg-astriarch-ui-dark-grey p-4 rounded-lg">
-          <h3 class="text-md font-semibold text-cyan-400 mb-3">Large Frame</h3>
+          <h3 class="text-md font-semibold text-cyan-400 mb-3">Purple Theme</h3>
           <div class="w-full h-32">
-            <WindowFrame className="border-2 border-astriarch-primary/20">
+            <WindowFrame useFallback={false} strokeColor="var(--astriarch-purple-theme)">
               <div class="w-full h-full bg-astriarch-ui-dark-blue rounded flex items-center justify-center">
-                <p class="text-astriarch-body-16-semibold text-astriarch-primary">Large Panel</p>
+                <p class="text-astriarch-body-16-semibold text-astriarch-purple-theme">Purple Panel</p>
+              </div>
+            </WindowFrame>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fallback vs SVG Comparison -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+        <!-- CSS Fallback -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">CSS Fallback Mode</h3>
+          <div class="w-full h-48">
+            <WindowFrame useFallback={true}>
+              <div class="w-full h-full bg-astriarch-glass rounded flex items-center justify-center">
+                <p class="text-astriarch-body-16 text-astriarch-ui-white">Simple CSS Styling</p>
+              </div>
+            </WindowFrame>
+          </div>
+        </div>
+
+        <!-- SVG Components -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">SVG Components Mode</h3>
+          <div class="w-full h-48">
+            <WindowFrame useFallback={false} strokeColor="var(--astriarch-primary)">
+              <div class="w-full h-full bg-astriarch-glass rounded flex items-center justify-center">
+                <p class="text-astriarch-body-16 text-astriarch-primary">Pixel-Perfect Figma Design</p>
               </div>
             </WindowFrame>
           </div>
