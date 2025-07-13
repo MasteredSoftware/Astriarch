@@ -70,7 +70,7 @@
     <div class="p-4 border-b border-cyan-500/20 bg-slate-800/50 flex-shrink-0">
       <div class="flex justify-between items-center mb-2">
         <div class="flex items-center space-x-4">
-          <Text style="font-size: 18px; color: #00FFFF; font-weight: 600;">
+          <Text style="font-size: 18px; font-weight: 600;" class="text-astriarch-primary">
             {selectedPlanet.name}
           </Text>
           <Text style="font-size: 12px; color: #94A3B8;">
