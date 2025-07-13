@@ -1,4 +1,4 @@
-import type { PlanetData, PlanetType, ClientModelData, PlayerData } from 'astriarch-engine';
+import type { PlanetData, PlanetType, ClientModelData, PlayerData, ClientPlayer } from 'astriarch-engine';
 import Konva from 'konva';
 
 const PLANET_SIZE = 20; // Base planet size matching original
@@ -13,7 +13,7 @@ export class DrawnPlanet {
   private planetData: PlanetData;
   private knownPlanetType: PlanetType | null = null;
   private gameModel: ClientModelData;
-  private owner: PlayerData | null = null;
+  private owner: PlayerData | ClientPlayer | null = null;
   private textBlockForeground = "yellow";
   private textBlockStrengthForeground = "yellow";
   private textBlockStrengthText = "";
@@ -34,12 +34,26 @@ export class DrawnPlanet {
     this.planetData = planetData;
     this.gameModel = gameModel;
     
+    console.log('Creating DrawnPlanet:', {
+      id: planetData.id,
+      name: planetData.name,
+      boundingHexMidPoint: planetData.boundingHexMidPoint,
+      type: planetData.type,
+      hasFleet: !!planetData.planetaryFleet?.starships?.length,
+      hasBuildQueue: !!planetData.buildQueue?.length
+    });
+    
     // Position planet at its hex midpoint
     this.group.x(planetData.boundingHexMidPoint.x);
     this.group.y(planetData.boundingHexMidPoint.y);
     
     this.createVisualElements();
     this.update(gameModel);
+    
+    console.log('DrawnPlanet created and positioned at:', {
+      x: this.group.x(),
+      y: this.group.y()
+    });
   }
 
   private createVisualElements() {
@@ -87,14 +101,38 @@ export class DrawnPlanet {
   update(gameModel: ClientModelData): void {
     this.gameModel = gameModel;
     
-    // Update owner information
-    this.owner = this.planetData.ownerPlayerID ? 
-      gameModel.players.find(p => p.id === this.planetData.ownerPlayerID) || null : null;
+    // Enhanced owner detection using multiple data sources
+    this.owner = null;
+    
+    // Check if this planet is owned by the main player
+    if (gameModel.mainPlayerOwnedPlanets[this.planetData.id]) {
+      this.owner = gameModel.mainPlayer;
+      console.log(`Planet ${this.planetData.name} (${this.planetData.id}) is owned by main player`);
+    } else {
+      // Check for other players' ownership using lastKnownPlanetFleetStrength
+      const lastKnownData = gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
+      if (lastKnownData?.lastKnownOwnerId) {
+        // Find the player with this ID
+        const knownOwner = gameModel.clientPlayers.find(player => player.id === lastKnownData.lastKnownOwnerId);
+        if (knownOwner) {
+          this.owner = knownOwner;
+          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) last known owner: ${knownOwner.name} (cycle ${lastKnownData.cycleLastExplored})`);
+        } else {
+          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) has unknown owner ID: ${lastKnownData.lastKnownOwnerId}`);
+        }
+      } else {
+        if (lastKnownData) {
+          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) was explored but has no known owner (cycle ${lastKnownData.cycleLastExplored})`);
+        } else {
+          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) has never been explored`);
+        }
+      }
+    }
 
-    // Update planet type if known
-    const knownPlanet = gameModel.knownPlanets[this.planetData.id];
-    if (knownPlanet?.type) {
-      this.knownPlanetType = knownPlanet.type;
+    // Update planet type if available in the planet data
+    if (this.planetData.type) {
+      this.knownPlanetType = this.planetData.type;
+      console.log(`Planet ${this.planetData.name} type: ${this.knownPlanetType}`);
     }
 
     this.updateVisuals();
@@ -115,30 +153,33 @@ export class DrawnPlanet {
 
     // Color by owner
     if (this.owner) {
-      fillColor = this.owner.color || '#444';
+      // Convert ColorRgbaData to string if needed
+      const ownerColor = this.owner.color;
+      if (typeof ownerColor === 'string') {
+        fillColor = ownerColor;
+      } else if (ownerColor && typeof ownerColor === 'object') {
+        // Assume it's a ColorRgbaData object with r, g, b properties
+        fillColor = `rgb(${ownerColor.r || 0}, ${ownerColor.g || 0}, ${ownerColor.b || 0})`;
+      } else {
+        fillColor = '#444';
+      }
       strokeColor = this.lightenColor(fillColor, 0.3);
     }
 
     // Modify based on planet type if known
     if (this.knownPlanetType) {
       switch (this.knownPlanetType) {
-        case 'Terran':
+        case 1: // AsteroidBelt
+          fillColor = this.owner ? fillColor : '#8a8a8a';
+          break;
+        case 2: // DeadPlanet
+          fillColor = this.owner ? fillColor : '#444444';
+          break;
+        case 3: // PlanetClass1
           fillColor = this.owner ? fillColor : '#4a90e2';
           break;
-        case 'Desert':
-          fillColor = this.owner ? fillColor : '#d4a574';
-          break;
-        case 'Ice':
-          fillColor = this.owner ? fillColor : '#87ceeb';
-          break;
-        case 'Volcanic':
-          fillColor = this.owner ? fillColor : '#ff6b47';
-          break;
-        case 'Toxic':
-          fillColor = this.owner ? fillColor : '#9acd32';
-          break;
-        case 'Barren':
-          fillColor = this.owner ? fillColor : '#696969';
+        case 4: // PlanetClass2
+          fillColor = this.owner ? fillColor : '#50c878';
           break;
       }
     }
@@ -152,12 +193,31 @@ export class DrawnPlanet {
 
     let strengthText = '';
     
-    // Show planet fleet strength if we own it or have scouted it
-    const knownPlanet = this.gameModel.knownPlanets[this.planetData.id];
-    if (knownPlanet && (this.owner?.id === this.gameModel.humanPlayerID || knownPlanet.scoutLevel > 0)) {
-      const strength = knownPlanet.fleetStrength || 0;
-      if (strength > 0) {
-        strengthText = strength.toString();
+    // Show fleet strength for owned planets with planetary fleet data
+    if (this.owner && this.owner.id === this.gameModel.mainPlayer.id && this.planetData.planetaryFleet?.starships?.length) {
+      const fleetSize = this.planetData.planetaryFleet.starships.length;
+      strengthText = fleetSize.toString();
+    }
+    // For non-owned or other players' planets, check last known fleet data
+    else {
+      const lastKnownData = this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
+      if (lastKnownData?.fleetData?.starships?.length) {
+        const lastKnownFleetSize = lastKnownData.fleetData.starships.length;
+        if (lastKnownFleetSize > 0) {
+          // Show exact number if we own the planet, otherwise show "?" for unknown current strength
+          if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
+            strengthText = lastKnownFleetSize.toString();
+          } else {
+            strengthText = `${lastKnownFleetSize}?`; // Last known strength with uncertainty indicator
+          }
+        }
+      }
+      // Also check current planetary fleet for visible data
+      else if (this.planetData.planetaryFleet?.starships?.length) {
+        const fleetSize = this.planetData.planetaryFleet.starships.length;
+        if (fleetSize > 0) {
+          strengthText = '?'; // Unknown current strength indicator
+        }
       }
     }
 
@@ -177,12 +237,23 @@ export class DrawnPlanet {
   }
 
   private createFleetIcon(): void {
+    // Get owner color as string - handle both PlayerData and ClientPlayer
+    let ownerColor = 'white';
+    if (this.owner?.color) {
+      const color = this.owner.color;
+      if (typeof color === 'string') {
+        ownerColor = color;
+      } else if (typeof color === 'object') {
+        ownerColor = `rgb(${color.r || 0}, ${color.g || 0}, ${color.b || 0})`;
+      }
+    }
+
     this.fleetIcon = new Konva.Rect({
       x: -FLEET_ICON_SIZE / 2,
       y: -FLEET_ICON_SIZE / 2,
       width: FLEET_ICON_SIZE,
       height: FLEET_ICON_SIZE,
-      fill: this.owner?.color || 'white',
+      fill: ownerColor,
       stroke: 'black',
       strokeWidth: 1,
       cornerRadius: 2
@@ -191,15 +262,27 @@ export class DrawnPlanet {
   }
 
   private updateProductionStatus(): void {
-    // Show production status for owned planets
-    if (this.owner?.id === this.gameModel.humanPlayerID) {
-      const knownPlanet = this.gameModel.knownPlanets[this.planetData.id];
-      if (knownPlanet?.currentProductionItem) {
-        this.showProductionIndicator();
-      } else if (this.statusIndicator) {
-        this.statusIndicator.destroy();
-        this.statusIndicator = null;
+    // Show production indicator for owned planets with build queue
+    if (this.owner && this.planetData.buildQueue?.length > 0) {
+      // Determine production status color based on the first item in queue
+      const firstItem = this.planetData.buildQueue[0];
+      if (firstItem) {
+        // Color based on production item type or completion status
+        if (firstItem.turnsToComplete <= 1) {
+          this.productionItemStatusColor = 'lime'; // Almost complete
+        } else if (firstItem.resourcesSpent) {
+          this.productionItemStatusColor = 'yellow'; // In progress
+        } else {
+          this.productionItemStatusColor = 'orange'; // Waiting for resources
+        }
+      } else {
+        this.productionItemStatusColor = 'gray'; // Unknown status
       }
+      this.showProductionIndicator();
+    } else if (this.statusIndicator) {
+      this.statusIndicator.destroy();
+      this.statusIndicator = null;
+      this.productionItemStatusColor = null;
     }
   }
 
