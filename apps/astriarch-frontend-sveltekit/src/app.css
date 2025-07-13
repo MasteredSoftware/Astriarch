@@ -16,8 +16,43 @@
   --primary-foreground: oklch(0.985 0.002 247.839);
   
   /* Astriarch Design System Colors */
+  
+  /* Primary Color Palette */
   --astriarch-primary-fill: #00FFFF;
   --astriarch-primary-stroke: linear-gradient(299.62deg, rgba(0, 0, 0, 0.5) 7.75%, #00FFFF 82.21%, #FFFFFF 100%);
+  
+  /* General UI Colors */
+  --astriarch-ui-dark-blue: #1B1F25;
+  --astriarch-ui-dark-grey: #313E46;
+  --astriarch-ui-light-grey: #90A9BA;
+  --astriarch-ui-white: #FFFFFF;
+  --astriarch-ui-white-75: rgba(255, 255, 255, 0.75);
+  --astriarch-ui-white-50: rgba(255, 255, 255, 0.5);
+  --astriarch-ui-modal-bg: rgba(27, 31, 37, 0.9);
+  
+  /* Theme Colors */
+  --astriarch-green-theme: #7BFE2B;
+  --astriarch-orange-theme: #FF9111;
+  --astriarch-purple-theme: #C240FF;
+  
+  /* Element Colors */
+  --astriarch-food: #F87B54;
+  --astriarch-energy: #FFCE22;
+  --astriarch-research: #00FFC2;
+  --astriarch-ore: #B6E827;
+  --astriarch-iridium: #AA77FF;
+  --astriarch-population: #23BDFF;
+  
+  /* Status Colors */
+  --astriarch-status-bad: #FF0000;
+  --astriarch-status-medium: #FFF500;
+  --astriarch-status-good: #00FF38;
+  
+  /* Background */
+  --astriarch-bg-glass: rgba(27, 31, 37, 0.8);
+  
+  /* Typography */
+  --astriarch-font-orbitron: 'Orbitron', system-ui, -apple-system, sans-serif;
   --secondary: oklch(0.967 0.003 264.542);
   --secondary-foreground: oklch(0.21 0.034 264.665);
   --muted: oklch(0.967 0.003 264.542);
@@ -116,6 +151,22 @@
   
   /* Astriarch Design System Utilities */
   --color-astriarch-primary: var(--astriarch-primary-fill);
+  --color-astriarch-ui-dark-blue: var(--astriarch-ui-dark-blue);
+  --color-astriarch-ui-dark-grey: var(--astriarch-ui-dark-grey);
+  --color-astriarch-ui-light-grey: var(--astriarch-ui-light-grey);
+  --color-astriarch-ui-white: var(--astriarch-ui-white);
+  --color-astriarch-green-theme: var(--astriarch-green-theme);
+  --color-astriarch-orange-theme: var(--astriarch-orange-theme);
+  --color-astriarch-purple-theme: var(--astriarch-purple-theme);
+  --color-astriarch-food: var(--astriarch-food);
+  --color-astriarch-energy: var(--astriarch-energy);
+  --color-astriarch-research: var(--astriarch-research);
+  --color-astriarch-ore: var(--astriarch-ore);
+  --color-astriarch-iridium: var(--astriarch-iridium);
+  --color-astriarch-population: var(--astriarch-population);
+  --color-astriarch-status-bad: var(--astriarch-status-bad);
+  --color-astriarch-status-medium: var(--astriarch-status-medium);
+  --color-astriarch-status-good: var(--astriarch-status-good);
 }
 
 @layer base {
@@ -155,6 +206,8 @@
 
 @layer utilities {
   /* Astriarch Design System Utilities */
+  
+  /* Primary Color */
   .bg-astriarch-primary {
     background-color: var(--astriarch-primary-fill);
   }
@@ -169,6 +222,165 @@
   
   .bg-astriarch-primary-stroke {
     background: var(--astriarch-primary-stroke);
+  }
+  
+  /* UI Colors */
+  .bg-astriarch-ui-dark-blue {
+    background-color: var(--astriarch-ui-dark-blue);
+  }
+  
+  .bg-astriarch-ui-dark-grey {
+    background-color: var(--astriarch-ui-dark-grey);
+  }
+  
+  .bg-astriarch-ui-light-grey {
+    background-color: var(--astriarch-ui-light-grey);
+  }
+  
+  .text-astriarch-ui-light-grey {
+    color: var(--astriarch-ui-light-grey);
+  }
+  
+  .bg-astriarch-ui-white {
+    background-color: var(--astriarch-ui-white);
+  }
+  
+  .text-astriarch-ui-white {
+    color: var(--astriarch-ui-white);
+  }
+  
+  .bg-astriarch-glass {
+    background-color: var(--astriarch-bg-glass);
+    backdrop-filter: blur(8px);
+  }
+  
+  .bg-astriarch-modal {
+    background-color: var(--astriarch-ui-modal-bg);
+    backdrop-filter: blur(12px);
+  }
+  
+  /* Theme Colors */
+  .bg-astriarch-green {
+    background-color: var(--astriarch-green-theme);
+  }
+  
+  .text-astriarch-green {
+    color: var(--astriarch-green-theme);
+  }
+  
+  .bg-astriarch-orange {
+    background-color: var(--astriarch-orange-theme);
+  }
+  
+  .text-astriarch-orange {
+    color: var(--astriarch-orange-theme);
+  }
+  
+  .bg-astriarch-purple {
+    background-color: var(--astriarch-purple-theme);
+  }
+  
+  .text-astriarch-purple {
+    color: var(--astriarch-purple-theme);
+  }
+  
+  /* Element/Resource Colors */
+  .bg-astriarch-food {
+    background-color: var(--astriarch-food);
+  }
+  
+  .text-astriarch-food {
+    color: var(--astriarch-food);
+  }
+  
+  .bg-astriarch-energy {
+    background-color: var(--astriarch-energy);
+  }
+  
+  .text-astriarch-energy {
+    color: var(--astriarch-energy);
+  }
+  
+  .bg-astriarch-research {
+    background-color: var(--astriarch-research);
+  }
+  
+  .text-astriarch-research {
+    color: var(--astriarch-research);
+  }
+  
+  .bg-astriarch-ore {
+    background-color: var(--astriarch-ore);
+  }
+  
+  .text-astriarch-ore {
+    color: var(--astriarch-ore);
+  }
+  
+  .bg-astriarch-iridium {
+    background-color: var(--astriarch-iridium);
+  }
+  
+  .text-astriarch-iridium {
+    color: var(--astriarch-iridium);
+  }
+  
+  .bg-astriarch-population {
+    background-color: var(--astriarch-population);
+  }
+  
+  .text-astriarch-population {
+    color: var(--astriarch-population);
+  }
+  
+  /* Status Colors */
+  .bg-astriarch-status-bad {
+    background-color: var(--astriarch-status-bad);
+  }
+  
+  .text-astriarch-status-bad {
+    color: var(--astriarch-status-bad);
+  }
+  
+  .bg-astriarch-status-medium {
+    background-color: var(--astriarch-status-medium);
+  }
+  
+  .text-astriarch-status-medium {
+    color: var(--astriarch-status-medium);
+  }
+  
+  .bg-astriarch-status-good {
+    background-color: var(--astriarch-status-good);
+  }
+  
+  .text-astriarch-status-good {
+    color: var(--astriarch-status-good);
+  }
+  
+  /* Border Utilities */
+  .border-astriarch-food {
+    border-color: var(--astriarch-food);
+  }
+  
+  .border-astriarch-energy {
+    border-color: var(--astriarch-energy);
+  }
+  
+  .border-astriarch-research {
+    border-color: var(--astriarch-research);
+  }
+  
+  .border-astriarch-ore {
+    border-color: var(--astriarch-ore);
+  }
+  
+  .border-astriarch-iridium {
+    border-color: var(--astriarch-iridium);
+  }
+  
+  .border-astriarch-population {
+    border-color: var(--astriarch-population);
   }
   
   /* For use as border image or pseudo-element backgrounds */

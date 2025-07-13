@@ -97,20 +97,20 @@
       <!-- Resource Summary -->
       <div class="grid grid-cols-4 gap-4 text-xs">
         <div class="text-center">
-          <div class="text-green-400">{(selectedPlanet.resources?.food || 0).toFixed(1)}</div>
-          <div class="text-slate-400">Food</div>
+          <div class="text-astriarch-food">{(selectedPlanet.resources?.food || 0).toFixed(1)}</div>
+          <div class="text-astriarch-ui-light-grey">Food</div>
         </div>
         <div class="text-center">
-          <div class="text-yellow-400">{(selectedPlanet.resources?.energy || 0).toFixed(1)}</div>
-          <div class="text-slate-400">Energy</div>
+          <div class="text-astriarch-energy">{(selectedPlanet.resources?.energy || 0).toFixed(1)}</div>
+          <div class="text-astriarch-ui-light-grey">Energy</div>
         </div>
         <div class="text-center">
-          <div class="text-orange-400">{(selectedPlanet.resources?.ore || 0).toFixed(1)}</div>
-          <div class="text-slate-400">Ore</div>
+          <div class="text-astriarch-ore">{(selectedPlanet.resources?.ore || 0).toFixed(1)}</div>
+          <div class="text-astriarch-ui-light-grey">Ore</div>
         </div>
         <div class="text-center">
-          <div class="text-purple-400">{(selectedPlanet.resources?.iridium || 0).toFixed(1)}</div>
-          <div class="text-slate-400">Iridium</div>
+          <div class="text-astriarch-iridium">{(selectedPlanet.resources?.iridium || 0).toFixed(1)}</div>
+          <div class="text-astriarch-ui-light-grey">Iridium</div>
         </div>
       </div>
     </div>
