@@ -29,6 +29,7 @@
     Tab
   } from "$lib/components/astriarch";
   import Logo from "$lib/components/atoms/Logo.svelte";
+  import WindowFrame from "$lib/components/atoms/WindowFrame.svelte";
   import type { IconImageType, TabControllerTab } from "$lib/components/astriarch";
   
   let showDialog = $state(false);
@@ -164,6 +165,84 @@
           <div class="bg-astriarch-glass p-6 rounded text-center">
             <Logo size="lg" variant="white" className="mx-auto mb-4" />
             <p class="text-astriarch-ui-light-grey text-sm">Welcome back to the galaxy</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Window Frame Component Demo -->
+    <div class="mb-12">
+      <h2 class="text-2xl font-bold text-center mb-6 text-cyan-300">
+        🖼️ Window Frame Atom Component
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <!-- Basic Window Frame -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">Basic Window Frame</h3>
+          <div class="w-full h-64">
+            <WindowFrame>
+              <div class="w-full h-full bg-astriarch-glass rounded flex items-center justify-center">
+                <p class="text-astriarch-body-16 text-astriarch-ui-white">Window Content Area</p>
+              </div>
+            </WindowFrame>
+          </div>
+        </div>
+
+        <!-- Window Frame with Game Content -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">With Game Content and SVG</h3>
+          <div class="w-full h-64">
+            <WindowFrame showLogo={true} fallbackMode={false}>
+              <div class="w-full h-full bg-gradient-to-br from-astriarch-ui-dark-blue to-black p-4 rounded">
+                <h4 class="text-astriarch-headline-24 text-astriarch-primary mb-2">Planet Overview</h4>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                  <div class="text-astriarch-food">Food: 1,250</div>
+                  <div class="text-astriarch-energy">Energy: 890</div>
+                  <div class="text-astriarch-ore">Ore: 670</div>
+                  <div class="text-astriarch-research">Research: 340</div>
+                </div>
+              </div>
+            </WindowFrame>
+          </div>
+        </div>
+      </div>
+
+      <!-- Different Window Frame Variations -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Small Window Frame -->
+        <div class="bg-astriarch-ui-dark-grey p-4 rounded-lg">
+          <h3 class="text-md font-semibold text-cyan-400 mb-3">Small Frame</h3>
+          <div class="w-full h-32">
+            <WindowFrame showLogo={false}>
+              <div class="w-full h-full bg-astriarch-bg-glass rounded flex items-center justify-center">
+                <p class="text-astriarch-caption-12 text-astriarch-ui-light-grey">Mini Panel</p>
+              </div>
+            </WindowFrame>
+          </div>
+        </div>
+
+        <!-- Medium Window Frame -->
+        <div class="bg-astriarch-ui-dark-grey p-4 rounded-lg">
+          <h3 class="text-md font-semibold text-cyan-400 mb-3">Medium Frame</h3>
+          <div class="w-full h-32">
+            <WindowFrame version="v2.1">
+              <div class="w-full h-full bg-astriarch-bg-glass rounded flex items-center justify-center">
+                <p class="text-astriarch-body-14 text-astriarch-ui-white">Medium Panel</p>
+              </div>
+            </WindowFrame>
+          </div>
+        </div>
+
+        <!-- Large Window Frame -->
+        <div class="bg-astriarch-ui-dark-grey p-4 rounded-lg">
+          <h3 class="text-md font-semibold text-cyan-400 mb-3">Large Frame</h3>
+          <div class="w-full h-32">
+            <WindowFrame className="border-2 border-astriarch-primary/20">
+              <div class="w-full h-full bg-astriarch-ui-dark-blue rounded flex items-center justify-center">
+                <p class="text-astriarch-body-16-semibold text-astriarch-primary">Large Panel</p>
+              </div>
+            </WindowFrame>
           </div>
         </div>
       </div>
