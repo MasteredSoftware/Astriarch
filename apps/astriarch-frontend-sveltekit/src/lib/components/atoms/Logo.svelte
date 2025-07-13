@@ -27,8 +27,8 @@
     primary: 'text-astriarch-primary'
   };
 
-  // Logo asset from local assets
-  const logoImageSrc = '/assets/logo/astriarch-logo.png';
+  // Logo asset from static directory (SvelteKit convention)
+  const logoImageSrc = 'logo/astriarch-logo.png';
   const logoText = 'ASTRIARCH';
 </script>
 

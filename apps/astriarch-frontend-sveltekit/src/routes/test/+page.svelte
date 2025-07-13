@@ -28,6 +28,7 @@
     TabController,
     Tab
   } from "$lib/components/astriarch";
+  import Logo from "$lib/components/atoms/Logo.svelte";
   import type { IconImageType, TabControllerTab } from "$lib/components/astriarch";
   
   let showDialog = $state(false);
@@ -91,6 +92,82 @@
     <h1 class="text-4xl font-bold text-center mb-8 text-cyan-400 font-orbitron">
       Astriarch - Ruler of the Stars
     </h1>
+
+    <!-- Logo Component Demo -->
+    <div class="mb-12">
+      <h2 class="text-2xl font-bold text-center mb-6 text-cyan-300">
+        🎨 Logo Atom Component
+      </h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+        <!-- Text Logo Variations -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">Text Logos</h3>
+          <div class="space-y-4">
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">Small:</span>
+              <Logo size="sm" variant="white" />
+            </div>
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">Medium:</span>
+              <Logo size="md" variant="white" />
+            </div>
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">Large:</span>
+              <Logo size="lg" variant="primary" />
+            </div>
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">XL:</span>
+              <Logo size="xl" variant="primary" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Image Logo Variations -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">Image Logos</h3>
+          <div class="space-y-4">
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">Small:</span>
+              <Logo type="image" size="sm" variant="default" />
+            </div>
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">Medium:</span>
+              <Logo type="image" size="md" variant="white" />
+            </div>
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">Large:</span>
+              <Logo type="image" size="lg" variant="primary" />
+            </div>
+            <div class="flex items-center space-x-4">
+              <span class="text-sm text-cyan-300 w-16">XL:</span>
+              <Logo type="image" size="xl" variant="white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Usage Examples -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <!-- Header Example -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">Header Usage</h3>
+          <div class="bg-astriarch-ui-dark-blue p-4 rounded flex items-center justify-between">
+            <Logo size="md" variant="primary" />
+            <div class="text-astriarch-ui-light-grey text-sm">Navigation Menu</div>
+          </div>
+        </div>
+
+        <!-- Login Card Example -->
+        <div class="bg-astriarch-ui-dark-grey p-6 rounded-lg">
+          <h3 class="text-lg font-semibold text-cyan-400 mb-4">Login Card Usage</h3>
+          <div class="bg-astriarch-glass p-6 rounded text-center">
+            <Logo size="lg" variant="white" className="mx-auto mb-4" />
+            <p class="text-astriarch-ui-light-grey text-sm">Welcome back to the galaxy</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Astriarch Custom Components Demo -->
     <div class="mb-12">
