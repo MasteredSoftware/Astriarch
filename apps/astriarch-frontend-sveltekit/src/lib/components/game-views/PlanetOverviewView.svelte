@@ -70,12 +70,12 @@
     <div class="p-4 border-b border-cyan-500/20 bg-slate-800/50 flex-shrink-0">
       <div class="flex justify-between items-center mb-2">
         <div class="flex items-center space-x-4">
-          <Text style="font-size: 18px; font-weight: 600;" class="text-astriarch-primary">
+          <h2 class="text-astriarch-headline-24 text-astriarch-primary">
             {selectedPlanet.name}
-          </Text>
-          <Text style="font-size: 12px; color: #94A3B8;">
+          </h2>
+          <span class="text-astriarch-body-14 text-astriarch-ui-light-grey">
             {getPlanetTypeName(selectedPlanet.type)} World
-          </Text>
+          </span>
           {#if planetList.length > 1}
             <select 
               class="bg-slate-700 border border-slate-600 rounded px-2 py-1 text-xs text-white"
@@ -119,15 +119,15 @@
     <div class="flex flex-1 min-h-0">
       <!-- Column 1: Available Items to Build -->
       <div class="flex-1 border-r border-cyan-500/20 p-3 overflow-y-auto">
-        <Text style="font-size: 14px; color: #00FFFF; margin-bottom: 8px; font-weight: 500;">
+        <h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
           Build Items
-        </Text>
+        </h3>
         
         <!-- Buildings Section -->
         <div class="mb-4">
-          <Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">
+          <h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
             Buildings
-          </Text>
+          </h4>
           <div class="space-y-1">
             {#each availableBuildings as building}
               <button class="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs border border-slate-600/30 hover:border-cyan-500/30 transition-colors">
@@ -147,9 +147,9 @@
 
         <!-- Ships Section -->
         <div>
-          <Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">
+          <h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
             Starships
-          </Text>
+          </h4>
           <div class="space-y-1">
             {#each availableShips as ship}
               <button class="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs border border-slate-600/30 hover:border-cyan-500/30 transition-colors">
@@ -170,15 +170,15 @@
 
       <!-- Column 2: Resources per Turn & Worker Management -->
       <div class="flex-1 border-r border-cyan-500/20 p-3 overflow-y-auto">
-        <Text style="font-size: 14px; color: #00FFFF; margin-bottom: 8px; font-weight: 500;">
+        <h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
           Production & Workers
-        </Text>
+        </h3>
         
         <!-- Resource Production -->
         <div class="mb-4">
-          <Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">
+          <h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
             Resource Production per Turn
-          </Text>
+          </h4>
           <div class="space-y-2 text-xs">
             <div class="flex justify-between p-2 bg-slate-800/30 rounded">
               <span class="text-green-400">Food:</span>
@@ -201,9 +201,9 @@
 
         <!-- Worker Assignment -->
         <div>
-          <Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">
+          <h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
             Worker Assignment
-          </Text>
+          </h4>
           <div class="space-y-2 text-xs">
             <div class="flex justify-between items-center p-2 bg-slate-800/30 rounded">
               <span class="text-green-400">Farmers:</span>
@@ -235,9 +235,9 @@
 
       <!-- Column 3: Build Queue -->
       <div class="flex-1 p-3 overflow-y-auto">
-        <Text style="font-size: 14px; color: #00FFFF; margin-bottom: 8px; font-weight: 500;">
+        <h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
           Build Queue
-        </Text>
+        </h3>
         
         {#if selectedPlanet.buildQueue && selectedPlanet.buildQueue.length > 0}
           <div class="space-y-2">

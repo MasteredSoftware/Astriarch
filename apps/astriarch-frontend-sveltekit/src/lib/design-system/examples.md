@@ -229,7 +229,141 @@ Complete design system based on your Figma design with all colors and styles sys
 --astriarch-font-orbitron: 'Orbitron', system-ui, -apple-system, sans-serif;
 ```
 
-The design system uses **Orbitron** as the primary font family, which is already configured globally. All components inherit this sci-fi aesthetic font automatically.
+The design system uses **Orbitron** as the primary font family for that sci-fi aesthetic.
+
+### Typography Scale
+
+#### Headlines
+```html
+<!-- Headline 72px - Hero text -->
+<h1 class="text-astriarch-headline-72 text-astriarch-ui-white">Main Title</h1>
+
+<!-- Headline 56px - Large section headers -->
+<h2 class="text-astriarch-headline-56 text-astriarch-ui-white">Section Header</h2>
+
+<!-- Headline 42px - Medium headers -->
+<h3 class="text-astriarch-headline-42 text-astriarch-ui-white">Subsection</h3>
+
+<!-- Headline 38px - Small headers -->
+<h4 class="text-astriarch-headline-38 text-astriarch-ui-white">Small Header</h4>
+
+<!-- Headline 32px - Component titles -->
+<h5 class="text-astriarch-headline-32 text-astriarch-ui-white">Component Title</h5>
+
+<!-- Headline 24px - Card titles -->
+<h6 class="text-astriarch-headline-24 text-astriarch-ui-white">Card Title</h6>
+```
+
+#### Body Text
+```html
+<!-- Body 19px - Large body text -->
+<p class="text-astriarch-body-19 text-astriarch-ui-white">Large body text for important content</p>
+<p class="text-astriarch-body-19-semibold text-astriarch-ui-white">Large body text emphasized</p>
+
+<!-- Body 18px - Medium body text -->
+<p class="text-astriarch-body-18 text-astriarch-ui-white">Medium body text for general content</p>
+<p class="text-astriarch-body-18-semibold text-astriarch-ui-white">Medium body text emphasized</p>
+
+<!-- Body 16px - Standard body text -->
+<p class="text-astriarch-body-16 text-astriarch-ui-white">Standard body text for most content</p>
+<p class="text-astriarch-body-16-semibold text-astriarch-ui-white">Standard body text emphasized</p>
+
+<!-- Body 14px - Small body text -->
+<p class="text-astriarch-body-14 text-astriarch-ui-white">Small body text for secondary content</p>
+<p class="text-astriarch-body-14-semibold text-astriarch-ui-white">Small body text emphasized</p>
+```
+
+#### Captions
+```html
+<!-- Caption 12px - Standard captions -->
+<span class="text-astriarch-caption-12 text-astriarch-ui-light-grey">Standard caption text</span>
+<span class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey">Emphasized caption</span>
+
+<!-- Caption 10px - Small captions -->
+<span class="text-astriarch-caption-10 text-astriarch-ui-light-grey">Small caption text</span>
+<span class="text-astriarch-caption-10-semibold text-astriarch-ui-light-grey">Small emphasized caption</span>
+```
+
+#### Call to Action
+```html
+<!-- CTA 16px - Primary buttons -->
+<button class="text-astriarch-cta-16 bg-astriarch-primary text-black px-6 py-3 rounded">
+  Primary Action
+</button>
+
+<!-- CTA 14px - Secondary buttons -->
+<button class="text-astriarch-cta-14 bg-astriarch-ui-dark-grey text-astriarch-ui-white px-4 py-2 rounded">
+  Secondary Action
+</button>
+
+<!-- CTA 12px - Small buttons -->
+<button class="text-astriarch-cta-12 bg-astriarch-ui-dark-grey text-astriarch-ui-white px-3 py-1 rounded">
+  Small Action
+</button>
+```
+
+#### Labels
+```html
+<!-- Label 12px - Form labels, section labels -->
+<label class="text-astriarch-label-12 text-astriarch-ui-light-grey">
+  Field Label
+</label>
+```
+
+### Typography Usage Examples
+
+#### Section Header Component
+```svelte
+<div class="mb-6">
+  <h2 class="text-astriarch-headline-32 text-astriarch-primary mb-2">
+    Planet Overview
+  </h2>
+  <p class="text-astriarch-body-16 text-astriarch-ui-light-grey">
+    Manage your planet's resources and development
+  </p>
+</div>
+```
+
+#### Card Component with Typography
+```svelte
+<div class="bg-astriarch-glass p-4 rounded-lg">
+  <h3 class="text-astriarch-headline-24 text-astriarch-ui-white mb-2">
+    Resource Production
+  </h3>
+  <div class="space-y-2">
+    <div class="flex justify-between items-center">
+      <span class="text-astriarch-body-16 text-astriarch-ui-light-grey">Food:</span>
+      <span class="text-astriarch-body-16-semibold text-astriarch-food">+2.4</span>
+    </div>
+    <span class="text-astriarch-caption-12 text-astriarch-ui-light-grey">per turn</span>
+  </div>
+</div>
+```
+
+#### Button with Proper Typography
+```svelte
+<button class="bg-astriarch-primary hover:opacity-80 transition-opacity px-6 py-3 rounded">
+  <span class="text-astriarch-cta-16 text-black">
+    Build Structure
+  </span>
+</button>
+```
+
+#### Form with Labels
+```svelte
+<div class="space-y-4">
+  <div>
+    <label class="text-astriarch-label-12 text-astriarch-ui-light-grey block mb-1">
+      Planet Name
+    </label>
+    <input 
+      class="text-astriarch-body-16 bg-astriarch-ui-dark-grey text-astriarch-ui-white border border-astriarch-primary rounded px-3 py-2 w-full"
+      type="text"
+      value="Terra Prime"
+    />
+  </div>
+</div>
+```
 
 ## Next Steps
 
