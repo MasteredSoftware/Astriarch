@@ -131,7 +131,7 @@
               <FleetCommandView />
             </div>
           {:else if $currentView === 'planets'}
-            <div class="absolute top-4 right-4 w-96 max-h-[calc(100%-2rem)] bg-black/80 backdrop-blur-sm border border-cyan-500/40 rounded-lg overflow-hidden">
+            <div class="absolute bottom-4 left-4 right-4 h-1/2 bg-black/90 backdrop-blur-sm border border-cyan-500/40 rounded-lg overflow-hidden">
               <PlanetOverviewView />
             </div>
           {:else if $currentView === 'research'}
