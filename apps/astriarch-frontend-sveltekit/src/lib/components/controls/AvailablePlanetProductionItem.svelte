@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Card } from '$lib/components/astriarch';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   
   export let name: string;
   export let description: string = '';
@@ -29,46 +30,87 @@
   }
 </script>
 
-<Card
-  class="w-full text-left relative group transition-all duration-200 cursor-pointer
-         {enabled ? 'hover:bg-astriarch-ui-dark-blue/20' : 'cursor-not-allowed'}"
-  {enabled}
-  onclick={handleClick}
->
-  <div class="p-3">
-    <!-- Item name -->
-    <div class="text-astriarch-body-14-semibold text-astriarch-ui-white mb-1
-                {enabled ? '' : 'text-astriarch-ui-medium-grey'}">
-      {name}
-    </div>
+{#if description}
+  <Tooltip.Provider>
+    <Tooltip.Root>
+      <Tooltip.Trigger class="w-full">
+        <Card
+          class="w-full text-left relative group transition-all duration-200 cursor-pointer
+                 {enabled ? 'hover:bg-astriarch-ui-dark-blue/20' : 'cursor-not-allowed'}"
+          size="md"
+          {enabled}
+          onclick={handleClick}
+        >
+          <div class="p-3">
+            <!-- Item name -->
+            <div class="text-astriarch-body-14-semibold text-astriarch-ui-white mb-1
+                        {enabled ? '' : 'text-astriarch-ui-medium-grey'}">
+              {name}
+            </div>
 
-    <!-- Description (if provided) -->
-    {#if description}
-      <div class="text-astriarch-caption-10 text-astriarch-ui-light-grey mb-2
-                  {enabled ? '' : 'text-astriarch-ui-dark-grey'}">
-        {description}
-      </div>
-    {/if}
-
-    <!-- Resource costs -->
-    {#if displayCosts.length > 0}
-      <div class="flex items-center gap-3">
-        {#each displayCosts as [resource, amount]}
-          <div class="flex items-center gap-1">
-            <!-- Colored resource circle -->
-            <div 
-              class="w-2.5 h-2.5 rounded-full flex-shrink-0
-                     {enabled ? '' : 'opacity-50'}"
-              style="background-color: {resourceColors[resource] || 'var(--astriarch-ui-medium-grey)'}"
-            ></div>
-            <!-- Resource amount -->
-            <span class="text-astriarch-caption-12-semibold
-                         {enabled ? 'text-astriarch-ui-white' : 'text-astriarch-ui-medium-grey'}">
-              {amount}
-            </span>
+            <!-- Resource costs -->
+            {#if displayCosts.length > 0}
+              <div class="flex items-center gap-2">
+                {#each displayCosts as [resource, amount]}
+                  <div class="flex items-center gap-1">
+                    <!-- Colored resource circle -->
+                    <div 
+                      class="w-2.5 h-2.5 rounded-full flex-shrink-0
+                             {enabled ? '' : 'opacity-50'}"
+                      style="background-color: {resourceColors[resource] || 'var(--astriarch-ui-medium-grey)'}"
+                    ></div>
+                    <!-- Resource amount -->
+                    <span class="text-astriarch-caption-12-semibold
+                                 {enabled ? 'text-astriarch-ui-white' : 'text-astriarch-ui-medium-grey'}">
+                      {amount}
+                    </span>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
-        {/each}
+        </Card>
+      </Tooltip.Trigger>
+      <Tooltip.Content class="bg-astriarch-ui-dark-grey border border-astriarch-ui-medium-grey/30 text-astriarch-ui-white text-astriarch-caption-12 max-w-xs">
+        {description}
+      </Tooltip.Content>
+    </Tooltip.Root>
+  </Tooltip.Provider>
+{:else}
+  <Card
+    class="w-full text-left relative group transition-all duration-200 cursor-pointer
+           {enabled ? 'hover:bg-astriarch-ui-dark-blue/20' : 'cursor-not-allowed'}"
+    size="md"
+    {enabled}
+    onclick={handleClick}
+  >
+    <div class="p-3">
+      <!-- Item name -->
+      <div class="text-astriarch-body-14-semibold text-astriarch-ui-white mb-1
+                  {enabled ? '' : 'text-astriarch-ui-medium-grey'}">
+        {name}
       </div>
-    {/if}
-  </div>
-</Card>
+
+      <!-- Resource costs -->
+      {#if displayCosts.length > 0}
+        <div class="flex items-center gap-3">
+          {#each displayCosts as [resource, amount]}
+            <div class="flex items-center gap-1">
+              <!-- Colored resource circle -->
+              <div 
+                class="w-2.5 h-2.5 rounded-full flex-shrink-0
+                       {enabled ? '' : 'opacity-50'}"
+                style="background-color: {resourceColors[resource] || 'var(--astriarch-ui-medium-grey)'}"
+              ></div>
+              <!-- Resource amount -->
+              <span class="text-astriarch-caption-12-semibold
+                           {enabled ? 'text-astriarch-ui-white' : 'text-astriarch-ui-medium-grey'}">
+                {amount}
+              </span>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </Card>
+{/if}
