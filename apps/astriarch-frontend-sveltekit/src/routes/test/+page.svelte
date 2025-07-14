@@ -26,7 +26,8 @@
     NavigationController,
     NavigationTab,
     TabController,
-    Tab
+    Tab,
+    AvailablePlanetProductionItem
   } from "$lib/components/astriarch";
   import Logo from "$lib/components/atoms/Logo.svelte";
   import WindowFrame from "$lib/components/atoms/WindowFrame.svelte";
@@ -728,6 +729,56 @@
         </TabController>
       </div>
       
+    </div>
+
+    <!-- AvailablePlanetProductionItem Test Section -->
+    <div class="mt-8">
+      <h3 class="text-astriarch-headline-20 text-astriarch-primary mb-4">
+        Production Items
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
+        <!-- Building examples -->
+        <AvailablePlanetProductionItem 
+          name="Farm"
+          description="Increases food production"
+          cost={{ energy: 2, ore: 1 }}
+          onClick={() => console.log('Farm selected')}
+        />
+        <AvailablePlanetProductionItem 
+          name="Mine"
+          description="Increases ore and iridium production"
+          cost={{ energy: 6, ore: 4, iridium: 2 }}
+          enabled={false}
+          onClick={() => console.log('Mine selected')}
+        />
+        <AvailablePlanetProductionItem 
+          name="Factory"
+          description="Increases production capacity"
+          cost={{ energy: 12, ore: 8, iridium: 4 }}
+          onClick={() => console.log('Factory selected')}
+        />
+        
+        <!-- Ship examples -->
+        <AvailablePlanetProductionItem 
+          name="Scout"
+          description="Fast exploration vessel"
+          cost={{ energy: 3, ore: 2, iridium: 1 }}
+          onClick={() => console.log('Scout selected')}
+        />
+        <AvailablePlanetProductionItem 
+          name="Destroyer"
+          description="Light combat vessel"
+          cost={{ energy: 6, ore: 4, iridium: 2 }}
+          onClick={() => console.log('Destroyer selected')}
+        />
+        <AvailablePlanetProductionItem 
+          name="Battleship"
+          description="Heavy combat vessel"
+          cost={{ energy: 24, ore: 16, iridium: 8 }}
+          enabled={false}
+          onClick={() => console.log('Battleship selected')}
+        />
+      </div>
     </div>
 
     <div class="mt-8 text-center">

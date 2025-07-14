@@ -13,6 +13,9 @@ export { default as IconImage } from './icon-image/IconImage.svelte';
 export { default as Text } from './text/Text.svelte';
 export { default as Box } from './box/Box.svelte';
 export { default as TopOverview } from './top-overview/TopOverview.svelte';
+
+// Atoms
+export { default as AvailablePlanetProductionItem } from '../controls/AvailablePlanetProductionItem.svelte';
 export { default as TopOverviewItem } from './top-overview-item/TopOverviewItem.svelte';
 
 // Dialog and Notification components

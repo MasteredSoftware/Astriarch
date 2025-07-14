@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Text, Card, Button } from '$lib/components/astriarch';
+  import { Text, Card, Button, AvailablePlanetProductionItem } from '$lib/components/astriarch';
   import { clientGameModel } from '$lib/stores/gameStore';
 
   let selectedPlanet = null;
@@ -129,18 +129,17 @@
             Buildings
           </h4>
           <div class="space-y-1">
-            {#each availableBuildings as building}
-              <button class="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs border border-slate-600/30 hover:border-cyan-500/30 transition-colors">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <div class="text-white font-medium">{building.name}</div>
-                    <div class="text-slate-400 text-xs">{building.description}</div>
-                  </div>
-                  <div class="text-right text-xs text-slate-400">
-                    {Object.entries(building.cost).map(([resource, amount]) => `${amount} ${resource}`).join(', ')}
-                  </div>
-                </div>
-              </button>
+            {#each availableBuildings as building, index}
+              <AvailablePlanetProductionItem 
+                name={building.name}
+                description={building.description}
+                cost={building.cost}
+                enabled={index !== 0}
+                onClick={() => {
+                  // Handle building selection
+                  console.log('Selected building:', building.name);
+                }}
+              />
             {/each}
           </div>
         </div>
@@ -152,17 +151,15 @@
           </h4>
           <div class="space-y-1">
             {#each availableShips as ship}
-              <button class="w-full text-left p-2 bg-slate-800/50 hover:bg-slate-700/50 rounded text-xs border border-slate-600/30 hover:border-cyan-500/30 transition-colors">
-                <div class="flex justify-between items-center">
-                  <div>
-                    <div class="text-white font-medium">{ship.name}</div>
-                    <div class="text-slate-400 text-xs">{ship.description}</div>
-                  </div>
-                  <div class="text-right text-xs text-slate-400">
-                    {Object.entries(ship.cost).map(([resource, amount]) => `${amount} ${resource}`).join(', ')}
-                  </div>
-                </div>
-              </button>
+              <AvailablePlanetProductionItem 
+                name={ship.name}
+                description={ship.description}
+                cost={ship.cost}
+                onClick={() => {
+                  // Handle ship selection
+                  console.log('Selected ship:', ship.name);
+                }}
+              />
             {/each}
           </div>
         </div>
