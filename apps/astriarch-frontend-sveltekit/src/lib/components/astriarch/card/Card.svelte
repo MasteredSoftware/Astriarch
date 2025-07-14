@@ -57,13 +57,18 @@
   tabindex={onclick ? 0 : undefined}
   {...restProps}
 >
-  {#if label}
-    <div style={textStyle}>
-      {label}
-    </div>
-  {/if}
+  <!-- SVG Background (behind content) -->
   <CardSvg {size} {enabled} />
-  {#if children}
-    {@render children()}
-  {/if}
+  
+  <!-- Content layer (above SVG) -->
+  <div class="relative z-10">
+    {#if label}
+      <div style={textStyle}>
+        {label}
+      </div>
+    {/if}
+    {#if children}
+      {@render children()}
+    {/if}
+  </div>
 </div>
