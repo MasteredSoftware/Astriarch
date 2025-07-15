@@ -1,6 +1,10 @@
 <script lang="ts">
   import { Text, Card, Button, AvailablePlanetProductionItem } from '$lib/components/astriarch';
   import { clientGameModel } from '$lib/stores/gameStore';
+  import { GameTools } from 'astriarch-engine/src/utils/gameTools';
+  import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
+  import { PlanetImprovementType } from 'astriarch-engine/src/model/planet';
+  import { StarShipType } from 'astriarch-engine/src/model/fleet';
 
   let selectedPlanet = null;
 
@@ -16,52 +20,52 @@
     selectedPlanet = planet;
   }
 
-  function getBuildingTypeName(type) {
-    switch(type) {
-      case 1: return 'Factory';
-      case 2: return 'Colony';
-      case 3: return 'Farm';
-      case 4: return 'Mine';
-      default: return 'Unknown';
-    }
-  }
-
-  function getStarshipTypeName(type) {
-    switch(type) {
-      case 1: return 'Defender';
-      case 2: return 'Scout';
-      case 3: return 'Destroyer';
-      case 4: return 'Cruiser';
-      case 5: return 'Battleship';
-      case 6: return 'Space Platform';
-      default: return 'Unknown Ship';
-    }
-  }
-
-  function getPlanetTypeName(type) {
-    switch(type) {
-      case 1: return 'Arid';
-      case 2: return 'Terran';
-      case 3: return 'Ocean';
-      case 4: return 'Gaia';
-      default: return 'Unknown';
-    }
-  }
-
-  // Sample data for available buildings and ships
-  const availableBuildings = [
-    { type: 3, name: 'Farm', cost: { energy: 1 }, description: 'Increases food production' },
-    { type: 4, name: 'Mine', cost: { energy: 2, ore: 1 }, description: 'Increases ore and iridium production' },
-    { type: 1, name: 'Factory', cost: { energy: 6, ore: 4, iridium: 2 }, description: 'Increases production capacity' },
-    { type: 2, name: 'Colony', cost: { energy: 3, ore: 2, iridium: 1 }, description: 'Increases population capacity' }
+  // Available building types with descriptions
+  const buildingTypes = [
+    { type: PlanetImprovementType.Farm, description: 'Increases food production' },
+    { type: PlanetImprovementType.Mine, description: 'Increases ore and iridium production' },
+    { type: PlanetImprovementType.Factory, description: 'Increases production rate' },
+    { type: PlanetImprovementType.Colony, description: 'Increases population capacity' }
   ];
 
-  const availableShips = [
-    { type: 2, name: 'Scout', cost: { energy: 3, ore: 2, iridium: 1 }, description: 'Fast exploration vessel' },
-    { type: 3, name: 'Destroyer', cost: { energy: 6, ore: 4, iridium: 2 }, description: 'Light combat vessel' },
-    { type: 4, name: 'Cruiser', cost: { energy: 12, ore: 8, iridium: 4 }, description: 'Medium combat vessel' },
-    { type: 5, name: 'Battleship', cost: { energy: 24, ore: 16, iridium: 8 }, description: 'Heavy combat vessel' }
+  const shipTypes = [
+    { type: StarShipType.SystemDefense, description: 'Basic planetary defense unit' },
+    { type: StarShipType.Scout, description: 'Fast exploration vessel' },
+    { type: StarShipType.Destroyer, description: 'Light combat vessel' },
+    { type: StarShipType.Cruiser, description: 'Medium combat vessel' },
+    { type: StarShipType.Battleship, description: 'Heavy combat vessel' },
+    { type: StarShipType.SpacePlatform, description: 'Massive defensive structure' }
   ];
+
+  // Generate available buildings with proper costs from engine
+  $: availableBuildings = buildingTypes.map(({ type, description }) => {
+    const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
+    return {
+      type,
+      name: GameTools.planetImprovementTypeToFriendlyName(type),
+      description,
+      cost: {
+        energy: productionItem.energyCost,
+        ore: productionItem.oreCost,
+        iridium: productionItem.iridiumCost
+      }
+    };
+  });
+
+  // Generate available ships with proper costs from engine
+  $: availableShips = shipTypes.map(({ type, description }) => {
+    const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
+    return {
+      type,
+      name: GameTools.starShipTypeToFriendlyName(type),
+      description,
+      cost: {
+        energy: productionItem.energyCost,
+        ore: productionItem.oreCost,
+        iridium: productionItem.iridiumCost
+      }
+    };
+  });
 </script>
 
 <div class="h-full bg-slate-900/95 backdrop-blur-sm flex flex-col">
@@ -74,7 +78,7 @@
             {selectedPlanet.name}
           </h2>
           <span class="text-astriarch-body-14 text-astriarch-ui-light-grey">
-            {getPlanetTypeName(selectedPlanet.type)} World
+            {GameTools.planetTypeToFriendlyName(selectedPlanet.type)}
           </span>
           {#if planetList.length > 1}
             <select 
@@ -128,7 +132,7 @@
           <h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
             Buildings
           </h4>
-          <div class="space-y-1">
+          <div class="grid grid-cols-4 gap-2">
             {#each availableBuildings as building, index}
               <AvailablePlanetProductionItem 
                 name={building.name}
@@ -149,7 +153,7 @@
           <h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
             Starships
           </h4>
-          <div class="space-y-1">
+          <div class="grid grid-cols-4 gap-2">
             {#each availableShips as ship}
               <AvailablePlanetProductionItem 
                 name={ship.name}
@@ -243,9 +247,9 @@
                 <div class="flex justify-between items-center text-xs mb-1">
                   <div class="text-cyan-400 font-medium">
                     {#if item.itemType === 1}
-                      {getBuildingTypeName(item.improvementData?.type)}
+                      {GameTools.planetImprovementTypeToFriendlyName(item.improvementData?.type)}
                     {:else if item.itemType === 2}
-                      {getStarshipTypeName(item.starshipData?.type)}
+                      {GameTools.starShipTypeToFriendlyName(item.starshipData?.type)}
                     {:else}
                       Unknown Item
                     {/if}

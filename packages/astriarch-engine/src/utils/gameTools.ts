@@ -1,5 +1,5 @@
 import { StarShipType } from "../model/fleet";
-import { PlanetImprovementType } from "../model/planet";
+import { PlanetImprovementType, PlanetType } from "../model/planet";
 
 export class GameTools {
   public static starShipTypeToFriendlyName(t: StarShipType) {
@@ -41,6 +41,25 @@ export class GameTools {
         break;
       case PlanetImprovementType.Mine:
         name = "Mine";
+        break;
+    }
+    return name;
+  }
+
+  public static planetTypeToFriendlyName(t: PlanetType): string {
+    let name = "";
+    switch (t) {
+      case PlanetType.DeadPlanet:
+        name = "Dead";
+        break;
+      case PlanetType.PlanetClass1:
+        name = "Arid";
+        break;
+      case PlanetType.PlanetClass2:
+        name = "Terrestrial";
+        break;
+      case PlanetType.AsteroidBelt:
+        name = "Asteroid Belt";
         break;
     }
     return name;
