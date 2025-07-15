@@ -1,0 +1,9 @@
+{
+  "loglevel": "DEBUG",
+  "mongodb": {
+    "gamedb_name": "astriarch_v2_dev"
+  },
+  "server": {
+    "port": 8001
+  }
+}
