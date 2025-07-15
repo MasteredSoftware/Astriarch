@@ -3,6 +3,7 @@
   import { clientGameModel } from '$lib/stores/gameStore';
   import { GameTools } from 'astriarch-engine/src/utils/gameTools';
   import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
+  import { Planet } from 'astriarch-engine/src/engine/planet';
   import { PlanetImprovementType } from 'astriarch-engine/src/model/planet';
   import { StarShipType } from 'astriarch-engine/src/model/fleet';
 
@@ -18,6 +19,44 @@
 
   function selectPlanet(planet) {
     selectedPlanet = planet;
+  }
+
+  function addBuildingToQueue(buildingType: PlanetImprovementType) {
+    if (!selectedPlanet || !$clientGameModel) return;
+    
+    const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
+    
+    try {
+      // Planet.enqueueProductionItemAndSpendResources(
+      //   $clientGameModel.grid,
+      //   $clientGameModel.mainPlayer,
+      //   $clientGameModel.planetById,
+      //   selectedPlanet,
+      //   item
+      // );
+      console.log('Added building to queue:', GameTools.planetImprovementTypeToFriendlyName(buildingType));
+    } catch (error) {
+      console.error('Failed to add building to queue:', error);
+    }
+  }
+
+  function addShipToQueue(shipType: StarShipType) {
+    if (!selectedPlanet || !$clientGameModel) return;
+    
+    const item = PlanetProductionItem.constructStarShipInProduction(shipType);
+    
+    try {
+      // Planet.enqueueProductionItemAndSpendResources(
+      //   $clientGameModel.grid,
+      //   $clientGameModel.mainPlayer,
+      //   $clientGameModel.planetById,
+      //   selectedPlanet,
+      //   item
+      // );
+      console.log('Added ship to queue:', GameTools.starShipTypeToFriendlyName(shipType));
+    } catch (error) {
+      console.error('Failed to add ship to queue:', error);
+    }
   }
 
   // Available building types with descriptions
@@ -139,10 +178,7 @@
                 description={building.description}
                 cost={building.cost}
                 enabled={index !== 0}
-                onClick={() => {
-                  // Handle building selection
-                  console.log('Selected building:', building.name);
-                }}
+                onClick={() => addBuildingToQueue(building.type)}
               />
             {/each}
           </div>
@@ -159,10 +195,7 @@
                 name={ship.name}
                 description={ship.description}
                 cost={ship.cost}
-                onClick={() => {
-                  // Handle ship selection
-                  console.log('Selected ship:', ship.name);
-                }}
+                onClick={() => addShipToQueue(ship.type)}
               />
             {/each}
           </div>

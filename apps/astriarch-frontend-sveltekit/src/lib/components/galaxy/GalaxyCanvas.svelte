@@ -187,8 +187,6 @@
       return;
     }
 
-    console.log('Updating game objects...');
-
     // Update grid reference if changed
     const gm = $gameModel;
     if (gm?.grid && currentGrid !== gm.grid) {
@@ -214,11 +212,6 @@
 
   function updatePlanets(gameModel: ClientModelData) {
     const allPlanetsToRender = new Set<number>();
-
-    console.log('Updating planets:', { 
-      ownedPlanets: Object.keys(gameModel.mainPlayerOwnedPlanets).length,
-      clientPlanets: gameModel.clientPlanets.length 
-    });
 
     // First, render all owned planets (these have full PlanetData)
     for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {

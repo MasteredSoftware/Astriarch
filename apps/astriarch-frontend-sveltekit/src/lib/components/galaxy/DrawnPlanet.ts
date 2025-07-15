@@ -107,7 +107,7 @@ export class DrawnPlanet {
     // Check if this planet is owned by the main player
     if (gameModel.mainPlayerOwnedPlanets[this.planetData.id]) {
       this.owner = gameModel.mainPlayer;
-      console.log(`Planet ${this.planetData.name} (${this.planetData.id}) is owned by main player`);
+      //console.log(`Planet ${this.planetData.name} (${this.planetData.id}) is owned by main player`);
     } else {
       // Check for other players' ownership using lastKnownPlanetFleetStrength
       const lastKnownData = gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
@@ -116,15 +116,15 @@ export class DrawnPlanet {
         const knownOwner = gameModel.clientPlayers.find(player => player.id === lastKnownData.lastKnownOwnerId);
         if (knownOwner) {
           this.owner = knownOwner;
-          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) last known owner: ${knownOwner.name} (cycle ${lastKnownData.cycleLastExplored})`);
+          //console.log(`Planet ${this.planetData.name} (${this.planetData.id}) last known owner: ${knownOwner.name} (cycle ${lastKnownData.cycleLastExplored})`);
         } else {
-          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) has unknown owner ID: ${lastKnownData.lastKnownOwnerId}`);
+          //console.log(`Planet ${this.planetData.name} (${this.planetData.id}) has unknown owner ID: ${lastKnownData.lastKnownOwnerId}`);
         }
       } else {
         if (lastKnownData) {
-          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) was explored but has no known owner (cycle ${lastKnownData.cycleLastExplored})`);
+          //console.log(`Planet ${this.planetData.name} (${this.planetData.id}) was explored but has no known owner (cycle ${lastKnownData.cycleLastExplored})`);
         } else {
-          console.log(`Planet ${this.planetData.name} (${this.planetData.id}) has never been explored`);
+          //console.log(`Planet ${this.planetData.name} (${this.planetData.id}) has never been explored`);
         }
       }
     }
@@ -132,7 +132,7 @@ export class DrawnPlanet {
     // Update planet type if available in the planet data
     if (this.planetData.type) {
       this.knownPlanetType = this.planetData.type;
-      console.log(`Planet ${this.planetData.name} type: ${this.knownPlanetType}`);
+      //console.log(`Planet ${this.planetData.name} type: ${this.knownPlanetType}`);
     }
 
     this.updateVisuals();
