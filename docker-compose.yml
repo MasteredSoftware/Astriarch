@@ -17,7 +17,7 @@ services:
   # Backend service (optional - can run locally during development)
   astriarch-backend:
     build:
-      context: ./apps/astriarch-backend
+      context: .
       dockerfile: Dockerfile
     container_name: astriarch_backend
     restart: unless-stopped
@@ -32,9 +32,6 @@ services:
       - mongodb
     networks:
       - astriarch_net
-    volumes:
-      - ./apps/astriarch-backend:/usr/src/app
-      - /usr/src/app/node_modules
     command: npm run dev
 
 volumes:
