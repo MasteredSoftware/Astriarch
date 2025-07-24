@@ -1,7 +1,8 @@
 import WebSocket from 'ws';
 import { Server } from 'http';
 import { logger } from '../utils/logger';
-import { SessionModel, GameModel } from '../models';
+import { Session, Game, RealtimeConnection } from '../models';
+import { RealtimeGameController } from '../controllers/RealtimeGameController';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface IWebSocketMessage {
@@ -20,6 +21,7 @@ export interface IConnectedClient {
 }
 
 export class WebSocketServer {
+  private static instance: WebSocketServer;
   private wss: WebSocket.Server;
   private clients: Map<string, IConnectedClient> = new Map();
   private gameRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds
@@ -29,6 +31,11 @@ export class WebSocketServer {
     this.wss = new WebSocket.Server({ server });
     this.setupWebSocketServer();
     this.startPingInterval();
+    WebSocketServer.instance = this;
+  }
+
+  public static getInstance(): WebSocketServer | null {
+    return WebSocketServer.instance || null;
   }
 
   private setupWebSocketServer(): void {
@@ -114,7 +121,7 @@ export class WebSocketServer {
 
     try {
       // Verify game exists
-      const game = await GameModel.findById(data.gameId);
+      const game = await Game.findById(data.gameId);
       if (!game) {
         this.sendToClient(sessionId, {
           type: 'error',
@@ -133,8 +140,39 @@ export class WebSocketServer {
       }
       this.gameRooms.get(data.gameId)!.add(sessionId);
 
-      // Create/update session in database
-      await SessionModel.findOneAndUpdate(
+      // Create/update realtime connection tracking
+      await RealtimeConnection.findOneAndUpdate(
+        { sessionId },
+        {
+          gameId: data.gameId,
+          sessionId,
+          playerId: data.playerName, // TODO: Use proper player ID
+          playerName: data.playerName,
+          connectionState: 'connected',
+          websocketId: sessionId,
+          connectedAt: new Date(),
+          lastActivity: new Date(),
+          reconnectAttempts: 0,
+          clientInfo: {
+            userAgent: 'WebSocket Client', // TODO: Get from headers
+            version: '2.0.0'
+          },
+          gameSync: {
+            lastSyncTime: new Date(),
+            syncVersion: '2.0.0',
+            pendingActions: 0
+          },
+          performance: {
+            latency: 0,
+            packetsLost: 0,
+            reconnects: 0
+          }
+        },
+        { upsert: true, new: true }
+      );
+
+      // Create/update legacy session for compatibility
+      await Session.findOneAndUpdate(
         { sessionId },
         {
           sessionId,
@@ -146,15 +184,28 @@ export class WebSocketServer {
         { upsert: true, new: true }
       );
 
+      // Initialize realtime game processing if not already started
+      try {
+        await RealtimeGameController.initializeRealtimeGame(data.gameId);
+      } catch (error) {
+        logger.warn(`Game ${data.gameId} already initialized or failed to initialize:`, error);
+      }
+
       // Notify game room of new player
       this.broadcastToGame(data.gameId, {
         type: 'player_joined',
         data: { playerName: data.playerName }
       }, sessionId);
 
+      // Get current game state from RealtimeGameController
+      const currentGameState = await RealtimeGameController.getCurrentGameState(data.gameId);
+      
       this.sendToClient(sessionId, {
         type: 'game_joined',
-        data: { gameId: data.gameId, gameState: game.gameState }
+        data: { 
+          gameId: data.gameId, 
+          gameState: currentGameState || game.gameState // Fallback to legacy if needed
+        }
       });
 
       logger.info(`Player ${data.playerName} joined game ${data.gameId} with session ${sessionId}`);
@@ -181,8 +232,8 @@ export class WebSocketServer {
         }
       }
 
-      // Update session status
-      await SessionModel.findOneAndUpdate(
+      // Update legacy session status  
+      await Session.findOneAndUpdate(
         { sessionId },
         { connectionStatus: 'disconnected' }
       );
@@ -233,18 +284,54 @@ export class WebSocketServer {
     if (!client || !client.gameId || !client.playerName) return;
 
     try {
-      // Broadcast game action to all players in the game
-      this.broadcastToGame(client.gameId, {
-        type: 'game_action',
+      // Process action through RealtimeGameController
+      const result = await RealtimeGameController.processPlayerAction(
+        client.gameId,
+        client.playerName, // TODO: Use proper player ID
+        data.actionType || 'unknown_action',
+        data.actionData || data
+      );
+
+      // Update connection activity
+      await RealtimeConnection.findOneAndUpdate(
+        { sessionId },
+        { 
+          lastActivity: new Date(),
+          $inc: { 'gameSync.pendingActions': result.success ? 0 : 1 }
+        }
+      );
+
+      // Send result back to the client
+      this.sendToClient(sessionId, {
+        type: 'game_action_result',
         data: {
-          playerName: client.playerName,
-          action: data
+          success: result.success,
+          message: result.message,
+          changes: result.changes,
+          originalAction: data
         }
       });
 
-      logger.debug(`Game action from ${client.playerName} in game ${client.gameId}:`, data);
+      // Note: Game state broadcasts are handled by RealtimeGameController.processPlayerAction
+      // No need to broadcast here as the controller handles real-time synchronization
+
+      logger.debug(`Game action processed for ${client.playerName} in game ${client.gameId}:`, {
+        action: data,
+        result: result.success,
+        message: result.message
+      });
     } catch (error) {
       logger.error('Error handling game action:', error);
+      
+      // Send error response to client
+      this.sendToClient(sessionId, {
+        type: 'game_action_result',
+        data: {
+          success: false,
+          message: 'Failed to process action',
+          originalAction: data
+        }
+      });
     }
   }
 
@@ -253,8 +340,8 @@ export class WebSocketServer {
     if (!client) return;
 
     try {
-      // Update session status
-      await SessionModel.findOneAndUpdate(
+      // Update legacy session status  
+      await Session.findOneAndUpdate(
         { sessionId },
         { connectionStatus: 'disconnected' }
       );
@@ -294,7 +381,7 @@ export class WebSocketServer {
     }
   }
 
-  private broadcastToGame(gameId: string, message: IWebSocketMessage, excludeSessionId?: string): void {
+  public broadcastToGame(gameId: string, message: IWebSocketMessage, excludeSessionId?: string): void {
     const gameRoom = this.gameRooms.get(gameId);
     if (!gameRoom) return;
 

@@ -2,8 +2,12 @@ import config from 'config';
 import { GameModel } from '../models/Game';
 import { SessionModel } from '../models/Session';
 import { logger } from '../utils/logger';
-import { startNewGame, GameModelData, Player, PlayerData } from 'astriarch-engine';
-import { Planet } from 'astriarch-engine/src/engine/planet';
+import { 
+  startNewGame,
+  GameModelData,
+  Player,
+  PlayerData
+} from 'astriarch-engine';
 
 export interface GameSettings {
   maxPlayers?: number;
