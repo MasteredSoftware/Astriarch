@@ -1,197 +1,257 @@
-import { writable, derived } from 'svelte/store';
-import { 
-  startNewGame, 
-  advanceClientGameModelTime, 
-  getPlayerTotalResources, 
-  getPlayerTotalResourceProductionPerTurn,
-  getPlayerTotalPopulation,
-  subscribeToEvents,
-  type ClientModelData,
-  type EventNotification,
-  type GameModelData,
-  type Grid,
-  ResearchType
-} from 'astriarch-engine';
+import { writable, derived, get } from 'svelte/store';
 
-// Game state stores
-export const gameModel = writable<GameModelData | null>(null);
-export const clientGameModel = writable<ClientModelData | null>(null);
-export const notifications = writable<string[]>([]);
-export const gameStarted = writable<boolean>(false);
-export const isGameRunning = writable<boolean>(false);
-
-// Resource data derived from client game model
-export const resourceData = derived(
-  clientGameModel,
-  ($clientGameModel) => {
-    if (!$clientGameModel) {
-      return {
-        total: {
-          food: 0,
-          energy: 0,
-          research: 0,
-          ore: 0,
-          iridium: 0,
-          production: 0
-        },
-        perTurn: {
-          food: 0,
-          energy: 0,
-          research: 0,
-          ore: 0,
-          iridium: 0,
-          production: 0
-        }
-      };
-    }
-
-    // Get actual resources from the game model using the correct API
-    const totalResources = getPlayerTotalResources($clientGameModel.mainPlayer, $clientGameModel.mainPlayerOwnedPlanets);
-    const perTurnResources = getPlayerTotalResourceProductionPerTurn($clientGameModel.mainPlayer, $clientGameModel.mainPlayerOwnedPlanets);
-    
-    return {
-      total: totalResources,
-      perTurn: perTurnResources
-    };
-  }
-);
-
-// Population derived from client game model
-export const population = derived(
-  clientGameModel,
-  ($clientGameModel) => {
-    if (!$clientGameModel) return 0;
-    
-    return getPlayerTotalPopulation($clientGameModel.mainPlayer, $clientGameModel.mainPlayerOwnedPlanets);
-  }
-);
-
-// Current cycle derived from client game model
-export const currentCycle = derived(
-  clientGameModel,
-  ($clientGameModel) => {
-    if (!$clientGameModel) return 0;
-    return $clientGameModel.currentCycle;
-  }
-);
-
-// Friendly time display derived from current cycle
-export const gameTime = derived(
-  currentCycle,
-  ($currentCycle) => {
-    // Convert cycles to a more meaningful time representation
-    const hours = Math.floor($currentCycle / 100); // Rough conversion
-    const minutes = Math.floor(($currentCycle % 100) * 0.6); // Convert to 60-minute scale
-    return {
-      cycle: $currentCycle,
-      timeString: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
-      stardate: (2387 + ($currentCycle * 0.001)).toFixed(3)
-    };
-  }
-);
-export const currentResearch = derived(
-  clientGameModel,
-  ($clientGameModel) => {
-    if (!$clientGameModel || !$clientGameModel.mainPlayer.research.researchTypeInQueue) {
-      return "Nothing";
-    }
-    
-    const researchType = $clientGameModel.mainPlayer.research.researchTypeInQueue;
-    const researchNames: Record<number, string> = {
-      [ResearchType.NEW_SHIP_TYPE_DEFENDER]: "Defender Ship",
-      [ResearchType.NEW_SHIP_TYPE_SCOUT]: "Scout Ship", 
-      [ResearchType.NEW_SHIP_TYPE_DESTROYER]: "Destroyer Ship",
-      [ResearchType.NEW_SHIP_TYPE_CRUISER]: "Cruiser Ship",
-      [ResearchType.NEW_SHIP_TYPE_BATTLESHIP]: "Battleship",
-      [ResearchType.COMBAT_IMPROVEMENT_ATTACK]: "Combat Attack",
-      [ResearchType.COMBAT_IMPROVEMENT_DEFENSE]: "Combat Defense",
-      [ResearchType.PROPULSION_IMPROVEMENT]: "Propulsion",
-      [ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS]: "Farm Efficiency",
-      [ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES]: "Mine Efficiency",
-      [ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES]: "Colony Growth",
-      [ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES]: "Factory Efficiency",
-      [ResearchType.SPACE_PLATFORM_IMPROVEMENT]: "Space Platforms"
-    };
-    
-    return researchNames[researchType] || "Unknown Research";
-  }
-);
-
-// Game actions
-export const gameActions = {
-  startNewGame() {
-    const { gameModel: gm, clientGameModel: cgm } = startNewGame();
-    gameModel.set(gm);
-    clientGameModel.set(cgm);
-    gameStarted.set(true);
-    isGameRunning.set(true);
-    
-    // Subscribe to game events
-    subscribeToEvents("me", (playerId: string, enList: EventNotification[]) => {
-      notifications.update(prev => [
-        ...prev,
-        ...enList.map(en => en.message)
-      ]);
-    });
-
-    // Add initial notification
-    notifications.update(prev => [...prev, "New game started! Welcome to Astriarch."]);
-    
-    // Start the animation frame loop
-    startGameLoop();
-  },
-
-  pauseGame() {
-    isGameRunning.set(false);
-    if (animationFrameId !== null) {
-      cancelAnimationFrame(animationFrameId);
-      animationFrameId = null;
-    }
-  },
-
-  resumeGame() {
-    isGameRunning.set(true);
-    startGameLoop();
-  },
-
-  clearNotifications() {
-    notifications.set([]);
-  }
-};
-
-// Helper to get current store values
-function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T {
-  let value: T;
-  const unsubscribe = store.subscribe(v => value = v);
-  unsubscribe();
-  return value!;
+// Core game state interfaces
+export interface Position {
+  x: number;
+  y: number;
 }
 
-// Animation frame loop for continuous game time advancement
-let animationFrameId: number | null = null;
+export interface Planet {
+  id: string;
+  position: Position;
+  playerId?: string;
+  playerName?: string;
+  population: number;
+  resources: {
+    food: number;
+    ore: number;
+    iridium: number;
+  };
+  buildings: {
+    farms: number;
+    mines: number;
+    factories: number;
+    spacePlatforms: number;
+  };
+  buildQueue?: Array<{
+    type: string;
+    turnsRemaining: number;
+  }>;
+}
 
-function startGameLoop() {
-  if (animationFrameId !== null) {
-    cancelAnimationFrame(animationFrameId);
+export interface Fleet {
+  id: string;
+  playerId: string;
+  playerName?: string;
+  position: Position;
+  destination?: {
+    planetId: string;
+    arrivalTime: number;
+  };
+  ships: {
+    scouts: number;
+    destroyers: number;
+    cruisers: number;
+    battleships: number;
+  };
+  status: 'in_transit' | 'arrived' | 'defending' | 'attacking';
+  orders: string;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  isAI: boolean;
+  isActive: boolean;
+  resources: {
+    credits: number;
+    food: number;
+    ore: number;
+    iridium: number;
+  };
+  research: {
+    attack: number;
+    defense: number;
+    propulsion: number;
+  };
+}
+
+export interface GameState {
+  gameId: string;
+  gameTime: number;
+  planets: Record<string, Planet>;
+  fleets: Record<string, Fleet>;
+  players: Record<string, Player>;
+  currentTurn?: number;
+}
+
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface Notification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'battle' | 'research' | 'construction' | 'fleet' | 'planet' | 'diplomacy';
+  message: string;
+  timestamp: number;
+  actionText?: string;
+  actionType?: string;
+}
+
+export interface GameStoreState {
+  gameId: string | null;
+  currentPlayer: string | null;
+  currentView: 'lobby' | 'game' | 'planet' | 'research' | 'diplomacy' | 'fleet';
+  gameState: GameState | null;
+  selectedPlanet: string | null;
+  selectedFleet: string | null;
+  chatMessages: ChatMessage[];
+  notifications: Notification[];
+  showChat: boolean;
+  showNotifications: boolean;
+}
+
+// Create the main game store
+function createGameStore() {
+  const initialState: GameStoreState = {
+    gameId: null,
+    currentPlayer: null,
+    currentView: 'game',
+    gameState: null,
+    selectedPlanet: null,
+    selectedFleet: null,
+    chatMessages: [],
+    notifications: [],
+    showChat: false,
+    showNotifications: false
+  };
+
+  const { subscribe, set, update } = writable(initialState);
+
+  return {
+    subscribe,
+    set,
+    update,
+
+    // Game state actions
+    setGameState: (gameState: GameState) => update(store => ({
+      ...store,
+      gameState
+    })),
+
+    setCurrentPlayer: (playerId: string) => update(store => ({
+      ...store,
+      currentPlayer: playerId
+    })),
+
+    setCurrentView: (view: GameStoreState['currentView']) => update(store => ({
+      ...store,
+      currentView: view
+    })),
+
+    // Selection actions
+    selectPlanet: (planetId: string | null) => update(store => ({
+      ...store,
+      selectedPlanet: planetId,
+      currentView: planetId ? 'planet' : store.currentView
+    })),
+
+    selectFleet: (fleetId: string | null) => update(store => ({
+      ...store,
+      selectedFleet: fleetId,
+      currentView: fleetId ? 'fleet' : store.currentView
+    })),
+
+    // Chat actions
+    addChatMessage: (message: ChatMessage) => update(store => ({
+      ...store,
+      chatMessages: [...store.chatMessages, message]
+    })),
+
+    toggleChat: () => update(store => ({
+      ...store,
+      showChat: !store.showChat
+    })),
+
+    // Notification actions
+    addNotification: (notification: Omit<Notification, 'id'>) => update(store => ({
+      ...store,
+      notifications: [...store.notifications, {
+        ...notification,
+        id: `notification-${Date.now()}-${Math.random()}`
+      }]
+    })),
+
+    dismissNotification: (notificationId: string) => update(store => ({
+      ...store,
+      notifications: store.notifications.filter(n => n.id !== notificationId)
+    })),
+
+    clearNotifications: () => update(store => ({
+      ...store,
+      notifications: []
+    })),
+
+    toggleNotifications: () => update(store => ({
+      ...store,
+      showNotifications: !store.showNotifications
+    })),
+
+    // Reset actions
+    reset: () => set(initialState)
+  };
+}
+
+export const gameStore = createGameStore();
+
+// Derived stores for specific data
+export const currentPlanet = derived(
+  gameStore,
+  $store => {
+    if (!$store.selectedPlanet || !$store.gameState) return null;
+    return $store.gameState.planets[$store.selectedPlanet] || null;
   }
-  
-  function gameLoop() {
-    if (!get(isGameRunning) || !get(gameStarted)) {
-      animationFrameId = null;
-      return;
-    }
-    
-    const cgm = get(clientGameModel);
-    const gm = get(gameModel);
-    
-    if (cgm && gm) {
-      // Advance the client game model time continuously
-      const updatedClientGameModel = advanceClientGameModelTime(cgm, gm.grid);
-      clientGameModel.set(updatedClientGameModel);
-    }
-    
-    animationFrameId = requestAnimationFrame(gameLoop);
+);
+
+export const currentFleet = derived(
+  gameStore,
+  $store => {
+    if (!$store.selectedFleet || !$store.gameState) return null;
+    return $store.gameState.fleets[$store.selectedFleet] || null;
   }
-  
-  animationFrameId = requestAnimationFrame(gameLoop);
+);
+
+export const playerPlanets = derived(
+  gameStore,
+  $store => {
+    if (!$store.currentPlayer || !$store.gameState) return [];
+    return Object.values($store.gameState.planets).filter(
+      planet => planet.playerId === $store.currentPlayer
+    );
+  }
+);
+
+export const playerFleets = derived(
+  gameStore,
+  $store => {
+    if (!$store.currentPlayer || !$store.gameState) return [];
+    return Object.values($store.gameState.fleets).filter(
+      fleet => fleet.playerId === $store.currentPlayer
+    );
+  }
+);
+
+export const allPlayers = derived(
+  gameStore,
+  $store => {
+    if (!$store.gameState) return [];
+    return Object.values($store.gameState.players);
+  }
+);
+
+export const currentPlayerData = derived(
+  gameStore,
+  $store => {
+    if (!$store.currentPlayer || !$store.gameState) return null;
+    return $store.gameState.players[$store.currentPlayer] || null;
+  }
+);
+
+// Helper function to get current store value
+export function getGameStore() {
+  return get(gameStore);
 }
