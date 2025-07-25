@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { gameStore, playerPlanets, playerFleets, allPlayers } from '../../stores/gameStore';
+  import { gameStore, playerPlanets, playerFleets, allPlayers } from '../../stores/gameStore.new';
   import { webSocketService } from '../../services/websocket';
   import GameCanvas from './GameCanvas.svelte';
   import PlanetView from './PlanetView.svelte';

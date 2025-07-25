@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameStore, type ChatMessage } from '../../stores/gameStore';
+  import { gameStore, type ChatMessage } from '../../stores/gameStore.new';
   import { webSocketService } from '../../services/websocket';
   import { Button } from '../astriarch';
   import { Card } from '../astriarch';

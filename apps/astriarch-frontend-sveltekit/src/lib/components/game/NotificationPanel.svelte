@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameStore, type Notification } from '../../stores/gameStore';
+  import { gameStore, type Notification } from '../../stores/gameStore.new';
   import { Button } from '../astriarch';
   import { Card } from '../astriarch';
   

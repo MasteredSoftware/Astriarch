@@ -1,5 +1,5 @@
 import { writable, type Writable } from 'svelte/store';
-import { gameStore } from '../stores/gameStore';
+import { gameStore } from '../stores/gameStore.new';
 
 export interface WebSocketMessage {
   type: string;

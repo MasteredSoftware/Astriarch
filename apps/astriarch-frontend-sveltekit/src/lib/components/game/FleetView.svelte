@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameStore, currentFleet, playerPlanets } from '../../stores/gameStore';
+  import { gameStore, currentFleet, playerPlanets } from '../../stores/gameStore.new';
   import { webSocketService } from '../../services/websocket';
   import { Button } from '../astriarch';
   import { Card } from '../astriarch';

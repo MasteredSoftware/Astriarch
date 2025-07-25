@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, createEventDispatcher } from 'svelte';
-  import { gameStore, type Planet, type Fleet } from '../../stores/gameStore';
+  import { gameStore, type Planet, type Fleet } from '../../stores/gameStore.new';
   
   const dispatch = createEventDispatcher();
   

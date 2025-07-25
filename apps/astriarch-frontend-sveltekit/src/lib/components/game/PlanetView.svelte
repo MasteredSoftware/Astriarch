@@ -1,6 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { gameStore, currentPlanet, type Planet } from '../../stores/gameStore';
+  import { gameStore, currentPlanet, type Planet } from '../../stores/gameStore.new';
   import { webSocketService } from '../../services/websocket';
   import { Button } from '../astriarch';
   import { Card } from '../astriarch';

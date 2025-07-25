@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameStore } from '../../stores/gameStore';
+  import { gameStore } from '../../stores/gameStore.new';
   import { webSocketService } from '../../services/websocket';
   import { Button } from '../astriarch';
   import { Card } from '../astriarch';
