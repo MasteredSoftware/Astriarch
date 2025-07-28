@@ -94,12 +94,17 @@
           onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
         />
       {:else}
-        <Button 
-          label="Start New Game" 
-          size="lg" 
-          variant="primary"
-          onclick={gameActions.startNewGame}
-        />
+        <div class="flex items-center space-x-4">
+          <Button 
+            label="Start New Game" 
+            size="lg" 
+            variant="primary"
+            onclick={gameActions.startNewGame}
+          />
+          <a href="/test/websocket" class="text-cyan-400 hover:text-cyan-300 text-sm underline">
+            WebSocket Test
+          </a>
+        </div>
       {/if}
     </div>
 

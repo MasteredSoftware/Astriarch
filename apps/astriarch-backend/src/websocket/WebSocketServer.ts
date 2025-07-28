@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { Session, Game } from '../models';
 import { GameController } from '../controllers/GameControllerWebSocket';
 import { v4 as uuidv4 } from 'uuid';
-import { MESSAGE_TYPE, Message, getMessageTypeName, ERROR_TYPE, CHAT_MESSAGE_TYPE } from '../shared/MessageTypes';
+import { MESSAGE_TYPE, Message, getMessageTypeName, ERROR_TYPE, CHAT_MESSAGE_TYPE } from 'astriarch-engine';
 
 export interface IConnectedClient {
   ws: WebSocket;
@@ -120,8 +120,9 @@ export class WebSocketServer {
     switch (message.type) {
       case MESSAGE_TYPE.NOOP:
         // Echo back with server message (like old app.js)
+        const counter = typeof message.payload.counter === 'number' ? message.payload.counter : 0;
         message.payload.message = 'Hello From the Server';
-        message.payload.counter = (message.payload.counter || 0) + 1;
+        message.payload.counter = counter + 1;
         this.sendToClient(clientId, message);
         break;
 
@@ -255,7 +256,7 @@ export class WebSocketServer {
       if (!client) return;
 
             const games = await GameController.listLobbyGames({ sessionId: client.sessionId });
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.LIST_GAMES, games));
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.LIST_GAMES, { games }));
     } catch (error) {
       logger.error('Error listing games:', error);
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to list games' }));
@@ -267,8 +268,10 @@ export class WebSocketServer {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-      const { name, playerName } = message.payload;
-      if (!name || !playerName) {
+      const name = message.payload.name;
+      const playerName = message.payload.playerName;
+      
+      if (typeof name !== 'string' || typeof playerName !== 'string') {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game name and player name are required' }));
         return;
       }
@@ -283,7 +286,7 @@ export class WebSocketServer {
       };
 
             const game = await GameController.createGame(gameData);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, game._id));
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, { gameId: game._id }));
 
       // Update lobby players about new game
       await this.sendUpdatedGameListToLobbyPlayers(game);
@@ -298,8 +301,10 @@ export class WebSocketServer {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-      const { gameId, playerName } = message.payload;
-      if (!gameId || !playerName) {
+      const gameId = message.payload.gameId;
+      const playerName = message.payload.playerName;
+      
+      if (typeof gameId !== 'string' || typeof playerName !== 'string') {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID and player name are required' }));
         return;
       }
@@ -384,7 +389,12 @@ export class WebSocketServer {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-      const { gameId } = message.payload;
+      const gameId = message.payload.gameId;
+      if (typeof gameId !== 'string') {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID is required' }));
+        return;
+      }
+
       const result = await GameController.resumeGame({
         sessionId: client.sessionId,
         gameId

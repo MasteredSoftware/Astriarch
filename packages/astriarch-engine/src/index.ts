@@ -11,6 +11,9 @@ import { ResearchType } from "./model/research";
 import { CitizenWorkerType } from "./model/planet";
 import { Grid } from "./engine/grid";
 
+// Export messaging types
+export * from "./messaging/MessageTypes";
+
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
 
