@@ -10,9 +10,8 @@ import config from 'config';
 
 import { connectDatabase } from './database/connection';
 import { WebSocketServer } from './websocket';
-import { gameRoutes } from './routes/gameRoutes';
 import { healthRoutes } from './routes/healthRoutes';
-import { GameController } from './controllers/GameController';
+import { GameController } from './controllers/GameControllerWebSocket';
 import { logger } from './utils/logger';
 
 const app = express();
@@ -61,9 +60,8 @@ app.use(session({
   }
 }));
 
-// Routes
+// Routes - Only health check needed, everything else goes through WebSocket
 app.use('/api/health', healthRoutes);
-app.use('/api/game', gameRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {

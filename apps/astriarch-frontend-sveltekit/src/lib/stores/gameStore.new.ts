@@ -128,10 +128,29 @@ function createGameStore() {
     update,
 
     // Game state actions
-    setGameState: (gameState: GameState) => update(store => ({
-      ...store,
-      gameState
-    })),
+    setGameState: (gameState: GameState) => update(store => {
+      // Add default positions to planets if they don't exist
+      if (gameState.planets) {
+        Object.keys(gameState.planets).forEach((planetId, index) => {
+          const planet = gameState.planets[planetId];
+          if (!planet.position) {
+            // Generate a default position in a grid layout
+            const gridSize = Math.ceil(Math.sqrt(Object.keys(gameState.planets).length));
+            const row = Math.floor(index / gridSize);
+            const col = index % gridSize;
+            planet.position = {
+              x: 100 + col * 150,
+              y: 100 + row * 150
+            };
+          }
+        });
+      }
+      
+      return {
+        ...store,
+        gameState
+      };
+    }),
 
     setCurrentPlayer: (playerId: string) => update(store => ({
       ...store,
@@ -142,6 +161,47 @@ function createGameStore() {
       ...store,
       currentView: view
     })),
+
+    setGameId: (gameId: string | null) => update(store => ({
+      ...store,
+      gameId
+    })),
+
+    updateGameTime: (gameTime: number) => update(store => ({
+      ...store,
+      gameState: store.gameState ? {
+        ...store.gameState,
+        gameTime
+      } : null
+    })),
+
+    applyChanges: (changes: {
+      planets?: Record<string, Planet>;
+      fleets?: Record<string, Fleet>;
+      players?: Record<string, Player>;
+    }) => update(store => {
+      if (!store.gameState) return store;
+      
+      // Apply changes to the game state
+      const newGameState = { ...store.gameState };
+      
+      if (changes.planets) {
+        newGameState.planets = { ...newGameState.planets, ...changes.planets };
+      }
+      
+      if (changes.fleets) {
+        newGameState.fleets = { ...newGameState.fleets, ...changes.fleets };
+      }
+      
+      if (changes.players) {
+        newGameState.players = { ...newGameState.players, ...changes.players };
+      }
+      
+      return {
+        ...store,
+        gameState: newGameState
+      };
+    }),
 
     // Selection actions
     selectPlanet: (planetId: string | null) => update(store => ({
@@ -218,7 +278,7 @@ export const currentFleet = derived(
 export const playerPlanets = derived(
   gameStore,
   $store => {
-    if (!$store.currentPlayer || !$store.gameState) return [];
+    if (!$store.currentPlayer || !$store.gameState || !$store.gameState.planets) return [];
     return Object.values($store.gameState.planets).filter(
       planet => planet.playerId === $store.currentPlayer
     );
@@ -228,7 +288,7 @@ export const playerPlanets = derived(
 export const playerFleets = derived(
   gameStore,
   $store => {
-    if (!$store.currentPlayer || !$store.gameState) return [];
+    if (!$store.currentPlayer || !$store.gameState || !$store.gameState.fleets) return [];
     return Object.values($store.gameState.fleets).filter(
       fleet => fleet.playerId === $store.currentPlayer
     );
@@ -238,7 +298,7 @@ export const playerFleets = derived(
 export const allPlayers = derived(
   gameStore,
   $store => {
-    if (!$store.gameState) return [];
+    if (!$store.gameState || !$store.gameState.players) return [];
     return Object.values($store.gameState.players);
   }
 );

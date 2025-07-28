@@ -254,7 +254,7 @@ export class WebSocketServer {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-            const games = await GameController.listLobbyGames({ sessionId: client.sessionId });
+      const games = await GameController.listLobbyGames({ sessionId: client.sessionId });
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.LIST_GAMES, games));
     } catch (error) {
       logger.error('Error listing games:', error);
@@ -282,7 +282,7 @@ export class WebSocketServer {
         }]
       };
 
-            const game = await GameController.createGame(gameData);
+      const game = await GameController.createGame(gameData);
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, game._id));
 
       // Update lobby players about new game
@@ -304,7 +304,7 @@ export class WebSocketServer {
         return;
       }
 
-            const result = await GameController.joinGame({
+      const result = await GameController.joinGame({
         gameId,
         sessionId: client.sessionId,
         playerName: playerName.substring(0, 20)
@@ -423,59 +423,13 @@ export class WebSocketServer {
   }
 
   private async handleEndTurn(clientId: string, message: Message): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.endPlayerTurn(client.sessionId, message.payload);
-      
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send response back to the client
-      const response = new Message(MESSAGE_TYPE.END_TURN, {
-        allPlayersFinished: result.allPlayersFinished,
-        endOfTurnMessages: result.endOfTurnMessages,
-        destroyedClientPlayers: result.destroyedClientPlayers
-      });
-
-      this.sendToClient(clientId, response);
-
-      // If game has other players, broadcast to them too
-      if (result.game && result.game.players) {
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
-      }
-
-    } catch (error) {
-      logger.error('handleEndTurn error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'End turn failed' }));
-    }
+    // TODO: Implement based on GameController.endPlayerTurn
+    logger.warn('handleEndTurn not yet implemented');
   }
 
   private async handleSendShips(clientId: string, message: Message): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.sendShips(client.sessionId, message.payload);
-      
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // If game has other players, broadcast the ship movement
-      if (result.game && result.game.players) {
-        const response = new Message(MESSAGE_TYPE.SEND_SHIPS, message.payload);
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
-      }
-
-    } catch (error) {
-      logger.error('handleSendShips error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Send ships failed' }));
-    }
+    // TODO: Implement based on GameController.sendShips
+    logger.warn('handleSendShips not yet implemented');
   }
 
   private async handleUpdatePlanetStart(clientId: string, message: Message): Promise<void> {
@@ -494,27 +448,8 @@ export class WebSocketServer {
   }
 
   private async handleClearWaypoint(clientId: string, message: Message): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.clearWaypoint(client.sessionId, message.payload);
-      
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // If game has other players, broadcast the waypoint clearing
-      if (result.game && result.game.players) {
-        const response = new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, message.payload);
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
-      }
-
-    } catch (error) {
-      logger.error('handleClearWaypoint error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Clear waypoint failed' }));
-    }
+    // TODO: Implement based on GameController.clearWaypoint
+    logger.warn('handleClearWaypoint not yet implemented');
   }
 
   private async handleAdjustResearchPercent(clientId: string, message: Message): Promise<void> {

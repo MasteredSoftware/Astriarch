@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { gameStore, playerPlanets, playerFleets, allPlayers } from '../../stores/gameStore.new';
-  import { webSocketService } from '../../services/websocket';
+  import { gameModel, clientGameModel, resourceData, population, gameActions } from '../../stores/gameStore';
   import GameCanvas from './GameCanvas.svelte';
   import PlanetView from './PlanetView.svelte';
   import ResearchView from './ResearchView.svelte';
@@ -12,122 +11,59 @@
   import { Card } from '../astriarch';
   import { TopOverview } from '../astriarch';
   
-  let gameId = '';
-  let playerName = '';
-  let connectionState = 'disconnected';
-  let lastError: string | null = null;
-  let showConnectDialog = true;
+  let currentView = 'game';
+  let selectedPlanet: string | null = null;
+  let selectedFleet: string | null = null;
+  let showChat = false;
+  let showNotifications = false;
   
-  // Subscribe to connection state
-  let connectionStateUnsubscribe: () => void;
-  let errorUnsubscribe: () => void;
+  // Subscribe to game state
+  $: gameStarted = $gameModel !== null;
+  $: currentGameModel = $gameModel;
+  $: currentClientModel = $clientGameModel;
   
-  onMount(() => {
-    connectionStateUnsubscribe = webSocketService.getConnectionState().subscribe(state => {
-      connectionState = state;
-      if (state === 'connected') {
-        showConnectDialog = false;
-      }
-    });
-    
-    errorUnsubscribe = webSocketService.getLastError().subscribe(error => {
-      lastError = error;
-    });
-  });
-  
-  onDestroy(() => {
-    connectionStateUnsubscribe?.();
-    errorUnsubscribe?.();
-    webSocketService.disconnect();
-  });
-  
-  async function connect() {
-    if (!gameId.trim() || !playerName.trim()) {
-      lastError = 'Please enter both Game ID and Player Name';
-      return;
-    }
-    
-    try {
-      await webSocketService.connect('ws://localhost:8001');
-      webSocketService.joinGame(gameId.trim(), playerName.trim());
-      gameStore.setCurrentPlayer(playerName.trim());
-    } catch (error) {
-      console.error('Connection failed:', error);
-    }
-  }
-  
-  function disconnect() {
-    webSocketService.leaveGame();
-    webSocketService.disconnect();
-    showConnectDialog = true;
-    gameId = '';
-    playerName = '';
+  function startNewGame() {
+    gameActions.startNewGame();
   }
   
   function handlePlanetClick(event: CustomEvent) {
     const { planetId } = event.detail;
-    gameStore.selectPlanet(planetId);
+    selectedPlanet = planetId;
+    currentView = 'planet';
   }
   
   function handleFleetClick(event: CustomEvent) {
     const { fleetId } = event.detail;
-    gameStore.selectFleet(fleetId);
+    selectedFleet = fleetId;
+    currentView = 'fleet';
   }
   
   function toggleView(view: string) {
-    gameStore.setCurrentView(view as any);
+    currentView = view;
   }
   
-  // Get current game state
-  $: currentView = $gameStore.currentView;
-  $: gameState = $gameStore.gameState;
-  $: selectedPlanet = $gameStore.selectedPlanet;
-  $: selectedFleet = $gameStore.selectedFleet;
-  $: notifications = $gameStore.notifications;
-  $: chatMessages = $gameStore.chatMessages;
-  $: myPlanets = $playerPlanets;
-  $: myFleets = $playerFleets;
-  $: players = $allPlayers;
+  function toggleChat() {
+    showChat = !showChat;
+  }
+  
+  function toggleNotifications() {
+    showNotifications = !showNotifications;
+  }
 </script>
 
 <div class="game-interface">
-  {#if showConnectDialog}
-    <!-- Connection Dialog -->
-    <div class="connect-overlay">
-      <Card class="connect-dialog">
-        <div class="connect-header">
-          <h2>Connect to Astriarch Game</h2>
+  {#if !gameStarted}
+    <!-- Game Start Screen -->
+    <div class="start-overlay">
+      <Card class="start-dialog">
+        <div class="start-header">
+          <h2>Welcome to Astriarch</h2>
         </div>
-        <div class="connect-form">
-          <div class="form-group">
-            <label for="gameId">Game ID:</label>
-            <input 
-              id="gameId" 
-              type="text" 
-              bind:value={gameId} 
-              placeholder="Enter game ID"
-              class="form-input"
-            />
-          </div>
-          <div class="form-group">
-            <label for="playerName">Player Name:</label>
-            <input 
-              id="playerName" 
-              type="text" 
-              bind:value={playerName} 
-              placeholder="Enter your name"
-              class="form-input"
-            />
-          </div>
-          {#if lastError}
-            <div class="error-message">{lastError}</div>
-          {/if}
-          <div class="connect-actions">
-            <Button 
-              on:click={connect} 
-              disabled={connectionState === 'connecting' || !gameId.trim() || !playerName.trim()}
-            >
-              {connectionState === 'connecting' ? 'Connecting...' : 'Connect'}
+        <div class="start-content">
+          <p>Ready to conquer the galaxy?</p>
+          <div class="start-actions">
+            <Button onclick={startNewGame}>
+              Start New Game
             </Button>
           </div>
         </div>
@@ -138,27 +74,18 @@
     <div class="game-layout">
       <!-- Top Status Bar -->
       <div class="top-bar">
-        <TopOverview>
+        <TopOverview resourceData={$resourceData} population={$population}>
           <div class="status-section">
-            <div class="connection-status">
-              <span class="status-indicator status-{connectionState}"></span>
-              <span>Connected as {playerName}</span>
+            <div class="game-status">
+              <span>Astriarch Engine Game</span>
             </div>
-            {#if gameState}
-              <div class="game-time">
-                Time: {Math.floor(gameState.gameTime / 1000)}s
-              </div>
-            {/if}
           </div>
           <div class="actions-section">
-            <Button size="small" variant="secondary" on:click={() => gameStore.toggleChat()}>
-              Chat ({chatMessages.length})
+            <Button size="small" variant="secondary" onclick={toggleChat}>
+              Chat
             </Button>
-            <Button size="small" variant="secondary" on:click={() => gameStore.toggleNotifications()}>
-              Alerts ({notifications.length})
-            </Button>
-            <Button size="small" variant="destructive" on:click={disconnect}>
-              Disconnect
+            <Button size="small" variant="secondary" onclick={toggleNotifications}>
+              Alerts
             </Button>
           </div>
         </TopOverview>
@@ -172,66 +99,19 @@
             <h3>Game Views</h3>
             <div class="nav-buttons">
               <Button 
-                variant={currentView === 'game' ? 'default' : 'secondary'} 
-                size="small" 
-                on:click={() => toggleView('game')}
+                variant={currentView === 'game' ? 'primary' : 'outline'} 
+                size="sm" 
+                onclick={() => toggleView('game')}
               >
                 Galaxy Map
               </Button>
               <Button 
-                variant={currentView === 'research' ? 'default' : 'secondary'} 
-                size="small" 
-                on:click={() => toggleView('research')}
+                variant={currentView === 'research' ? 'primary' : 'outline'} 
+                size="sm" 
+                onclick={() => toggleView('research')}
               >
                 Research Lab
               </Button>
-              <Button 
-                variant={currentView === 'diplomacy' ? 'default' : 'secondary'} 
-                size="small" 
-                on:click={() => toggleView('diplomacy')}
-              >
-                Diplomacy
-              </Button>
-            </div>
-          </Card>
-          
-          <!-- Player Planets -->
-          <Card class="planets-card">
-            <h3>My Planets ({myPlanets.length})</h3>
-            <div class="planets-list">
-              {#each myPlanets as planet}
-                <button 
-                  class="planet-item" 
-                  class:selected={selectedPlanet === planet.id}
-                  on:click={() => gameStore.selectPlanet(planet.id)}
-                >
-                  <div class="planet-name">Planet {planet.id}</div>
-                  <div class="planet-stats">
-                    <span>Pop: {planet.population}</span>
-                    <span>Ore: {planet.resources.ore}</span>
-                  </div>
-                </button>
-              {/each}
-            </div>
-          </Card>
-          
-          <!-- Player Fleets -->
-          <Card class="fleets-card">
-            <h3>My Fleets ({myFleets.length})</h3>
-            <div class="fleets-list">
-              {#each myFleets as fleet}
-                <button 
-                  class="fleet-item"
-                  class:selected={selectedFleet === fleet.id}
-                  on:click={() => gameStore.selectFleet(fleet.id)}
-                >
-                  <div class="fleet-name">Fleet {fleet.id}</div>
-                  <div class="fleet-stats">
-                    <span>Ships: {Object.values(fleet.ships).reduce((sum, count) => sum + count, 0)}</span>
-                    <span>Status: {fleet.status}</span>
-                  </div>
-                </button>
-              {/each}
             </div>
           </Card>
         </div>
@@ -255,46 +135,17 @@
           {/if}
         </div>
         
-        <!-- Right Sidebar - Players and Stats -->
+        <!-- Right Sidebar - Game Info -->
         <div class="right-sidebar">
-          <Card class="players-card">
-            <h3>Players ({players.length})</h3>
-            <div class="players-list">
-              {#each players as player}
-                <div class="player-item" class:current={player.id === $gameStore.currentPlayer}>
-                  <div class="player-name">{player.name}</div>
-                  <div class="player-stats">
-                    <span class="player-status" class:active={player.isActive}></span>
-                    <span>{player.isAI ? 'AI' : 'Human'}</span>
-                  </div>
-                </div>
-              {/each}
+          <Card class="info-card">
+            <h3>Game Status</h3>
+            <div class="game-info">
+              <p>Engine-based local game</p>
+              {#if currentClientModel}
+                <p>Cycle: {currentClientModel.currentCycle}</p>
+              {/if}
             </div>
           </Card>
-          
-          <!-- Quick Stats -->
-          {#if gameState && $gameStore.currentPlayer}
-            {@const currentPlayer = gameState.players[$gameStore.currentPlayer]}
-            {#if currentPlayer}
-              <Card class="stats-card">
-                <h3>Research Progress</h3>
-                <div class="research-stats">
-                  <div class="research-item">
-                    <span>Attack:</span>
-                    <span>{currentPlayer.research.attack}</span>
-                  </div>
-                  <div class="research-item">
-                    <span>Defense:</span>
-                    <span>{currentPlayer.research.defense}</span>
-                  </div>
-                  <div class="research-item">
-                    <span>Propulsion:</span>
-                    <span>{currentPlayer.research.propulsion}</span>
-                  </div>
-                </div>
-              </Card>
-            {/if}
-          {/if}
         </div>
       </div>
       
@@ -303,11 +154,11 @@
         <PlanetView />
       {/if}
       
-      {#if $gameStore.showChat}
+      {#if showChat}
         <ChatPanel />
       {/if}
       
-      {#if $gameStore.showNotifications}
+      {#if showNotifications}
         <NotificationPanel />
       {/if}
     </div>
@@ -323,7 +174,7 @@
     overflow: hidden;
   }
   
-  .connect-overlay {
+  .start-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -336,67 +187,13 @@
     z-index: 1000;
   }
   
-  .connect-dialog {
-    width: 400px;
-    max-width: 90%;
-    background: var(--background);
-    border: 2px solid var(--border);
-  }
-  
-  .connect-header {
-    padding: 1rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--muted);
-  }
-  
-  .connect-header h2 {
-    margin: 0;
-    color: var(--foreground);
-  }
-  
-  .connect-form {
+  .start-content {
     padding: 1.5rem;
+    text-align: center;
   }
   
-  .form-group {
-    margin-bottom: 1rem;
-  }
-  
-  .form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    color: var(--foreground);
-  }
-  
-  .form-input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--background);
-    color: var(--foreground);
-    font-size: 1rem;
-  }
-  
-  .form-input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.2);
-  }
-  
-  .error-message {
-    background: var(--destructive);
-    color: var(--destructive-foreground);
-    padding: 0.5rem;
-    border-radius: 4px;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-  }
-  
-  .connect-actions {
-    display: flex;
-    justify-content: center;
+  .start-actions {
+    margin-top: 1rem;
   }
   
   .game-layout {
@@ -414,31 +211,6 @@
     display: flex;
     align-items: center;
     gap: 1rem;
-  }
-  
-  .connection-status {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  .status-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-  
-  .status-connected {
-    background: var(--success);
-  }
-  
-  .status-connecting {
-    background: var(--warning);
-  }
-  
-  .status-disconnected,
-  .status-error {
-    background: var(--destructive);
   }
   
   .actions-section {
@@ -479,17 +251,6 @@
     overflow: hidden;
   }
   
-  .nav-card h3,
-  .planets-card h3,
-  .fleets-card h3,
-  .players-card h3,
-  .stats-card h3 {
-    margin: 0 0 1rem 0;
-    color: var(--foreground);
-    font-size: 0.9rem;
-    font-weight: 600;
-  }
-  
   .nav-buttons {
     display: flex;
     flex-direction: column;
@@ -497,104 +258,12 @@
     padding: 0.75rem;
   }
   
-  .planets-list,
-  .fleets-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-  
-  .planet-item,
-  .fleet-item {
-    background: none;
-    border: none;
-    padding: 0.5rem;
-    text-align: left;
-    border-radius: 4px;
-    cursor: pointer;
-    color: var(--foreground);
-    border: 1px solid transparent;
-  }
-  
-  .planet-item:hover,
-  .fleet-item:hover {
-    background: var(--muted);
-  }
-  
-  .planet-item.selected,
-  .fleet-item.selected {
-    background: var(--primary);
-    color: var(--primary-foreground);
-  }
-  
-  .planet-name,
-  .fleet-name {
-    font-weight: 600;
-    font-size: 0.9rem;
-  }
-  
-  .planet-stats,
-  .fleet-stats {
-    font-size: 0.8rem;
-    color: var(--muted-foreground);
-    display: flex;
-    gap: 0.5rem;
-  }
-  
-  .players-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+  .game-info {
     padding: 0.75rem;
   }
   
-  .player-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.5rem;
-    background: var(--muted);
-    border-radius: 4px;
-  }
-  
-  .player-item.current {
-    border: 1px solid var(--primary);
-  }
-  
-  .player-name {
-    font-weight: 600;
-  }
-  
-  .player-stats {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.8rem;
-  }
-  
-  .player-status {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--muted-foreground);
-  }
-  
-  .player-status.active {
-    background: var(--success);
-  }
-  
-  .research-stats {
-    padding: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  
-  .research-item {
-    display: flex;
-    justify-content: space-between;
+  .game-info p {
+    margin: 0.5rem 0;
     font-size: 0.9rem;
   }
   

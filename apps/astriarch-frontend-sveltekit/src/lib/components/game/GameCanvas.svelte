@@ -95,6 +95,12 @@
   }
   
   function drawPlanet(planet: Planet) {
+    // Check if planet has position data
+    if (!planet.position) {
+      console.warn('Planet missing position data:', planet);
+      return;
+    }
+    
     const { x, y } = planet.position;
     
     // Planet base
@@ -126,7 +132,7 @@
     }
     
     // Buildings indicator
-    const buildingCount = Object.values(planet.buildings).reduce((sum, count) => sum + count, 0);
+    const buildingCount = Object.values(planet.builtImprovements).reduce((sum, count) => sum + count, 0);
     if (buildingCount > 0) {
       ctx.fillStyle = '#00ff00';
       ctx.fillRect(x - 2, y - PLANET_RADIUS - 4, Math.min(buildingCount * 0.5, 8), 2);
@@ -247,6 +253,9 @@
     // Check for planet hover
     if (gameState) {
       for (const planet of Object.values(gameState.planets)) {
+        // Skip planets without position data
+        if (!planet.position) continue;
+        
         const distance = Math.sqrt(
           Math.pow(x - planet.position.x, 2) + Math.pow(y - planet.position.y, 2)
         );

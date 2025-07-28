@@ -1,5 +1,127 @@
 import { writable, type Writable } from 'svelte/store';
-import { gameStore } from '../stores/gameStore.new';
+import type { ClientModelData } from 'astriarch-engine';
+
+// For now, we'll work with the WebSocket data as-is and convert it to engine format
+interface WebSocketGameState {
+  gameId: string;
+  gameTime: number;
+  planets: Record<string, any>;
+  fleets: Record<string, any>;
+  players: Record<string, any>;
+}
+
+// Store for WebSocket multiplayer game state
+interface MultiplayerGameState {
+  gameId: string | null;
+  currentPlayer: string | null;
+  connected: boolean;
+  webSocketGameState: WebSocketGameState | null;
+  clientGameModel: ClientModelData | null; // This will be derived from webSocketGameState
+}
+
+// Chat and notifications (keep as before)
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: number;
+}
+
+export interface GameNotification {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error' | 'battle' | 'research' | 'construction' | 'fleet' | 'planet' | 'diplomacy';
+  message: string;
+  timestamp: number;
+  actionText?: string;
+  actionType?: string;
+}
+
+// Create the multiplayer game store using engine patterns
+function createMultiplayerGameStore() {
+  const initialState: MultiplayerGameState = {
+    gameId: null,
+    currentPlayer: null,
+    connected: false,
+    webSocketGameState: null,
+    clientGameModel: null,
+  };
+
+  const { subscribe, set, update } = writable(initialState);
+  
+  // Separate stores for chat and notifications
+  const chatMessages = writable<ChatMessage[]>([]);
+  const notifications = writable<GameNotification[]>([]);
+
+  return {
+    subscribe,
+    set,
+    update,
+    chatMessages,
+    notifications,
+
+    // Game state actions
+    setWebSocketGameState: (gameState: WebSocketGameState) => update(store => {
+      // TODO: Convert WebSocket game state to ClientGameModel format
+      // For now, just store the raw WebSocket data
+      return {
+        ...store,
+        webSocketGameState: gameState,
+        // clientGameModel: convertWebSocketToClientModel(gameState, store.currentPlayer)
+      };
+    }),
+
+    setCurrentPlayer: (playerId: string) => update(store => ({
+      ...store,
+      currentPlayer: playerId
+    })),
+
+    setGameId: (gameId: string | null) => update(store => ({
+      ...store,
+      gameId
+    })),
+
+    setConnected: (connected: boolean) => update(store => ({
+      ...store,
+      connected
+    })),
+
+    // Chat actions
+    addChatMessage: (message: ChatMessage) => {
+      chatMessages.update(prev => [...prev, message]);
+    },
+
+    clearChatMessages: () => {
+      chatMessages.set([]);
+    },
+
+    // Notification actions
+    addNotification: (notification: Omit<GameNotification, 'id'>) => {
+      const newNotification: GameNotification = {
+        ...notification,
+        id: `notification-${Date.now()}-${Math.random()}`
+      };
+      notifications.update(prev => [...prev, newNotification]);
+    },
+
+    dismissNotification: (notificationId: string) => {
+      notifications.update(prev => prev.filter(n => n.id !== notificationId));
+    },
+
+    clearNotifications: () => {
+      notifications.set([]);
+    },
+
+    // Reset actions
+    reset: () => {
+      set(initialState);
+      chatMessages.set([]);
+      notifications.set([]);
+    }
+  };
+}
+
+export const multiplayerGameStore = createMultiplayerGameStore();
 
 export interface WebSocketMessage {
   type: string;
@@ -22,6 +144,7 @@ class WebSocketService {
   private playerName: string | null = null;
 
   // Connection state store
+  private gameJoined: Writable<boolean> = writable(false);
   public connectionState: Writable<'disconnected' | 'connecting' | 'connected' | 'error'> = writable('disconnected');
   public lastError: Writable<string | null> = writable(null);
 
@@ -52,6 +175,7 @@ class WebSocketService {
 
         this.ws.onerror = (error) => {
           console.error('WebSocket error:', error);
+          console.error('WebSocket state:', this.ws?.readyState);
           this.connectionState.set('error');
           this.lastError.set('Connection error');
           reject(error);
@@ -71,6 +195,7 @@ class WebSocketService {
       this.ws = null;
     }
     this.connectionState.set('disconnected');
+    this.gameJoined.set(false);
   }
 
   private handleReconnect(): void {
@@ -102,9 +227,17 @@ class WebSocketService {
           break;
 
         case 'game_joined':
+          console.log('Game joined data:', message.data);
           this.gameId = message.data.gameId;
-          gameStore.setGameState(message.data.gameState);
+          if (message.data.gameState) {
+            console.log('Setting game state:', message.data.gameState);
+            console.log('Sample planet data:', Object.values(message.data.gameState.planets || {})[0]);
+            gameStore.setGameState(message.data.gameState);
+          } else {
+            console.warn('No gameState in game_joined message');
+          }
           gameStore.setGameId(message.data.gameId);
+          this.gameJoined.set(true);
           break;
 
         case 'game_state_update':
@@ -282,6 +415,10 @@ class WebSocketService {
 
   getLastError() {
     return this.lastError;
+  }
+
+  getGameJoined() {
+    return this.gameJoined;
   }
 }
 
