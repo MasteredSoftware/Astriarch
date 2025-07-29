@@ -1,25 +1,49 @@
 import { writable, type Writable } from 'svelte/store';
-import type { ClientModelData } from 'astriarch-engine';
+import { MESSAGE_TYPE, Message, type IMessage } from 'astriarch-engine';
 
-// For now, we'll work with the WebSocket data as-is and convert it to engine format
-interface WebSocketGameState {
-  gameId: string;
-  gameTime: number;
-  planets: Record<string, any>;
-  fleets: Record<string, any>;
-  players: Record<string, any>;
+// Interfaces for game data
+export interface IGame {
+  _id: string;
+  name: string;
+  players: IPlayer[];
+  gameOptions?: IGameOptions;
+  status: 'waiting' | 'in_progress' | 'completed';
+  createdAt: Date;
+  lastActivity: Date;
+}
+
+export interface IPlayer {
+  sessionId: string;
+  position: number;
+  Id: string;
+  name: string;
+  connected?: boolean;
+}
+
+export interface IGameOptions {
+  galaxySize: 'small' | 'medium' | 'large';
+  planetsPerSystem: number;
+  gameSpeed: 'slow' | 'normal' | 'fast';
+  distributePlanetsEvenly: boolean;
+  quickStart: boolean;
+  maxPlayers: number;
 }
 
 // Store for WebSocket multiplayer game state
 interface MultiplayerGameState {
+  sessionId: string | null;
   gameId: string | null;
   currentPlayer: string | null;
+  playerName: string | null;
   connected: boolean;
-  webSocketGameState: WebSocketGameState | null;
-  clientGameModel: ClientModelData | null; // This will be derived from webSocketGameState
+  gameJoined: boolean;
+  currentView: 'lobby' | 'game_options' | 'game';
+  availableGames: IGame[];
+  selectedGame: IGame | null;
+  gameState: any | null; // Will be converted to engine format later
 }
 
-// Chat and notifications (keep as before)
+// Chat and notifications
 export interface ChatMessage {
   id: string;
   playerId: string;
@@ -37,14 +61,19 @@ export interface GameNotification {
   actionType?: string;
 }
 
-// Create the multiplayer game store using engine patterns
+// Create the multiplayer game store
 function createMultiplayerGameStore() {
   const initialState: MultiplayerGameState = {
+    sessionId: null,
     gameId: null,
     currentPlayer: null,
+    playerName: null,
     connected: false,
-    webSocketGameState: null,
-    clientGameModel: null,
+    gameJoined: false,
+    currentView: 'lobby',
+    availableGames: [],
+    selectedGame: null,
+    gameState: null,
   };
 
   const { subscribe, set, update } = writable(initialState);
@@ -60,59 +89,71 @@ function createMultiplayerGameStore() {
     chatMessages,
     notifications,
 
-    // Game state actions
-    setWebSocketGameState: (gameState: WebSocketGameState) => update(store => {
-      // TODO: Convert WebSocket game state to ClientGameModel format
-      // For now, just store the raw WebSocket data
-      return {
-        ...store,
-        webSocketGameState: gameState,
-        // clientGameModel: convertWebSocketToClientModel(gameState, store.currentPlayer)
-      };
+    // Connection management
+    setConnected: (connected: boolean) => update(store => ({ ...store, connected })),
+    setSessionId: (sessionId: string) => update(store => ({ ...store, sessionId })),
+    setPlayerName: (playerName: string) => update(store => ({ ...store, playerName })),
+
+    // Game management
+    setGameId: (gameId: string | null) => update(store => ({ ...store, gameId })),
+    setCurrentPlayer: (currentPlayer: string | null) => update(store => ({ ...store, currentPlayer })),
+    setGameJoined: (gameJoined: boolean) => update(store => ({ ...store, gameJoined })),
+    setCurrentView: (currentView: 'lobby' | 'game_options' | 'game') => update(store => ({ ...store, currentView })),
+    
+    // Lobby management
+    setAvailableGames: (games: IGame[]) => update(store => ({ ...store, availableGames: games })),
+    setSelectedGame: (game: IGame | null) => update(store => ({ ...store, selectedGame: game })),
+    
+    // Game state
+    setGameState: (gameState: any) => update(store => ({ ...store, gameState })),
+    applyChanges: (changes: any) => update(store => {
+      // Apply incremental changes to game state
+      if (store.gameState && changes) {
+        return {
+          ...store,
+          gameState: {
+            ...store.gameState,
+            ...changes
+          }
+        };
+      }
+      return store;
     }),
 
-    setCurrentPlayer: (playerId: string) => update(store => ({
-      ...store,
-      currentPlayer: playerId
-    })),
-
-    setGameId: (gameId: string | null) => update(store => ({
-      ...store,
-      gameId
-    })),
-
-    setConnected: (connected: boolean) => update(store => ({
-      ...store,
-      connected
-    })),
-
-    // Chat actions
+    // Chat management
     addChatMessage: (message: ChatMessage) => {
-      chatMessages.update(prev => [...prev, message]);
+      chatMessages.update(messages => [...messages, message]);
     },
-
     clearChatMessages: () => {
       chatMessages.set([]);
     },
 
-    // Notification actions
-    addNotification: (notification: Omit<GameNotification, 'id'>) => {
-      const newNotification: GameNotification = {
-        ...notification,
-        id: `notification-${Date.now()}-${Math.random()}`
-      };
-      notifications.update(prev => [...prev, newNotification]);
+    // Notification management
+    addNotification: (notification: GameNotification) => {
+      notifications.update(notifs => [...notifs, notification]);
     },
-
-    dismissNotification: (notificationId: string) => {
-      notifications.update(prev => prev.filter(n => n.id !== notificationId));
+    removeNotification: (id: string) => {
+      notifications.update(notifs => notifs.filter(n => n.id !== id));
     },
-
     clearNotifications: () => {
       notifications.set([]);
     },
 
-    // Reset actions
+    // Game time updates
+    updateGameTime: (gameTime: number) => update(store => {
+      if (store.gameState) {
+        return {
+          ...store,
+          gameState: {
+            ...store.gameState,
+            gameTime
+          }
+        };
+      }
+      return store;
+    }),
+
+    // Reset everything
     reset: () => {
       set(initialState);
       chatMessages.set([]);
@@ -121,306 +162,231 @@ function createMultiplayerGameStore() {
   };
 }
 
-export const multiplayerGameStore = createMultiplayerGameStore();
-
-export interface WebSocketMessage {
-  type: string;
-  data: any;
-  sessionId?: string;
-  gameId?: string;
-}
-
-export interface GameActionData {
-  actionType: string;
-  actionData: any;
-}
-
+// WebSocket connection management
 class WebSocketService {
   private ws: WebSocket | null = null;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private gameId: string | null = null;
-  private playerName: string | null = null;
+  private messageQueue: IMessage[] = [];
+  private isConnecting = false;
 
-  // Connection state store
-  private gameJoined: Writable<boolean> = writable(false);
-  public connectionState: Writable<'disconnected' | 'connecting' | 'connected' | 'error'> = writable('disconnected');
-  public lastError: Writable<string | null> = writable(null);
+  constructor(private gameStore: ReturnType<typeof createMultiplayerGameStore>) {}
 
-  connect(serverUrl: string = 'ws://localhost:8001'): Promise<void> {
+  connect(url: string = 'ws://localhost:8001'): Promise<void> {
+    if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
+      return Promise.resolve();
+    }
+
+    this.isConnecting = true;
+
     return new Promise((resolve, reject) => {
-      this.connectionState.set('connecting');
-      this.lastError.set(null);
-
       try {
-        this.ws = new WebSocket(serverUrl);
+        this.ws = new WebSocket(url);
 
         this.ws.onopen = () => {
           console.log('WebSocket connected');
-          this.connectionState.set('connected');
+          this.isConnecting = false;
           this.reconnectAttempts = 0;
+          this.gameStore.setConnected(true);
+          
+          // Send queued messages
+          while (this.messageQueue.length > 0) {
+            const message = this.messageQueue.shift();
+            if (message) {
+              this.send(message);
+            }
+          }
+          
           resolve();
         };
 
         this.ws.onmessage = (event) => {
-          this.handleMessage(event.data);
+          try {
+            const message: IMessage = JSON.parse(event.data);
+            this.handleMessage(message);
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error);
+          }
         };
 
-        this.ws.onclose = (event) => {
-          console.log('WebSocket closed:', event.code, event.reason);
-          this.connectionState.set('disconnected');
-          this.handleReconnect();
+        this.ws.onclose = () => {
+          console.log('WebSocket disconnected');
+          this.isConnecting = false;
+          this.gameStore.setConnected(false);
+          this.attemptReconnect();
         };
 
         this.ws.onerror = (error) => {
           console.error('WebSocket error:', error);
-          console.error('WebSocket state:', this.ws?.readyState);
-          this.connectionState.set('error');
-          this.lastError.set('Connection error');
+          this.isConnecting = false;
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            message: 'WebSocket connection error',
+            timestamp: Date.now()
+          });
           reject(error);
         };
 
       } catch (error) {
-        this.connectionState.set('error');
-        this.lastError.set('Failed to create WebSocket connection');
+        this.isConnecting = false;
         reject(error);
       }
     });
   }
 
-  disconnect(): void {
+  private attemptReconnect() {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++;
+      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+      
+      setTimeout(() => {
+        this.connect().catch(error => {
+          console.error('Reconnection failed:', error);
+        });
+      }, this.reconnectDelay * this.reconnectAttempts);
+    } else {
+      this.gameStore.addNotification({
+        id: Date.now().toString(),
+        type: 'error',
+        message: 'Failed to reconnect to server after multiple attempts',
+        timestamp: Date.now()
+      });
+    }
+  }
+
+  private handleMessage(message: IMessage) {
+    console.log('Received message:', message);
+
+    switch (message.type) {
+      case MESSAGE_TYPE.LIST_GAMES:
+        this.gameStore.setAvailableGames((message.payload.games as IGame[]) || []);
+        break;
+
+      case MESSAGE_TYPE.GAME_LIST_UPDATED:
+        this.gameStore.setAvailableGames((message.payload.games as IGame[]) || []);
+        break;
+
+      case MESSAGE_TYPE.GAME_STATE_UPDATE:
+        if (message.payload.changes) {
+          this.gameStore.applyChanges(message.payload.changes);
+        } else {
+          this.gameStore.setGameState(message.payload.gameState);
+        }
+        break;
+
+      case MESSAGE_TYPE.JOIN_GAME:
+        if (message.payload.success) {
+          this.gameStore.setGameId(message.payload.gameId as string);
+          this.gameStore.setGameJoined(true);
+          this.gameStore.setCurrentView('game_options');
+        }
+        break;
+
+      case MESSAGE_TYPE.CHAT_MESSAGE: {
+        const chatData = message.payload as unknown as ChatMessage;
+        this.gameStore.addChatMessage(chatData);
+        break;
+      }
+
+      case MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED:
+        this.gameStore.addNotification({
+          id: Date.now().toString(),
+          type: 'info',
+          message: `Player activity updated`,
+          timestamp: Date.now()
+        });
+        break;
+
+      case MESSAGE_TYPE.GAME_OVER:
+        this.gameStore.addNotification({
+          id: Date.now().toString(),
+          type: 'info',
+          message: `Game has ended`,
+          timestamp: Date.now()
+        });
+        break;
+
+      case MESSAGE_TYPE.ERROR:
+        this.gameStore.addNotification({
+          id: Date.now().toString(),
+          type: 'error',
+          message: message.payload.error as string || 'An error occurred',
+          timestamp: Date.now()
+        });
+        break;
+
+      default:
+        console.log('Unhandled message type:', message.type);
+    }
+  }
+
+  send(message: IMessage) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify(message));
+    } else {
+      // Queue message for when connection is established
+      this.messageQueue.push(message);
+      
+      if (!this.isConnecting) {
+        this.connect().catch(error => {
+          console.error('Failed to connect for sending message:', error);
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            message: 'Failed to send message - not connected',
+            timestamp: Date.now()
+          });
+        });
+      }
+    }
+  }
+
+  // Game-specific methods
+  listGames() {
+    this.send(new Message(MESSAGE_TYPE.LIST_GAMES, {}));
+  }
+
+  createGame(gameOptions: IGameOptions) {
+    this.send(new Message(MESSAGE_TYPE.CREATE_GAME, { gameOptions }));
+  }
+
+  joinGame(gameId: string, playerName?: string) {
+    this.send(new Message(MESSAGE_TYPE.JOIN_GAME, { gameId, playerName }));
+  }
+
+  startGame() {
+    this.send(new Message(MESSAGE_TYPE.START_GAME, {}));
+  }
+
+  leaveGame() {
+    this.send(new Message(MESSAGE_TYPE.EXIT_RESIGN, {}));
+  }
+
+  sendChatMessage(message: string) {
+    this.send(new Message(MESSAGE_TYPE.CHAT_MESSAGE, { message }));
+  }
+
+  // Game actions (placeholder for actual game commands)
+  sendGameAction(actionType: string, actionData: unknown) {
+    this.send(new Message(MESSAGE_TYPE.END_TURN, { actionType, actionData }));
+  }
+
+  disconnect() {
     if (this.ws) {
       this.ws.close();
       this.ws = null;
     }
-    this.connectionState.set('disconnected');
-    this.gameJoined.set(false);
-  }
-
-  private handleReconnect(): void {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-      
-      setTimeout(() => {
-        if (this.gameId && this.playerName) {
-          this.connect().then(() => {
-            // Re-join game after reconnection
-            this.joinGame(this.gameId!, this.playerName!);
-          }).catch(console.error);
-        }
-      }, this.reconnectDelay * this.reconnectAttempts);
-    } else {
-      this.lastError.set('Max reconnection attempts reached');
-    }
-  }
-
-  private handleMessage(data: string): void {
-    try {
-      const message: WebSocketMessage = JSON.parse(data);
-      console.log('Received message:', message);
-
-      switch (message.type) {
-        case 'connection_established':
-          console.log('Connection established with session:', message.data.sessionId);
-          break;
-
-        case 'game_joined':
-          console.log('Game joined data:', message.data);
-          this.gameId = message.data.gameId;
-          if (message.data.gameState) {
-            console.log('Setting game state:', message.data.gameState);
-            console.log('Sample planet data:', Object.values(message.data.gameState.planets || {})[0]);
-            gameStore.setGameState(message.data.gameState);
-          } else {
-            console.warn('No gameState in game_joined message');
-          }
-          gameStore.setGameId(message.data.gameId);
-          this.gameJoined.set(true);
-          break;
-
-        case 'game_state_update':
-          if (message.data.changes) {
-            gameStore.applyChanges(message.data.changes);
-          }
-          if (message.data.gameState) {
-            gameStore.setGameState(message.data.gameState);
-          }
-          break;
-
-        case 'game_action_result':
-          this.handleActionResult(message.data);
-          break;
-
-        case 'player_joined':
-          gameStore.addNotification({
-            type: 'info',
-            message: `${message.data.playerName} joined the game`,
-            timestamp: Date.now()
-          });
-          break;
-
-        case 'player_left':
-          gameStore.addNotification({
-            type: 'info', 
-            message: `${message.data.playerName} left the game`,
-            timestamp: Date.now()
-          });
-          break;
-
-        case 'chat_message':
-          gameStore.addChatMessage(message.data);
-          break;
-
-        case 'time_update':
-          gameStore.updateGameTime(message.data.gameTime);
-          break;
-
-        case 'error':
-          console.error('Server error:', message.data.message);
-          this.lastError.set(message.data.message);
-          gameStore.addNotification({
-            type: 'error',
-            message: message.data.message,
-            timestamp: Date.now()
-          });
-          break;
-
-        default:
-          console.warn('Unknown message type:', message.type);
-      }
-    } catch (error) {
-      console.error('Error parsing message:', error);
-    }
-  }
-
-  private handleActionResult(result: any): void {
-    if (result.success) {
-      gameStore.addNotification({
-        type: 'success',
-        message: result.message || 'Action completed successfully',
-        timestamp: Date.now()
-      });
-
-      // Apply any changes from the action
-      if (result.changes) {
-        gameStore.applyChanges(result.changes);
-      }
-    } else {
-      gameStore.addNotification({
-        type: 'error',
-        message: result.message || 'Action failed',
-        timestamp: Date.now()
-      });
-    }
-  }
-
-  joinGame(gameId: string, playerName: string): void {
-    this.gameId = gameId;
-    this.playerName = playerName;
-    
-    this.sendMessage({
-      type: 'join_game',
-      data: {
-        gameId,
-        playerName
-      }
-    });
-  }
-
-  leaveGame(): void {
-    this.sendMessage({
-      type: 'leave_game',
-      data: {}
-    });
-    
-    this.gameId = null;
-    this.playerName = null;
-    gameStore.reset();
-  }
-
-  sendGameAction(actionType: string, actionData: any): void {
-    this.sendMessage({
-      type: 'game_action',
-      data: {
-        actionType,
-        actionData
-      }
-    });
-  }
-
-  sendChatMessage(message: string, messageType: string = 'public'): void {
-    this.sendMessage({
-      type: 'chat_message',
-      data: {
-        message,
-        messageType
-      }
-    });
-  }
-
-  // Specific game actions
-  buildStructure(planetId: string, buildingType: string, quantity: number = 1): void {
-    this.sendGameAction('build_structure', {
-      planetId,
-      buildingType,
-      quantity
-    });
-  }
-
-  sendFleet(fromPlanetId: string, toPlanetId: string, ships: any, orders: string): void {
-    this.sendGameAction('send_fleet', {
-      fromPlanetId,
-      toPlanetId,
-      ships,
-      orders
-    });
-  }
-
-  setResearchAllocation(researchType: string, allocation: number): void {
-    this.sendGameAction('research_upgrade', {
-      researchType,
-      allocation
-    });
-  }
-
-  managePlanet(planetId: string, action: string, parameters: any): void {
-    this.sendGameAction('planet_management', {
-      planetId,
-      action,
-      parameters
-    });
-  }
-
-  private sendMessage(message: WebSocketMessage): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
-    } else {
-      console.error('WebSocket not connected');
-      this.lastError.set('Not connected to server');
-    }
-  }
-
-  ping(): void {
-    this.sendMessage({
-      type: 'ping',
-      data: {}
-    });
-  }
-
-  getConnectionState() {
-    return this.connectionState;
-  }
-
-  getLastError() {
-    return this.lastError;
-  }
-
-  getGameJoined() {
-    return this.gameJoined;
+    this.gameStore.reset();
   }
 }
 
-// Export singleton instance
-export const webSocketService = new WebSocketService();
+// Create singleton instances
+export const multiplayerGameStore = createMultiplayerGameStore();
+export const webSocketService = new WebSocketService(multiplayerGameStore);
+
+// Export connection utility
+export function connectToGame(url?: string) {
+  return webSocketService.connect(url);
+}
