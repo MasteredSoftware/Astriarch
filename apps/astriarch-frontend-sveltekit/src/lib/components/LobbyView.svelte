@@ -7,6 +7,7 @@
   let selectedGame: IGame | null = null;
   let createGameForm = false;
   let playerName = '';
+  let newGameName = '';
 
   // Default game options based on old codebase
   let newGameOptions: IGameOptions = {
@@ -51,9 +52,14 @@
   }
 
   function createGame() {
-    if (playerName.trim()) {
+    if (playerName.trim() && newGameName.trim()) {
       multiplayerGameStore.setPlayerName(playerName.trim());
-      webSocketService.createGame(newGameOptions);
+      // Create game options with the game name
+      const gameOptionsWithName = {
+        ...newGameOptions,
+        name: newGameName.trim()
+      };
+      webSocketService.createGame(gameOptionsWithName);
       createGameForm = false;
     }
   }
@@ -89,6 +95,17 @@
       {#if createGameForm}
         <div class="create-game-form">
           <h3>Create New Game</h3>
+          <div class="form-group">
+            <label for="gameName">Game Name:</label>
+            <input 
+              id="gameName"
+              type="text" 
+              bind:value={newGameName} 
+              placeholder="Enter game name"
+              required
+            />
+          </div>
+          
           <div class="form-group">
             <label for="playerName">Your Name:</label>
             <input 
@@ -160,7 +177,7 @@
           </div>
 
           <div class="form-actions">
-            <button on:click={createGame} class="btn-primary" disabled={!playerName.trim()}>
+            <button on:click={createGame} class="btn-primary" disabled={!playerName.trim() || !newGameName.trim()}>
               Create Game
             </button>
             <button on:click={() => createGameForm = false} class="btn-secondary">

@@ -21,6 +21,7 @@ export interface IPlayer {
 }
 
 export interface IGameOptions {
+  name?: string;
   galaxySize: 'small' | 'medium' | 'large';
   planetsPerSystem: number;
   gameSpeed: 'slow' | 'normal' | 'fast';
@@ -372,7 +373,27 @@ class WebSocketService {
   }
 
   createGame(gameOptions: IGameOptions) {
-    this.send(new Message(MESSAGE_TYPE.CREATE_GAME, { gameOptions }));
+    // Get current player name from store
+    let currentPlayerName = '';
+    const unsubscribe = this.gameStore.subscribe(state => {
+      currentPlayerName = state.playerName || 'Anonymous';
+    });
+    unsubscribe();
+
+    // Send both game name and player name as the backend expects
+    const payload: Record<string, unknown> = {
+      name: gameOptions.name || 'Unnamed Game',
+      playerName: currentPlayerName,
+      gameOptions: {
+        galaxySize: gameOptions.galaxySize,
+        planetsPerSystem: gameOptions.planetsPerSystem,
+        gameSpeed: gameOptions.gameSpeed,
+        distributePlanetsEvenly: gameOptions.distributePlanetsEvenly,
+        quickStart: gameOptions.quickStart,
+        maxPlayers: gameOptions.maxPlayers
+      }
+    };
+    this.send(new Message(MESSAGE_TYPE.CREATE_GAME, payload));
   }
 
   joinGame(gameId: string, playerName?: string) {
