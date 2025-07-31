@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { multiplayerGameStore, webSocketService, type IGame, type IGameOptions } from '$lib/services/websocket';
 
-  let gameState: any;
+  let gameState: any = null;
   let availableGames: IGame[] = [];
   let selectedGame: IGame | null = null;
   let createGameForm = false;
@@ -20,8 +20,8 @@
 
   const unsubscribe = multiplayerGameStore.subscribe((state) => {
     gameState = state;
-    availableGames = state.availableGames;
-    selectedGame = state.selectedGame;
+    availableGames = state?.availableGames || [];
+    selectedGame = state?.selectedGame || null;
   });
 
   onMount(() => {
@@ -181,7 +181,7 @@
                 on:keydown={(e) => e.key === 'Enter' && selectGame(game)}
               >
                 <div class="game-name">{game.name}</div>
-                <div class="game-players">{game.players.length}/{game.gameOptions?.maxPlayers} players</div>
+                <div class="game-players">{game.players?.length || 0}/{game.gameOptions?.maxPlayers || 0} players</div>
                 <div class="game-status status-{game.status}">{game.status}</div>
                 <div class="game-created">Created: {formatDate(game.createdAt)}</div>
               </div>
@@ -207,9 +207,9 @@
           </div>
 
           <div class="detail-section">
-            <h3>Players ({selectedGame.players.length}/{selectedGame.gameOptions?.maxPlayers})</h3>
+            <h3>Players ({selectedGame.players?.length || 0}/{selectedGame.gameOptions?.maxPlayers || 0})</h3>
             <div class="players-list">
-              {#each selectedGame.players as player}
+              {#each selectedGame.players || [] as player}
                 <div class="player-item">
                   <span class="player-name">{player.name}</span>
                   <span class="player-status" class:connected={player.connected}>
@@ -266,7 +266,7 @@
                 <button 
                   on:click={joinGame} 
                   class="btn-join"
-                  disabled={!playerName.trim() || selectedGame.players.length >= (selectedGame.gameOptions?.maxPlayers || 4)}
+                  disabled={!playerName.trim() || (selectedGame.players?.length || 0) >= (selectedGame.gameOptions?.maxPlayers || 4)}
                 >
                   Join Game
                 </button>

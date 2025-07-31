@@ -40,7 +40,7 @@ interface MultiplayerGameState {
   currentView: 'lobby' | 'game_options' | 'game';
   availableGames: IGame[];
   selectedGame: IGame | null;
-  gameState: any | null; // Will be converted to engine format later
+  gameState: unknown | null; // Will be converted to engine format later
 }
 
 // Chat and notifications
@@ -59,6 +59,29 @@ export interface GameNotification {
   timestamp: number;
   actionText?: string;
   actionType?: string;
+}
+
+// Helper function to ensure game data has proper structure
+function validateGameData(games: unknown[]): IGame[] {
+  return games.map((game: unknown) => {
+    const g = game as Record<string, unknown>;
+    return {
+      _id: (g._id as string) || '',
+      name: (g.name as string) || 'Unnamed Game',
+      players: Array.isArray(g.players) ? g.players : [],
+      gameOptions: (g.gameOptions as IGameOptions) || {
+        galaxySize: 'medium',
+        planetsPerSystem: 4,
+        gameSpeed: 'normal',
+        distributePlanetsEvenly: true,
+        quickStart: false,
+        maxPlayers: 4
+      },
+      status: (g.status as 'waiting' | 'in_progress' | 'completed') || 'waiting',
+      createdAt: g.createdAt ? new Date(g.createdAt as string) : new Date(),
+      lastActivity: g.lastActivity ? new Date(g.lastActivity as string) : new Date()
+    };
+  });
 }
 
 // Create the multiplayer game store
@@ -105,15 +128,15 @@ function createMultiplayerGameStore() {
     setSelectedGame: (game: IGame | null) => update(store => ({ ...store, selectedGame: game })),
     
     // Game state
-    setGameState: (gameState: any) => update(store => ({ ...store, gameState })),
-    applyChanges: (changes: any) => update(store => {
+    setGameState: (gameState: unknown) => update(store => ({ ...store, gameState })),
+    applyChanges: (changes: unknown) => update(store => {
       // Apply incremental changes to game state
       if (store.gameState && changes) {
         return {
           ...store,
           gameState: {
-            ...store.gameState,
-            ...changes
+            ...store.gameState as Record<string, unknown>,
+            ...changes as Record<string, unknown>
           }
         };
       }
@@ -261,11 +284,11 @@ class WebSocketService {
 
     switch (message.type) {
       case MESSAGE_TYPE.LIST_GAMES:
-        this.gameStore.setAvailableGames((message.payload.games as IGame[]) || []);
+        this.gameStore.setAvailableGames(validateGameData((message.payload.games as unknown[]) || []));
         break;
 
       case MESSAGE_TYPE.GAME_LIST_UPDATED:
-        this.gameStore.setAvailableGames((message.payload.games as IGame[]) || []);
+        this.gameStore.setAvailableGames(validateGameData((message.payload.games as unknown[]) || []));
         break;
 
       case MESSAGE_TYPE.GAME_STATE_UPDATE:
