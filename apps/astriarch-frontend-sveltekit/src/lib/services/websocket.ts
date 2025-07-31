@@ -20,6 +20,11 @@ export interface IPlayer {
   connected?: boolean;
 }
 
+export interface IOpponentOption {
+  name: string;
+  type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer
+}
+
 export interface IGameOptions {
   name?: string;
   galaxySize: 'small' | 'medium' | 'large';
@@ -28,6 +33,7 @@ export interface IGameOptions {
   distributePlanetsEvenly: boolean;
   quickStart: boolean;
   maxPlayers: number;
+  opponentOptions?: IOpponentOption[];
 }
 
 // Store for WebSocket multiplayer game state
@@ -300,6 +306,47 @@ class WebSocketService {
         }
         break;
 
+      case MESSAGE_TYPE.START_GAME:
+        if (message.payload.success) {
+          this.gameStore.setCurrentView('game');
+          this.gameStore.setGameState(message.payload.gameState);
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'success',
+            message: 'Game started!',
+            timestamp: Date.now()
+          });
+        } else {
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            message: message.payload.error as string || 'Failed to start game',
+            timestamp: Date.now()
+          });
+        }
+        break;
+
+      case MESSAGE_TYPE.CREATE_GAME:
+        if (message.payload.success) {
+          this.gameStore.setGameId(message.payload.gameId as string);
+          this.gameStore.setGameJoined(true);
+          this.gameStore.setCurrentView('game_options');
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'success',
+            message: `Game "${message.payload.gameName || 'Unnamed Game'}" created successfully!`,
+            timestamp: Date.now()
+          });
+        } else {
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            message: message.payload.error as string || 'Failed to create game',
+            timestamp: Date.now()
+          });
+        }
+        break;
+
       case MESSAGE_TYPE.JOIN_GAME:
         if (message.payload.success) {
           this.gameStore.setGameId(message.payload.gameId as string);
@@ -390,7 +437,8 @@ class WebSocketService {
         gameSpeed: gameOptions.gameSpeed,
         distributePlanetsEvenly: gameOptions.distributePlanetsEvenly,
         quickStart: gameOptions.quickStart,
-        maxPlayers: gameOptions.maxPlayers
+        maxPlayers: gameOptions.maxPlayers,
+        opponentOptions: gameOptions.opponentOptions || []
       }
     };
     this.send(new Message(MESSAGE_TYPE.CREATE_GAME, payload));

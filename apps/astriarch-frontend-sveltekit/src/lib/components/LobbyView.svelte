@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { multiplayerGameStore, webSocketService, type IGame, type IGameOptions } from '$lib/services/websocket';
+  import { multiplayerGameStore, webSocketService, type IGame, type IGameOptions, type IOpponentOption } from '$lib/services/websocket';
 
   let gameState: any = null;
   let availableGames: IGame[] = [];
@@ -9,6 +9,23 @@
   let playerName = '';
   let newGameName = '';
 
+  // Opponent types mapping
+  const opponentTypes = [
+    { value: -2, label: 'Closed' },
+    { value: -1, label: 'Open' },
+    { value: 1, label: 'Easy Computer' },
+    { value: 2, label: 'Normal Computer' },
+    { value: 3, label: 'Hard Computer' },
+    { value: 4, label: 'Expert Computer' }
+  ];
+
+  // Initialize opponent options for up to 3 additional players (Player 2, 3, 4)
+  let opponentOptions: IOpponentOption[] = [
+    { name: '', type: -1 }, // Player 2 - Open by default
+    { name: '', type: -2 }, // Player 3 - Closed by default  
+    { name: '', type: -2 }  // Player 4 - Closed by default
+  ];
+
   // Default game options based on old codebase
   let newGameOptions: IGameOptions = {
     galaxySize: 'medium',
@@ -16,7 +33,8 @@
     gameSpeed: 'normal',
     distributePlanetsEvenly: true,
     quickStart: false,
-    maxPlayers: 4
+    maxPlayers: 4,
+    opponentOptions: opponentOptions
   };
 
   const unsubscribe = multiplayerGameStore.subscribe((state) => {
@@ -54,14 +72,36 @@
   function createGame() {
     if (playerName.trim() && newGameName.trim()) {
       multiplayerGameStore.setPlayerName(playerName.trim());
-      // Create game options with the game name
+      // Create game options with the game name and opponent options
       const gameOptionsWithName = {
         ...newGameOptions,
-        name: newGameName.trim()
+        name: newGameName.trim(),
+        opponentOptions: opponentOptions
       };
       webSocketService.createGame(gameOptionsWithName);
       createGameForm = false;
     }
+  }
+
+  function updateOpponentOptions() {
+    // Update opponent options based on max players
+    const maxOpponents = newGameOptions.maxPlayers - 1; // -1 for the main player
+    
+    // Show/hide opponent slots based on max players
+    for (let i = 0; i < opponentOptions.length; i++) {
+      if (i < maxOpponents) {
+        // Keep existing settings for active slots, or set to Open if was Closed
+        if (opponentOptions[i].type === -2) {
+          opponentOptions[i].type = -1; // Open
+        }
+      } else {
+        // Close slots beyond max players
+        opponentOptions[i].type = -2; // Closed
+      }
+    }
+    
+    // Update the game options
+    newGameOptions.opponentOptions = opponentOptions;
   }
 
   function refreshGames() {
@@ -128,7 +168,7 @@
 
           <div class="form-group">
             <label for="maxPlayers">Max Players:</label>
-            <select id="maxPlayers" bind:value={newGameOptions.maxPlayers}>
+            <select id="maxPlayers" bind:value={newGameOptions.maxPlayers} on:change={updateOpponentOptions}>
               <option value={2}>2 Players</option>
               <option value={3}>3 Players</option>
               <option value={4}>4 Players</option>
@@ -174,6 +214,28 @@
               />
               Quick Start
             </label>
+          </div>
+
+          <!-- Player Configuration Section -->
+          <div class="player-config-section">
+            <h4>Player Configuration</h4>
+            <div class="player-slot">
+              <span class="player-label">Player 1 (You):</span>
+              <span class="player-name">{playerName || 'Your Name'}</span>
+            </div>
+            
+            {#each opponentOptions as opponent, index}
+              {#if index < newGameOptions.maxPlayers - 1}
+                <div class="player-slot">
+                  <span class="player-label">Player {index + 2}:</span>
+                  <select bind:value={opponent.type}>
+                    {#each opponentTypes as type}
+                      <option value={type.value}>{type.label}</option>
+                    {/each}
+                  </select>
+                </div>
+              {/if}
+            {/each}
           </div>
 
           <div class="form-actions">
@@ -416,6 +478,49 @@
 
   .form-group.checkbox input {
     margin-right: 8px;
+  }
+
+  .player-config-section {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    border: 1px solid #444;
+  }
+
+  .player-config-section h4 {
+    color: #ccc;
+    margin: 0 0 15px 0;
+    font-size: 16px;
+  }
+
+  .player-slot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px 0;
+  }
+
+  .player-slot label,
+  .player-slot .player-label {
+    color: #ccc;
+    font-weight: 500;
+    min-width: 80px;
+  }
+
+  .player-slot .player-name {
+    color: #fff;
+    font-style: italic;
+  }
+
+  .player-slot select {
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    color: #fff;
+    padding: 6px 10px;
+    min-width: 140px;
   }
 
   .form-group input, .form-group select {
