@@ -2,7 +2,7 @@ import { ClientModelData, ClientPlanet, ClientPlayer, ClientTradingCenter, Plane
 import { ModelData } from '../model/model';
 import { PlanetData } from '../model/planet';
 import { PlayerData } from '../model/player';
-import { TradeData, TradingCenterData } from '../model/tradingCenter';
+import { TradingCenterData } from '../model/tradingCenter';
 import { TaskNotifications } from './taskNotifications';
 
 export class ClientGameModel {

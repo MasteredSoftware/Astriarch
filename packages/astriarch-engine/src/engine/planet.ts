@@ -21,7 +21,6 @@ import { GameTools } from '../utils/gameTools';
 import { Utils } from '../utils/utils';
 import { Events } from './events';
 import { Fleet } from './fleet';
-import { GameModelData } from './gameModel';
 import { Grid, GridHex } from './grid';
 import { PlanetDistanceComparer } from './planetDistanceComparer';
 import { PlanetProductionItem } from './planetProductionItem';

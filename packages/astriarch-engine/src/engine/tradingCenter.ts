@@ -8,7 +8,6 @@ import {
   TradingCenterResource,
   TradingCenterResourceType,
 } from '../model/tradingCenter';
-import { ClientGameModel } from './clientGameModel';
 import { Events } from './events';
 import { GameModel, GameModelData } from './gameModel';
 import { Planet } from './planet';

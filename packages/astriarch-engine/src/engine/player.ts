@@ -1,10 +1,9 @@
-import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
+import { PlanetById, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
 import { EventNotificationType } from '../model/eventNotification';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
-import { ResearchType } from '../model/research';
 import { Utils } from '../utils/utils';
 import { Events } from './events';
 import { Fleet } from './fleet';
@@ -160,7 +159,7 @@ export class Player {
   }
 
   public static addLastStarShipToQueueOnPlanets(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, cyclesElapsed, currentCycle, grid } = data;
+    const { clientModel, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
     let autoQueuedCount = 0;
@@ -207,7 +206,7 @@ export class Player {
   }
 
   public static eatAndStarve(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, cyclesElapsed, currentCycle, grid } = data;
+    const { clientModel, cyclesElapsed, currentCycle } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const totalPop = this.getTotalPopulation(mainPlayer, mainPlayerOwnedPlanets);
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
@@ -412,7 +411,7 @@ export class Player {
   }
 
   public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, cyclesElapsed, currentCycle, grid } = data;
+    const { clientModel } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //if we have a normal PlanetHappiness (meaning we didn't cause unrest from starvation)
     //	we'll slowly reduce the amount of protest on the planet
@@ -550,7 +549,7 @@ export class Player {
   }
 
   public static moveShips(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, cyclesElapsed, grid } = data;
+    const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const fleetsArrivingOnUnownedPlanets: FleetData[] = [];
     //for each planet and each outgoing fleet on that planet, move the fleet to the player's fleets in transit

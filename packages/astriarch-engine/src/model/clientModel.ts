@@ -1,5 +1,5 @@
 import { PointData } from '../shapes/shapes';
-import { GameOptions, ModelBase } from './model';
+import { ModelBase } from './model';
 import { PlanetData, PlanetType } from './planet';
 import { ColorRgbaData, PlayerData, PlayerType } from './player';
 import { ResearchData } from './research';

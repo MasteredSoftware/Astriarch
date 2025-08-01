@@ -18,11 +18,11 @@ export class Grid {
     this.quadrants = [];
     this.hexes = [];
 
-    let h: GridHex, x: number, y: number, quadWidth: number, quadHeight: number;
+    let h: GridHex, x: number, y: number;
+    const quadWidth: number = width / 2;
+    const quadHeight: number = height / 2;
     x = 0;
     y = 0;
-    quadWidth = width / 2;
-    quadHeight = height / 2;
     if (options.systemsToGenerate == 2 || options.systemsToGenerate == 4) {
       //[0 , 0]
       this.quadrants.push(new GridRect(x, y, quadWidth, quadHeight));
@@ -84,7 +84,6 @@ export class Grid {
 
     let row = 0;
     for (y = 0.0; y + hexHeight <= height; y += hexHeight / 2) {
-      let col = 0;
       let colId = 0;
 
       let offset = 0.0;
@@ -102,7 +101,6 @@ export class Grid {
         if (!hexagonsByXCoOrd[colId]) hexagonsByXCoOrd[colId] = [];
         hexagonsByXCoOrd[colId].push(h);
 
-        col++;
         colId += 2;
       }
       row++;

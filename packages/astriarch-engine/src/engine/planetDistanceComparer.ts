@@ -1,7 +1,6 @@
 import { PlanetData, PlanetType } from '../model/planet';
 import { LastKnownPlanetFleetStrength } from '../model/player';
 import { Fleet } from './fleet';
-import { GameModelData } from './gameModel';
 import { Grid, GridHex } from './grid';
 
 /**
