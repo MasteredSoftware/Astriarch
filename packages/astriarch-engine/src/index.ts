@@ -1,18 +1,18 @@
-import { ClientGameModel } from "./engine/clientGameModel";
-import { Engine } from "./engine/engine";
-import { Events, Subscription } from "./engine/events";
-import { GameController } from "./engine/gameController";
-import { GameModel, GameModelData, playerColors } from "./engine/gameModel";
-import { Player } from "./engine/player";
-import { ClientModelData, PlanetById } from "./model/clientModel";
-import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from "./model/model";
-import { PlayerData, PlayerType } from "./model/player";
-import { ResearchType } from "./model/research";
-import { CitizenWorkerType } from "./model/planet";
-import { Grid } from "./engine/grid";
+import { ClientGameModel } from './engine/clientGameModel';
+import { Engine } from './engine/engine';
+import { Events, Subscription } from './engine/events';
+import { GameController } from './engine/gameController';
+import { GameModel, GameModelData, playerColors } from './engine/gameModel';
+import { Player } from './engine/player';
+import { ClientModelData, PlanetById } from './model/clientModel';
+import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from './model/model';
+import { PlayerData, PlayerType } from './model/player';
+import { ResearchType } from './model/research';
+import { CitizenWorkerType } from './model/planet';
+import { Grid } from './engine/grid';
 
 // Export messaging types
-export * from "./messaging/MessageTypes";
+export * from './messaging/MessageTypes';
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
@@ -22,8 +22,8 @@ const engine = new Engine([]);
 export const startNewGame = () => {
   // NOTE: just for testing right now
   const players = [] as PlayerData[];
-  players.push(Player.constructPlayer("me", PlayerType.Human, "Matt", playerColors[0]));
-  players.push(Player.constructPlayer("c1", PlayerType.Computer_Hard, "Computer1", playerColors[1]));
+  players.push(Player.constructPlayer('me', PlayerType.Human, 'Matt', playerColors[0]));
+  players.push(Player.constructPlayer('c1', PlayerType.Computer_Hard, 'Computer1', playerColors[1]));
 
   players[0].research.researchPercent = 0.9;
   players[0].research.researchTypeInQueue = ResearchType.PROPULSION_IMPROVEMENT;
@@ -35,7 +35,7 @@ export const startNewGame = () => {
     distributePlanetsEvenly: true,
     quickStart: true,
     gameSpeed: GameSpeed.NORMAL,
-    version: "2.0",
+    version: '2.0',
   };
 
   const gameModel = GameModel.constructData(players, gameOptions);
@@ -45,7 +45,7 @@ export const startNewGame = () => {
 
   engine.serverGameModels.push(gameModel);
 
-  const clientGameModel = ClientGameModel.constructClientGameModel(gameModel.modelData, "me");
+  const clientGameModel = ClientGameModel.constructClientGameModel(gameModel.modelData, 'me');
 
   return { gameModel, clientGameModel };
 };
@@ -79,5 +79,5 @@ export const getPlayerTotalPopulation = (player: PlayerData, planetById: PlanetB
 };
 
 // TODO: decide what the engine should actually export
-export * from "./engine";
-export * from "./model";
+export * from './engine';
+export * from './model';

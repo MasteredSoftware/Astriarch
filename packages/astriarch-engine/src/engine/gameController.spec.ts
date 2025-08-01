@@ -1,7 +1,7 @@
-import { PlayerType } from "../model/player";
-import { startNewTestGameWithOptions } from "../test/testUtils";
-import { ClientGameModel } from "./clientGameModel";
-import { GameController } from "./gameController";
+import { PlayerType } from '../model/player';
+import { startNewTestGameWithOptions } from '../test/testUtils';
+import { ClientGameModel } from './clientGameModel';
+import { GameController } from './gameController';
 
 const assertPointsBasedOnGameOptions = (
   expectedPoints: number,
@@ -12,7 +12,7 @@ const assertPointsBasedOnGameOptions = (
   ownedPlanetCount: number,
   playerCount: number,
   playerWins: boolean,
-  playerType: PlayerType = PlayerType.Computer_Expert
+  playerType: PlayerType = PlayerType.Computer_Expert,
 ) => {
   const testGameData = startNewTestGameWithOptions(
     turnNumber,
@@ -21,7 +21,7 @@ const assertPointsBasedOnGameOptions = (
     planetsPerSystem,
     ownedPlanetCount,
     playerCount,
-    playerType
+    playerType,
   );
   const { modelData } = testGameData.gameModel;
   const [player] = modelData.players;
@@ -30,27 +30,27 @@ const assertPointsBasedOnGameOptions = (
   expect(calculatedPoints).toEqual(expectedPoints);
 };
 
-describe("GameController", () => {
+describe('GameController', () => {
   beforeEach(() => {});
 
-  describe("CalculateEndGamePoints()", () => {
-    it("should base points on total points at the end of the game", () => {
+  describe('CalculateEndGamePoints()', () => {
+    it('should base points on total points at the end of the game', () => {
       assertPointsBasedOnGameOptions(436, 100, 100, 4, 4, 8, 4, true);
     });
 
-    it("should award less points if the player loses", () => {
+    it('should award less points if the player loses', () => {
       assertPointsBasedOnGameOptions(404, 100, 100, 4, 4, 8, 4, false);
     });
 
-    it("should handle awarding points even if the player owns no planets", () => {
+    it('should handle awarding points even if the player owns no planets', () => {
       assertPointsBasedOnGameOptions(400, 100, 100, 4, 4, 0, 4, false);
     });
 
-    it("should give bonus points for a quick game", () => {
+    it('should give bonus points for a quick game', () => {
       assertPointsBasedOnGameOptions(472, 50, 100, 4, 4, 8, 4, true);
     });
 
-    it("should give less points for an easier game", () => {
+    it('should give less points for an easier game', () => {
       assertPointsBasedOnGameOptions(413, 100, 100, 2, 4, 8, 2, true, PlayerType.Human);
     });
   });

@@ -1,5 +1,5 @@
-import { StarshipData } from "../model/fleet";
-import { BattleSimulator, FleetDamagePending } from "./battleSimulator";
+import { StarshipData } from '../model/fleet';
+import { BattleSimulator, FleetDamagePending } from './battleSimulator';
 
 /**
  * StarShipAdvantageStrengthComparer is an object that allows array sorting of starships

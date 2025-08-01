@@ -1,4 +1,4 @@
-import { PointData } from "../shapes/shapes";
+import { PointData } from '../shapes/shapes';
 
 export enum StarShipType {
   SystemDefense = 1, //System defense ships are not equiped with hyperdrive and cannot leave the system they are in

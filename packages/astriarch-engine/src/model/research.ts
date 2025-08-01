@@ -1,4 +1,4 @@
-import { StarShipType } from "./fleet";
+import { StarShipType } from './fleet';
 
 export enum ResearchType {
   UNKNOWN = 0,

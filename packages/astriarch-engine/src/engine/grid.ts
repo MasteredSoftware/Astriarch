@@ -1,8 +1,8 @@
-import { GalaxySizeOption, GameOptions } from "../model/model";
-import { HexagonData, PointData } from "../shapes/shapes";
+import { GalaxySizeOption, GameOptions } from '../model/model';
+import { HexagonData, PointData } from '../shapes/shapes';
 
 const HexProperties = { HEIGHT: 40.0, WIDTH: 71.0, SIDE: 29.0, X: 21 };
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 /**
  * Grid is a proper instantiated class since it has deterministic generation
@@ -160,7 +160,7 @@ export class Grid {
     const h2 = grid.getHexAt(mp2);
     if (!h1 || !h2) {
       throw new Error(
-        `Cannot find hex in getHexDistanceForMidPoints ${this.pointDataToString(mp1)}, ${this.pointDataToString(mp2)}`
+        `Cannot find hex in getHexDistanceForMidPoints ${this.pointDataToString(mp1)}, ${this.pointDataToString(mp2)}`,
       );
     }
     return this.getHexDistance(h1, h2);

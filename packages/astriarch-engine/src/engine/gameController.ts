@@ -1,21 +1,21 @@
-import { ClientModelData, PlanetById } from "../model/clientModel";
-import { EventNotificationType } from "../model/eventNotification";
-import { FleetData } from "../model/fleet";
-import { GalaxySizeOption, ModelBase, ModelData } from "../model/model";
-import { PlayerData, PlayerType } from "../model/player";
-import { ResearchType } from "../model/research";
-import { Utils } from "../utils/utils";
-import { BattleSimulator } from "./battleSimulator";
-import { ClientGameModel } from "./clientGameModel";
-import { ComputerPlayer } from "./computerPlayer";
-import { Events } from "./events";
-import { Fleet } from "./fleet";
-import { AdvanceGameClockForPlayerData, GameModel, GameModelData } from "./gameModel";
-import { Grid } from "./grid";
-import { Planet } from "./planet";
-import { Player } from "./player";
-import { Research } from "./research";
-import { TradingCenter } from "./tradingCenter";
+import { ClientModelData, PlanetById } from '../model/clientModel';
+import { EventNotificationType } from '../model/eventNotification';
+import { FleetData } from '../model/fleet';
+import { GalaxySizeOption, ModelBase, ModelData } from '../model/model';
+import { PlayerData, PlayerType } from '../model/player';
+import { ResearchType } from '../model/research';
+import { Utils } from '../utils/utils';
+import { BattleSimulator } from './battleSimulator';
+import { ClientGameModel } from './clientGameModel';
+import { ComputerPlayer } from './computerPlayer';
+import { Events } from './events';
+import { Fleet } from './fleet';
+import { AdvanceGameClockForPlayerData, GameModel, GameModelData } from './gameModel';
+import { Grid } from './grid';
+import { Planet } from './planet';
+import { Player } from './player';
+import { Research } from './research';
+import { TradingCenter } from './tradingCenter';
 
 export class GameController {
   public static MS_PER_CYCLE = 30 * 1000; // Time per cycle (or "turn")
@@ -98,7 +98,7 @@ export class GameController {
   public static resolvePlanetaryConflicts(
     gameModel: GameModelData,
     player: PlayerData,
-    fleetsArrivingOnUnownedPlanets: FleetData[]
+    fleetsArrivingOnUnownedPlanets: FleetData[],
   ) {
     //if any of the player's fleets in transit have reached their destination
     //  if the destination is not an owned planet, we need to resolve the conflict
@@ -106,10 +106,10 @@ export class GameController {
     for (const playerFleet of fleetsArrivingOnUnownedPlanets) {
       const destinationPlanet = Planet.getPlanetAtMidPoint(
         gameModel.modelData.planets,
-        playerFleet.destinationHexMidPoint!
+        playerFleet.destinationHexMidPoint!,
       );
       if (!destinationPlanet) {
-        throw new Error("Unable to find fleet destinationPlanet in resolvePlanetaryConflicts");
+        throw new Error('Unable to find fleet destinationPlanet in resolvePlanetaryConflicts');
       }
 
       //if there are ships in the planet's OutgoingFleets list, recall them since we are being attacked
@@ -134,7 +134,7 @@ export class GameController {
         defendingClientPlayer,
         destinationPlanet.planetaryFleet,
         attackingClientPlayer,
-        playerFleet
+        playerFleet,
       );
 
       //determine strength differences
@@ -149,11 +149,11 @@ export class GameController {
 
       planetaryConflictData.attackingFleetResearchBoost.attack = Research.getResearchBoostForStarshipCombatImprovement(
         ResearchType.COMBAT_IMPROVEMENT_ATTACK,
-        player
+        player,
       );
       planetaryConflictData.attackingFleetResearchBoost.defense = Research.getResearchBoostForStarshipCombatImprovement(
         ResearchType.COMBAT_IMPROVEMENT_DEFENSE,
-        player
+        player,
       );
 
       planetaryConflictData.defendingFleetResearchBoost.attack = planetOwner
@@ -165,13 +165,13 @@ export class GameController {
 
       planetaryConflictData.attackingFleetChances = BattleSimulator.getAttackingFleetChances(
         playerFleetStrength,
-        enemyFleetStrength
+        enemyFleetStrength,
       );
 
       //now actually simulate the battle
       let playerWins = BattleSimulator.simulateFleetBattle(playerFleet, player, enemyFleet, planetOwner);
       //if at this point playerWins doesn't have a value it means that both fleets were destroyed, in that case the enemy should win because they are the defender of the planet
-      if (playerWins === null || typeof playerWins == "undefined") playerWins = false;
+      if (playerWins === null || typeof playerWins == 'undefined') playerWins = false;
 
       if (!playerWins) {
         //just kill the fleet
@@ -183,9 +183,9 @@ export class GameController {
           //the attacking player is a human player and lost
           //PlanetaryConflictData summarizes your attacking fleet, the enemy fleet and what was destroyed in the enemy fleet
 
-          let message = "You lost a fleet attacking planet: " + destinationPlanet.name;
+          let message = 'You lost a fleet attacking planet: ' + destinationPlanet.name;
           if (planetOwner) {
-            message = "You lost a fleet attacking " + planetOwner.name + " at planet: " + destinationPlanet.name;
+            message = 'You lost a fleet attacking ' + planetOwner.name + ' at planet: ' + destinationPlanet.name;
           }
           planetaryConflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
           Events.enqueueNewEvent(
@@ -193,7 +193,7 @@ export class GameController {
             EventNotificationType.AttackingFleetLost,
             message,
             destinationPlanet,
-            planetaryConflictData
+            planetaryConflictData,
           );
         }
 
@@ -201,14 +201,14 @@ export class GameController {
           //the defending player is a human player and won
           //PlanetaryConflictData summarizes the attacking fleet, your fleet and what was destroyed in your fleet
           const message =
-            "You successfully defended against " + player.name + " attacking planet: " + destinationPlanet.name;
+            'You successfully defended against ' + player.name + ' attacking planet: ' + destinationPlanet.name;
           planetaryConflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
           Events.enqueueNewEvent(
             planetOwner.id,
             EventNotificationType.DefendedAgainstAttackingFleet,
             message,
             destinationPlanet,
-            planetaryConflictData
+            planetaryConflictData,
           );
         }
       } else {
@@ -238,20 +238,20 @@ export class GameController {
                 Math.floor(
                   Math.min(
                     researchLootMax,
-                    rp.researchPointsCompleted - attackingPlayerResearch.researchPointsCompleted
-                  ) + 1
-                )
+                    rp.researchPointsCompleted - attackingPlayerResearch.researchPointsCompleted,
+                  ) + 1,
+                ),
               );
               const levelIncrease = Research.setResearchPointsCompleted(
                 attackingPlayerResearch,
-                attackingPlayerResearch.researchPointsCompleted + planetaryConflictData.resourcesLooted.research
+                attackingPlayerResearch.researchPointsCompleted + planetaryConflictData.resourcesLooted.research,
               );
               if (levelIncrease) {
                 Events.enqueueNewEvent(
                   defendingPlayer.id,
                   EventNotificationType.ResearchStolen,
                   `${Research.researchProgressToString(attackingPlayerResearch)} was stolen by ${player.name}`,
-                  destinationPlanet
+                  destinationPlanet,
                 );
                 Events.enqueueNewEvent(
                   player.id,
@@ -259,7 +259,7 @@ export class GameController {
                   `You stole ${Research.researchProgressToString(attackingPlayerResearch)} from ${
                     defendingPlayer.name
                   }`,
-                  destinationPlanet
+                  destinationPlanet,
                 );
               }
               break;
@@ -277,9 +277,9 @@ export class GameController {
         if (player.type == PlayerType.Human) {
           //the attacking player is a human player and won
           //PlanetaryConflictData summarizes your attacking fleet, the enemy fleet and what was destroyed in your fleet
-          let message = "Your fleet captured planet: " + destinationPlanet.name;
+          let message = 'Your fleet captured planet: ' + destinationPlanet.name;
           if (defendingPlayer != null) {
-            message = "Your fleet captured planet: " + destinationPlanet.name + ", owned by: " + defendingPlayer.name;
+            message = 'Your fleet captured planet: ' + destinationPlanet.name + ', owned by: ' + defendingPlayer.name;
           }
           planetaryConflictData.winningFleet = Fleet.cloneFleet(playerFleet);
           Events.enqueueNewEvent(
@@ -287,21 +287,21 @@ export class GameController {
             EventNotificationType.PlanetCaptured,
             message,
             destinationPlanet,
-            planetaryConflictData
+            planetaryConflictData,
           );
         }
 
         if (defendingPlayer && defendingPlayer.type == PlayerType.Human) {
           //the defending player is a human player and lost
           //planetaryConflictData summarizes your defending fleet, the enemy fleet and what was destroyed in the enemy fleet
-          const message = player.name + " captured your planet: " + destinationPlanet.name;
+          const message = player.name + ' captured your planet: ' + destinationPlanet.name;
           planetaryConflictData.winningFleet = Fleet.cloneFleet(playerFleet);
           Events.enqueueNewEvent(
             defendingPlayer.id,
             EventNotificationType.PlanetLost,
             message,
             destinationPlanet,
-            planetaryConflictData
+            planetaryConflictData,
           );
         }
       }
@@ -312,7 +312,7 @@ export class GameController {
     model: ModelData,
     player: PlayerData,
     ownedPlanets: PlanetById,
-    playerWon: boolean
+    playerWon: boolean,
   ) {
     return this.getEndGamePlayerPoints(model, player, ownedPlanets, playerWon);
   }
@@ -321,7 +321,7 @@ export class GameController {
     model: ModelData,
     player: PlayerData,
     ownedPlanets: PlanetById,
-    playerWon: boolean
+    playerWon: boolean,
   ) {
     let turnsTaken = model.currentCycle;
     if (turnsTaken > 1000) {
@@ -383,10 +383,10 @@ export class GameController {
         (model.gameOptions.galaxySize == GalaxySizeOption.TINY
           ? 0.25
           : model.gameOptions.galaxySize == GalaxySizeOption.SMALL
-          ? 0.5
-          : model.gameOptions.galaxySize == GalaxySizeOption.MEDIUM
-          ? 0.75
-          : 1.0)
+            ? 0.5
+            : model.gameOptions.galaxySize == GalaxySizeOption.MEDIUM
+              ? 0.75
+              : 1.0)
       : 6;
     const speedFactor = minTurns / turnsTaken;
 
@@ -399,35 +399,35 @@ export class GameController {
       planetsPerSystem,
       difficultyRating,
       speedFactor,
-      playerWon
+      playerWon,
     );
     console.log(
-      "CalculateEndGamePoints: points:",
+      'CalculateEndGamePoints: points:',
       player.points,
-      "additionalPoints:",
+      'additionalPoints:',
       additionalPoints,
-      "speedFactor:",
+      'speedFactor:',
       speedFactor,
-      "difficultyRating:",
+      'difficultyRating:',
       difficultyRating,
-      "percentageOwned:",
+      'percentageOwned:',
       ownedPlanetCount / (systemsToGenerate * planetsPerSystem),
-      "ownedPlanetCount:",
+      'ownedPlanetCount:',
       ownedPlanetCount,
-      "totalPopulation:",
+      'totalPopulation:',
       totalPopulation,
-      "maxPopulation:",
+      'maxPopulation:',
       maxPopulation,
-      "systemsToGenerate:",
+      'systemsToGenerate:',
       systemsToGenerate,
-      "planetsPerSystem:",
+      'planetsPerSystem:',
       planetsPerSystem,
-      "playerWon:",
+      'playerWon:',
       playerWon,
-      "minTurns:",
+      'minTurns:',
       minTurns,
-      "model.currentCycle:",
-      model.currentCycle
+      'model.currentCycle:',
+      model.currentCycle,
     );
 
     return Math.floor(player.points + additionalPoints);
@@ -442,7 +442,7 @@ export class GameController {
     planetsPerSystem: number,
     difficultyRating: number,
     speedFactor: number,
-    playerWon: boolean
+    playerWon: boolean,
   ) {
     const percentageOwned = ownedPlanetCount / (systemsToGenerate * planetsPerSystem);
     const percentagePopulated = totalPopulation / maxPopulation;
@@ -450,7 +450,7 @@ export class GameController {
     let additionalPoints = points * (playerWon ? 2 : 0.25);
     additionalPoints = Math.round(
       additionalPoints *
-        (percentageOwned * difficultyRating * speedFactor + percentagePopulated * difficultyRating * speedFactor)
+        (percentageOwned * difficultyRating * speedFactor + percentagePopulated * difficultyRating * speedFactor),
     );
 
     return additionalPoints;

@@ -1,9 +1,9 @@
-import { FleetData, StarshipData, StarShipType } from "../model/fleet";
-import { PlayerData } from "../model/player";
-import { ResearchType } from "../model/research";
-import { Utils } from "../utils/utils";
-import { Fleet } from "./fleet";
-import { StarShipAdvantageStrengthComparer } from "./starShipAdvantageStrengthComparer";
+import { FleetData, StarshipData, StarShipType } from '../model/fleet';
+import { PlayerData } from '../model/player';
+import { ResearchType } from '../model/research';
+import { Utils } from '../utils/utils';
+import { Fleet } from './fleet';
+import { StarShipAdvantageStrengthComparer } from './starShipAdvantageStrengthComparer';
 
 interface FleetBonusChance {
   attack: number;
@@ -35,7 +35,7 @@ export class BattleSimulator {
     f1: FleetData,
     f1Owner: PlayerData,
     f2: FleetData,
-    f2Owner?: PlayerData
+    f2Owner?: PlayerData,
   ): boolean | null {
     let fleet1Wins = null; // null means draw which shouldn't happen unless two fleets meet in mid-space (neither has locationHex)
 
@@ -114,7 +114,7 @@ export class BattleSimulator {
   public static dealDamage(
     owner: PlayerData | undefined,
     fleetDamagePending: FleetDamagePending,
-    experiencedGainedByStarShipId: ExperiencePending
+    experiencedGainedByStarShipId: ExperiencePending,
   ) {
     for (const dp of Object.values(fleetDamagePending)) {
       for (const hit of dp.hits) {
@@ -132,7 +132,7 @@ export class BattleSimulator {
     defenseBonusChance: number,
     ship: StarshipData,
     enemyFleet: StarshipData[],
-    fleetDamagePending: FleetDamagePending
+    fleetDamagePending: FleetDamagePending,
   ) {
     let damage = 0;
     let maxDamage = 0;

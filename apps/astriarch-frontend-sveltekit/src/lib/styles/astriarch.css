@@ -1,560 +1,567 @@
 /* Astriarch Design System */
 
 :root {
-  /* Astriarch Design System Colors */
-  
-  /* Primary Color Palette */
-  --astriarch-primary-fill: #00FFFF;
-  --astriarch-primary-stroke: linear-gradient(299.62deg, rgba(0, 0, 0, 0.5) 7.75%, #00FFFF 82.21%, #FFFFFF 100%);
-  
-  /* General UI Colors */
-  --astriarch-ui-dark-blue: #1B1F25;
-  --astriarch-ui-dark-grey: #313E46;
-  --astriarch-ui-light-grey: #90A9BA;
-  --astriarch-ui-white: #FFFFFF;
-  --astriarch-ui-white-75: rgba(255, 255, 255, 0.75);
-  --astriarch-ui-white-50: rgba(255, 255, 255, 0.5);
-  --astriarch-ui-modal-bg: rgba(27, 31, 37, 0.9);
-  
-  /* Theme Colors */
-  --astriarch-green-theme: #7BFE2B;
-  --astriarch-orange-theme: #FF9111;
-  --astriarch-purple-theme: #C240FF;
-  
-  /* Element Colors */
-  --astriarch-food: #F87B54;
-  --astriarch-energy: #FFCE22;
-  --astriarch-research: #00FFC2;
-  --astriarch-ore: #B6E827;
-  --astriarch-iridium: #AA77FF;
-  --astriarch-population: #23BDFF;
-  
-  /* Status Colors */
-  --astriarch-status-bad: #FF0000;
-  --astriarch-status-medium: #FFF500;
-  --astriarch-status-good: #00FF38;
-  
-  /* Background */
-  --astriarch-bg-glass: rgba(27, 31, 37, 0.8);
-  
-  /* Typography */
-  --astriarch-font-orbitron: 'Orbitron', system-ui, -apple-system, sans-serif;
-  
-  /* Typography Scale - Headlines */
-  --astriarch-headline-72-size: 72px;
-  --astriarch-headline-72-weight: 600;
-  --astriarch-headline-72-line-height: 86px;
-  --astriarch-headline-72-letter-spacing: 0px;
-  
-  --astriarch-headline-56-size: 56px;
-  --astriarch-headline-56-weight: 700;
-  --astriarch-headline-56-line-height: 62px;
-  --astriarch-headline-56-letter-spacing: 1.12px;
-  
-  --astriarch-headline-42-size: 42px;
-  --astriarch-headline-42-weight: 700;
-  --astriarch-headline-42-line-height: 46px;
-  --astriarch-headline-42-letter-spacing: 0.84px;
-  
-  --astriarch-headline-38-size: 38px;
-  --astriarch-headline-38-weight: 700;
-  --astriarch-headline-38-line-height: 42px;
-  --astriarch-headline-38-letter-spacing: 0.76px;
-  
-  --astriarch-headline-32-size: 32px;
-  --astriarch-headline-32-weight: 700;
-  --astriarch-headline-32-line-height: 40px;
-  --astriarch-headline-32-letter-spacing: 0.64px;
-  
-  --astriarch-headline-24-size: 24px;
-  --astriarch-headline-24-weight: 700;
-  --astriarch-headline-24-line-height: 32px;
-  --astriarch-headline-24-letter-spacing: 0.48px;
-  
-  /* Typography Scale - Body */
-  --astriarch-body-19-size: 19px;
-  --astriarch-body-19-weight: 400;
-  --astriarch-body-19-line-height: 29px;
-  --astriarch-body-19-letter-spacing: 0.095px;
-  
-  --astriarch-body-19-semibold-size: 19px;
-  --astriarch-body-19-semibold-weight: 600;
-  --astriarch-body-19-semibold-line-height: 22px;
-  --astriarch-body-19-semibold-letter-spacing: 0.095px;
-  
-  --astriarch-body-18-size: 18px;
-  --astriarch-body-18-weight: 400;
-  --astriarch-body-18-line-height: 26px;
-  --astriarch-body-18-letter-spacing: 0.09px;
-  
-  --astriarch-body-18-semibold-size: 18px;
-  --astriarch-body-18-semibold-weight: 600;
-  --astriarch-body-18-semibold-line-height: 26px;
-  --astriarch-body-18-semibold-letter-spacing: 0.09px;
-  
-  --astriarch-body-16-size: 16px;
-  --astriarch-body-16-weight: 400;
-  --astriarch-body-16-line-height: 24px;
-  --astriarch-body-16-letter-spacing: 0.16px;
-  
-  --astriarch-body-16-semibold-size: 16px;
-  --astriarch-body-16-semibold-weight: 600;
-  --astriarch-body-16-semibold-line-height: 24px;
-  --astriarch-body-16-semibold-letter-spacing: 0.08px;
-  
-  --astriarch-body-14-size: 14px;
-  --astriarch-body-14-weight: 400;
-  --astriarch-body-14-line-height: 28px;
-  --astriarch-body-14-letter-spacing: 0.14px;
-  
-  --astriarch-body-14-semibold-size: 14px;
-  --astriarch-body-14-semibold-weight: 600;
-  --astriarch-body-14-semibold-line-height: 24px;
-  --astriarch-body-14-semibold-letter-spacing: 0.07px;
-  
-  /* Typography Scale - Caption */
-  --astriarch-caption-12-size: 12px;
-  --astriarch-caption-12-weight: 400;
-  --astriarch-caption-12-line-height: 16px;
-  --astriarch-caption-12-letter-spacing: 0.5px;
-  
-  --astriarch-caption-12-semibold-size: 12px;
-  --astriarch-caption-12-semibold-weight: 600;
-  --astriarch-caption-12-semibold-line-height: 16px;
-  --astriarch-caption-12-semibold-letter-spacing: 0.5px;
-  
-  --astriarch-caption-10-size: 10px;
-  --astriarch-caption-10-weight: 400;
-  --astriarch-caption-10-line-height: 14px;
-  --astriarch-caption-10-letter-spacing: 0.5px;
-  
-  --astriarch-caption-10-semibold-size: 10px;
-  --astriarch-caption-10-semibold-weight: 600;
-  --astriarch-caption-10-semibold-line-height: 14px;
-  --astriarch-caption-10-semibold-letter-spacing: 0.25px;
-  
-  /* Typography Scale - Call to Action */
-  --astriarch-cta-16-size: 16px;
-  --astriarch-cta-16-weight: 800;
-  --astriarch-cta-16-line-height: 20px;
-  --astriarch-cta-16-letter-spacing: 2px;
-  
-  --astriarch-cta-14-size: 14px;
-  --astriarch-cta-14-weight: 800;
-  --astriarch-cta-14-line-height: 20px;
-  --astriarch-cta-14-letter-spacing: 2px;
-  
-  --astriarch-cta-12-size: 12px;
-  --astriarch-cta-12-weight: 800;
-  --astriarch-cta-12-line-height: 16px;
-  --astriarch-cta-12-letter-spacing: 2px;
-  
-  /* Typography Scale - Label */
-  --astriarch-label-12-size: 12px;
-  --astriarch-label-12-weight: 400;
-  --astriarch-label-12-line-height: 16px;
-  --astriarch-label-12-letter-spacing: 3px;
+	/* Astriarch Design System Colors */
+
+	/* Primary Color Palette */
+	--astriarch-primary-fill: #00ffff;
+	--astriarch-primary-stroke: linear-gradient(
+		299.62deg,
+		rgba(0, 0, 0, 0.5) 7.75%,
+		#00ffff 82.21%,
+		#ffffff 100%
+	);
+
+	/* General UI Colors */
+	--astriarch-ui-dark-blue: #1b1f25;
+	--astriarch-ui-dark-grey: #313e46;
+	--astriarch-ui-light-grey: #90a9ba;
+	--astriarch-ui-white: #ffffff;
+	--astriarch-ui-white-75: rgba(255, 255, 255, 0.75);
+	--astriarch-ui-white-50: rgba(255, 255, 255, 0.5);
+	--astriarch-ui-modal-bg: rgba(27, 31, 37, 0.9);
+
+	/* Theme Colors */
+	--astriarch-green-theme: #7bfe2b;
+	--astriarch-orange-theme: #ff9111;
+	--astriarch-purple-theme: #c240ff;
+
+	/* Element Colors */
+	--astriarch-food: #f87b54;
+	--astriarch-energy: #ffce22;
+	--astriarch-research: #00ffc2;
+	--astriarch-ore: #b6e827;
+	--astriarch-iridium: #aa77ff;
+	--astriarch-population: #23bdff;
+
+	/* Status Colors */
+	--astriarch-status-bad: #ff0000;
+	--astriarch-status-medium: #fff500;
+	--astriarch-status-good: #00ff38;
+
+	/* Background */
+	--astriarch-bg-glass: rgba(27, 31, 37, 0.8);
+
+	/* Typography */
+	--astriarch-font-orbitron: 'Orbitron', system-ui, -apple-system, sans-serif;
+
+	/* Typography Scale - Headlines */
+	--astriarch-headline-72-size: 72px;
+	--astriarch-headline-72-weight: 600;
+	--astriarch-headline-72-line-height: 86px;
+	--astriarch-headline-72-letter-spacing: 0px;
+
+	--astriarch-headline-56-size: 56px;
+	--astriarch-headline-56-weight: 700;
+	--astriarch-headline-56-line-height: 62px;
+	--astriarch-headline-56-letter-spacing: 1.12px;
+
+	--astriarch-headline-42-size: 42px;
+	--astriarch-headline-42-weight: 700;
+	--astriarch-headline-42-line-height: 46px;
+	--astriarch-headline-42-letter-spacing: 0.84px;
+
+	--astriarch-headline-38-size: 38px;
+	--astriarch-headline-38-weight: 700;
+	--astriarch-headline-38-line-height: 42px;
+	--astriarch-headline-38-letter-spacing: 0.76px;
+
+	--astriarch-headline-32-size: 32px;
+	--astriarch-headline-32-weight: 700;
+	--astriarch-headline-32-line-height: 40px;
+	--astriarch-headline-32-letter-spacing: 0.64px;
+
+	--astriarch-headline-24-size: 24px;
+	--astriarch-headline-24-weight: 700;
+	--astriarch-headline-24-line-height: 32px;
+	--astriarch-headline-24-letter-spacing: 0.48px;
+
+	/* Typography Scale - Body */
+	--astriarch-body-19-size: 19px;
+	--astriarch-body-19-weight: 400;
+	--astriarch-body-19-line-height: 29px;
+	--astriarch-body-19-letter-spacing: 0.095px;
+
+	--astriarch-body-19-semibold-size: 19px;
+	--astriarch-body-19-semibold-weight: 600;
+	--astriarch-body-19-semibold-line-height: 22px;
+	--astriarch-body-19-semibold-letter-spacing: 0.095px;
+
+	--astriarch-body-18-size: 18px;
+	--astriarch-body-18-weight: 400;
+	--astriarch-body-18-line-height: 26px;
+	--astriarch-body-18-letter-spacing: 0.09px;
+
+	--astriarch-body-18-semibold-size: 18px;
+	--astriarch-body-18-semibold-weight: 600;
+	--astriarch-body-18-semibold-line-height: 26px;
+	--astriarch-body-18-semibold-letter-spacing: 0.09px;
+
+	--astriarch-body-16-size: 16px;
+	--astriarch-body-16-weight: 400;
+	--astriarch-body-16-line-height: 24px;
+	--astriarch-body-16-letter-spacing: 0.16px;
+
+	--astriarch-body-16-semibold-size: 16px;
+	--astriarch-body-16-semibold-weight: 600;
+	--astriarch-body-16-semibold-line-height: 24px;
+	--astriarch-body-16-semibold-letter-spacing: 0.08px;
+
+	--astriarch-body-14-size: 14px;
+	--astriarch-body-14-weight: 400;
+	--astriarch-body-14-line-height: 28px;
+	--astriarch-body-14-letter-spacing: 0.14px;
+
+	--astriarch-body-14-semibold-size: 14px;
+	--astriarch-body-14-semibold-weight: 600;
+	--astriarch-body-14-semibold-line-height: 24px;
+	--astriarch-body-14-semibold-letter-spacing: 0.07px;
+
+	/* Typography Scale - Caption */
+	--astriarch-caption-12-size: 12px;
+	--astriarch-caption-12-weight: 400;
+	--astriarch-caption-12-line-height: 16px;
+	--astriarch-caption-12-letter-spacing: 0.5px;
+
+	--astriarch-caption-12-semibold-size: 12px;
+	--astriarch-caption-12-semibold-weight: 600;
+	--astriarch-caption-12-semibold-line-height: 16px;
+	--astriarch-caption-12-semibold-letter-spacing: 0.5px;
+
+	--astriarch-caption-10-size: 10px;
+	--astriarch-caption-10-weight: 400;
+	--astriarch-caption-10-line-height: 14px;
+	--astriarch-caption-10-letter-spacing: 0.5px;
+
+	--astriarch-caption-10-semibold-size: 10px;
+	--astriarch-caption-10-semibold-weight: 600;
+	--astriarch-caption-10-semibold-line-height: 14px;
+	--astriarch-caption-10-semibold-letter-spacing: 0.25px;
+
+	/* Typography Scale - Call to Action */
+	--astriarch-cta-16-size: 16px;
+	--astriarch-cta-16-weight: 800;
+	--astriarch-cta-16-line-height: 20px;
+	--astriarch-cta-16-letter-spacing: 2px;
+
+	--astriarch-cta-14-size: 14px;
+	--astriarch-cta-14-weight: 800;
+	--astriarch-cta-14-line-height: 20px;
+	--astriarch-cta-14-letter-spacing: 2px;
+
+	--astriarch-cta-12-size: 12px;
+	--astriarch-cta-12-weight: 800;
+	--astriarch-cta-12-line-height: 16px;
+	--astriarch-cta-12-letter-spacing: 2px;
+
+	/* Typography Scale - Label */
+	--astriarch-label-12-size: 12px;
+	--astriarch-label-12-weight: 400;
+	--astriarch-label-12-line-height: 16px;
+	--astriarch-label-12-letter-spacing: 3px;
 }
 
 @theme inline {
-  /* Astriarch Design System Utilities for Tailwind */
-  --color-astriarch-primary: var(--astriarch-primary-fill);
-  --color-astriarch-ui-dark-blue: var(--astriarch-ui-dark-blue);
-  --color-astriarch-ui-dark-grey: var(--astriarch-ui-dark-grey);
-  --color-astriarch-ui-light-grey: var(--astriarch-ui-light-grey);
-  --color-astriarch-ui-white: var(--astriarch-ui-white);
-  --color-astriarch-green-theme: var(--astriarch-green-theme);
-  --color-astriarch-orange-theme: var(--astriarch-orange-theme);
-  --color-astriarch-purple-theme: var(--astriarch-purple-theme);
-  --color-astriarch-food: var(--astriarch-food);
-  --color-astriarch-energy: var(--astriarch-energy);
-  --color-astriarch-research: var(--astriarch-research);
-  --color-astriarch-ore: var(--astriarch-ore);
-  --color-astriarch-iridium: var(--astriarch-iridium);
-  --color-astriarch-population: var(--astriarch-population);
-  --color-astriarch-status-bad: var(--astriarch-status-bad);
-  --color-astriarch-status-medium: var(--astriarch-status-medium);
-  --color-astriarch-status-good: var(--astriarch-status-good);
+	/* Astriarch Design System Utilities for Tailwind */
+	--color-astriarch-primary: var(--astriarch-primary-fill);
+	--color-astriarch-ui-dark-blue: var(--astriarch-ui-dark-blue);
+	--color-astriarch-ui-dark-grey: var(--astriarch-ui-dark-grey);
+	--color-astriarch-ui-light-grey: var(--astriarch-ui-light-grey);
+	--color-astriarch-ui-white: var(--astriarch-ui-white);
+	--color-astriarch-green-theme: var(--astriarch-green-theme);
+	--color-astriarch-orange-theme: var(--astriarch-orange-theme);
+	--color-astriarch-purple-theme: var(--astriarch-purple-theme);
+	--color-astriarch-food: var(--astriarch-food);
+	--color-astriarch-energy: var(--astriarch-energy);
+	--color-astriarch-research: var(--astriarch-research);
+	--color-astriarch-ore: var(--astriarch-ore);
+	--color-astriarch-iridium: var(--astriarch-iridium);
+	--color-astriarch-population: var(--astriarch-population);
+	--color-astriarch-status-bad: var(--astriarch-status-bad);
+	--color-astriarch-status-medium: var(--astriarch-status-medium);
+	--color-astriarch-status-good: var(--astriarch-status-good);
 }
 
 @layer utilities {
-  /* Astriarch Design System Utilities */
-  
-  /* Primary Color */
-  .bg-astriarch-primary {
-    background-color: var(--astriarch-primary-fill);
-  }
-  
-  .text-astriarch-primary {
-    color: var(--astriarch-primary-fill);
-  }
-  
-  .border-astriarch-primary {
-    border-color: var(--astriarch-primary-fill);
-  }
-  
-  .bg-astriarch-primary-stroke {
-    background: var(--astriarch-primary-stroke);
-  }
-  
-  /* UI Colors */
-  .bg-astriarch-ui-dark-blue {
-    background-color: var(--astriarch-ui-dark-blue);
-  }
-  
-  .bg-astriarch-ui-dark-grey {
-    background-color: var(--astriarch-ui-dark-grey);
-  }
-  
-  .bg-astriarch-ui-light-grey {
-    background-color: var(--astriarch-ui-light-grey);
-  }
-  
-  .text-astriarch-ui-light-grey {
-    color: var(--astriarch-ui-light-grey);
-  }
-  
-  .bg-astriarch-ui-white {
-    background-color: var(--astriarch-ui-white);
-  }
-  
-  .text-astriarch-ui-white {
-    color: var(--astriarch-ui-white);
-  }
-  
-  .bg-astriarch-glass {
-    background-color: var(--astriarch-bg-glass);
-    backdrop-filter: blur(8px);
-  }
-  
-  .bg-astriarch-modal {
-    background-color: var(--astriarch-ui-modal-bg);
-    backdrop-filter: blur(12px);
-  }
-  
-  /* Theme Colors */
-  .bg-astriarch-green {
-    background-color: var(--astriarch-green-theme);
-  }
-  
-  .text-astriarch-green {
-    color: var(--astriarch-green-theme);
-  }
-  
-  .bg-astriarch-orange {
-    background-color: var(--astriarch-orange-theme);
-  }
-  
-  .text-astriarch-orange {
-    color: var(--astriarch-orange-theme);
-  }
-  
-  .bg-astriarch-purple {
-    background-color: var(--astriarch-purple-theme);
-  }
-  
-  .text-astriarch-purple {
-    color: var(--astriarch-purple-theme);
-  }
-  
-  /* Element/Resource Colors */
-  .bg-astriarch-food {
-    background-color: var(--astriarch-food);
-  }
-  
-  .text-astriarch-food {
-    color: var(--astriarch-food);
-  }
-  
-  .bg-astriarch-energy {
-    background-color: var(--astriarch-energy);
-  }
-  
-  .text-astriarch-energy {
-    color: var(--astriarch-energy);
-  }
-  
-  .bg-astriarch-research {
-    background-color: var(--astriarch-research);
-  }
-  
-  .text-astriarch-research {
-    color: var(--astriarch-research);
-  }
-  
-  .bg-astriarch-ore {
-    background-color: var(--astriarch-ore);
-  }
-  
-  .text-astriarch-ore {
-    color: var(--astriarch-ore);
-  }
-  
-  .bg-astriarch-iridium {
-    background-color: var(--astriarch-iridium);
-  }
-  
-  .text-astriarch-iridium {
-    color: var(--astriarch-iridium);
-  }
-  
-  .bg-astriarch-population {
-    background-color: var(--astriarch-population);
-  }
-  
-  .text-astriarch-population {
-    color: var(--astriarch-population);
-  }
-  
-  /* Status Colors */
-  .bg-astriarch-status-bad {
-    background-color: var(--astriarch-status-bad);
-  }
-  
-  .text-astriarch-status-bad {
-    color: var(--astriarch-status-bad);
-  }
-  
-  .bg-astriarch-status-medium {
-    background-color: var(--astriarch-status-medium);
-  }
-  
-  .text-astriarch-status-medium {
-    color: var(--astriarch-status-medium);
-  }
-  
-  .bg-astriarch-status-good {
-    background-color: var(--astriarch-status-good);
-  }
-  
-  .text-astriarch-status-good {
-    color: var(--astriarch-status-good);
-  }
-  
-  /* Border Utilities */
-  .border-astriarch-food {
-    border-color: var(--astriarch-food);
-  }
-  
-  .border-astriarch-energy {
-    border-color: var(--astriarch-energy);
-  }
-  
-  .border-astriarch-research {
-    border-color: var(--astriarch-research);
-  }
-  
-  .border-astriarch-ore {
-    border-color: var(--astriarch-ore);
-  }
-  
-  .border-astriarch-iridium {
-    border-color: var(--astriarch-iridium);
-  }
-  
-  .border-astriarch-population {
-    border-color: var(--astriarch-population);
-  }
-  
-  /* For use as border image or pseudo-element backgrounds */
-  .border-gradient-astriarch {
-    position: relative;
-  }
-  
-  .border-gradient-astriarch::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    padding: 1px; /* Border width */
-    background: var(--astriarch-primary-stroke);
-    border-radius: inherit;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    -webkit-mask-composite: xor;
-  }
-  
-  /* Typography Utilities - Headlines */
-  .text-astriarch-headline-72 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-headline-72-size);
-    font-weight: var(--astriarch-headline-72-weight);
-    line-height: var(--astriarch-headline-72-line-height);
-    letter-spacing: var(--astriarch-headline-72-letter-spacing);
-  }
-  
-  .text-astriarch-headline-56 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-headline-56-size);
-    font-weight: var(--astriarch-headline-56-weight);
-    line-height: var(--astriarch-headline-56-line-height);
-    letter-spacing: var(--astriarch-headline-56-letter-spacing);
-  }
-  
-  .text-astriarch-headline-42 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-headline-42-size);
-    font-weight: var(--astriarch-headline-42-weight);
-    line-height: var(--astriarch-headline-42-line-height);
-    letter-spacing: var(--astriarch-headline-42-letter-spacing);
-  }
-  
-  .text-astriarch-headline-38 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-headline-38-size);
-    font-weight: var(--astriarch-headline-38-weight);
-    line-height: var(--astriarch-headline-38-line-height);
-    letter-spacing: var(--astriarch-headline-38-letter-spacing);
-  }
-  
-  .text-astriarch-headline-32 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-headline-32-size);
-    font-weight: var(--astriarch-headline-32-weight);
-    line-height: var(--astriarch-headline-32-line-height);
-    letter-spacing: var(--astriarch-headline-32-letter-spacing);
-  }
-  
-  .text-astriarch-headline-24 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-headline-24-size);
-    font-weight: var(--astriarch-headline-24-weight);
-    line-height: var(--astriarch-headline-24-line-height);
-    letter-spacing: var(--astriarch-headline-24-letter-spacing);
-  }
-  
-  /* Typography Utilities - Body Text */
-  .text-astriarch-body-19 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-19-size);
-    font-weight: var(--astriarch-body-19-weight);
-    line-height: var(--astriarch-body-19-line-height);
-    letter-spacing: var(--astriarch-body-19-letter-spacing);
-  }
-  
-  .text-astriarch-body-19-semibold {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-19-semibold-size);
-    font-weight: var(--astriarch-body-19-semibold-weight);
-    line-height: var(--astriarch-body-19-semibold-line-height);
-    letter-spacing: var(--astriarch-body-19-semibold-letter-spacing);
-  }
-  
-  .text-astriarch-body-18 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-18-size);
-    font-weight: var(--astriarch-body-18-weight);
-    line-height: var(--astriarch-body-18-line-height);
-    letter-spacing: var(--astriarch-body-18-letter-spacing);
-  }
-  
-  .text-astriarch-body-18-semibold {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-18-semibold-size);
-    font-weight: var(--astriarch-body-18-semibold-weight);
-    line-height: var(--astriarch-body-18-semibold-line-height);
-    letter-spacing: var(--astriarch-body-18-semibold-letter-spacing);
-  }
-  
-  .text-astriarch-body-16 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-16-size);
-    font-weight: var(--astriarch-body-16-weight);
-    line-height: var(--astriarch-body-16-line-height);
-    letter-spacing: var(--astriarch-body-16-letter-spacing);
-  }
-  
-  .text-astriarch-body-16-semibold {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-16-semibold-size);
-    font-weight: var(--astriarch-body-16-semibold-weight);
-    line-height: var(--astriarch-body-16-semibold-line-height);
-    letter-spacing: var(--astriarch-body-16-semibold-letter-spacing);
-  }
-  
-  .text-astriarch-body-14 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-14-size);
-    font-weight: var(--astriarch-body-14-weight);
-    line-height: var(--astriarch-body-14-line-height);
-    letter-spacing: var(--astriarch-body-14-letter-spacing);
-  }
-  
-  .text-astriarch-body-14-semibold {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-body-14-semibold-size);
-    font-weight: var(--astriarch-body-14-semibold-weight);
-    line-height: var(--astriarch-body-14-semibold-line-height);
-    letter-spacing: var(--astriarch-body-14-semibold-letter-spacing);
-  }
-  
-  /* Typography Utilities - Captions */
-  .text-astriarch-caption-12 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-caption-12-size);
-    font-weight: var(--astriarch-caption-12-weight);
-    line-height: var(--astriarch-caption-12-line-height);
-    letter-spacing: var(--astriarch-caption-12-letter-spacing);
-  }
-  
-  .text-astriarch-caption-12-semibold {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-caption-12-semibold-size);
-    font-weight: var(--astriarch-caption-12-semibold-weight);
-    line-height: var(--astriarch-caption-12-semibold-line-height);
-    letter-spacing: var(--astriarch-caption-12-semibold-letter-spacing);
-  }
-  
-  .text-astriarch-caption-10 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-caption-10-size);
-    font-weight: var(--astriarch-caption-10-weight);
-    line-height: var(--astriarch-caption-10-line-height);
-    letter-spacing: var(--astriarch-caption-10-letter-spacing);
-  }
-  
-  .text-astriarch-caption-10-semibold {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-caption-10-semibold-size);
-    font-weight: var(--astriarch-caption-10-semibold-weight);
-    line-height: var(--astriarch-caption-10-semibold-line-height);
-    letter-spacing: var(--astriarch-caption-10-semibold-letter-spacing);
-  }
-  
-  /* Typography Utilities - Call to Action */
-  .text-astriarch-cta-16 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-cta-16-size);
-    font-weight: var(--astriarch-cta-16-weight);
-    line-height: var(--astriarch-cta-16-line-height);
-    letter-spacing: var(--astriarch-cta-16-letter-spacing);
-    text-transform: uppercase;
-  }
-  
-  .text-astriarch-cta-14 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-cta-14-size);
-    font-weight: var(--astriarch-cta-14-weight);
-    line-height: var(--astriarch-cta-14-line-height);
-    letter-spacing: var(--astriarch-cta-14-letter-spacing);
-    text-transform: uppercase;
-  }
-  
-  .text-astriarch-cta-12 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-cta-12-size);
-    font-weight: var(--astriarch-cta-12-weight);
-    line-height: var(--astriarch-cta-12-line-height);
-    letter-spacing: var(--astriarch-cta-12-letter-spacing);
-    text-transform: uppercase;
-  }
-  
-  /* Typography Utilities - Labels */
-  .text-astriarch-label-12 {
-    font-family: var(--astriarch-font-orbitron);
-    font-size: var(--astriarch-label-12-size);
-    font-weight: var(--astriarch-label-12-weight);
-    line-height: var(--astriarch-label-12-line-height);
-    letter-spacing: var(--astriarch-label-12-letter-spacing);
-    text-transform: uppercase;
-  }
+	/* Astriarch Design System Utilities */
+
+	/* Primary Color */
+	.bg-astriarch-primary {
+		background-color: var(--astriarch-primary-fill);
+	}
+
+	.text-astriarch-primary {
+		color: var(--astriarch-primary-fill);
+	}
+
+	.border-astriarch-primary {
+		border-color: var(--astriarch-primary-fill);
+	}
+
+	.bg-astriarch-primary-stroke {
+		background: var(--astriarch-primary-stroke);
+	}
+
+	/* UI Colors */
+	.bg-astriarch-ui-dark-blue {
+		background-color: var(--astriarch-ui-dark-blue);
+	}
+
+	.bg-astriarch-ui-dark-grey {
+		background-color: var(--astriarch-ui-dark-grey);
+	}
+
+	.bg-astriarch-ui-light-grey {
+		background-color: var(--astriarch-ui-light-grey);
+	}
+
+	.text-astriarch-ui-light-grey {
+		color: var(--astriarch-ui-light-grey);
+	}
+
+	.bg-astriarch-ui-white {
+		background-color: var(--astriarch-ui-white);
+	}
+
+	.text-astriarch-ui-white {
+		color: var(--astriarch-ui-white);
+	}
+
+	.bg-astriarch-glass {
+		background-color: var(--astriarch-bg-glass);
+		backdrop-filter: blur(8px);
+	}
+
+	.bg-astriarch-modal {
+		background-color: var(--astriarch-ui-modal-bg);
+		backdrop-filter: blur(12px);
+	}
+
+	/* Theme Colors */
+	.bg-astriarch-green {
+		background-color: var(--astriarch-green-theme);
+	}
+
+	.text-astriarch-green {
+		color: var(--astriarch-green-theme);
+	}
+
+	.bg-astriarch-orange {
+		background-color: var(--astriarch-orange-theme);
+	}
+
+	.text-astriarch-orange {
+		color: var(--astriarch-orange-theme);
+	}
+
+	.bg-astriarch-purple {
+		background-color: var(--astriarch-purple-theme);
+	}
+
+	.text-astriarch-purple {
+		color: var(--astriarch-purple-theme);
+	}
+
+	/* Element/Resource Colors */
+	.bg-astriarch-food {
+		background-color: var(--astriarch-food);
+	}
+
+	.text-astriarch-food {
+		color: var(--astriarch-food);
+	}
+
+	.bg-astriarch-energy {
+		background-color: var(--astriarch-energy);
+	}
+
+	.text-astriarch-energy {
+		color: var(--astriarch-energy);
+	}
+
+	.bg-astriarch-research {
+		background-color: var(--astriarch-research);
+	}
+
+	.text-astriarch-research {
+		color: var(--astriarch-research);
+	}
+
+	.bg-astriarch-ore {
+		background-color: var(--astriarch-ore);
+	}
+
+	.text-astriarch-ore {
+		color: var(--astriarch-ore);
+	}
+
+	.bg-astriarch-iridium {
+		background-color: var(--astriarch-iridium);
+	}
+
+	.text-astriarch-iridium {
+		color: var(--astriarch-iridium);
+	}
+
+	.bg-astriarch-population {
+		background-color: var(--astriarch-population);
+	}
+
+	.text-astriarch-population {
+		color: var(--astriarch-population);
+	}
+
+	/* Status Colors */
+	.bg-astriarch-status-bad {
+		background-color: var(--astriarch-status-bad);
+	}
+
+	.text-astriarch-status-bad {
+		color: var(--astriarch-status-bad);
+	}
+
+	.bg-astriarch-status-medium {
+		background-color: var(--astriarch-status-medium);
+	}
+
+	.text-astriarch-status-medium {
+		color: var(--astriarch-status-medium);
+	}
+
+	.bg-astriarch-status-good {
+		background-color: var(--astriarch-status-good);
+	}
+
+	.text-astriarch-status-good {
+		color: var(--astriarch-status-good);
+	}
+
+	/* Border Utilities */
+	.border-astriarch-food {
+		border-color: var(--astriarch-food);
+	}
+
+	.border-astriarch-energy {
+		border-color: var(--astriarch-energy);
+	}
+
+	.border-astriarch-research {
+		border-color: var(--astriarch-research);
+	}
+
+	.border-astriarch-ore {
+		border-color: var(--astriarch-ore);
+	}
+
+	.border-astriarch-iridium {
+		border-color: var(--astriarch-iridium);
+	}
+
+	.border-astriarch-population {
+		border-color: var(--astriarch-population);
+	}
+
+	/* For use as border image or pseudo-element backgrounds */
+	.border-gradient-astriarch {
+		position: relative;
+	}
+
+	.border-gradient-astriarch::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		padding: 1px; /* Border width */
+		background: var(--astriarch-primary-stroke);
+		border-radius: inherit;
+		mask:
+			linear-gradient(#fff 0 0) content-box,
+			linear-gradient(#fff 0 0);
+		mask-composite: exclude;
+		-webkit-mask-composite: xor;
+	}
+
+	/* Typography Utilities - Headlines */
+	.text-astriarch-headline-72 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-headline-72-size);
+		font-weight: var(--astriarch-headline-72-weight);
+		line-height: var(--astriarch-headline-72-line-height);
+		letter-spacing: var(--astriarch-headline-72-letter-spacing);
+	}
+
+	.text-astriarch-headline-56 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-headline-56-size);
+		font-weight: var(--astriarch-headline-56-weight);
+		line-height: var(--astriarch-headline-56-line-height);
+		letter-spacing: var(--astriarch-headline-56-letter-spacing);
+	}
+
+	.text-astriarch-headline-42 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-headline-42-size);
+		font-weight: var(--astriarch-headline-42-weight);
+		line-height: var(--astriarch-headline-42-line-height);
+		letter-spacing: var(--astriarch-headline-42-letter-spacing);
+	}
+
+	.text-astriarch-headline-38 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-headline-38-size);
+		font-weight: var(--astriarch-headline-38-weight);
+		line-height: var(--astriarch-headline-38-line-height);
+		letter-spacing: var(--astriarch-headline-38-letter-spacing);
+	}
+
+	.text-astriarch-headline-32 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-headline-32-size);
+		font-weight: var(--astriarch-headline-32-weight);
+		line-height: var(--astriarch-headline-32-line-height);
+		letter-spacing: var(--astriarch-headline-32-letter-spacing);
+	}
+
+	.text-astriarch-headline-24 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-headline-24-size);
+		font-weight: var(--astriarch-headline-24-weight);
+		line-height: var(--astriarch-headline-24-line-height);
+		letter-spacing: var(--astriarch-headline-24-letter-spacing);
+	}
+
+	/* Typography Utilities - Body Text */
+	.text-astriarch-body-19 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-19-size);
+		font-weight: var(--astriarch-body-19-weight);
+		line-height: var(--astriarch-body-19-line-height);
+		letter-spacing: var(--astriarch-body-19-letter-spacing);
+	}
+
+	.text-astriarch-body-19-semibold {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-19-semibold-size);
+		font-weight: var(--astriarch-body-19-semibold-weight);
+		line-height: var(--astriarch-body-19-semibold-line-height);
+		letter-spacing: var(--astriarch-body-19-semibold-letter-spacing);
+	}
+
+	.text-astriarch-body-18 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-18-size);
+		font-weight: var(--astriarch-body-18-weight);
+		line-height: var(--astriarch-body-18-line-height);
+		letter-spacing: var(--astriarch-body-18-letter-spacing);
+	}
+
+	.text-astriarch-body-18-semibold {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-18-semibold-size);
+		font-weight: var(--astriarch-body-18-semibold-weight);
+		line-height: var(--astriarch-body-18-semibold-line-height);
+		letter-spacing: var(--astriarch-body-18-semibold-letter-spacing);
+	}
+
+	.text-astriarch-body-16 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-16-size);
+		font-weight: var(--astriarch-body-16-weight);
+		line-height: var(--astriarch-body-16-line-height);
+		letter-spacing: var(--astriarch-body-16-letter-spacing);
+	}
+
+	.text-astriarch-body-16-semibold {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-16-semibold-size);
+		font-weight: var(--astriarch-body-16-semibold-weight);
+		line-height: var(--astriarch-body-16-semibold-line-height);
+		letter-spacing: var(--astriarch-body-16-semibold-letter-spacing);
+	}
+
+	.text-astriarch-body-14 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-14-size);
+		font-weight: var(--astriarch-body-14-weight);
+		line-height: var(--astriarch-body-14-line-height);
+		letter-spacing: var(--astriarch-body-14-letter-spacing);
+	}
+
+	.text-astriarch-body-14-semibold {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-body-14-semibold-size);
+		font-weight: var(--astriarch-body-14-semibold-weight);
+		line-height: var(--astriarch-body-14-semibold-line-height);
+		letter-spacing: var(--astriarch-body-14-semibold-letter-spacing);
+	}
+
+	/* Typography Utilities - Captions */
+	.text-astriarch-caption-12 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-caption-12-size);
+		font-weight: var(--astriarch-caption-12-weight);
+		line-height: var(--astriarch-caption-12-line-height);
+		letter-spacing: var(--astriarch-caption-12-letter-spacing);
+	}
+
+	.text-astriarch-caption-12-semibold {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-caption-12-semibold-size);
+		font-weight: var(--astriarch-caption-12-semibold-weight);
+		line-height: var(--astriarch-caption-12-semibold-line-height);
+		letter-spacing: var(--astriarch-caption-12-semibold-letter-spacing);
+	}
+
+	.text-astriarch-caption-10 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-caption-10-size);
+		font-weight: var(--astriarch-caption-10-weight);
+		line-height: var(--astriarch-caption-10-line-height);
+		letter-spacing: var(--astriarch-caption-10-letter-spacing);
+	}
+
+	.text-astriarch-caption-10-semibold {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-caption-10-semibold-size);
+		font-weight: var(--astriarch-caption-10-semibold-weight);
+		line-height: var(--astriarch-caption-10-semibold-line-height);
+		letter-spacing: var(--astriarch-caption-10-semibold-letter-spacing);
+	}
+
+	/* Typography Utilities - Call to Action */
+	.text-astriarch-cta-16 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-cta-16-size);
+		font-weight: var(--astriarch-cta-16-weight);
+		line-height: var(--astriarch-cta-16-line-height);
+		letter-spacing: var(--astriarch-cta-16-letter-spacing);
+		text-transform: uppercase;
+	}
+
+	.text-astriarch-cta-14 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-cta-14-size);
+		font-weight: var(--astriarch-cta-14-weight);
+		line-height: var(--astriarch-cta-14-line-height);
+		letter-spacing: var(--astriarch-cta-14-letter-spacing);
+		text-transform: uppercase;
+	}
+
+	.text-astriarch-cta-12 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-cta-12-size);
+		font-weight: var(--astriarch-cta-12-weight);
+		line-height: var(--astriarch-cta-12-line-height);
+		letter-spacing: var(--astriarch-cta-12-letter-spacing);
+		text-transform: uppercase;
+	}
+
+	/* Typography Utilities - Labels */
+	.text-astriarch-label-12 {
+		font-family: var(--astriarch-font-orbitron);
+		font-size: var(--astriarch-label-12-size);
+		font-weight: var(--astriarch-label-12-weight);
+		line-height: var(--astriarch-label-12-line-height);
+		letter-spacing: var(--astriarch-label-12-letter-spacing);
+		text-transform: uppercase;
+	}
 }

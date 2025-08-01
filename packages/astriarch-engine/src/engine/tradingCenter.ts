@@ -1,19 +1,19 @@
-import { PlanetById } from "../model/clientModel";
-import { PlanetData } from "../model/planet";
-import { PlayerData } from "../model/player";
+import { PlanetById } from '../model/clientModel';
+import { PlanetData } from '../model/planet';
+import { PlayerData } from '../model/player';
 import {
   TradeData,
   TradeType,
   TradingCenterData,
   TradingCenterResource,
   TradingCenterResourceType,
-} from "../model/tradingCenter";
-import { ClientGameModel } from "./clientGameModel";
-import { Events } from "./events";
-import { GameModel, GameModelData } from "./gameModel";
-import { Planet } from "./planet";
-import { Utils } from "../utils/utils";
-import { EventNotificationType } from "../model/eventNotification";
+} from '../model/tradingCenter';
+import { ClientGameModel } from './clientGameModel';
+import { Events } from './events';
+import { GameModel, GameModelData } from './gameModel';
+import { Planet } from './planet';
+import { Utils } from '../utils/utils';
+import { EventNotificationType } from '../model/eventNotification';
 
 export interface ExecuteTradeResults {
   executed: boolean;
@@ -32,7 +32,7 @@ export class TradingCenter {
       400,
       0.1,
       1.5,
-      40
+      40,
     );
     const oreResource = TradingCenter.constructResource(
       TradingCenterResourceType.ORE,
@@ -40,7 +40,7 @@ export class TradingCenter {
       200,
       0.2,
       3.0,
-      20
+      20,
     );
     const iridiumResource = TradingCenter.constructResource(
       TradingCenterResourceType.IRIDIUM,
@@ -48,7 +48,7 @@ export class TradingCenter {
       100,
       0.4,
       6.0,
-      10
+      10,
     );
     return {
       energyAmount,
@@ -67,7 +67,7 @@ export class TradingCenter {
     desiredAmount: number,
     priceMin: number,
     priceMax: number,
-    tradeAmountMax: number
+    tradeAmountMax: number,
   ): TradingCenterResource {
     const resource = {
       type,
@@ -87,7 +87,7 @@ export class TradingCenter {
     planetId: number,
     tradeType: TradeType,
     resourceType: TradingCenterResourceType,
-    amount: number
+    amount: number,
   ): TradeData {
     return {
       playerId,
@@ -120,8 +120,8 @@ export class TradingCenter {
     return resourceType === TradingCenterResourceType.FOOD
       ? tradingCenterData.foodResource
       : resourceType === TradingCenterResourceType.ORE
-      ? tradingCenterData.oreResource
-      : tradingCenterData.iridiumResource;
+        ? tradingCenterData.oreResource
+        : tradingCenterData.iridiumResource;
   }
 
   public static executeTrade(
@@ -129,7 +129,7 @@ export class TradingCenter {
     planetById: PlanetById,
     player: PlayerData,
     planet: PlanetData,
-    trade: TradeData
+    trade: TradeData,
   ): ExecuteTradeResults {
     const executedStatus = { executed: false, foodAmount: 0, oreAmount: 0, iridiumAmount: 0, tradeEnergyAmount: 0 };
     const { tradingCenter } = gameModel.modelData;
@@ -170,7 +170,7 @@ export class TradingCenter {
           0,
           executedStatus.foodAmount,
           executedStatus.oreAmount,
-          executedStatus.iridiumAmount
+          executedStatus.iridiumAmount,
         );
 
         executedStatus.executed = true;
@@ -225,10 +225,10 @@ export class TradingCenter {
           }
           executedTradeResultsByPlayerId[trade.playerId].push({ trade, results });
         } else {
-          console.warn("Unable to find planet in executeCurrentTrades:", trade);
+          console.warn('Unable to find planet in executeCurrentTrades:', trade);
         }
       } else {
-        console.warn("Unable to find player in executeCurrentTrades:", trade);
+        console.warn('Unable to find player in executeCurrentTrades:', trade);
       }
     }
 
@@ -261,24 +261,24 @@ export class TradingCenter {
       }
       if (resourcesBought.tradeCount || resourcesSold.tradeCount) {
         const tradeCount = resourcesBought.tradeCount + resourcesSold.tradeCount;
-        let message = tradeCount > 1 ? tradeCount + " Trades Executed," : tradeCount + " Trade Executed,";
+        let message = tradeCount > 1 ? tradeCount + ' Trades Executed,' : tradeCount + ' Trade Executed,';
         if (resourcesBought.energySpent) {
           message +=
-            " Spent " +
+            ' Spent ' +
             Utils.decimalToFixed(resourcesBought.energySpent, 2) +
-            " gold buying: " +
-            (resourcesBought.food ? resourcesBought.food + " food, " : "") +
-            (resourcesBought.ore ? resourcesBought.ore + " ore, " : "") +
-            (resourcesBought.iridium ? resourcesBought.iridium + " iridium, " : "");
+            ' gold buying: ' +
+            (resourcesBought.food ? resourcesBought.food + ' food, ' : '') +
+            (resourcesBought.ore ? resourcesBought.ore + ' ore, ' : '') +
+            (resourcesBought.iridium ? resourcesBought.iridium + ' iridium, ' : '');
         }
         if (resourcesSold.energyEarned) {
           message +=
-            " Earned " +
+            ' Earned ' +
             Utils.decimalToFixed(resourcesSold.energyEarned, 2) +
-            " gold selling: " +
-            (resourcesSold.food ? resourcesSold.food + " food, " : "") +
-            (resourcesSold.ore ? resourcesSold.ore + " ore, " : "") +
-            (resourcesSold.iridium ? resourcesSold.iridium + " iridium, " : "");
+            ' gold selling: ' +
+            (resourcesSold.food ? resourcesSold.food + ' food, ' : '') +
+            (resourcesSold.ore ? resourcesSold.ore + ' ore, ' : '') +
+            (resourcesSold.iridium ? resourcesSold.iridium + ' iridium, ' : '');
         }
         message = message.substring(0, message.length - 2);
 
@@ -287,20 +287,20 @@ export class TradingCenter {
 
       if (resourcesNotBought.tradeCount || resourcesNotSold.tradeCount) {
         const tradeCount = resourcesNotBought.tradeCount + resourcesNotSold.tradeCount;
-        let message = tradeCount > 1 ? tradeCount + " Trades Not Executed," : tradeCount + " Trade Not Executed,";
+        let message = tradeCount > 1 ? tradeCount + ' Trades Not Executed,' : tradeCount + ' Trade Not Executed,';
         if (resourcesNotBought.energySpent) {
           message +=
-            " Could not Buy: " +
-            (resourcesNotBought.food ? resourcesNotBought.food + " food, " : "") +
-            (resourcesNotBought.ore ? resourcesNotBought.ore + " ore, " : "") +
-            (resourcesNotBought.iridium ? resourcesNotBought.iridium + " iridium, " : "");
+            ' Could not Buy: ' +
+            (resourcesNotBought.food ? resourcesNotBought.food + ' food, ' : '') +
+            (resourcesNotBought.ore ? resourcesNotBought.ore + ' ore, ' : '') +
+            (resourcesNotBought.iridium ? resourcesNotBought.iridium + ' iridium, ' : '');
         }
         if (resourcesNotSold.energyEarned) {
           message +=
-            " Could not Sell: " +
-            (resourcesNotSold.food ? resourcesNotSold.food + " food, " : "") +
-            (resourcesNotSold.ore ? resourcesNotSold.ore + " ore, " : "") +
-            (resourcesNotSold.iridium ? resourcesNotSold.iridium + " iridium, " : "");
+            ' Could not Sell: ' +
+            (resourcesNotSold.food ? resourcesNotSold.food + ' food, ' : '') +
+            (resourcesNotSold.ore ? resourcesNotSold.ore + ' ore, ' : '') +
+            (resourcesNotSold.iridium ? resourcesNotSold.iridium + ' iridium, ' : '');
         }
         message = message.substring(0, message.length - 2);
 

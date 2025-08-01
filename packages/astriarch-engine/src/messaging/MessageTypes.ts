@@ -9,7 +9,7 @@ export enum MESSAGE_TYPE {
   PING = 'PING',
   PONG = 'PONG',
   ERROR = 'ERROR',
-  
+
   // Game Management
   CREATE_GAME = 'CREATE_GAME',
   JOIN_GAME = 'JOIN_GAME',
@@ -19,7 +19,7 @@ export enum MESSAGE_TYPE {
   RESUME_GAME = 'RESUME_GAME',
   CHANGE_GAME_OPTIONS = 'CHANGE_GAME_OPTIONS',
   CHANGE_PLAYER_NAME = 'CHANGE_PLAYER_NAME',
-  
+
   // Game Actions
   END_TURN = 'END_TURN',
   SEND_SHIPS = 'SEND_SHIPS',
@@ -27,25 +27,25 @@ export enum MESSAGE_TYPE {
   UPDATE_PLANET_OPTIONS = 'UPDATE_PLANET_OPTIONS',
   UPDATE_PLANET_BUILD_QUEUE = 'UPDATE_PLANET_BUILD_QUEUE',
   CLEAR_WAYPOINT = 'CLEAR_WAYPOINT',
-  
+
   // Research & Trading
   ADJUST_RESEARCH_PERCENT = 'ADJUST_RESEARCH_PERCENT',
   SUBMIT_RESEARCH_ITEM = 'SUBMIT_RESEARCH_ITEM',
   CANCEL_RESEARCH_ITEM = 'CANCEL_RESEARCH_ITEM',
   SUBMIT_TRADE = 'SUBMIT_TRADE',
   CANCEL_TRADE = 'CANCEL_TRADE',
-  
+
   // Chat & Communication
   CHAT_MESSAGE = 'CHAT_MESSAGE',
   CHAT_ROOM_SESSIONS_UPDATED = 'CHAT_ROOM_SESSIONS_UPDATED',
-  
+
   // Game State
   GAME_STATE_UPDATE = 'GAME_STATE_UPDATE',
   GAME_OVER = 'GAME_OVER',
-  
+
   // Player Actions
   EXIT_RESIGN = 'EXIT_RESIGN',
-  LOGOUT = 'LOGOUT'
+  LOGOUT = 'LOGOUT',
 }
 
 export enum ERROR_TYPE {
@@ -53,14 +53,14 @@ export enum ERROR_TYPE {
   GAME_NOT_FOUND = 'GAME_NOT_FOUND',
   PLAYER_NOT_FOUND = 'PLAYER_NOT_FOUND',
   UNAUTHORIZED = 'UNAUTHORIZED',
-  INVALID_ACTION = 'INVALID_ACTION'
+  INVALID_ACTION = 'INVALID_ACTION',
 }
 
 export enum CHAT_MESSAGE_TYPE {
   TEXT_MESSAGE = 'TEXT_MESSAGE',
   PLAYER_ENTER = 'PLAYER_ENTER',
   PLAYER_LEAVE = 'PLAYER_LEAVE',
-  SYSTEM_MESSAGE = 'SYSTEM_MESSAGE'
+  SYSTEM_MESSAGE = 'SYSTEM_MESSAGE',
 }
 
 // =============================================
@@ -299,40 +299,50 @@ export class ChatMessage extends Message<IChatMessagePayload> {
 // =============================================
 
 export function isCreateGameRequest(message: IMessage<unknown>): message is Message<ICreateGameRequestPayload> {
-  return message.type === MESSAGE_TYPE.CREATE_GAME && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'name' in message.payload && 
-         'playerName' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.CREATE_GAME &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'name' in message.payload &&
+    'playerName' in message.payload
+  );
 }
 
 export function isCreateGameResponse(message: IMessage<unknown>): message is Message<ICreateGameResponsePayload> {
-  return message.type === MESSAGE_TYPE.CREATE_GAME && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'gameId' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.CREATE_GAME &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'gameId' in message.payload
+  );
 }
 
 export function isJoinGameRequest(message: IMessage<unknown>): message is Message<IJoinGameRequestPayload> {
-  return message.type === MESSAGE_TYPE.JOIN_GAME && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'gameId' in message.payload && 
-         'playerName' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.JOIN_GAME &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'gameId' in message.payload &&
+    'playerName' in message.payload
+  );
 }
 
 export function isJoinGameResponse(message: IMessage<unknown>): message is Message<IJoinGameResponsePayload> {
-  return message.type === MESSAGE_TYPE.JOIN_GAME && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'success' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.JOIN_GAME &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'success' in message.payload
+  );
 }
 
 export function isListGamesResponse(message: IMessage<unknown>): message is Message<IListGamesResponsePayload> {
-  return message.type === MESSAGE_TYPE.LIST_GAMES && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'games' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.LIST_GAMES &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'games' in message.payload
+  );
 }
 
 export function isStartGameRequest(message: IMessage<unknown>): message is Message<IStartGameRequestPayload> {
@@ -340,10 +350,12 @@ export function isStartGameRequest(message: IMessage<unknown>): message is Messa
 }
 
 export function isStartGameResponse(message: IMessage<unknown>): message is Message<IStartGameResponsePayload> {
-  return message.type === MESSAGE_TYPE.START_GAME && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'success' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.START_GAME &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'success' in message.payload
+  );
 }
 
 export function isGameStateUpdate(message: IMessage<unknown>): message is Message<IGameStateUpdatePayload> {
@@ -351,17 +363,21 @@ export function isGameStateUpdate(message: IMessage<unknown>): message is Messag
 }
 
 export function isChatMessage(message: IMessage<unknown>): message is Message<IChatMessagePayload> {
-  return message.type === MESSAGE_TYPE.CHAT_MESSAGE && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'message' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.CHAT_MESSAGE &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'message' in message.payload
+  );
 }
 
 export function isErrorMessage(message: IMessage<unknown>): message is Message<IErrorPayload> {
-  return message.type === MESSAGE_TYPE.ERROR && 
-         typeof message.payload === 'object' && 
-         message.payload !== null &&
-         'error' in message.payload;
+  return (
+    message.type === MESSAGE_TYPE.ERROR &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'error' in message.payload
+  );
 }
 
 export function getMessageTypeName(type: MESSAGE_TYPE): string {
@@ -402,9 +418,9 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.GAME_LIST_UPDATED]: 61,
     [MESSAGE_TYPE.GAME_STATE_UPDATE]: 62,
     [MESSAGE_TYPE.GAME_OVER]: 63,
-    [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 64
+    [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 64,
   };
-  
+
   return typeMap[type] ?? -1;
 }
 
@@ -441,8 +457,8 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     61: MESSAGE_TYPE.GAME_LIST_UPDATED,
     62: MESSAGE_TYPE.GAME_STATE_UPDATE,
     63: MESSAGE_TYPE.GAME_OVER,
-    64: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED
+    64: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
   };
-  
+
   return reverseMap[typeNum] ?? null;
 }

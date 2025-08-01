@@ -1,9 +1,9 @@
-import { PointData } from "../shapes/shapes";
-import { GameOptions, ModelBase } from "./model";
-import { PlanetData, PlanetType } from "./planet";
-import { ColorRgbaData, PlayerData, PlayerType } from "./player";
-import { ResearchData } from "./research";
-import { TradeData, TradingCenterResource } from "./tradingCenter";
+import { PointData } from '../shapes/shapes';
+import { GameOptions, ModelBase } from './model';
+import { PlanetData, PlanetType } from './planet';
+import { ColorRgbaData, PlayerData, PlayerType } from './player';
+import { ResearchData } from './research';
+import { TradeData, TradingCenterResource } from './tradingCenter';
 
 export type PlanetById = Record<number, PlanetData>;
 

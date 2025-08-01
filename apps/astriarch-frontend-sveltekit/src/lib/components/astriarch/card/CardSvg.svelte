@@ -1,14 +1,14 @@
 <script lang="ts">
-  import type { Size } from '../types.js';
-  import CardSvgLarge from './CardSvgLarge.svelte';
-  import CardSvgMedium from './CardSvgMedium.svelte';
+	import type { Size } from '../types.js';
+	import CardSvgLarge from './CardSvgLarge.svelte';
+	import CardSvgMedium from './CardSvgMedium.svelte';
 
-  export let size: Size = "lg";
-  export let enabled = true;
+	export let size: Size = 'lg';
+	export let enabled = true;
 
-  $: component = size === "lg" ? CardSvgLarge : CardSvgMedium;
+	$: component = size === 'lg' ? CardSvgLarge : CardSvgMedium;
 </script>
 
 <div class="absolute top-0">
-  <svelte:component this={component} {enabled} />
+	<svelte:component this={component} {enabled} />
 </div>

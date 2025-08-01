@@ -1,4 +1,4 @@
-import { PlanetResourceData } from "../model/planet";
+import { PlanetResourceData } from '../model/planet';
 
 export class PlanetResources {
   public static constructPlanetResources(
@@ -7,7 +7,7 @@ export class PlanetResources {
     research: number,
     ore: number,
     iridium: number,
-    production: number
+    production: number,
   ): PlanetResourceData {
     return {
       food,

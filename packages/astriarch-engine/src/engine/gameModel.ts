@@ -1,21 +1,21 @@
-import { ClientModelData, PlanetById } from "../model/clientModel";
-import { StarShipType } from "../model/fleet";
-import { GalaxySizeOption, GameOptions, ModelData, PlanetsPerSystemOption } from "../model/model";
+import { ClientModelData, PlanetById } from '../model/clientModel';
+import { StarShipType } from '../model/fleet';
+import { GalaxySizeOption, GameOptions, ModelData, PlanetsPerSystemOption } from '../model/model';
 import {
   PlanetData,
   PlanetHappinessType,
   PlanetImprovementType,
   PlanetResourceData,
   PlanetType,
-} from "../model/planet";
-import { PlayerData } from "../model/player";
-import { Utils } from "../utils/utils";
-import { Fleet } from "./fleet";
-import { Grid, GridHex } from "./grid";
-import { Planet } from "./planet";
-import { PlanetResources } from "./planetResources";
-import { Player } from "./player";
-import { TradingCenter } from "./tradingCenter";
+} from '../model/planet';
+import { PlayerData } from '../model/player';
+import { Utils } from '../utils/utils';
+import { Fleet } from './fleet';
+import { Grid, GridHex } from './grid';
+import { Planet } from './planet';
+import { PlanetResources } from './planetResources';
+import { Player } from './player';
+import { TradingCenter } from './tradingCenter';
 
 export interface GameModelData {
   modelData: ModelData;
@@ -103,17 +103,17 @@ export class GameModel {
             gameOptions.galaxySize == GalaxySizeOption.LARGE
               ? 5
               : gameOptions.galaxySize == GalaxySizeOption.MEDIUM
-              ? 4
-              : gameOptions.galaxySize == GalaxySizeOption.SMALL
-              ? 3
-              : 2;
+                ? 4
+                : gameOptions.galaxySize == GalaxySizeOption.SMALL
+                  ? 3
+                  : 2;
           const hexPos = Utils.nextRandom(0, subQuadrantHexes[chosenPlanetSubQuadrant].length);
           planetBoundingHex = subQuadrantHexes[chosenPlanetSubQuadrant][hexPos];
           if (playerHomePlanetHex) {
             // get distance from home
             const distanceFromHome = Grid.getHexDistance(planetBoundingHex, playerHomePlanetHex);
             if (distanceFromHome > maxDistanceFromHome) {
-              console.log("Chosen location for planet too far from Home, picking again:", iSQ, distanceFromHome);
+              console.log('Chosen location for planet too far from Home, picking again:', iSQ, distanceFromHome);
             } else {
               hexFound = true;
             }
@@ -273,7 +273,10 @@ export class GameModel {
     }, resources);
   }
 
-  public static getPlayerTotalResourceProductionPerTurn(player: PlayerData, planetById: PlanetById): PlanetResourceData  {
+  public static getPlayerTotalResourceProductionPerTurn(
+    player: PlayerData,
+    planetById: PlanetById,
+  ): PlanetResourceData {
     const resources = {
       food: 0,
       energy: 0,
@@ -286,7 +289,7 @@ export class GameModel {
     return player.ownedPlanetIds.reduce((accum, curr) => {
       if (curr in planetById) {
         const planet = planetById[curr];
-        const {amountPerTurn} = Planet.getPlanetWorkerResourceGeneration(planet, player);
+        const { amountPerTurn } = Planet.getPlanetWorkerResourceGeneration(planet, player);
         accum = PlanetResources.addPlanetResources(accum, amountPerTurn);
       }
       return accum;
@@ -320,7 +323,7 @@ export class GameModel {
     oldOwner: PlayerData | undefined,
     newOwner: PlayerData | undefined,
     planet: PlanetData,
-    currentCycle: number
+    currentCycle: number,
   ) {
     if (newOwner) {
       newOwner.ownedPlanetIds.push(planet.id);

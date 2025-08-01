@@ -1,20 +1,20 @@
-import { ClientModelData, PlanetById, TaskNotificationType } from "../model/clientModel";
-import { EarnedPointsType, earnedPointsConfigByType } from "../model/earnedPoints";
-import { EventNotificationType } from "../model/eventNotification";
-import { FleetData, StarshipAdvantageData } from "../model/fleet";
-import { PlanetData, PlanetHappinessType, PlanetImprovementType } from "../model/planet";
-import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from "../model/player";
-import { ResearchType } from "../model/research";
-import { Utils } from "../utils/utils";
-import { Events } from "./events";
-import { Fleet } from "./fleet";
-import { AdvanceGameClockForPlayerData, GameModel } from "./gameModel";
-import { Grid } from "./grid";
-import { Planet } from "./planet";
-import { PlanetProductionItem } from "./planetProductionItem";
-import { PlanetResources } from "./planetResources";
-import { Research } from "./research";
-import { TaskNotifications } from "./taskNotifications";
+import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
+import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
+import { EventNotificationType } from '../model/eventNotification';
+import { FleetData, StarshipAdvantageData } from '../model/fleet';
+import { PlanetData, PlanetHappinessType, PlanetImprovementType } from '../model/planet';
+import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
+import { ResearchType } from '../model/research';
+import { Utils } from '../utils/utils';
+import { Events } from './events';
+import { Fleet } from './fleet';
+import { AdvanceGameClockForPlayerData, GameModel } from './gameModel';
+import { Grid } from './grid';
+import { Planet } from './planet';
+import { PlanetProductionItem } from './planetProductionItem';
+import { PlanetResources } from './planetResources';
+import { Research } from './research';
+import { TaskNotifications } from './taskNotifications';
 
 export class Player {
   public static constructPlayer(id: string, type: PlayerType, name: string, color: ColorRgbaData): PlayerData {
@@ -47,7 +47,7 @@ export class Player {
     p: PlayerData,
     planet: PlanetData,
     cycle: number,
-    lastKnownOwnerId: string | undefined
+    lastKnownOwnerId: string | undefined,
   ) {
     p.knownPlanetIds.push(planet.id);
     p.knownPlanetIds = [...new Set(p.knownPlanetIds)];
@@ -58,10 +58,10 @@ export class Player {
     p: PlayerData,
     planet: PlanetData,
     cycle: number,
-    lastKnownOwnerId: string | undefined
+    lastKnownOwnerId: string | undefined,
   ) {
     const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } = Fleet.countStarshipsByType(
-      planet.planetaryFleet
+      planet.planetaryFleet,
     );
     const lastKnownFleet = Fleet.generateFleetWithShipCount(
       defenders,
@@ -70,7 +70,7 @@ export class Player {
       cruisers,
       battleships,
       spaceplatforms,
-      planet.boundingHexMidPoint
+      planet.boundingHexMidPoint,
     );
     const lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
     p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
@@ -115,9 +115,12 @@ export class Player {
   public static getTotalResourceAmount(p: PlayerData, ownedPlanets: PlanetById) {
     const totalResources = p.ownedPlanetIds
       .map((planetId) => ownedPlanets[planetId])
-      .reduce((accum, curr) => {
-        return PlanetResources.addPlanetResources(accum, curr.resources);
-      }, PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0));
+      .reduce(
+        (accum, curr) => {
+          return PlanetResources.addPlanetResources(accum, curr.resources);
+        },
+        PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0),
+      );
     return totalResources;
   }
 
@@ -197,8 +200,8 @@ export class Player {
       Events.enqueueNewEvent(
         mainPlayer.id,
         EventNotificationType.ResourcesAutoSpent,
-        "Auto-queued: " + Fleet.toString(autoQueuedFleet),
-        focusPlanet
+        'Auto-queued: ' + Fleet.toString(autoQueuedFleet),
+        focusPlanet,
       );
     }
   }
@@ -240,7 +243,7 @@ export class Player {
 
     let totalFoodShipped = 0;
 
-    let protestingPlanetNames = "";
+    let protestingPlanetNames = '';
     let protestingPlanetCount = 0;
     let lastProtestingPlanet;
 
@@ -260,7 +263,7 @@ export class Player {
           }
           const amountSpent = PlanetResources.spendEnergyAsPossible(
             pSurplus.resources,
-            Math.min(foodShortageTotal, pSurplus.resources.food)
+            Math.min(foodShortageTotal, pSurplus.resources.food),
           );
 
           totalFoodShipped += amountSpent;
@@ -284,16 +287,16 @@ export class Player {
         //otherwise people just slowly starve
         const looseOne = Utils.nextRandom(0, 100) < Math.round(foodShortageRatio * 100);
         if (looseOne) {
-          let riotReason = "."; //for shortages
+          let riotReason = '.'; //for shortages
           if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0)
-            riotReason = ", insufficient Energy to ship Food.";
+            riotReason = ', insufficient Energy to ship Food.';
           //notify user of starvation
           planet.planetHappiness = PlanetHappinessType.Riots;
           Events.enqueueNewEvent(
             mainPlayer.id,
             EventNotificationType.FoodShortageRiots,
-            "Riots over food shortages killed one population on planet: " + planet.name + riotReason,
-            planet
+            'Riots over food shortages killed one population on planet: ' + planet.name + riotReason,
+            planet,
           );
           if (planet.population.length > 0) {
             planet.population.pop();
@@ -310,14 +313,14 @@ export class Player {
               Events.enqueueNewEvent(
                 mainPlayer.id,
                 EventNotificationType.PopulationStarvation,
-                "You lost one population due to food shortages on planet: " + planet.name,
-                planet
+                'You lost one population due to food shortages on planet: ' + planet.name,
+                planet,
               );
               planet.population.pop();
             } else {
               protestingPlanetCount++;
 
-              if (protestingPlanetNames != "") protestingPlanetNames += ", ";
+              if (protestingPlanetNames != '') protestingPlanetNames += ', ';
               protestingPlanetNames += planet.name;
 
               lastProtestingPlanet = planet;
@@ -344,8 +347,8 @@ export class Player {
           Events.enqueueNewEvent(
             mainPlayer.id,
             EventNotificationType.PlanetLostDueToStarvation,
-            "You have lost control of " + planet.name + " due to starvation",
-            planet
+            'You have lost control of ' + planet.name + ' due to starvation',
+            planet,
           );
 
           GameModel.changePlanetOwner(mainPlayer, undefined, planet, currentCycle);
@@ -360,17 +363,17 @@ export class Player {
     }
 
     if (protestingPlanetCount > 0) {
-      let protestingPlanetReason = ".";
+      let protestingPlanetReason = '.';
       if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0)
-        protestingPlanetReason = ", insufficient Gold to ship Food.";
-      let planetPluralized = "planet: ";
-      if (protestingPlanetCount > 1) planetPluralized = "planets: ";
+        protestingPlanetReason = ', insufficient Gold to ship Food.';
+      let planetPluralized = 'planet: ';
+      if (protestingPlanetCount > 1) planetPluralized = 'planets: ';
       //notify user of population unrest
       Events.enqueueNewEvent(
         mainPlayer.id,
         EventNotificationType.InsufficientFood,
-        "Population unrest over lack of Food on " + planetPluralized + protestingPlanetNames + protestingPlanetReason,
-        lastProtestingPlanet
+        'Population unrest over lack of Food on ' + planetPluralized + protestingPlanetNames + protestingPlanetReason,
+        lastProtestingPlanet,
       );
     }
 
@@ -378,7 +381,7 @@ export class Player {
       Events.enqueueNewEvent(
         mainPlayer.id,
         EventNotificationType.ResourcesAutoSpent,
-        totalFoodShipped + " Energy spent shipping Food"
+        totalFoodShipped + ' Energy spent shipping Food',
       );
     }
   }
@@ -441,21 +444,21 @@ export class Player {
             //console.log("Planet: ", p.Name, "citizen["+c+"]", citizen);
           }
         }
-        const citizenText = protestingCitizenCount > 1 ? " Citizens" : " Citizen";
+        const citizenText = protestingCitizenCount > 1 ? ' Citizens' : ' Citizen';
         if (protestingCitizenCount >= p.population.length / 2) {
           p.planetHappiness = PlanetHappinessType.Unrest;
           Events.enqueueNewEvent(
             mainPlayer.id,
             EventNotificationType.CitizensProtesting,
-            "Population unrest on " + p.name + " due to " + protestingCitizenCount + citizenText + " protesting",
-            p
+            'Population unrest on ' + p.name + ' due to ' + protestingCitizenCount + citizenText + ' protesting',
+            p,
           );
         } else if (protestingCitizenCount > 0) {
           Events.enqueueNewEvent(
             mainPlayer.id,
             EventNotificationType.CitizensProtesting,
-            protestingCitizenCount + citizenText + " protesting your rule on " + p.name,
-            p
+            protestingCitizenCount + citizenText + ' protesting your rule on ' + p.name,
+            p,
           );
         }
       }
@@ -478,8 +481,8 @@ export class Player {
           Events.enqueueNewEvent(
             mainPlayer.id,
             EventNotificationType.PopulationGrowth,
-            "Population growth on planet: " + p.name,
-            p
+            'Population growth on planet: ' + p.name,
+            p,
           );
           //grow
           lastCitizen.populationChange = 0;
@@ -508,7 +511,7 @@ export class Player {
         const maxStrengthToRepair = Math.min(
           Math.floor((totalResources.energy / 2) * 3),
           Math.floor(totalResources.ore * 2),
-          Math.floor(totalResources.iridium * 4)
+          Math.floor(totalResources.iridium * 4),
         );
 
         const totalStrengthRepaired = Fleet.repairPlanetaryFleet(p, maxStrengthToRepair, cyclesElapsed);
@@ -535,12 +538,12 @@ export class Player {
         mainPlayer.id,
         EventNotificationType.ResourcesAutoSpent,
         resourcesAutoSpent.energy +
-          " Energy, " +
+          ' Energy, ' +
           resourcesAutoSpent.ore +
-          " Ore, " +
+          ' Ore, ' +
           resourcesAutoSpent.iridium +
-          " Iridium spent repairing fleets.",
-        planetTarget
+          ' Iridium spent repairing fleets.',
+        planetTarget,
       );
     }
     return resourcesAutoSpent;
@@ -568,11 +571,11 @@ export class Player {
       if (playerFleet.parsecsToDestination! <= 0) {
         const destinationPlanet = Planet.getClientPlanetAtMidPoint(
           clientModel.clientPlanets,
-          playerFleet.destinationHexMidPoint!
+          playerFleet.destinationHexMidPoint!,
         );
         if (!destinationPlanet) {
           throw new Error(
-            `Unable to find client planet at midpoint: ${Grid.pointDataToString(playerFleet.destinationHexMidPoint!)}`
+            `Unable to find client planet at midpoint: ${Grid.pointDataToString(playerFleet.destinationHexMidPoint!)}`,
           );
         }
 

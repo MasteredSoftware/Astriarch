@@ -1,4 +1,4 @@
-import { GameModelData } from "./gameModel";
+import { GameModelData } from './gameModel';
 
 export class Engine {
   serverGameModels: GameModelData[] = [];

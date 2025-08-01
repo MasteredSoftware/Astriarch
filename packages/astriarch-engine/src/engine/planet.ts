@@ -1,7 +1,7 @@
-import { ClientPlanet, PlanetById } from "../model/clientModel";
-import { EarnedPointsType } from "../model/earnedPoints";
-import { EventNotificationType } from "../model/eventNotification";
-import { StarShipType } from "../model/fleet";
+import { ClientPlanet, PlanetById } from '../model/clientModel';
+import { EarnedPointsType } from '../model/earnedPoints';
+import { EventNotificationType } from '../model/eventNotification';
+import { StarShipType } from '../model/fleet';
 import {
   Citizen,
   CitizenWorkerType,
@@ -13,21 +13,21 @@ import {
   PlanetResourceData,
   PlanetType,
   ProductionItemResources,
-} from "../model/planet";
-import { PlayerData } from "../model/player";
-import { ResearchType } from "../model/research";
-import { PointData } from "../shapes/shapes";
-import { GameTools } from "../utils/gameTools";
-import { Utils } from "../utils/utils";
-import { Events } from "./events";
-import { Fleet } from "./fleet";
-import { GameModelData } from "./gameModel";
-import { Grid, GridHex } from "./grid";
-import { PlanetDistanceComparer } from "./planetDistanceComparer";
-import { PlanetProductionItem } from "./planetProductionItem";
-import { PlanetResources } from "./planetResources";
-import { Player } from "./player";
-import { Research } from "./research";
+} from '../model/planet';
+import { PlayerData } from '../model/player';
+import { ResearchType } from '../model/research';
+import { PointData } from '../shapes/shapes';
+import { GameTools } from '../utils/gameTools';
+import { Utils } from '../utils/utils';
+import { Events } from './events';
+import { Fleet } from './fleet';
+import { GameModelData } from './gameModel';
+import { Grid, GridHex } from './grid';
+import { PlanetDistanceComparer } from './planetDistanceComparer';
+import { PlanetProductionItem } from './planetProductionItem';
+import { PlanetResources } from './planetResources';
+import { Player } from './player';
+import { Research } from './research';
 
 export interface PlanetPerTurnResourceGeneration {
   baseAmountPerWorkerPerTurn: PlanetResourceData;
@@ -56,7 +56,7 @@ export class Planet {
     type: PlanetType,
     name: string,
     boundingHex: GridHex,
-    initialOwner?: PlayerData
+    initialOwner?: PlayerData,
   ): PlanetData {
     const halfPlanetSize = Planet.PLANET_SIZE / 2;
     const originPoint = { x: boundingHex.midPoint.x - halfPlanetSize, y: boundingHex.midPoint.y - halfPlanetSize };
@@ -163,7 +163,7 @@ export class Planet {
     energy: number,
     food: number,
     ore: number,
-    iridium: number
+    iridium: number,
   ) {
     const { resources } = planet;
     //first check for required energy, food, ore and iridium on this planet
@@ -194,13 +194,13 @@ export class Planet {
       }
       if (energyNeeded !== 0 || foodNeeded !== 0 || oreNeeded !== 0 || iridiumNeeded !== 0) {
         console.warn(
-          "Problem spending energy, food, ore and iridium as necessary! ",
+          'Problem spending energy, food, ore and iridium as necessary! ',
           player.name,
           planet.name,
           energyNeeded,
           foodNeeded,
           oreNeeded,
-          iridiumNeeded
+          iridiumNeeded,
         );
       }
     }
@@ -214,7 +214,7 @@ export class Planet {
     player: PlayerData,
     planetById: PlanetById,
     planet: PlanetData,
-    item: PlanetProductionItemData
+    item: PlanetProductionItemData,
   ) {
     planet.buildQueue.push(item);
 
@@ -264,7 +264,7 @@ export class Planet {
     if (colonyCount) {
       const colonyBoost = Research.getResearchBoostForEfficiencyImprovement(
         ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES,
-        owner
+        owner,
       );
       amountPerTurn +=
         Math.min(colonyCount, p.population.length) * baseAmountPerPopPerTurn * colonyBoost * Planet.IMPROVEMENT_RATIO;
@@ -349,7 +349,7 @@ export class Planet {
       if (farmCount > 0) {
         researchEffectiveness = Research.getResearchBoostForEfficiencyImprovement(
           ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS,
-          owner
+          owner,
         );
         if (farmers < farmCount) {
           rpt.amountNextWorkerPerTurn.food =
@@ -367,7 +367,7 @@ export class Planet {
       if (mineCount > 0) {
         researchEffectiveness = Research.getResearchBoostForEfficiencyImprovement(
           ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES,
-          owner
+          owner,
         );
         if (miners < mineCount) {
           rpt.amountNextWorkerPerTurn.ore =
@@ -392,7 +392,7 @@ export class Planet {
       if (factoryCount > 0) {
         researchEffectiveness = Research.getResearchBoostForEfficiencyImprovement(
           ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES,
-          owner
+          owner,
         );
         if (builders < factoryCount) {
           rpt.amountNextWorkerPerTurn.production =
@@ -495,11 +495,11 @@ export class Planet {
     }
     for (const c of citizens.protesting) {
       if (c.workerType === desiredType) {
-        console.warn("No content citizens found in Planet.getCitizenByType! Returning protesting citizen.");
+        console.warn('No content citizens found in Planet.getCitizenByType! Returning protesting citizen.');
         return c;
       }
     }
-    throw new Error("No matching citizens found in Planet.getCitizenByType!");
+    throw new Error('No matching citizens found in Planet.getCitizenByType!');
   }
 
   public static maxPopulation(p: PlanetData) {
@@ -529,7 +529,7 @@ export class Planet {
     owner: PlayerData,
     farmerDiff: number,
     minerDiff: number,
-    builderDiff: number
+    builderDiff: number,
   ) {
     while (farmerDiff !== 0) {
       if (farmerDiff > 0) {
@@ -584,7 +584,7 @@ export class Planet {
         "Couldn't move workers in Planet.updatePopulationWorkerTypesByDiff!",
         farmerDiff,
         minerDiff,
-        builderDiff
+        builderDiff,
       );
     }
     return this.getPlanetWorkerResourceGeneration(p, owner);
@@ -627,7 +627,7 @@ export class Planet {
   public static estimateTurnsToComplete(
     planet: PlanetData,
     item: PlanetProductionItemData,
-    resourceGeneration: PlanetPerTurnResourceGeneration
+    resourceGeneration: PlanetPerTurnResourceGeneration,
   ) {
     if (resourceGeneration.amountPerTurn.production !== 0) {
       const productionCostLeft = item.baseProductionCost - item.productionCostComplete - planet.resources.production;
@@ -649,7 +649,7 @@ export class Planet {
     owner: PlayerData,
     gameGrid: Grid,
     resourceGeneration: PlanetPerTurnResourceGeneration,
-    cyclesElapsed: number
+    cyclesElapsed: number,
   ): { buildQueueEmpty: boolean } {
     const returnVal = { buildQueueEmpty: false };
 
@@ -667,7 +667,7 @@ export class Planet {
         //assign points
         Player.increasePoints(owner, EarnedPointsType.PRODUCTION_UNIT_BUILT, nextItem.baseProductionCost);
 
-        let nextItemInQueueName = "Nothing";
+        let nextItemInQueueName = 'Nothing';
         if (planet.buildQueue.length > 0) {
           const nextInQueue = planet.buildQueue[0];
           nextItemInQueueName = PlanetProductionItem.toString(nextInQueue);
@@ -683,15 +683,15 @@ export class Planet {
             owner.id,
             EventNotificationType.ImprovementBuilt,
             PlanetProductionItem.toString(nextItem) +
-              " built on planet: " +
+              ' built on planet: ' +
               planet.name +
-              ", next in queue: " +
+              ', next in queue: ' +
               nextItemInQueueName,
-            planet
+            planet,
           );
         } else if (nextItem.itemType === PlanetProductionItemType.StarShipInProduction) {
           if (!nextItem.starshipData) {
-            throw new Error("No starshipData in PlanetProductionItem");
+            throw new Error('No starshipData in PlanetProductionItem');
           }
           const { type, customShipData } = nextItem.starshipData;
           const ship = Fleet.generateStarship(type, customShipData);
@@ -719,11 +719,11 @@ export class Planet {
             owner.id,
             EventNotificationType.ShipBuilt,
             PlanetProductionItem.toString(nextItem) +
-              " built on planet: " +
+              ' built on planet: ' +
               planet.name +
-              ", next in queue: " +
+              ', next in queue: ' +
               nextItemInQueueName,
-            planet
+            planet,
           );
         } else if (nextItem.itemType === PlanetProductionItemType.PlanetImprovementToDestroy) {
           if (planet.builtImprovements[nextItem.improvementData!.type] > 0) {
@@ -732,11 +732,11 @@ export class Planet {
               owner.id,
               EventNotificationType.ImprovementDemolished,
               GameTools.planetImprovementTypeToFriendlyName(nextItem.improvementData!.type) +
-                " demolished on planet: " +
+                ' demolished on planet: ' +
                 planet.name +
-                ", next in queue: " +
+                ', next in queue: ' +
                 nextItemInQueueName,
-              planet
+              planet,
             );
 
             //TODO: there is probably a better place to handle this check for population overages
@@ -765,7 +765,7 @@ export class Planet {
    * Returns data if there is a mobile starship in the queue
    */
   public static buildQueueContainsMobileStarship(
-    p: PlanetData
+    p: PlanetData,
   ): { turnsToComplete: number; starshipStrength: number } | undefined {
     for (const ppi of p.buildQueue) {
       if (ppi.starshipData && Fleet.starshipTypeIsMobile(ppi.starshipData.type)) {

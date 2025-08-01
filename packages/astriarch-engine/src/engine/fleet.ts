@@ -1,13 +1,13 @@
-import { EarnedPointsType } from "../model/earnedPoints";
-import { FleetData, LastKnownFleetData, StarshipAdvantageData, StarshipData, StarShipType } from "../model/fleet";
-import { PlanetData, PlanetImprovementType } from "../model/planet";
-import { PlayerData } from "../model/player";
-import { ResearchType } from "../model/research";
-import { PointData } from "../shapes/shapes";
-import { GameTools } from "../utils/gameTools";
-import { Grid } from "./grid";
-import { Player } from "./player";
-import { Research } from "./research";
+import { EarnedPointsType } from '../model/earnedPoints';
+import { FleetData, LastKnownFleetData, StarshipAdvantageData, StarshipData, StarShipType } from '../model/fleet';
+import { PlanetData, PlanetImprovementType } from '../model/planet';
+import { PlayerData } from '../model/player';
+import { ResearchType } from '../model/research';
+import { PointData } from '../shapes/shapes';
+import { GameTools } from '../utils/gameTools';
+import { Grid } from './grid';
+import { Player } from './player';
+import { Research } from './research';
 
 export type StarshipsByType = Record<StarShipType, StarshipData[]>;
 
@@ -40,7 +40,7 @@ export class Fleet {
     cruisers: number,
     battleships: number,
     spaceplatforms: number,
-    locationHexMidPoint: PointData | null
+    locationHexMidPoint: PointData | null,
   ): FleetData {
     const starships = [
       ...Fleet.generateStarships(StarShipType.SystemDefense, defenders),
@@ -204,7 +204,7 @@ export class Fleet {
     scouts: number,
     destoyers: number,
     cruisers: number,
-    battleships: number
+    battleships: number,
   ): FleetData {
     const newFleet = this.generateFleet([], fleet.locationHexMidPoint);
     const starshipsByType = this.getStarshipsByType(fleet);
@@ -263,7 +263,7 @@ export class Fleet {
     fleet: FleetData,
     gameGrid: Grid,
     locationHexMidPoint: PointData,
-    destinationHexMidPoint: PointData
+    destinationHexMidPoint: PointData,
   ) {
     fleet.locationHexMidPoint = locationHexMidPoint;
     fleet.destinationHexMidPoint = destinationHexMidPoint;
@@ -412,7 +412,7 @@ export class Fleet {
    */
   public static moveFleet(fleet: FleetData, owner: PlayerData, cyclesElapsed: number) {
     if (!fleet.parsecsToDestination) {
-      throw new Error("Unable to move fleet until parsecsToDestination is set");
+      throw new Error('Unable to move fleet until parsecsToDestination is set');
     }
     fleet.locationHexMidPoint = null;
     //TODO: should this update the location hex to a closer hex as well?
@@ -438,32 +438,35 @@ export class Fleet {
    */
   public static toString(fleet: FleetData) {
     const shipsByType = Fleet.getStarshipsByType(fleet);
-    const customCountsByType = Object.entries(shipsByType).reduce((accum, [currType, currShips]) => {
-      const key = currType as unknown as StarShipType;
-      if (!(key in accum)) {
-        accum[key] = { standard: 0, custom: 0 };
-      }
-      accum[key].custom = currShips.filter((s) => !!s.customShipData).length;
-      accum[key].standard = currShips.length - accum[key].custom;
-      return accum;
-    }, {} as Record<StarShipType, { standard: number; custom: number }>);
+    const customCountsByType = Object.entries(shipsByType).reduce(
+      (accum, [currType, currShips]) => {
+        const key = currType as unknown as StarShipType;
+        if (!(key in accum)) {
+          accum[key] = { standard: 0, custom: 0 };
+        }
+        accum[key].custom = currShips.filter((s) => !!s.customShipData).length;
+        accum[key].standard = currShips.length - accum[key].custom;
+        return accum;
+      },
+      {} as Record<StarShipType, { standard: number; custom: number }>,
+    );
 
     const fleetSummary = Object.entries(customCountsByType).reduce((accum, [currType, currCounts]) => {
       const key = currType as unknown as StarShipType;
       if (currCounts.standard) {
-        if (accum != "") accum += ", ";
+        if (accum != '') accum += ', ';
         accum += `${currCounts.standard} ${GameTools.starShipTypeToFriendlyName(key)}${
-          currCounts.standard > 1 ? "s" : ""
+          currCounts.standard > 1 ? 's' : ''
         }`;
       }
       if (currCounts.custom) {
-        if (accum != "") accum += ", ";
-        accum += `${currCounts.custom} ${GameTools.starShipTypeToFriendlyName(key)}${currCounts.custom > 1 ? "s" : ""}`;
+        if (accum != '') accum += ', ';
+        accum += `${currCounts.custom} ${GameTools.starShipTypeToFriendlyName(key)}${currCounts.custom > 1 ? 's' : ''}`;
       }
       return accum;
-    }, "");
+    }, '');
 
-    return fleetSummary ?? "No Ships";
+    return fleetSummary ?? 'No Ships';
   }
 
   /**
@@ -482,7 +485,7 @@ export class Fleet {
   public static constructLastKnownFleet(
     cycleLastExplored: number,
     fleetData: FleetData,
-    lastKnownOwnerId: string | undefined
+    lastKnownOwnerId: string | undefined,
   ): LastKnownFleetData {
     return {
       cycleLastExplored,

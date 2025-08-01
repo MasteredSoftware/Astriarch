@@ -1,6 +1,6 @@
-import { ClientPlayer } from "./clientModel";
-import { FleetData } from "./fleet";
-import { PlanetData, PlanetResourceData } from "./planet";
+import { ClientPlayer } from './clientModel';
+import { FleetData } from './fleet';
+import { PlanetData, PlanetResourceData } from './planet';
 
 export interface ResearchBoost {
   attack: number;

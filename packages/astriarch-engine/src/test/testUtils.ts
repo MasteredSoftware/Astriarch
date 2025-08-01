@@ -1,13 +1,13 @@
-import { ClientGameModel } from "../engine/clientGameModel";
-import { Engine } from "../engine/engine";
-import { GameModel, GameModelData, playerColors } from "../engine/gameModel";
-import { Player } from "../engine/player";
-import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from "../model/model";
-import { PlayerData, PlayerType } from "../model/player";
-import { ResearchType } from "../model/research";
-import { CitizenWorkerType } from "../model/planet";
-import { ClientModelData } from "../model/clientModel";
-import { EarnedPointsType } from "../model/earnedPoints";
+import { ClientGameModel } from '../engine/clientGameModel';
+import { Engine } from '../engine/engine';
+import { GameModel, GameModelData, playerColors } from '../engine/gameModel';
+import { Player } from '../engine/player';
+import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from '../model/model';
+import { PlayerData, PlayerType } from '../model/player';
+import { ResearchType } from '../model/research';
+import { CitizenWorkerType } from '../model/planet';
+import { ClientModelData } from '../model/clientModel';
+import { EarnedPointsType } from '../model/earnedPoints';
 
 export interface TestGameData {
   engine: Engine;
@@ -16,8 +16,8 @@ export interface TestGameData {
 
 export const startNewTestGame = (): TestGameData => {
   const players = [] as PlayerData[];
-  players.push(Player.constructPlayer("me", PlayerType.Human, "Matt", playerColors[0]));
-  players.push(Player.constructPlayer("c1", PlayerType.Computer_Hard, "Computer1", playerColors[1]));
+  players.push(Player.constructPlayer('me', PlayerType.Human, 'Matt', playerColors[0]));
+  players.push(Player.constructPlayer('c1', PlayerType.Computer_Hard, 'Computer1', playerColors[1]));
 
   players[0].research.researchPercent = 0.9;
   players[0].research.researchTypeInQueue = ResearchType.PROPULSION_IMPROVEMENT;
@@ -29,7 +29,7 @@ export const startNewTestGame = (): TestGameData => {
     distributePlanetsEvenly: true,
     quickStart: true,
     gameSpeed: GameSpeed.NORMAL,
-    version: "2.0",
+    version: '2.0',
   };
 
   const gameModel = GameModel.constructData(players, gameOptions);
@@ -49,7 +49,7 @@ export const startNewTestGameWithOptions = (
   planetsPerSystem: number,
   ownedPlanetCount: number,
   playerCount: number,
-  playerType: PlayerType
+  playerType: PlayerType,
 ): TestGameData => {
   const players = [] as PlayerData[];
   for (let i = 0; i < playerCount; i++) {
@@ -65,7 +65,7 @@ export const startNewTestGameWithOptions = (
     distributePlanetsEvenly: true,
     quickStart: true,
     gameSpeed: GameSpeed.NORMAL,
-    version: "2.0",
+    version: '2.0',
   };
 
   const gameModel = GameModel.constructData(players, gameOptions);
@@ -79,7 +79,7 @@ export const startNewTestGameWithOptions = (
       firstPlayer,
       undefined,
       ownedPlanetsPlayer1[firstPlayer.ownedPlanetIds[0]],
-      gameModel.modelData.currentCycle
+      gameModel.modelData.currentCycle,
     );
   }
 

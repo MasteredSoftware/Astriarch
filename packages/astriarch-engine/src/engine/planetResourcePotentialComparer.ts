@@ -1,6 +1,6 @@
-import { PlanetData, PlanetResourceType } from "../model/planet";
-import { Utils } from "../utils/utils";
-import { PlanetResourcesPerTurn } from "./computerPlayer";
+import { PlanetData, PlanetResourceType } from '../model/planet';
+import { Utils } from '../utils/utils';
+import { PlanetResourcesPerTurn } from './computerPlayer';
 
 /**
  * A sort function object to prefer planets with higher resource generation potential

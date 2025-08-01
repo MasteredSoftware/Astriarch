@@ -2,7 +2,7 @@
 export { default as Button } from './button/Button.svelte';
 export { default as ButtonSvg } from './button/ButtonSvg.svelte';
 
-// Card components  
+// Card components
 export { default as Card } from './card/Card.svelte';
 export { default as CardSvg } from './card/CardSvg.svelte';
 

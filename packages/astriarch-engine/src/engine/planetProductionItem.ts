@@ -1,7 +1,7 @@
-import { StarshipAdvantageData, StarShipType } from "../model/fleet";
-import { PlanetImprovementType, PlanetProductionItemData, PlanetProductionItemType } from "../model/planet";
-import { GameTools } from "../utils/gameTools";
-import { Fleet } from "./fleet";
+import { StarshipAdvantageData, StarShipType } from '../model/fleet';
+import { PlanetImprovementType, PlanetProductionItemData, PlanetProductionItemType } from '../model/planet';
+import { GameTools } from '../utils/gameTools';
+import { Fleet } from './fleet';
 
 export class PlanetProductionItem {
   private static constructPlanetProductionItem(itemType: PlanetProductionItemType): PlanetProductionItemData {
@@ -59,7 +59,7 @@ export class PlanetProductionItem {
 
   public static constructStarShipInProduction(
     type: StarShipType,
-    customShipData?: StarshipAdvantageData
+    customShipData?: StarshipAdvantageData,
   ): PlanetProductionItemData {
     const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovement);
     base.starshipData = { type, customShipData };
@@ -121,18 +121,18 @@ export class PlanetProductionItem {
   public static toString(item: PlanetProductionItemData) {
     if (
       [PlanetProductionItemType.PlanetImprovement, PlanetProductionItemType.PlanetImprovementToDestroy].includes(
-        item.itemType
+        item.itemType,
       )
     ) {
       if (!item.improvementData) {
-        throw new Error("No improvementData for PlanetProductionItemData");
+        throw new Error('No improvementData for PlanetProductionItemData');
       }
       return item.itemType === PlanetProductionItemType.PlanetImprovementToDestroy
-        ? "Demolish "
-        : "" + GameTools.planetImprovementTypeToFriendlyName(item.improvementData?.type);
+        ? 'Demolish '
+        : '' + GameTools.planetImprovementTypeToFriendlyName(item.improvementData?.type);
     }
     if (!item.starshipData) {
-      throw new Error("No starshipData for PlanetProductionItemData");
+      throw new Error('No starshipData for PlanetProductionItemData');
     }
     return GameTools.starShipTypeToFriendlyName(item.starshipData.type);
   }

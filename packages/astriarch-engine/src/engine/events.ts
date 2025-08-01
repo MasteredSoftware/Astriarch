@@ -1,9 +1,9 @@
-import { ClientPlayer } from "../model/clientModel";
-import { EventNotification, EventNotificationType, PlanetaryConflictData } from "../model/eventNotification";
-import { FleetData } from "../model/fleet";
-import { PlanetData } from "../model/planet";
-import { Fleet } from "./fleet";
-import { PlanetResources } from "./planetResources";
+import { ClientPlayer } from '../model/clientModel';
+import { EventNotification, EventNotificationType, PlanetaryConflictData } from '../model/eventNotification';
+import { FleetData } from '../model/fleet';
+import { PlanetData } from '../model/planet';
+import { Fleet } from './fleet';
+import { PlanetResources } from './planetResources';
 
 export type Subscription = (playerId: string, enList: EventNotification[]) => void;
 
@@ -17,7 +17,7 @@ export class Events {
     type: EventNotificationType,
     message: string,
     planet?: PlanetData,
-    data?: PlanetaryConflictData
+    data?: PlanetaryConflictData,
   ): EventNotification {
     return {
       playerId,
@@ -33,7 +33,7 @@ export class Events {
     type: EventNotificationType,
     message: string,
     planet?: PlanetData,
-    data?: PlanetaryConflictData
+    data?: PlanetaryConflictData,
   ): EventNotification {
     return Events.enqueueEvent(Events.constructEvent(playerId, type, message, planet, data));
   }
@@ -50,7 +50,7 @@ export class Events {
     defendingClientPlayer: ClientPlayer | null,
     defendingFleet: FleetData,
     attackingClientPlayer: ClientPlayer,
-    attackingFleet: FleetData
+    attackingFleet: FleetData,
   ): PlanetaryConflictData {
     return {
       defendingClientPlayer,

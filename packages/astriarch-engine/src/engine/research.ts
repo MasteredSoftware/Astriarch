@@ -1,17 +1,17 @@
-import { PlanetById } from "../model/clientModel";
-import { EventNotificationType } from "../model/eventNotification";
-import { StarshipAdvantageData, StarShipType } from "../model/fleet";
-import { PlayerData } from "../model/player";
+import { PlanetById } from '../model/clientModel';
+import { EventNotificationType } from '../model/eventNotification';
+import { StarshipAdvantageData, StarShipType } from '../model/fleet';
+import { PlayerData } from '../model/player';
 import {
   ResearchData,
   ResearchProgressByType,
   ResearchType,
   ResearchTypeProgress,
   ResearchTypeProgressData,
-} from "../model/research";
-import { GameTools } from "../utils/gameTools";
-import { Events } from "./events";
-import { AdvanceGameClockForPlayerData } from "./gameModel";
+} from '../model/research';
+import { GameTools } from '../utils/gameTools';
+import { Events } from './events';
+import { AdvanceGameClockForPlayerData } from './gameModel';
 
 const MAX_RESEARCH_LEVEL = 9;
 
@@ -174,12 +174,12 @@ export class Research {
       const rtpInQueue = mainPlayer.research.researchProgressByType[mainPlayer.research.researchTypeInQueue];
       const levelIncrease = Research.setResearchPointsCompleted(
         rtpInQueue,
-        rtpInQueue.researchPointsCompleted + totalResearch
+        rtpInQueue.researchPointsCompleted + totalResearch,
       );
       if (levelIncrease) {
         //we've gained a level
         const message =
-          "Our Scientists and Engineers have finished researching and developing: " +
+          'Our Scientists and Engineers have finished researching and developing: ' +
           Research.researchProgressToString(rtpInQueue);
         Events.enqueueNewEvent(mainPlayer.id, EventNotificationType.ResearchComplete, message);
 
@@ -196,74 +196,74 @@ export class Research {
     let defaultName = Research.researchProgressFriendlyName(researchProgress);
     switch (researchProgress.type) {
       case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
-        defaultName += " Level " + level;
+        defaultName += ' Level ' + level;
         break;
       case ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
-        defaultName += " Level " + level;
+        defaultName += ' Level ' + level;
         break;
       case ResearchType.PROPULSION_IMPROVEMENT:
-        defaultName += " Level " + level;
+        defaultName += ' Level ' + level;
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
-        defaultName = "Level " + level + " " + defaultName;
+        defaultName = 'Level ' + level + ' ' + defaultName;
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
-        defaultName = "Level " + level + " " + defaultName;
+        defaultName = 'Level ' + level + ' ' + defaultName;
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
-        defaultName = "Level " + level + " " + defaultName;
+        defaultName = 'Level ' + level + ' ' + defaultName;
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
-        defaultName = "Level " + level + " " + defaultName;
+        defaultName = 'Level ' + level + ' ' + defaultName;
         break;
       case ResearchType.SPACE_PLATFORM_IMPROVEMENT:
-        defaultName = "Level " + level + " " + defaultName;
+        defaultName = 'Level ' + level + ' ' + defaultName;
         break;
     }
     return defaultName;
   }
 
   public static researchProgressFriendlyName(researchProgress: ResearchTypeProgress) {
-    let defaultName = "Unknown";
+    let defaultName = 'Unknown';
     switch (researchProgress.type) {
       case ResearchType.NEW_SHIP_TYPE_DEFENDER:
-        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.SystemDefense);
+        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.SystemDefense);
         break;
       case ResearchType.NEW_SHIP_TYPE_SCOUT:
-        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Scout);
+        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Scout);
         break;
       case ResearchType.NEW_SHIP_TYPE_DESTROYER:
-        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Destroyer);
+        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Destroyer);
         break;
       case ResearchType.NEW_SHIP_TYPE_CRUISER:
-        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Cruiser);
+        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Cruiser);
         break;
       case ResearchType.NEW_SHIP_TYPE_BATTLESHIP:
-        defaultName = "Custom " + GameTools.starShipTypeToFriendlyName(StarShipType.Battleship);
+        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Battleship);
         break;
       case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
-        defaultName = "Ship Attack";
+        defaultName = 'Ship Attack';
         break;
       case ResearchType.COMBAT_IMPROVEMENT_DEFENSE:
-        defaultName = "Ship Defense";
+        defaultName = 'Ship Defense';
         break;
       case ResearchType.PROPULSION_IMPROVEMENT:
-        defaultName = "Ship Propulsion";
+        defaultName = 'Ship Propulsion';
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS:
-        defaultName = "Farms";
+        defaultName = 'Farms';
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES:
-        defaultName = "Mines";
+        defaultName = 'Mines';
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES:
-        defaultName = "Colonies";
+        defaultName = 'Colonies';
         break;
       case ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES:
-        defaultName = "Factories";
+        defaultName = 'Factories';
         break;
       case ResearchType.SPACE_PLATFORM_IMPROVEMENT:
-        defaultName = "Space Platforms";
+        defaultName = 'Space Platforms';
         break;
     }
     return defaultName;

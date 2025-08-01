@@ -1,9 +1,9 @@
-import { ClientModelData, ClientPlanet, ClientPlayer, ClientTradingCenter, PlanetById } from "../model/clientModel";
-import { ModelData } from "../model/model";
-import { PlanetData } from "../model/planet";
-import { PlayerData } from "../model/player";
-import { TradeData, TradingCenterData } from "../model/tradingCenter";
-import { TaskNotifications } from "./taskNotifications";
+import { ClientModelData, ClientPlanet, ClientPlayer, ClientTradingCenter, PlanetById } from '../model/clientModel';
+import { ModelData } from '../model/model';
+import { PlanetData } from '../model/planet';
+import { PlayerData } from '../model/player';
+import { TradeData, TradingCenterData } from '../model/tradingCenter';
+import { TaskNotifications } from './taskNotifications';
 
 export class ClientGameModel {
   public static constructClientGameModel(model: ModelData, targetPlayerId: string): ClientModelData {
@@ -11,14 +11,14 @@ export class ClientGameModel {
     const clientTradingCenter = ClientGameModel.constructClientTradingCenter(model.tradingCenter, targetPlayerId);
     const mainPlayer = model.players.find((p) => p.id === targetPlayerId);
     if (!mainPlayer) {
-      throw new Error("Unable to find target player in constructClientGameModel!");
+      throw new Error('Unable to find target player in constructClientGameModel!');
     }
     const mainPlayerOwnedPlanets = ClientGameModel.getOwnedPlanets(mainPlayer?.ownedPlanetIds, model.planets);
     const otherPlayers = model.players.filter((player) => player.id !== targetPlayerId);
     const clientPlayers = otherPlayers.map((player) => ClientGameModel.constructClientPlayer(player));
     const mainPlayerExploredPlanetIds = new Set(mainPlayer?.knownPlanetIds);
     const clientPlanets = model.planets.map((p) =>
-      ClientGameModel.constructClientPlanet(p, mainPlayerExploredPlanetIds.has(p.id))
+      ClientGameModel.constructClientPlanet(p, mainPlayerExploredPlanetIds.has(p.id)),
     );
 
     const taskNotifications = TaskNotifications.constructTaskNotifications();
@@ -63,7 +63,7 @@ export class ClientGameModel {
 
   public static constructClientTradingCenter(
     tradingCender: TradingCenterData,
-    targetPlayerId: string
+    targetPlayerId: string,
   ): ClientTradingCenter {
     const { energyAmount, foodResource, oreResource, iridiumResource } = tradingCender;
 

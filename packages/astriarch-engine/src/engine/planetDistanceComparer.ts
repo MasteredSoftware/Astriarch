@@ -1,8 +1,8 @@
-import { PlanetData, PlanetType } from "../model/planet";
-import { LastKnownPlanetFleetStrength } from "../model/player";
-import { Fleet } from "./fleet";
-import { GameModelData } from "./gameModel";
-import { Grid, GridHex } from "./grid";
+import { PlanetData, PlanetType } from '../model/planet';
+import { LastKnownPlanetFleetStrength } from '../model/player';
+import { Fleet } from './fleet';
+import { GameModelData } from './gameModel';
+import { Grid, GridHex } from './grid';
 
 /**
  * A sort function object to prefer planets with less distance

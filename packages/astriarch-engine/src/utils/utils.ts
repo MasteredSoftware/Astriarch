@@ -1,8 +1,8 @@
-import { ColorRgbaData } from "../model/player";
+import { ColorRgbaData } from '../model/player';
 
 export class Utils {
   public static nextRandom(lowInclusive: number, highExclusive?: number) {
-    if (highExclusive === null || typeof highExclusive == "undefined") {
+    if (highExclusive === null || typeof highExclusive == 'undefined') {
       highExclusive = lowInclusive;
       lowInclusive = 0;
     }
@@ -24,7 +24,7 @@ export class Utils {
   public static decimalToFixed(number: number, maxDecimalPlaces: number) {
     return number
       ? Math.round(number) != number
-        ? number.toFixed(maxDecimalPlaces).replace(/0+$/, "")
+        ? number.toFixed(maxDecimalPlaces).replace(/0+$/, '')
         : number
       : number;
   }

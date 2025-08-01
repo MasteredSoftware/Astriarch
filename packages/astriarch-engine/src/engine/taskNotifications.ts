@@ -1,4 +1,4 @@
-import { TaskNotification, TaskNotificationIndex, TaskNotificationType } from "../model/clientModel";
+import { TaskNotification, TaskNotificationIndex, TaskNotificationType } from '../model/clientModel';
 
 export class TaskNotifications {
   public static constructTaskNotifications(): TaskNotificationIndex {
