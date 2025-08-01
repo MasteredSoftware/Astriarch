@@ -1,40 +1,29 @@
-import { writable, type Writable } from 'svelte/store';
-import { MESSAGE_TYPE, Message, type IMessage } from 'astriarch-engine';
+import { writable } from 'svelte/store';
+import { 
+  MESSAGE_TYPE, 
+  Message,
+  type IMessage,
+  type IGame,
+  type IGameOptions,
+  isCreateGameResponse,
+  isJoinGameResponse,
+  isListGamesResponse,
+  isStartGameResponse,
+  isGameStateUpdate,
+  isErrorMessage
+} from 'astriarch-engine';
 
-// Interfaces for game data
-export interface IGame {
-  _id: string;
-  name: string;
-  players: IPlayer[];
-  gameOptions?: IGameOptions;
-  status: 'waiting' | 'in_progress' | 'completed';
-  createdAt: Date;
-  lastActivity: Date;
-}
-
-export interface IPlayer {
-  sessionId: string;
-  position: number;
-  Id: string;
-  name: string;
-  connected?: boolean;
-}
-
+// Additional types specific to this service
 export interface IOpponentOption {
   name: string;
-  type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer
+  type: number; // -2 = closed, -1 = open, positive number = AI difficulty
 }
 
-export interface IGameOptions {
-  name?: string;
-  galaxySize: 'small' | 'medium' | 'large';
-  planetsPerSystem: number;
-  gameSpeed: 'slow' | 'normal' | 'fast';
-  distributePlanetsEvenly: boolean;
-  quickStart: boolean;
-  maxPlayers: number;
-  opponentOptions?: IOpponentOption[];
-}
+// Re-export types from engine for convenience
+export type { IGame, IGameOptions };
+
+// Interfaces for game data - imported from engine
+// IGame, IGameOptions now imported from astriarch-engine
 
 // Store for WebSocket multiplayer game state
 interface MultiplayerGameState {
@@ -198,7 +187,7 @@ class WebSocketService {
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
   private reconnectDelay = 1000;
-  private messageQueue: IMessage[] = [];
+  private messageQueue: IMessage<unknown>[] = [];
   private isConnecting = false;
 
   constructor(private gameStore: ReturnType<typeof createMultiplayerGameStore>) {}
@@ -233,7 +222,7 @@ class WebSocketService {
 
         this.ws.onmessage = (event) => {
           try {
-            const message: IMessage = JSON.parse(event.data);
+            const message: IMessage<unknown> = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
             console.error('Failed to parse WebSocket message:', error);
@@ -286,72 +275,107 @@ class WebSocketService {
     }
   }
 
-  private handleMessage(message: IMessage) {
+  private handleMessage(message: IMessage<unknown>) {
     console.log('Received message:', message);
 
     switch (message.type) {
       case MESSAGE_TYPE.LIST_GAMES:
-        this.gameStore.setAvailableGames(validateGameData((message.payload.games as unknown[]) || []));
+        if (isListGamesResponse(message)) {
+          this.gameStore.setAvailableGames(validateGameData(message.payload.games));
+        } else {
+          console.warn('LIST_GAMES payload missing games array:', message.payload);
+        }
         break;
 
       case MESSAGE_TYPE.GAME_LIST_UPDATED:
-        this.gameStore.setAvailableGames(validateGameData((message.payload.games as unknown[]) || []));
+        if (isListGamesResponse(message)) {
+          this.gameStore.setAvailableGames(validateGameData(message.payload.games));
+        } else {
+          console.warn('GAME_LIST_UPDATED payload missing games array:', message.payload);
+        }
         break;
 
       case MESSAGE_TYPE.GAME_STATE_UPDATE:
-        if (message.payload.changes) {
-          this.gameStore.applyChanges(message.payload.changes);
+        if (isGameStateUpdate(message)) {
+          if (message.payload.changes) {
+            this.gameStore.applyChanges(message.payload.changes);
+          } else {
+            this.gameStore.setGameState(message.payload.gameState);
+          }
         } else {
-          this.gameStore.setGameState(message.payload.gameState);
+          console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
         }
         break;
 
       case MESSAGE_TYPE.START_GAME:
-        if (message.payload.success) {
-          this.gameStore.setCurrentView('game');
-          this.gameStore.setGameState(message.payload.gameState);
-          this.gameStore.addNotification({
-            id: Date.now().toString(),
-            type: 'success',
-            message: 'Game started!',
-            timestamp: Date.now()
-          });
+        if (isStartGameResponse(message)) {
+          if (message.payload.success) {
+            this.gameStore.setCurrentView('game');
+            this.gameStore.setGameState(message.payload.gameState);
+            this.gameStore.addNotification({
+              id: Date.now().toString(),
+              type: 'success',
+              message: 'Game started!',
+              timestamp: Date.now()
+            });
+          } else {
+            this.gameStore.addNotification({
+              id: Date.now().toString(),
+              type: 'error',
+              message: message.payload.error || 'Failed to start game',
+              timestamp: Date.now()
+            });
+          }
         } else {
-          this.gameStore.addNotification({
-            id: Date.now().toString(),
-            type: 'error',
-            message: message.payload.error as string || 'Failed to start game',
-            timestamp: Date.now()
-          });
+          console.warn('Unexpected START_GAME payload format:', message.payload);
         }
         break;
 
       case MESSAGE_TYPE.CREATE_GAME:
-        if (message.payload.success) {
-          this.gameStore.setGameId(message.payload.gameId as string);
+        if (isCreateGameResponse(message)) {
+          this.gameStore.setGameId(message.payload.gameId);
           this.gameStore.setGameJoined(true);
           this.gameStore.setCurrentView('game_options');
           this.gameStore.addNotification({
             id: Date.now().toString(),
             type: 'success',
-            message: `Game "${message.payload.gameName || 'Unnamed Game'}" created successfully!`,
+            message: `Game created successfully!`,
             timestamp: Date.now()
           });
-        } else {
+        } else if (isErrorMessage(message)) {
           this.gameStore.addNotification({
             id: Date.now().toString(),
             type: 'error',
-            message: message.payload.error as string || 'Failed to create game',
+            message: message.payload.error || 'Failed to create game',
+            timestamp: Date.now()
+          });
+        } else {
+          console.warn('Unexpected CREATE_GAME payload format:', message.payload);
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            message: 'Unexpected response from server',
             timestamp: Date.now()
           });
         }
         break;
 
       case MESSAGE_TYPE.JOIN_GAME:
-        if (message.payload.success) {
-          this.gameStore.setGameId(message.payload.gameId as string);
-          this.gameStore.setGameJoined(true);
-          this.gameStore.setCurrentView('game_options');
+        if (isJoinGameResponse(message)) {
+          if (message.payload.success) {
+            this.gameStore.setGameId(message.payload.gameId || '');
+            this.gameStore.setGameJoined(true);
+            this.gameStore.setCurrentView('game_options');
+          } else {
+            this.gameStore.addNotification({
+              id: Date.now().toString(),
+              type: 'error',
+              message: message.payload.error || 'Failed to join game',
+              timestamp: Date.now()
+            });
+          }
+        } else {
+          console.warn('Unexpected JOIN_GAME payload format:', message.payload);
         }
         break;
 
@@ -380,12 +404,16 @@ class WebSocketService {
         break;
 
       case MESSAGE_TYPE.ERROR:
-        this.gameStore.addNotification({
-          id: Date.now().toString(),
-          type: 'error',
-          message: message.payload.error as string || 'An error occurred',
-          timestamp: Date.now()
-        });
+        if (isErrorMessage(message)) {
+          this.gameStore.addNotification({
+            id: Date.now().toString(),
+            type: 'error',
+            message: message.payload.error || 'An error occurred',
+            timestamp: Date.now()
+          });
+        } else {
+          console.warn('Unexpected ERROR payload format:', message.payload);
+        }
         break;
 
       default:
@@ -393,7 +421,7 @@ class WebSocketService {
     }
   }
 
-  send(message: IMessage) {
+  send(message: IMessage<unknown>) {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
