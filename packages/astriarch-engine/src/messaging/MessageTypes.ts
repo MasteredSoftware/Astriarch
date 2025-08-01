@@ -63,28 +63,305 @@ export enum CHAT_MESSAGE_TYPE {
   SYSTEM_MESSAGE = 'SYSTEM_MESSAGE'
 }
 
-export interface IMessage {
+// =============================================
+// PAYLOAD TYPE DEFINITIONS
+// =============================================
+
+// Game data interfaces
+export interface IGame {
+  _id: string;
+  name: string;
+  players: IPlayer[];
+  gameOptions?: IGameOptions;
+  status: 'waiting' | 'in_progress' | 'completed';
+  createdAt: Date;
+  lastActivity: Date;
+}
+
+export interface IPlayer {
+  sessionId: string;
+  position: number;
+  Id: string;
+  name: string;
+  connected?: boolean;
+}
+
+export interface IOpponentOption {
+  name: string;
+  type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer
+}
+
+export interface IGameOptions {
+  name?: string;
+  galaxySize: 'small' | 'medium' | 'large';
+  planetsPerSystem: number;
+  gameSpeed: 'slow' | 'normal' | 'fast';
+  distributePlanetsEvenly: boolean;
+  quickStart: boolean;
+  maxPlayers: number;
+  opponentOptions?: IOpponentOption[];
+}
+
+// Payload interfaces for each message type
+export interface INoopPayload {
+  counter?: number;
+  message?: string;
+}
+
+export interface IPingPayload {
+  timestamp?: number;
+}
+
+export interface IPongPayload {
+  timestamp?: number;
+}
+
+export interface IErrorPayload {
+  error: string;
+  message?: string;
+  errorType?: ERROR_TYPE;
+}
+
+// Game Management Payloads
+export interface ICreateGameRequestPayload {
+  name: string;
+  playerName: string;
+  gameOptions: IGameOptions;
+}
+
+export interface ICreateGameResponsePayload {
+  gameId: string;
+  gameName?: string;
+}
+
+export interface IJoinGameRequestPayload {
+  gameId: string;
+  playerName: string;
+}
+
+export interface IJoinGameResponsePayload {
+  success: boolean;
+  gameId?: string;
+  error?: string;
+}
+
+export type IListGamesRequestPayload = Record<string, never>;
+
+export interface IListGamesResponsePayload {
+  games: IGame[];
+}
+
+export interface IStartGameRequestPayload {
+  gameOptions?: IGameOptions;
+}
+
+export interface IStartGameResponsePayload {
+  success: boolean;
+  gameState?: unknown;
+  error?: string;
+}
+
+export interface IGameStateUpdatePayload {
+  gameState?: unknown;
+  changes?: unknown;
+}
+
+export interface IChatMessagePayload {
+  id: string;
+  playerId: string;
+  playerName: string;
+  message: string;
+  timestamp: number;
+  messageType?: CHAT_MESSAGE_TYPE;
+}
+
+// =============================================
+// GENERIC MESSAGE INTERFACE AND BASE CLASS
+// =============================================
+
+export interface IMessage<T = Record<string, unknown>> {
   type: MESSAGE_TYPE;
-  payload: Record<string, unknown>;
+  payload: T;
   sessionId?: string;
   gameId?: string;
   timestamp?: Date;
 }
 
-export class Message implements IMessage {
+export class Message<T = Record<string, unknown>> implements IMessage<T> {
   public type: MESSAGE_TYPE;
-  public payload: Record<string, unknown>;
+  public payload: T;
   public sessionId?: string;
   public gameId?: string;
   public timestamp: Date;
 
-  constructor(type: MESSAGE_TYPE, payload: Record<string, unknown> = {}, sessionId?: string, gameId?: string) {
+  constructor(type: MESSAGE_TYPE, payload: T, sessionId?: string, gameId?: string) {
     this.type = type;
     this.payload = payload;
     this.sessionId = sessionId;
     this.gameId = gameId;
     this.timestamp = new Date();
   }
+}
+
+// =============================================
+// TYPED MESSAGE CLASSES
+// =============================================
+
+// System Messages
+export class NoopMessage extends Message<INoopPayload> {
+  constructor(payload: INoopPayload, sessionId?: string) {
+    super(MESSAGE_TYPE.NOOP, payload, sessionId);
+  }
+}
+
+export class PingMessage extends Message<IPingPayload> {
+  constructor(payload: IPingPayload = {}, sessionId?: string) {
+    super(MESSAGE_TYPE.PING, payload, sessionId);
+  }
+}
+
+export class PongMessage extends Message<IPongPayload> {
+  constructor(payload: IPongPayload = {}, sessionId?: string) {
+    super(MESSAGE_TYPE.PONG, payload, sessionId);
+  }
+}
+
+export class ErrorMessage extends Message<IErrorPayload> {
+  constructor(payload: IErrorPayload, sessionId?: string) {
+    super(MESSAGE_TYPE.ERROR, payload, sessionId);
+  }
+}
+
+// Game Management Messages - Client to Server
+export class CreateGameRequestMessage extends Message<ICreateGameRequestPayload> {
+  constructor(payload: ICreateGameRequestPayload, sessionId?: string) {
+    super(MESSAGE_TYPE.CREATE_GAME, payload, sessionId);
+  }
+}
+
+export class JoinGameRequestMessage extends Message<IJoinGameRequestPayload> {
+  constructor(payload: IJoinGameRequestPayload, sessionId?: string) {
+    super(MESSAGE_TYPE.JOIN_GAME, payload, sessionId);
+  }
+}
+
+export class ListGamesRequestMessage extends Message<IListGamesRequestPayload> {
+  constructor(sessionId?: string) {
+    super(MESSAGE_TYPE.LIST_GAMES, {} as IListGamesRequestPayload, sessionId);
+  }
+}
+
+export class StartGameRequestMessage extends Message<IStartGameRequestPayload> {
+  constructor(payload: IStartGameRequestPayload = {}, sessionId?: string) {
+    super(MESSAGE_TYPE.START_GAME, payload, sessionId);
+  }
+}
+
+// Game Management Messages - Server to Client
+export class CreateGameResponseMessage extends Message<ICreateGameResponsePayload> {
+  constructor(payload: ICreateGameResponsePayload, sessionId?: string) {
+    super(MESSAGE_TYPE.CREATE_GAME, payload, sessionId);
+  }
+}
+
+export class JoinGameResponseMessage extends Message<IJoinGameResponsePayload> {
+  constructor(payload: IJoinGameResponsePayload, sessionId?: string) {
+    super(MESSAGE_TYPE.JOIN_GAME, payload, sessionId);
+  }
+}
+
+export class ListGamesResponseMessage extends Message<IListGamesResponsePayload> {
+  constructor(payload: IListGamesResponsePayload, sessionId?: string) {
+    super(MESSAGE_TYPE.LIST_GAMES, payload, sessionId);
+  }
+}
+
+export class StartGameResponseMessage extends Message<IStartGameResponsePayload> {
+  constructor(payload: IStartGameResponsePayload, sessionId?: string) {
+    super(MESSAGE_TYPE.START_GAME, payload, sessionId);
+  }
+}
+
+export class GameStateUpdateMessage extends Message<IGameStateUpdatePayload> {
+  constructor(payload: IGameStateUpdatePayload, sessionId?: string) {
+    super(MESSAGE_TYPE.GAME_STATE_UPDATE, payload, sessionId);
+  }
+}
+
+export class ChatMessage extends Message<IChatMessagePayload> {
+  constructor(payload: IChatMessagePayload, sessionId?: string) {
+    super(MESSAGE_TYPE.CHAT_MESSAGE, payload, sessionId);
+  }
+}
+
+// =============================================
+// TYPE GUARDS FOR RUNTIME TYPE CHECKING
+// =============================================
+
+export function isCreateGameRequest(message: IMessage<unknown>): message is Message<ICreateGameRequestPayload> {
+  return message.type === MESSAGE_TYPE.CREATE_GAME && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'name' in message.payload && 
+         'playerName' in message.payload;
+}
+
+export function isCreateGameResponse(message: IMessage<unknown>): message is Message<ICreateGameResponsePayload> {
+  return message.type === MESSAGE_TYPE.CREATE_GAME && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'gameId' in message.payload;
+}
+
+export function isJoinGameRequest(message: IMessage<unknown>): message is Message<IJoinGameRequestPayload> {
+  return message.type === MESSAGE_TYPE.JOIN_GAME && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'gameId' in message.payload && 
+         'playerName' in message.payload;
+}
+
+export function isJoinGameResponse(message: IMessage<unknown>): message is Message<IJoinGameResponsePayload> {
+  return message.type === MESSAGE_TYPE.JOIN_GAME && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'success' in message.payload;
+}
+
+export function isListGamesResponse(message: IMessage<unknown>): message is Message<IListGamesResponsePayload> {
+  return message.type === MESSAGE_TYPE.LIST_GAMES && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'games' in message.payload;
+}
+
+export function isStartGameRequest(message: IMessage<unknown>): message is Message<IStartGameRequestPayload> {
+  return message.type === MESSAGE_TYPE.START_GAME;
+}
+
+export function isStartGameResponse(message: IMessage<unknown>): message is Message<IStartGameResponsePayload> {
+  return message.type === MESSAGE_TYPE.START_GAME && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'success' in message.payload;
+}
+
+export function isGameStateUpdate(message: IMessage<unknown>): message is Message<IGameStateUpdatePayload> {
+  return message.type === MESSAGE_TYPE.GAME_STATE_UPDATE;
+}
+
+export function isChatMessage(message: IMessage<unknown>): message is Message<IChatMessagePayload> {
+  return message.type === MESSAGE_TYPE.CHAT_MESSAGE && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'message' in message.payload;
+}
+
+export function isErrorMessage(message: IMessage<unknown>): message is Message<IErrorPayload> {
+  return message.type === MESSAGE_TYPE.ERROR && 
+         typeof message.payload === 'object' && 
+         message.payload !== null &&
+         'error' in message.payload;
 }
 
 export function getMessageTypeName(type: MESSAGE_TYPE): string {
