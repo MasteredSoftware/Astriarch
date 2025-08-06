@@ -3,8 +3,11 @@
 	import TopOverviewFrameSvg from './TopOverviewFrameSvg.svelte';
 	import type { ResourceData } from '../types.js';
 
-	export let resourceData: ResourceData;
-	export let population: number;
+	export let resourceData: ResourceData = {
+		total: { research: 0, energy: 0, food: 0, ore: 0, iridium: 0, production: 0 },
+		perTurn: { research: 0, energy: 0, food: 0, ore: 0, iridium: 0, production: 0 }
+	};
+	export let population: number = 0;
 
 	type $$Props = {
 		resourceData: ResourceData;

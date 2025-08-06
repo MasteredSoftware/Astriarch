@@ -13,7 +13,7 @@
 	}
 
 	let {
-		amount,
+		amount = 0,
 		amountPerTurn,
 		type,
 		onClick,
@@ -22,7 +22,7 @@
 		...restProps
 	}: Props = $props();
 
-	const amountFormatted = $derived(amount.toFixed(1));
+	const amountFormatted = $derived((amount ?? 0).toFixed(1));
 	const amountPerTurnFormatted = $derived(amountPerTurn ? amountPerTurn.toFixed(1) : null);
 	const amountPerTurnSign = $derived(amountPerTurn ? (amountPerTurn > 0 ? '+' : '') : '');
 	const amountContent = $derived(
