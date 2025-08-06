@@ -193,7 +193,6 @@
 
 	function updateGameObjects() {
 		if (!$clientGameModel) {
-			console.log('No client game model available');
 			return;
 		}
 

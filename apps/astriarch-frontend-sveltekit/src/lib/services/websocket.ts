@@ -13,6 +13,10 @@ import {
 	isErrorMessage
 } from 'astriarch-engine';
 
+// Import the main game stores to update them when receiving multiplayer game state
+import { gameModel, gameStarted } from '$lib/stores/gameStore';
+import type { GameModelData } from 'astriarch-engine';
+
 // Additional types specific to this service
 export interface IOpponentOption {
 	name: string;
@@ -316,6 +320,14 @@ class WebSocketService {
 						this.gameStore.applyChanges(message.payload.changes);
 					} else {
 						this.gameStore.setGameState(message.payload.gameState);
+						
+						// Update the main game stores
+						if (message.payload.gameState) {
+							const gameState = message.payload.gameState as GameModelData;
+							gameModel.set(gameState);
+							gameStarted.set(true);
+							console.log('Updated main game stores with multiplayer game state');
+						}
 					}
 				} else {
 					console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
@@ -327,6 +339,16 @@ class WebSocketService {
 					if (message.payload.success) {
 						this.gameStore.setCurrentView('game');
 						this.gameStore.setGameState(message.payload.gameState);
+						
+						// update main game stores
+						if (message.payload.gameState) {
+							// Update the main game stores so that GalaxyCanvas and other components can access the data
+							const gameState = message.payload.gameState as GameModelData;
+							gameModel.set(gameState);
+							gameStarted.set(true);
+							console.log('Updated main game stores with multiplayer game state');
+						}
+						
 						this.gameStore.addNotification({
 							id: Date.now().toString(),
 							type: 'success',
