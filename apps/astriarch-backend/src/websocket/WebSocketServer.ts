@@ -4,7 +4,25 @@ import { logger } from '../utils/logger';
 import { Session, Game } from '../models';
 import { GameController } from '../controllers/GameControllerWebSocket';
 import { v4 as uuidv4 } from 'uuid';
-import { MESSAGE_TYPE, Message, getMessageTypeName, ERROR_TYPE, CHAT_MESSAGE_TYPE } from 'astriarch-engine';
+import { 
+  MESSAGE_TYPE, 
+  Message, 
+  getMessageTypeName, 
+  ERROR_TYPE, 
+  CHAT_MESSAGE_TYPE,
+  type IMessage,
+  // Import available type guards
+  isCreateGameRequest,
+  isJoinGameRequest,
+  isStartGameRequest,
+  isListGamesResponse,
+  isGameStateUpdate,
+  isErrorMessage,
+  // Import available payload types
+  type ICreateGameRequestPayload,
+  type IJoinGameRequestPayload,
+  type IStartGameRequestPayload
+} from 'astriarch-engine';
 
 export interface IConnectedClient {
   ws: WebSocket;
@@ -99,7 +117,12 @@ export class WebSocketServer {
       await this.touchSession(client.sessionId);
 
       const parsedMessage = JSON.parse(data);
-      const message = new Message(parsedMessage.type, parsedMessage.payload, client.sessionId);
+      const message: IMessage<unknown> = {
+        type: parsedMessage.type,
+        payload: parsedMessage.payload || {},
+        sessionId: client.sessionId,
+        timestamp: new Date()
+      };
       
       logger.info(`${getMessageTypeName(message.type)} Message received from ${client.sessionId}:`, data);
 
@@ -113,17 +136,21 @@ export class WebSocketServer {
     }
   }
 
-  private async processMessage(client: IConnectedClient, message: Message): Promise<void> {
+  private async processMessage(client: IConnectedClient, message: IMessage<unknown>): Promise<void> {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
     switch (message.type) {
       case MESSAGE_TYPE.NOOP:
         // Echo back with server message (like old app.js)
-        const counter = typeof message.payload.counter === 'number' ? message.payload.counter : 0;
-        message.payload.message = 'Hello From the Server';
-        message.payload.counter = counter + 1;
-        this.sendToClient(clientId, message);
+        const counter = typeof message.payload === 'object' && message.payload !== null && 'counter' in message.payload 
+          ? (message.payload as any).counter : 0;
+        const response = {
+          ...(message.payload as object),
+          message: 'Hello From the Server',
+          counter: counter + 1
+        };
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.NOOP, response));
         break;
 
       case MESSAGE_TYPE.PING:
@@ -135,14 +162,26 @@ export class WebSocketServer {
         break;
 
       case MESSAGE_TYPE.CREATE_GAME:
+        if (!isCreateGameRequest(message)) {
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid create game request' }));
+          return;
+        }
         await this.handleCreateGame(clientId, message);
         break;
 
       case MESSAGE_TYPE.JOIN_GAME:
+        if (!isJoinGameRequest(message)) {
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid join game request' }));
+          return;
+        }
         await this.handleJoinGame(clientId, message);
         break;
 
       case MESSAGE_TYPE.START_GAME:
+        if (!isStartGameRequest(message)) {
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid start game request' }));
+          return;
+        }
         await this.handleStartGame(clientId, message);
         break;
 
@@ -238,7 +277,7 @@ export class WebSocketServer {
     return this.sessionLookup.get(sessionId) || null;
   }
 
-  private sendToClient(clientId: string, message: Message): void {
+  private sendToClient(clientId: string, message: Message<any>): void {
     const client = this.clients.get(clientId);
     if (!client || client.ws.readyState !== WebSocket.OPEN) return;
 
@@ -250,12 +289,12 @@ export class WebSocketServer {
   }
 
   // Message handlers - Basic game management
-  private async handleListGames(clientId: string, message: Message): Promise<void> {
+  private async handleListGames(clientId: string, message: IMessage<unknown>): Promise<void> {
     try {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-            const games = await GameController.listLobbyGames({ sessionId: client.sessionId });
+      const games = await GameController.listLobbyGames({ sessionId: client.sessionId });
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.LIST_GAMES, { games }));
     } catch (error) {
       logger.error('Error listing games:', error);
@@ -263,15 +302,14 @@ export class WebSocketServer {
     }
   }
 
-  private async handleCreateGame(clientId: string, message: Message): Promise<void> {
+  private async handleCreateGame(clientId: string, message: IMessage<ICreateGameRequestPayload>): Promise<void> {
     try {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-      const name = message.payload.name;
-      const playerName = message.payload.playerName;
+      const { name, playerName } = message.payload;
       
-      if (typeof name !== 'string' || typeof playerName !== 'string') {
+      if (!name || !playerName) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game name and player name are required' }));
         return;
       }
@@ -285,7 +323,7 @@ export class WebSocketServer {
         }]
       };
 
-            const game = await GameController.createGame(gameData);
+      const game = await GameController.createGame(gameData);
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, { gameId: game._id }));
 
       // Update lobby players about new game
@@ -296,20 +334,19 @@ export class WebSocketServer {
     }
   }
 
-  private async handleJoinGame(clientId: string, message: Message): Promise<void> {
+  private async handleJoinGame(clientId: string, message: IMessage<IJoinGameRequestPayload>): Promise<void> {
     try {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-      const gameId = message.payload.gameId;
-      const playerName = message.payload.playerName;
+      const { gameId, playerName } = message.payload;
       
-      if (typeof gameId !== 'string' || typeof playerName !== 'string') {
+      if (!gameId || !playerName) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID and player name are required' }));
         return;
       }
 
-            const result = await GameController.joinGame({
+      const result = await GameController.joinGame({
         gameId,
         sessionId: client.sessionId,
         playerName: playerName.substring(0, 20)
@@ -351,45 +388,68 @@ export class WebSocketServer {
     }
   }
 
-  private async handleStartGame(clientId: string, message: Message): Promise<void> {
+  private async handleStartGame(clientId: string, message: IMessage<IStartGameRequestPayload>): Promise<void> {
     try {
       const client = this.clients.get(clientId);
       if (!client) return;
+
+      // Get gameId from payload
+      const gameId = message.payload.gameId;
+      
+      if (!gameId) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID is required' }));
+        return;
+      }
 
       const result = await GameController.startGame({
         sessionId: client.sessionId,
-        gameOptions: message.payload
+        gameId
       });
 
       if (result.success && result.game && result.serializableModel) {
-        // Send client models to each player (like old app.js)
-        for (const player of result.game.players) {
-          const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(
-            result.serializableModel,
-            player.Id
-          );
-          
-          const startMessage = new Message(MESSAGE_TYPE.START_GAME, serializableClientModel);
-          this.broadcastToSession(player.sessionId, startMessage);
-        }
+        // Send success response with game state
+        const startResponse = {
+          success: true,
+          gameState: result.serializableModel
+        };
+
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, startResponse));
+
+        // TODO: Send client models to each player (like old app.js)
+        // for (const player of result.game.players) {
+        //   const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(
+        //     result.serializableModel,
+        //     player.Id
+        //   );
+        //   
+        //   const startMessage = new Message(MESSAGE_TYPE.START_GAME, serializableClientModel);
+        //   this.broadcastToSession(player.sessionId, startMessage);
+        // }
       } else {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { 
-          message: result.error || 'Failed to start game',
-          type: result.errorType 
-        }));
+        const errorResponse = {
+          success: false,
+          error: result.error || 'Failed to start game'
+        };
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, errorResponse));
       }
     } catch (error) {
       logger.error('Error starting game:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to start game' }));
+      const errorResponse = {
+        success: false,
+        error: 'Failed to start game'
+      };
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, errorResponse));
     }
   }
 
-  private async handleResumeGame(clientId: string, message: Message): Promise<void> {
+  private async handleResumeGame(clientId: string, message: IMessage<unknown>): Promise<void> {
     try {
       const client = this.clients.get(clientId);
       if (!client) return;
 
-      const gameId = message.payload.gameId;
+      const payload = message.payload as any;
+      const gameId = payload.gameId;
+      
       if (typeof gameId !== 'string') {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID is required' }));
         return;
@@ -422,17 +482,17 @@ export class WebSocketServer {
   }
 
   // Placeholder handlers for game actions (to be implemented)
-  private async handleChangeGameOptions(clientId: string, message: Message): Promise<void> {
+  private async handleChangeGameOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.updateGameOptions
     logger.warn('handleChangeGameOptions not yet implemented');
   }
 
-  private async handleChangePlayerName(clientId: string, message: Message): Promise<void> {
+  private async handleChangePlayerName(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.changePlayerName
     logger.warn('handleChangePlayerName not yet implemented');
   }
 
-  private async handleEndTurn(clientId: string, message: Message): Promise<void> {
+  private async handleEndTurn(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
@@ -464,7 +524,7 @@ export class WebSocketServer {
     }
   }
 
-  private async handleSendShips(clientId: string, message: Message): Promise<void> {
+  private async handleSendShips(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
@@ -488,22 +548,22 @@ export class WebSocketServer {
     }
   }
 
-  private async handleUpdatePlanetStart(clientId: string, message: Message): Promise<void> {
+  private async handleUpdatePlanetStart(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.startUpdatePlanet
     logger.warn('handleUpdatePlanetStart not yet implemented');
   }
 
-  private async handleUpdatePlanetOptions(clientId: string, message: Message): Promise<void> {
+  private async handleUpdatePlanetOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.updatePlanetOptions
     logger.warn('handleUpdatePlanetOptions not yet implemented');
   }
 
-  private async handleUpdatePlanetBuildQueue(clientId: string, message: Message): Promise<void> {
+  private async handleUpdatePlanetBuildQueue(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.updatePlanetBuildQueue
     logger.warn('handleUpdatePlanetBuildQueue not yet implemented');
   }
 
-  private async handleClearWaypoint(clientId: string, message: Message): Promise<void> {
+  private async handleClearWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
@@ -527,42 +587,42 @@ export class WebSocketServer {
     }
   }
 
-  private async handleAdjustResearchPercent(clientId: string, message: Message): Promise<void> {
+  private async handleAdjustResearchPercent(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.adjustResearchPercent
     logger.warn('handleAdjustResearchPercent not yet implemented');
   }
 
-  private async handleSubmitResearchItem(clientId: string, message: Message): Promise<void> {
+  private async handleSubmitResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.submitResearchItem
     logger.warn('handleSubmitResearchItem not yet implemented');
   }
 
-  private async handleCancelResearchItem(clientId: string, message: Message): Promise<void> {
+  private async handleCancelResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.cancelResearchItem
     logger.warn('handleCancelResearchItem not yet implemented');
   }
 
-  private async handleSubmitTrade(clientId: string, message: Message): Promise<void> {
+  private async handleSubmitTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.submitTrade
     logger.warn('handleSubmitTrade not yet implemented');
   }
 
-  private async handleCancelTrade(clientId: string, message: Message): Promise<void> {
+  private async handleCancelTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.cancelTrade
     logger.warn('handleCancelTrade not yet implemented');
   }
 
-  private async handleChatMessage(clientId: string, message: Message): Promise<void> {
+  private async handleChatMessage(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement chat system like old app.js
     logger.warn('handleChatMessage not yet implemented');
   }
 
-  private async handleExitResign(clientId: string, message: Message): Promise<void> {
+  private async handleExitResign(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.exitResign
     logger.warn('handleExitResign not yet implemented');
   }
 
-  private async handleLogout(clientId: string, message: Message): Promise<void> {
+  private async handleLogout(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement logout
     logger.warn('handleLogout not yet implemented');
   }
@@ -585,7 +645,7 @@ export class WebSocketServer {
     }
   }
 
-  private broadcastToOtherPlayersInGame(game: any, sessionId: string, message: Message): void {
+  private broadcastToOtherPlayersInGame(game: any, sessionId: string, message: Message<any>): void {
     const playersBySessionKey = this.getOtherPlayersBySessionKeyFromGame(game, sessionId);
     this.broadcast(playersBySessionKey, message);
   }
@@ -609,7 +669,7 @@ export class WebSocketServer {
   }
 
   // Broadcasting methods (like old app.js)
-  public broadcast(playersBySessionKey: Record<string, any>, message: Message): void {
+  public broadcast(playersBySessionKey: Record<string, any>, message: Message<any>): void {
     const data = JSON.stringify(message);
     for (const [sessionId, clientId] of this.sessionLookup.entries()) {
       if (sessionId in playersBySessionKey) {
@@ -621,7 +681,7 @@ export class WebSocketServer {
     }
   }
 
-  public broadcastToSession(playerSessionKey: string, message: Message): void {
+  public broadcastToSession(playerSessionKey: string, message: Message<any>): void {
     const data = JSON.stringify(message);
     const clientId = this.sessionLookup.get(playerSessionKey);
     if (clientId) {

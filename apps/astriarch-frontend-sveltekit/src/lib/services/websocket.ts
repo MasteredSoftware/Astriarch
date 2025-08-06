@@ -492,7 +492,24 @@ class WebSocketService {
 	}
 
 	startGame() {
-		this.send(new Message(MESSAGE_TYPE.START_GAME, {}));
+		// Get current game ID from store
+		let currentGameId = '';
+		const unsubscribe = this.gameStore.subscribe((state) => {
+			currentGameId = state.gameId || '';
+		});
+		unsubscribe();
+
+		if (!currentGameId) {
+			this.gameStore.addNotification({
+				id: Date.now().toString(),
+				type: 'error',
+				message: 'No game selected to start',
+				timestamp: Date.now()
+			});
+			return;
+		}
+
+		this.send(new Message(MESSAGE_TYPE.START_GAME, { gameId: currentGameId }));
 	}
 
 	leaveGame() {

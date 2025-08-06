@@ -152,6 +152,7 @@ export interface IListGamesResponsePayload {
 }
 
 export interface IStartGameRequestPayload {
+  gameId: string;
   gameOptions?: IGameOptions;
 }
 
@@ -252,7 +253,7 @@ export class ListGamesRequestMessage extends Message<IListGamesRequestPayload> {
 }
 
 export class StartGameRequestMessage extends Message<IStartGameRequestPayload> {
-  constructor(payload: IStartGameRequestPayload = {}, sessionId?: string) {
+  constructor(payload: IStartGameRequestPayload, sessionId?: string) {
     super(MESSAGE_TYPE.START_GAME, payload, sessionId);
   }
 }

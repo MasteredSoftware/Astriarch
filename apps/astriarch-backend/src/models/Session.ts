@@ -2,7 +2,6 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISession extends Document {
   sessionId: string;
-  gameId: mongoose.Types.ObjectId;
   playerName: string;
   connectionStatus: 'connected' | 'disconnected';
   lastPing: Date;
@@ -14,11 +13,6 @@ const SessionSchema = new Schema<ISession>({
     type: String, 
     required: true, 
     unique: true 
-  },
-  gameId: { 
-    type: Schema.Types.ObjectId, 
-    ref: 'Game', 
-    required: true 
   },
   playerName: { 
     type: String, 
@@ -40,7 +34,6 @@ const SessionSchema = new Schema<ISession>({
 });
 
 // Indexes for efficient queries
-SessionSchema.index({ gameId: 1 });
 SessionSchema.index({ lastPing: 1 });
 
 export const SessionModel = mongoose.model<ISession>('Session', SessionSchema);

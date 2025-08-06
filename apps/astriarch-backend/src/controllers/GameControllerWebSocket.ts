@@ -33,7 +33,8 @@ export interface JoinGameData {
 
 export interface StartGameData {
   sessionId: string;
-  gameOptions: any;
+  gameId: string;
+  gameOptions?: any;
 }
 
 export interface ResumeGameData {
@@ -191,15 +192,16 @@ export class GameController {
    */
   static async startGame(data: StartGameData): Promise<GameResult> {
     try {
-      // Find game by session
-      const session = await SessionModel.findOne({ sessionId: data.sessionId });
-      if (!session || !session.gameId) {
-        return { success: false, error: 'No active game found for session' };
-      }
-
-      const game = await GameModel.findById(session.gameId);
+      // Find game by gameId from the payload
+      const game = await GameModel.findById(data.gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
+      }
+
+      // Verify the session is associated with this game
+      const player = game.players?.find(p => p.sessionId === data.sessionId);
+      if (!player) {
+        return { success: false, error: 'Player not found in this game' };
       }
 
       // Validate game can be started
