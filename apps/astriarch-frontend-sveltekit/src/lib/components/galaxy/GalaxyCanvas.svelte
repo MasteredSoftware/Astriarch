@@ -57,7 +57,7 @@
 			container: canvasContainer,
 			width: window.innerWidth - 300, // Account for UI panels
 			height: window.innerHeight - 200, // Account for top bar and navigation
-			draggable: true // Allow panning the galaxy view
+			draggable: false // Disable panning the galaxy view
 		});
 
 		// Create layers (back to front rendering order)

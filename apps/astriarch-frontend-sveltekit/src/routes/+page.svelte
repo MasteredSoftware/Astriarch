@@ -30,11 +30,11 @@
 	}
 
 	let navigationItems = [
-		{ label: 'Galaxy View', onclick: () => navigationActions.setView('galaxy') },
+		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
+		{ label: 'Research', onclick: () => navigationActions.setView('research') },
+		{ label: 'Trading', onclick: () => navigationActions.setView('trading') },
 		{ label: 'Fleet Command', onclick: () => navigationActions.setView('fleet') },
-		{ label: 'Planet Overview', onclick: () => navigationActions.setView('planets') },
-		{ label: 'Research Lab', onclick: () => navigationActions.setView('research') },
-		{ label: 'Diplomacy', onclick: () => navigationActions.setView('diplomacy') }
+		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
 	];
 
 	onMount(() => {
