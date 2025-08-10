@@ -127,14 +127,18 @@
 </script>
 
 <div class="game-options-container">
-	<div class="form-header">
-		<Text style="font-size: 24px; color: #FFFFFF; font-weight: 700;">New Skirmish Game</Text>
-		<Text style="font-size: 16px; color: #94A3B8; margin-top: 0.5rem;">
-			Please enter your name and choose the desired game settings.
-		</Text>
-	</div>
+	<div class="scrollable-content">
+		<div class="content-wrapper">
+			<div class="form-header">
+				<Text style="font-size: 24px; color: #FFFFFF; font-weight: 700;">
+					New Skirmish Game
+				</Text>
+				<Text style="font-size: 16px; color: #94A3B8; margin-top: 0.5rem;">
+					Please enter your name and choose the desired game settings.
+				</Text>
+			</div>
 
-	<div class="game-options-content">
+			<div class="game-options-content">
 		<!-- Left Panel: Players -->
 		<div class="players-panel">
 			<div class="form-group">
@@ -369,28 +373,45 @@
 				</div>
 			</div>
 		</div>
-	</div>
+		</div>
 
-	<div class="form-actions">
-		<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
-		{#if isHost}
-			<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" />
-		{:else}
-			<Text style="font-size: 14px; color: #94A3B8;">Waiting for host to start the game...</Text>
-		{/if}
+		<div class="form-actions">
+			<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
+			{#if isHost}
+				<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" />
+			{:else}
+				<Text style="font-size: 14px; color: #94A3B8;">Waiting for host to start the game...</Text>
+			{/if}
+		</div>
+	</div>
 	</div>
 </div>
 
 <style>
 	.game-options-container {
 		width: 100%;
+		height: 100vh;
 		color: white;
-		padding: 2rem;
+		display: flex;
+		flex-direction: column;
+		overflow-y: auto;
+		box-sizing: border-box;
+		padding: 1rem;
+	}
+
+	.scrollable-content {
+		flex: 1;
+		overflow-y: auto;
+		padding-right: 0.5rem; /* Space for scrollbar */
+	}
+
+	.content-wrapper {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: flex-start;
-		overflow-y: auto;
+		max-width: 1200px;
+		margin: 0 auto;
+		padding: 1rem;
 	}
 
 	.form-header {
@@ -507,6 +528,11 @@
 		align-items: center;
 		max-width: 1200px;
 		width: 100%;
+		padding: 1rem;
+		margin-top: 1rem;
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: 8px;
+		border: 1px solid rgba(0, 255, 255, 0.2);
 	}
 
 	input:disabled,
