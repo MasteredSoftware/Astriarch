@@ -1,7 +1,10 @@
 <script lang="ts">
+	// Import the SVG logo directly
+	import logoSvg from '$lib/assets/logo/logo.svg';
+	
 	export let size: 'sm' | 'md' | 'lg' | 'xl' = 'md';
 	export let variant: 'default' | 'white' | 'primary' = 'default';
-	export let type: 'text' | 'image' = 'text';
+	export let type: 'text' | 'image' = 'image'; // Default to image since we have the SVG
 	export let className: string = '';
 
 	// Size configurations for container height
@@ -27,8 +30,6 @@
 		primary: 'text-astriarch-primary'
 	};
 
-	// Logo asset from static directory (SvelteKit convention)
-	const logoImageSrc = 'logo/astriarch-logo.png';
 	const logoText = 'ASTRIARCH';
 </script>
 
@@ -47,16 +48,16 @@
 			{logoText}
 		</span>
 	{:else}
-		<!-- Image-based logo using the Figma asset -->
+		<!-- SVG-based logo using the Figma asset -->
 		<img
-			src={logoImageSrc}
+			src={logoSvg}
 			alt="Astriarch"
 			class="h-full w-auto object-contain"
 			style="filter: {variant === 'primary'
-				? 'hue-rotate(180deg) saturate(2)'
+				? 'drop-shadow(0 0 10px rgba(0, 255, 255, 0.5))'
 				: variant === 'white'
 					? 'brightness(0) invert(1)'
-					: 'none'}"
+					: 'drop-shadow(0 0 5px rgba(0, 255, 255, 0.3))'}"
 		/>
 	{/if}
 </div>
