@@ -357,19 +357,19 @@
 <style>
 	.game-options-container {
 		width: 100%;
-		min-height: 100vh;
 		color: white;
-		background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
 		padding: 2rem;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		justify-content: center;
+		justify-content: flex-start;
+		overflow-y: auto;
 	}
 
 	.form-header {
 		text-align: center;
 		margin-bottom: 2rem;
+		margin-top: 2rem;
 	}
 
 	.game-options-content {

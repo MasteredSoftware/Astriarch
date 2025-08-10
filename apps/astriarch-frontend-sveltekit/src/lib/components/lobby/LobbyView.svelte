@@ -103,7 +103,7 @@
 	}
 </script>
 
-<div class="lobby-container">
+<div class="lobby-container {currentView === 'lobby' ? 'lobby-view' : 'game-options-view'}">
 	<!-- Connection Status -->
 	{#if !isConnected}
 		<div class="connection-status">
@@ -114,20 +114,22 @@
 	{/if}
 
 	<!-- Lobby Header -->
-	<header class="lobby-header">
-		<Text
-			style="font-size: 32px; font-weight: bold; color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);"
-		>
-			ASTRIARCH LOBBY
-		</Text>
-		<Text style="font-size: 16px; color: #94A3B8; margin-top: 8px;">
-			Join an existing game or create a new one
-		</Text>
-		<!-- Debug Info -->
-		<div style="margin-top: 1rem; font-size: 12px; color: #888;">
-			Debug: Connected: {isConnected}, Current View: {currentView}, Games: {games.length}, Game ID: {gameId}
-		</div>
-	</header>
+	{#if currentView === 'lobby'}
+		<header class="lobby-header">
+			<Text
+				style="font-size: 32px; font-weight: bold; color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);"
+			>
+				ASTRIARCH LOBBY
+			</Text>
+			<Text style="font-size: 16px; color: #94A3B8; margin-top: 8px;">
+				Join an existing game or create a new one
+			</Text>
+			<!-- Debug Info -->
+			<div style="margin-top: 1rem; font-size: 12px; color: #888;">
+				Debug: Connected: {isConnected}, Current View: {currentView}, Games: {games.length}, Game ID: {gameId}
+			</div>
+		</header>
+	{/if}
 
 	<!-- Main Content -->
 	<div class="lobby-content">
@@ -198,10 +200,17 @@
 
 <style>
 	.lobby-container {
-		min-height: calc(100vh - 80px);
-		padding: 2rem;
+		min-height: 100vh;
 		color: white;
 		background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+	}
+
+	.lobby-container.lobby-view {
+		padding: 2rem;
+	}
+
+	.lobby-container.game-options-view {
+		padding: 0;
 	}
 
 	.connection-status {
