@@ -1,5 +1,4 @@
 import { ClientGameModel } from '../engine/clientGameModel';
-import { Engine } from '../engine/engine';
 import { GameModel, GameModelData, playerColors } from '../engine/gameModel';
 import { Player } from '../engine/player';
 import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from '../model/model';
@@ -10,7 +9,6 @@ import { ClientModelData } from '../model/clientModel';
 import { EarnedPointsType } from '../model/earnedPoints';
 
 export interface TestGameData {
-  engine: Engine;
   gameModel: GameModelData;
 }
 
@@ -37,9 +35,7 @@ export const startNewTestGame = (): TestGameData => {
   const homePlanet = gameModel.modelData.planets.find((p) => p.id === players[0].homePlanetId);
   homePlanet!.population[0].workerType = CitizenWorkerType.Miner;
 
-  const engine = new Engine([gameModel]);
-
-  return { engine, gameModel };
+  return { gameModel };
 };
 
 export const startNewTestGameWithOptions = (
@@ -95,7 +91,5 @@ export const startNewTestGameWithOptions = (
     }
   }
 
-  const engine = new Engine([gameModel]);
-
-  return { engine, gameModel };
+  return { gameModel };
 };
