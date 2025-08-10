@@ -20,8 +20,14 @@
 	import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
 	import DiplomacyView from '$lib/components/game-views/DiplomacyView.svelte';
 
+	// Import lobby components
+	import { LobbyView } from '$lib/components/lobby';
+
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
 	let GalaxyCanvas: any = null;
+
+	// UI state
+	let showLobby = false;
 
 	$: if (browser && !GalaxyCanvas) {
 		import('$lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
@@ -36,6 +42,14 @@
 		{ label: 'Fleet Command', onclick: () => navigationActions.setView('fleet') },
 		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
 	];
+
+	function handleShowLobby() {
+		showLobby = true;
+	}
+
+	function handleBackToMain() {
+		showLobby = false;
+	}
 
 	onMount(() => {
 		console.log('Astriarch game component mounted');
@@ -109,6 +123,12 @@
 						variant="primary"
 						onclick={gameActions.startNewGame}
 					/>
+					<Button
+						label="Multiplayer Lobby"
+						size="lg"
+						variant="outline"
+						onclick={handleShowLobby}
+					/>
 					<a href="/test/websocket" class="text-sm text-cyan-400 underline hover:text-cyan-300">
 						WebSocket Test
 					</a>
@@ -157,7 +177,7 @@
 						>
 							<ResearchLabView />
 						</div>
-					{:else if $currentView === 'diplomacy'}
+					{:else if $currentView === 'activity'}
 						<div
 							class="absolute top-4 right-4 max-h-[calc(100%-2rem)] w-96 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/80 backdrop-blur-sm"
 						>
@@ -169,6 +189,21 @@
 				<!-- Bottom Navigation -->
 				<div class="mt-4">
 					<NavigationController items={navigationItems} />
+				</div>
+			</div>
+		{:else if showLobby}
+			<!-- Multiplayer Lobby -->
+			<div class="flex h-[calc(100vh-200px)] flex-col">
+				<div class="mb-4 flex items-center justify-between px-4">
+					<Button
+						label="← Back to Main"
+						size="sm"
+						variant="outline"
+						onclick={handleBackToMain}
+					/>
+				</div>
+				<div class="flex-1">
+					<LobbyView />
 				</div>
 			</div>
 		{:else}
@@ -187,12 +222,20 @@
 					<Text style="font-size: 16px; color: #64748B; margin-bottom: 48px;">
 						The galaxy awaits your strategic genius in this real-time space conquest.
 					</Text>
-					<Button
-						label="Begin Your Conquest"
-						size="lg"
-						variant="primary"
-						onclick={gameActions.startNewGame}
-					/>
+					<div class="flex justify-center space-x-4">
+						<Button
+							label="Begin Your Conquest"
+							size="lg"
+							variant="primary"
+							onclick={gameActions.startNewGame}
+						/>
+						<Button
+							label="Join Multiplayer"
+							size="lg"
+							variant="outline"
+							onclick={handleShowLobby}
+						/>
+					</div>
 				</div>
 			</div>
 		{/if}

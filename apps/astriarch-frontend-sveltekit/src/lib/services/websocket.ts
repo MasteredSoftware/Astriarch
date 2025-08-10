@@ -226,6 +226,9 @@ class WebSocketService {
 					this.isConnecting = false;
 					this.reconnectAttempts = 0;
 					this.gameStore.setConnected(true);
+					
+					// Set a default player name if none exists
+					this.gameStore.setPlayerName('Player');
 
 					// Send queued messages
 					while (this.messageQueue.length > 0) {
@@ -485,12 +488,14 @@ class WebSocketService {
 	}
 
 	createGame(gameOptions: IGameOptions) {
-		// Get current player name from store
-		let currentPlayerName = '';
+		// Get current player name from store or use a default
+		let currentPlayerName = 'Player';
 		const unsubscribe = this.gameStore.subscribe((state) => {
-			currentPlayerName = state.playerName || 'Anonymous';
+			currentPlayerName = state.playerName || 'Player';
 		});
 		unsubscribe();
+
+		console.log('Creating game with player name:', currentPlayerName);
 
 		// Send both game name and player name as the backend expects
 		const payload: Record<string, unknown> = {
@@ -506,6 +511,8 @@ class WebSocketService {
 				opponentOptions: gameOptions.opponentOptions || []
 			}
 		};
+		
+		console.log('Sending CREATE_GAME with payload:', payload);
 		this.send(new Message(MESSAGE_TYPE.CREATE_GAME, payload));
 	}
 
