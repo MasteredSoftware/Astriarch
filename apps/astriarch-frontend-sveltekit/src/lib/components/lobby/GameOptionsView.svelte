@@ -127,16 +127,24 @@
 </script>
 
 <div class="game-options-container">
-	<div class="game-options-header">
-		<Text size="xl" weight="bold">New Skirmish Game</Text>
-		<Text>Please enter your name and choose the desired game settings.</Text>
+	<div class="form-header">
+		<Text style="font-size: 24px; color: #FFFFFF; font-weight: 700;">
+			New Skirmish Game
+		</Text>
+		<Text style="font-size: 16px; color: #94A3B8; margin-top: 0.5rem;">
+			Please enter your name and choose the desired game settings.
+		</Text>
 	</div>
 
 	<div class="game-options-content">
 		<!-- Left Panel: Players -->
 		<div class="players-panel">
 			<div class="form-group">
-				<label for="gameName">Game Name:</label>
+				<label for="gameName" class="form-label">
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+						Game Name:
+					</Text>
+				</label>
 				<input
 					id="gameName"
 					type="text"
@@ -144,11 +152,16 @@
 					on:input={handleOptionChange}
 					disabled={!isHost}
 					maxlength="50"
+					class="form-input"
 				/>
 			</div>
 
 			<div class="form-group">
-				<label for="playerName">Your Name:</label>
+				<label for="playerName" class="form-label">
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+						Your Name:
+					</Text>
+				</label>
 				<input
 					id="playerName"
 					type="text"
@@ -156,51 +169,74 @@
 					on:input={handleOptionChange}
 					disabled={!isHost}
 					maxlength="20"
+					class="form-input"
 				/>
 			</div>
 
 			<div class="form-group">
-				<label>Player 1:</label>
+				<label class="form-label">
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+						Player 1:
+					</Text>
+				</label>
 				<span class="player-name">You</span>
 			</div>
 
 			<div class="form-group">
-				<label>Player 2:</label>
-				<span class="player-name">{getPlayerTypeName(formData.opponentOptions[0]?.type, formData.opponentOptions[0]?.name)}</span>
-				{#if isHost}
-					<select bind:value={formData.opponentOptions[0].type} on:change={handleOptionChange}>
-						{#each playerTypeOptions as option}
-							<option value={option.value} disabled={option.disabled}>{option.label}</option>
-						{/each}
-					</select>
-				{/if}
-			</div>
-
-			{#if formData.systemsToGenerate >= 3}
-				<div class="form-group">
-					<label>Player 3:</label>
-					<span class="player-name">{getPlayerTypeName(formData.opponentOptions[1]?.type, formData.opponentOptions[1]?.name)}</span>
+				<label class="form-label">
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+						Player 2:
+					</Text>
+				</label>
+				<div class="player-row">
+					<span class="player-name">{getPlayerTypeName(formData.opponentOptions[0]?.type, formData.opponentOptions[0]?.name)}</span>
 					{#if isHost}
-						<select bind:value={formData.opponentOptions[1].type} on:change={handleOptionChange}>
+						<select bind:value={formData.opponentOptions[0].type} on:change={handleOptionChange} class="form-select">
 							{#each playerTypeOptions as option}
 								<option value={option.value} disabled={option.disabled}>{option.label}</option>
 							{/each}
 						</select>
 					{/if}
 				</div>
+			</div>
+
+			{#if formData.systemsToGenerate >= 3}
+				<div class="form-group">
+					<label class="form-label">
+						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+							Player 3:
+						</Text>
+					</label>
+					<div class="player-row">
+						<span class="player-name">{getPlayerTypeName(formData.opponentOptions[1]?.type, formData.opponentOptions[1]?.name)}</span>
+						{#if isHost}
+							<select bind:value={formData.opponentOptions[1].type} on:change={handleOptionChange} class="form-select">
+								{#each playerTypeOptions as option}
+									<option value={option.value} disabled={option.disabled}>{option.label}</option>
+								{/each}
+							</select>
+						{/if}
+					</div>
+				</div>
 			{/if}
 
 			{#if formData.systemsToGenerate >= 4}
 				<div class="form-group">
-					<label>Player 4:</label>
-					<span class="player-name">{getPlayerTypeName(formData.opponentOptions[2]?.type, formData.opponentOptions[2]?.name)}</span>
-					{#if isHost}
-						<select bind:value={formData.opponentOptions[2].type} on:change={handleOptionChange}>
-							{#each playerTypeOptions as option}
-								<option value={option.value} disabled={option.disabled}>{option.label}</option>
-							{/each}
-						</select>
-					{/if}
+					<label class="form-label">
+						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+							Player 4:
+						</Text>
+					</label>
+					<div class="player-row">
+						<span class="player-name">{getPlayerTypeName(formData.opponentOptions[2]?.type, formData.opponentOptions[2]?.name)}</span>
+						{#if isHost}
+							<select bind:value={formData.opponentOptions[2].type} on:change={handleOptionChange} class="form-select">
+								{#each playerTypeOptions as option}
+									<option value={option.value} disabled={option.disabled}>{option.label}</option>
+								{/each}
+							</select>
+						{/if}
+					</div>
 				</div>
 			{/if}
 		</div>
@@ -209,8 +245,12 @@
 		<div class="settings-panel">
 			<div class="settings-left">
 				<div class="form-group">
-					<label for="turnTimeLimit">Turn Time Limit:</label>
-					<select id="turnTimeLimit" bind:value={formData.turnTimeLimitSeconds} on:change={handleOptionChange} disabled={!isHost}>
+					<label for="turnTimeLimit" class="form-label">
+						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+							Turn Time Limit:
+						</Text>
+					</label>
+					<select id="turnTimeLimit" bind:value={formData.turnTimeLimitSeconds} on:change={handleOptionChange} disabled={!isHost} class="form-select">
 						{#each turnTimeLimitOptions as option}
 							<option value={option.value}>{option.label}</option>
 						{/each}
@@ -218,8 +258,12 @@
 				</div>
 
 				<div class="form-group">
-					<label for="galaxySize">Galaxy Size:</label>
-					<select id="galaxySize" bind:value={formData.galaxySize} on:change={handleOptionChange} disabled={!isHost}>
+					<label for="galaxySize" class="form-label">
+						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+							Galaxy Size:
+						</Text>
+					</label>
+					<select id="galaxySize" bind:value={formData.galaxySize} on:change={handleOptionChange} disabled={!isHost} class="form-select">
 						{#each galaxySizeOptions as option}
 							<option value={option.value}>{option.label}</option>
 						{/each}
@@ -227,8 +271,12 @@
 				</div>
 
 				<div class="form-group">
-					<label for="systemsToGenerate">Number of Systems:</label>
-					<select id="systemsToGenerate" bind:value={formData.systemsToGenerate} on:change={handleOptionChange} disabled={!isHost}>
+					<label for="systemsToGenerate" class="form-label">
+						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+							Number of Systems:
+						</Text>
+					</label>
+					<select id="systemsToGenerate" bind:value={formData.systemsToGenerate} on:change={handleOptionChange} disabled={!isHost} class="form-select">
 						{#each systemsOptions as option}
 							<option value={option.value}>{option.label}</option>
 						{/each}
@@ -236,8 +284,12 @@
 				</div>
 
 				<div class="form-group">
-					<label for="planetsPerSystem">Planets Per System:</label>
-					<select id="planetsPerSystem" bind:value={formData.planetsPerSystem} on:change={handleOptionChange} disabled={!isHost}>
+					<label for="planetsPerSystem" class="form-label">
+						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+							Planets Per System:
+						</Text>
+					</label>
+					<select id="planetsPerSystem" bind:value={formData.planetsPerSystem} on:change={handleOptionChange} disabled={!isHost} class="form-select">
 						{#each planetsPerSystemOptions as option}
 							<option value={option.value}>{option.label}</option>
 						{/each}
@@ -245,27 +297,39 @@
 				</div>
 
 				<div class="form-group">
-					<label>
+					<div class="checkbox-group">
 						<input
 							type="checkbox"
 							bind:checked={formData.distributePlanetsEvenly}
 							on:change={handleOptionChange}
 							disabled={!isHost}
+							class="form-checkbox"
+							id="distributePlanets"
 						/>
-						Distribute Planets Evenly
-					</label>
+						<label for="distributePlanets" class="checkbox-label">
+							<Text style="font-size: 14px; color: #FFFFFF;">
+								Distribute Planets Evenly
+							</Text>
+						</label>
+					</div>
 				</div>
 
 				<div class="form-group">
-					<label>
+					<div class="checkbox-group">
 						<input
 							type="checkbox"
 							bind:checked={formData.quickStart}
 							on:change={handleOptionChange}
 							disabled={!isHost}
+							class="form-checkbox"
+							id="quickStart"
 						/>
-						Quick Start
-					</label>
+						<label for="quickStart" class="checkbox-label">
+							<Text style="font-size: 14px; color: #FFFFFF;">
+								Quick Start
+							</Text>
+						</label>
+					</div>
 				</div>
 			</div>
 
@@ -278,55 +342,58 @@
 		</div>
 	</div>
 
-	<div class="game-options-footer">
-		<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="secondary" />
+	<div class="form-actions">
+		<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
 		{#if isHost}
 			<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" />
 		{:else}
-			<Text>Waiting for host to start the game...</Text>
+			<Text style="font-size: 14px; color: #94A3B8;">
+				Waiting for host to start the game...
+			</Text>
 		{/if}
 	</div>
 </div>
 
 <style>
 	.game-options-container {
-		position: absolute;
-		width: 640px;
-		height: 500px;
-		left: 50%;
-		top: 50%;
-		transform: translate(-50%, -50%);
+		width: 100%;
+		min-height: 100vh;
 		color: white;
-		font-size: 12px;
-		background-color: rgba(128, 128, 128, 0.9);
-		border: 2px solid #666;
-		border-radius: 8px;
-		z-index: 103;
-		padding: 20px;
+		background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+		padding: 2rem;
 		display: flex;
 		flex-direction: column;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.game-options-header {
+	.form-header {
 		text-align: center;
-		margin-bottom: 20px;
+		margin-bottom: 2rem;
 	}
 
 	.game-options-content {
 		display: flex;
-		flex: 1;
-		gap: 20px;
+		gap: 2rem;
+		max-width: 1200px;
+		width: 100%;
+		background: rgba(0, 0, 0, 0.4);
+		backdrop-filter: blur(10px);
+		border: 1px solid rgba(0, 255, 255, 0.3);
+		border-radius: 12px;
+		padding: 2rem;
+		margin-bottom: 2rem;
 	}
 
 	.players-panel {
 		flex: 1;
-		min-width: 250px;
+		min-width: 300px;
 	}
 
 	.settings-panel {
 		flex: 1;
 		display: flex;
-		gap: 20px;
+		gap: 2rem;
 	}
 
 	.settings-left {
@@ -341,64 +408,104 @@
 	}
 
 	.form-group {
-		margin-bottom: 15px;
+		margin-bottom: 1.5rem;
+	}
+
+	.form-label {
+		display: block;
+		margin-bottom: 0.5rem;
+	}
+
+	.form-input,
+	.form-select {
+		width: 100%;
+		padding: 0.75rem;
+		border: 1px solid rgba(0, 255, 255, 0.3);
+		border-radius: 6px;
+		background: rgba(0, 0, 0, 0.4);
+		color: #FFFFFF;
+		font-size: 14px;
+		transition: border-color 0.2s ease;
+	}
+
+	.form-input:focus,
+	.form-select:focus {
+		outline: none;
+		border-color: #00FFFF;
+		box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
+	}
+
+	.form-select {
+		cursor: pointer;
+	}
+
+	.player-row {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-	}
-
-	.form-group label {
-		min-width: 80px;
-		font-weight: bold;
-	}
-
-	.form-group input,
-	.form-group select {
-		padding: 4px 8px;
-		border: 1px solid #ccc;
-		border-radius: 4px;
-		background: white;
-		color: black;
-		font-size: 12px;
-	}
-
-	.form-group input[type="text"] {
-		width: 147px;
-	}
-
-	.form-group select {
-		min-width: 120px;
-	}
-
-	.form-group input[type="checkbox"] {
-		width: auto;
-		margin-right: 8px;
+		gap: 1rem;
 	}
 
 	.player-name {
-		min-width: 100px;
+		min-width: 120px;
 		font-weight: bold;
+		color: #00FFFF;
+	}
+
+	.checkbox-group {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.form-checkbox {
+		width: 16px;
+		height: 16px;
+		accent-color: #00FFFF;
+	}
+
+	.checkbox-label {
+		cursor: pointer;
 	}
 
 	.starfield-canvas {
-		border: 1px solid #666;
-		border-radius: 4px;
+		border: 1px solid rgba(0, 255, 255, 0.3);
+		border-radius: 6px;
+		overflow: hidden;
 	}
 
-	.game-options-footer {
+	.form-actions {
 		display: flex;
+		gap: 1rem;
 		justify-content: center;
-		gap: 20px;
 		align-items: center;
-		padding-top: 20px;
-		border-top: 1px solid #666;
-		margin-top: 20px;
+		max-width: 1200px;
+		width: 100%;
 	}
 
 	input:disabled,
 	select:disabled {
-		background: #f5f5f5;
-		color: #666;
+		background: rgba(0, 0, 0, 0.6);
+		color: #888;
 		cursor: not-allowed;
+		border-color: rgba(255, 255, 255, 0.1);
+	}
+
+	/* Responsive Design */
+	@media (max-width: 768px) {
+		.game-options-content {
+			flex-direction: column;
+		}
+
+		.settings-panel {
+			flex-direction: column;
+		}
+
+		.settings-right {
+			width: 100%;
+		}
+
+		.form-actions {
+			flex-direction: column;
+		}
 	}
 </style>

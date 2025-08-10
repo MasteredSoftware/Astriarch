@@ -26,7 +26,7 @@
 			games = state.availableGames;
 			
 			// Handle view transitions
-			currentView = state.currentView;d
+			currentView = state.currentView;
 			gameJoined = state.gameJoined;
 			gameId = state.gameId || '';
 			
