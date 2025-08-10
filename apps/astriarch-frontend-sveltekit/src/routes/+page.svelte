@@ -70,7 +70,7 @@
 </svelte:head>
 
 <main
-	class="min-h-screen overflow-hidden bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white"
+	class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white"
 >
 	<!-- Space Background Effect -->
 	<div class="fixed inset-0 opacity-20">

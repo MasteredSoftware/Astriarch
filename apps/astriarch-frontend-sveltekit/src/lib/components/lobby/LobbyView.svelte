@@ -85,6 +85,14 @@
 
 	function handleCreateGame() {
 		console.log('Create game button clicked - creating game directly');
+		console.log('Connected:', isConnected);
+		console.log('Current view:', currentView);
+		
+		if (!isConnected) {
+			console.log('Cannot create game - not connected to server');
+			return;
+		}
+		
 		// Create game with default options - this will trigger transition to game_options view
 		const defaultGameOptions = {
 			name: 'New Game',
@@ -97,6 +105,7 @@
 			distributePlanetsEvenly: true,
 			quickStart: false
 		};
+		console.log('Calling webSocketService.createGame with options:', defaultGameOptions);
 		webSocketService.createGame(defaultGameOptions);
 	}
 
@@ -201,9 +210,11 @@
 
 <style>
 	.lobby-container {
-		min-height: 100vh;
+		height: 100vh;
 		color: white;
 		background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+		display: flex;
+		flex-direction: column;
 	}
 
 	.lobby-container.lobby-view {
@@ -234,13 +245,16 @@
 		position: relative;
 		max-width: 1200px;
 		margin: 0 auto;
+		flex: 1;
+		display: flex;
+		flex-direction: column;
 	}
 
 	.game-selection {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 2rem;
-		min-height: 600px;
+		flex: 1;
 	}
 
 	.game-list-panel,
@@ -249,9 +263,9 @@
 		border-radius: 12px;
 		background: rgba(0, 0, 0, 0.4);
 		backdrop-filter: blur(10px);
-		overflow: hidden;
 		display: flex;
 		flex-direction: column;
+		min-height: 0; /* Allow flex items to shrink */
 	}
 
 	.panel-header {
