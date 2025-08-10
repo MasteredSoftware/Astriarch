@@ -108,6 +108,19 @@ export class GameController {
           isAI: false
         })),
         gameOptions: {
+          name: gameData.name,
+          mainPlayerName: gameData.players[0]?.name || 'Unknown',
+          systemsToGenerate: 4, // Default: 4 systems
+          planetsPerSystem: 4, // Default: 4 planets per system
+          galaxySize: 4, // Default: Large
+          distributePlanetsEvenly: true,
+          quickStart: false,
+          turnTimeLimitSeconds: 0, // Default: No time limit
+          opponentOptions: [
+            { name: '', type: -1 }, // Player 2: Open
+            { name: '', type: -2 }, // Player 3: Closed
+            { name: '', type: -2 }  // Player 4: Closed
+          ],
           maxPlayers: 4,
           gameType: 'standard',
           isPrivate: false
@@ -260,10 +273,54 @@ export class GameController {
   // Game Action Methods (to be implemented)
   // ==========================================
 
-  static async updateGameOptions(data: any): Promise<GameResult> {
-    // TODO: Implement game options update
-    logger.warn('updateGameOptions not yet implemented');
-    return { success: false, error: 'Not implemented' };
+  static async updateGameOptions(data: { sessionId: string; gameId: string; gameOptions: any; playerName?: string }): Promise<GameResult> {
+    try {
+      const { sessionId, gameId, gameOptions, playerName } = data;
+
+      // Find the game
+      const game = await GameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: 'Game not found' };
+      }
+
+      // Check if the player is the host (first player)
+      const player = game.players?.find(p => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: 'Player not found in game' };
+      }
+
+      // Only the host (position 0) can change game options
+      if (player.position !== 0) {
+        return { success: false, error: 'Only the game host can change options' };
+      }
+
+      // Update game options
+      game.gameOptions = {
+        ...game.gameOptions,
+        ...gameOptions
+      };
+
+      // Update game name if provided
+      if (gameOptions.name) {
+        game.name = gameOptions.name;
+      }
+
+      // Update main player name if provided
+      if (playerName && player) {
+        player.name = playerName;
+        game.hostPlayerName = playerName;
+      }
+
+      game.lastActivity = new Date();
+      await game.save();
+
+      logger.info(`Game options updated for game ${gameId}`);
+      return { success: true, game };
+
+    } catch (error) {
+      logger.error('Error updating game options:', error);
+      return { success: false, error: 'Failed to update game options' };
+    }
   }
 
   static async changePlayerName(data: any): Promise<GameResult> {

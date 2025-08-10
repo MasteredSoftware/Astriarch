@@ -21,7 +21,8 @@ import {
   // Import available payload types
   type ICreateGameRequestPayload,
   type IJoinGameRequestPayload,
-  type IStartGameRequestPayload
+  type IStartGameRequestPayload,
+  type IChangeGameOptionsPayload
 } from 'astriarch-engine';
 
 export interface IConnectedClient {
@@ -324,7 +325,26 @@ export class WebSocketServer {
       };
 
       const game = await GameController.createGame(gameData);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, { gameId: game._id }));
+      
+      // Add client to game room
+      client.gameId = game._id.toString();
+      client.playerName = playerName;
+      client.playerId = `player_0`;
+
+      if (!this.gameRooms.has(game._id.toString())) {
+        this.gameRooms.set(game._id.toString(), new Set());
+      }
+      this.gameRooms.get(game._id.toString())!.add(client.sessionId);
+
+      // Send success response with game options to trigger view transition
+      const createResponse = {
+        gameId: game._id,
+        gameOptions: game.gameOptions,
+        name: game.name,
+        playerPosition: 0
+      };
+
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, createResponse));
 
       // Update lobby players about new game
       await this.sendUpdatedGameListToLobbyPlayers(game);
@@ -482,9 +502,48 @@ export class WebSocketServer {
   }
 
   // Placeholder handlers for game actions (to be implemented)
-  private async handleChangeGameOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.updateGameOptions
-    logger.warn('handleChangeGameOptions not yet implemented');
+  private async handleChangeGameOptions(clientId: string, message: IMessage<IChangeGameOptionsPayload>): Promise<void> {
+    try {
+      const client = this.clients.get(clientId);
+      if (!client) return;
+
+      const { gameId, gameOptions, playerName } = message.payload;
+      
+      if (!gameId || !gameOptions) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID and game options are required' }));
+        return;
+      }
+
+      const result = await GameController.updateGameOptions({
+        sessionId: client.sessionId,
+        gameId,
+        gameOptions,
+        playerName
+      });
+
+      if (result.success && result.game) {
+        const optionsResponse = {
+          gameOptions: result.game.gameOptions,
+          name: result.game.name,
+          gameId: result.game._id
+        };
+
+        // Send success response to the player who changed options
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse));
+
+        // Broadcast to other players in the game
+        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, 
+          new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse));
+
+        // Update lobby players about game changes
+        await this.sendUpdatedGameListToLobbyPlayers(result.game);
+      } else {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error || 'Failed to update game options' }));
+      }
+    } catch (error) {
+      logger.error('Error changing game options:', error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to update game options' }));
+    }
   }
 
   private async handleChangePlayerName(clientId: string, message: IMessage<unknown>): Promise<void> {
@@ -629,11 +688,13 @@ export class WebSocketServer {
 
   // Helper methods for game management
   private async sendUpdatedGameListToLobbyPlayers(gameDoc: any): Promise<void> {
-    logger.debug('sendUpdatedGameListToLobbyPlayers:', gameDoc);
-    const gameSummary = GameController.getGameSummaryFromGameDoc(gameDoc);
-    const messageForPlayers = new Message(MESSAGE_TYPE.GAME_LIST_UPDATED, gameSummary);
+    logger.debug('sendUpdatedGameListToLobbyPlayers for game:', gameDoc._id);
     
     try {
+      // Get the complete updated games list instead of just the single game
+      const games = await GameController.listLobbyGames({ sessionId: 'system' });
+      const messageForPlayers = new Message(MESSAGE_TYPE.GAME_LIST_UPDATED, { games });
+      
       const chatRoom = await GameController.getChatRoomWithSessions(null);
       if (chatRoom) {
         for (const session of chatRoom.sessions) {
@@ -641,7 +702,7 @@ export class WebSocketServer {
         }
       }
     } catch (error) {
-      logger.error('sendUpdatedGameListToLobbyPlayers.getChatRoomWithSessions:', error);
+      logger.error('sendUpdatedGameListToLobbyPlayers error:', error);
     }
   }
 

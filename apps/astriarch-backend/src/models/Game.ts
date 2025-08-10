@@ -10,9 +10,21 @@ export interface IPlayer {
 }
 
 export interface IGameOptions {
-  maxPlayers: number;
-  gameType: string;
-  isPrivate: boolean;
+  name?: string;
+  mainPlayerName?: string;
+  systemsToGenerate?: number; // Number of systems (2-4 players)
+  planetsPerSystem?: number; // 4-8 planets per system
+  galaxySize?: number; // 1: Tiny, 2: Small, 3: Medium, 4: Large
+  distributePlanetsEvenly?: boolean;
+  quickStart?: boolean;
+  turnTimeLimitSeconds?: number; // 0: None, 30, 60, 120, 180, 300
+  opponentOptions?: Array<{
+    name: string;
+    type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer
+  }>;
+  maxPlayers?: number;
+  gameType?: string;
+  isPrivate?: boolean;
 }
 
 export interface IGame extends Document {

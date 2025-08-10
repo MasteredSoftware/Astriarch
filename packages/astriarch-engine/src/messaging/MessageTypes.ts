@@ -93,13 +93,14 @@ export interface IOpponentOption {
 
 export interface IGameOptions {
   name?: string;
-  galaxySize: 'small' | 'medium' | 'large';
-  planetsPerSystem: number;
-  gameSpeed: 'slow' | 'normal' | 'fast';
+  mainPlayerName?: string;
+  systemsToGenerate: number; // Number of systems (2-4 players)
+  planetsPerSystem: number; // 4-8 planets per system
+  galaxySize: number; // 1: Tiny, 2: Small, 3: Medium, 4: Large
   distributePlanetsEvenly: boolean;
   quickStart: boolean;
-  maxPlayers: number;
-  opponentOptions?: IOpponentOption[];
+  turnTimeLimitSeconds: number; // 0: None, 30, 60, 120, 180, 300
+  opponentOptions: IOpponentOption[];
 }
 
 // Payload interfaces for each message type
@@ -160,6 +161,12 @@ export interface IStartGameResponsePayload {
   success: boolean;
   gameState?: unknown;
   error?: string;
+}
+
+export interface IChangeGameOptionsPayload {
+  gameId: string;
+  gameOptions: IGameOptions;
+  playerName?: string;
 }
 
 export interface IGameStateUpdatePayload {
@@ -339,7 +346,7 @@ export function isJoinGameResponse(message: IMessage<unknown>): message is Messa
 
 export function isListGamesResponse(message: IMessage<unknown>): message is Message<IListGamesResponsePayload> {
   return (
-    message.type === MESSAGE_TYPE.LIST_GAMES &&
+    (message.type === MESSAGE_TYPE.LIST_GAMES || message.type === MESSAGE_TYPE.GAME_LIST_UPDATED) &&
     typeof message.payload === 'object' &&
     message.payload !== null &&
     'games' in message.payload

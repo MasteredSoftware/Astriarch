@@ -419,6 +419,18 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.CHANGE_GAME_OPTIONS:
+				// Game options have been updated
+				console.log('Received CHANGE_GAME_OPTIONS:', message.payload);
+				// The game options are updated and will be reflected in the lobby and game options view
+				this.gameStore.addNotification({
+					id: Date.now().toString(),
+					type: 'info',
+					message: 'Game options updated',
+					timestamp: Date.now()
+				});
+				break;
+
 			case MESSAGE_TYPE.CHAT_MESSAGE: {
 				const chatData = message.payload as unknown as ChatMessage;
 				this.gameStore.addChatMessage(chatData);
@@ -502,13 +514,21 @@ class WebSocketService {
 			name: gameOptions.name || 'Unnamed Game',
 			playerName: currentPlayerName,
 			gameOptions: {
-				galaxySize: gameOptions.galaxySize,
-				planetsPerSystem: gameOptions.planetsPerSystem,
-				gameSpeed: gameOptions.gameSpeed,
-				distributePlanetsEvenly: gameOptions.distributePlanetsEvenly,
-				quickStart: gameOptions.quickStart,
-				maxPlayers: gameOptions.maxPlayers,
-				opponentOptions: gameOptions.opponentOptions || []
+				name: gameOptions.name || 'Unnamed Game',
+				mainPlayerName: currentPlayerName,
+				systemsToGenerate: 4, // Default to 4 systems
+				planetsPerSystem: gameOptions.planetsPerSystem || 4,
+				galaxySize: typeof gameOptions.galaxySize === 'string' 
+					? (gameOptions.galaxySize === 'Small' ? 2 : gameOptions.galaxySize === 'Medium' ? 3 : gameOptions.galaxySize === 'Large' ? 4 : 4)
+					: (gameOptions.galaxySize || 4),
+				distributePlanetsEvenly: gameOptions.distributePlanetsEvenly ?? true,
+				quickStart: gameOptions.quickStart ?? false,
+				turnTimeLimitSeconds: 0, // Default to no time limit
+				opponentOptions: [
+					{ name: '', type: -1 }, // Player 2: Open
+					{ name: '', type: -2 }, // Player 3: Closed
+					{ name: '', type: -2 }  // Player 4: Closed
+				]
 			}
 		};
 		
@@ -547,6 +567,37 @@ class WebSocketService {
 
 	sendChatMessage(message: string) {
 		this.send(new Message(MESSAGE_TYPE.CHAT_MESSAGE, { message }));
+	}
+
+	changeGameOptions(gameId: string, gameOptions: {
+		name: string;
+		playerName: string;
+		systemsToGenerate: number;
+		planetsPerSystem: number;
+		galaxySize: number;
+		distributePlanetsEvenly: boolean;
+		quickStart: boolean;
+		turnTimeLimitSeconds: number;
+		opponentOptions: Array<{ name: string; type: number }>;
+	}) {
+		const payload = {
+			gameId,
+			gameOptions: {
+				name: gameOptions.name,
+				mainPlayerName: gameOptions.playerName,
+				systemsToGenerate: gameOptions.systemsToGenerate,
+				planetsPerSystem: gameOptions.planetsPerSystem,
+				galaxySize: gameOptions.galaxySize,
+				distributePlanetsEvenly: gameOptions.distributePlanetsEvenly,
+				quickStart: gameOptions.quickStart,
+				turnTimeLimitSeconds: gameOptions.turnTimeLimitSeconds,
+				opponentOptions: gameOptions.opponentOptions
+			},
+			playerName: gameOptions.playerName
+		};
+
+		console.log('Sending CHANGE_GAME_OPTIONS with payload:', payload);
+		this.send(new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload));
 	}
 
 	// Game actions (placeholder for actual game commands)
