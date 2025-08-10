@@ -21,6 +21,7 @@
 		// Subscribe to multiplayer game store state
 		unsubscribeWebSocket = multiplayerGameStore.subscribe((state) => {
 			console.log('Store state updated:', state);
+			const wasConnected = isConnected;
 			isConnected = state.connected;
 			// Update games list when we receive game updates
 			games = state.availableGames;
@@ -34,16 +35,22 @@
 			if (gameId) {
 				currentGame = games.find((game) => game._id === gameId) || null;
 			}
+
+			// Request games list when connection is first established
+			if (!wasConnected && isConnected) {
+				console.log('WebSocket connected, requesting games list...');
+				requestGamesList();
+			}
 		});
 
 		// Connect if not already connected
 		if (!isConnected) {
 			console.log('Attempting to connect to WebSocket...');
 			webSocketService.connect();
+		} else {
+			// Already connected, request games list immediately
+			requestGamesList();
 		}
-
-		// Request initial games list
-		requestGamesList();
 	});
 
 	onDestroy(() => {
@@ -54,7 +61,10 @@
 
 	function requestGamesList() {
 		if (isConnected) {
+			console.log('Requesting games list...');
 			webSocketService.listGames();
+		} else {
+			console.log('Cannot request games list - WebSocket not connected');
 		}
 	}
 
