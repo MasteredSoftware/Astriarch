@@ -24,7 +24,11 @@
 
 	function formatDate(date: Date | string): string {
 		const d = typeof date === 'string' ? new Date(date) : date;
-		return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		return (
+			d.toLocaleDateString() +
+			' ' +
+			d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+		);
 	}
 
 	function getStatusDisplay(game: IGame): string {
@@ -74,7 +78,7 @@
 						</Text>
 					</div>
 				</div>
-				
+
 				{#if game.description}
 					<Text style="font-size: 14px; color: #94A3B8; margin-top: 0.5rem;">
 						{game.description}
@@ -130,9 +134,7 @@
 									</Text>
 									{#if player.isHost}
 										<div class="host-badge">
-											<Text style="font-size: 10px; color: #000000; font-weight: 600;">
-												HOST
-											</Text>
+											<Text style="font-size: 10px; color: #000000; font-weight: 600;">HOST</Text>
 										</div>
 									{/if}
 								</div>
@@ -146,9 +148,7 @@
 							</div>
 						{/each}
 					{:else}
-						<Text style="font-size: 14px; color: #6B7280;">
-							No players yet
-						</Text>
+						<Text style="font-size: 14px; color: #6B7280;">No players yet</Text>
 					{/if}
 				</div>
 			</div>
@@ -194,7 +194,7 @@
 						Join Game
 					</Button>
 				{/if}
-				
+
 				{#if canSpectateGame(game)}
 					<Button
 						style="background: rgba(0, 255, 255, 0.1); border: 1px solid #00FFFF; color: #00FFFF; width: 100%;"
@@ -203,7 +203,7 @@
 						Spectate Game
 					</Button>
 				{/if}
-				
+
 				{#if game.status === 'completed'}
 					<Text style="font-size: 14px; color: #6B7280; text-align: center;">
 						This game has ended
@@ -299,7 +299,7 @@
 
 	.host-badge {
 		padding: 0.125rem 0.375rem;
-		background: #00FFFF;
+		background: #00ffff;
 		border-radius: 8px;
 		font-size: 10px;
 		font-weight: 600;
@@ -312,11 +312,11 @@
 	}
 
 	.ready-status.ready {
-		background: #10B981;
+		background: #10b981;
 	}
 
 	.ready-status.not-ready {
-		background: #6B7280;
+		background: #6b7280;
 	}
 
 	.info-grid {

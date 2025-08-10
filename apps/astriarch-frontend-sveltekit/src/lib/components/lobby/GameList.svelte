@@ -16,7 +16,11 @@
 
 	function formatDate(date: Date | string): string {
 		const d = typeof date === 'string' ? new Date(date) : date;
-		return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+		return (
+			d.toLocaleDateString() +
+			' ' +
+			d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+		);
 	}
 
 	function getStatusDisplay(game: IGame): string {
@@ -60,12 +64,9 @@
 						<Text style="font-size: 16px; color: #FFFFFF; font-weight: 600;">
 							{game.name}
 						</Text>
-						<div
-							class="status-indicator"
-							style="background-color: {getStatusColor(game)};"
-						></div>
+						<div class="status-indicator" style="background-color: {getStatusColor(game)};"></div>
 					</div>
-					
+
 					<div class="game-info">
 						<Text style="font-size: 12px; color: #94A3B8;">
 							Status: <span style="color: {getStatusColor(game)};">{getStatusDisplay(game)}</span>
@@ -131,7 +132,7 @@
 	}
 
 	.game-item.selected {
-		border-color: #00FFFF;
+		border-color: #00ffff;
 		background: rgba(0, 255, 255, 0.1);
 		box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
 	}

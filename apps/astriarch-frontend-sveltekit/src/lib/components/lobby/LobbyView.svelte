@@ -24,15 +24,15 @@
 			isConnected = state.connected;
 			// Update games list when we receive game updates
 			games = state.availableGames;
-			
+
 			// Handle view transitions
 			currentView = state.currentView;
 			gameJoined = state.gameJoined;
 			gameId = state.gameId || '';
-			
+
 			// Find current game if we have a gameId
 			if (gameId) {
-				currentGame = games.find(game => game._id === gameId) || null;
+				currentGame = games.find((game) => game._id === gameId) || null;
 			}
 		});
 
@@ -107,9 +107,7 @@
 	<!-- Connection Status -->
 	{#if !isConnected}
 		<div class="connection-status">
-			<Text style="color: #F59E0B; font-size: 14px;">
-				Connecting to server...
-			</Text>
+			<Text style="color: #F59E0B; font-size: 14px;">Connecting to server...</Text>
 		</div>
 	{/if}
 
@@ -126,7 +124,8 @@
 			</Text>
 			<!-- Debug Info -->
 			<div style="margin-top: 1rem; font-size: 12px; color: #888;">
-				Debug: Connected: {isConnected}, Current View: {currentView}, Games: {games.length}, Game ID: {gameId}
+				Debug: Connected: {isConnected}, Current View: {currentView}, Games: {games.length}, Game
+				ID: {gameId}
 			</div>
 		</header>
 	{/if}
@@ -152,20 +151,14 @@
 						/>
 					</div>
 					<div class="panel-content">
-						<GameList
-							{games}
-							{selectedGame}
-							on:gameSelect={handleGameSelect}
-						/>
+						<GameList {games} {selectedGame} on:gameSelect={handleGameSelect} />
 					</div>
 				</div>
 
 				<!-- Right Panel - Game Details -->
 				<div class="game-details-panel">
 					<div class="panel-header">
-						<Text style="font-size: 18px; color: #00FFFF; font-weight: 600;">
-							Game Details
-						</Text>
+						<Text style="font-size: 18px; color: #00FFFF; font-weight: 600;">Game Details</Text>
 					</div>
 					<div class="panel-content">
 						<GameDetails
@@ -189,9 +182,7 @@
 				/>
 			{:else}
 				<div style="text-align: center; padding: 2rem;">
-					<Text style="color: #F59E0B;">
-						Loading game configuration...
-					</Text>
+					<Text style="color: #F59E0B;">Loading game configuration...</Text>
 				</div>
 			{/if}
 		{/if}
@@ -219,7 +210,7 @@
 		right: 1rem;
 		padding: 0.5rem 1rem;
 		background: rgba(245, 158, 11, 0.1);
-		border: 1px solid #F59E0B;
+		border: 1px solid #f59e0b;
 		border-radius: 6px;
 		z-index: 100;
 	}

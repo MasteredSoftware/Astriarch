@@ -62,13 +62,13 @@
 		if (!validateForm()) return;
 
 		isSubmitting = true;
-		
+
 		try {
 			const gameOptions = { ...formData };
 			if (!gameOptions.isPrivate) {
 				delete gameOptions.password;
 			}
-			
+
 			dispatch('createGame', gameOptions);
 		} catch (error) {
 			console.error('Error creating game:', error);
@@ -84,9 +84,7 @@
 
 <div class="create-game-form">
 	<div class="form-header">
-		<Text style="font-size: 20px; color: #FFFFFF; font-weight: 700;">
-			Create New Game
-		</Text>
+		<Text style="font-size: 20px; color: #FFFFFF; font-weight: 700;">Create New Game</Text>
 		<Text style="font-size: 14px; color: #94A3B8; margin-top: 0.25rem;">
 			Set up your galactic empire
 		</Text>
@@ -96,9 +94,7 @@
 		<!-- Game Name -->
 		<div class="form-group">
 			<label for="gameName" class="form-label">
-				<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-					Game Name *
-				</Text>
+				<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Game Name *</Text>
 			</label>
 			<input
 				id="gameName"
@@ -119,9 +115,7 @@
 		<!-- Description -->
 		<div class="form-group">
 			<label for="gameDescription" class="form-label">
-				<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-					Description
-				</Text>
+				<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Description</Text>
 			</label>
 			<textarea
 				id="gameDescription"
@@ -143,9 +137,7 @@
 			<!-- Galaxy Size -->
 			<div class="form-group">
 				<label for="galaxySize" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-						Galaxy Size
-					</Text>
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Galaxy Size</Text>
 				</label>
 				<select id="galaxySize" bind:value={formData.galaxySize} class="form-select">
 					<option value="Small">Small (Fast games)</option>
@@ -157,9 +149,7 @@
 			<!-- Game Speed -->
 			<div class="form-group">
 				<label for="gameSpeed" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-						Game Speed
-					</Text>
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Game Speed</Text>
 				</label>
 				<select id="gameSpeed" bind:value={formData.gameSpeed} class="form-select">
 					<option value="Slow">Slow (Tactical)</option>
@@ -171,9 +161,7 @@
 			<!-- Max Players -->
 			<div class="form-group">
 				<label for="maxPlayers" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-						Max Players
-					</Text>
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Max Players</Text>
 				</label>
 				<input
 					id="maxPlayers"
@@ -193,9 +181,7 @@
 			<!-- Victory Condition -->
 			<div class="form-group">
 				<label for="victoryCondition" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-						Victory Condition
-					</Text>
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Victory Condition</Text>
 				</label>
 				<select id="victoryCondition" bind:value={formData.victoryCondition} class="form-select">
 					<option value="Conquest">Conquest (Destroy enemies)</option>
@@ -215,9 +201,7 @@
 					class="form-checkbox"
 				/>
 				<label for="isPrivate" class="checkbox-label">
-					<Text style="font-size: 14px; color: #FFFFFF;">
-						Private Game (Requires password)
-					</Text>
+					<Text style="font-size: 14px; color: #FFFFFF;">Private Game (Requires password)</Text>
 				</label>
 			</div>
 		</div>
@@ -226,9 +210,7 @@
 		{#if formData.isPrivate}
 			<div class="form-group">
 				<label for="password" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-						Password *
-					</Text>
+					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Password *</Text>
 				</label>
 				<input
 					id="password"
@@ -293,7 +275,7 @@
 		border: 1px solid rgba(0, 255, 255, 0.3);
 		border-radius: 6px;
 		background: rgba(0, 0, 0, 0.4);
-		color: #FFFFFF;
+		color: #ffffff;
 		font-size: 14px;
 		transition: border-color 0.2s ease;
 	}
@@ -302,13 +284,13 @@
 	.form-textarea:focus,
 	.form-select:focus {
 		outline: none;
-		border-color: #00FFFF;
+		border-color: #00ffff;
 		box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.2);
 	}
 
 	.form-input.error,
 	.form-textarea.error {
-		border-color: #EF4444;
+		border-color: #ef4444;
 	}
 
 	.form-textarea {
@@ -336,7 +318,7 @@
 	.form-checkbox {
 		width: 16px;
 		height: 16px;
-		accent-color: #00FFFF;
+		accent-color: #00ffff;
 	}
 
 	.checkbox-label {
@@ -356,7 +338,7 @@
 		.settings-grid {
 			grid-template-columns: 1fr;
 		}
-		
+
 		.form-actions {
 			flex-direction: column;
 		}

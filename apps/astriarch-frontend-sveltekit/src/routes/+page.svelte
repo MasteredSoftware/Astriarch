@@ -123,12 +123,7 @@
 						variant="primary"
 						onclick={gameActions.startNewGame}
 					/>
-					<Button
-						label="Multiplayer Lobby"
-						size="lg"
-						variant="outline"
-						onclick={handleShowLobby}
-					/>
+					<Button label="Multiplayer Lobby" size="lg" variant="outline" onclick={handleShowLobby} />
 					<a href="/test/websocket" class="text-sm text-cyan-400 underline hover:text-cyan-300">
 						WebSocket Test
 					</a>
@@ -195,12 +190,7 @@
 			<!-- Multiplayer Lobby -->
 			<div class="flex h-[calc(100vh-200px)] flex-col">
 				<div class="mb-4 flex items-center justify-between px-4">
-					<Button
-						label="← Back to Main"
-						size="sm"
-						variant="outline"
-						onclick={handleBackToMain}
-					/>
+					<Button label="← Back to Main" size="sm" variant="outline" onclick={handleBackToMain} />
 				</div>
 				<div class="flex-1">
 					<LobbyView />

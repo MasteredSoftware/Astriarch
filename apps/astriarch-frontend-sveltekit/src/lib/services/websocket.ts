@@ -226,7 +226,7 @@ class WebSocketService {
 					this.isConnecting = false;
 					this.reconnectAttempts = 0;
 					this.gameStore.setConnected(true);
-					
+
 					// Set a default player name if none exists
 					this.gameStore.setPlayerName('Player');
 
@@ -323,7 +323,7 @@ class WebSocketService {
 						this.gameStore.applyChanges(message.payload.changes);
 					} else {
 						this.gameStore.setGameState(message.payload.gameState);
-						
+
 						// Update the main game stores
 						if (message.payload.gameState) {
 							const gameState = message.payload.gameState as GameModelData;
@@ -342,7 +342,7 @@ class WebSocketService {
 					if (message.payload.success) {
 						this.gameStore.setCurrentView('game');
 						this.gameStore.setGameState(message.payload.gameState);
-						
+
 						// update main game stores
 						if (message.payload.gameState) {
 							// Update the main game stores so that GalaxyCanvas and other components can access the data
@@ -351,7 +351,7 @@ class WebSocketService {
 							gameStarted.set(true);
 							console.log('Updated main game stores with multiplayer game state');
 						}
-						
+
 						this.gameStore.addNotification({
 							id: Date.now().toString(),
 							type: 'success',
@@ -518,20 +518,27 @@ class WebSocketService {
 				mainPlayerName: currentPlayerName,
 				systemsToGenerate: 4, // Default to 4 systems
 				planetsPerSystem: gameOptions.planetsPerSystem || 4,
-				galaxySize: typeof gameOptions.galaxySize === 'string' 
-					? (gameOptions.galaxySize === 'Small' ? 2 : gameOptions.galaxySize === 'Medium' ? 3 : gameOptions.galaxySize === 'Large' ? 4 : 4)
-					: (gameOptions.galaxySize || 4),
+				galaxySize:
+					typeof gameOptions.galaxySize === 'string'
+						? gameOptions.galaxySize === 'Small'
+							? 2
+							: gameOptions.galaxySize === 'Medium'
+								? 3
+								: gameOptions.galaxySize === 'Large'
+									? 4
+									: 4
+						: gameOptions.galaxySize || 4,
 				distributePlanetsEvenly: gameOptions.distributePlanetsEvenly ?? true,
 				quickStart: gameOptions.quickStart ?? false,
 				turnTimeLimitSeconds: 0, // Default to no time limit
 				opponentOptions: [
 					{ name: '', type: -1 }, // Player 2: Open
 					{ name: '', type: -2 }, // Player 3: Closed
-					{ name: '', type: -2 }  // Player 4: Closed
+					{ name: '', type: -2 } // Player 4: Closed
 				]
 			}
 		};
-		
+
 		console.log('Sending CREATE_GAME with payload:', payload);
 		this.send(new Message(MESSAGE_TYPE.CREATE_GAME, payload));
 	}
@@ -569,17 +576,20 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.CHAT_MESSAGE, { message }));
 	}
 
-	changeGameOptions(gameId: string, gameOptions: {
-		name: string;
-		playerName: string;
-		systemsToGenerate: number;
-		planetsPerSystem: number;
-		galaxySize: number;
-		distributePlanetsEvenly: boolean;
-		quickStart: boolean;
-		turnTimeLimitSeconds: number;
-		opponentOptions: Array<{ name: string; type: number }>;
-	}) {
+	changeGameOptions(
+		gameId: string,
+		gameOptions: {
+			name: string;
+			playerName: string;
+			systemsToGenerate: number;
+			planetsPerSystem: number;
+			galaxySize: number;
+			distributePlanetsEvenly: boolean;
+			quickStart: boolean;
+			turnTimeLimitSeconds: number;
+			opponentOptions: Array<{ name: string; type: number }>;
+		}
+	) {
 		const payload = {
 			gameId,
 			gameOptions: {
