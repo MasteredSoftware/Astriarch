@@ -13,6 +13,7 @@
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
 
 	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
+	import { Logo } from '$lib/components/atoms';
 
 	// Import game view components
 	import FleetCommandView from '$lib/components/game-views/FleetCommandView.svelte';
@@ -69,9 +70,7 @@
 	/>
 </svelte:head>
 
-<main
-	class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white"
->
+<main class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white">
 	<!-- Space Background Effect -->
 	<div class="fixed inset-0 opacity-20">
 		<div
@@ -89,15 +88,13 @@
 	<header class="relative z-10 p-4">
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center space-x-4">
-				<Text
-					style="font-size: 32px; font-weight: bold; color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);"
-				>
-					ASTRIARCH
-				</Text>
-				<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
-					Cycle {$gameTime.cycle} • {$gameTime.timeString} • Stardate {$gameTime.stardate}
-				</Text>
+				<Logo size="lg" variant="primary" />
+
+				<!-- Game time info - only show when game is started -->
 				{#if $gameStarted}
+					<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
+						Cycle {$gameTime.cycle} • {$gameTime.timeString} • Stardate {$gameTime.stardate}
+					</Text>
 					<Text
 						style="font-size: 12px; color: {$isGameRunning
 							? '#10B981'
@@ -200,11 +197,9 @@
 			<!-- Welcome Screen -->
 			<div class="flex h-[calc(100vh-200px)] items-center justify-center">
 				<div class="mx-auto max-w-2xl p-8 text-center">
-					<Text
-						style="font-size: 48px; font-weight: bold; color: #00FFFF; margin-bottom: 24px; text-shadow: 0 0 20px rgba(0,255,255,0.5);"
-					>
-						ASTRIARCH
-					</Text>
+					<div class="mb-6 flex justify-center">
+						<Logo size="xl" variant="primary" />
+					</div>
 					<Text style="font-size: 20px; color: #94A3B8; margin-bottom: 32px; line-height: 1.6;">
 						Command vast fleets across the galaxy in real-time. Manage planetary resources and
 						populations. Research advanced technologies. Forge alliances or crush your enemies.

@@ -87,12 +87,12 @@
 		console.log('Create game button clicked - creating game directly');
 		console.log('Connected:', isConnected);
 		console.log('Current view:', currentView);
-		
+
 		if (!isConnected) {
 			console.log('Cannot create game - not connected to server');
 			return;
 		}
-		
+
 		// Create game with default options - this will trigger transition to game_options view
 		const defaultGameOptions = {
 			name: 'New Game',

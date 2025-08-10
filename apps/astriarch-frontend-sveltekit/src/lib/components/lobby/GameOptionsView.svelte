@@ -130,260 +130,263 @@
 	<div class="scrollable-content">
 		<div class="content-wrapper">
 			<div class="form-header">
-				<Text style="font-size: 24px; color: #FFFFFF; font-weight: 700;">
-					New Skirmish Game
-				</Text>
+				<Text style="font-size: 24px; color: #FFFFFF; font-weight: 700;">New Skirmish Game</Text>
 				<Text style="font-size: 16px; color: #94A3B8; margin-top: 0.5rem;">
 					Please enter your name and choose the desired game settings.
 				</Text>
 			</div>
 
 			<div class="game-options-content">
-		<!-- Left Panel: Players -->
-		<div class="players-panel">
-			<div class="form-group">
-				<label for="gameName" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Game Name:</Text>
-				</label>
-				<input
-					id="gameName"
-					type="text"
-					bind:value={formData.name}
-					on:input={handleOptionChange}
-					disabled={!isHost}
-					maxlength="50"
-					class="form-input"
-				/>
-			</div>
+				<!-- Left Panel: Players -->
+				<div class="players-panel">
+					<div class="form-group">
+						<label for="gameName" class="form-label">
+							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Game Name:</Text>
+						</label>
+						<input
+							id="gameName"
+							type="text"
+							bind:value={formData.name}
+							on:input={handleOptionChange}
+							disabled={!isHost}
+							maxlength="50"
+							class="form-input"
+						/>
+					</div>
 
-			<div class="form-group">
-				<label for="playerName" class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Your Name:</Text>
-				</label>
-				<input
-					id="playerName"
-					type="text"
-					bind:value={formData.playerName}
-					on:input={handleOptionChange}
-					disabled={!isHost}
-					maxlength="20"
-					class="form-input"
-				/>
-			</div>
+					<div class="form-group">
+						<label for="playerName" class="form-label">
+							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Your Name:</Text>
+						</label>
+						<input
+							id="playerName"
+							type="text"
+							bind:value={formData.playerName}
+							on:input={handleOptionChange}
+							disabled={!isHost}
+							maxlength="20"
+							class="form-input"
+						/>
+					</div>
 
-			<div class="form-group">
-				<label class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 1:</Text>
-				</label>
-				<span class="player-name">You</span>
-			</div>
+					<div class="form-group">
+						<label class="form-label">
+							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 1:</Text>
+						</label>
+						<span class="player-name">You</span>
+					</div>
 
-			<div class="form-group">
-				<label class="form-label">
-					<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 2:</Text>
-				</label>
-				<div class="player-row">
-					<span class="player-name"
-						>{getPlayerTypeName(
-							formData.opponentOptions[0]?.type,
-							formData.opponentOptions[0]?.name
-						)}</span
-					>
-					{#if isHost}
-						<select
-							bind:value={formData.opponentOptions[0].type}
-							on:change={handleOptionChange}
-							class="form-select"
-						>
-							{#each playerTypeOptions as option}
-								<option value={option.value} disabled={option.disabled}>{option.label}</option>
-							{/each}
-						</select>
+					<div class="form-group">
+						<label class="form-label">
+							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 2:</Text>
+						</label>
+						<div class="player-row">
+							<span class="player-name"
+								>{getPlayerTypeName(
+									formData.opponentOptions[0]?.type,
+									formData.opponentOptions[0]?.name
+								)}</span
+							>
+							{#if isHost}
+								<select
+									bind:value={formData.opponentOptions[0].type}
+									on:change={handleOptionChange}
+									class="form-select"
+								>
+									{#each playerTypeOptions as option}
+										<option value={option.value} disabled={option.disabled}>{option.label}</option>
+									{/each}
+								</select>
+							{/if}
+						</div>
+					</div>
+
+					{#if formData.systemsToGenerate >= 3}
+						<div class="form-group">
+							<label class="form-label">
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 3:</Text>
+							</label>
+							<div class="player-row">
+								<span class="player-name"
+									>{getPlayerTypeName(
+										formData.opponentOptions[1]?.type,
+										formData.opponentOptions[1]?.name
+									)}</span
+								>
+								{#if isHost}
+									<select
+										bind:value={formData.opponentOptions[1].type}
+										on:change={handleOptionChange}
+										class="form-select"
+									>
+										{#each playerTypeOptions as option}
+											<option value={option.value} disabled={option.disabled}>{option.label}</option
+											>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						</div>
+					{/if}
+
+					{#if formData.systemsToGenerate >= 4}
+						<div class="form-group">
+							<label class="form-label">
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 4:</Text>
+							</label>
+							<div class="player-row">
+								<span class="player-name"
+									>{getPlayerTypeName(
+										formData.opponentOptions[2]?.type,
+										formData.opponentOptions[2]?.name
+									)}</span
+								>
+								{#if isHost}
+									<select
+										bind:value={formData.opponentOptions[2].type}
+										on:change={handleOptionChange}
+										class="form-select"
+									>
+										{#each playerTypeOptions as option}
+											<option value={option.value} disabled={option.disabled}>{option.label}</option
+											>
+										{/each}
+									</select>
+								{/if}
+							</div>
+						</div>
 					{/if}
 				</div>
-			</div>
 
-			{#if formData.systemsToGenerate >= 3}
-				<div class="form-group">
-					<label class="form-label">
-						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 3:</Text>
-					</label>
-					<div class="player-row">
-						<span class="player-name"
-							>{getPlayerTypeName(
-								formData.opponentOptions[1]?.type,
-								formData.opponentOptions[1]?.name
-							)}</span
-						>
-						{#if isHost}
+				<!-- Right Panel: Game Settings -->
+				<div class="settings-panel">
+					<div class="settings-left">
+						<div class="form-group">
+							<label for="turnTimeLimit" class="form-label">
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;"
+									>Turn Time Limit:</Text
+								>
+							</label>
 							<select
-								bind:value={formData.opponentOptions[1].type}
+								id="turnTimeLimit"
+								bind:value={formData.turnTimeLimitSeconds}
 								on:change={handleOptionChange}
+								disabled={!isHost}
 								class="form-select"
 							>
-								{#each playerTypeOptions as option}
-									<option value={option.value} disabled={option.disabled}>{option.label}</option>
+								{#each turnTimeLimitOptions as option}
+									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
-						{/if}
-					</div>
-				</div>
-			{/if}
+						</div>
 
-			{#if formData.systemsToGenerate >= 4}
-				<div class="form-group">
-					<label class="form-label">
-						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 4:</Text>
-					</label>
-					<div class="player-row">
-						<span class="player-name"
-							>{getPlayerTypeName(
-								formData.opponentOptions[2]?.type,
-								formData.opponentOptions[2]?.name
-							)}</span
-						>
-						{#if isHost}
+						<div class="form-group">
+							<label for="galaxySize" class="form-label">
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Galaxy Size:</Text>
+							</label>
 							<select
-								bind:value={formData.opponentOptions[2].type}
+								id="galaxySize"
+								bind:value={formData.galaxySize}
 								on:change={handleOptionChange}
+								disabled={!isHost}
 								class="form-select"
 							>
-								{#each playerTypeOptions as option}
-									<option value={option.value} disabled={option.disabled}>{option.label}</option>
+								{#each galaxySizeOptions as option}
+									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
-						{/if}
+						</div>
+
+						<div class="form-group">
+							<label for="systemsToGenerate" class="form-label">
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+									Number of Systems:
+								</Text>
+							</label>
+							<select
+								id="systemsToGenerate"
+								bind:value={formData.systemsToGenerate}
+								on:change={handleOptionChange}
+								disabled={!isHost}
+								class="form-select"
+							>
+								{#each systemsOptions as option}
+									<option value={option.value}>{option.label}</option>
+								{/each}
+							</select>
+						</div>
+
+						<div class="form-group">
+							<label for="planetsPerSystem" class="form-label">
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
+									Planets Per System:
+								</Text>
+							</label>
+							<select
+								id="planetsPerSystem"
+								bind:value={formData.planetsPerSystem}
+								on:change={handleOptionChange}
+								disabled={!isHost}
+								class="form-select"
+							>
+								{#each planetsPerSystemOptions as option}
+									<option value={option.value}>{option.label}</option>
+								{/each}
+							</select>
+						</div>
+
+						<div class="form-group">
+							<div class="checkbox-group">
+								<input
+									type="checkbox"
+									bind:checked={formData.distributePlanetsEvenly}
+									on:change={handleOptionChange}
+									disabled={!isHost}
+									class="form-checkbox"
+									id="distributePlanets"
+								/>
+								<label for="distributePlanets" class="checkbox-label">
+									<Text style="font-size: 14px; color: #FFFFFF;">Distribute Planets Evenly</Text>
+								</label>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<div class="checkbox-group">
+								<input
+									type="checkbox"
+									bind:checked={formData.quickStart}
+									on:change={handleOptionChange}
+									disabled={!isHost}
+									class="form-checkbox"
+									id="quickStart"
+								/>
+								<label for="quickStart" class="checkbox-label">
+									<Text style="font-size: 14px; color: #FFFFFF;">Quick Start</Text>
+								</label>
+							</div>
+						</div>
 					</div>
-				</div>
-			{/if}
-		</div>
 
-		<!-- Right Panel: Game Settings -->
-		<div class="settings-panel">
-			<div class="settings-left">
-				<div class="form-group">
-					<label for="turnTimeLimit" class="form-label">
-						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Turn Time Limit:</Text>
-					</label>
-					<select
-						id="turnTimeLimit"
-						bind:value={formData.turnTimeLimitSeconds}
-						on:change={handleOptionChange}
-						disabled={!isHost}
-						class="form-select"
-					>
-						{#each turnTimeLimitOptions as option}
-							<option value={option.value}>{option.label}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div class="form-group">
-					<label for="galaxySize" class="form-label">
-						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Galaxy Size:</Text>
-					</label>
-					<select
-						id="galaxySize"
-						bind:value={formData.galaxySize}
-						on:change={handleOptionChange}
-						disabled={!isHost}
-						class="form-select"
-					>
-						{#each galaxySizeOptions as option}
-							<option value={option.value}>{option.label}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div class="form-group">
-					<label for="systemsToGenerate" class="form-label">
-						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-							Number of Systems:
-						</Text>
-					</label>
-					<select
-						id="systemsToGenerate"
-						bind:value={formData.systemsToGenerate}
-						on:change={handleOptionChange}
-						disabled={!isHost}
-						class="form-select"
-					>
-						{#each systemsOptions as option}
-							<option value={option.value}>{option.label}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div class="form-group">
-					<label for="planetsPerSystem" class="form-label">
-						<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">
-							Planets Per System:
-						</Text>
-					</label>
-					<select
-						id="planetsPerSystem"
-						bind:value={formData.planetsPerSystem}
-						on:change={handleOptionChange}
-						disabled={!isHost}
-						class="form-select"
-					>
-						{#each planetsPerSystemOptions as option}
-							<option value={option.value}>{option.label}</option>
-						{/each}
-					</select>
-				</div>
-
-				<div class="form-group">
-					<div class="checkbox-group">
-						<input
-							type="checkbox"
-							bind:checked={formData.distributePlanetsEvenly}
-							on:change={handleOptionChange}
-							disabled={!isHost}
-							class="form-checkbox"
-							id="distributePlanets"
-						/>
-						<label for="distributePlanets" class="checkbox-label">
-							<Text style="font-size: 14px; color: #FFFFFF;">Distribute Planets Evenly</Text>
-						</label>
-					</div>
-				</div>
-
-				<div class="form-group">
-					<div class="checkbox-group">
-						<input
-							type="checkbox"
-							bind:checked={formData.quickStart}
-							on:change={handleOptionChange}
-							disabled={!isHost}
-							class="form-checkbox"
-							id="quickStart"
-						/>
-						<label for="quickStart" class="checkbox-label">
-							<Text style="font-size: 14px; color: #FFFFFF;">Quick Start</Text>
-						</label>
+					<div class="settings-right">
+						<!-- Starfield Canvas Placeholder -->
+						<div class="starfield-canvas">
+							<canvas width="200" height="170" style="background-color: #000;"></canvas>
+						</div>
 					</div>
 				</div>
 			</div>
 
-			<div class="settings-right">
-				<!-- Starfield Canvas Placeholder -->
-				<div class="starfield-canvas">
-					<canvas width="200" height="170" style="background-color: #000;"></canvas>
-				</div>
+			<div class="form-actions">
+				<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
+				{#if isHost}
+					<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" />
+				{:else}
+					<Text style="font-size: 14px; color: #94A3B8;">Waiting for host to start the game...</Text
+					>
+				{/if}
 			</div>
 		</div>
-		</div>
-
-		<div class="form-actions">
-			<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
-			{#if isHost}
-				<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" />
-			{:else}
-				<Text style="font-size: 14px; color: #94A3B8;">Waiting for host to start the game...</Text>
-			{/if}
-		</div>
-	</div>
 	</div>
 </div>
 
