@@ -1,4 +1,4 @@
-export { GameModel as Game, IGame } from './Game';
+export { ServerGameModel as Game, IGame } from './Game';
 export { SessionModel as Session, ISession } from './Session';
 export { ChatMessageModel as ChatMessage, IChatMessage } from './ChatMessage';
 export { GameState, IGameState } from './GameState';

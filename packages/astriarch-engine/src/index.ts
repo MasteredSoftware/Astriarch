@@ -4,7 +4,7 @@ import { GameController } from './engine/gameController';
 import { GameModel, GameModelData, playerColors } from './engine/gameModel';
 import { Player } from './engine/player';
 import { ClientModelData, PlanetById } from './model/clientModel';
-import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from './model/model';
+import { GalaxySizeOption, GameOptions, GameSpeed, ModelData, PlanetsPerSystemOption } from './model/model';
 import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { CitizenWorkerType } from './model/planet';
@@ -15,6 +15,18 @@ export * from './messaging/MessageTypes';
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
+
+export const createGame = (hostPlayerId: string, hostPlayerName: string, gameOptions: GameOptions) => {
+  const players = [] as PlayerData[];
+  players.push(Player.constructPlayer(hostPlayerId, PlayerType.Human, hostPlayerName, playerColors[0]));
+  const gameModel = GameModel.constructData(players, gameOptions);
+  return gameModel;
+};
+
+export const constructClientGameModel = (gameModel: ModelData, playerId: string) => {
+  const clientModel = ClientGameModel.constructClientGameModel(gameModel, playerId);
+  return clientModel;
+};
 
 export const startNewGame = () => {
   // NOTE: just for testing right now

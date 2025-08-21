@@ -109,4 +109,4 @@ const GameSchema = new Schema<IGame>({
 GameSchema.index({ status: 1, createdAt: -1 });
 GameSchema.index({ lastActivity: 1 });
 
-export const GameModel = mongoose.model<IGame>('Game', GameSchema);
+export const ServerGameModel = mongoose.model<IGame>('Game', GameSchema);

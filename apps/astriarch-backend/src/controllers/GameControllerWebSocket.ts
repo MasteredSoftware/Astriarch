@@ -1,8 +1,9 @@
 import config from 'config';
-import { GameModel } from '../models/Game';
+import { ServerGameModel } from '../models/Game';
 import { SessionModel } from '../models/Session';
 import { logger } from '../utils/logger';
 import * as engine from 'astriarch-engine';
+import { getPlayerId } from '../utils/player-id-helper';
 
 export interface GameSettings {
   maxPlayers?: number;
@@ -67,7 +68,7 @@ export class GameController {
    */
   static async listLobbyGames(options: { sessionId: string }): Promise<any[]> {
     try {
-      const games = await GameModel.find({
+      const games = await ServerGameModel.find({
         status: { $in: ['waiting_for_players', 'in_progress'] }
       })
       .sort({ createdAt: -1 })
@@ -86,9 +87,20 @@ export class GameController {
    */
   static async createGame(gameData: CreateGameData): Promise<any> {
     try {
+      const gameOptions = {
+        systemsToGenerate: 4,
+        planetsPerSystem: 4,
+        galaxySize: engine.GalaxySizeOption.SMALL,
+        distributePlanetsEvenly: true,
+        quickStart: false,
+        gameSpeed: engine.GameSpeed.NORMAL,
+        version: '2.0',
+      }
+      const playerId = getPlayerId(gameData.players[0].position);
+      const gameModel = engine.createGame(playerId, gameData.players[0].name, gameOptions);
 
       // Create database record matching old app.js structure
-      const game = new GameModel({
+      const game = new ServerGameModel({
         name: gameData.name,
         hostPlayerName: gameData.players[0]?.name || 'Unknown',
         players: gameData.players.map(p => ({
@@ -117,7 +129,7 @@ export class GameController {
           gameType: 'standard',
           isPrivate: false
         },
-        gameState: engineGameData.modelData,
+        gameState: gameModel.modelData,
         status: 'waiting_for_players',
         createdAt: new Date(),
         lastActivity: new Date()
@@ -137,7 +149,7 @@ export class GameController {
    */
   static async joinGame(data: JoinGameData): Promise<GameResult> {
     try {
-      const game = await GameModel.findById(data.gameId);
+      const game = await ServerGameModel.findById(data.gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
       }
@@ -160,8 +172,8 @@ export class GameController {
 
       // Add player to game
       const playerPosition = game.players ? game.players.length : 0;
-      const playerId = `player_${playerPosition}`;
-      
+      const playerId = getPlayerId(playerPosition);
+
       const newPlayer = {
         name: data.playerName,
         sessionId: data.sessionId,
@@ -198,7 +210,7 @@ export class GameController {
   static async startGame(data: StartGameData): Promise<GameResult> {
     try {
       // Find game by gameId from the payload
-      const game = await GameModel.findById(data.gameId);
+      const game = await ServerGameModel.findById(data.gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
       }
@@ -239,7 +251,7 @@ export class GameController {
    */
   static async resumeGame(data: ResumeGameData): Promise<GameResult> {
     try {
-      const game = await GameModel.findById(data.gameId);
+      const game = await ServerGameModel.findById(data.gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
       }
@@ -269,7 +281,7 @@ export class GameController {
       const { sessionId, gameId, gameOptions, playerName } = data;
 
       // Find the game
-      const game = await GameModel.findById(gameId);
+      const game = await ServerGameModel.findById(gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
       }
@@ -322,7 +334,7 @@ export class GameController {
 
   static async endPlayerTurn(sessionId: string, data: any): Promise<GameResult> {
     try {
-      const game = await GameModel.findById(data.gameId);
+      const game = await ServerGameModel.findById(data.gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
       }
@@ -358,7 +370,7 @@ export class GameController {
 
   static async sendShips(sessionId: string, data: any): Promise<GameResult> {
     try {
-      const game = await GameModel.findById(data.gameId);
+      const game = await ServerGameModel.findById(data.gameId);
       if (!game) {
         return { success: false, error: 'Game not found' };
       }
@@ -540,7 +552,7 @@ export class GameController {
       const maxAge = cleanupConfig?.max_age_hours || 24;
       const cutoffDate = new Date(Date.now() - maxAge * 60 * 60 * 1000);
 
-      const result = await GameModel.deleteMany({
+      const result = await ServerGameModel.deleteMany({
         lastActivity: { $lt: cutoffDate },
         status: { $ne: 'in_progress' }
       });
