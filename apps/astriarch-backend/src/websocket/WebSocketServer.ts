@@ -440,16 +440,33 @@ export class WebSocketServer {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, startResponse));
 
 
-        // TODO: Send client models to each player (like old app.js)
-        // for (const player of result.game.players) {
-        //   const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(
-        //     result.serializableModel,
-        //     player.Id
-        //   );
-        //   
-        //   const startMessage = new Message(MESSAGE_TYPE.START_GAME, serializableClientModel);
-        //   this.broadcastToSession(player.sessionId, startMessage);
-        // }
+        // Send client models to each player (like old app.js)
+        if (result.game && result.game.players) {
+          for (const player of result.game.players) {
+            // Only send to human players (not AI)
+            if (!player.isAI && player.sessionId) {
+              // The game state might be a GameModelData object with a modelData property,
+              // or it might be the ModelData directly. Handle both cases.
+              let modelData: any;
+              if (result.game.gameState && typeof result.game.gameState === 'object') {
+                modelData = (result.game.gameState as any).modelData || result.game.gameState;
+              } else {
+                logger.warn('Invalid game state structure, skipping client model construction');
+                continue;
+              }
+              
+              // Construct the client-specific game model for this player
+              const clientGameModel = constructClientGameModel(modelData, player.Id);
+              
+              const startMessage = new Message(MESSAGE_TYPE.START_GAME, {
+                success: true,
+                gameState: clientGameModel
+              });
+              
+              this.broadcastToSession(player.sessionId, startMessage);
+            }
+          }
+        }
       } else {
         const errorResponse = {
           success: false,
