@@ -1,5 +1,5 @@
 import config from 'config';
-import { ServerGameModel } from '../models/Game';
+import { ServerGameModel, IGame, IPlayer } from '../models/Game';
 import { SessionModel } from '../models/Session';
 import { logger } from '../utils/logger';
 import * as engine from 'astriarch-engine';
@@ -41,12 +41,11 @@ export interface GameResult {
   success: boolean;
   error?: string;
   errorType?: string;
-  game?: any;
-  serializableModel?: any;
+  game?: IGame;
   playerPosition?: number;
   playerId?: string;
   gameData?: any;
-  player?: any;
+  player?: IPlayer;
   // End turn specific properties
   allPlayersFinished?: boolean;
   endOfTurnMessages?: any[];

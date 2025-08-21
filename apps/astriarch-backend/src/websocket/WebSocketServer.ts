@@ -1,7 +1,7 @@
 import WebSocket from 'ws';
 import { Server } from 'http';
 import { logger } from '../utils/logger';
-import { Session, Game } from '../models';
+import { Session, Game, IGame } from '../models';
 import { GameController } from '../controllers/GameControllerWebSocket';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -22,8 +22,10 @@ import {
   type ICreateGameRequestPayload,
   type IJoinGameRequestPayload,
   type IStartGameRequestPayload,
-  type IChangeGameOptionsPayload
+  type IChangeGameOptionsPayload,
+  constructClientGameModel
 } from 'astriarch-engine';
+import { getPlayerId } from '../utils/player-id-helper';
 
 export interface IConnectedClient {
   ws: WebSocket;
@@ -426,18 +428,18 @@ export class WebSocketServer {
         gameId
       });
 
-      if (result.success && result.game && result.serializableModel) {
+      if (result.success && result.game) {
+        const playerId = getPlayerId(0);
+        const clientGameModel = constructClientGameModel(result.game.gameState, playerId);
         // Send success response with game state
         const startResponse = {
           success: true,
-          gameState: result.serializableModel
+          gameState: clientGameModel
         };
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, startResponse));
 
 
-        const clientGameModel = engine.ClientGameModel.constructClientGameModel(gameModel.modelData, 'me');
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, optionsResponse));
         // TODO: Send client models to each player (like old app.js)
         // for (const player of result.game.players) {
         //   const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(
@@ -709,12 +711,12 @@ export class WebSocketServer {
     }
   }
 
-  private broadcastToOtherPlayersInGame(game: any, sessionId: string, message: Message<any>): void {
+  private broadcastToOtherPlayersInGame(game: IGame, sessionId: string, message: Message<any>): void {
     const playersBySessionKey = this.getOtherPlayersBySessionKeyFromGame(game, sessionId);
     this.broadcast(playersBySessionKey, message);
   }
 
-  private getOtherPlayersBySessionKeyFromGame(game: any, currentPlayerSessionKey: string | null): Record<string, any> {
+  private getOtherPlayersBySessionKeyFromGame(game: IGame, currentPlayerSessionKey: string | null): Record<string, any> {
     const playersBySessionKey: Record<string, any> = {};
     for (const player of game.players) {
       if (player.sessionId && player.sessionId !== currentPlayerSessionKey) {

@@ -28,15 +28,15 @@ export interface IGameOptions {
 }
 
 export interface IGame extends Document {
-  name?: string; // Game name (for lobby display)
+  name: string; // Game name (for lobby display)
   hostPlayerName: string;
   maxPlayers: number;
   gameType: string;
   isPrivate: boolean;
   gameState: object;
   status: 'waiting_for_players' | 'in_progress' | 'completed';
-  players?: IPlayer[]; // Array of players in the game
-  gameOptions?: IGameOptions; // Game configuration options
+  players: IPlayer[]; // Array of players in the game
+  gameOptions: IGameOptions; // Game configuration options
   createdAt: Date;
   lastActivity: Date;
 }
