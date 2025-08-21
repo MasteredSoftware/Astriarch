@@ -226,11 +226,7 @@ export class GameController {
         return { success: false, error: 'Not enough players to start game' };
       }
 
-      // Create new engine game with players
-      const gameModel = engine.GameModel.constructData(players, gameOptions);
-
       // Update game status
-      game.gameState = engineGameData.modelData;
       game.status = 'in_progress';
       game.lastActivity = new Date();
       await game.save();
