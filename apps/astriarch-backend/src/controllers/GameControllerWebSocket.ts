@@ -2,13 +2,7 @@ import config from 'config';
 import { GameModel } from '../models/Game';
 import { SessionModel } from '../models/Session';
 import { logger } from '../utils/logger';
-import { 
-  startNewGame,
-  GameModelData,
-  Player,
-  PlayerData,
-  ClientModelData
-} from 'astriarch-engine';
+import * as engine from 'astriarch-engine';
 
 export interface GameSettings {
   maxPlayers?: number;
@@ -92,8 +86,6 @@ export class GameController {
    */
   static async createGame(gameData: CreateGameData): Promise<any> {
     try {
-      // Create engine game model using startNewGame function
-      const { gameModel: engineGameData, clientGameModel } = startNewGame();
 
       // Create database record matching old app.js structure
       const game = new GameModel({
@@ -223,8 +215,8 @@ export class GameController {
       }
 
       // Create new engine game with players
-      const { gameModel: engineGameData, clientGameModel } = startNewGame();
-      
+      const gameModel = engine.GameModel.constructData(players, gameOptions);
+
       // Update game status
       game.gameState = engineGameData.modelData;
       game.status = 'in_progress';
@@ -235,7 +227,6 @@ export class GameController {
       return {
         success: true,
         game,
-        serializableModel: engineGameData.modelData
       };
     } catch (error) {
       logger.error('Error starting game:', error);

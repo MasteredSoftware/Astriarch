@@ -435,6 +435,9 @@ export class WebSocketServer {
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, startResponse));
 
+
+        const clientGameModel = engine.ClientGameModel.constructClientGameModel(gameModel.modelData, 'me');
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, optionsResponse));
         // TODO: Send client models to each player (like old app.js)
         // for (const player of result.game.players) {
         //   const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(

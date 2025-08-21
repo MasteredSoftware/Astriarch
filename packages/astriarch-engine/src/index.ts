@@ -44,5 +44,9 @@ export const getPlayerTotalPopulation = (player: PlayerData, planetById: PlanetB
   return GameModel.getPlayerTotalPopulation(player, planetById);
 };
 
+export const getEngineVersion = () => {
+  return '2.0.0';
+};
+
 // TODO: decide what the engine should actually export
 export * from './model';
