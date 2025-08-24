@@ -172,6 +172,8 @@ export interface IChangeGameOptionsPayload {
 export interface IGameStateUpdatePayload {
   gameState?: unknown;
   changes?: unknown;
+  clientGameModel?: unknown;
+  currentCycle?: number;
 }
 
 export interface IChatMessagePayload {

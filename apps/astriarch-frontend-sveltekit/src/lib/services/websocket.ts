@@ -14,8 +14,8 @@ import {
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
-import { gameModel, gameStarted } from '$lib/stores/gameStore';
-import type { GameModelData } from 'astriarch-engine';
+import { gameModel, clientGameModel, gameStarted, isGameRunning, gameActions } from '$lib/stores/gameStore';
+import type { GameModelData, ClientModelData } from 'astriarch-engine';
 
 // Additional types specific to this service
 export interface IOpponentOption {
@@ -319,17 +319,22 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.GAME_STATE_UPDATE:
 				if (isGameStateUpdate(message)) {
-					if (message.payload.changes) {
+					if (message.payload.clientGameModel) {
+						// Update the client game model with the real-time data from server
+						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
+						clientGameModel.set(updatedClientGameModel);
+						this.gameStore.setGameState(updatedClientGameModel);
+						console.log('Received real-time game state update from server');
+					} else if (message.payload.changes) {
 						this.gameStore.applyChanges(message.payload.changes);
 					} else {
 						this.gameStore.setGameState(message.payload.gameState);
 
-						// Update the main game stores
+						// Fallback - update the main game stores if needed
 						if (message.payload.gameState) {
-							const gameState = message.payload.gameState as GameModelData;
-							gameModel.set(gameState);
-							gameStarted.set(true);
-							console.log('Updated main game stores with multiplayer game state');
+							const gameState = message.payload.gameState as ClientModelData;
+							clientGameModel.set(gameState);
+							console.log('Updated client game state with fallback format');
 						}
 					}
 				} else {
@@ -343,13 +348,22 @@ class WebSocketService {
 						this.gameStore.setCurrentView('game');
 						this.gameStore.setGameState(message.payload.gameState);
 
-						// update main game stores
+						// Update the main game stores for multiplayer
 						if (message.payload.gameState) {
-							// Update the main game stores so that GalaxyCanvas and other components can access the data
-							const gameState = message.payload.gameState as GameModelData;
-							gameModel.set(gameState);
+							// The server sends a ClientModelData (player-specific view of the game)
+							const clientGameState = message.payload.gameState as ClientModelData;
+							clientGameModel.set(clientGameState);
 							gameStarted.set(true);
-							console.log('Updated main game stores with multiplayer game state');
+							isGameRunning.set(true);
+
+							// For multiplayer, we don't have access to the full GameModelData on the client
+							// The clientGameModel contains everything the player needs to see
+							console.log('Multiplayer game started! Updated client game state.');
+
+							// Start the client-side game loop for real-time updates
+							// Note: In multiplayer, time advancement happens on the server
+							// The client loop only updates the UI and sends player actions
+							gameActions.resumeGame();
 						}
 
 						this.gameStore.addNotification({
