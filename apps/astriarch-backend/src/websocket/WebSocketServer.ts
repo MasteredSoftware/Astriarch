@@ -143,6 +143,11 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
+    // If this is a game action and the client is in an active game, advance game time
+    if (this.isGameAction(message.type) && client.gameId) {
+      await this.advanceGameTimeForAction(client.gameId);
+    }
+
     switch (message.type) {
       case MESSAGE_TYPE.NOOP:
         // Echo back with server message (like old app.js)
@@ -278,6 +283,76 @@ export class WebSocketServer {
 
   private getClientIdBySessionId(sessionId: string): string | null {
     return this.sessionLookup.get(sessionId) || null;
+  }
+
+  // Real-time game management methods
+  private isGameAction(messageType: MESSAGE_TYPE): boolean {
+    const gameActionTypes = [
+      MESSAGE_TYPE.END_TURN,
+      MESSAGE_TYPE.SEND_SHIPS,
+      MESSAGE_TYPE.UPDATE_PLANET_START,
+      MESSAGE_TYPE.UPDATE_PLANET_OPTIONS,
+      MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE,
+      MESSAGE_TYPE.CLEAR_WAYPOINT,
+      MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT,
+      MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM,
+      MESSAGE_TYPE.CANCEL_RESEARCH_ITEM,
+      MESSAGE_TYPE.SUBMIT_TRADE,
+      MESSAGE_TYPE.CANCEL_TRADE
+    ];
+    return gameActionTypes.includes(messageType);
+  }
+
+  private async advanceGameTimeForAction(gameId: string): Promise<void> {
+    try {
+      const game = await Game.findById(gameId);
+      if (!game || game.status !== 'in_progress') {
+        return;
+      }
+
+      // Use the engine's advanceGameModelTime function which handles time properly
+      const { advanceGameModelTime } = await import('astriarch-engine');
+      advanceGameModelTime(game.gameState as any);
+
+      // Save the updated game state with new timestamp
+      await game.save();
+
+      // Broadcast the updated game state to all connected players
+      await this.broadcastGameStateUpdate(gameId);
+    } catch (error) {
+      logger.error('Error advancing game time:', error);
+    }
+  }
+
+  private async broadcastGameStateUpdate(gameId: string): Promise<void> {
+    try {
+      const game = await Game.findById(gameId);
+      if (!game) {
+        return;
+      }
+
+      const gameRoom = this.gameRooms.get(gameId);
+      if (!gameRoom) {
+        return;
+      }
+
+      // Send updated client models to each connected player
+      for (const sessionId of gameRoom) {
+        const clientId = this.getClientIdBySessionId(sessionId);
+        const client = clientId ? this.clients.get(clientId) : null;
+        
+        if (client?.playerId && clientId) {
+          const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
+          const updateMessage = new Message(MESSAGE_TYPE.GAME_STATE_UPDATE, {
+            clientGameModel,
+            currentCycle: (game.gameState as any).currentCycle || 0
+          });
+          this.sendToClient(clientId, updateMessage);
+        }
+      }
+    } catch (error) {
+      logger.error('Error broadcasting game state update:', error);
+    }
   }
 
   private sendToClient(clientId: string, message: Message<any>): void {
