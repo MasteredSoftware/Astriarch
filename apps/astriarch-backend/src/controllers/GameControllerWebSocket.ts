@@ -220,17 +220,81 @@ export class GameController {
         return { success: false, error: 'Player not found in this game' };
       }
 
-      // Validate game can be started
-      if (!game.players || game.players.length < 1) {
+      // Add computer players based on opponentOptions
+      const gameOptions = game.gameOptions;
+      const allPlayers = [...(game.players || [])]; // Start with existing human players
+      
+      if (gameOptions?.opponentOptions) {
+        let computerNumber = 1;
+        
+        for (let i = 0; i < gameOptions.opponentOptions.length; i++) {
+          const opponentOption = gameOptions.opponentOptions[i];
+          const playerType = opponentOption.type;
+          
+          if (playerType > 0) { // Computer player (1=Easy, 2=Normal, 3=Hard, 4=Expert)
+            const computerPlayer = {
+              name: `Computer ${computerNumber++}`,
+              sessionId: '', // Computer players don't have sessions
+              position: i + 1, // Positions start from 1 (host is 0)
+              Id: getPlayerId(i + 1),
+              isActive: true,
+              isAI: true
+            };
+            allPlayers.push(computerPlayer);
+          }
+          // playerType === 0 means Human player (should already be in the game)
+          // playerType === -1 means Open slot (no player added)
+          // playerType === -2 means Closed slot (no player added)
+        }
+      }
+      
+      // Validate we have enough players to start
+      if (allPlayers.length < 2) {
         return { success: false, error: 'Not enough players to start game' };
       }
 
-      // Update game status
+      // Create the engine players array
+      const enginePlayers = [];
+      for (const dbPlayer of allPlayers) {
+        if (dbPlayer.isAI) {
+          // Create computer player with appropriate AI level
+          const aiLevel = gameOptions?.opponentOptions?.[dbPlayer.position - 1]?.type || 2; // Default to Normal
+          enginePlayers.push(engine.Player.constructPlayer(
+            dbPlayer.Id, 
+            aiLevel, // AI difficulty level maps to PlayerType enum
+            dbPlayer.name, 
+            engine.playerColors[dbPlayer.position] || engine.playerColors[0]
+          ));
+        } else {
+          // Create human player
+          enginePlayers.push(engine.Player.constructPlayer(
+            dbPlayer.Id,
+            engine.PlayerType.Human,
+            dbPlayer.name,
+            engine.playerColors[dbPlayer.position] || engine.playerColors[0]
+          ));
+        }
+      }
+
+      // Create the game model with all players
+      const gameModel = engine.GameModel.constructData(enginePlayers, {
+        systemsToGenerate: gameOptions?.systemsToGenerate || 4,
+        planetsPerSystem: gameOptions?.planetsPerSystem || 4,
+        galaxySize: gameOptions?.galaxySize || engine.GalaxySizeOption.SMALL,
+        distributePlanetsEvenly: gameOptions?.distributePlanetsEvenly ?? true,
+        quickStart: gameOptions?.quickStart ?? false,
+        gameSpeed: engine.GameSpeed.NORMAL,
+        version: '2.0',
+      });
+
+      // Update the game with the complete player list and game state
+      game.players = allPlayers;
+      game.gameState = gameModel.modelData;
       game.status = 'in_progress';
       game.lastActivity = new Date();
       await game.save();
 
-      logger.info(`Game ${game._id} started with ${game.players.length} players`);
+      logger.info(`Game ${game._id} started with ${allPlayers.length} players (${allPlayers.filter(p => !p.isAI).length} human, ${allPlayers.filter(p => p.isAI).length} computer)`);
       return {
         success: true,
         game,

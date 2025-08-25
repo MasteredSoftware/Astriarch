@@ -50,12 +50,6 @@ const PlayerSchema = new Schema<IPlayer>({
   isAI: { type: Boolean, default: false }
 });
 
-const GameOptionsSchema = new Schema<IGameOptions>({
-  maxPlayers: { type: Number, default: 4 },
-  gameType: { type: String, default: 'standard' },
-  isPrivate: { type: Boolean, default: false }
-});
-
 const GameSchema = new Schema<IGame>({
   name: { 
     type: String 
@@ -92,7 +86,7 @@ const GameSchema = new Schema<IGame>({
     default: []
   },
   gameOptions: {
-    type: GameOptionsSchema,
+    type: Schema.Types.Mixed,
     default: () => ({})
   },
   createdAt: { 
