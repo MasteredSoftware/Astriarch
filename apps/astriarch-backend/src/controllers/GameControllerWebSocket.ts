@@ -234,7 +234,7 @@ export class GameController {
           if (playerType > 0) { // Computer player (1=Easy, 2=Normal, 3=Hard, 4=Expert)
             const computerPlayer = {
               name: `Computer ${computerNumber++}`,
-              sessionId: '', // Computer players don't have sessions
+              sessionId: undefined, // Computer players don't have sessions
               position: i + 1, // Positions start from 1 (host is 0)
               Id: getPlayerId(i + 1),
               isActive: true,

@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPlayer {
   name: string;
-  sessionId: string;
+  sessionId?: string; // Optional for computer players
   position: number;
   Id: string;
   isActive: boolean;
@@ -43,7 +43,7 @@ export interface IGame extends Document {
 
 const PlayerSchema = new Schema<IPlayer>({
   name: { type: String, required: true },
-  sessionId: { type: String, required: true },
+  sessionId: { type: String, required: false }, // Not required for computer players
   position: { type: Number, required: true },
   Id: { type: String, required: true },
   isActive: { type: Boolean, default: true },
