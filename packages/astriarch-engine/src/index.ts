@@ -13,6 +13,32 @@ import { Grid } from './engine/grid';
 // Export messaging types
 export * from './messaging/MessageTypes';
 
+// Export engine classes
+export { Player };
+export { GameModel };
+export { ClientGameModel };
+export { GameController };
+export { Events };
+export { Grid };
+
+// Export model types and enums
+export { PlayerType };
+export { GalaxySizeOption };
+export { GameSpeed };
+export { PlanetsPerSystemOption };
+export { ResearchType };
+export { CitizenWorkerType };
+export { playerColors };
+
+// Export interfaces
+export type { PlayerData };
+export type { GameOptions };
+export type { ModelData };
+export type { GameModelData };
+export type { ClientModelData };
+export type { PlanetById };
+export type { Subscription };
+
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
 
@@ -88,6 +114,3 @@ export const getPlayerTotalPopulation = (player: PlayerData, planetById: PlanetB
 export const getEngineVersion = () => {
   return '2.0.0';
 };
-
-// TODO: decide what the engine should actually export
-export * from './model';
