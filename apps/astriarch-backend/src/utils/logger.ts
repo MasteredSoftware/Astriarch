@@ -19,36 +19,32 @@ class Logger {
     return levels[level] >= levels[this.logLevel];
   }
 
-  private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
+  private formatPrefix(level: LogLevel): string {
     const timestamp = new Date().toISOString();
-    const formattedArgs = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-    ).join(' ');
-    
-    return `[${timestamp}] ${level}: ${message} ${formattedArgs}`.trim();
+    return `[${timestamp}] ${level}:`;
   }
 
   debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('DEBUG')) {
-      console.log(this.formatMessage('DEBUG', message, ...args));
+      console.log(this.formatPrefix('DEBUG'), message, ...args);
     }
   }
 
   info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('INFO')) {
-      console.log(this.formatMessage('INFO', message, ...args));
+      console.log(this.formatPrefix('INFO'), message, ...args);
     }
   }
 
   warn(message: string, ...args: unknown[]): void {
     if (this.shouldLog('WARN')) {
-      console.warn(this.formatMessage('WARN', message, ...args));
+      console.warn(this.formatPrefix('WARN'), message, ...args);
     }
   }
 
   error(message: string, ...args: unknown[]): void {
     if (this.shouldLog('ERROR')) {
-      console.error(this.formatMessage('ERROR', message, ...args));
+      console.error(this.formatPrefix('ERROR'), message, ...args);
     }
   }
 }
