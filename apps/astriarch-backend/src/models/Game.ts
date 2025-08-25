@@ -105,6 +105,9 @@ const GameSchema = new Schema<IGame>({
   }
 });
 
+// Configure schema to preserve empty objects
+GameSchema.set('minimize', false);
+
 // Index for efficient queries
 GameSchema.index({ status: 1, createdAt: -1 });
 GameSchema.index({ lastActivity: 1 });
