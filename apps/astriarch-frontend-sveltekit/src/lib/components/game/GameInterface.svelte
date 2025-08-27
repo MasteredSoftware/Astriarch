@@ -1,12 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import {
-		gameModel,
-		clientGameModel,
-		resourceData,
-		population,
-		gameActions
-	} from '../../stores/gameStore';
+	import { clientGameModel, resourceData, population, gameActions } from '../../stores/gameStore';
 	import GameCanvas from './GameCanvas.svelte';
 	import PlanetView from './PlanetView.svelte';
 	import ResearchView from './ResearchView.svelte';
@@ -24,13 +18,8 @@
 	let showNotifications = false;
 
 	// Subscribe to game state
-	$: gameStarted = $gameModel !== null;
-	$: currentGameModel = $gameModel;
+	$: gameStarted = $clientGameModel !== null;
 	$: currentClientModel = $clientGameModel;
-
-	function startNewGame() {
-		gameActions.startNewGame();
-	}
 
 	function handlePlanetClick(event: CustomEvent) {
 		const { planetId } = event.detail;
@@ -58,22 +47,7 @@
 </script>
 
 <div class="game-interface">
-	{#if !gameStarted}
-		<!-- Game Start Screen -->
-		<div class="start-overlay">
-			<Card class="start-dialog">
-				<div class="start-header">
-					<h2>Welcome to Astriarch</h2>
-				</div>
-				<div class="start-content">
-					<p>Ready to conquer the galaxy?</p>
-					<div class="start-actions">
-						<Button onclick={startNewGame}>Start New Game</Button>
-					</div>
-				</div>
-			</Card>
-		</div>
-	{:else}
+	{#if gameStarted}
 		<!-- Main Game Interface -->
 		<div class="game-layout">
 			<!-- Top Status Bar -->
@@ -159,6 +133,18 @@
 				<NotificationPanel />
 			{/if}
 		</div>
+	{:else}
+		<!-- No Game Connected -->
+		<div class="start-overlay">
+			<Card class="start-dialog">
+				<div class="start-header">
+					<h2>Connect to Game</h2>
+				</div>
+				<div class="start-content">
+					<p>Waiting for game connection...</p>
+				</div>
+			</Card>
+		</div>
 	{/if}
 </div>
 
@@ -187,10 +173,6 @@
 	.start-content {
 		padding: 1.5rem;
 		text-align: center;
-	}
-
-	.start-actions {
-		margin-top: 1rem;
 	}
 
 	.game-layout {

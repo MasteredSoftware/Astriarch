@@ -1,24 +1,19 @@
 import { writable, derived } from 'svelte/store';
 import {
-	startNewGame,
 	advanceClientGameModelTime,
 	getPlayerTotalResources,
 	getPlayerTotalResourceProductionPerTurn,
 	getPlayerTotalPopulation,
-	subscribeToEvents,
 	type ClientModelData,
-	type EventNotification,
-	type GameModelData,
 	type Grid,
 	ResearchType
 } from 'astriarch-engine';
 
 // Game state stores
-export const gameModel = writable<GameModelData | null>(null);
 export const clientGameModel = writable<ClientModelData | null>(null);
+export const gameGrid = writable<Grid | null>(null);
 export const notifications = writable<string[]>([]);
-export const gameStarted = writable<boolean>(false);
-export const isGameRunning = writable<boolean>(false);
+export const isGameRunning = writable<boolean>(true);
 
 // Resource data derived from client game model
 export const resourceData = derived(clientGameModel, ($clientGameModel) => {
@@ -113,23 +108,8 @@ export const currentResearch = derived(clientGameModel, ($clientGameModel) => {
 
 // Game actions
 export const gameActions = {
-	startNewGame() {
-		const { gameModel: gm, clientGameModel: cgm } = startNewGame();
-		gameModel.set(gm);
-		clientGameModel.set(cgm);
-		gameStarted.set(true);
-		isGameRunning.set(true);
-
-		// Subscribe to game events
-		subscribeToEvents('me', (playerId: string, enList: EventNotification[]) => {
-			notifications.update((prev) => [...prev, ...enList.map((en) => en.message)]);
-		});
-
-		// Add initial notification
-		notifications.update((prev) => [...prev, 'New game started! Welcome to Astriarch.']);
-
-		// Start the animation frame loop
-		startGameLoop();
+	clearNotifications() {
+		notifications.set([]);
 	},
 
 	pauseGame() {
@@ -143,10 +123,6 @@ export const gameActions = {
 	resumeGame() {
 		isGameRunning.set(true);
 		startGameLoop();
-	},
-
-	clearNotifications() {
-		notifications.set([]);
 	}
 };
 
@@ -167,17 +143,17 @@ function startGameLoop() {
 	}
 
 	function gameLoop() {
-		if (!get(isGameRunning) || !get(gameStarted)) {
+		if (!get(isGameRunning)) {
 			animationFrameId = null;
 			return;
 		}
 
 		const cgm = get(clientGameModel);
-		const gm = get(gameModel);
+		const grid = get(gameGrid);
 
-		if (cgm && gm) {
+		if (cgm && grid) {
 			// Advance the client game model time continuously
-			const updatedClientGameModel = advanceClientGameModelTime(cgm, gm.grid);
+			const updatedClientGameModel = advanceClientGameModelTime(cgm, grid);
 			clientGameModel.set(updatedClientGameModel);
 		}
 
@@ -186,3 +162,18 @@ function startGameLoop() {
 
 	animationFrameId = requestAnimationFrame(gameLoop);
 }
+
+// Start the game loop when both client game model and grid are loaded
+clientGameModel.subscribe((cgm) => {
+	const grid = get(gameGrid);
+	if (cgm && grid && get(isGameRunning) && animationFrameId === null) {
+		startGameLoop();
+	}
+});
+
+gameGrid.subscribe((grid) => {
+	const cgm = get(clientGameModel);
+	if (cgm && grid && get(isGameRunning) && animationFrameId === null) {
+		startGameLoop();
+	}
+});

@@ -14,8 +14,8 @@ import {
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
-import { gameModel, clientGameModel, gameStarted, isGameRunning, gameActions } from '$lib/stores/gameStore';
-import type { GameModelData, ClientModelData } from 'astriarch-engine';
+import { clientGameModel, isGameRunning, gameActions } from '$lib/stores/gameStore';
+import type { ClientModelData } from 'astriarch-engine';
 
 // Additional types specific to this service
 export interface IOpponentOption {
@@ -353,7 +353,6 @@ class WebSocketService {
 							// The server sends a ClientModelData (player-specific view of the game)
 							const clientGameState = message.payload.gameState as ClientModelData;
 							clientGameModel.set(clientGameState);
-							gameStarted.set(true);
 							isGameRunning.set(true);
 
 							// For multiplayer, we don't have access to the full GameModelData on the client
@@ -471,8 +470,16 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
 				// Handle build queue update response
-				if (message.payload && typeof message.payload === 'object' && 'success' in message.payload) {
-					const payload = message.payload as { success: boolean; error?: string; gameData?: unknown };
+				if (
+					message.payload &&
+					typeof message.payload === 'object' &&
+					'success' in message.payload
+				) {
+					const payload = message.payload as {
+						success: boolean;
+						error?: string;
+						gameData?: unknown;
+					};
 					if (payload.success) {
 						this.gameStore.addNotification({
 							id: Date.now().toString(),
@@ -480,7 +487,7 @@ class WebSocketService {
 							message: 'Build queue updated successfully',
 							timestamp: Date.now()
 						});
-						
+
 						// Update game state if provided
 						if (payload.gameData) {
 							this.gameStore.setGameState(payload.gameData);
@@ -658,7 +665,13 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.END_TURN, { actionType, actionData }));
 	}
 
-	updatePlanetBuildQueue(gameId: string, planetId: number, action: 'add' | 'remove', productionItem?: unknown, index?: number) {
+	updatePlanetBuildQueue(
+		gameId: string,
+		planetId: number,
+		action: 'add' | 'remove',
+		productionItem?: unknown,
+		index?: number
+	) {
 		const payload = {
 			gameId,
 			planetId,

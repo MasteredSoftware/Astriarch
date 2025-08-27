@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { clientGameModel, gameModel } from '$lib/stores/gameStore';
+	import { clientGameModel, gameGrid } from '$lib/stores/gameStore';
 	import type {
 		ClientModelData,
 		PlanetHappinessType,
@@ -41,15 +41,15 @@
 		console.log('Initializing GalaxyCanvas...');
 
 		// Get galaxy dimensions from the grid when available
-		const gm = $gameModel;
-		const galaxyWidth = gm?.grid ? 621 : 800; // Default fallback
-		const galaxyHeight = gm?.grid ? 480 : 600; // Default fallback
+		const grid = $gameGrid;
+		const galaxyWidth = grid ? 621 : 800; // Default fallback
+		const galaxyHeight = grid ? 480 : 600; // Default fallback
 
-		console.log('Galaxy dimensions:', { galaxyWidth, galaxyHeight, hasGrid: !!gm?.grid });
+		console.log('Galaxy dimensions:', { galaxyWidth, galaxyHeight, hasGrid: !!grid });
 
-		if (gm?.grid) {
-			currentGrid = gm.grid;
-			console.log('Grid loaded with', gm.grid.hexes.length, 'hexes');
+		if (grid) {
+			currentGrid = grid;
+			console.log('Grid loaded with', grid.hexes.length, 'hexes');
 		}
 
 		// Create Konva stage with proper galaxy dimensions
@@ -197,9 +197,9 @@
 		}
 
 		// Update grid reference if changed
-		const gm = $gameModel;
-		if (gm?.grid && currentGrid !== gm.grid) {
-			currentGrid = gm.grid;
+		const grid = $gameGrid;
+		if (grid && currentGrid !== grid) {
+			currentGrid = grid;
 			console.log('Grid updated, recreating background');
 			// Recreate background with hex grid
 			galaxyLayer.destroyChildren();

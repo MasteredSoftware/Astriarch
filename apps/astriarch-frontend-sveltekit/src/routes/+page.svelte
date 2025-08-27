@@ -2,7 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
 	import {
-		gameStarted,
+		clientGameModel,
 		notifications,
 		resourceData,
 		population,
@@ -29,6 +29,9 @@
 
 	// UI state
 	let showLobby = false;
+
+	// Computed values
+	$: gameStarted = $clientGameModel !== null;
 
 	$: if (browser && !GalaxyCanvas) {
 		import('$lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
@@ -57,8 +60,7 @@
 	});
 
 	onDestroy(() => {
-		// Pause the game when component is destroyed to stop animation frame
-		gameActions.pauseGame();
+		console.log('Astriarch game component destroyed');
 	});
 </script>
 
@@ -91,7 +93,7 @@
 				<Logo size="lg" variant="primary" />
 
 				<!-- Game time info - only show when game is started -->
-				{#if $gameStarted}
+				{#if gameStarted}
 					<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
 						Cycle {$gameTime.cycle} • {$gameTime.timeString} • Stardate {$gameTime.stardate}
 					</Text>
@@ -105,31 +107,24 @@
 				{/if}
 			</div>
 
-			{#if $gameStarted}
-				<Button
-					label={$isGameRunning ? 'Pause Game' : 'Resume Game'}
-					size="md"
-					variant={$isGameRunning ? 'outline' : 'primary'}
-					onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
-				/>
-			{:else}
-				<div class="flex items-center space-x-4">
+			<div class="flex items-center space-x-4">
+				{#if gameStarted}
 					<Button
-						label="Start New Game"
-						size="lg"
-						variant="primary"
-						onclick={gameActions.startNewGame}
+						label={$isGameRunning ? 'Pause Game' : 'Resume Game'}
+						size="md"
+						variant={$isGameRunning ? 'outline' : 'primary'}
+						onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
 					/>
-					<Button label="Multiplayer Lobby" size="lg" variant="outline" onclick={handleShowLobby} />
-					<a href="/test/websocket" class="text-sm text-cyan-400 underline hover:text-cyan-300">
-						WebSocket Test
-					</a>
-				</div>
-			{/if}
+				{/if}
+				<Button label="Multiplayer Lobby" size="lg" variant="primary" onclick={handleShowLobby} />
+				<a href="/test/websocket" class="text-sm text-cyan-400 underline hover:text-cyan-300">
+					WebSocket Test
+				</a>
+			</div>
 		</div>
 
 		<!-- Resource Overview -->
-		{#if $gameStarted}
+		{#if gameStarted}
 			<div class="mb-6 flex justify-center">
 				<TopOverview resourceData={$resourceData} population={$population} />
 			</div>
@@ -138,7 +133,7 @@
 
 	<!-- Main Game Area -->
 	<div class="relative z-10 flex-1">
-		{#if $gameStarted}
+		{#if gameStarted}
 			<!-- Game View -->
 			<div class="flex h-[calc(100vh-200px)] flex-col">
 				<!-- Central Game Content Area with Galaxy Canvas as background -->
@@ -207,17 +202,11 @@
 					<Text style="font-size: 16px; color: #64748B; margin-bottom: 48px;">
 						The galaxy awaits your strategic genius in this real-time space conquest.
 					</Text>
-					<div class="flex justify-center space-x-4">
+					<div class="flex justify-center">
 						<Button
-							label="Begin Your Conquest"
+							label="Join Multiplayer Game"
 							size="lg"
 							variant="primary"
-							onclick={gameActions.startNewGame}
-						/>
-						<Button
-							label="Join Multiplayer"
-							size="lg"
-							variant="outline"
 							onclick={handleShowLobby}
 						/>
 					</div>
