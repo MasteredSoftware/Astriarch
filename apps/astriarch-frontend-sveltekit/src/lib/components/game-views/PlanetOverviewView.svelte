@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Text, Card, Button, AvailablePlanetProductionItem } from '$lib/components/astriarch';
 	import { clientGameModel } from '$lib/stores/gameStore';
+	import { webSocketService, multiplayerGameStore } from '$lib/services/websocket';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
@@ -27,13 +28,21 @@
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
 		try {
-			// Planet.enqueueProductionItemAndSpendResources(
-			//   $clientGameModel.grid,
-			//   $clientGameModel.mainPlayer,
-			//   $clientGameModel.planetById,
-			//   selectedPlanet,
-			//   item
-			// );
+			// Get the current game ID from multiplayer store
+			let gameId = '';
+			const unsubscribe = multiplayerGameStore.subscribe((state) => {
+				gameId = state.gameId || '';
+			});
+			unsubscribe();
+
+			if (!gameId) {
+				console.error('No game ID available');
+				return;
+			}
+
+			// Send WebSocket message to add item to build queue
+			webSocketService.updatePlanetBuildQueue(gameId, selectedPlanet.id, 'add', item);
+
 			console.log(
 				'Added building to queue:',
 				GameTools.planetImprovementTypeToFriendlyName(buildingType)
@@ -49,13 +58,21 @@
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType);
 
 		try {
-			// Planet.enqueueProductionItemAndSpendResources(
-			//   $clientGameModel.grid,
-			//   $clientGameModel.mainPlayer,
-			//   $clientGameModel.planetById,
-			//   selectedPlanet,
-			//   item
-			// );
+			// Get the current game ID from multiplayer store
+			let gameId = '';
+			const unsubscribe = multiplayerGameStore.subscribe((state) => {
+				gameId = state.gameId || '';
+			});
+			unsubscribe();
+
+			if (!gameId) {
+				console.error('No game ID available');
+				return;
+			}
+
+			// Send WebSocket message to add item to build queue
+			webSocketService.updatePlanetBuildQueue(gameId, selectedPlanet.id, 'add', item);
+
 			console.log('Added ship to queue:', GameTools.starShipTypeToFriendlyName(shipType));
 		} catch (error) {
 			console.error('Failed to add ship to queue:', error);

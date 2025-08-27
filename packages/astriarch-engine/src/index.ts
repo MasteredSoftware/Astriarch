@@ -3,6 +3,7 @@ import { Events, Subscription } from './engine/events';
 import { GameController } from './engine/gameController';
 import { GameModel, GameModelData, playerColors } from './engine/gameModel';
 import { Player } from './engine/player';
+import { Planet } from './engine/planet';
 import { ClientModelData, PlanetById } from './model/clientModel';
 import { GalaxySizeOption, GameOptions, GameSpeed, ModelData, PlanetsPerSystemOption } from './model/model';
 import { PlayerData, PlayerType } from './model/player';
@@ -15,6 +16,7 @@ export * from './messaging/MessageTypes';
 
 // Export engine classes
 export { Player };
+export { Planet };
 export { GameModel };
 export { ClientGameModel };
 export { GameController };

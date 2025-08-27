@@ -36,6 +36,9 @@ export const playerColors = [
   Utils.ColorRgba(255, 0, 0, 255), //Light Red
 ];
 
+const GALAXY_WIDTH = 621.0; //1920.0; //TODO: externalize later
+const GALAXY_HEIGHT = 480.0; //1080.0; //TODO: externalize later
+
 export class GameModel {
   public static constructData(players: PlayerData[], gameOptions: GameOptions): GameModelData {
     const gameStartedAtTime = new Date().getTime();
@@ -43,9 +46,7 @@ export class GameModel {
     const currentCycle = 0;
     const tradingCenter = TradingCenter.constructData(players.length);
 
-    const galaxyWidth = 621.0; //1920.0; //TODO: externalize later
-    const galaxyHeight = 480.0; //1080.0; //TODO: externalize later
-    const grid = new Grid(galaxyWidth, galaxyHeight, gameOptions);
+    const grid = new Grid(GALAXY_WIDTH, GALAXY_HEIGHT, gameOptions);
     const planets = GameModel.populatePlanets(grid, players, gameOptions);
 
     const modelData = {
@@ -58,6 +59,11 @@ export class GameModel {
       planets,
     };
 
+    return { modelData, grid };
+  }
+
+  public static constructGridWithModelData(modelData: ModelData): GameModelData {
+    const grid = new Grid(GALAXY_WIDTH, GALAXY_HEIGHT, modelData.gameOptions);
     return { modelData, grid };
   }
 

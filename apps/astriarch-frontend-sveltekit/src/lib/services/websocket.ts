@@ -469,6 +469,35 @@ class WebSocketService {
 				});
 				break;
 
+			case MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
+				// Handle build queue update response
+				if (message.payload && typeof message.payload === 'object' && 'success' in message.payload) {
+					const payload = message.payload as { success: boolean; error?: string; gameData?: unknown };
+					if (payload.success) {
+						this.gameStore.addNotification({
+							id: Date.now().toString(),
+							type: 'success',
+							message: 'Build queue updated successfully',
+							timestamp: Date.now()
+						});
+						
+						// Update game state if provided
+						if (payload.gameData) {
+							this.gameStore.setGameState(payload.gameData);
+						}
+					} else {
+						this.gameStore.addNotification({
+							id: Date.now().toString(),
+							type: 'error',
+							message: payload.error || 'Failed to update build queue',
+							timestamp: Date.now()
+						});
+					}
+				} else {
+					console.warn('Unexpected UPDATE_PLANET_BUILD_QUEUE payload format:', message.payload);
+				}
+				break;
+
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
 					this.gameStore.addNotification({
@@ -624,9 +653,22 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload));
 	}
 
-	// Game actions (placeholder for actual game commands)
+	// Game actions
 	sendGameAction(actionType: string, actionData: unknown) {
 		this.send(new Message(MESSAGE_TYPE.END_TURN, { actionType, actionData }));
+	}
+
+	updatePlanetBuildQueue(gameId: string, planetId: number, action: 'add' | 'remove', productionItem?: unknown, index?: number) {
+		const payload = {
+			gameId,
+			planetId,
+			action,
+			productionItem,
+			index
+		};
+
+		console.log('Sending UPDATE_PLANET_BUILD_QUEUE with payload:', payload);
+		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload));
 	}
 
 	disconnect() {

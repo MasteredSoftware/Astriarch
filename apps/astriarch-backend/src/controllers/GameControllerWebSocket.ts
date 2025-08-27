@@ -469,9 +469,81 @@ export class GameController {
   }
 
   static async updatePlanetBuildQueue(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement build queue update
-    logger.warn('updatePlanetBuildQueue not yet implemented');
-    return { success: false, error: 'Not implemented' };
+    try {
+      const { gameId, planetId, action, productionItem } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: 'Game not found' };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find(p => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: 'Player not found in game' };
+      }
+
+      // Get the current game state
+      const gameModel = game.gameState as any;
+      
+      // Find the planet in the game state
+      const planet = gameModel.planets?.find((p: any) => p.id === planetId);
+      if (!planet) {
+        return { success: false, error: 'Planet not found' };
+      }
+
+      // Verify the player owns this planet
+      if (planet.ownerId !== player.Id) {
+        return { success: false, error: 'You do not own this planet' };
+      }
+
+      // Handle different actions
+      if (action === 'add') {
+        // Add item to build queue using engine method
+        const planetById = gameModel.planets.reduce((acc: any, p: any) => {
+          acc[p.id] = p;
+          return acc;
+        }, {});
+
+        const gamePlayer = gameModel.players?.find((p: any) => p.id === player.Id);
+        if (!gamePlayer) {
+          return { success: false, error: 'Player not found in game state' };
+        }
+
+        // Use engine method to add to queue and spend resources
+        engine.Planet.enqueueProductionItemAndSpendResources(
+          gameModel.grid,
+          gamePlayer,
+          planetById,
+          planet,
+          productionItem
+        );
+
+        // Save the updated game state
+        game.gameState = gameModel;
+        game.lastActivity = new Date();
+        await game.save();
+
+        logger.info(`Player ${player.Id} added production item to planet ${planetId} build queue`);
+        
+        return { 
+          success: true, 
+          game,
+          gameData: gameModel
+        };
+
+      } else if (action === 'remove') {
+        // TODO: Implement remove from queue
+        return { success: false, error: 'Remove from queue not yet implemented' };
+      } else {
+        return { success: false, error: 'Invalid action' };
+      }
+
+    } catch (error) {
+      logger.error('UpdatePlanetBuildQueue error:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
   }
 
   static async clearWaypoint(sessionId: string, payload: any): Promise<GameResult> {

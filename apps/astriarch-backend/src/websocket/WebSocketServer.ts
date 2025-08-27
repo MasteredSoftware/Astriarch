@@ -23,7 +23,10 @@ import {
   type IJoinGameRequestPayload,
   type IStartGameRequestPayload,
   type IChangeGameOptionsPayload,
-  constructClientGameModel
+  constructClientGameModel,
+  advanceGameModelTime,
+  GameModel,
+  ModelData
 } from 'astriarch-engine';
 import { getPlayerId } from '../utils/player-id-helper';
 
@@ -311,8 +314,8 @@ export class WebSocketServer {
       }
 
       // Use the engine's advanceGameModelTime function which handles time properly
-      const { advanceGameModelTime } = await import('astriarch-engine');
-      advanceGameModelTime(game.gameState as any);
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+      advanceGameModelTime(gameModelData);
 
       // Save the updated game state with new timestamp
       await game.save();
@@ -715,8 +718,34 @@ export class WebSocketServer {
   }
 
   private async handleUpdatePlanetBuildQueue(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.updatePlanetBuildQueue
-    logger.warn('handleUpdatePlanetBuildQueue not yet implemented');
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.updatePlanetBuildQueue(client.sessionId, message.payload);
+      
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, { 
+        success: true,
+        message: 'Production item added to queue'
+      }));
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+
+    } catch (error) {
+      logger.error('handleUpdatePlanetBuildQueue error:', error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { 
+        message: error instanceof Error ? error.message : 'Unknown error occurred while updating build queue' 
+      }));
+    }
   }
 
   private async handleClearWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
