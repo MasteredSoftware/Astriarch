@@ -4,10 +4,14 @@ import {
 	getPlayerTotalResources,
 	getPlayerTotalResourceProductionPerTurn,
 	getPlayerTotalPopulation,
+	Grid,
 	type ClientModelData,
-	type Grid,
 	ResearchType
 } from 'astriarch-engine';
+
+// Galaxy constants (from engine's GameModel)
+const GALAXY_WIDTH = 621.0;
+const GALAXY_HEIGHT = 480.0;
 
 // Game state stores
 export const clientGameModel = writable<ClientModelData | null>(null);
@@ -162,6 +166,19 @@ function startGameLoop() {
 
 	animationFrameId = requestAnimationFrame(gameLoop);
 }
+
+// Automatically construct the grid when clientGameModel is loaded
+clientGameModel.subscribe((cgm) => {
+	if (cgm && cgm.gameOptions) {
+		// Construct the deterministic grid based on game options
+		const grid = new Grid(GALAXY_WIDTH, GALAXY_HEIGHT, cgm.gameOptions);
+		gameGrid.set(grid);
+		console.log('Client-side grid constructed with', grid.hexes.length, 'hexes');
+	} else if (!cgm) {
+		// Clear the grid when no game model
+		gameGrid.set(null);
+	}
+});
 
 // Start the game loop when both client game model and grid are loaded
 clientGameModel.subscribe((cgm) => {
