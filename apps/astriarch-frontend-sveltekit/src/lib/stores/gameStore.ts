@@ -167,10 +167,12 @@ function startGameLoop() {
 	animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-// Automatically construct the grid when clientGameModel is loaded
+// Construct the grid once when a game is started/resumed
 clientGameModel.subscribe((cgm) => {
-	if (cgm && cgm.gameOptions) {
-		// Construct the deterministic grid based on game options
+	const currentGrid = get(gameGrid);
+
+	if (cgm && cgm.gameOptions && !currentGrid) {
+		// Only construct grid once when we have game options but no grid yet
 		const grid = new Grid(GALAXY_WIDTH, GALAXY_HEIGHT, cgm.gameOptions);
 		gameGrid.set(grid);
 		console.log('Client-side grid constructed with', grid.hexes.length, 'hexes');
