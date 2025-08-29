@@ -4,6 +4,7 @@ import { SessionModel } from '../models/Session';
 import { logger } from '../utils/logger';
 import * as engine from 'astriarch-engine';
 import { getPlayerId } from '../utils/player-id-helper';
+import { GameModel } from 'astriarch-engine';
 
 export interface GameSettings {
   maxPlayers?: number;
@@ -493,8 +494,15 @@ export class GameController {
         return { success: false, error: 'Planet not found' };
       }
 
-      // Verify the player owns this planet
-      if (planet.ownerId !== player.Id) {
+      const gamePlayer = gameModel.players?.find((p: any) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: 'Player not found in game state' };
+      }
+      
+      // Check if this planet exists in the player's owned planets      
+      const ownsPlanet = GameModel.isPlanetOwnedByPlayer(gamePlayer, planetId);
+      
+      if (!ownsPlanet) {
         return { success: false, error: 'You do not own this planet' };
       }
 

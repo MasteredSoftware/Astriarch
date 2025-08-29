@@ -6,6 +6,7 @@ import {
 	getPlayerTotalPopulation,
 	Grid,
 	type ClientModelData,
+	type PlanetProductionItemData,
 	ResearchType
 } from 'astriarch-engine';
 
@@ -127,6 +128,46 @@ export const gameActions = {
 	resumeGame() {
 		isGameRunning.set(true);
 		startGameLoop();
+	},
+
+	// Optimistic update: add item to planet's build queue immediately
+	addToPlanetBuildQueueOptimistic(planetId: number, item: PlanetProductionItemData) {
+		clientGameModel.update((cgm) => {
+			if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return cgm;
+
+			// Create a new client game model with updated build queue
+			const updatedCgm = { ...cgm };
+			const updatedPlanets = { ...updatedCgm.mainPlayerOwnedPlanets };
+			const updatedPlanet = { ...updatedPlanets[planetId] };
+
+			// Add item to build queue
+			updatedPlanet.buildQueue = [...(updatedPlanet.buildQueue || []), item];
+			updatedPlanets[planetId] = updatedPlanet;
+			updatedCgm.mainPlayerOwnedPlanets = updatedPlanets;
+
+			return updatedCgm;
+		});
+	},
+
+	// Optimistic update: remove item from planet's build queue immediately
+	removeFromPlanetBuildQueueOptimistic(planetId: number, itemIndex: number) {
+		clientGameModel.update((cgm) => {
+			if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return cgm;
+
+			// Create a new client game model with updated build queue
+			const updatedCgm = { ...cgm };
+			const updatedPlanets = { ...updatedCgm.mainPlayerOwnedPlanets };
+			const updatedPlanet = { ...updatedPlanets[planetId] };
+
+			// Remove item from build queue
+			updatedPlanet.buildQueue = (updatedPlanet.buildQueue || []).filter(
+				(_, index) => index !== itemIndex
+			);
+			updatedPlanets[planetId] = updatedPlanet;
+			updatedCgm.mainPlayerOwnedPlanets = updatedPlanets;
+
+			return updatedCgm;
+		});
 	}
 };
 

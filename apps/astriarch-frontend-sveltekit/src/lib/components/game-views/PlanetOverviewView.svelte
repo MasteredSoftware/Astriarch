@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { Text, Card, Button, AvailablePlanetProductionItem } from '$lib/components/astriarch';
-	import { clientGameModel } from '$lib/stores/gameStore';
+	import { Text, AvailablePlanetProductionItem } from '$lib/components/astriarch';
+	import { clientGameModel, gameActions } from '$lib/stores/gameStore';
 	import { webSocketService, multiplayerGameStore } from '$lib/services/websocket';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
-	import { Planet } from 'astriarch-engine/src/engine/planet';
-	import { PlanetImprovementType } from 'astriarch-engine/src/model/planet';
+	import { PlanetImprovementType, type PlanetData } from 'astriarch-engine/src/model/planet';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
+	import type { ClientModelData } from 'astriarch-engine';
 
-	let selectedPlanet = null;
+	let selectedPlanet: ClientModelData['mainPlayerOwnedPlanets'][number] | undefined = undefined;
 
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
@@ -18,7 +18,7 @@
 		selectedPlanet = planetList[0];
 	}
 
-	function selectPlanet(planet) {
+	function selectPlanet(planet?: PlanetData) {
 		selectedPlanet = planet;
 	}
 
@@ -26,6 +26,9 @@
 		if (!selectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
+
+		// Optimistic update: immediately add to local build queue
+		gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
 
 		try {
 			// Get the current game ID from multiplayer store
@@ -49,6 +52,7 @@
 			);
 		} catch (error) {
 			console.error('Failed to add building to queue:', error);
+			// TODO: Revert optimistic update on error
 		}
 	}
 
@@ -56,6 +60,9 @@
 		if (!selectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType);
+
+		// Optimistic update: immediately add to local build queue
+		gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
 
 		try {
 			// Get the current game ID from multiplayer store
@@ -76,6 +83,38 @@
 			console.log('Added ship to queue:', GameTools.starShipTypeToFriendlyName(shipType));
 		} catch (error) {
 			console.error('Failed to add ship to queue:', error);
+			// TODO: Revert optimistic update on error
+		}
+	}
+
+	function removeFromBuildQueue(itemIndex: number) {
+		if (!selectedPlanet || !$clientGameModel) return;
+
+		// Optimistic update: immediately remove from local build queue
+		gameActions.removeFromPlanetBuildQueueOptimistic(selectedPlanet.id, itemIndex);
+
+		try {
+			// Get the current game ID from multiplayer store
+			let gameId = '';
+			const unsubscribe = multiplayerGameStore.subscribe((state) => {
+				gameId = state.gameId || '';
+			});
+			unsubscribe();
+
+			if (!gameId) {
+				console.error('No game ID available');
+				return;
+			}
+
+			// Send WebSocket message to remove item from build queue
+			webSocketService.updatePlanetBuildQueue(gameId, selectedPlanet.id, 'remove', {
+				index: itemIndex
+			});
+
+			console.log('Removed item from build queue at index:', itemIndex);
+		} catch (error) {
+			console.error('Failed to remove item from build queue:', error);
+			// TODO: Revert optimistic update on error
 		}
 	}
 
@@ -142,8 +181,10 @@
 					{#if planetList.length > 1}
 						<select
 							class="rounded border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-white"
-							on:change={(e) =>
-								selectPlanet(planetList.find((p) => p.id === parseInt(e.target.value)))}
+							on:change={(e) => {
+								const target = e.target as HTMLSelectElement;
+								selectPlanet(planetList.find((p) => p.id === parseInt(target.value)));
+							}}
 							value={selectedPlanet.id}
 						>
 							{#each planetList as planet}
@@ -302,15 +343,18 @@
 							<div class="rounded border border-slate-600/50 bg-slate-800/50 p-2">
 								<div class="mb-1 flex items-center justify-between text-xs">
 									<div class="font-medium text-cyan-400">
-										{#if item.itemType === 1}
-											{GameTools.planetImprovementTypeToFriendlyName(item.improvementData?.type)}
-										{:else if item.itemType === 2}
-											{GameTools.starShipTypeToFriendlyName(item.starshipData?.type)}
+										{#if item.itemType === 1 && item.improvementData?.type}
+											{GameTools.planetImprovementTypeToFriendlyName(item.improvementData.type)}
+										{:else if item.itemType === 2 && item.starshipData?.type}
+											{GameTools.starShipTypeToFriendlyName(item.starshipData.type)}
 										{:else}
 											Unknown Item
 										{/if}
 									</div>
-									<button class="text-xs text-red-400 hover:text-red-300">✕</button>
+									<button
+										class="text-xs text-red-400 hover:text-red-300"
+										on:click={() => removeFromBuildQueue(index)}>✕</button
+									>
 								</div>
 
 								<div class="mb-2 text-xs text-slate-400">

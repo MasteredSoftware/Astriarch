@@ -316,6 +316,10 @@ export class GameModel {
     return gameModel.modelData.planets.find((p) => p.id === planetId);
   }
 
+  public static isPlanetOwnedByPlayer(player: PlayerData, planetId: number): boolean {
+    return player.ownedPlanetIds.includes(planetId);
+  }
+
   public static findPlanetOwner(gameModel: GameModelData, planetId: number): PlayerData | undefined {
     for (const player of gameModel.modelData.players) {
       if (player.ownedPlanetIds.includes(planetId)) {
