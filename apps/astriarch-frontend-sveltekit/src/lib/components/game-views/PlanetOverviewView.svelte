@@ -8,18 +8,21 @@
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import type { ClientModelData } from 'astriarch-engine';
 
-	let selectedPlanet: ClientModelData['mainPlayerOwnedPlanets'][number] | undefined = undefined;
+	let selectedPlanetId: number | undefined = undefined;
 
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
 
 	// Auto-select first planet if none selected
-	$: if (!selectedPlanet && planetList.length > 0) {
-		selectedPlanet = planetList[0];
+	$: if (!selectedPlanetId && planetList.length > 0) {
+		selectedPlanetId = planetList[0]?.id;
 	}
 
+	// Reactive selectedPlanet that always reflects current data from store
+	$: selectedPlanet = selectedPlanetId ? planets[selectedPlanetId] : undefined;
+
 	function selectPlanet(planet?: PlanetData) {
-		selectedPlanet = planet;
+		selectedPlanetId = planet?.id;
 	}
 
 	function addBuildingToQueue(buildingType: PlanetImprovementType) {
@@ -185,7 +188,7 @@
 								const target = e.target as HTMLSelectElement;
 								selectPlanet(planetList.find((p) => p.id === parseInt(target.value)));
 							}}
-							value={selectedPlanet.id}
+							value={selectedPlanetId}
 						>
 							{#each planetList as planet}
 								<option value={planet.id}>{planet.name}</option>

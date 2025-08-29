@@ -3,6 +3,7 @@ import { Server } from 'http';
 import { logger } from '../utils/logger';
 import { Session, Game, IGame } from '../models';
 import { GameController } from '../controllers/GameControllerWebSocket';
+import { persistGame } from '../database/DocumentPersistence';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   MESSAGE_TYPE, 
@@ -317,8 +318,8 @@ export class WebSocketServer {
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
       advanceGameModelTime(gameModelData);
 
-      // Save the updated game state with new timestamp
-      await game.save();
+      // Save the updated game state with automatic Mixed field handling
+      await persistGame(game);
 
       // Broadcast the updated game state to all connected players
       await this.broadcastGameStateUpdate(gameId);
@@ -329,28 +330,47 @@ export class WebSocketServer {
 
   private async broadcastGameStateUpdate(gameId: string): Promise<void> {
     try {
+      logger.info(`Broadcasting game state update for game: ${gameId}`);
+      
       const game = await Game.findById(gameId);
       if (!game) {
+        logger.warn(`Game ${gameId} not found for state update`);
         return;
       }
 
       const gameRoom = this.gameRooms.get(gameId);
       if (!gameRoom) {
+        logger.warn(`No game room found for game: ${gameId}`);
         return;
       }
+
+      logger.info(`Game room has ${gameRoom.size} sessions: ${Array.from(gameRoom)}`);
 
       // Send updated client models to each connected player
       for (const sessionId of gameRoom) {
         const clientId = this.getClientIdBySessionId(sessionId);
         const client = clientId ? this.clients.get(clientId) : null;
         
+        logger.info(`Session ${sessionId}: clientId=${clientId}, client.playerId=${client?.playerId}`);
+        
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
+          
+          // Debug: Log build queue data for the first planet
+          const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
+          if (firstPlanetId) {
+            const firstPlanet = (clientGameModel.mainPlayerOwnedPlanets as any)[firstPlanetId];
+            logger.info(`Build queue for planet ${firstPlanetId}: ${JSON.stringify(firstPlanet.buildQueue)}`);
+          }
+          
           const updateMessage = new Message(MESSAGE_TYPE.GAME_STATE_UPDATE, {
             clientGameModel,
             currentCycle: (game.gameState as any).currentCycle || 0
           });
           this.sendToClient(clientId, updateMessage);
+          logger.info(`Sent game state update to session ${sessionId} with playerId ${client.playerId}`);
+        } else {
+          logger.warn(`Skipping session ${sessionId}: missing client or playerId`);
         }
       }
     } catch (error) {
@@ -508,7 +528,7 @@ export class WebSocketServer {
 
       if (result.success && result.game) {
         const playerId = getPlayerId(0);
-        const clientGameModel = constructClientGameModel(result.game.gameState, playerId);
+        const clientGameModel = constructClientGameModel(result.game.gameState as any, playerId);
         // Send success response with game state
         const startResponse = {
           success: true,
@@ -523,6 +543,21 @@ export class WebSocketServer {
           for (const player of result.game.players) {
             // Only send to human players (not AI)
             if (!player.isAI && player.sessionId) {
+              // Update client info for this player
+              const playerClientId = this.getClientIdBySessionId(player.sessionId);
+              const playerClient = playerClientId ? this.clients.get(playerClientId) : null;
+              
+              if (playerClient) {
+                playerClient.gameId = gameId;
+                playerClient.playerId = getPlayerId(player.position || 0);
+                
+                // Add to game room
+                if (!this.gameRooms.has(gameId)) {
+                  this.gameRooms.set(gameId, new Set());
+                }
+                this.gameRooms.get(gameId)!.add(player.sessionId);
+              }
+              
               // The game state might be a GameModelData object with a modelData property,
               // or it might be the ModelData directly. Handle both cases.
               let modelData: any;
@@ -585,6 +620,16 @@ export class WebSocketServer {
           result.gameData,
           result.player.Id
         );
+
+        // Update client info for resumed game
+        client.gameId = gameId;
+        client.playerId = getPlayerId(result.player.position || 0);
+
+        // Add to game room if not already there
+        if (!this.gameRooms.has(gameId)) {
+          this.gameRooms.set(gameId, new Set());
+        }
+        this.gameRooms.get(gameId)!.add(client.sessionId);
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.RESUME_GAME, {
           gameData: serializableClientModel,

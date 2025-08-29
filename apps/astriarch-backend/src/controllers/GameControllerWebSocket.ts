@@ -2,6 +2,7 @@ import config from 'config';
 import { ServerGameModel, IGame, IPlayer } from '../models/Game';
 import { SessionModel } from '../models/Session';
 import { logger } from '../utils/logger';
+import { persistGame } from '../database/DocumentPersistence';
 import * as engine from 'astriarch-engine';
 import { getPlayerId } from '../utils/player-id-helper';
 import { GameModel } from 'astriarch-engine';
@@ -135,7 +136,7 @@ export class GameController {
         lastActivity: new Date()
       });
 
-      await game.save();
+      await persistGame(game);
       logger.info(`Game "${gameData.name}" created by ${gameData.players[0]?.name}:`, game._id);
       return game;
     } catch (error) {
@@ -189,7 +190,7 @@ export class GameController {
       game.players.push(newPlayer);
       game.lastActivity = new Date();
 
-      await game.save();
+      await persistGame(game);
       
       logger.info(`${data.playerName} joined game ${data.gameId} as player ${playerPosition}`);
       return {
@@ -293,7 +294,7 @@ export class GameController {
       game.gameState = gameModel.modelData;
       game.status = 'in_progress';
       game.lastActivity = new Date();
-      await game.save();
+      await persistGame(game);
 
       logger.info(`Game ${game._id} started with ${allPlayers.length} players (${allPlayers.filter(p => !p.isAI).length} human, ${allPlayers.filter(p => p.isAI).length} computer)`);
       return {
@@ -375,7 +376,7 @@ export class GameController {
       }
 
       game.lastActivity = new Date();
-      await game.save();
+      await persistGame(game);
 
       logger.info(`Game options updated for game ${gameId}`);
       return { success: true, game };
@@ -531,7 +532,18 @@ export class GameController {
         // Save the updated game state
         game.gameState = gameModel;
         game.lastActivity = new Date();
-        await game.save();
+        
+        // Debug: Log build queue before and after save
+        const planetAfterUpdate = gameModel.planets?.find((p: any) => p.id === planetId);
+        logger.info(`Planet ${planetId} build queue before save: ${JSON.stringify(planetAfterUpdate?.buildQueue)}`);
+        
+        // Use data access layer to save with automatic Mixed field handling
+        await persistGame(game);
+        
+        // Re-fetch the game to see what was actually saved
+        const savedGame = await ServerGameModel.findById(gameId);
+        const savedPlanet = (savedGame?.gameState as any)?.planets?.find((p: any) => p.id === planetId);
+        logger.info(`Planet ${planetId} build queue after save: ${JSON.stringify(savedPlanet?.buildQueue)}`);
 
         logger.info(`Player ${player.Id} added production item to planet ${planetId} build queue`);
         
