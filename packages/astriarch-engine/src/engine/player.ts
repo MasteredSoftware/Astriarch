@@ -1,8 +1,8 @@
-import { PlanetById, TaskNotificationType } from '../model/clientModel';
+import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
 import { EventNotificationType } from '../model/eventNotification';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
-import { PlanetData, PlanetHappinessType, PlanetImprovementType } from '../model/planet';
+import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Utils } from '../utils/utils';
 import { Events } from './events';
@@ -156,6 +156,30 @@ export class Player {
 
     p.points = Object.values(p.earnedPointsByType).reduce((accum, curr) => accum + curr, 0);
     return p.points;
+  }
+
+  public static enqueueProductionItemAndSpendResourcesIfPossible(
+    clientModel: ClientModelData,
+    grid: Grid,
+    planet: PlanetData,
+    item: PlanetProductionItemData,
+  ): boolean {
+    // Check if there are enough resources to enqueue the production item
+    let canBuild = false;
+    const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
+    if (
+      totalResources.energy >= item.energyCost &&
+      totalResources.ore >= item.oreCost &&
+      totalResources.iridium >= item.iridiumCost
+    ) {
+      canBuild = true;
+    }
+
+    if (canBuild) {
+      Planet.enqueueProductionItemAndSpendResources(grid, mainPlayer, mainPlayerOwnedPlanets, planet, item);
+    }
+    return canBuild;
   }
 
   public static addLastStarShipToQueueOnPlanets(data: AdvanceGameClockForPlayerData) {

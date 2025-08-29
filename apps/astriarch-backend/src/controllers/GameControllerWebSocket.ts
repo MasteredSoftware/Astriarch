@@ -487,7 +487,9 @@ export class GameController {
       }
 
       // Get the current game state
-      const gameModel = game.gameState as any;
+      // Construct a proper GameModel with grid from the gameState data
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData; // The actual game state
       
       // Find the planet in the game state
       const planet = gameModel.planets?.find((p: any) => p.id === planetId);
@@ -519,34 +521,27 @@ export class GameController {
         if (!gamePlayer) {
           return { success: false, error: 'Player not found in game state' };
         }
-
+        const clientGameModel = engine.constructClientGameModel(gameModel, player.Id);
         // Use engine method to add to queue and spend resources
-        engine.Planet.enqueueProductionItemAndSpendResources(
-          gameModel.grid,
+        const canBuild = engine.Player.enqueueProductionItemAndSpendResourcesIfPossible(
+          clientGameModel,
+          gameModelData.grid, // Use the grid from GameModelData
           gamePlayer,
-          planetById,
           planet,
           productionItem
         );
+
+        if (!canBuild) {
+          return { success: false, error: 'Not enough resources to build item' };
+        }
 
         // Save the updated game state
         game.gameState = gameModel;
         game.lastActivity = new Date();
         
-        // Debug: Log build queue before and after save
-        const planetAfterUpdate = gameModel.planets?.find((p: any) => p.id === planetId);
-        logger.info(`Planet ${planetId} build queue before save: ${JSON.stringify(planetAfterUpdate?.buildQueue)}`);
-        
         // Use data access layer to save with automatic Mixed field handling
         await persistGame(game);
-        
-        // Re-fetch the game to see what was actually saved
-        const savedGame = await ServerGameModel.findById(gameId);
-        const savedPlanet = (savedGame?.gameState as any)?.planets?.find((p: any) => p.id === planetId);
-        logger.info(`Planet ${planetId} build queue after save: ${JSON.stringify(savedPlanet?.buildQueue)}`);
 
-        logger.info(`Player ${player.Id} added production item to planet ${planetId} build queue`);
-        
         return { 
           success: true, 
           game,
