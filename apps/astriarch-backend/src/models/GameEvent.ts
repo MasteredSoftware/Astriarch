@@ -33,8 +33,8 @@ const GameEventSchema = new Schema<IGameEvent>({
   },
   gameTime: {
     type: Number,
-    required: true,
-    index: true
+    required: true
+    // Removed index: true - using schema-level index instead
   },
   eventType: {
     type: String,

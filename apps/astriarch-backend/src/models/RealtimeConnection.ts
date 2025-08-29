@@ -37,8 +37,8 @@ const RealtimeConnectionSchema = new Schema<IRealtimeConnection>({
   sessionId: {
     type: String,
     required: true,
-    unique: true,
-    index: true
+    unique: true
+    // Removed index: true - using schema-level index instead
   },
   playerId: {
     type: String,
@@ -57,8 +57,8 @@ const RealtimeConnectionSchema = new Schema<IRealtimeConnection>({
     index: true
   },
   websocketId: {
-    type: String,
-    index: true
+    type: String
+    // Removed index: true - using schema-level index instead
   },
   connectedAt: {
     type: Date,
@@ -68,8 +68,8 @@ const RealtimeConnectionSchema = new Schema<IRealtimeConnection>({
   lastActivity: {
     type: Date,
     default: Date.now,
-    required: true,
-    index: true
+    required: true
+    // Removed index: true - using schema-level index instead
   },
   disconnectedAt: Date,
   reconnectAttempts: {
@@ -108,7 +108,7 @@ const RealtimeConnectionSchema = new Schema<IRealtimeConnection>({
 // Indexes for connection management and monitoring
 RealtimeConnectionSchema.index({ gameId: 1, connectionState: 1 });
 RealtimeConnectionSchema.index({ gameId: 1, playerId: 1 });
-RealtimeConnectionSchema.index({ sessionId: 1 }, { unique: true });
+// Removed sessionId index - unique: true already creates an index
 RealtimeConnectionSchema.index({ lastActivity: 1 }); // For cleanup of stale connections
 RealtimeConnectionSchema.index({ websocketId: 1 });
 
