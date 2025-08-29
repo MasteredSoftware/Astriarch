@@ -30,8 +30,17 @@
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
-		// Optimistic update: immediately add to local build queue
-		gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
+		// Use engine validation - only proceeds if sufficient resources
+		const success = gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
+
+		if (!success) {
+			console.warn(
+				'Insufficient resources to build:',
+				GameTools.planetImprovementTypeToFriendlyName(buildingType)
+			);
+			// Could add user notification here
+			return;
+		}
 
 		try {
 			// Get the current game ID from multiplayer store
@@ -64,8 +73,17 @@
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType);
 
-		// Optimistic update: immediately add to local build queue
-		gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
+		// Use engine validation - only proceeds if sufficient resources
+		const success = gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
+
+		if (!success) {
+			console.warn(
+				'Insufficient resources to build:',
+				GameTools.starShipTypeToFriendlyName(shipType)
+			);
+			// Could add user notification here
+			return;
+		}
 
 		try {
 			// Get the current game ID from multiplayer store
@@ -93,8 +111,13 @@
 	function removeFromBuildQueue(itemIndex: number) {
 		if (!selectedPlanet || !$clientGameModel) return;
 
-		// Optimistic update: immediately remove from local build queue
-		gameActions.removeFromPlanetBuildQueueOptimistic(selectedPlanet.id, itemIndex);
+		// Remove from build queue with engine refund handling
+		const success = gameActions.removeFromPlanetBuildQueueOptimistic(selectedPlanet.id, itemIndex);
+
+		if (!success) {
+			console.warn('Failed to remove item from build queue at index:', itemIndex);
+			return;
+		}
 
 		try {
 			// Get the current game ID from multiplayer store

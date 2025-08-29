@@ -6,6 +6,7 @@ import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { ClientModelData, PlanetById } from './model/clientModel';
 import { GalaxySizeOption, GameOptions, GameSpeed, ModelData, PlanetsPerSystemOption } from './model/model';
+import { PlanetProductionItemData } from './model/planet';
 import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { CitizenWorkerType } from './model/planet';
@@ -39,6 +40,7 @@ export type { ModelData };
 export type { GameModelData };
 export type { ClientModelData };
 export type { PlanetById };
+export type { PlanetProductionItemData };
 export type { Subscription };
 
 export const MS_PER_TICK = 200; // Time for client side refreshes

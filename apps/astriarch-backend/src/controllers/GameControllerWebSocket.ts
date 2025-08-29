@@ -526,7 +526,6 @@ export class GameController {
         const canBuild = engine.Player.enqueueProductionItemAndSpendResourcesIfPossible(
           clientGameModel,
           gameModelData.grid, // Use the grid from GameModelData
-          gamePlayer,
           planet,
           productionItem
         );

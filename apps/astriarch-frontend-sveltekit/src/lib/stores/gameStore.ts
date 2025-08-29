@@ -5,6 +5,8 @@ import {
 	getPlayerTotalResourceProductionPerTurn,
 	getPlayerTotalPopulation,
 	Grid,
+	Player,
+	Planet,
 	type ClientModelData,
 	type PlanetProductionItemData,
 	ResearchType
@@ -130,44 +132,49 @@ export const gameActions = {
 		startGameLoop();
 	},
 
-	// Optimistic update: add item to planet's build queue immediately
-	addToPlanetBuildQueueOptimistic(planetId: number, item: PlanetProductionItemData) {
-		clientGameModel.update((cgm) => {
-			if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return cgm;
+	// Validate with engine then add item to planet's build queue if resources are sufficient
+	addToPlanetBuildQueueOptimistic(planetId: number, item: PlanetProductionItemData): boolean {
+		const cgm = get(clientGameModel);
+		if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return false;
 
-			// Create a new client game model with updated build queue
-			const updatedCgm = { ...cgm };
-			const updatedPlanets = { ...updatedCgm.mainPlayerOwnedPlanets };
-			const updatedPlanet = { ...updatedPlanets[planetId] };
+		const grid = get(gameGrid);
+		if (!grid) return false;
 
-			// Add item to build queue
-			updatedPlanet.buildQueue = [...(updatedPlanet.buildQueue || []), item];
-			updatedPlanets[planetId] = updatedPlanet;
-			updatedCgm.mainPlayerOwnedPlanets = updatedPlanets;
+		const planet = cgm.mainPlayerOwnedPlanets[planetId];
 
-			return updatedCgm;
-		});
+		// Use engine validation to check if we can build this item
+		const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+			cgm,
+			grid,
+			planet,
+			item
+		);
+
+		if (canBuild) {
+			// The engine method already updated the planet's build queue and spent resources
+			// We need to trigger a store update to notify components
+			clientGameModel.update((current) => (current ? { ...current } : null));
+		}
+
+		return canBuild;
 	},
 
-	// Optimistic update: remove item from planet's build queue immediately
-	removeFromPlanetBuildQueueOptimistic(planetId: number, itemIndex: number) {
-		clientGameModel.update((cgm) => {
-			if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return cgm;
+	// Remove item from planet's build queue with refund
+	removeFromPlanetBuildQueueOptimistic(planetId: number, itemIndex: number): boolean {
+		const cgm = get(clientGameModel);
+		if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return false;
 
-			// Create a new client game model with updated build queue
-			const updatedCgm = { ...cgm };
-			const updatedPlanets = { ...updatedCgm.mainPlayerOwnedPlanets };
-			const updatedPlanet = { ...updatedPlanets[planetId] };
+		const planet = cgm.mainPlayerOwnedPlanets[planetId];
 
-			// Remove item from build queue
-			updatedPlanet.buildQueue = (updatedPlanet.buildQueue || []).filter(
-				(_, index) => index !== itemIndex
-			);
-			updatedPlanets[planetId] = updatedPlanet;
-			updatedCgm.mainPlayerOwnedPlanets = updatedPlanets;
+		// Use engine method to remove item and handle refund
+		const success = Planet.removeBuildQueueItemForRefund(planet, itemIndex);
 
-			return updatedCgm;
-		});
+		if (success) {
+			// Trigger a store update to notify components
+			clientGameModel.update((current) => (current ? { ...current } : null));
+		}
+
+		return success;
 	}
 };
 
