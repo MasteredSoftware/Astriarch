@@ -533,27 +533,27 @@ export class Planet {
     builderDiff: number,
   ) {
     const current = this.countPopulationWorkerTypes(p);
-    
+
     // Calculate what we want to achieve
     let desiredFarmers = Math.max(0, current.farmers + farmerDiff);
     let desiredMiners = Math.max(0, current.miners + minerDiff);
     let desiredBuilders = Math.max(0, current.builders + builderDiff);
-    
+
     const totalPopulation = p.population.length;
     const desiredTotal = desiredFarmers + desiredMiners + desiredBuilders;
-    
+
     // If we're trying to assign more workers than we have population, we need to adjust
     if (desiredTotal > totalPopulation) {
       // We need to reduce some assignments - prioritize keeping the requested increases
       const excess = desiredTotal - totalPopulation;
-      
+
       // Create array of worker types with their desired amounts and whether they were increased
       const workers = [
         { type: 'farmers', desired: desiredFarmers, wasIncreased: farmerDiff > 0, diff: farmerDiff },
         { type: 'miners', desired: desiredMiners, wasIncreased: minerDiff > 0, diff: minerDiff },
-        { type: 'builders', desired: desiredBuilders, wasIncreased: builderDiff > 0, diff: builderDiff }
+        { type: 'builders', desired: desiredBuilders, wasIncreased: builderDiff > 0, diff: builderDiff },
       ];
-      
+
       // Sort to reduce from non-increased types first, then by highest count
       workers.sort((a, b) => {
         if (a.wasIncreased !== b.wasIncreased) {
@@ -561,7 +561,7 @@ export class Planet {
         }
         return b.desired - a.desired; // Then by highest count
       });
-      
+
       let remaining = excess;
       for (const worker of workers) {
         if (remaining <= 0) break;
@@ -569,26 +569,26 @@ export class Planet {
         worker.desired -= canReduce;
         remaining -= canReduce;
       }
-      
+
       // Update our desired values
-      desiredFarmers = workers.find(w => w.type === 'farmers')!.desired;
-      desiredMiners = workers.find(w => w.type === 'miners')!.desired;
-      desiredBuilders = workers.find(w => w.type === 'builders')!.desired;
+      desiredFarmers = workers.find((w) => w.type === 'farmers')!.desired;
+      desiredMiners = workers.find((w) => w.type === 'miners')!.desired;
+      desiredBuilders = workers.find((w) => w.type === 'builders')!.desired;
     }
-    
+
     // If we have unassigned population, assign to the type that needs the most
     const assignedTotal = desiredFarmers + desiredMiners + desiredBuilders;
     if (assignedTotal < totalPopulation) {
       const unassigned = totalPopulation - assignedTotal;
-      
+
       // Find which assignment has the least workers to balance things out
       const assignments = [
         { type: 'farmers', count: desiredFarmers },
         { type: 'miners', count: desiredMiners },
-        { type: 'builders', count: desiredBuilders }
+        { type: 'builders', count: desiredBuilders },
       ];
       assignments.sort((a, b) => a.count - b.count);
-      
+
       // Distribute unassigned workers starting with the lowest assignment
       let remaining = unassigned;
       for (const assignment of assignments) {
@@ -600,20 +600,14 @@ export class Planet {
         remaining -= toAdd;
       }
     }
-    
+
     // Now calculate the balanced diffs that sum to zero
     const balancedFarmerDiff = desiredFarmers - current.farmers;
     const balancedMinerDiff = desiredMiners - current.miners;
     const balancedBuilderDiff = desiredBuilders - current.builders;
-    
+
     // Use the existing method that requires diffs to sum to zero
-    return this.updatePopulationWorkerTypesByDiff(
-      p,
-      owner,
-      balancedFarmerDiff,
-      balancedMinerDiff,
-      balancedBuilderDiff
-    );
+    return this.updatePopulationWorkerTypesByDiff(p, owner, balancedFarmerDiff, balancedMinerDiff, balancedBuilderDiff);
   }
 
   /**

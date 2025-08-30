@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { get } from 'svelte/store';
 import {
 	MESSAGE_TYPE,
 	Message,
@@ -527,6 +528,30 @@ class WebSocketService {
 			case MESSAGE_TYPE.PONG:
 				// Server responded to our ping - session is alive
 				console.log('Received pong from server');
+
+				// Check if PONG includes updated game state
+				if (message.payload && typeof message.payload === 'object') {
+					const payload = message.payload as Record<string, unknown>;
+
+					if (payload.clientGameModel) {
+						console.log('PONG included updated game state, updating client model');
+
+						// Update the main game store with the fresh data from the server
+						clientGameModel.set(payload.clientGameModel as ClientModelData);
+
+						// Update game running state if needed
+						const currentGameRunning = get(isGameRunning);
+						if (payload.clientGameModel && !currentGameRunning) {
+							isGameRunning.set(true);
+						}
+
+						// Optionally update current cycle if provided
+						if (payload.currentCycle !== undefined) {
+							// You could add a currentCycle store if needed
+							console.log('Current game cycle:', payload.currentCycle);
+						}
+					}
+				}
 				break;
 
 			default:

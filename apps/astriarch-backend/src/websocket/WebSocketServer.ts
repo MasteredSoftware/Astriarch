@@ -168,7 +168,8 @@ export class WebSocketServer {
         break;
 
       case MESSAGE_TYPE.PING:
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.PONG, {}));
+        // Send back PONG with updated client game model if player is in an active game
+        await this.handlePing(clientId);
         break;
 
       case MESSAGE_TYPE.LIST_GAMES:
@@ -913,6 +914,34 @@ export class WebSocketServer {
   private async handleLogout(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement logout
     logger.warn("handleLogout not yet implemented");
+  }
+
+  private async handlePing(clientId: string): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    // Always send a basic PONG response
+    let pongPayload: any = { timestamp: new Date().toISOString() };
+
+    // If client is in an active game, include their current game state
+    if (client.gameId && client.playerId) {
+      try {
+        const game = await Game.findById(client.gameId);
+        if (game && game.status === "in_progress") {
+          const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
+          pongPayload = {
+            ...pongPayload,
+            clientGameModel,
+            currentCycle: (game.gameState as any).currentCycle || 0,
+          };
+          logger.info(`Sending PONG with updated game state to session ${client.sessionId}`);
+        }
+      } catch (error) {
+        logger.error("Error getting game state for PING response:", error);
+      }
+    }
+
+    this.sendToClient(clientId, new Message(MESSAGE_TYPE.PONG, pongPayload));
   }
 
   // Helper methods for game management
