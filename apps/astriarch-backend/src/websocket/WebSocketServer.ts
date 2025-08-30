@@ -663,7 +663,6 @@ export class WebSocketServer {
     }
   }
 
-  // Placeholder handlers for game actions (to be implemented)
   private async handleChangeGameOptions(clientId: string, message: IMessage<IChangeGameOptionsPayload>): Promise<void> {
     try {
       const client = this.clients.get(clientId);

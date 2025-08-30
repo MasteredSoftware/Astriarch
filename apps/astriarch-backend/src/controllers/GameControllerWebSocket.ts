@@ -510,8 +510,8 @@ export class GameController {
         return { success: false, error: "You do not own this planet" };
       }
 
-      // Update worker assignments using the engine method
-      engine.Planet.updatePopulationWorkerTypesByDiff(
+      // Update worker assignments using the new engine method that handles rebalancing
+      engine.Planet.updatePopulationWorkerTypes(
         planet,
         gamePlayer,
         farmerDiff || 0,
