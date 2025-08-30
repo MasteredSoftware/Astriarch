@@ -222,8 +222,9 @@
 <div class="flex h-full flex-col bg-slate-900/95 backdrop-blur-sm">
 	{#if selectedPlanet}
 		<!-- Planet Header Summary -->
-		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-4">
-			<div class="mb-2 flex items-center justify-between">
+		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-3">
+			<div id="selected-planet-header" class="flex items-center justify-between gap-6">
+				<!-- Left: Planet Name & Info -->
 				<div class="flex items-center space-x-4">
 					<h2 class="text-astriarch-headline-24 text-astriarch-primary">
 						{selectedPlanet.name}
@@ -245,36 +246,63 @@
 							{/each}
 						</select>
 					{/if}
-				</div>
-				<div class="text-right text-xs">
-					<div class="text-white">Population: {selectedPlanet.population?.length || 0}</div>
-					<div class="text-slate-400">
+					<div class="text-xs text-slate-400">
+						Pop: {selectedPlanet.population?.length || 0} | 
 						Max: {selectedPlanet.maxImprovements + (selectedPlanet.builtImprovements?.[2] || 0)}
 					</div>
 				</div>
-			</div>
 
-			<!-- Resource Summary -->
-			<div class="grid grid-cols-4 gap-4 text-xs">
-				<div class="text-center">
-					<div class="text-astriarch-food">{(selectedPlanet.resources?.food || 0).toFixed(1)}</div>
-					<div class="text-astriarch-ui-light-grey">Food</div>
-				</div>
-				<div class="text-center">
-					<div class="text-astriarch-energy">
-						{(selectedPlanet.resources?.energy || 0).toFixed(1)}
+				<!-- Middle: Resources -->
+				<div class="flex items-center space-x-3">
+					<span class="text-xs text-slate-400">Resources:</span>
+					<div class="flex space-x-2 text-xs">
+						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
+							<span class="text-astriarch-food">{(selectedPlanet.resources?.food || 0).toFixed(1)}</span>
+							<span class="text-astriarch-ui-light-grey text-xs">F</span>
+						</div>
+						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
+							<span class="text-astriarch-energy">{(selectedPlanet.resources?.energy || 0).toFixed(1)}</span>
+							<span class="text-astriarch-ui-light-grey text-xs">E</span>
+						</div>
+						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
+							<span class="text-astriarch-ore">{(selectedPlanet.resources?.ore || 0).toFixed(1)}</span>
+							<span class="text-astriarch-ui-light-grey text-xs">O</span>
+						</div>
+						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
+							<span class="text-astriarch-iridium">{(selectedPlanet.resources?.iridium || 0).toFixed(1)}</span>
+							<span class="text-astriarch-ui-light-grey text-xs">I</span>
+						</div>
 					</div>
-					<div class="text-astriarch-ui-light-grey">Energy</div>
 				</div>
-				<div class="text-center">
-					<div class="text-astriarch-ore">{(selectedPlanet.resources?.ore || 0).toFixed(1)}</div>
-					<div class="text-astriarch-ui-light-grey">Ore</div>
-				</div>
-				<div class="text-center">
-					<div class="text-astriarch-iridium">
-						{(selectedPlanet.resources?.iridium || 0).toFixed(1)}
+
+				<!-- Right: Improvements -->
+				<div class="flex items-center space-x-3">
+					<span class="text-xs text-slate-400">Improvements:</span>
+					<div class="flex flex-wrap gap-1 text-xs">
+						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Farm] > 0}
+							<span class="rounded bg-slate-800/30 px-2 py-1 text-green-400">
+								Farm: {selectedPlanet.builtImprovements[PlanetImprovementType.Farm]}
+							</span>
+						{/if}
+						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Mine] > 0}
+							<span class="rounded bg-slate-800/30 px-2 py-1 text-orange-400">
+								Mine: {selectedPlanet.builtImprovements[PlanetImprovementType.Mine]}
+							</span>
+						{/if}
+						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Factory] > 0}
+							<span class="rounded bg-slate-800/30 px-2 py-1 text-blue-400">
+								Factory: {selectedPlanet.builtImprovements[PlanetImprovementType.Factory]}
+							</span>
+						{/if}
+						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Colony] > 0}
+							<span class="rounded bg-slate-800/30 px-2 py-1 text-purple-400">
+								Colony: {selectedPlanet.builtImprovements[PlanetImprovementType.Colony]}
+							</span>
+						{/if}
+						{#if !selectedPlanet.builtImprovements || Object.values(selectedPlanet.builtImprovements).every(count => count === 0)}
+							<span class="text-slate-500 text-xs">None</span>
+						{/if}
 					</div>
-					<div class="text-astriarch-ui-light-grey">Iridium</div>
 				</div>
 			</div>
 		</div>
