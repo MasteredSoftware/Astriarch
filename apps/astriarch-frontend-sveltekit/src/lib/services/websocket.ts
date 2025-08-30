@@ -684,6 +684,25 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload));
 	}
 
+	updatePlanetWorkerAssignments(
+		gameId: string,
+		planetId: number,
+		farmerDiff: number,
+		minerDiff: number,
+		builderDiff: number
+	) {
+		const payload = {
+			gameId,
+			planetId,
+			farmerDiff,
+			minerDiff,
+			builderDiff
+		};
+
+		console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
+		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+	}
+
 	disconnect() {
 		if (this.ws) {
 			this.ws.close();

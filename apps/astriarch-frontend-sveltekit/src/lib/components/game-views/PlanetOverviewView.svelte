@@ -5,7 +5,11 @@
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
-	import { PlanetImprovementType, type PlanetData } from 'astriarch-engine/src/model/planet';
+	import {
+		PlanetImprovementType,
+		CitizenWorkerType,
+		type PlanetData
+	} from 'astriarch-engine/src/model/planet';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import type { ClientModelData } from 'astriarch-engine';
 
@@ -26,6 +30,23 @@
 	$: workerAssignments = selectedPlanet
 		? Planet.countPopulationWorkerTypes(selectedPlanet)
 		: { farmers: 0, miners: 0, builders: 0 };
+
+	// Helper function for worker assignment changes
+	function adjustWorkerAssignment(workerType: CitizenWorkerType, delta: number) {
+		if (!selectedPlanet || !$multiplayerGameStore.gameId) return;
+
+		const farmerDiff = workerType === CitizenWorkerType.Farmer ? delta : 0;
+		const minerDiff = workerType === CitizenWorkerType.Miner ? delta : 0;
+		const builderDiff = workerType === CitizenWorkerType.Builder ? delta : 0;
+
+		webSocketService.updatePlanetWorkerAssignments(
+			$multiplayerGameStore.gameId,
+			selectedPlanet.id,
+			farmerDiff,
+			minerDiff,
+			builderDiff
+		);
+	}
 
 	function selectPlanet(planet?: PlanetData) {
 		selectedPlanetId = planet?.id;
@@ -213,7 +234,7 @@
 					{#if planetList.length > 1}
 						<select
 							class="rounded border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-white"
-							on:change={(e) => {
+							onchange={(e) => {
 								const target = e.target as HTMLSelectElement;
 								selectPlanet(planetList.find((p) => p.id === parseInt(target.value)));
 							}}
@@ -340,25 +361,43 @@
 						<div class="flex items-center justify-between rounded bg-slate-800/30 p-2">
 							<span class="text-green-400">Farmers:</span>
 							<div class="flex items-center space-x-1">
-								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">-</button>
+								<button
+									class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500"
+									onclick={() => adjustWorkerAssignment(CitizenWorkerType.Farmer, -1)}>-</button
+								>
 								<span class="w-6 text-center text-white">{workerAssignments.farmers}</span>
-								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">+</button>
+								<button
+									class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500"
+									onclick={() => adjustWorkerAssignment(CitizenWorkerType.Farmer, 1)}>+</button
+								>
 							</div>
 						</div>
 						<div class="flex items-center justify-between rounded bg-slate-800/30 p-2">
 							<span class="text-orange-400">Miners:</span>
 							<div class="flex items-center space-x-1">
-								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">-</button>
+								<button
+									class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500"
+									onclick={() => adjustWorkerAssignment(CitizenWorkerType.Miner, -1)}>-</button
+								>
 								<span class="w-6 text-center text-white">{workerAssignments.miners}</span>
-								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">+</button>
+								<button
+									class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500"
+									onclick={() => adjustWorkerAssignment(CitizenWorkerType.Miner, 1)}>+</button
+								>
 							</div>
 						</div>
 						<div class="flex items-center justify-between rounded bg-slate-800/30 p-2">
 							<span class="text-blue-400">Builders:</span>
 							<div class="flex items-center space-x-1">
-								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">-</button>
+								<button
+									class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500"
+									onclick={() => adjustWorkerAssignment(CitizenWorkerType.Builder, -1)}>-</button
+								>
 								<span class="w-6 text-center text-white">{workerAssignments.builders}</span>
-								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">+</button>
+								<button
+									class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500"
+									onclick={() => adjustWorkerAssignment(CitizenWorkerType.Builder, 1)}>+</button
+								>
 							</div>
 						</div>
 					</div>
@@ -405,7 +444,7 @@
 									</div>
 									<button
 										class="text-xs text-red-400 hover:text-red-300"
-										on:click={() => removeFromBuildQueue(index)}>✕</button
+										onclick={() => removeFromBuildQueue(index)}>✕</button
 									>
 								</div>
 
