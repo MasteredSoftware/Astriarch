@@ -70,6 +70,7 @@ export class Planet {
     const resources = PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0);
     if (initialOwner) {
       population.push(Planet.constructCitizen(type, initialOwner.id));
+      population.push(Planet.constructCitizen(type, initialOwner.id));
       resources.energy = 3;
       resources.food = 4;
       resources.ore = 2;
