@@ -4,6 +4,7 @@
 	import { webSocketService, multiplayerGameStore } from '$lib/services/websocket';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
+	import { Planet } from 'astriarch-engine/src/engine/planet';
 	import { PlanetImprovementType, type PlanetData } from 'astriarch-engine/src/model/planet';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import type { ClientModelData } from 'astriarch-engine';
@@ -20,6 +21,11 @@
 
 	// Reactive selectedPlanet that always reflects current data from store
 	$: selectedPlanet = selectedPlanetId ? planets[selectedPlanetId] : undefined;
+
+	// Calculate current worker assignments for the selected planet
+	$: workerAssignments = selectedPlanet
+		? Planet.countPopulationWorkerTypes(selectedPlanet)
+		: { farmers: 0, miners: 0, builders: 0 };
 
 	function selectPlanet(planet?: PlanetData) {
 		selectedPlanetId = planet?.id;
@@ -335,7 +341,7 @@
 							<span class="text-green-400">Farmers:</span>
 							<div class="flex items-center space-x-1">
 								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">-</button>
-								<span class="w-6 text-center text-white">2</span>
+								<span class="w-6 text-center text-white">{workerAssignments.farmers}</span>
 								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">+</button>
 							</div>
 						</div>
@@ -343,17 +349,37 @@
 							<span class="text-orange-400">Miners:</span>
 							<div class="flex items-center space-x-1">
 								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">-</button>
-								<span class="w-6 text-center text-white">3</span>
+								<span class="w-6 text-center text-white">{workerAssignments.miners}</span>
 								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">+</button>
 							</div>
 						</div>
 						<div class="flex items-center justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-blue-400">Workers:</span>
+							<span class="text-blue-400">Builders:</span>
 							<div class="flex items-center space-x-1">
 								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">-</button>
-								<span class="w-6 text-center text-white">1</span>
+								<span class="w-6 text-center text-white">{workerAssignments.builders}</span>
 								<button class="h-5 w-5 rounded bg-slate-600 text-xs hover:bg-slate-500">+</button>
 							</div>
+						</div>
+					</div>
+
+					<!-- Total Population Summary -->
+					<div class="mt-3 border-t border-slate-700/50 pt-2">
+						<div class="flex justify-between text-xs">
+							<span class="text-slate-400">Total Population:</span>
+							<span class="text-white">{selectedPlanet?.population?.length || 0}</span>
+						</div>
+						<div class="flex justify-between text-xs">
+							<span class="text-slate-400">Unassigned:</span>
+							<span class="text-white"
+								>{Math.max(
+									0,
+									(selectedPlanet?.population?.length || 0) -
+										(workerAssignments.farmers +
+											workerAssignments.miners +
+											workerAssignments.builders)
+								)}</span
+							>
 						</div>
 					</div>
 				</div>
