@@ -464,10 +464,66 @@ export class GameController {
     return { success: false, error: 'Not implemented' };
   }
 
-  static async updatePlanetOptions(data: any, payload: any): Promise<GameResult> {
-    // TODO: Implement planet options update
-    logger.warn('updatePlanetOptions not yet implemented');
-    return { success: false, error: 'Not implemented' };
+  static async updatePlanetOptions(sessionId: string, payload: any): Promise<GameResult> {
+    try {
+      const { gameId, planetId, farmerDiff, minerDiff, builderDiff } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: 'Game not found' };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find(p => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: 'Player not found in game' };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+      
+      // Find the planet in the game state
+      const planet = gameModel.planets?.find((p: any) => p.id === planetId);
+      if (!planet) {
+        return { success: false, error: 'Planet not found' };
+      }
+
+      const gamePlayer = gameModel.players?.find((p: any) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: 'Player not found in game state' };
+      }
+      
+      // Check if this planet exists in the player's owned planets      
+      const ownsPlanet = GameModel.isPlanetOwnedByPlayer(gamePlayer, planetId);
+      
+      if (!ownsPlanet) {
+        return { success: false, error: 'You do not own this planet' };
+      }
+
+      // Update worker assignments using the engine method
+      engine.Planet.updatePopulationWorkerTypesByDiff(
+        planet,
+        gamePlayer,
+        farmerDiff || 0,
+        minerDiff || 0,
+        builderDiff || 0
+      );
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      await persistGame(game);
+
+      return { success: true, game };
+
+    } catch (error) {
+      logger.error('updatePlanetOptions error:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error occurred while updating planet options' 
+      };
+    }
   }
 
   static async updatePlanetBuildQueue(sessionId: string, payload: any): Promise<GameResult> {

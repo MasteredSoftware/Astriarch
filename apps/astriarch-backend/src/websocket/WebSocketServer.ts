@@ -758,8 +758,34 @@ export class WebSocketServer {
   }
 
   private async handleUpdatePlanetOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.updatePlanetOptions
-    logger.warn('handleUpdatePlanetOptions not yet implemented');
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.updatePlanetOptions(client.sessionId, message.payload);
+      
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, { 
+        success: true,
+        message: 'Worker assignments updated successfully'
+      }));
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+
+    } catch (error) {
+      logger.error('handleUpdatePlanetOptions error:', error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { 
+        message: error instanceof Error ? error.message : 'Unknown error occurred while updating worker assignments' 
+      }));
+    }
   }
 
   private async handleUpdatePlanetBuildQueue(clientId: string, message: IMessage<unknown>): Promise<void> {
