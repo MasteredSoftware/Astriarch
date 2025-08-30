@@ -511,13 +511,7 @@ export class GameController {
       }
 
       // Update worker assignments using the new engine method that handles rebalancing
-      engine.Planet.updatePopulationWorkerTypes(
-        planet,
-        gamePlayer,
-        farmerDiff || 0,
-        minerDiff || 0,
-        builderDiff || 0,
-      );
+      engine.Planet.updatePopulationWorkerTypes(planet, gamePlayer, farmerDiff || 0, minerDiff || 0, builderDiff || 0);
 
       // Save the updated game state
       game.gameState = gameModel;

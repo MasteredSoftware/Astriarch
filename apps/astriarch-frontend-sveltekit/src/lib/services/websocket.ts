@@ -207,6 +207,8 @@ class WebSocketService {
 	private reconnectDelay = 1000;
 	private messageQueue: IMessage<unknown>[] = [];
 	private isConnecting = false;
+	private pingInterval: number | null = null;
+	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
 
 	constructor(private gameStore: ReturnType<typeof createMultiplayerGameStore>) {}
 
@@ -226,6 +228,9 @@ class WebSocketService {
 					this.isConnecting = false;
 					this.reconnectAttempts = 0;
 					this.gameStore.setConnected(true);
+
+					// Start the ping interval to keep the session alive
+					this.startPingInterval();
 
 					// Set a default player name if none exists
 					this.gameStore.setPlayerName('Player');
@@ -254,6 +259,7 @@ class WebSocketService {
 					console.log('WebSocket disconnected');
 					this.isConnecting = false;
 					this.gameStore.setConnected(false);
+					this.stopPingInterval();
 					this.attemptReconnect();
 				};
 
@@ -518,6 +524,11 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.PONG:
+				// Server responded to our ping - session is alive
+				console.log('Received pong from server');
+				break;
+
 			default:
 				console.log('Unhandled message type:', message.type);
 		}
@@ -703,7 +714,25 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
 	}
 
+	private startPingInterval() {
+		this.stopPingInterval(); // Clear any existing interval
+		this.pingInterval = window.setInterval(() => {
+			if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+				console.log('Sending ping to keep session alive');
+				this.send(new Message(MESSAGE_TYPE.PING, {}));
+			}
+		}, this.pingIntervalMs);
+	}
+
+	private stopPingInterval() {
+		if (this.pingInterval !== null) {
+			window.clearInterval(this.pingInterval);
+			this.pingInterval = null;
+		}
+	}
+
 	disconnect() {
+		this.stopPingInterval();
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;
