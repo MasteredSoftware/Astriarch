@@ -131,7 +131,7 @@ export class WebSocketServer {
         timestamp: new Date(),
       };
 
-      logger.info(`${getMessageTypeName(message.type)} Message received from ${client.sessionId}:`, data);
+      logger.info(`${getMessageTypeName(message.type)} Message received from ${client.sessionId}:`, data.toString());
 
       // Update last ping
       client.lastPing = new Date();

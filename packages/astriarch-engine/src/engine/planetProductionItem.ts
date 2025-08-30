@@ -50,7 +50,7 @@ export class PlanetProductionItem {
   }
 
   public static constructPlanetImprovementToDestroy(type: PlanetImprovementType): PlanetProductionItemData {
-    const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovement);
+    const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovementToDestroy);
     base.improvementData = { type };
 
     base.baseProductionCost = base.baseProductionCost / 4;
@@ -61,7 +61,7 @@ export class PlanetProductionItem {
     type: StarShipType,
     customShipData?: StarshipAdvantageData,
   ): PlanetProductionItemData {
-    const base = this.constructPlanetProductionItem(PlanetProductionItemType.PlanetImprovement);
+    const base = this.constructPlanetProductionItem(PlanetProductionItemType.StarShipInProduction);
     base.starshipData = { type, customShipData };
 
     switch (type) {
