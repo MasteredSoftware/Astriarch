@@ -1,11 +1,11 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IRealtimeConnection extends Document {
   gameId: string;
   sessionId: string;
   playerId: string;
   playerName: string;
-  connectionState: 'connected' | 'disconnected' | 'reconnecting' | 'timeout';
+  connectionState: "connected" | "disconnected" | "reconnecting" | "timeout";
   websocketId?: string; // Internal WebSocket connection ID
   connectedAt: Date;
   lastActivity: Date;
@@ -28,82 +28,85 @@ export interface IRealtimeConnection extends Document {
   };
 }
 
-const RealtimeConnectionSchema = new Schema<IRealtimeConnection>({
-  gameId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  sessionId: {
-    type: String,
-    required: true,
-    unique: true
-    // Removed index: true - using schema-level index instead
-  },
-  playerId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  playerName: {
-    type: String,
-    required: true
-  },
-  connectionState: {
-    type: String,
-    required: true,
-    enum: ['connected', 'disconnected', 'reconnecting', 'timeout'],
-    default: 'connected',
-    index: true
-  },
-  websocketId: {
-    type: String
-    // Removed index: true - using schema-level index instead
-  },
-  connectedAt: {
-    type: Date,
-    default: Date.now,
-    required: true
-  },
-  lastActivity: {
-    type: Date,
-    default: Date.now,
-    required: true
-    // Removed index: true - using schema-level index instead
-  },
-  disconnectedAt: Date,
-  reconnectAttempts: {
-    type: Number,
-    default: 0
-  },
-  clientInfo: {
-    userAgent: String,
-    ipAddress: String,
-    version: String
-  },
-  gameSync: {
-    lastSyncTime: Date,
-    syncVersion: String,
-    pendingActions: {
-      type: Number,
-      default: 0
-    }
-  },
-  performance: {
-    latency: Number,
-    packetsLost: {
-      type: Number,
-      default: 0
+const RealtimeConnectionSchema = new Schema<IRealtimeConnection>(
+  {
+    gameId: {
+      type: String,
+      required: true,
+      index: true,
     },
-    reconnects: {
+    sessionId: {
+      type: String,
+      required: true,
+      unique: true,
+      // Removed index: true - using schema-level index instead
+    },
+    playerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    playerName: {
+      type: String,
+      required: true,
+    },
+    connectionState: {
+      type: String,
+      required: true,
+      enum: ["connected", "disconnected", "reconnecting", "timeout"],
+      default: "connected",
+      index: true,
+    },
+    websocketId: {
+      type: String,
+      // Removed index: true - using schema-level index instead
+    },
+    connectedAt: {
+      type: Date,
+      default: Date.now,
+      required: true,
+    },
+    lastActivity: {
+      type: Date,
+      default: Date.now,
+      required: true,
+      // Removed index: true - using schema-level index instead
+    },
+    disconnectedAt: Date,
+    reconnectAttempts: {
       type: Number,
-      default: 0
-    }
-  }
-}, {
-  timestamps: true,
-  collection: 'realtimeconnections'
-});
+      default: 0,
+    },
+    clientInfo: {
+      userAgent: String,
+      ipAddress: String,
+      version: String,
+    },
+    gameSync: {
+      lastSyncTime: Date,
+      syncVersion: String,
+      pendingActions: {
+        type: Number,
+        default: 0,
+      },
+    },
+    performance: {
+      latency: Number,
+      packetsLost: {
+        type: Number,
+        default: 0,
+      },
+      reconnects: {
+        type: Number,
+        default: 0,
+      },
+    },
+  },
+  {
+    timestamps: true,
+    collection: "realtimeconnections",
+  },
+);
 
 // Indexes for connection management and monitoring
 RealtimeConnectionSchema.index({ gameId: 1, connectionState: 1 });
@@ -114,11 +117,11 @@ RealtimeConnectionSchema.index({ websocketId: 1 });
 
 // TTL index for automatic cleanup of old disconnected connections (24 hours)
 RealtimeConnectionSchema.index(
-  { disconnectedAt: 1 }, 
-  { 
+  { disconnectedAt: 1 },
+  {
     expireAfterSeconds: 24 * 60 * 60,
-    partialFilterExpression: { connectionState: 'disconnected' }
-  }
+    partialFilterExpression: { connectionState: "disconnected" },
+  },
 );
 
-export const RealtimeConnection = model<IRealtimeConnection>('RealtimeConnection', RealtimeConnectionSchema);
+export const RealtimeConnection = model<IRealtimeConnection>("RealtimeConnection", RealtimeConnectionSchema);

@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IPlayer {
   name: string;
@@ -34,7 +34,7 @@ export interface IGame extends Document {
   gameType: string;
   isPrivate: boolean;
   gameState: object;
-  status: 'waiting_for_players' | 'in_progress' | 'completed';
+  status: "waiting_for_players" | "in_progress" | "completed";
   players: IPlayer[]; // Array of players in the game
   gameOptions: IGameOptions; // Game configuration options
   createdAt: Date;
@@ -47,63 +47,63 @@ const PlayerSchema = new Schema<IPlayer>({
   position: { type: Number, required: true },
   Id: { type: String, required: true },
   isActive: { type: Boolean, default: true },
-  isAI: { type: Boolean, default: false }
+  isAI: { type: Boolean, default: false },
 });
 
 const GameSchema = new Schema<IGame>({
-  name: { 
-    type: String 
+  name: {
+    type: String,
   },
-  hostPlayerName: { 
-    type: String, 
-    required: true 
+  hostPlayerName: {
+    type: String,
+    required: true,
   },
-  maxPlayers: { 
-    type: Number, 
-    required: true, 
-    default: 4 
+  maxPlayers: {
+    type: Number,
+    required: true,
+    default: 4,
   },
-  gameType: { 
-    type: String, 
-    required: true, 
-    default: 'standard' 
+  gameType: {
+    type: String,
+    required: true,
+    default: "standard",
   },
-  isPrivate: { 
-    type: Boolean, 
-    default: false 
+  isPrivate: {
+    type: Boolean,
+    default: false,
   },
-  gameState: { 
-    type: Schema.Types.Mixed, 
-    required: true 
+  gameState: {
+    type: Schema.Types.Mixed,
+    required: true,
   },
   status: {
     type: String,
-    enum: ['waiting_for_players', 'in_progress', 'completed'],
-    default: 'waiting_for_players'
+    enum: ["waiting_for_players", "in_progress", "completed"],
+    default: "waiting_for_players",
   },
   players: {
     type: [PlayerSchema],
-    default: []
+    default: [],
   },
   gameOptions: {
     type: Schema.Types.Mixed,
-    default: () => ({})
+    default: () => ({}),
   },
-  createdAt: { 
-    type: Date, 
-    default: Date.now 
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
-  lastActivity: { 
-    type: Date, 
-    default: Date.now 
-  }
+  lastActivity: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 // Configure schema to preserve empty objects
-GameSchema.set('minimize', false);
+GameSchema.set("minimize", false);
 
 // Index for efficient queries
 GameSchema.index({ status: 1, createdAt: -1 });
 GameSchema.index({ lastActivity: 1 });
 
-export const ServerGameModel = mongoose.model<IGame>('Game', GameSchema);
+export const ServerGameModel = mongoose.model<IGame>("Game", GameSchema);

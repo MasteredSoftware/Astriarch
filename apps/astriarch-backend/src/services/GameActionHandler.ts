@@ -1,6 +1,6 @@
 // Game action handler - processes game actions through business logic
-import { GameState, PlayerAction, GameEvent } from '../models';
-import { logger } from '../utils/logger';
+import { GameState, PlayerAction, GameEvent } from "../models";
+import { logger } from "../utils/logger";
 
 export interface GameActionResult {
   success: boolean;
@@ -20,26 +20,26 @@ export class GameActionHandler {
       planetId: string;
       buildingType: string;
       quantity?: number;
-    }
+    },
   ): Promise<GameActionResult> {
     try {
       const { planetId, buildingType, quantity = 1 } = actionData;
-      
+
       // Validate planet ownership
       const planet = gameState.planets?.[planetId];
       if (!planet || planet.playerId !== playerId) {
         return {
           success: false,
-          message: 'Planet not found or not owned by player'
+          message: "Planet not found or not owned by player",
         };
       }
 
       // Validate building type
-      const validBuildings = ['farm', 'mine', 'factory', 'spacePlatform'];
+      const validBuildings = ["farm", "mine", "factory", "spacePlatform"];
       if (!validBuildings.includes(buildingType)) {
         return {
           success: false,
-          message: `Invalid building type: ${buildingType}`
+          message: `Invalid building type: ${buildingType}`,
         };
       }
 
@@ -48,51 +48,50 @@ export class GameActionHandler {
         farm: { ore: 10, iridium: 0 },
         mine: { ore: 15, iridium: 5 },
         factory: { ore: 20, iridium: 10 },
-        spacePlatform: { ore: 50, iridium: 25 }
+        spacePlatform: { ore: 50, iridium: 25 },
       };
 
       const cost = buildingCosts[buildingType as keyof typeof buildingCosts];
       const totalCost = {
         ore: cost.ore * quantity,
-        iridium: cost.iridium * quantity
+        iridium: cost.iridium * quantity,
       };
 
       // Check if player has enough resources
       if (planet.resources.ore < totalCost.ore || planet.resources.iridium < totalCost.iridium) {
         return {
           success: false,
-          message: 'Insufficient resources'
+          message: "Insufficient resources",
         };
       }
 
       // Deduct resources and add to build queue
       planet.resources.ore -= totalCost.ore;
       planet.resources.iridium -= totalCost.iridium;
-      
+
       // Add to build queue (simplified - assuming immediate completion for now)
       planet.buildings[buildingType] = (planet.buildings[buildingType] || 0) + quantity;
 
       const changes = {
-        type: 'building_started',
+        type: "building_started",
         planetId,
         buildingType,
         quantity,
         newResources: planet.resources,
-        newBuildings: planet.buildings
+        newBuildings: planet.buildings,
       };
 
       return {
         success: true,
         message: `${buildingType} construction started`,
         changes,
-        gameStateUpdate: { planets: { [planetId]: planet } }
+        gameStateUpdate: { planets: { [planetId]: planet } },
       };
-
     } catch (error) {
-      logger.error('Error processing build structure action:', error);
+      logger.error("Error processing build structure action:", error);
       return {
         success: false,
-        message: 'Failed to process building construction'
+        message: "Failed to process building construction",
       };
     }
   }
@@ -112,8 +111,8 @@ export class GameActionHandler {
         cruisers?: number;
         battleships?: number;
       };
-      orders: 'attack' | 'colonize' | 'reinforce';
-    }
+      orders: "attack" | "colonize" | "reinforce";
+    },
   ): Promise<GameActionResult> {
     try {
       const { fromPlanetId, toPlanetId, ships, orders } = actionData;
@@ -123,7 +122,7 @@ export class GameActionHandler {
       if (!fromPlanet || fromPlanet.playerId !== playerId) {
         return {
           success: false,
-          message: 'Source planet not found or not owned'
+          message: "Source planet not found or not owned",
         };
       }
 
@@ -132,7 +131,7 @@ export class GameActionHandler {
       if (!toPlanet) {
         return {
           success: false,
-          message: 'Destination planet not found'
+          message: "Destination planet not found",
         };
       }
 
@@ -141,7 +140,7 @@ export class GameActionHandler {
       if (totalShips === 0) {
         return {
           success: false,
-          message: 'No ships specified for fleet'
+          message: "No ships specified for fleet",
         };
       }
 
@@ -160,7 +159,7 @@ export class GameActionHandler {
         position: fromPlanet.position || { x: 0, y: 0 },
         destination: toPlanet.position || { x: 100, y: 100 },
         arrivalTime: new Date(Date.now() + 60000), // 1 minute travel time
-        status: 'in_transit'
+        status: "in_transit",
       };
 
       // Add fleet to game state
@@ -168,27 +167,26 @@ export class GameActionHandler {
       gameState.fleets[fleetId] = fleet;
 
       const changes = {
-        type: 'fleet_dispatched',
+        type: "fleet_dispatched",
         fleetId,
         fromPlanetId,
         toPlanetId,
         ships,
         orders,
-        arrivalTime: fleet.arrivalTime
+        arrivalTime: fleet.arrivalTime,
       };
 
       return {
         success: true,
         message: `Fleet dispatched to ${toPlanetId}`,
         changes,
-        gameStateUpdate: { fleets: { [fleetId]: fleet } }
+        gameStateUpdate: { fleets: { [fleetId]: fleet } },
       };
-
     } catch (error) {
-      logger.error('Error processing send fleet action:', error);
+      logger.error("Error processing send fleet action:", error);
       return {
         success: false,
-        message: 'Failed to dispatch fleet'
+        message: "Failed to dispatch fleet",
       };
     }
   }
@@ -200,19 +198,19 @@ export class GameActionHandler {
     gameState: any,
     playerId: string,
     actionData: {
-      researchType: 'attack' | 'defense' | 'propulsion';
+      researchType: "attack" | "defense" | "propulsion";
       allocation: number; // Percentage of resources to allocate
-    }
+    },
   ): Promise<GameActionResult> {
     try {
       const { researchType, allocation } = actionData;
 
       // Validate research type
-      const validResearch = ['attack', 'defense', 'propulsion'];
+      const validResearch = ["attack", "defense", "propulsion"];
       if (!validResearch.includes(researchType)) {
         return {
           success: false,
-          message: `Invalid research type: ${researchType}`
+          message: `Invalid research type: ${researchType}`,
         };
       }
 
@@ -220,7 +218,7 @@ export class GameActionHandler {
       if (allocation < 0 || allocation > 100) {
         return {
           success: false,
-          message: 'Research allocation must be between 0 and 100'
+          message: "Research allocation must be between 0 and 100",
         };
       }
 
@@ -229,7 +227,7 @@ export class GameActionHandler {
       if (!player) {
         return {
           success: false,
-          message: 'Player not found'
+          message: "Player not found",
         };
       }
 
@@ -242,24 +240,23 @@ export class GameActionHandler {
       player.research[`${researchType}Allocation`] = allocation;
 
       const changes = {
-        type: 'research_allocation_changed',
+        type: "research_allocation_changed",
         researchType,
         previousAllocation,
-        newAllocation: allocation
+        newAllocation: allocation,
       };
 
       return {
         success: true,
         message: `${researchType} research allocation set to ${allocation}%`,
         changes,
-        gameStateUpdate: { players: { [playerId]: player } }
+        gameStateUpdate: { players: { [playerId]: player } },
       };
-
     } catch (error) {
-      logger.error('Error processing research upgrade action:', error);
+      logger.error("Error processing research upgrade action:", error);
       return {
         success: false,
-        message: 'Failed to update research'
+        message: "Failed to update research",
       };
     }
   }
@@ -272,9 +269,9 @@ export class GameActionHandler {
     playerId: string,
     actionData: {
       planetId: string;
-      action: 'adjust_population' | 'demolish_building' | 'upgrade_building';
+      action: "adjust_population" | "demolish_building" | "upgrade_building";
       parameters: any;
-    }
+    },
   ): Promise<GameActionResult> {
     try {
       const { planetId, action, parameters } = actionData;
@@ -284,7 +281,7 @@ export class GameActionHandler {
       if (!planet || planet.playerId !== playerId) {
         return {
           success: false,
-          message: 'Planet not found or not owned by player'
+          message: "Planet not found or not owned by player",
         };
       }
 
@@ -292,7 +289,7 @@ export class GameActionHandler {
       let gameStateUpdate: any = {};
 
       switch (action) {
-        case 'adjust_population':
+        case "adjust_population":
           // Adjust population allocation between different roles
           const { workerAllocation } = parameters;
           if (workerAllocation) {
@@ -302,7 +299,7 @@ export class GameActionHandler {
           }
           break;
 
-        case 'demolish_building':
+        case "demolish_building":
           // Remove a building and get some resources back
           const { buildingType } = parameters;
           if (planet.buildings[buildingType] > 0) {
@@ -312,7 +309,7 @@ export class GameActionHandler {
               farm: { ore: 5, iridium: 0 },
               mine: { ore: 7, iridium: 2 },
               factory: { ore: 10, iridium: 5 },
-              spacePlatform: { ore: 25, iridium: 12 }
+              spacePlatform: { ore: 25, iridium: 12 },
             };
             const refund = refundCosts[buildingType as keyof typeof refundCosts];
             if (refund) {
@@ -325,7 +322,7 @@ export class GameActionHandler {
           } else {
             return {
               success: false,
-              message: `No ${buildingType} buildings to demolish`
+              message: `No ${buildingType} buildings to demolish`,
             };
           }
           break;
@@ -333,7 +330,7 @@ export class GameActionHandler {
         default:
           return {
             success: false,
-            message: `Unknown planet management action: ${action}`
+            message: `Unknown planet management action: ${action}`,
           };
       }
 
@@ -341,14 +338,13 @@ export class GameActionHandler {
         success: true,
         message: `Planet management action completed: ${action}`,
         changes,
-        gameStateUpdate
+        gameStateUpdate,
       };
-
     } catch (error) {
-      logger.error('Error processing planet management action:', error);
+      logger.error("Error processing planet management action:", error);
       return {
         success: false,
-        message: 'Failed to process planet management action'
+        message: "Failed to process planet management action",
       };
     }
   }
@@ -360,27 +356,27 @@ export class GameActionHandler {
     gameState: any,
     playerId: string,
     actionType: string,
-    actionData: any
+    actionData: any,
   ): Promise<GameActionResult> {
     logger.debug(`Processing action: ${actionType} for player: ${playerId}`);
 
     switch (actionType) {
-      case 'build_structure':
+      case "build_structure":
         return await this.processBuildStructure(gameState, playerId, actionData);
-      
-      case 'send_fleet':
+
+      case "send_fleet":
         return await this.processSendFleet(gameState, playerId, actionData);
-      
-      case 'research_upgrade':
+
+      case "research_upgrade":
         return await this.processResearchUpgrade(gameState, playerId, actionData);
-      
-      case 'planet_management':
+
+      case "planet_management":
         return await this.processPlanetManagement(gameState, playerId, actionData);
-      
+
       default:
         return {
           success: false,
-          message: `Unknown action type: ${actionType}`
+          message: `Unknown action type: ${actionType}`,
         };
     }
   }

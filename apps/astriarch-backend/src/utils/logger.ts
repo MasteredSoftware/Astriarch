@@ -1,12 +1,12 @@
-import config from 'config';
+import config from "config";
 
-type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
 
 class Logger {
   private logLevel: LogLevel;
 
   constructor() {
-    this.logLevel = (config.get('loglevel') as LogLevel) || 'INFO';
+    this.logLevel = (config.get("loglevel") as LogLevel) || "INFO";
   }
 
   private shouldLog(level: LogLevel): boolean {
@@ -14,7 +14,7 @@ class Logger {
       DEBUG: 0,
       INFO: 1,
       WARN: 2,
-      ERROR: 3
+      ERROR: 3,
     };
     return levels[level] >= levels[this.logLevel];
   }
@@ -25,26 +25,26 @@ class Logger {
   }
 
   debug(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('DEBUG')) {
-      console.log(this.formatPrefix('DEBUG'), message, ...args);
+    if (this.shouldLog("DEBUG")) {
+      console.log(this.formatPrefix("DEBUG"), message, ...args);
     }
   }
 
   info(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('INFO')) {
-      console.log(this.formatPrefix('INFO'), message, ...args);
+    if (this.shouldLog("INFO")) {
+      console.log(this.formatPrefix("INFO"), message, ...args);
     }
   }
 
   warn(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('WARN')) {
-      console.warn(this.formatPrefix('WARN'), message, ...args);
+    if (this.shouldLog("WARN")) {
+      console.warn(this.formatPrefix("WARN"), message, ...args);
     }
   }
 
   error(message: string, ...args: unknown[]): void {
-    if (this.shouldLog('ERROR')) {
-      console.error(this.formatPrefix('ERROR'), message, ...args);
+    if (this.shouldLog("ERROR")) {
+      console.error(this.formatPrefix("ERROR"), message, ...args);
     }
   }
 }

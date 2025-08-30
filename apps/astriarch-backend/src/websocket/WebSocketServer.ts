@@ -1,15 +1,15 @@
-import WebSocket from 'ws';
-import { Server } from 'http';
-import { logger } from '../utils/logger';
-import { Session, Game, IGame } from '../models';
-import { GameController } from '../controllers/GameControllerWebSocket';
-import { persistGame } from '../database/DocumentPersistence';
-import { v4 as uuidv4 } from 'uuid';
-import { 
-  MESSAGE_TYPE, 
-  Message, 
-  getMessageTypeName, 
-  ERROR_TYPE, 
+import WebSocket from "ws";
+import { Server } from "http";
+import { logger } from "../utils/logger";
+import { Session, Game, IGame } from "../models";
+import { GameController } from "../controllers/GameControllerWebSocket";
+import { persistGame } from "../database/DocumentPersistence";
+import { v4 as uuidv4 } from "uuid";
+import {
+  MESSAGE_TYPE,
+  Message,
+  getMessageTypeName,
+  ERROR_TYPE,
   CHAT_MESSAGE_TYPE,
   type IMessage,
   // Import available type guards
@@ -27,9 +27,9 @@ import {
   constructClientGameModel,
   advanceGameModelTime,
   GameModel,
-  ModelData
-} from 'astriarch-engine';
-import { getPlayerId } from '../utils/player-id-helper';
+  ModelData,
+} from "astriarch-engine";
+import { getPlayerId } from "../utils/player-id-helper";
 
 export interface IConnectedClient {
   ws: WebSocket;
@@ -62,31 +62,31 @@ export class WebSocketServer {
   }
 
   private setupWebSocketServer(): void {
-    this.wss.on('connection', (ws: WebSocket, req: any) => {
+    this.wss.on("connection", (ws: WebSocket, req: any) => {
       const clientId = uuidv4();
       const sessionId = this.extractSessionId(req) || clientId;
-      
+
       logger.info(`New WebSocket connection established. SessionId: ${sessionId}`);
 
       const client: IConnectedClient = {
         ws,
         sessionId,
         lastPing: new Date(),
-        upgradeReq: req // Store for cookie parsing compatibility
+        upgradeReq: req, // Store for cookie parsing compatibility
       };
 
       this.clients.set(clientId, client);
       this.sessionLookup.set(sessionId, clientId);
 
-      ws.on('message', (data: string) => {
+      ws.on("message", (data: string) => {
         this.handleMessage(clientId, data);
       });
 
-      ws.on('close', () => {
+      ws.on("close", () => {
         this.handleDisconnection(clientId);
       });
 
-      ws.on('error', (error) => {
+      ws.on("error", (error) => {
         logger.error(`WebSocket error for session ${sessionId}:`, error);
         this.handleDisconnection(clientId);
       });
@@ -97,17 +97,17 @@ export class WebSocketServer {
     // Extract session ID from cookies similar to old app.js
     try {
       if (req.headers.cookie) {
-        const cookies = req.headers.cookie.split(';').reduce((acc: any, cookie: string) => {
-          const [key, value] = cookie.trim().split('=');
+        const cookies = req.headers.cookie.split(";").reduce((acc: any, cookie: string) => {
+          const [key, value] = cookie.trim().split("=");
           acc[key] = value;
           return acc;
         }, {});
-        
+
         // Look for connect.sid cookie (matches old implementation)
-        return cookies['connect.sid'] || null;
+        return cookies["connect.sid"] || null;
       }
     } catch (error) {
-      logger.warn('Error extracting session ID:', error);
+      logger.warn("Error extracting session ID:", error);
     }
     return null;
   }
@@ -128,9 +128,9 @@ export class WebSocketServer {
         type: parsedMessage.type,
         payload: parsedMessage.payload || {},
         sessionId: client.sessionId,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
-      
+
       logger.info(`${getMessageTypeName(message.type)} Message received from ${client.sessionId}:`, data);
 
       // Update last ping
@@ -139,7 +139,7 @@ export class WebSocketServer {
       await this.processMessage(client, message);
     } catch (error) {
       logger.error(`Error parsing message from ${client.sessionId}:`, data, error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid message format' }));
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Invalid message format" }));
     }
   }
 
@@ -155,12 +155,14 @@ export class WebSocketServer {
     switch (message.type) {
       case MESSAGE_TYPE.NOOP:
         // Echo back with server message (like old app.js)
-        const counter = typeof message.payload === 'object' && message.payload !== null && 'counter' in message.payload 
-          ? (message.payload as any).counter : 0;
+        const counter =
+          typeof message.payload === "object" && message.payload !== null && "counter" in message.payload
+            ? (message.payload as any).counter
+            : 0;
         const response = {
           ...(message.payload as object),
-          message: 'Hello From the Server',
-          counter: counter + 1
+          message: "Hello From the Server",
+          counter: counter + 1,
         };
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.NOOP, response));
         break;
@@ -175,7 +177,7 @@ export class WebSocketServer {
 
       case MESSAGE_TYPE.CREATE_GAME:
         if (!isCreateGameRequest(message)) {
-          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid create game request' }));
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Invalid create game request" }));
           return;
         }
         await this.handleCreateGame(clientId, message);
@@ -183,7 +185,7 @@ export class WebSocketServer {
 
       case MESSAGE_TYPE.JOIN_GAME:
         if (!isJoinGameRequest(message)) {
-          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid join game request' }));
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Invalid join game request" }));
           return;
         }
         await this.handleJoinGame(clientId, message);
@@ -191,7 +193,7 @@ export class WebSocketServer {
 
       case MESSAGE_TYPE.START_GAME:
         if (!isStartGameRequest(message)) {
-          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Invalid start game request' }));
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Invalid start game request" }));
           return;
         }
         await this.handleStartGame(clientId, message);
@@ -267,7 +269,7 @@ export class WebSocketServer {
 
       default:
         logger.error(`Unhandled Message Type: ${message.type}`);
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Unknown message type' }));
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Unknown message type" }));
         break;
     }
   }
@@ -275,13 +277,9 @@ export class WebSocketServer {
   // Helper methods
   private async touchSession(sessionId: string): Promise<void> {
     try {
-      await Session.findOneAndUpdate(
-        { sessionId },
-        { lastActivity: new Date() },
-        { upsert: true }
-      );
+      await Session.findOneAndUpdate({ sessionId }, { lastActivity: new Date() }, { upsert: true });
     } catch (error) {
-      logger.error('TouchSession Error:', error);
+      logger.error("TouchSession Error:", error);
     }
   }
 
@@ -302,7 +300,7 @@ export class WebSocketServer {
       MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM,
       MESSAGE_TYPE.CANCEL_RESEARCH_ITEM,
       MESSAGE_TYPE.SUBMIT_TRADE,
-      MESSAGE_TYPE.CANCEL_TRADE
+      MESSAGE_TYPE.CANCEL_TRADE,
     ];
     return gameActionTypes.includes(messageType);
   }
@@ -310,7 +308,7 @@ export class WebSocketServer {
   private async advanceGameTimeForAction(gameId: string): Promise<void> {
     try {
       const game = await Game.findById(gameId);
-      if (!game || game.status !== 'in_progress') {
+      if (!game || game.status !== "in_progress") {
         return;
       }
 
@@ -324,14 +322,14 @@ export class WebSocketServer {
       // Broadcast the updated game state to all connected players
       await this.broadcastGameStateUpdate(gameId);
     } catch (error) {
-      logger.error('Error advancing game time:', error);
+      logger.error("Error advancing game time:", error);
     }
   }
 
   private async broadcastGameStateUpdate(gameId: string): Promise<void> {
     try {
       logger.info(`Broadcasting game state update for game: ${gameId}`);
-      
+
       const game = await Game.findById(gameId);
       if (!game) {
         logger.warn(`Game ${gameId} not found for state update`);
@@ -350,22 +348,22 @@ export class WebSocketServer {
       for (const sessionId of gameRoom) {
         const clientId = this.getClientIdBySessionId(sessionId);
         const client = clientId ? this.clients.get(clientId) : null;
-        
+
         logger.info(`Session ${sessionId}: clientId=${clientId}, client.playerId=${client?.playerId}`);
-        
+
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
-          
+
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
           if (firstPlanetId) {
             const firstPlanet = (clientGameModel.mainPlayerOwnedPlanets as any)[firstPlanetId];
             logger.info(`Build queue for planet ${firstPlanetId}: ${JSON.stringify(firstPlanet.buildQueue)}`);
           }
-          
+
           const updateMessage = new Message(MESSAGE_TYPE.GAME_STATE_UPDATE, {
             clientGameModel,
-            currentCycle: (game.gameState as any).currentCycle || 0
+            currentCycle: (game.gameState as any).currentCycle || 0,
           });
           this.sendToClient(clientId, updateMessage);
           logger.info(`Sent game state update to session ${sessionId} with playerId ${client.playerId}`);
@@ -374,7 +372,7 @@ export class WebSocketServer {
         }
       }
     } catch (error) {
-      logger.error('Error broadcasting game state update:', error);
+      logger.error("Error broadcasting game state update:", error);
     }
   }
 
@@ -398,8 +396,8 @@ export class WebSocketServer {
       const games = await GameController.listLobbyGames({ sessionId: client.sessionId });
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.LIST_GAMES, { games }));
     } catch (error) {
-      logger.error('Error listing games:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to list games' }));
+      logger.error("Error listing games:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to list games" }));
     }
   }
 
@@ -409,23 +407,28 @@ export class WebSocketServer {
       if (!client) return;
 
       const { name, playerName } = message.payload;
-      
+
       if (!name || !playerName) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game name and player name are required' }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: "Game name and player name are required" }),
+        );
         return;
       }
 
       const gameData = {
         name,
-        players: [{
-          name: playerName.substring(0, 20),
-          sessionId: client.sessionId,
-          position: 0
-        }]
+        players: [
+          {
+            name: playerName.substring(0, 20),
+            sessionId: client.sessionId,
+            position: 0,
+          },
+        ],
       };
 
       const game = await GameController.createGame(gameData);
-      
+
       // Add client to game room
       client.gameId = game._id.toString();
       client.playerName = playerName;
@@ -441,7 +444,7 @@ export class WebSocketServer {
         gameId: game._id,
         gameOptions: game.gameOptions,
         name: game.name,
-        playerPosition: 0
+        playerPosition: 0,
       };
 
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, createResponse));
@@ -449,8 +452,8 @@ export class WebSocketServer {
       // Update lobby players about new game
       await this.sendUpdatedGameListToLobbyPlayers(game);
     } catch (error) {
-      logger.error('Error creating game:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to create game' }));
+      logger.error("Error creating game:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to create game" }));
     }
   }
 
@@ -460,16 +463,19 @@ export class WebSocketServer {
       if (!client) return;
 
       const { gameId, playerName } = message.payload;
-      
+
       if (!gameId || !playerName) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID and player name are required' }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: "Game ID and player name are required" }),
+        );
         return;
       }
 
       const result = await GameController.joinGame({
         gameId,
         sessionId: client.sessionId,
-        playerName: playerName.substring(0, 20)
+        playerName: playerName.substring(0, 20),
       });
 
       if (result.success && result.game) {
@@ -477,7 +483,7 @@ export class WebSocketServer {
           gameOptions: result.game.gameOptions,
           name: result.game.name,
           playerPosition: result.playerPosition,
-          _id: result.game._id
+          _id: result.game._id,
         };
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.JOIN_GAME, joinResponse));
@@ -494,17 +500,23 @@ export class WebSocketServer {
         this.gameRooms.get(gameId)!.add(client.sessionId);
 
         // Broadcast to other players
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, 
-          new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, joinResponse));
+        this.broadcastToOtherPlayersInGame(
+          result.game,
+          client.sessionId,
+          new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, joinResponse),
+        );
 
         // Update lobby
         await this.sendUpdatedGameListToLobbyPlayers(result.game);
       } else {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error || 'Failed to join game' }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: result.error || "Failed to join game" }),
+        );
       }
     } catch (error) {
-      logger.error('Error joining game:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to join game' }));
+      logger.error("Error joining game:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to join game" }));
     }
   }
 
@@ -515,15 +527,15 @@ export class WebSocketServer {
 
       // Get gameId from payload
       const gameId = message.payload.gameId;
-      
+
       if (!gameId) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID is required' }));
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Game ID is required" }));
         return;
       }
 
       const result = await GameController.startGame({
         sessionId: client.sessionId,
-        gameId
+        gameId,
       });
 
       if (result.success && result.game) {
@@ -532,11 +544,10 @@ export class WebSocketServer {
         // Send success response with game state
         const startResponse = {
           success: true,
-          gameState: clientGameModel
+          gameState: clientGameModel,
         };
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, startResponse));
-
 
         // Send client models to each player (like old app.js)
         if (result.game && result.game.players) {
@@ -546,36 +557,36 @@ export class WebSocketServer {
               // Update client info for this player
               const playerClientId = this.getClientIdBySessionId(player.sessionId);
               const playerClient = playerClientId ? this.clients.get(playerClientId) : null;
-              
+
               if (playerClient) {
                 playerClient.gameId = gameId;
                 playerClient.playerId = getPlayerId(player.position || 0);
-                
+
                 // Add to game room
                 if (!this.gameRooms.has(gameId)) {
                   this.gameRooms.set(gameId, new Set());
                 }
                 this.gameRooms.get(gameId)!.add(player.sessionId);
               }
-              
+
               // The game state might be a GameModelData object with a modelData property,
               // or it might be the ModelData directly. Handle both cases.
               let modelData: any;
-              if (result.game.gameState && typeof result.game.gameState === 'object') {
+              if (result.game.gameState && typeof result.game.gameState === "object") {
                 modelData = (result.game.gameState as any).modelData || result.game.gameState;
               } else {
-                logger.warn('Invalid game state structure, skipping client model construction');
+                logger.warn("Invalid game state structure, skipping client model construction");
                 continue;
               }
-              
+
               // Construct the client-specific game model for this player
               const clientGameModel = constructClientGameModel(modelData, player.Id);
-              
+
               const startMessage = new Message(MESSAGE_TYPE.START_GAME, {
                 success: true,
-                gameState: clientGameModel
+                gameState: clientGameModel,
               });
-              
+
               this.broadcastToSession(player.sessionId, startMessage);
             }
           }
@@ -583,15 +594,15 @@ export class WebSocketServer {
       } else {
         const errorResponse = {
           success: false,
-          error: result.error || 'Failed to start game'
+          error: result.error || "Failed to start game",
         };
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.START_GAME, errorResponse));
       }
     } catch (error) {
-      logger.error('Error starting game:', error);
+      logger.error("Error starting game:", error);
       const errorResponse = {
         success: false,
-        error: 'Failed to start game'
+        error: "Failed to start game",
       };
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, errorResponse));
     }
@@ -604,21 +615,21 @@ export class WebSocketServer {
 
       const payload = message.payload as any;
       const gameId = payload.gameId;
-      
-      if (typeof gameId !== 'string') {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID is required' }));
+
+      if (typeof gameId !== "string") {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Game ID is required" }));
         return;
       }
 
       const result = await GameController.resumeGame({
         sessionId: client.sessionId,
-        gameId
+        gameId,
       });
 
       if (result.success && result.gameData && result.player) {
         const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(
           result.gameData,
-          result.player.Id
+          result.player.Id,
         );
 
         // Update client info for resumed game
@@ -631,18 +642,24 @@ export class WebSocketServer {
         }
         this.gameRooms.get(gameId)!.add(client.sessionId);
 
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.RESUME_GAME, {
-          gameData: serializableClientModel,
-          playerPosition: result.player.position
-        }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.RESUME_GAME, {
+            gameData: serializableClientModel,
+            playerPosition: result.player.position,
+          }),
+        );
       } else {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { 
-          message: result.error || 'Unable to find Game to Resume' 
-        }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, {
+            message: result.error || "Unable to find Game to Resume",
+          }),
+        );
       }
     } catch (error) {
-      logger.error('Error resuming game:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to resume game' }));
+      logger.error("Error resuming game:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to resume game" }));
     }
   }
 
@@ -653,9 +670,12 @@ export class WebSocketServer {
       if (!client) return;
 
       const { gameId, gameOptions, playerName } = message.payload;
-      
+
       if (!gameId || !gameOptions) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Game ID and game options are required' }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: "Game ID and game options are required" }),
+        );
         return;
       }
 
@@ -663,37 +683,43 @@ export class WebSocketServer {
         sessionId: client.sessionId,
         gameId,
         gameOptions,
-        playerName
+        playerName,
       });
 
       if (result.success && result.game) {
         const optionsResponse = {
           gameOptions: result.game.gameOptions,
           name: result.game.name,
-          gameId: result.game._id
+          gameId: result.game._id,
         };
 
         // Send success response to the player who changed options
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse));
 
         // Broadcast to other players in the game
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, 
-          new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse));
+        this.broadcastToOtherPlayersInGame(
+          result.game,
+          client.sessionId,
+          new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse),
+        );
 
         // Update lobby players about game changes
         await this.sendUpdatedGameListToLobbyPlayers(result.game);
       } else {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error || 'Failed to update game options' }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: result.error || "Failed to update game options" }),
+        );
       }
     } catch (error) {
-      logger.error('Error changing game options:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Failed to update game options' }));
+      logger.error("Error changing game options:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to update game options" }));
     }
   }
 
   private async handleChangePlayerName(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.changePlayerName
-    logger.warn('handleChangePlayerName not yet implemented');
+    logger.warn("handleChangePlayerName not yet implemented");
   }
 
   private async handleEndTurn(clientId: string, message: IMessage<unknown>): Promise<void> {
@@ -702,7 +728,7 @@ export class WebSocketServer {
 
     try {
       const result = await GameController.endPlayerTurn(client.sessionId, message.payload);
-      
+
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
@@ -712,7 +738,7 @@ export class WebSocketServer {
       const response = new Message(MESSAGE_TYPE.END_TURN, {
         allPlayersFinished: result.allPlayersFinished,
         endOfTurnMessages: result.endOfTurnMessages,
-        destroyedClientPlayers: result.destroyedClientPlayers
+        destroyedClientPlayers: result.destroyedClientPlayers,
       });
 
       this.sendToClient(clientId, response);
@@ -721,10 +747,9 @@ export class WebSocketServer {
       if (result.game && result.game.players) {
         this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
       }
-
     } catch (error) {
-      logger.error('handleEndTurn error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'End turn failed' }));
+      logger.error("handleEndTurn error:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "End turn failed" }));
     }
   }
 
@@ -734,7 +759,7 @@ export class WebSocketServer {
 
     try {
       const result = await GameController.sendShips(client.sessionId, message.payload);
-      
+
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
@@ -745,16 +770,15 @@ export class WebSocketServer {
         const response = new Message(MESSAGE_TYPE.SEND_SHIPS, message.payload);
         this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
       }
-
     } catch (error) {
-      logger.error('handleSendShips error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Send ships failed' }));
+      logger.error("handleSendShips error:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Send ships failed" }));
     }
   }
 
   private async handleUpdatePlanetStart(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.startUpdatePlanet
-    logger.warn('handleUpdatePlanetStart not yet implemented');
+    logger.warn("handleUpdatePlanetStart not yet implemented");
   }
 
   private async handleUpdatePlanetOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
@@ -763,28 +787,33 @@ export class WebSocketServer {
 
     try {
       const result = await GameController.updatePlanetOptions(client.sessionId, message.payload);
-      
+
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
       }
 
       // Send success response to the requesting client
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, { 
-        success: true,
-        message: 'Worker assignments updated successfully'
-      }));
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, {
+          success: true,
+          message: "Worker assignments updated successfully",
+        }),
+      );
 
       // Broadcast game state update to all players in the game
       if (result.game && result.game._id) {
         await this.broadcastGameStateUpdate(result.game._id.toString());
       }
-
     } catch (error) {
-      logger.error('handleUpdatePlanetOptions error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { 
-        message: error instanceof Error ? error.message : 'Unknown error occurred while updating worker assignments' 
-      }));
+      logger.error("handleUpdatePlanetOptions error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: error instanceof Error ? error.message : "Unknown error occurred while updating worker assignments",
+        }),
+      );
     }
   }
 
@@ -794,28 +823,33 @@ export class WebSocketServer {
 
     try {
       const result = await GameController.updatePlanetBuildQueue(client.sessionId, message.payload);
-      
+
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
       }
 
       // Send success response to the requesting client
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, { 
-        success: true,
-        message: 'Production item added to queue'
-      }));
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, {
+          success: true,
+          message: "Production item added to queue",
+        }),
+      );
 
       // Broadcast game state update to all players in the game
       if (result.game && result.game._id) {
         await this.broadcastGameStateUpdate(result.game._id.toString());
       }
-
     } catch (error) {
-      logger.error('handleUpdatePlanetBuildQueue error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { 
-        message: error instanceof Error ? error.message : 'Unknown error occurred while updating build queue' 
-      }));
+      logger.error("handleUpdatePlanetBuildQueue error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: error instanceof Error ? error.message : "Unknown error occurred while updating build queue",
+        }),
+      );
     }
   }
 
@@ -825,7 +859,7 @@ export class WebSocketServer {
 
     try {
       const result = await GameController.clearWaypoint(client.sessionId, message.payload);
-      
+
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
@@ -836,62 +870,61 @@ export class WebSocketServer {
         const response = new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, message.payload);
         this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
       }
-
     } catch (error) {
-      logger.error('handleClearWaypoint error:', error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: 'Clear waypoint failed' }));
+      logger.error("handleClearWaypoint error:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Clear waypoint failed" }));
     }
   }
 
   private async handleAdjustResearchPercent(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.adjustResearchPercent
-    logger.warn('handleAdjustResearchPercent not yet implemented');
+    logger.warn("handleAdjustResearchPercent not yet implemented");
   }
 
   private async handleSubmitResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.submitResearchItem
-    logger.warn('handleSubmitResearchItem not yet implemented');
+    logger.warn("handleSubmitResearchItem not yet implemented");
   }
 
   private async handleCancelResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.cancelResearchItem
-    logger.warn('handleCancelResearchItem not yet implemented');
+    logger.warn("handleCancelResearchItem not yet implemented");
   }
 
   private async handleSubmitTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.submitTrade
-    logger.warn('handleSubmitTrade not yet implemented');
+    logger.warn("handleSubmitTrade not yet implemented");
   }
 
   private async handleCancelTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.cancelTrade
-    logger.warn('handleCancelTrade not yet implemented');
+    logger.warn("handleCancelTrade not yet implemented");
   }
 
   private async handleChatMessage(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement chat system like old app.js
-    logger.warn('handleChatMessage not yet implemented');
+    logger.warn("handleChatMessage not yet implemented");
   }
 
   private async handleExitResign(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement based on GameController.exitResign
-    logger.warn('handleExitResign not yet implemented');
+    logger.warn("handleExitResign not yet implemented");
   }
 
   private async handleLogout(clientId: string, message: IMessage<unknown>): Promise<void> {
     // TODO: Implement logout
-    logger.warn('handleLogout not yet implemented');
+    logger.warn("handleLogout not yet implemented");
   }
 
   // Helper methods for game management
   private async sendUpdatedGameListToLobbyPlayers(gameDoc: any): Promise<void> {
-    logger.debug('sendUpdatedGameListToLobbyPlayers for game:', gameDoc._id);
-    
+    logger.debug("sendUpdatedGameListToLobbyPlayers for game:", gameDoc._id);
+
     try {
       // Get the complete updated games list instead of just the single game
-      const games = await GameController.listLobbyGames({ sessionId: 'system' });
+      const games = await GameController.listLobbyGames({ sessionId: "system" });
       const messageForPlayers = new Message(MESSAGE_TYPE.GAME_LIST_UPDATED, { games });
-      
+
       const chatRoom = await GameController.getChatRoomWithSessions(null);
       if (chatRoom) {
         for (const session of chatRoom.sessions) {
@@ -899,7 +932,7 @@ export class WebSocketServer {
         }
       }
     } catch (error) {
-      logger.error('sendUpdatedGameListToLobbyPlayers error:', error);
+      logger.error("sendUpdatedGameListToLobbyPlayers error:", error);
     }
   }
 
@@ -908,7 +941,10 @@ export class WebSocketServer {
     this.broadcast(playersBySessionKey, message);
   }
 
-  private getOtherPlayersBySessionKeyFromGame(game: IGame, currentPlayerSessionKey: string | null): Record<string, any> {
+  private getOtherPlayersBySessionKeyFromGame(
+    game: IGame,
+    currentPlayerSessionKey: string | null,
+  ): Record<string, any> {
     const playersBySessionKey: Record<string, any> = {};
     for (const player of game.players) {
       if (player.sessionId && player.sessionId !== currentPlayerSessionKey) {
@@ -919,10 +955,13 @@ export class WebSocketServer {
   }
 
   // Client model creation (like old app.js)
-  private getSerializableClientModelFromSerializableModelForPlayer(serializableModel: any, targetPlayerId: string): any {
+  private getSerializableClientModelFromSerializableModelForPlayer(
+    serializableModel: any,
+    targetPlayerId: string,
+  ): any {
     // TODO: Implement client model filtering based on old app.js logic
     // This should filter the full game model to only show what the specific player should see
-    logger.warn('getSerializableClientModelFromSerializableModelForPlayer not yet implemented');
+    logger.warn("getSerializableClientModelFromSerializableModelForPlayer not yet implemented");
     return serializableModel; // Temporary return full model
   }
 
@@ -956,11 +995,8 @@ export class WebSocketServer {
     if (!client) return;
 
     try {
-      // Update session status  
-      await Session.findOneAndUpdate(
-        { sessionId: client.sessionId },
-        { connectionStatus: 'disconnected' }
-      );
+      // Update session status
+      await Session.findOneAndUpdate({ sessionId: client.sessionId }, { connectionStatus: "disconnected" });
 
       // Remove from game room if in one
       if (client.gameId) {
@@ -979,7 +1015,7 @@ export class WebSocketServer {
       this.sessionLookup.delete(client.sessionId);
       logger.info(`Session ${client.sessionId} disconnected`);
     } catch (error) {
-      logger.error('Error handling disconnection:', error);
+      logger.error("Error handling disconnection:", error);
     }
   }
 

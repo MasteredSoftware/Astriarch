@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IGameState extends Document {
   gameId: string;
@@ -72,54 +72,57 @@ export interface IGameState extends Document {
   version: string; // Schema version for migration tracking
 }
 
-const GameStateSchema = new Schema<IGameState>({
-  gameId: {
-    type: String,
-    required: true,
-    index: true
+const GameStateSchema = new Schema<IGameState>(
+  {
+    gameId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+    gameTime: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    planets: {
+      type: Schema.Types.Mixed,
+      required: true,
+      default: {},
+    },
+    fleets: {
+      type: Schema.Types.Mixed,
+      required: true,
+      default: {},
+    },
+    players: {
+      type: Schema.Types.Mixed,
+      required: true,
+      default: {},
+    },
+    gameSettings: {
+      type: Schema.Types.Mixed,
+      required: true,
+    },
+    version: {
+      type: String,
+      required: true,
+      default: "2.0.0",
+    },
   },
-  timestamp: {
-    type: Date,
-    default: Date.now,
-    index: true
+  {
+    timestamps: true,
+    collection: "gamestates",
   },
-  gameTime: {
-    type: Number,
-    required: true,
-    default: 0
-  },
-  planets: {
-    type: Schema.Types.Mixed,
-    required: true,
-    default: {}
-  },
-  fleets: {
-    type: Schema.Types.Mixed,
-    required: true,
-    default: {}
-  },
-  players: {
-    type: Schema.Types.Mixed,
-    required: true,
-    default: {}
-  },
-  gameSettings: {
-    type: Schema.Types.Mixed,
-    required: true
-  },
-  version: {
-    type: String,
-    required: true,
-    default: '2.0.0'
-  }
-}, {
-  timestamps: true,
-  collection: 'gamestates'
-});
+);
 
 // Indexes for realtime performance
 GameStateSchema.index({ gameId: 1, timestamp: -1 });
 GameStateSchema.index({ gameId: 1, gameTime: -1 });
-GameStateSchema.index({ 'players.lastActionTime': -1 });
+GameStateSchema.index({ "players.lastActionTime": -1 });
 
-export const GameState = model<IGameState>('GameState', GameStateSchema);
+export const GameState = model<IGameState>("GameState", GameStateSchema);

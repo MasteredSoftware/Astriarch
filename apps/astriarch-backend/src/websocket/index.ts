@@ -1,2 +1,2 @@
-export { WebSocketServer } from './WebSocketServer';
-export type { IConnectedClient } from './WebSocketServer';
+export { WebSocketServer } from "./WebSocketServer";
+export type { IConnectedClient } from "./WebSocketServer";

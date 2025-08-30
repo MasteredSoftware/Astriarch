@@ -1,4 +1,4 @@
-import { Router, Request, Response, type Router as ExpressRouter } from 'express';
+import { Router, Request, Response, type Router as ExpressRouter } from "express";
 
 const router: ExpressRouter = Router();
 
@@ -9,14 +9,14 @@ interface HealthResponse {
   uptime: number;
 }
 
-router.get('/', (req: Request, res: Response) => {
+router.get("/", (req: Request, res: Response) => {
   const response: HealthResponse = {
-    status: 'OK',
-    version: process.env.npm_package_version || '2.0.0',
+    status: "OK",
+    version: process.env.npm_package_version || "2.0.0",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   };
-  
+
   res.json(response);
 });
 

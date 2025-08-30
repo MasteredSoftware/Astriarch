@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document } from "mongoose";
 
 export interface IPlayerAction extends Document {
   gameId: string;
@@ -29,68 +29,71 @@ export interface IPlayerAction extends Document {
   serverLatency?: number; // Time between client and server processing
 }
 
-const PlayerActionSchema = new Schema<IPlayerAction>({
-  gameId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  playerId: {
-    type: String,
-    required: true,
-    index: true
-  },
-  timestamp: {
-    type: Date,
-    default: Date.now,
-    index: true
-  },
-  gameTime: {
-    type: Number,
-    required: true
-  },
-  actionType: {
-    type: String,
-    required: true,
-    enum: [
-      'build_structure',
-      'send_fleet',
-      'attack_planet',
-      'colonize_planet',
-      'research_upgrade',
-      'demolish_structure',
-      'fleet_orders',
-      'planet_management',
-      'diplomacy_action',
-      'trade_action'
-    ]
-  },
-  actionData: {
-    type: Schema.Types.Mixed,
-    required: true
-  },
-  result: {
-    success: {
+const PlayerActionSchema = new Schema<IPlayerAction>(
+  {
+    gameId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    playerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+      index: true,
+    },
+    gameTime: {
+      type: Number,
+      required: true,
+    },
+    actionType: {
+      type: String,
+      required: true,
+      enum: [
+        "build_structure",
+        "send_fleet",
+        "attack_planet",
+        "colonize_planet",
+        "research_upgrade",
+        "demolish_structure",
+        "fleet_orders",
+        "planet_management",
+        "diplomacy_action",
+        "trade_action",
+      ],
+    },
+    actionData: {
+      type: Schema.Types.Mixed,
+      required: true,
+    },
+    result: {
+      success: {
+        type: Boolean,
+        required: true,
+        default: false,
+      },
+      message: String,
+      changes: Schema.Types.Mixed,
+    },
+    processed: {
       type: Boolean,
       required: true,
-      default: false
+      default: false,
+      index: true,
     },
-    message: String,
-    changes: Schema.Types.Mixed
+    processingTime: Date,
+    clientTimestamp: Date,
+    serverLatency: Number,
   },
-  processed: {
-    type: Boolean,
-    required: true,
-    default: false,
-    index: true
+  {
+    timestamps: true,
+    collection: "playeractions",
   },
-  processingTime: Date,
-  clientTimestamp: Date,
-  serverLatency: Number
-}, {
-  timestamps: true,
-  collection: 'playeractions'
-});
+);
 
 // Critical indexes for realtime performance
 PlayerActionSchema.index({ gameId: 1, timestamp: -1 });
@@ -99,4 +102,4 @@ PlayerActionSchema.index({ gameId: 1, processed: 1 });
 PlayerActionSchema.index({ gameId: 1, actionType: 1, timestamp: -1 });
 PlayerActionSchema.index({ gameTime: 1 });
 
-export const PlayerAction = model<IPlayerAction>('PlayerAction', PlayerActionSchema);
+export const PlayerAction = model<IPlayerAction>("PlayerAction", PlayerActionSchema);
