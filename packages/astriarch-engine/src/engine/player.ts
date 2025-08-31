@@ -410,20 +410,21 @@ export class Player {
   }
 
   public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, cyclesElapsed, grid } = data;
+    const { clientModel, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
       const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, mainPlayer);
-      const results = Planet.buildImprovements(p, mainPlayer, grid, resourceGeneration, cyclesElapsed);
+      const results = Planet.buildImprovements(p, mainPlayer, grid, resourceGeneration);
 
       if (results.buildQueueEmpty) {
-        //if the build queue was empty we'll increase energy based on planet production
+        //if the build queue was empty we'll convert planet production to energy
         planetNameBuildQueueEmptyList.push(p.name);
 
-        const energyProduced = (resourceGeneration.amountPerTurn.production / 4.0) * cyclesElapsed;
+        const energyProduced = (p.resources.production / 4.0);
         p.resources.energy += energyProduced;
+        p.resources.production = 0;
         TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
           type: TaskNotificationType.BuildQueueEmpty,
           planetId: p.id,

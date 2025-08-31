@@ -261,6 +261,10 @@
 							<span class="text-astriarch-ui-light-grey text-xs">F</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
+							<span class="text-astriarch-food">{(selectedPlanet.resources?.production || 0).toFixed(1)}</span>
+							<span class="text-astriarch-ui-light-grey text-xs">P</span>
+						</div>
+						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 							<span class="text-astriarch-energy">{(selectedPlanet.resources?.energy || 0).toFixed(1)}</span>
 							<span class="text-astriarch-ui-light-grey text-xs">E</span>
 						</div>
@@ -498,7 +502,7 @@
 
 								<div class="flex justify-between text-xs">
 									<span class="text-slate-400">
-										{Math.round(item.productionCostComplete || 0)}/{Math.round(
+										{item.productionCostComplete || 0}/{Math.round(
 											item.baseProductionCost || 1
 										)}
 									</span>

@@ -748,14 +748,14 @@ export class Planet {
     owner: PlayerData,
     gameGrid: Grid,
     resourceGeneration: PlanetPerTurnResourceGeneration,
-    cyclesElapsed: number,
   ): { buildQueueEmpty: boolean } {
     const returnVal = { buildQueueEmpty: false };
 
     if (planet.buildQueue.length > 0) {
       const nextItem = planet.buildQueue[0];
 
-      nextItem.productionCostComplete += planet.resources.production * cyclesElapsed;
+      // This assumes that the production on the planet has already been adjusted for elapsed cycles
+      nextItem.productionCostComplete += planet.resources.production;
       planet.resources.production = 0;
 
       if (nextItem.productionCostComplete >= nextItem.baseProductionCost) {
