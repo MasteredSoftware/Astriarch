@@ -6,6 +6,7 @@
 	import type { PlanetData } from 'astriarch-engine/src/model/planet';
 	import type { LastKnownFleetData } from 'astriarch-engine/src/model/fleet';
 	import { Fleet } from 'astriarch-engine';
+	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 
 	// Reactive values from the store
 	$: currentSelectedPlanet = $selectedPlanet;
@@ -69,22 +70,6 @@
 		return parts.length > 0 ? parts.join(', ') : 'No Ships';
 	}
 
-	// Helper function to get planet type display name
-	function getPlanetTypeDisplay(type: number | null): string {
-		if (type === null) return 'Unknown';
-
-		switch (type) {
-			case 0:
-				return 'Asteroid Belt';
-			case 1:
-				return 'Dead Planet';
-			case 2:
-				return 'Class 1 Planet';
-			default:
-				return 'Unknown';
-		}
-	}
-
 	// Helper function to get turns since exploration
 	function getTurnsSinceExploration(lastKnownData: LastKnownFleetData | null): string {
 		if (!lastKnownData || !gameModel) return '';
@@ -114,7 +99,7 @@
 			<div>
 				<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Type</Text>
 				<Text style="font-size: 14px; color: #E2E8F0;">
-					{getPlanetTypeDisplay(currentSelectedPlanet.type)}
+					{GameTools.planetTypeToFriendlyName(currentSelectedPlanet.type)}
 				</Text>
 			</div>
 		{/if}
