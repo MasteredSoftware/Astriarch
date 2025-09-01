@@ -267,6 +267,7 @@ export class Fleet {
   ) {
     fleet.locationHexMidPoint = locationHexMidPoint;
     fleet.destinationHexMidPoint = destinationHexMidPoint;
+    fleet.travelingFromHexMidPoint = locationHexMidPoint;
 
     fleet.totalTravelDistance = Grid.getHexDistanceForMidPoints(gameGrid, locationHexMidPoint, destinationHexMidPoint);
     fleet.parsecsToDestination = fleet.totalTravelDistance;
