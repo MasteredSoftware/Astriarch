@@ -11,6 +11,8 @@ import {
 	type PlanetProductionItemData,
 	ResearchType
 } from 'astriarch-engine';
+import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
+import type { PlanetData } from 'astriarch-engine/src/model/planet';
 
 // Galaxy constants (from engine's GameModel)
 const GALAXY_WIDTH = 621.0;
@@ -117,9 +119,22 @@ export const currentResearch = derived(clientGameModel, ($clientGameModel) => {
 // Selected planet derived from selectedPlanetId and clientGameModel
 export const selectedPlanet = derived(
 	[selectedPlanetId, clientGameModel],
-	([$selectedPlanetId, $clientGameModel]) => {
+	([$selectedPlanetId, $clientGameModel]): PlanetData | ClientPlanet | null => {
 		if (!$selectedPlanetId || !$clientGameModel) return null;
-		return $clientGameModel.mainPlayerOwnedPlanets[$selectedPlanetId] || null;
+		
+		// First check if it's an owned planet (full PlanetData)
+		const ownedPlanet = $clientGameModel.mainPlayerOwnedPlanets[$selectedPlanetId];
+		if (ownedPlanet) {
+			return ownedPlanet;
+		}
+		
+		// Then check if it's a known client planet (ClientPlanet)
+		const clientPlanet = $clientGameModel.clientPlanets.find(p => p.id === $selectedPlanetId);
+		if (clientPlanet) {
+			return clientPlanet;
+		}
+		
+		return null;
 	}
 );
 
