@@ -121,27 +121,6 @@
 				</div>
 			{/if}
 
-			<!-- Resources -->
-			{#if currentSelectedPlanet.resources}
-				<div>
-					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Resources</Text>
-					<div class="space-y-1">
-						<Text style="font-size: 12px; color: #FCD34D;">
-							Energy: {currentSelectedPlanet.resources.energy.toFixed(1)}
-						</Text>
-						<Text style="font-size: 12px; color: #34D399;">
-							Food: {currentSelectedPlanet.resources.food.toFixed(1)}
-						</Text>
-						<Text style="font-size: 12px; color: #A78BFA;">
-							Ore: {currentSelectedPlanet.resources.ore.toFixed(1)}
-						</Text>
-						<Text style="font-size: 12px; color: #F472B6;">
-							Iridium: {currentSelectedPlanet.resources.iridium.toFixed(1)}
-						</Text>
-					</div>
-				</div>
-			{/if}
-
 			<!-- Fleet Strength -->
 			{#if currentSelectedPlanet.planetaryFleet}
 				<div>

@@ -14,11 +14,20 @@
 
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
-	$: currentSelectedPlanet = $selectedPlanet;
+	$: currentSelectedPlanet = $selectedPlanetId ? planets[$selectedPlanetId] : null;
+
+	// Auto-start destination selection when the view loads
+	$: if (
+		currentSelectedPlanet &&
+		!$fleetCommandStore.isSelectingDestination &&
+		!$fleetCommandStore.destinationPlanetId
+	) {
+		fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+	}
 
 	// Get ships of the selected type from the selected planet (excluding defenders which can't leave)
 	$: ships =
-		currentSelectedPlanet?.planetaryFleet.starships.filter((ship) => {
+		currentSelectedPlanet?.planetaryFleet.starships.filter((ship: StarshipData) => {
 			// Exclude System Defense ships as they can't leave the planet
 			if (ship.type === StarShipType.SystemDefense) return false;
 			// If "all" is selected, show all mobile ships
@@ -45,7 +54,7 @@
 	}
 
 	function selectAllShips() {
-		selectedShipIds = new Set(ships.map((ship) => ship.id));
+		selectedShipIds = new Set(ships.map((ship: StarshipData) => ship.id));
 	}
 
 	function getHealthPercentage(ship: StarshipData): number {
@@ -61,19 +70,25 @@
 	}
 
 	function sendShips() {
-		if (!currentSelectedPlanet || selectedShipIds.size === 0) {
-			console.warn('No ships selected to send');
+		if (
+			!currentSelectedPlanet ||
+			selectedShipIds.size === 0 ||
+			!$fleetCommandStore.destinationPlanetId
+		) {
+			console.warn('Cannot send ships: missing planet, ships, or destination');
 			return;
 		}
 
-		// Check if we have a destination selected
-		const fleetState = $fleetCommandStore;
-		if (fleetState.destinationPlanetId) {
-			// We have a destination, proceed with sending
-			actuallyPSendShips(fleetState.destinationPlanetId);
-			fleetCommandStore.reset();
-		} else {
-			// Start destination selection mode
+		// Send ships immediately since we have everything we need
+		actuallyPSendShips($fleetCommandStore.destinationPlanetId);
+
+		// Clear selection and reset to destination selection mode
+		selectedShipIds.clear();
+		selectedShipIds = new Set();
+		fleetCommandStore.reset();
+
+		// Auto-restart destination selection for next fleet
+		if (currentSelectedPlanet) {
 			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
 		}
 	}
@@ -102,7 +117,7 @@
 			battleships: [] as number[]
 		};
 
-		ships.forEach((ship) => {
+		ships.forEach((ship: StarshipData) => {
 			if (selectedShipIds.has(ship.id)) {
 				switch (ship.type) {
 					case StarShipType.Scout:
@@ -169,12 +184,60 @@
 			</p>
 		</div>
 
+		<!-- Destination Selection Status -->
+		<div class="px-4">
+			{#if $fleetCommandStore.destinationPlanetId}
+				<!-- Destination Selected -->
+				<div class="rounded border border-green-500/40 bg-green-600/20 p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm text-green-200">
+								Destination: <strong>{destinationPlanet?.name || 'Unknown Planet'}</strong>
+							</p>
+							<p class="mt-1 text-xs text-green-300/80">
+								Select ships above and click "Send Ships" to launch your fleet
+							</p>
+						</div>
+						<button
+							class="rounded bg-gray-600 px-3 py-1 text-sm hover:bg-gray-500"
+							onclick={cancelSendShips}
+						>
+							Change Destination
+						</button>
+					</div>
+				</div>
+			{:else}
+				<!-- No Destination Selected -->
+				<div class="rounded border border-cyan-500/40 bg-cyan-600/20 p-4">
+					<div class="flex items-center justify-between">
+						<div>
+							<p class="text-sm font-medium text-cyan-200">
+								Select a destination planet on the galaxy map
+							</p>
+							<p class="mt-1 text-xs text-cyan-300/80">
+								Click on any planet in the galaxy view to set your fleet's destination
+							</p>
+						</div>
+						<div class="text-cyan-400">
+							<svg class="h-6 w-6 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+								<path
+									fill-rule="evenodd"
+									d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+									clip-rule="evenodd"
+								/>
+							</svg>
+						</div>
+					</div>
+				</div>
+			{/if}
+		</div>
+
 		<!-- Action Buttons -->
 		<div class="flex gap-3">
 			<button
 				class="h-12 rounded-[4px] bg-gradient-to-b from-[#00FFFF] to-[#00CCCC] px-8 text-[14px] font-extrabold tracking-[2px] text-[#1B1F25] uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#00DDDD] hover:to-[#00AAAA] disabled:cursor-not-allowed disabled:opacity-50"
 				onclick={sendShips}
-				disabled={selectedShipIds.size === 0}
+				disabled={selectedShipIds.size === 0 || !$fleetCommandStore.destinationPlanetId}
 			>
 				Send Ships
 			</button>
@@ -186,48 +249,6 @@
 			</button>
 		</div>
 	</div>
-
-	<!-- Destination Selection UI -->
-	{#if $fleetCommandStore.isSelectingDestination}
-		<div class="mb-4 px-8">
-			<div class="rounded border border-yellow-500/40 bg-yellow-600/20 p-3">
-				<p class="text-sm text-yellow-200">
-					Click on a planet in the galaxy to select destination for your fleet
-				</p>
-				<button
-					class="mt-2 rounded bg-gray-600 px-4 py-1 text-sm hover:bg-gray-500"
-					onclick={cancelSendShips}
-				>
-					Cancel
-				</button>
-			</div>
-		</div>
-	{/if}
-
-	<!-- Destination Confirmed UI -->
-	{#if $fleetCommandStore.destinationPlanetId && !$fleetCommandStore.isSelectingDestination}
-		<div class="mb-4 px-8">
-			<div class="rounded border border-green-500/40 bg-green-600/20 p-3">
-				<p class="mb-2 text-sm text-green-200">
-					Destination: <strong>{destinationPlanet?.name || 'Unknown Planet'}</strong>
-				</p>
-				<div class="flex gap-2">
-					<button
-						class="rounded bg-green-600 px-4 py-1 text-sm font-bold hover:bg-green-500"
-						onclick={() => actuallyPSendShips($fleetCommandStore.destinationPlanetId!)}
-					>
-						Confirm Send Ships
-					</button>
-					<button
-						class="rounded bg-gray-600 px-4 py-1 text-sm hover:bg-gray-500"
-						onclick={cancelSendShips}
-					>
-						Cancel
-					</button>
-				</div>
-			</div>
-		</div>
-	{/if}
 
 	<!-- Planet Selector -->
 	{#if planetList.length > 1}

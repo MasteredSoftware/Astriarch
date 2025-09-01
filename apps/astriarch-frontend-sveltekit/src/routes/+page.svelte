@@ -88,16 +88,30 @@
 	</div>
 
 	<!-- Top HUD -->
-	<header class="relative z-10 p-4">
-		<div class="mb-4 flex items-center justify-between">
+	<header class="relative z-10 p-2">
+		<div class="flex items-center justify-between">
 			<div class="flex items-center space-x-4">
 				<Logo size="lg" variant="primary" />
 
 				<!-- Game time info - only show when game is started -->
 				{#if gameStarted}
-					<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
-						Cycle {$gameTime.cycle} • {$gameTime.timeString} • Stardate {$gameTime.stardate}
-					</Text>
+					<div class="flex flex-col items-center">
+						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
+							Cycle {$gameTime.cycle} • {$gameTime.timeString}
+						</Text>
+						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
+							Stardate {$gameTime.stardate}
+						</Text>
+					</div>
+					<!-- Resource Overview -->
+					<div class="mb-6 flex justify-center">
+						<TopOverview resourceData={$resourceData} population={$population} />
+					</div>
+				{/if}
+			</div>
+
+			<div class="flex items-center space-x-4">
+				{#if gameStarted}
 					<Text
 						style="font-size: 12px; color: {$isGameRunning
 							? '#10B981'
@@ -105,11 +119,6 @@
 					>
 						{$isGameRunning ? '● RUNNING' : '⏸ PAUSED'}
 					</Text>
-				{/if}
-			</div>
-
-			<div class="flex items-center space-x-4">
-				{#if gameStarted}
 					<Button
 						label={$isGameRunning ? 'Pause Game' : 'Resume Game'}
 						size="md"
@@ -117,26 +126,15 @@
 						onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
 					/>
 				{/if}
-				<Button label="Multiplayer Lobby" size="lg" variant="primary" onclick={handleShowLobby} />
-				<a href="/test/websocket" class="text-sm text-cyan-400 underline hover:text-cyan-300">
-					WebSocket Test
-				</a>
 			</div>
 		</div>
-
-		<!-- Resource Overview -->
-		{#if gameStarted}
-			<div class="mb-6 flex justify-center">
-				<TopOverview resourceData={$resourceData} population={$population} />
-			</div>
-		{/if}
 	</header>
 
 	<!-- Main Game Area -->
 	<div class="relative z-10 flex-1">
 		{#if gameStarted}
 			<!-- Game View -->
-			<div class="flex h-[calc(100vh-200px)] flex-col">
+			<div class="flex h-[calc(100vh-80px)] flex-col">
 				<!-- Central Game Content Area with Galaxy Canvas as background -->
 				<div class="relative mx-4 flex-1 overflow-hidden rounded-lg">
 					<!-- Galaxy Canvas - Always visible as background (client-side only) -->
@@ -182,14 +180,14 @@
 				</div>
 
 				<!-- Bottom Navigation -->
-				<div class="mt-4">
+				<div class="mt-1">
 					<NavigationController items={navigationItems} />
 				</div>
 			</div>
 		{:else if showLobby}
 			<!-- Multiplayer Lobby -->
 			<div class="flex h-[calc(100vh-200px)] flex-col">
-				<div class="mb-4 flex items-center justify-between px-4">
+				<div class="flex items-center justify-between px-4">
 					<Button label="← Back to Main" size="sm" variant="outline" onclick={handleBackToMain} />
 				</div>
 				<div class="flex-1">
@@ -235,11 +233,4 @@
 			{/each}
 		</div>
 	{/if}
-
-	<!-- Debug: Test page link -->
-	<div class="fixed bottom-4 left-4 z-20">
-		<a href="/test" class="text-xs text-slate-500 transition-colors hover:text-cyan-400">
-			Component Test Page
-		</a>
-	</div>
 </main>
