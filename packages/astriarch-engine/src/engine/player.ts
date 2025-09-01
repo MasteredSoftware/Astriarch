@@ -422,7 +422,7 @@ export class Player {
         //if the build queue was empty we'll convert planet production to energy
         planetNameBuildQueueEmptyList.push(p.name);
 
-        const energyProduced = (p.resources.production / 4.0);
+        const energyProduced = p.resources.production / 4.0;
         p.resources.energy += energyProduced;
         p.resources.production = 0;
         TaskNotifications.upsertTask(data.clientModel.taskNotifications, {

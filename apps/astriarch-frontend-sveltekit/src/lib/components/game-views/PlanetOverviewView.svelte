@@ -247,8 +247,8 @@
 						</select>
 					{/if}
 					<div class="text-xs text-slate-400">
-						Pop: {selectedPlanet.population?.length || 0} | 
-						Max: {selectedPlanet.maxImprovements + (selectedPlanet.builtImprovements?.[2] || 0)}
+						Pop: {selectedPlanet.population?.length || 0} | Max: {selectedPlanet.maxImprovements +
+							(selectedPlanet.builtImprovements?.[2] || 0)}
 					</div>
 				</div>
 
@@ -257,23 +257,33 @@
 					<span class="text-xs text-slate-400">Resources:</span>
 					<div class="flex space-x-2 text-xs">
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
-							<span class="text-astriarch-food">{(selectedPlanet.resources?.food || 0).toFixed(1)}</span>
+							<span class="text-astriarch-food"
+								>{(selectedPlanet.resources?.food || 0).toFixed(1)}</span
+							>
 							<span class="text-astriarch-ui-light-grey text-xs">F</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
-							<span class="text-astriarch-food">{(selectedPlanet.resources?.production || 0).toFixed(1)}</span>
+							<span class="text-astriarch-food"
+								>{(selectedPlanet.resources?.production || 0).toFixed(1)}</span
+							>
 							<span class="text-astriarch-ui-light-grey text-xs">P</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
-							<span class="text-astriarch-energy">{(selectedPlanet.resources?.energy || 0).toFixed(1)}</span>
+							<span class="text-astriarch-energy"
+								>{(selectedPlanet.resources?.energy || 0).toFixed(1)}</span
+							>
 							<span class="text-astriarch-ui-light-grey text-xs">E</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
-							<span class="text-astriarch-ore">{(selectedPlanet.resources?.ore || 0).toFixed(1)}</span>
+							<span class="text-astriarch-ore"
+								>{(selectedPlanet.resources?.ore || 0).toFixed(1)}</span
+							>
 							<span class="text-astriarch-ui-light-grey text-xs">O</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
-							<span class="text-astriarch-iridium">{(selectedPlanet.resources?.iridium || 0).toFixed(1)}</span>
+							<span class="text-astriarch-iridium"
+								>{(selectedPlanet.resources?.iridium || 0).toFixed(1)}</span
+							>
 							<span class="text-astriarch-ui-light-grey text-xs">I</span>
 						</div>
 					</div>
@@ -303,8 +313,8 @@
 								Colony: {selectedPlanet.builtImprovements[PlanetImprovementType.Colony]}
 							</span>
 						{/if}
-						{#if !selectedPlanet.builtImprovements || Object.values(selectedPlanet.builtImprovements).every(count => count === 0)}
-							<span class="text-slate-500 text-xs">None</span>
+						{#if !selectedPlanet.builtImprovements || Object.values(selectedPlanet.builtImprovements).every((count) => count === 0)}
+							<span class="text-xs text-slate-500">None</span>
 						{/if}
 					</div>
 				</div>
@@ -502,7 +512,7 @@
 
 								<div class="flex justify-between text-xs">
 									<span class="text-slate-400">
-										{item.productionCostComplete || 0}/{Math.round(
+										{(item.productionCostComplete || 0).toFixed(1)}/{Math.round(
 											item.baseProductionCost || 1
 										)}
 									</span>
