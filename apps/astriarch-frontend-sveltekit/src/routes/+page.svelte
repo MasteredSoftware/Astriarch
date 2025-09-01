@@ -147,7 +147,9 @@
 					</div>
 
 					<!-- Info Panel - Top Left -->
-					<div class="absolute top-4 left-4 z-20 w-64 max-h-80 overflow-y-auto bg-black/80 border border-cyan-500/30 rounded-lg backdrop-blur-sm">
+					<div
+						class="absolute top-4 left-4 z-20 max-h-80 w-64 overflow-y-auto rounded-lg border border-cyan-500/30 bg-black/80 backdrop-blur-sm"
+					>
 						<PlanetInfoPanel />
 					</div>
 

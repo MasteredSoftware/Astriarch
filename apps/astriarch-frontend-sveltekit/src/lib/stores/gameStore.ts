@@ -121,19 +121,19 @@ export const selectedPlanet = derived(
 	[selectedPlanetId, clientGameModel],
 	([$selectedPlanetId, $clientGameModel]): PlanetData | ClientPlanet | null => {
 		if (!$selectedPlanetId || !$clientGameModel) return null;
-		
+
 		// First check if it's an owned planet (full PlanetData)
 		const ownedPlanet = $clientGameModel.mainPlayerOwnedPlanets[$selectedPlanetId];
 		if (ownedPlanet) {
 			return ownedPlanet;
 		}
-		
+
 		// Then check if it's a known client planet (ClientPlanet)
-		const clientPlanet = $clientGameModel.clientPlanets.find(p => p.id === $selectedPlanetId);
+		const clientPlanet = $clientGameModel.clientPlanets.find((p) => p.id === $selectedPlanetId);
 		if (clientPlanet) {
 			return clientPlanet;
 		}
-		
+
 		return null;
 	}
 );
@@ -146,26 +146,20 @@ export const gameActions = {
 
 	// Planet selection actions
 	selectPlanet(planetId: number | null) {
+		console.log('gameActions.selectPlanet called with ID:', planetId);
 		selectedPlanetId.set(planetId);
 	},
 
-	// Auto-select first planet when game starts or when current selection becomes invalid
-	autoSelectFirstPlanet() {
+	selectHomePlanet() {
 		const cgm = get(clientGameModel);
-		const currentSelectedId = get(selectedPlanetId);
 
-		if (!cgm) {
+		const homePlanetId = cgm?.mainPlayer.homePlanetId;
+		if (!homePlanetId) {
 			selectedPlanetId.set(null);
 			return;
 		}
 
-		const planetIds = Object.keys(cgm.mainPlayerOwnedPlanets).map((id) => parseInt(id));
-
-		// If no planet is selected or current selection is invalid, select first available
-		if (!currentSelectedId || !cgm.mainPlayerOwnedPlanets[currentSelectedId]) {
-			const firstPlanetId = planetIds.length > 0 ? planetIds[0] : null;
-			selectedPlanetId.set(firstPlanetId);
-		}
+		selectedPlanetId.set(homePlanetId);
 	},
 
 	pauseGame() {
@@ -292,9 +286,4 @@ gameGrid.subscribe((grid) => {
 	if (cgm && grid && get(isGameRunning) && animationFrameId === null) {
 		startGameLoop();
 	}
-});
-
-// Auto-select first planet when clientGameModel changes
-clientGameModel.subscribe((cgm) => {
-	gameActions.autoSelectFirstPlanet();
 });

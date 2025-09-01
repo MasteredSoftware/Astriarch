@@ -14,24 +14,26 @@
 	// Helper function to get planet status
 	function getPlanetStatus(planet: PlanetData | ClientPlanet | null) {
 		if (!planet || !gameModel) return 'none';
-		
+
 		// Check if it's an owned planet (has full PlanetData structure)
 		if ('planetaryFleet' in planet) {
 			return 'owned';
 		}
-		
+
 		// Check if we have last known fleet strength (explored but not owned)
 		const lastKnownData = gameModel.mainPlayer.lastKnownPlanetFleetStrength[planet.id];
 		if (lastKnownData) {
 			return 'explored';
 		}
-		
+
 		// It's a ClientPlanet that we know about but haven't explored
 		return 'unexplored';
 	}
 
 	// Helper function to get last known fleet data
-	function getLastKnownFleetData(planet: PlanetData | ClientPlanet | null): LastKnownFleetData | null {
+	function getLastKnownFleetData(
+		planet: PlanetData | ClientPlanet | null
+	): LastKnownFleetData | null {
 		if (!planet || !gameModel) return null;
 		return gameModel.mainPlayer.lastKnownPlanetFleetStrength[planet.id] || null;
 	}
@@ -39,12 +41,12 @@
 	// Helper function to format fleet strength display
 	function formatFleetStrength(fleetData: any): string {
 		if (!fleetData) return 'No Fleet';
-		
+
 		const fleet = fleetData.fleetData || fleetData;
 		const counts = Fleet.countStarshipsByType(fleet);
-		
+
 		let parts: string[] = [];
-		
+
 		if (counts.defenders > 0) {
 			parts.push(`${counts.defenders} Defenders`);
 		}
@@ -63,26 +65,30 @@
 		if (counts.spaceplatforms > 0) {
 			parts.push(`${counts.spaceplatforms} Space Platforms`);
 		}
-		
+
 		return parts.length > 0 ? parts.join(', ') : 'No Ships';
 	}
 
 	// Helper function to get planet type display name
 	function getPlanetTypeDisplay(type: number | null): string {
 		if (type === null) return 'Unknown';
-		
+
 		switch (type) {
-			case 0: return 'Asteroid Belt';
-			case 1: return 'Dead Planet';
-			case 2: return 'Class 1 Planet';
-			default: return 'Unknown';
+			case 0:
+				return 'Asteroid Belt';
+			case 1:
+				return 'Dead Planet';
+			case 2:
+				return 'Class 1 Planet';
+			default:
+				return 'Unknown';
 		}
 	}
 
 	// Helper function to get turns since exploration
 	function getTurnsSinceExploration(lastKnownData: LastKnownFleetData | null): string {
 		if (!lastKnownData || !gameModel) return '';
-		
+
 		const turnsSince = gameModel.currentCycle - lastKnownData.cycleLastExplored;
 		if (turnsSince === 0) return 'Explored this cycle';
 		if (turnsSince === 1) return 'Explored last cycle';
@@ -136,16 +142,16 @@
 					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Resources</Text>
 					<div class="space-y-1">
 						<Text style="font-size: 12px; color: #FCD34D;">
-							Energy: {currentSelectedPlanet.resources.energy}
+							Energy: {currentSelectedPlanet.resources.energy.toFixed(1)}
 						</Text>
 						<Text style="font-size: 12px; color: #34D399;">
-							Food: {currentSelectedPlanet.resources.food}
+							Food: {currentSelectedPlanet.resources.food.toFixed(1)}
 						</Text>
 						<Text style="font-size: 12px; color: #A78BFA;">
-							Ore: {currentSelectedPlanet.resources.ore}
+							Ore: {currentSelectedPlanet.resources.ore.toFixed(1)}
 						</Text>
 						<Text style="font-size: 12px; color: #F472B6;">
-							Iridium: {currentSelectedPlanet.resources.iridium}
+							Iridium: {currentSelectedPlanet.resources.iridium.toFixed(1)}
 						</Text>
 					</div>
 				</div>
@@ -161,7 +167,7 @@
 				</div>
 			{/if}
 
-		<!-- Explored but not owned -->
+			<!-- Explored but not owned -->
 		{:else if planetStatus === 'explored' && lastKnownData}
 			<div>
 				<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Status</Text>
@@ -170,7 +176,9 @@
 
 			<!-- Last Known Owner -->
 			{#if lastKnownData.lastKnownOwnerId && gameModel}
-				{@const owner = gameModel.clientPlayers.find(p => p.id === lastKnownData.lastKnownOwnerId)}
+				{@const owner = gameModel.clientPlayers.find(
+					(p) => p.id === lastKnownData.lastKnownOwnerId
+				)}
 				<div>
 					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Owner</Text>
 					<Text style="font-size: 14px; color: #EF4444;">
@@ -195,7 +203,7 @@
 				</Text>
 			</div>
 
-		<!-- Unexplored planet -->
+			<!-- Unexplored planet -->
 		{:else if planetStatus === 'unexplored'}
 			<div>
 				<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Status</Text>

@@ -361,6 +361,7 @@ class WebSocketService {
 							const clientGameState = message.payload.gameState as ClientModelData;
 							clientGameModel.set(clientGameState);
 							isGameRunning.set(true);
+							gameActions.selectHomePlanet();
 
 							// For multiplayer, we don't have access to the full GameModelData on the client
 							// The clientGameModel contains everything the player needs to see

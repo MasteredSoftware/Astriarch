@@ -24,10 +24,14 @@
 	// Use the central selected planet from gameStore
 	$: currentSelectedPlanet = $selectedPlanet;
 
+	// Check if the selected planet is an owned planet (has PlanetData structure)
+	$: isOwnedPlanet = currentSelectedPlanet && 'planetaryFleet' in currentSelectedPlanet;
+
 	// Calculate current worker assignments for the selected planet
-	$: workerAssignments = currentSelectedPlanet
-		? Planet.countPopulationWorkerTypes(currentSelectedPlanet)
-		: { farmers: 0, miners: 0, builders: 0 };
+	$: workerAssignments =
+		currentSelectedPlanet && isOwnedPlanet
+			? Planet.countPopulationWorkerTypes(currentSelectedPlanet)
+			: { farmers: 0, miners: 0, builders: 0 };
 
 	// Helper function for worker assignment changes
 	function adjustWorkerAssignment(workerType: CitizenWorkerType, delta: number) {
@@ -221,7 +225,7 @@
 </script>
 
 <div class="flex h-full flex-col bg-slate-900/95 backdrop-blur-sm">
-	{#if currentSelectedPlanet}
+	{#if currentSelectedPlanet && isOwnedPlanet}
 		<!-- Planet Header Summary -->
 		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-3">
 			<div id="selected-planet-header" class="flex items-center justify-between gap-6">
@@ -231,7 +235,7 @@
 						{currentSelectedPlanet.name}
 					</h2>
 					<span class="text-astriarch-body-14 text-astriarch-ui-light-grey">
-						{GameTools.planetTypeToFriendlyName(currentSelectedPlanet.type)}
+						{GameTools.planetTypeToFriendlyName(currentSelectedPlanet.type || 1)}
 					</span>
 					{#if planetList.length > 1}
 						<select
@@ -534,6 +538,18 @@
 						</Text>
 					</div>
 				{/if}
+			</div>
+		</div>
+	{:else if currentSelectedPlanet && !isOwnedPlanet}
+		<!-- Selected planet is not owned -->
+		<div class="flex h-full items-center justify-center">
+			<div class="text-center">
+				<Text style="color: #94A3B8; font-size: 14px;"
+					>Planet "{currentSelectedPlanet.name}" is not under your control</Text
+				>
+				<Text style="color: #64748B; font-size: 12px; margin-top: 4px;">
+					Only owned planets can be managed here
+				</Text>
 			</div>
 		</div>
 	{:else}
