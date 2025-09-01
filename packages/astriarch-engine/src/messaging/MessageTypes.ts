@@ -3,6 +3,8 @@
  * Based on the original Astriarch architecture from app.js
  */
 
+import type { EventNotification } from '../model/eventNotification';
+
 export enum MESSAGE_TYPE {
   // Connection & System
   NOOP = 'NOOP',
@@ -41,6 +43,7 @@ export enum MESSAGE_TYPE {
 
   // Game State
   GAME_STATE_UPDATE = 'GAME_STATE_UPDATE',
+  EVENT_NOTIFICATIONS = 'EVENT_NOTIFICATIONS',
   GAME_OVER = 'GAME_OVER',
 
   // Player Actions
@@ -174,6 +177,10 @@ export interface IGameStateUpdatePayload {
   changes?: unknown;
   clientGameModel?: unknown;
   currentCycle?: number;
+}
+
+export interface IEventNotificationsPayload {
+  events: EventNotification[];
 }
 
 export interface IChatMessagePayload {
@@ -427,8 +434,9 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.ERROR]: 60,
     [MESSAGE_TYPE.GAME_LIST_UPDATED]: 61,
     [MESSAGE_TYPE.GAME_STATE_UPDATE]: 62,
-    [MESSAGE_TYPE.GAME_OVER]: 63,
-    [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 64,
+    [MESSAGE_TYPE.EVENT_NOTIFICATIONS]: 63,
+    [MESSAGE_TYPE.GAME_OVER]: 64,
+    [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 65,
   };
 
   return typeMap[type] ?? -1;
@@ -466,8 +474,9 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     60: MESSAGE_TYPE.ERROR,
     61: MESSAGE_TYPE.GAME_LIST_UPDATED,
     62: MESSAGE_TYPE.GAME_STATE_UPDATE,
-    63: MESSAGE_TYPE.GAME_OVER,
-    64: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
+    63: MESSAGE_TYPE.EVENT_NOTIFICATIONS,
+    64: MESSAGE_TYPE.GAME_OVER,
+    65: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
   };
 
   return reverseMap[typeNum] ?? null;

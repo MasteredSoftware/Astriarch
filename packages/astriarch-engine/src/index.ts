@@ -13,6 +13,7 @@ import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { CitizenWorkerType } from './model/planet';
 import { Grid } from './engine/grid';
+import { EventNotification, EventNotificationType } from './model/eventNotification';
 
 // Export messaging types
 export * from './messaging/MessageTypes';
@@ -35,6 +36,7 @@ export { GameSpeed };
 export { PlanetsPerSystemOption };
 export { ResearchType };
 export { CitizenWorkerType };
+export { EventNotificationType };
 export { playerColors };
 
 // Export interfaces
@@ -48,6 +50,7 @@ export type { PlanetProductionItemData };
 export type { Subscription };
 export type { FleetData };
 export type { StarshipData };
+export type { EventNotification };
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"

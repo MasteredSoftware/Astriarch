@@ -6,6 +6,9 @@ import {
 	type IMessage,
 	type IGame,
 	type IGameOptions,
+	type IEventNotificationsPayload,
+	type EventNotification,
+	EventNotificationType,
 	isCreateGameResponse,
 	isJoinGameResponse,
 	isListGamesResponse,
@@ -304,6 +307,67 @@ class WebSocketService {
 		}
 	}
 
+	private handleEventNotifications(events: EventNotification[]) {
+		for (const event of events) {
+			// Convert EventNotificationType to a user-friendly notification type
+			let notificationType:
+				| 'info'
+				| 'success'
+				| 'warning'
+				| 'error'
+				| 'battle'
+				| 'research'
+				| 'construction'
+				| 'fleet'
+				| 'planet'
+				| 'diplomacy' = 'info';
+
+			switch (event.type) {
+				case EventNotificationType.ResearchComplete:
+				case EventNotificationType.ResearchStolen:
+				case EventNotificationType.ResearchQueueEmpty:
+					notificationType = 'research';
+					break;
+				case EventNotificationType.ImprovementBuilt:
+				case EventNotificationType.ShipBuilt:
+				case EventNotificationType.ImprovementDemolished:
+					notificationType = 'construction';
+					break;
+				case EventNotificationType.DefendedAgainstAttackingFleet:
+				case EventNotificationType.AttackingFleetLost:
+				case EventNotificationType.PlanetCaptured:
+				case EventNotificationType.PlanetLost:
+					notificationType = 'battle';
+					break;
+				case EventNotificationType.PopulationGrowth:
+				case EventNotificationType.PopulationStarvation:
+				case EventNotificationType.PlanetLostDueToStarvation:
+					notificationType = 'planet';
+					break;
+				case EventNotificationType.InsufficientFood:
+				case EventNotificationType.FoodShortageRiots:
+				case EventNotificationType.CitizensProtesting:
+					notificationType = 'warning';
+					break;
+				case EventNotificationType.TradesExecuted:
+					notificationType = 'success';
+					break;
+				case EventNotificationType.TradesNotExecuted:
+					notificationType = 'error';
+					break;
+				default:
+					notificationType = 'info';
+			}
+
+			this.gameStore.addNotification({
+				id: Date.now().toString() + Math.random(),
+				type: notificationType,
+				message: event.message,
+				timestamp: Date.now()
+			});
+		}
+	}
+
 	private handleMessage(message: IMessage<unknown>) {
 		console.log('Received message:', message);
 
@@ -455,6 +519,12 @@ class WebSocketService {
 			case MESSAGE_TYPE.CHAT_MESSAGE: {
 				const chatData = message.payload as unknown as ChatMessage;
 				this.gameStore.addChatMessage(chatData);
+				break;
+			}
+
+			case MESSAGE_TYPE.EVENT_NOTIFICATIONS: {
+				const eventData = message.payload as IEventNotificationsPayload;
+				this.handleEventNotifications(eventData.events);
 				break;
 			}
 

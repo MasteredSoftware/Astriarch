@@ -12,6 +12,7 @@ import {
   ERROR_TYPE,
   CHAT_MESSAGE_TYPE,
   type IMessage,
+  type IEventNotificationsPayload,
   // Import available type guards
   isCreateGameRequest,
   isJoinGameRequest,
@@ -28,6 +29,8 @@ import {
   advanceGameModelTime,
   GameModel,
   ModelData,
+  Events,
+  type EventNotification,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -48,6 +51,7 @@ export class WebSocketServer {
   private sessionLookup: Map<string, string> = new Map(); // sessionId -> clientId mapping
   private gameRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds
   private chatRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds (null for lobby)
+  private eventSubscriptions: Set<string> = new Set(); // track active event subscriptions by playerId
   private pingInterval?: NodeJS.Timeout;
 
   constructor(server: Server) {
@@ -59,6 +63,49 @@ export class WebSocketServer {
 
   public static getInstance(): WebSocketServer | null {
     return WebSocketServer.instance || null;
+  }
+
+  // Event subscription management
+  private subscribeToPlayerEvents(playerId: string): void {
+    if (this.eventSubscriptions.has(playerId)) {
+      return; // Already subscribed
+    }
+
+    Events.subscribe(playerId, (subscriptionPlayerId: string, events: EventNotification[]) => {
+      this.handlePlayerEvents(subscriptionPlayerId, events);
+    });
+
+    this.eventSubscriptions.add(playerId);
+    logger.info(`Subscribed to events for player: ${playerId}`);
+  }
+
+  private handlePlayerEvents(playerId: string, events: EventNotification[]): void {
+    if (events.length === 0) {
+      return;
+    }
+
+    logger.info(`Received ${events.length} events for player ${playerId}`);
+
+    // Find the client for this player
+    let targetClient: IConnectedClient | null = null;
+    for (const client of this.clients.values()) {
+      if (client.playerId === playerId) {
+        targetClient = client;
+        break;
+      }
+    }
+
+    if (!targetClient) {
+      logger.warn(`No connected client found for player ${playerId} to send events`);
+      return;
+    }
+
+    // Send events to the client
+    const eventMessage = new Message<IEventNotificationsPayload>(MESSAGE_TYPE.EVENT_NOTIFICATIONS, {
+      events,
+    });
+
+    this.broadcastToSession(targetClient.sessionId, eventMessage);
   }
 
   private setupWebSocketServer(): void {
@@ -205,7 +252,7 @@ export class WebSocketServer {
         break;
 
       case MESSAGE_TYPE.CHANGE_GAME_OPTIONS:
-        await this.handleChangeGameOptions(clientId, message);
+        await this.handleChangeGameOptions(clientId, message as IMessage<IChangeGameOptionsPayload>);
         break;
 
       case MESSAGE_TYPE.CHANGE_PLAYER_NAME:
@@ -563,6 +610,9 @@ export class WebSocketServer {
                 playerClient.gameId = gameId;
                 playerClient.playerId = getPlayerId(player.position || 0);
 
+                // Subscribe to events for this player
+                this.subscribeToPlayerEvents(playerClient.playerId);
+
                 // Add to game room
                 if (!this.gameRooms.has(gameId)) {
                   this.gameRooms.set(gameId, new Set());
@@ -636,6 +686,9 @@ export class WebSocketServer {
         // Update client info for resumed game
         client.gameId = gameId;
         client.playerId = getPlayerId(result.player.position || 0);
+
+        // Subscribe to events for this player
+        this.subscribeToPlayerEvents(client.playerId);
 
         // Add to game room if not already there
         if (!this.gameRooms.has(gameId)) {

@@ -3,13 +3,16 @@
 	import { browser } from '$app/environment';
 	import {
 		clientGameModel,
-		notifications,
 		resourceData,
 		population,
 		gameTime,
 		isGameRunning,
 		gameActions
 	} from '$lib/stores/gameStore';
+	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+
+	// Get the notifications store from the multiplayerGameStore
+	const { notifications } = multiplayerGameStore;
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
 
 	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
@@ -63,6 +66,69 @@
 	onDestroy(() => {
 		console.log('Astriarch game component destroyed');
 	});
+
+	// Helper functions for notifications
+	function getNotificationColor(type: string): string {
+		switch (type) {
+			case 'research':
+				return '#3B82F6'; // Blue
+			case 'construction':
+				return '#10B981'; // Green
+			case 'battle':
+				return '#EF4444'; // Red
+			case 'planet':
+				return '#8B5CF6'; // Purple
+			case 'fleet':
+				return '#06B6D4'; // Cyan
+			case 'warning':
+				return '#F59E0B'; // Yellow
+			case 'error':
+				return '#EF4444'; // Red
+			case 'success':
+				return '#10B981'; // Green
+			case 'diplomacy':
+				return '#EC4899'; // Pink
+			default:
+				return '#00FFFF'; // Cyan
+		}
+	}
+
+	function getNotificationTypeLabel(type: string): string {
+		switch (type) {
+			case 'research':
+				return 'RESEARCH';
+			case 'construction':
+				return 'CONSTRUCTION';
+			case 'battle':
+				return 'BATTLE';
+			case 'planet':
+				return 'PLANET';
+			case 'fleet':
+				return 'FLEET';
+			case 'warning':
+				return 'WARNING';
+			case 'error':
+				return 'ERROR';
+			case 'success':
+				return 'SUCCESS';
+			case 'diplomacy':
+				return 'DIPLOMACY';
+			default:
+				return 'INFO';
+		}
+	}
+
+	function formatTimestamp(timestamp: number): string {
+		const now = Date.now();
+		const diff = now - timestamp;
+		const seconds = Math.floor(diff / 1000);
+
+		if (seconds < 60) return `${seconds}s`;
+		const minutes = Math.floor(seconds / 60);
+		if (minutes < 60) return `${minutes}m`;
+		const hours = Math.floor(minutes / 60);
+		return `${hours}h`;
+	}
 </script>
 
 <svelte:head>
@@ -225,10 +291,27 @@
 	{#if $notifications.length > 0}
 		<div class="fixed right-4 bottom-4 z-20 max-w-sm space-y-2">
 			{#each $notifications.slice(-5) as notification, i}
-				<div class="rounded-lg border border-cyan-500/40 bg-black/80 p-3 backdrop-blur-sm">
-					<Text style="color: #00FFFF; font-size: 12px;">
-						{notification}
-					</Text>
+				<div
+					class="cursor-pointer rounded-lg border border-cyan-500/40 bg-black/80 p-3 backdrop-blur-sm transition-opacity hover:opacity-80"
+					on:click={() => multiplayerGameStore.dismissNotification(notification.id)}
+				>
+					<div class="flex items-start justify-between">
+						<div class="flex-1">
+							<Text
+								style="color: {getNotificationColor(
+									notification.type
+								)}; font-size: 12px; font-weight: bold;"
+							>
+								{getNotificationTypeLabel(notification.type)}
+							</Text>
+							<Text style="color: #FFFFFF; font-size: 11px; margin-top: 2px;">
+								{notification.message}
+							</Text>
+						</div>
+						<Text style="color: #888888; font-size: 10px;">
+							{formatTimestamp(notification.timestamp)}
+						</Text>
+					</div>
 				</div>
 			{/each}
 		</div>
