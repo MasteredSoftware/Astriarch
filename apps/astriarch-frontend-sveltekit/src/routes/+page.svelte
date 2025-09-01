@@ -20,6 +20,7 @@
 	import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
 	import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
 	import DiplomacyView from '$lib/components/game-views/DiplomacyView.svelte';
+	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 
 	// Import lobby components
 	import { LobbyView } from '$lib/components/lobby';
@@ -143,6 +144,11 @@
 						{#if GalaxyCanvas}
 							<svelte:component this={GalaxyCanvas} />
 						{/if}
+					</div>
+
+					<!-- Info Panel - Top Left -->
+					<div class="absolute top-4 left-4 z-20 w-64 max-h-80 overflow-y-auto bg-black/80 border border-cyan-500/30 rounded-lg backdrop-blur-sm">
+						<PlanetInfoPanel />
 					</div>
 
 					<!-- Overlay Panels for different views -->

@@ -359,13 +359,13 @@
 			fleetCommandStore.setDestinationPlanet(planetData.id);
 			console.log('Destination planet selected:', planetData.name);
 		} else {
-			// Normal planet selection - update the central store if this is an owned planet
+			// Normal planet selection - always select the planet to show info
+			gameActions.selectPlanet(planetData.id);
 			const gameModel = $clientGameModel;
 			if (gameModel && gameModel.mainPlayerOwnedPlanets[planetData.id]) {
-				gameActions.selectPlanet(planetData.id);
 				console.log('Selected owned planet:', planetData.name);
 			} else {
-				console.log('Clicked unowned planet:', planetData.name, '- not selecting for management');
+				console.log('Selected unowned planet:', planetData.name, '- showing info');
 			}
 		}
 	}
