@@ -5,7 +5,7 @@ import { logger } from "../utils/logger";
 import { persistGame } from "../database/DocumentPersistence";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
-import { GameModel } from "astriarch-engine";
+import { GameModel, Fleet, StarShipType } from "astriarch-engine";
 
 export interface GameSettings {
   maxPlayers?: number;
@@ -440,7 +440,9 @@ export class GameController {
 
   static async sendShips(sessionId: string, data: any): Promise<GameResult> {
     try {
-      const game = await ServerGameModel.findById(data.gameId);
+      const { gameId, planetIdSource, planetIdDest, data: shipsByType } = data;
+
+      const game = await ServerGameModel.findById(gameId);
       if (!game) {
         return { success: false, error: "Game not found" };
       }
@@ -451,15 +453,104 @@ export class GameController {
         return { success: false, error: "Player not found in game" };
       }
 
-      // TODO: Implement ship sending using engine
-      // This would involve:
-      // 1. Validate the ship movement
-      // 2. Update game state
-      // 3. Save to database
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
 
-      logger.info(`Player ${player.Id} sending ships in game ${data.gameId}`);
+      // Find the source planet in the game state
+      const sourcePlanet = gameModel.planets?.find((p: any) => p.id === planetIdSource);
+      if (!sourcePlanet) {
+        return { success: false, error: "Source planet not found" };
+      }
 
-      return { success: true, game };
+      // Find the destination planet in the game state
+      const destinationPlanet = gameModel.planets?.find((p: any) => p.id === planetIdDest);
+      if (!destinationPlanet) {
+        return { success: false, error: "Destination planet not found" };
+      }
+
+      const gamePlayer = gameModel.players?.find((p: any) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Check if this player owns the source planet
+      const ownsSourcePlanet = GameModel.isPlanetOwnedByPlayer(gamePlayer, planetIdSource);
+      if (!ownsSourcePlanet) {
+        return { success: false, error: "You do not own the source planet" };
+      }
+
+      // Validate that we have ships to send
+      const totalShipsToSend = 
+        shipsByType.scouts.length + 
+        shipsByType.destroyers.length + 
+        shipsByType.cruisers.length + 
+        shipsByType.battleships.length;
+
+      if (totalShipsToSend === 0) {
+        return { success: false, error: "No ships selected to send" };
+      }
+
+      // Create a helper function to split fleet by specific ship IDs
+      const splitFleetWithShipIds = (
+        fleet: any, 
+        scoutIds: number[], 
+        destroyerIds: number[], 
+        cruiserIds: number[], 
+        battleshipIds: number[]
+      ) => {
+        const newFleet = Fleet.generateFleet([], fleet.locationHexMidPoint);
+        
+        const moveShipsToFleet = (shipIds: number[], targetType: any) => {
+          for (const shipId of shipIds) {
+            const shipIndex = fleet.starships.findIndex((s: any) => s.id === shipId && s.type === targetType);
+            if (shipIndex !== -1) {
+              const ship = fleet.starships.splice(shipIndex, 1)[0];
+              newFleet.starships.push(ship);
+            }
+          }
+        };
+
+        moveShipsToFleet(scoutIds, StarShipType.Scout);
+        moveShipsToFleet(destroyerIds, StarShipType.Destroyer);
+        moveShipsToFleet(cruiserIds, StarShipType.Cruiser);
+        moveShipsToFleet(battleshipIds, StarShipType.Battleship);
+
+        return newFleet;
+      };
+
+      // Split the fleet with the specific ship IDs
+      const newFleet = splitFleetWithShipIds(
+        sourcePlanet.planetaryFleet,
+        shipsByType.scouts,
+        shipsByType.destroyers,
+        shipsByType.cruisers,
+        shipsByType.battleships
+      );
+
+      // Set the destination for the new fleet
+      Fleet.setDestination(
+        newFleet,
+        gameModelData.grid,
+        sourcePlanet.boundingHexMidPoint,
+        destinationPlanet.boundingHexMidPoint
+      );
+
+      // Add the fleet to the source planet's outgoing fleets
+      sourcePlanet.outgoingFleets.push(newFleet);
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.Id} sent ${totalShipsToSend} ships from planet ${planetIdSource} to planet ${planetIdDest} in game ${gameId}`);
+
+      return { 
+        success: true, 
+        game,
+        gameData: gameModel
+      };
     } catch (error) {
       logger.error("SendShips error:", error);
       return { success: false, error: error instanceof Error ? error.message : "Unknown error" };

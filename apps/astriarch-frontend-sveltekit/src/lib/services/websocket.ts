@@ -512,6 +512,36 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.SEND_SHIPS:
+				// Handle send ships response
+				if (message.payload && typeof message.payload === 'object') {
+					if ('error' in message.payload) {
+						const errorPayload = message.payload as { error?: string };
+						this.gameStore.addNotification({
+							id: Date.now().toString(),
+							type: 'error',
+							message: errorPayload.error || 'Failed to send ships',
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							id: Date.now().toString(),
+							type: 'success',
+							message: 'Ships sent successfully',
+							timestamp: Date.now()
+						});
+					}
+				} else {
+					// Success case - ships sent successfully
+					this.gameStore.addNotification({
+						id: Date.now().toString(),
+						type: 'success',
+						message: 'Ships sent successfully',
+						timestamp: Date.now()
+					});
+				}
+				break;
+
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
 					this.gameStore.addNotification({
@@ -737,6 +767,28 @@ class WebSocketService {
 
 		console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
 		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+	}
+
+	sendShips(
+		gameId: string,
+		planetIdSource: number,
+		planetIdDest: number,
+		shipsByType: {
+			scouts: number[];
+			destroyers: number[];
+			cruisers: number[];
+			battleships: number[];
+		}
+	) {
+		const payload = {
+			gameId,
+			planetIdSource,
+			planetIdDest,
+			data: shipsByType
+		};
+
+		console.log('Sending SEND_SHIPS with payload:', payload);
+		this.send(new Message(MESSAGE_TYPE.SEND_SHIPS, payload));
 	}
 
 	private startPingInterval() {

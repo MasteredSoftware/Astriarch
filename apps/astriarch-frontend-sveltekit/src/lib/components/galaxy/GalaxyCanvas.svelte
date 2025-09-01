@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { clientGameModel, gameGrid } from '$lib/stores/gameStore';
+	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import type {
 		ClientModelData,
 		PlanetHappinessType,
@@ -233,6 +234,9 @@
 				drawnPlanet = new DrawnPlanet(planet, gameModel);
 				drawnPlanets.set(planet.id, drawnPlanet);
 				galaxyLayer.add(drawnPlanet.group);
+
+				// Add click handler for planet selection
+				drawnPlanet.onClick(handlePlanetClick);
 			}
 
 			drawnPlanet.update(gameModel);
@@ -286,6 +290,9 @@
 				drawnPlanet = new DrawnPlanet(planetData, gameModel);
 				drawnPlanets.set(clientPlanet.id, drawnPlanet);
 				galaxyLayer.add(drawnPlanet.group);
+
+				// Add click handler for planet selection
+				drawnPlanet.onClick(handlePlanetClick);
 			}
 
 			drawnPlanet.update(gameModel);
@@ -336,6 +343,37 @@
 		const pos = stage.getPointerPosition();
 		console.log('Galaxy clicked at:', pos);
 		// TODO: Implement planet selection, fleet commands, etc.
+	}
+
+	// Handle planet clicks for fleet command destination selection
+	function handlePlanetClick(drawnPlanet: DrawnPlanet) {
+		const planetData = drawnPlanet.getPlanetData();
+		console.log('Planet clicked:', planetData.name, planetData.id);
+
+		// Check if we're in destination selection mode
+		const fleetState = $fleetCommandStore;
+		if (fleetState.isSelectingDestination) {
+			// Prevent selecting source planet as destination
+			if (planetData.id === fleetState.sourcePlanetId) {
+				console.log('Cannot select source planet as destination');
+				return;
+			}
+
+			// Set the destination planet
+			fleetCommandStore.setDestinationPlanet(planetData.id);
+			console.log('Destination planet selected:', planetData.name);
+		}
+	}
+
+	// Subscribe to fleet command state to update cursor
+	$: {
+		if (canvasContainer) {
+			if ($fleetCommandStore.isSelectingDestination) {
+				canvasContainer.style.cursor = 'crosshair';
+			} else {
+				canvasContainer.style.cursor = 'grab';
+			}
+		}
 	}
 </script>
 

@@ -1,10 +1,12 @@
 import { ClientGameModel } from './engine/clientGameModel';
 import { Events, Subscription } from './engine/events';
+import { Fleet } from './engine/fleet';
 import { GameController } from './engine/gameController';
 import { GameModel, GameModelData, playerColors } from './engine/gameModel';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { ClientModelData, PlanetById } from './model/clientModel';
+import { StarShipType, FleetData, StarshipData } from './model/fleet';
 import { GalaxySizeOption, GameOptions, GameSpeed, ModelData, PlanetsPerSystemOption } from './model/model';
 import { PlanetProductionItemData } from './model/planet';
 import { PlayerData, PlayerType } from './model/player';
@@ -18,6 +20,7 @@ export * from './messaging/MessageTypes';
 // Export engine classes
 export { Player };
 export { Planet };
+export { Fleet };
 export { GameModel };
 export { ClientGameModel };
 export { GameController };
@@ -26,6 +29,7 @@ export { Grid };
 
 // Export model types and enums
 export { PlayerType };
+export { StarShipType };
 export { GalaxySizeOption };
 export { GameSpeed };
 export { PlanetsPerSystemOption };
@@ -42,6 +46,8 @@ export type { ClientModelData };
 export type { PlanetById };
 export type { PlanetProductionItemData };
 export type { Subscription };
+export type { FleetData };
+export type { StarshipData };
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
