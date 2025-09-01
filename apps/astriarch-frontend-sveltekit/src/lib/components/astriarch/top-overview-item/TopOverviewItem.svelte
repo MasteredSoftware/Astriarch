@@ -40,6 +40,7 @@
     margin-left: 4px;
     display: inline-block;
     vertical-align: bottom;
+    ${['food', 'ore', 'iridium'].includes(type) ? 'min-width: 110px;' : 'min-width: 65px;'}
   `);
 
 	function handleClick() {
