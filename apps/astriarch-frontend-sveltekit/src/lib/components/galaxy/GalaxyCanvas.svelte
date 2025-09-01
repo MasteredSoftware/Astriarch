@@ -1,13 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { clientGameModel, gameGrid } from '$lib/stores/gameStore';
+	import { clientGameModel, gameGrid, gameActions } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
-	import type {
-		ClientModelData,
-		PlanetHappinessType,
-		PlanetImprovementType,
-		Grid
-	} from 'astriarch-engine';
+	import type { ClientModelData, Grid } from 'astriarch-engine';
+	import { PlanetHappinessType, PlanetImprovementType } from 'astriarch-engine/src/model/planet';
 	import Konva from 'konva';
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
@@ -362,6 +358,15 @@
 			// Set the destination planet
 			fleetCommandStore.setDestinationPlanet(planetData.id);
 			console.log('Destination planet selected:', planetData.name);
+		} else {
+			// Normal planet selection - update the central store if this is an owned planet
+			const gameModel = $clientGameModel;
+			if (gameModel && gameModel.mainPlayerOwnedPlanets[planetData.id]) {
+				gameActions.selectPlanet(planetData.id);
+				console.log('Selected owned planet:', planetData.name);
+			} else {
+				console.log('Clicked unowned planet:', planetData.name, '- not selecting for management');
+			}
 		}
 	}
 

@@ -1,32 +1,31 @@
 <script lang="ts">
-	import { clientGameModel } from '$lib/stores/gameStore';
+	import {
+		clientGameModel,
+		selectedPlanet,
+		selectedPlanetId,
+		gameActions
+	} from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import { webSocketService, multiplayerGameStore } from '$lib/services/websocket';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
 
-	// Selected planet for fleet command
-	let selectedPlanetId: number | undefined = undefined;
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default
 	let selectedShipIds = new Set<number>();
 
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
-	$: selectedPlanet = selectedPlanetId ? planets[selectedPlanetId] : planetList[0];
-
-	// Auto-select first planet if none selected
-	$: if (!selectedPlanetId && planetList.length > 0) {
-		selectedPlanetId = planetList[0].id;
-	}
+	$: currentSelectedPlanet = $selectedPlanet;
 
 	// Get ships of the selected type from the selected planet (excluding defenders which can't leave)
-	$: ships = selectedPlanet?.planetaryFleet.starships.filter((ship) => {
-		// Exclude System Defense ships as they can't leave the planet
-		if (ship.type === StarShipType.SystemDefense) return false;
-		// If "all" is selected, show all mobile ships
-		if (selectedShipType === 'all') return true;
-		// Otherwise filter by specific type
-		return ship.type === selectedShipType;
-	}) || [];
+	$: ships =
+		currentSelectedPlanet?.planetaryFleet.starships.filter((ship) => {
+			// Exclude System Defense ships as they can't leave the planet
+			if (ship.type === StarShipType.SystemDefense) return false;
+			// If "all" is selected, show all mobile ships
+			if (selectedShipType === 'all') return true;
+			// Otherwise filter by specific type
+			return ship.type === selectedShipType;
+		}) || [];
 
 	// Ship type tabs configuration (excluding defenders)
 	const shipTypeTabs = [
@@ -35,7 +34,8 @@
 		{ type: StarShipType.Destroyer, label: 'DESTROYER' },
 		{ type: StarShipType.Cruiser, label: 'CRUISER' },
 		{ type: StarShipType.Battleship, label: 'BATTLESHIP' }
-	];	function toggleShipSelection(shipId: number) {
+	];
+	function toggleShipSelection(shipId: number) {
 		if (selectedShipIds.has(shipId)) {
 			selectedShipIds.delete(shipId);
 		} else {
@@ -61,7 +61,7 @@
 	}
 
 	function sendShips() {
-		if (!selectedPlanet || selectedShipIds.size === 0) {
+		if (!currentSelectedPlanet || selectedShipIds.size === 0) {
 			console.warn('No ships selected to send');
 			return;
 		}
@@ -74,12 +74,12 @@
 			fleetCommandStore.reset();
 		} else {
 			// Start destination selection mode
-			fleetCommandStore.startSelectingDestination(selectedPlanet.id, selectedShipIds);
+			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
 		}
 	}
 
 	function actuallyPSendShips(destinationPlanetId: number) {
-		if (!selectedPlanet || selectedShipIds.size === 0) return;
+		if (!currentSelectedPlanet || selectedShipIds.size === 0) return;
 
 		// Get game ID from multiplayer store
 		let gameId = '';
@@ -122,9 +122,15 @@
 		});
 
 		// Send ships via WebSocket
-		webSocketService.sendShips(gameId, selectedPlanet.id, destinationPlanetId, shipsByType);
+		webSocketService.sendShips(gameId, currentSelectedPlanet.id, destinationPlanetId, shipsByType);
 
-		console.log('Ships sent from planet', selectedPlanet.id, 'to planet', destinationPlanetId, shipsByType);
+		console.log(
+			'Ships sent from planet',
+			currentSelectedPlanet.id,
+			'to planet',
+			destinationPlanetId,
+			shipsByType
+		);
 
 		// Clear selection
 		selectedShipIds.clear();
@@ -135,10 +141,16 @@
 		fleetCommandStore.cancelDestinationSelection();
 	}
 
+	function handlePlanetChange(event: Event) {
+		const target = event.target as HTMLSelectElement;
+		const planetId = parseInt(target.value);
+		gameActions.selectPlanet(planetId);
+	}
+
 	// Get destination planet name if one is selected
-	$: destinationPlanet = $fleetCommandStore.destinationPlanetId 
-		? $clientGameModel?.mainPlayerOwnedPlanets[$fleetCommandStore.destinationPlanetId] || 
-		  $clientGameModel?.clientPlanets.find(p => p.id === $fleetCommandStore.destinationPlanetId)
+	$: destinationPlanet = $fleetCommandStore.destinationPlanetId
+		? $clientGameModel?.mainPlayerOwnedPlanets[$fleetCommandStore.destinationPlanetId] ||
+			$clientGameModel?.clientPlanets.find((p) => p.id === $fleetCommandStore.destinationPlanetId)
 		: null;
 </script>
 
@@ -150,7 +162,7 @@
 	<div class="flex items-center justify-between p-8">
 		<div>
 			<h1 class="text-[32px] leading-[40px] font-bold tracking-[0.64px] text-white">
-				Send available ships from Planet {selectedPlanet?.name || 'Unknown'}
+				Send available ships from Planet {currentSelectedPlanet?.name || 'Unknown'}
 			</h1>
 			<p class="mt-2 text-[14px] leading-[28px] tracking-[0.14px] text-white/75 opacity-80">
 				Select one or multiple ships from your fleet to explore or attack the planet
@@ -160,7 +172,7 @@
 		<!-- Action Buttons -->
 		<div class="flex gap-3">
 			<button
-				class="h-12 rounded-[4px] bg-gradient-to-b from-[#00FFFF] to-[#00CCCC] px-8 text-[14px] font-extrabold tracking-[2px] text-[#1B1F25] uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#00DDDD] hover:to-[#00AAAA] disabled:opacity-50 disabled:cursor-not-allowed"
+				class="h-12 rounded-[4px] bg-gradient-to-b from-[#00FFFF] to-[#00CCCC] px-8 text-[14px] font-extrabold tracking-[2px] text-[#1B1F25] uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#00DDDD] hover:to-[#00AAAA] disabled:cursor-not-allowed disabled:opacity-50"
 				onclick={sendShips}
 				disabled={selectedShipIds.size === 0}
 			>
@@ -178,12 +190,12 @@
 	<!-- Destination Selection UI -->
 	{#if $fleetCommandStore.isSelectingDestination}
 		<div class="mb-4 px-8">
-			<div class="rounded bg-yellow-600/20 border border-yellow-500/40 p-3">
-				<p class="text-yellow-200 text-sm">
+			<div class="rounded border border-yellow-500/40 bg-yellow-600/20 p-3">
+				<p class="text-sm text-yellow-200">
 					Click on a planet in the galaxy to select destination for your fleet
 				</p>
 				<button
-					class="mt-2 px-4 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+					class="mt-2 rounded bg-gray-600 px-4 py-1 text-sm hover:bg-gray-500"
 					onclick={cancelSendShips}
 				>
 					Cancel
@@ -195,19 +207,19 @@
 	<!-- Destination Confirmed UI -->
 	{#if $fleetCommandStore.destinationPlanetId && !$fleetCommandStore.isSelectingDestination}
 		<div class="mb-4 px-8">
-			<div class="rounded bg-green-600/20 border border-green-500/40 p-3">
-				<p class="text-green-200 text-sm mb-2">
+			<div class="rounded border border-green-500/40 bg-green-600/20 p-3">
+				<p class="mb-2 text-sm text-green-200">
 					Destination: <strong>{destinationPlanet?.name || 'Unknown Planet'}</strong>
 				</p>
 				<div class="flex gap-2">
 					<button
-						class="px-4 py-1 bg-green-600 hover:bg-green-500 rounded text-sm font-bold"
+						class="rounded bg-green-600 px-4 py-1 text-sm font-bold hover:bg-green-500"
 						onclick={() => actuallyPSendShips($fleetCommandStore.destinationPlanetId!)}
 					>
 						Confirm Send Ships
 					</button>
 					<button
-						class="px-4 py-1 bg-gray-600 hover:bg-gray-500 rounded text-sm"
+						class="rounded bg-gray-600 px-4 py-1 text-sm hover:bg-gray-500"
 						onclick={cancelSendShips}
 					>
 						Cancel
@@ -221,7 +233,8 @@
 	{#if planetList.length > 1}
 		<div class="mb-4 px-8">
 			<select
-				bind:value={selectedPlanetId}
+				onchange={handlePlanetChange}
+				value={$selectedPlanetId}
 				class="rounded border border-white/20 bg-[#1B1F25] px-3 py-1 text-sm text-white"
 			>
 				{#each planetList as planet}
@@ -267,8 +280,8 @@
 				{#if selectedShipType === 'all'}
 					No mobile ships available on this planet
 				{:else}
-					No {shipTypeTabs.find((t) => t.type === selectedShipType)?.label?.toLowerCase() || 'ships'} available
-					on this planet
+					No {shipTypeTabs.find((t) => t.type === selectedShipType)?.label?.toLowerCase() ||
+						'ships'} available on this planet
 				{/if}
 			</div>
 		{:else}
@@ -276,7 +289,7 @@
 				{#each ships as ship, index}
 					<button
 						type="button"
-						class="relative h-[72px] w-[90px] cursor-pointer transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+						class="relative h-[72px] w-[90px] cursor-pointer transition-all hover:scale-105 focus:ring-2 focus:ring-cyan-400 focus:outline-none"
 						onclick={() => toggleShipSelection(ship.id)}
 						aria-label="Toggle selection of ship {ship.id}"
 						aria-pressed={selectedShipIds.has(ship.id)}

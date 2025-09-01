@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { Text, AvailablePlanetProductionItem } from '$lib/components/astriarch';
-	import { clientGameModel, gameActions } from '$lib/stores/gameStore';
+	import {
+		clientGameModel,
+		gameActions,
+		selectedPlanet,
+		selectedPlanetId
+	} from '$lib/stores/gameStore';
 	import { webSocketService, multiplayerGameStore } from '$lib/services/websocket';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import { PlanetProductionItem } from 'astriarch-engine/src/engine/planetProductionItem';
@@ -13,27 +18,20 @@
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import type { ClientModelData } from 'astriarch-engine';
 
-	let selectedPlanetId: number | undefined = undefined;
-
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
 
-	// Auto-select first planet if none selected
-	$: if (!selectedPlanetId && planetList.length > 0) {
-		selectedPlanetId = planetList[0]?.id;
-	}
-
-	// Reactive selectedPlanet that always reflects current data from store
-	$: selectedPlanet = selectedPlanetId ? planets[selectedPlanetId] : undefined;
+	// Use the central selected planet from gameStore
+	$: currentSelectedPlanet = $selectedPlanet;
 
 	// Calculate current worker assignments for the selected planet
-	$: workerAssignments = selectedPlanet
-		? Planet.countPopulationWorkerTypes(selectedPlanet)
+	$: workerAssignments = currentSelectedPlanet
+		? Planet.countPopulationWorkerTypes(currentSelectedPlanet)
 		: { farmers: 0, miners: 0, builders: 0 };
 
 	// Helper function for worker assignment changes
 	function adjustWorkerAssignment(workerType: CitizenWorkerType, delta: number) {
-		if (!selectedPlanet || !$multiplayerGameStore.gameId) return;
+		if (!currentSelectedPlanet || !$multiplayerGameStore.gameId) return;
 
 		const farmerDiff = workerType === CitizenWorkerType.Farmer ? delta : 0;
 		const minerDiff = workerType === CitizenWorkerType.Miner ? delta : 0;
@@ -41,7 +39,7 @@
 
 		webSocketService.updatePlanetWorkerAssignments(
 			$multiplayerGameStore.gameId,
-			selectedPlanet.id,
+			currentSelectedPlanet.id,
 			farmerDiff,
 			minerDiff,
 			builderDiff
@@ -49,16 +47,16 @@
 	}
 
 	function selectPlanet(planet?: PlanetData) {
-		selectedPlanetId = planet?.id;
+		gameActions.selectPlanet(planet?.id || null);
 	}
 
 	function addBuildingToQueue(buildingType: PlanetImprovementType) {
-		if (!selectedPlanet || !$clientGameModel) return;
+		if (!currentSelectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
 		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
+		const success = gameActions.addToPlanetBuildQueueOptimistic(currentSelectedPlanet.id, item);
 
 		if (!success) {
 			console.warn(
@@ -83,7 +81,7 @@
 			}
 
 			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue(gameId, selectedPlanet.id, 'add', item);
+			webSocketService.updatePlanetBuildQueue(gameId, currentSelectedPlanet.id, 'add', item);
 
 			console.log(
 				'Added building to queue:',
@@ -96,12 +94,12 @@
 	}
 
 	function addShipToQueue(shipType: StarShipType) {
-		if (!selectedPlanet || !$clientGameModel) return;
+		if (!currentSelectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType);
 
 		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic(selectedPlanet.id, item);
+		const success = gameActions.addToPlanetBuildQueueOptimistic(currentSelectedPlanet.id, item);
 
 		if (!success) {
 			console.warn(
@@ -126,7 +124,7 @@
 			}
 
 			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue(gameId, selectedPlanet.id, 'add', item);
+			webSocketService.updatePlanetBuildQueue(gameId, currentSelectedPlanet.id, 'add', item);
 
 			console.log('Added ship to queue:', GameTools.starShipTypeToFriendlyName(shipType));
 		} catch (error) {
@@ -136,10 +134,13 @@
 	}
 
 	function removeFromBuildQueue(itemIndex: number) {
-		if (!selectedPlanet || !$clientGameModel) return;
+		if (!currentSelectedPlanet || !$clientGameModel) return;
 
 		// Remove from build queue with engine refund handling
-		const success = gameActions.removeFromPlanetBuildQueueOptimistic(selectedPlanet.id, itemIndex);
+		const success = gameActions.removeFromPlanetBuildQueueOptimistic(
+			currentSelectedPlanet.id,
+			itemIndex
+		);
 
 		if (!success) {
 			console.warn('Failed to remove item from build queue at index:', itemIndex);
@@ -160,7 +161,7 @@
 			}
 
 			// Send WebSocket message to remove item from build queue
-			webSocketService.updatePlanetBuildQueue(gameId, selectedPlanet.id, 'remove', {
+			webSocketService.updatePlanetBuildQueue(gameId, currentSelectedPlanet.id, 'remove', {
 				index: itemIndex
 			});
 
@@ -220,17 +221,17 @@
 </script>
 
 <div class="flex h-full flex-col bg-slate-900/95 backdrop-blur-sm">
-	{#if selectedPlanet}
+	{#if currentSelectedPlanet}
 		<!-- Planet Header Summary -->
 		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-3">
 			<div id="selected-planet-header" class="flex items-center justify-between gap-6">
 				<!-- Left: Planet Name & Info -->
 				<div class="flex items-center space-x-4">
 					<h2 class="text-astriarch-headline-24 text-astriarch-primary">
-						{selectedPlanet.name}
+						{currentSelectedPlanet.name}
 					</h2>
 					<span class="text-astriarch-body-14 text-astriarch-ui-light-grey">
-						{GameTools.planetTypeToFriendlyName(selectedPlanet.type)}
+						{GameTools.planetTypeToFriendlyName(currentSelectedPlanet.type)}
 					</span>
 					{#if planetList.length > 1}
 						<select
@@ -239,7 +240,7 @@
 								const target = e.target as HTMLSelectElement;
 								selectPlanet(planetList.find((p) => p.id === parseInt(target.value)));
 							}}
-							value={selectedPlanetId}
+							value={$selectedPlanetId}
 						>
 							{#each planetList as planet}
 								<option value={planet.id}>{planet.name}</option>
@@ -247,8 +248,8 @@
 						</select>
 					{/if}
 					<div class="text-xs text-slate-400">
-						Pop: {selectedPlanet.population?.length || 0} | Max: {selectedPlanet.maxImprovements +
-							(selectedPlanet.builtImprovements?.[2] || 0)}
+						Pop: {currentSelectedPlanet.population?.length || 0} | Max: {currentSelectedPlanet.maxImprovements +
+							(currentSelectedPlanet.builtImprovements?.[2] || 0)}
 					</div>
 				</div>
 
@@ -258,31 +259,31 @@
 					<div class="flex space-x-2 text-xs">
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 							<span class="text-astriarch-food"
-								>{(selectedPlanet.resources?.food || 0).toFixed(1)}</span
+								>{(currentSelectedPlanet.resources?.food || 0).toFixed(1)}</span
 							>
 							<span class="text-astriarch-ui-light-grey text-xs">F</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 							<span class="text-astriarch-food"
-								>{(selectedPlanet.resources?.production || 0).toFixed(1)}</span
+								>{(currentSelectedPlanet.resources?.production || 0).toFixed(1)}</span
 							>
 							<span class="text-astriarch-ui-light-grey text-xs">P</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 							<span class="text-astriarch-energy"
-								>{(selectedPlanet.resources?.energy || 0).toFixed(1)}</span
+								>{(currentSelectedPlanet.resources?.energy || 0).toFixed(1)}</span
 							>
 							<span class="text-astriarch-ui-light-grey text-xs">E</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 							<span class="text-astriarch-ore"
-								>{(selectedPlanet.resources?.ore || 0).toFixed(1)}</span
+								>{(currentSelectedPlanet.resources?.ore || 0).toFixed(1)}</span
 							>
 							<span class="text-astriarch-ui-light-grey text-xs">O</span>
 						</div>
 						<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 							<span class="text-astriarch-iridium"
-								>{(selectedPlanet.resources?.iridium || 0).toFixed(1)}</span
+								>{(currentSelectedPlanet.resources?.iridium || 0).toFixed(1)}</span
 							>
 							<span class="text-astriarch-ui-light-grey text-xs">I</span>
 						</div>
@@ -293,27 +294,27 @@
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Improvements:</span>
 					<div class="flex flex-wrap gap-1 text-xs">
-						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Farm] > 0}
+						{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Farm] > 0}
 							<span class="rounded bg-slate-800/30 px-2 py-1 text-green-400">
-								Farm: {selectedPlanet.builtImprovements[PlanetImprovementType.Farm]}
+								Farm: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Farm]}
 							</span>
 						{/if}
-						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Mine] > 0}
+						{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Mine] > 0}
 							<span class="rounded bg-slate-800/30 px-2 py-1 text-orange-400">
-								Mine: {selectedPlanet.builtImprovements[PlanetImprovementType.Mine]}
+								Mine: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Mine]}
 							</span>
 						{/if}
-						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Factory] > 0}
+						{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Factory] > 0}
 							<span class="rounded bg-slate-800/30 px-2 py-1 text-blue-400">
-								Factory: {selectedPlanet.builtImprovements[PlanetImprovementType.Factory]}
+								Factory: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Factory]}
 							</span>
 						{/if}
-						{#if selectedPlanet.builtImprovements?.[PlanetImprovementType.Colony] > 0}
+						{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Colony] > 0}
 							<span class="rounded bg-slate-800/30 px-2 py-1 text-purple-400">
-								Colony: {selectedPlanet.builtImprovements[PlanetImprovementType.Colony]}
+								Colony: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Colony]}
 							</span>
 						{/if}
-						{#if !selectedPlanet.builtImprovements || Object.values(selectedPlanet.builtImprovements).every((count) => count === 0)}
+						{#if !currentSelectedPlanet.builtImprovements || Object.values(currentSelectedPlanet.builtImprovements).every((count) => count === 0)}
 							<span class="text-xs text-slate-500">None</span>
 						{/if}
 					</div>
@@ -448,14 +449,14 @@
 					<div class="mt-3 border-t border-slate-700/50 pt-2">
 						<div class="flex justify-between text-xs">
 							<span class="text-slate-400">Total Population:</span>
-							<span class="text-white">{selectedPlanet?.population?.length || 0}</span>
+							<span class="text-white">{currentSelectedPlanet?.population?.length || 0}</span>
 						</div>
 						<div class="flex justify-between text-xs">
 							<span class="text-slate-400">Unassigned:</span>
 							<span class="text-white"
 								>{Math.max(
 									0,
-									(selectedPlanet?.population?.length || 0) -
+									(currentSelectedPlanet?.population?.length || 0) -
 										(workerAssignments.farmers +
 											workerAssignments.miners +
 											workerAssignments.builders)
@@ -470,9 +471,9 @@
 			<div class="flex-1 overflow-y-auto p-3">
 				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">Build Queue</h3>
 
-				{#if selectedPlanet.buildQueue && selectedPlanet.buildQueue.length > 0}
+				{#if currentSelectedPlanet.buildQueue && currentSelectedPlanet.buildQueue.length > 0}
 					<div class="space-y-2">
-						{#each selectedPlanet.buildQueue as item, index}
+						{#each currentSelectedPlanet.buildQueue as item, index}
 							<div class="rounded border border-slate-600/50 bg-slate-800/50 p-2">
 								<div class="mb-1 flex items-center justify-between text-xs">
 									<div class="font-medium text-cyan-400">

@@ -481,10 +481,10 @@ export class GameController {
       }
 
       // Validate that we have ships to send
-      const totalShipsToSend = 
-        shipsByType.scouts.length + 
-        shipsByType.destroyers.length + 
-        shipsByType.cruisers.length + 
+      const totalShipsToSend =
+        shipsByType.scouts.length +
+        shipsByType.destroyers.length +
+        shipsByType.cruisers.length +
         shipsByType.battleships.length;
 
       if (totalShipsToSend === 0) {
@@ -493,14 +493,14 @@ export class GameController {
 
       // Create a helper function to split fleet by specific ship IDs
       const splitFleetWithShipIds = (
-        fleet: any, 
-        scoutIds: number[], 
-        destroyerIds: number[], 
-        cruiserIds: number[], 
-        battleshipIds: number[]
+        fleet: any,
+        scoutIds: number[],
+        destroyerIds: number[],
+        cruiserIds: number[],
+        battleshipIds: number[],
       ) => {
         const newFleet = Fleet.generateFleet([], fleet.locationHexMidPoint);
-        
+
         const moveShipsToFleet = (shipIds: number[], targetType: any) => {
           for (const shipId of shipIds) {
             const shipIndex = fleet.starships.findIndex((s: any) => s.id === shipId && s.type === targetType);
@@ -525,7 +525,7 @@ export class GameController {
         shipsByType.scouts,
         shipsByType.destroyers,
         shipsByType.cruisers,
-        shipsByType.battleships
+        shipsByType.battleships,
       );
 
       // Set the destination for the new fleet
@@ -533,7 +533,7 @@ export class GameController {
         newFleet,
         gameModelData.grid,
         sourcePlanet.boundingHexMidPoint,
-        destinationPlanet.boundingHexMidPoint
+        destinationPlanet.boundingHexMidPoint,
       );
 
       // Add the fleet to the source planet's outgoing fleets
@@ -544,12 +544,14 @@ export class GameController {
       game.lastActivity = new Date();
       await persistGame(game);
 
-      logger.info(`Player ${player.Id} sent ${totalShipsToSend} ships from planet ${planetIdSource} to planet ${planetIdDest} in game ${gameId}`);
+      logger.info(
+        `Player ${player.Id} sent ${totalShipsToSend} ships from planet ${planetIdSource} to planet ${planetIdDest} in game ${gameId}`,
+      );
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         game,
-        gameData: gameModel
+        gameData: gameModel,
       };
     } catch (error) {
       logger.error("SendShips error:", error);
