@@ -765,10 +765,18 @@ export class WebSocketServer {
         return;
       }
 
-      // If game has other players, broadcast the ship movement
-      if (result.game && result.game.players) {
-        const response = new Message(MESSAGE_TYPE.SEND_SHIPS, message.payload);
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
+      // Send success response to the requesting client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.SEND_SHIPS, {
+          success: true,
+          message: "Ships sent successfully",
+        }),
+      );
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
       }
     } catch (error) {
       logger.error("handleSendShips error:", error);
