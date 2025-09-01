@@ -1,19 +1,55 @@
 import { writable, derived } from 'svelte/store';
 import type {
 	GameModelData,
-	PlayerData,
-	FleetData,
-	PlanetData,
-	ClientModelData
+	ClientModelData,
+	IGame,
+	IGameOptions
 } from 'astriarch-engine';
+
+// Additional types specific to multiplayer
+export interface IOpponentOption {
+	name: string;
+	type: number; // -2 = closed, -1 = open, positive number = AI difficulty
+}
+
+// Helper function to ensure game data has proper structure
+export function validateGameData(games: unknown[]): IGame[] {
+	return games.map((game: unknown) => {
+		const g = game as Record<string, unknown>;
+		return {
+			_id: (g._id as string) || '',
+			name: (g.name as string) || 'Unnamed Game',
+			players: Array.isArray(g.players) ? g.players : [],
+			gameOptions: (g.gameOptions as IGameOptions) || {
+				systemsToGenerate: 4,
+				planetsPerSystem: 4,
+				galaxySize: 4,
+				distributePlanetsEvenly: true,
+				quickStart: false,
+				gameSpeed: 3,
+				opponentOptions: []
+			},
+			status: (g.status as 'waiting' | 'in_progress' | 'completed') || 'waiting',
+			createdAt: g.createdAt ? new Date(g.createdAt as string) : new Date(),
+			lastActivity: g.lastActivity ? new Date(g.lastActivity as string) : new Date()
+		};
+	});
+}
 
 // WebSocket multiplayer game state interface
 export interface MultiplayerGameState {
+	sessionId: string | null;
 	gameId: string | null;
 	currentPlayer: string | null;
+	playerName: string | null;
 	gameModel: GameModelData | null;
 	clientModel: ClientModelData | null;
 	connected: boolean;
+	gameJoined: boolean;
+	currentView: 'lobby' | 'game_options' | 'game';
+	availableGames: IGame[];
+	selectedGame: IGame | null;
+	gameState: unknown | null;
 	selectedPlanet: string | null;
 	selectedFleet: string | null;
 }
@@ -49,11 +85,18 @@ export interface GameNotification {
 // Create the multiplayer game store
 function createMultiplayerGameStore() {
 	const initialState: MultiplayerGameState = {
+		sessionId: null,
 		gameId: null,
 		currentPlayer: null,
+		playerName: null,
 		gameModel: null,
 		clientModel: null,
 		connected: false,
+		gameJoined: false,
+		currentView: 'lobby',
+		availableGames: [],
+		selectedGame: null,
+		gameState: null,
 		selectedPlanet: null,
 		selectedFleet: null
 	};
@@ -70,6 +113,25 @@ function createMultiplayerGameStore() {
 		update,
 		chatMessages,
 		notifications,
+
+		// Connection management
+		setConnected: (connected: boolean) =>
+			update((store) => ({
+				...store,
+				connected
+			})),
+
+		setSessionId: (sessionId: string) =>
+			update((store) => ({
+				...store,
+				sessionId
+			})),
+
+		setPlayerName: (playerName: string) =>
+			update((store) => ({
+				...store,
+				playerName
+			})),
 
 		// Game state actions
 		setGameModel: (gameModel: GameModelData) =>
@@ -96,11 +158,67 @@ function createMultiplayerGameStore() {
 				gameId
 			})),
 
-		setConnected: (connected: boolean) =>
+		setGameJoined: (gameJoined: boolean) =>
 			update((store) => ({
 				...store,
-				connected
+				gameJoined
 			})),
+
+		setCurrentView: (currentView: 'lobby' | 'game_options' | 'game') =>
+			update((store) => ({
+				...store,
+				currentView
+			})),
+
+		// Lobby management
+		setAvailableGames: (games: IGame[]) =>
+			update((store) => ({
+				...store,
+				availableGames: games
+			})),
+
+		setSelectedGame: (game: IGame | null) =>
+			update((store) => ({
+				...store,
+				selectedGame: game
+			})),
+
+		// Game state
+		setGameState: (gameState: unknown) =>
+			update((store) => ({
+				...store,
+				gameState
+			})),
+
+		applyChanges: (changes: unknown) =>
+			update((store) => {
+				// Apply incremental changes to game state
+				if (store.gameState && changes) {
+					return {
+						...store,
+						gameState: {
+							...(store.gameState as Record<string, unknown>),
+							...(changes as Record<string, unknown>)
+						}
+					};
+				}
+				return store;
+			}),
+
+		// Game time updates
+		updateGameTime: (gameTime: number) =>
+			update((store) => {
+				if (store.gameState) {
+					return {
+						...store,
+						gameState: {
+							...store.gameState,
+							gameTime
+						}
+					};
+				}
+				return store;
+			}),
 
 		// Selection actions
 		selectPlanet: (planetId: string | null) =>

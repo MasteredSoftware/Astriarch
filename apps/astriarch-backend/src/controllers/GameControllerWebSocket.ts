@@ -119,7 +119,7 @@ export class GameController {
           galaxySize: 4, // Default: Large
           distributePlanetsEvenly: true,
           quickStart: false,
-          turnTimeLimitSeconds: 0, // Default: No time limit
+          gameSpeed: 3, // Default: Normal
           opponentOptions: [
             { name: "", type: -1 }, // Player 2: Open
             { name: "", type: -2 }, // Player 3: Closed

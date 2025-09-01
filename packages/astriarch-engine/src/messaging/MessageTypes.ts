@@ -3,8 +3,6 @@
  * Based on the original Astriarch architecture from app.js
  */
 
-import type { EventNotification } from '../model/eventNotification';
-
 export enum MESSAGE_TYPE {
   // Connection & System
   NOOP = 'NOOP',
@@ -102,7 +100,7 @@ export interface IGameOptions {
   galaxySize: number; // 1: Tiny, 2: Small, 3: Medium, 4: Large
   distributePlanetsEvenly: boolean;
   quickStart: boolean;
-  turnTimeLimitSeconds: number; // 0: None, 30, 60, 120, 180, 300
+  gameSpeed: number; // 0 - 5
   opponentOptions: IOpponentOption[];
 }
 
@@ -180,7 +178,13 @@ export interface IGameStateUpdatePayload {
 }
 
 export interface IEventNotificationsPayload {
-  events: EventNotification[];
+  events: {
+    playerId: string;
+    type: number; // EventNotificationType
+    message: string;
+    planet?: unknown; // PlanetData
+    data?: unknown; // PlanetaryConflictData
+  }[];
 }
 
 export interface IChatMessagePayload {

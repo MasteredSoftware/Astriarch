@@ -22,7 +22,7 @@
 		galaxySize: gameOptions?.galaxySize || 4,
 		distributePlanetsEvenly: gameOptions?.distributePlanetsEvenly ?? true,
 		quickStart: gameOptions?.quickStart ?? false,
-		turnTimeLimitSeconds: gameOptions?.turnTimeLimitSeconds || 0,
+		gameSpeed: gameOptions?.gameSpeed || 3,
 		opponentOptions: gameOptions?.opponentOptions || [
 			{ name: '', type: -1 }, // Player 2: Open
 			{ name: '', type: -2 }, // Player 3: Closed
@@ -57,14 +57,13 @@
 		return options;
 	}
 
-	// Turn time limit options
-	const turnTimeLimitOptions = [
-		{ value: 0, label: 'None' },
-		{ value: 30, label: '30 Seconds' },
-		{ value: 60, label: '1 Minute' },
-		{ value: 120, label: '2 Minutes' },
-		{ value: 180, label: '3 Minutes' },
-		{ value: 300, label: '5 Minutes' }
+	// Game speed options
+	const gameSpeedOptions = [
+		{ value: 0, label: 'Very Slow' },
+		{ value: 1, label: 'Slow' },
+		{ value: 2, label: 'Normal' },
+		{ value: 3, label: 'Fast' },
+		{ value: 4, label: 'Very Fast' },
 	];
 
 	// Player type options
@@ -264,17 +263,17 @@
 						<div class="form-group">
 							<label for="turnTimeLimit" class="form-label">
 								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;"
-									>Turn Time Limit:</Text
+									>Game Speed:</Text
 								>
 							</label>
 							<select
 								id="turnTimeLimit"
-								bind:value={formData.turnTimeLimitSeconds}
+								bind:value={formData.gameSpeed}
 								on:change={handleOptionChange}
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each turnTimeLimitOptions as option}
+								{#each gameSpeedOptions as option}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>

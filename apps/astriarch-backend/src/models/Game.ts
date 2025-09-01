@@ -17,7 +17,7 @@ export interface IGameOptions {
   galaxySize?: number; // 1: Tiny, 2: Small, 3: Medium, 4: Large
   distributePlanetsEvenly?: boolean;
   quickStart?: boolean;
-  turnTimeLimitSeconds?: number; // 0: None, 30, 60, 120, 180, 300
+  gameSpeed?: number; // 0: Very Slow, 1: Slow, 2: Normal, 3: Fast, 4: Very Fast
   opponentOptions?: Array<{
     name: string;
     type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer

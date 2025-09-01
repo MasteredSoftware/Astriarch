@@ -6,7 +6,8 @@
 		gameActions
 	} from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
-	import { webSocketService, multiplayerGameStore } from '$lib/services/websocket';
+	import { webSocketService } from '$lib/services/websocket';
+	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default

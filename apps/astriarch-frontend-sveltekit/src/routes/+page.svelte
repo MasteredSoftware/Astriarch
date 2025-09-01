@@ -15,7 +15,7 @@
 	const { notifications } = multiplayerGameStore;
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
 
-	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
+	import { TopOverview, NavigationController, Button, Text, Notification } from '$lib/components/astriarch';
 	import { Logo } from '$lib/components/atoms';
 
 	// Import game view components
@@ -61,6 +61,20 @@
 
 	onMount(() => {
 		console.log('Astriarch game component mounted');
+		
+		// Debug: Add a test notification to see if the system works
+		multiplayerGameStore.addNotification({
+			type: 'info',
+			message: 'Welcome to Astriarch! Event system is active.',
+			timestamp: Date.now()
+		});
+		
+		// Debug: Log notifications store changes
+		const unsubscribe = notifications.subscribe((notifs) => {
+			console.log('Notifications updated:', notifs);
+		});
+		
+		return () => unsubscribe();
 	});
 
 	onDestroy(() => {
@@ -191,6 +205,18 @@
 						variant={$isGameRunning ? 'outline' : 'primary'}
 						onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
 					/>
+				{:else}
+					<!-- Debug: Test notification button -->
+					<Button
+						label="Test Notification"
+						size="sm"
+						variant="outline"
+						onclick={() => multiplayerGameStore.addNotification({
+							type: Math.random() > 0.5 ? 'battle' : 'research',
+							message: `Test notification ${Math.floor(Math.random() * 1000)}`,
+							timestamp: Date.now()
+						})}
+					/>
 				{/if}
 			</div>
 		</div>
@@ -291,29 +317,17 @@
 	{#if $notifications.length > 0}
 		<div class="fixed right-4 bottom-4 z-20 max-w-sm space-y-2">
 			{#each $notifications.slice(-5) as notification, i}
-				<div
-					class="cursor-pointer rounded-lg border border-cyan-500/40 bg-black/80 p-3 backdrop-blur-sm transition-opacity hover:opacity-80"
-					on:click={() => multiplayerGameStore.dismissNotification(notification.id)}
-				>
-					<div class="flex items-start justify-between">
-						<div class="flex-1">
-							<Text
-								style="color: {getNotificationColor(
-									notification.type
-								)}; font-size: 12px; font-weight: bold;"
-							>
-								{getNotificationTypeLabel(notification.type)}
-							</Text>
-							<Text style="color: #FFFFFF; font-size: 11px; margin-top: 2px;">
-								{notification.message}
-							</Text>
-						</div>
-						<Text style="color: #888888; font-size: 10px;">
-							{formatTimestamp(notification.timestamp)}
-						</Text>
-					</div>
-				</div>
+				<Notification
+					label="{getNotificationTypeLabel(notification.type)}: {notification.message}"
+					size="md"
+					onclick={() => multiplayerGameStore.dismissNotification(notification.id)}
+				/>
 			{/each}
+		</div>
+	{:else}
+		<!-- Debug: Show when no notifications -->
+		<div class="fixed right-4 bottom-4 z-20 text-xs text-gray-400">
+			No notifications ({$notifications.length})
 		</div>
 	{/if}
 </main>

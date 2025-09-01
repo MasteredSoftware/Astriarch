@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { Text, Button } from '$lib/components/astriarch';
-	import { webSocketService, multiplayerGameStore, type IGame } from '$lib/services/websocket';
+	import { webSocketService, type IGame } from '$lib/services/websocket';
+	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import GameList from './GameList.svelte';
 	import GameDetails from './GameDetails.svelte';
 	import GameOptionsView from './GameOptionsView.svelte';
@@ -96,15 +97,21 @@
 		// Create game with default options - this will trigger transition to game_options view
 		const defaultGameOptions = {
 			name: 'New Game',
-			description: '',
-			galaxySize: 'Large' as const,
-			gameSpeed: 'Normal' as const,
+			mainPlayerName: 'Player',
+			systemsToGenerate: 4,
+			planetsPerSystem: 4,
+			galaxySize: 4,
+			gameSpeed: 3,
 			maxPlayers: 4,
-			victoryCondition: 'Conquest' as const,
-			isPrivate: false,
 			distributePlanetsEvenly: true,
-			quickStart: false
+			quickStart: false,
+			opponentOptions: [
+				{ name: '', type: -1 }, // Player 2: Open
+				{ name: '', type: -2 }, // Player 3: Closed
+				{ name: '', type: -2 } // Player 4: Closed
+			]
 		};
+
 		console.log('Calling webSocketService.createGame with options:', defaultGameOptions);
 		webSocketService.createGame(defaultGameOptions);
 	}
