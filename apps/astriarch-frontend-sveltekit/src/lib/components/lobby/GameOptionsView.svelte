@@ -2,9 +2,10 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text, Button } from '$lib/components/astriarch';
 	import { webSocketService } from '$lib/services/websocket';
+	import { getDefaultServerGameOptions } from 'astriarch-engine';
 
 	export let gameId: string;
-	export let gameOptions: any = {};
+	export let gameOptions = getDefaultServerGameOptions({});
 	export let playerPosition: number = 0;
 	export let isHost: boolean = false;
 
@@ -14,21 +15,7 @@
 	}>();
 
 	// Game options with defaults matching old game
-	let formData = {
-		name: gameOptions?.name || 'New Game',
-		playerName: gameOptions?.mainPlayerName || 'Player',
-		systemsToGenerate: gameOptions?.systemsToGenerate || 4,
-		planetsPerSystem: gameOptions?.planetsPerSystem || 4,
-		galaxySize: gameOptions?.galaxySize || 4,
-		distributePlanetsEvenly: gameOptions?.distributePlanetsEvenly ?? true,
-		quickStart: gameOptions?.quickStart ?? false,
-		gameSpeed: gameOptions?.gameSpeed || 3,
-		opponentOptions: gameOptions?.opponentOptions || [
-			{ name: '', type: -1 }, // Player 2: Open
-			{ name: '', type: -2 }, // Player 3: Closed
-			{ name: '', type: -2 } // Player 4: Closed
-		]
-	};
+	let formData = JSON.parse(JSON.stringify(gameOptions));
 
 	// Galaxy size options
 	const galaxySizeOptions = [

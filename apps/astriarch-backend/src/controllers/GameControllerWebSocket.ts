@@ -99,6 +99,8 @@ export class GameController {
       const playerId = getPlayerId(gameData.players[0].position);
       const gameModel = engine.createGame(playerId, gameData.players[0].name, gameOptions);
 
+      const defaultGameOptions = engine.getDefaultServerGameOptions({});
+
       // Create database record matching old app.js structure
       const game = new ServerGameModel({
         name: gameData.name,
@@ -111,24 +113,7 @@ export class GameController {
           isActive: true,
           isAI: false,
         })),
-        gameOptions: {
-          name: gameData.name,
-          mainPlayerName: gameData.players[0]?.name || "Unknown",
-          systemsToGenerate: 4, // Default: 4 systems
-          planetsPerSystem: 4, // Default: 4 planets per system
-          galaxySize: 4, // Default: Large
-          distributePlanetsEvenly: true,
-          quickStart: false,
-          gameSpeed: 3, // Default: Normal
-          opponentOptions: [
-            { name: "", type: -1 }, // Player 2: Open
-            { name: "", type: -2 }, // Player 3: Closed
-            { name: "", type: -2 }, // Player 4: Closed
-          ],
-          maxPlayers: 4,
-          gameType: "standard",
-          isPrivate: false,
-        },
+        gameOptions: defaultGameOptions,
         gameState: gameModel.modelData,
         status: "waiting_for_players",
         createdAt: new Date(),

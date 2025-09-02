@@ -7,7 +7,15 @@ import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { ClientModelData, PlanetById } from './model/clientModel';
 import { StarShipType, FleetData, StarshipData } from './model/fleet';
-import { GalaxySizeOption, GameOptions, GameSpeed, ModelData, PlanetsPerSystemOption } from './model/model';
+import {
+  GalaxySizeOption,
+  GameOptions,
+  GameSpeed,
+  ModelData,
+  OpponentOptionType,
+  PlanetsPerSystemOption,
+  ServerGameOptions,
+} from './model/model';
 import { PlanetProductionItemData } from './model/planet';
 import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
@@ -60,6 +68,30 @@ export const createGame = (hostPlayerId: string, hostPlayerName: string, gameOpt
   players.push(Player.constructPlayer(hostPlayerId, PlayerType.Human, hostPlayerName, playerColors[0]));
   const gameModel = GameModel.constructData(players, gameOptions);
   return gameModel;
+};
+
+export const getDefaultServerGameOptions = (userPreferences: Partial<ServerGameOptions>): ServerGameOptions => {
+  const defaults: ServerGameOptions = {
+    name: 'New Game',
+    mainPlayerName: 'Player',
+    systemsToGenerate: 4,
+    planetsPerSystem: PlanetsPerSystemOption.FOUR,
+    galaxySize: GalaxySizeOption.SMALL,
+    gameSpeed: GameSpeed.NORMAL,
+    distributePlanetsEvenly: true,
+    quickStart: false,
+    opponentOptions: [
+      { name: '', type: OpponentOptionType.OPEN }, // Player 2: Open
+      { name: '', type: OpponentOptionType.HARD_COMPUTER }, // Player 3: Hard Computer
+      { name: '', type: OpponentOptionType.EXPERT_COMPUTER }, // Player 4: Expert Computer
+    ],
+    version: '2.0',
+  };
+
+  return {
+    ...defaults,
+    ...userPreferences,
+  };
 };
 
 export const constructClientGameModel = (gameModel: ModelData, playerId: string) => {

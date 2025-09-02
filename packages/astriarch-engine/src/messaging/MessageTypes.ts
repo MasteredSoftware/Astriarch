@@ -3,6 +3,8 @@
  * Based on the original Astriarch architecture from app.js
  */
 
+import { ServerGameOptions } from "../model";
+
 export enum MESSAGE_TYPE {
   // Connection & System
   NOOP = 'NOOP',
@@ -73,7 +75,7 @@ export interface IGame {
   _id: string;
   name: string;
   players: IPlayer[];
-  gameOptions?: IGameOptions;
+  gameOptions?: ServerGameOptions;
   status: 'waiting' | 'in_progress' | 'completed';
   createdAt: Date;
   lastActivity: Date;
@@ -85,23 +87,6 @@ export interface IPlayer {
   Id: string;
   name: string;
   connected?: boolean;
-}
-
-export interface IOpponentOption {
-  name: string;
-  type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer
-}
-
-export interface IGameOptions {
-  name?: string;
-  mainPlayerName?: string;
-  systemsToGenerate: number; // Number of systems (2-4 players)
-  planetsPerSystem: number; // 4-8 planets per system
-  galaxySize: number; // 1: Tiny, 2: Small, 3: Medium, 4: Large
-  distributePlanetsEvenly: boolean;
-  quickStart: boolean;
-  gameSpeed: number; // 0 - 5
-  opponentOptions: IOpponentOption[];
 }
 
 // Payload interfaces for each message type
@@ -128,7 +113,7 @@ export interface IErrorPayload {
 export interface ICreateGameRequestPayload {
   name: string;
   playerName: string;
-  gameOptions: IGameOptions;
+  gameOptions: ServerGameOptions;
 }
 
 export interface ICreateGameResponsePayload {
@@ -155,7 +140,7 @@ export interface IListGamesResponsePayload {
 
 export interface IStartGameRequestPayload {
   gameId: string;
-  gameOptions?: IGameOptions;
+  gameOptions?: ServerGameOptions;
 }
 
 export interface IStartGameResponsePayload {
@@ -166,7 +151,7 @@ export interface IStartGameResponsePayload {
 
 export interface IChangeGameOptionsPayload {
   gameId: string;
-  gameOptions: IGameOptions;
+  gameOptions: ServerGameOptions;
   playerName?: string;
 }
 

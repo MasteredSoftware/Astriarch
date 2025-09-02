@@ -25,14 +25,35 @@ export enum GalaxySizeOption {
   LARGE = 4,
 } //multiplier for Astriarch.Hexagon.Static
 
+export enum OpponentOptionType {
+  CLOSED = -2,
+  OPEN = -1,
+  HUMAN = 0,
+  EASY_COMPUTER = 1,
+  NORMAL_COMPUTER = 2,
+  HARD_COMPUTER = 3,
+  EXPERT_COMPUTER = 4,
+}
+
+export interface OpponentOption {
+  name: string;
+  type: OpponentOptionType;
+}
+
 export interface GameOptions {
-  systemsToGenerate: number;
+  systemsToGenerate: number; // Number of systems (2-4 players)
   planetsPerSystem: PlanetsPerSystemOption;
   galaxySize: GalaxySizeOption;
   distributePlanetsEvenly: boolean;
   quickStart: boolean;
   gameSpeed: GameSpeed;
   version: string;
+}
+
+export interface ServerGameOptions extends GameOptions {
+  name?: string;
+  mainPlayerName?: string;
+  opponentOptions: OpponentOption[];
 }
 
 export interface ModelBase {

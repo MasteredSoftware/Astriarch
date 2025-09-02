@@ -3,14 +3,8 @@ import type {
 	GameModelData,
 	ClientModelData,
 	IGame,
-	IGameOptions
+	ServerGameOptions
 } from 'astriarch-engine';
-
-// Additional types specific to multiplayer
-export interface IOpponentOption {
-	name: string;
-	type: number; // -2 = closed, -1 = open, positive number = AI difficulty
-}
 
 // Helper function to ensure game data has proper structure
 export function validateGameData(games: unknown[]): IGame[] {
@@ -20,7 +14,7 @@ export function validateGameData(games: unknown[]): IGame[] {
 			_id: (g._id as string) || '',
 			name: (g.name as string) || 'Unnamed Game',
 			players: Array.isArray(g.players) ? g.players : [],
-			gameOptions: (g.gameOptions as IGameOptions) || {
+			gameOptions: (g.gameOptions as ServerGameOptions) || {
 				systemsToGenerate: 4,
 				planetsPerSystem: 4,
 				galaxySize: 4,

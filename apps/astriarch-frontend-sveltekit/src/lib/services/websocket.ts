@@ -4,7 +4,7 @@ import {
 	Message,
 	type IMessage,
 	type IGame,
-	type IGameOptions,
+	type ServerGameOptions,
 	type IEventNotificationsPayload,
 	type EventNotification,
 	EventNotificationType,
@@ -29,7 +29,7 @@ import {
 } from '$lib/stores/multiplayerGameStore';
 
 // Re-export types from engine for convenience
-export type { IGame, IGameOptions };
+export type { IGame, ServerGameOptions };
 
 // WebSocket connection management
 class WebSocketService {
@@ -513,7 +513,7 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.LIST_GAMES, {}));
 	}
 
-	createGame(gameOptions: IGameOptions) {
+	createGame(gameOptions: ServerGameOptions) {
 		// Get current player name from store or use a default
 		let currentPlayerName = 'Player';
 		const unsubscribe = this.gameStore.subscribe((state: MultiplayerGameState) => {

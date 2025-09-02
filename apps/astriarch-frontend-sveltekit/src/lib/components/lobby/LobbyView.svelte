@@ -6,6 +6,7 @@
 	import GameList from './GameList.svelte';
 	import GameDetails from './GameDetails.svelte';
 	import GameOptionsView from './GameOptionsView.svelte';
+	import { getDefaultServerGameOptions } from 'astriarch-engine';
 
 	let games: IGame[] = [];
 	let selectedGame: IGame | null = null;
@@ -95,22 +96,7 @@
 		}
 
 		// Create game with default options - this will trigger transition to game_options view
-		const defaultGameOptions = {
-			name: 'New Game',
-			mainPlayerName: 'Player',
-			systemsToGenerate: 4,
-			planetsPerSystem: 4,
-			galaxySize: 4,
-			gameSpeed: 3,
-			maxPlayers: 4,
-			distributePlanetsEvenly: true,
-			quickStart: false,
-			opponentOptions: [
-				{ name: '', type: -1 }, // Player 2: Open
-				{ name: '', type: -2 }, // Player 3: Closed
-				{ name: '', type: -2 } // Player 4: Closed
-			]
-		};
+		const defaultGameOptions = getDefaultServerGameOptions({});
 
 		console.log('Calling webSocketService.createGame with options:', defaultGameOptions);
 		webSocketService.createGame(defaultGameOptions);

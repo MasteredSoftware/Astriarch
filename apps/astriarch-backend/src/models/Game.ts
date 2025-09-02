@@ -1,3 +1,4 @@
+import { ServerGameOptions } from "astriarch-engine";
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IPlayer {
@@ -9,24 +10,6 @@ export interface IPlayer {
   isAI: boolean;
 }
 
-export interface IGameOptions {
-  name?: string;
-  mainPlayerName?: string;
-  systemsToGenerate?: number; // Number of systems (2-4 players)
-  planetsPerSystem?: number; // 4-8 planets per system
-  galaxySize?: number; // 1: Tiny, 2: Small, 3: Medium, 4: Large
-  distributePlanetsEvenly?: boolean;
-  quickStart?: boolean;
-  gameSpeed?: number; // 0: Very Slow, 1: Slow, 2: Normal, 3: Fast, 4: Very Fast
-  opponentOptions?: Array<{
-    name: string;
-    type: number; // -2: Closed, -1: Open, 0: Human, 1: Easy Computer, 2: Normal Computer, 3: Hard Computer, 4: Expert Computer
-  }>;
-  maxPlayers?: number;
-  gameType?: string;
-  isPrivate?: boolean;
-}
-
 export interface IGame extends Document {
   name: string; // Game name (for lobby display)
   hostPlayerName: string;
@@ -36,7 +19,7 @@ export interface IGame extends Document {
   gameState: object;
   status: "waiting_for_players" | "in_progress" | "completed";
   players: IPlayer[]; // Array of players in the game
-  gameOptions: IGameOptions; // Game configuration options
+  gameOptions: ServerGameOptions; // Game configuration options
   createdAt: Date;
   lastActivity: Date;
 }
