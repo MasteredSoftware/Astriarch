@@ -2,33 +2,8 @@ import { writable, derived } from 'svelte/store';
 import type {
 	GameModelData,
 	ClientModelData,
-	IGame,
-	ServerGameOptions
+	IGame
 } from 'astriarch-engine';
-
-// Helper function to ensure game data has proper structure
-export function validateGameData(games: unknown[]): IGame[] {
-	return games.map((game: unknown) => {
-		const g = game as Record<string, unknown>;
-		return {
-			_id: (g._id as string) || '',
-			name: (g.name as string) || 'Unnamed Game',
-			players: Array.isArray(g.players) ? g.players : [],
-			gameOptions: (g.gameOptions as ServerGameOptions) || {
-				systemsToGenerate: 4,
-				planetsPerSystem: 4,
-				galaxySize: 4,
-				distributePlanetsEvenly: true,
-				quickStart: false,
-				gameSpeed: 3,
-				opponentOptions: []
-			},
-			status: (g.status as 'waiting' | 'in_progress' | 'completed') || 'waiting',
-			createdAt: g.createdAt ? new Date(g.createdAt as string) : new Date(),
-			lastActivity: g.lastActivity ? new Date(g.lastActivity as string) : new Date()
-		};
-	});
-}
 
 // WebSocket multiplayer game state interface
 export interface MultiplayerGameState {

@@ -24,8 +24,7 @@ import type { ClientModelData } from 'astriarch-engine';
 import { 
 	multiplayerGameStore, 
 	type ChatMessage, 
-	type MultiplayerGameState,
-	validateGameData
+	type MultiplayerGameState
 } from '$lib/stores/multiplayerGameStore';
 
 // Re-export types from engine for convenience
@@ -201,7 +200,7 @@ class WebSocketService {
 		switch (message.type) {
 			case MESSAGE_TYPE.LIST_GAMES:
 				if (isListGamesResponse(message)) {
-					this.gameStore.setAvailableGames(validateGameData(message.payload.games));
+					this.gameStore.setAvailableGames(message.payload.games);
 				} else {
 					console.warn('LIST_GAMES payload missing games array:', message.payload);
 				}
@@ -209,7 +208,7 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.GAME_LIST_UPDATED:
 				if (isListGamesResponse(message)) {
-					this.gameStore.setAvailableGames(validateGameData(message.payload.games));
+					this.gameStore.setAvailableGames(message.payload.games);
 				} else {
 					console.warn('GAME_LIST_UPDATED payload missing games array:', message.payload);
 				}

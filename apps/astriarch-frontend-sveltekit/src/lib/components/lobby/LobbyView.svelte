@@ -36,6 +36,7 @@
 			// Find current game if we have a gameId
 			if (gameId) {
 				currentGame = games.find((game) => game._id === gameId) || null;
+				console.log('Current game updated:', currentGame);
 			}
 
 			// Request games list when connection is first established

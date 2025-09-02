@@ -50,6 +50,7 @@ export { playerColors };
 // Export interfaces
 export type { PlayerData };
 export type { GameOptions };
+export type { ServerGameOptions };
 export type { ModelData };
 export type { GameModelData };
 export type { ClientModelData };

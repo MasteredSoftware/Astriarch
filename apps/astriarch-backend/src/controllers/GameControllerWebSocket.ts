@@ -774,15 +774,31 @@ export class GameController {
   // Utility Methods (like old app.js)
   // ==========================================
 
+  /**
+   * Converts a game document from the database to a game summary for the frontend
+   * This matches the IGame interface expected by the frontend
+   */
   static getGameSummaryFromGameDoc(gameDoc: any): any {
     return {
-      _id: gameDoc._id,
-      name: gameDoc.name,
-      status: gameDoc.status,
-      playerCount: gameDoc.players ? gameDoc.players.length : 0,
-      maxPlayers: gameDoc.gameOptions?.maxPlayers || 4,
+      _id: gameDoc._id.toString(),
+      name: gameDoc.name || 'Unnamed Game',
+      status: gameDoc.status || 'waiting',
+      players: gameDoc.players || [],
+      gameOptions: gameDoc.gameOptions || {
+        systemsToGenerate: 4,
+        planetsPerSystem: 4,
+        galaxySize: 4,
+        distributePlanetsEvenly: true,
+        quickStart: false,
+        gameSpeed: 3,
+        opponentOptions: [
+          { name: '', type: -1 }, // Player 2: Open
+          { name: '', type: -2 }, // Player 3: Closed
+          { name: '', type: -2 } // Player 4: Closed
+        ]
+      },
       createdAt: gameDoc.createdAt,
-      lastActivity: gameDoc.lastActivity,
+      lastActivity: gameDoc.lastActivity
     };
   }
 
