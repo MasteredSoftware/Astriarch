@@ -164,22 +164,28 @@ export class Player {
     planet: PlanetData,
     item: PlanetProductionItemData,
   ): boolean {
-    // Check if there are enough resources to enqueue the production item
-    let canBuild = false;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
-    const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
-    if (
-      totalResources.energy >= item.energyCost &&
-      totalResources.ore >= item.oreCost &&
-      totalResources.iridium >= item.iridiumCost
-    ) {
-      canBuild = true;
-    }
+    
+    // Use the new comprehensive validation
+    const validationResult = PlanetProductionItem.canBuild(planet, mainPlayer, mainPlayerOwnedPlanets, item);
+    const canBuild = validationResult.result === 'can-build';
 
     if (canBuild) {
       Planet.enqueueProductionItemAndSpendResources(grid, mainPlayer, mainPlayerOwnedPlanets, planet, item);
     }
     return canBuild;
+  }
+
+  /**
+   * Checks if a production item can be built, returning only true/false for resource availability
+   * This is the original simpler check for backwards compatibility
+   */
+  public static canBuildBasedOnResources(
+    clientModel: ClientModelData,
+    item: PlanetProductionItemData,
+  ): boolean {
+    const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    return PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, item);
   }
 
   public static addLastStarShipToQueueOnPlanets(data: AdvanceGameClockForPlayerData) {
@@ -198,16 +204,12 @@ export class Player {
           customShipData = Research.getResearchDataByStarshipHullType(p.starshipTypeLastBuilt, mainPlayer)!;
         }
         const s = PlanetProductionItem.constructStarShipInProduction(p.starshipTypeLastBuilt, customShipData);
-        let canBuild = true;
-        if (totalResources.energy - s.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
-          canBuild = false;
-        }
-
-        if (totalResources.ore - s.oreCost < 0) {
-          canBuild = false;
-        }
-
-        if (totalResources.iridium - s.iridiumCost < 0) {
+        
+        // Use basic resource check but add special logic for food shipping
+        let canBuild = PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, s);
+        
+        // Additional check: ensure we have surplus energy after food shipping needs
+        if (canBuild && totalResources.energy - s.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
           canBuild = false;
         }
 

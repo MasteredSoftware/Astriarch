@@ -1,7 +1,23 @@
 import { StarshipAdvantageData, StarShipType } from '../model/fleet';
-import { PlanetImprovementType, PlanetProductionItemData, PlanetProductionItemType } from '../model/planet';
+import { PlanetImprovementType, PlanetProductionItemData, PlanetProductionItemType, PlanetData } from '../model/planet';
 import { GameTools } from '../utils/gameTools';
 import { Fleet } from './fleet';
+import { PlayerData } from '../model/player';
+import { PlanetById } from '../model/clientModel';
+import { Research } from './research';
+
+export enum CanBuildResult {
+  CanBuild = 'can-build',
+  CannotBuildInsufficientResources = 'cannot-build-insufficient-resources',
+  CannotBuildInsufficientSlots = 'cannot-build-insufficient-slots',
+  CannotBuildPrerequisitesNotMet = 'cannot-build-prerequisites-not-met',
+  CannotBuildSpacePlatformLimit = 'cannot-build-space-platform-limit',
+}
+
+export interface CanBuildValidationResult {
+  result: CanBuildResult;
+  reason?: string;
+}
 
 export class PlanetProductionItem {
   private static constructPlanetProductionItem(itemType: PlanetProductionItemType): PlanetProductionItemData {
@@ -135,5 +151,190 @@ export class PlanetProductionItem {
       throw new Error('No starshipData for PlanetProductionItemData');
     }
     return GameTools.starShipTypeToFriendlyName(item.starshipData.type);
+  }
+
+  /**
+   * Checks if a player has sufficient resources to build an item
+   */
+  public static hasSufficientResources(
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    item: PlanetProductionItemData,
+  ): boolean {
+    // Get total resources across all owned planets
+    const totalResources = Object.values(ownedPlanets)
+      .filter((planet) => player.ownedPlanetIds.includes(planet.id))
+      .reduce(
+        (accum, planet) => ({
+          energy: accum.energy + planet.resources.energy,
+          ore: accum.ore + planet.resources.ore,
+          iridium: accum.iridium + planet.resources.iridium,
+          food: accum.food + planet.resources.food,
+          production: accum.production + planet.resources.production,
+          research: accum.research + planet.resources.research,
+        }),
+        { energy: 0, ore: 0, iridium: 0, food: 0, production: 0, research: 0 },
+      );
+
+    return (
+      totalResources.energy >= item.energyCost &&
+      totalResources.ore >= item.oreCost &&
+      totalResources.iridium >= item.iridiumCost
+    );
+  }
+
+  /**
+   * Checks if a planet has available slots for building improvements
+   */
+  public static hasSufficientSlots(planet: PlanetData, item: PlanetProductionItemData): boolean {
+    // Only check slots for planet improvements
+    if (item.itemType !== PlanetProductionItemType.PlanetImprovement) {
+      return true;
+    }
+
+    // Count currently built improvements
+    const currentImprovements = Object.values(planet.builtImprovements).reduce((sum, count) => sum + count, 0);
+
+    // Count improvement items in the build queue
+    const queuedImprovements = planet.buildQueue.filter(
+      (queueItem) => queueItem.itemType === PlanetProductionItemType.PlanetImprovement,
+    ).length;
+
+    const totalImprovements = currentImprovements + queuedImprovements + 1; // +1 for the item we're trying to build
+
+    return totalImprovements <= planet.maxImprovements;
+  }
+
+  /**
+   * Checks if building prerequisites are met
+   */
+  public static hasPrerequisitesMet(planet: PlanetData, item: PlanetProductionItemData): boolean {
+    if (item.itemType === PlanetProductionItemType.PlanetImprovement) {
+      // Planet improvements have no prerequisites
+      return true;
+    }
+
+    if (item.itemType === PlanetProductionItemType.StarShipInProduction && item.starshipData) {
+      const shipType = item.starshipData.type;
+
+      switch (shipType) {
+        case StarShipType.SystemDefense:
+        case StarShipType.Scout:
+          // No prerequisites for defenders and scouts
+          return true;
+
+        case StarShipType.Destroyer:
+        case StarShipType.SpacePlatform:
+          // Require at least one factory
+          return planet.builtImprovements[PlanetImprovementType.Factory] > 0;
+
+        case StarShipType.Cruiser:
+        case StarShipType.Battleship:
+          // Require at least one space platform
+          const spacePlatformCount = Fleet.countStarshipsByType(planet.planetaryFleet).spaceplatforms;
+          return spacePlatformCount > 0;
+
+        default:
+          return true;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Checks if space platform limit has been reached
+   */
+  public static hasReachedSpacePlatformLimit(
+    planet: PlanetData,
+    player: PlayerData,
+    item: PlanetProductionItemData,
+  ): boolean {
+    // Only check for space platforms
+    if (
+      item.itemType !== PlanetProductionItemType.StarShipInProduction ||
+      !item.starshipData ||
+      item.starshipData.type !== StarShipType.SpacePlatform
+    ) {
+      return false;
+    }
+
+    // Count current space platforms on this planet
+    const currentSpacePlatforms = Fleet.countStarshipsByType(planet.planetaryFleet).spaceplatforms;
+
+    // Count space platforms in build queue
+    const queuedSpacePlatforms = planet.buildQueue.filter(
+      (queueItem) =>
+        queueItem.itemType === PlanetProductionItemType.StarShipInProduction &&
+        queueItem.starshipData?.type === StarShipType.SpacePlatform,
+    ).length;
+
+    const totalSpacePlatforms = currentSpacePlatforms + queuedSpacePlatforms + 1; // +1 for the one we're trying to build
+
+    // Get max space platform count from research
+    const maxSpacePlatforms = Research.getMaxSpacePlatformCount(player.research);
+
+    return totalSpacePlatforms > maxSpacePlatforms;
+  }
+
+  /**
+   * Comprehensive validation to check if an item can be built
+   */
+  public static canBuild(
+    planet: PlanetData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    item: PlanetProductionItemData,
+  ): CanBuildValidationResult {
+    // Check resource requirements
+    if (!this.hasSufficientResources(player, ownedPlanets, item)) {
+      return {
+        result: CanBuildResult.CannotBuildInsufficientResources,
+        reason: `Insufficient resources: need ${item.energyCost} energy, ${item.oreCost} ore, ${item.iridiumCost} iridium`,
+      };
+    }
+
+    // Check slot availability for improvements
+    if (!this.hasSufficientSlots(planet, item)) {
+      return {
+        result: CanBuildResult.CannotBuildInsufficientSlots,
+        reason: 'No available building slots on this planet',
+      };
+    }
+
+    // Check prerequisites
+    if (!this.hasPrerequisitesMet(planet, item)) {
+      if (item.itemType === PlanetProductionItemType.StarShipInProduction && item.starshipData) {
+        const shipType = item.starshipData.type;
+        if (shipType === StarShipType.Destroyer || shipType === StarShipType.SpacePlatform) {
+          return {
+            result: CanBuildResult.CannotBuildPrerequisitesNotMet,
+            reason: 'Requires a Factory to build',
+          };
+        }
+        if (shipType === StarShipType.Cruiser || shipType === StarShipType.Battleship) {
+          return {
+            result: CanBuildResult.CannotBuildPrerequisitesNotMet,
+            reason: 'Requires a Space Platform to build',
+          };
+        }
+      }
+      return {
+        result: CanBuildResult.CannotBuildPrerequisitesNotMet,
+        reason: 'Prerequisites not met',
+      };
+    }
+
+    // Check space platform limit
+    if (this.hasReachedSpacePlatformLimit(planet, player, item)) {
+      return {
+        result: CanBuildResult.CannotBuildSpacePlatformLimit,
+        reason: 'Maximum space platforms reached for this planet',
+      };
+    }
+
+    return {
+      result: CanBuildResult.CanBuild,
+    };
   }
 }

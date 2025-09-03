@@ -5,6 +5,7 @@ import { GameController } from './engine/gameController';
 import { GameModel, GameModelData, playerColors } from './engine/gameModel';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
+import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
 import { ClientModelData, PlanetById } from './model/clientModel';
 import { StarShipType, FleetData, StarshipData } from './model/fleet';
 import {
@@ -29,6 +30,7 @@ export * from './messaging/MessageTypes';
 // Export engine classes
 export { Player };
 export { Planet };
+export { PlanetProductionItem };
 export { Fleet };
 export { GameModel };
 export { ClientGameModel };
@@ -45,6 +47,7 @@ export { PlanetsPerSystemOption };
 export { ResearchType };
 export { CitizenWorkerType };
 export { EventNotificationType };
+export { CanBuildResult };
 export { playerColors };
 
 // Export interfaces
@@ -56,6 +59,7 @@ export type { GameModelData };
 export type { ClientModelData };
 export type { PlanetById };
 export type { PlanetProductionItemData };
+export type { CanBuildValidationResult };
 export type { Subscription };
 export type { FleetData };
 export type { StarshipData };
