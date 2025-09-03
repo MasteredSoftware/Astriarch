@@ -16,6 +16,7 @@
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
 
 	import { TopOverview, NavigationController, Button, Text, Notification } from '$lib/components/astriarch';
+	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
 	import { Logo } from '$lib/components/atoms';
 
 	// Import game view components
@@ -211,10 +212,40 @@
 						label="Test Notification"
 						size="sm"
 						variant="outline"
+						onclick={() => {
+							const notificationTypes = ['info', 'success', 'warning', 'error', 'battle', 'research', 'construction', 'fleet', 'planet', 'diplomacy'] as const;
+							const randomType = notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
+							const randomMessage = [
+								'Fleet has arrived at destination',
+								'Research completed successfully', 
+								'Planet under attack!',
+								'Construction finished',
+								'Diplomatic message received',
+								'Resources depleted warning',
+								'New trade route established'
+							][Math.floor(Math.random() * 7)];
+							
+							// Random duration between 3-8 seconds
+							const randomDuration = Math.floor(Math.random() * 5000) + 3000;
+							
+							multiplayerGameStore.addNotification({
+								type: randomType,
+								message: `${randomMessage} ${Math.floor(Math.random() * 1000)}`,
+								timestamp: Date.now(),
+								duration: randomDuration
+							});
+						}}
+					/>
+					
+					<!-- Debug: Test persistent notification button -->
+					<Button
+						label="Persistent Alert"
+						size="sm"
+						variant="outline"
 						onclick={() => multiplayerGameStore.addNotification({
-							type: Math.random() > 0.5 ? 'battle' : 'research',
-							message: `Test notification ${Math.floor(Math.random() * 1000)}`,
-							timestamp: Date.now()
+							type: 'error',
+							message: `Critical alert ${Math.floor(Math.random() * 1000)} - Click to dismiss`,
+							timestamp: Date.now(),
 						})}
 					/>
 				{/if}
@@ -316,11 +347,10 @@
 	<!-- Notifications Panel -->
 	{#if $notifications.length > 0}
 		<div class="fixed right-4 bottom-4 z-20 max-w-sm space-y-2">
-			{#each $notifications.slice(-5) as notification, i}
-				<Notification
-					label="{getNotificationTypeLabel(notification.type)}: {notification.message}"
-					size="md"
-					onclick={() => multiplayerGameStore.dismissNotification(notification.id)}
+			{#each $notifications.slice(-5) as notification, i (notification.id)}
+				<NotificationItem
+					{notification}
+					onDismiss={() => multiplayerGameStore.dismissNotification(notification.id)}
 				/>
 			{/each}
 		</div>

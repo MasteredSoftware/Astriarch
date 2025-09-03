@@ -49,6 +49,7 @@ export interface GameNotification {
 	timestamp: number;
 	actionText?: string;
 	actionType?: string;
+	duration?: number; // Duration in milliseconds before auto-removal (default: 5000ms)
 }
 
 // Create the multiplayer game store
@@ -215,9 +216,17 @@ function createMultiplayerGameStore() {
 		addNotification: (notification: Omit<GameNotification, 'id'>) => {
 			const newNotification: GameNotification = {
 				...notification,
-				id: `notification-${Date.now()}-${Math.random()}`
+				id: `notification-${Date.now()}-${Math.random()}`,
+				duration: notification.duration ?? 5000 // Default to 5 seconds
 			};
 			notifications.update((prev) => [...prev, newNotification]);
+
+			// Set up auto-removal timer if enabled
+			if (newNotification.duration) {
+				setTimeout(() => {
+					notifications.update((prev) => prev.filter((n) => n.id !== newNotification.id));
+				}, newNotification.duration);
+			}
 		},
 
 		dismissNotification: (notificationId: string) => {
