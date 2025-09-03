@@ -5,6 +5,7 @@ import { Fleet } from './fleet';
 import { PlayerData } from '../model/player';
 import { PlanetById } from '../model/clientModel';
 import { Research } from './research';
+import { Player } from './player';
 
 export enum CanBuildResult {
   CanBuild = 'can-build',
@@ -162,19 +163,7 @@ export class PlanetProductionItem {
     item: PlanetProductionItemData,
   ): boolean {
     // Get total resources across all owned planets
-    const totalResources = Object.values(ownedPlanets)
-      .filter((planet) => player.ownedPlanetIds.includes(planet.id))
-      .reduce(
-        (accum, planet) => ({
-          energy: accum.energy + planet.resources.energy,
-          ore: accum.ore + planet.resources.ore,
-          iridium: accum.iridium + planet.resources.iridium,
-          food: accum.food + planet.resources.food,
-          production: accum.production + planet.resources.production,
-          research: accum.research + planet.resources.research,
-        }),
-        { energy: 0, ore: 0, iridium: 0, food: 0, production: 0, research: 0 },
-      );
+    const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
 
     return (
       totalResources.energy >= item.energyCost &&
@@ -200,9 +189,9 @@ export class PlanetProductionItem {
       (queueItem) => queueItem.itemType === PlanetProductionItemType.PlanetImprovement,
     ).length;
 
-    const totalImprovements = currentImprovements + queuedImprovements + 1; // +1 for the item we're trying to build
+    const totalImprovements = currentImprovements + queuedImprovements;
 
-    return totalImprovements <= planet.maxImprovements;
+    return totalImprovements < planet.maxImprovements;
   }
 
   /**
