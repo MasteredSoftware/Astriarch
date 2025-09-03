@@ -880,7 +880,7 @@ export class Planet {
    */
   public static planetPopulationImprovementCountComparerSortFunction(a: PlanetData, b: PlanetData) {
     let ret = Utils.compareNumbers(b.population.length, a.population.length);
-    if (ret == 0) ret = Utils.compareNumbers(this.builtImprovementCount(b), this.builtImprovementCount(a));
+    if (ret == 0) ret = Utils.compareNumbers(Planet.builtImprovementCount(b), Planet.builtImprovementCount(a));
     return ret;
   }
 }
