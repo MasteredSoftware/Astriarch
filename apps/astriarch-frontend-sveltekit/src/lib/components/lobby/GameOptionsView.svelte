@@ -50,7 +50,7 @@
 		{ value: 1, label: 'Slow' },
 		{ value: 2, label: 'Normal' },
 		{ value: 3, label: 'Fast' },
-		{ value: 4, label: 'Very Fast' },
+		{ value: 4, label: 'Very Fast' }
 	];
 
 	// Player type options
@@ -249,9 +249,7 @@
 					<div class="settings-left">
 						<div class="form-group">
 							<label for="turnTimeLimit" class="form-label">
-								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;"
-									>Game Speed:</Text
-								>
+								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Game Speed:</Text>
 							</label>
 							<select
 								id="turnTimeLimit"

@@ -21,9 +21,9 @@ import { clientGameModel, isGameRunning, gameActions } from '$lib/stores/gameSto
 import type { ClientModelData } from 'astriarch-engine';
 
 // Import multiplayer store types and functionality from the centralized store
-import { 
-	multiplayerGameStore, 
-	type ChatMessage, 
+import {
+	multiplayerGameStore,
+	type ChatMessage,
 	type MultiplayerGameState
 } from '$lib/stores/multiplayerGameStore';
 
@@ -125,7 +125,6 @@ class WebSocketService {
 			}, this.reconnectDelay * this.reconnectAttempts);
 		} else {
 			this.gameStore.addNotification({
-				
 				type: 'error',
 				message: 'Failed to reconnect to server after multiple attempts',
 				timestamp: Date.now()
@@ -186,7 +185,6 @@ class WebSocketService {
 			}
 
 			this.gameStore.addNotification({
-				
 				type: notificationType,
 				message: event.message,
 				timestamp: Date.now()
@@ -264,14 +262,12 @@ class WebSocketService {
 						}
 
 						this.gameStore.addNotification({
-							
 							type: 'success',
 							message: 'Game started!',
 							timestamp: Date.now()
 						});
 					} else {
 						this.gameStore.addNotification({
-							
 							type: 'error',
 							message: message.payload.error || 'Failed to start game',
 							timestamp: Date.now()
@@ -288,14 +284,12 @@ class WebSocketService {
 					this.gameStore.setGameJoined(true);
 					this.gameStore.setCurrentView('game_options');
 					this.gameStore.addNotification({
-						
 						type: 'success',
 						message: `Game created successfully!`,
 						timestamp: Date.now()
 					});
 				} else if (isErrorMessage(message)) {
 					this.gameStore.addNotification({
-						
 						type: 'error',
 						message: message.payload.error || 'Failed to create game',
 						timestamp: Date.now()
@@ -303,7 +297,6 @@ class WebSocketService {
 				} else {
 					console.warn('Unexpected CREATE_GAME payload format:', message.payload);
 					this.gameStore.addNotification({
-						
 						type: 'error',
 						message: 'Unexpected response from server',
 						timestamp: Date.now()
@@ -319,7 +312,6 @@ class WebSocketService {
 						this.gameStore.setCurrentView('game_options');
 					} else {
 						this.gameStore.addNotification({
-							
 							type: 'error',
 							message: message.payload.error || 'Failed to join game',
 							timestamp: Date.now()
@@ -335,7 +327,6 @@ class WebSocketService {
 				console.log('Received CHANGE_GAME_OPTIONS:', message.payload);
 				// The game options are updated and will be reflected in the lobby and game options view
 				this.gameStore.addNotification({
-					
 					type: 'info',
 					message: 'Game options updated',
 					timestamp: Date.now()
@@ -356,7 +347,6 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED:
 				this.gameStore.addNotification({
-					
 					type: 'info',
 					message: `Player activity updated`,
 					timestamp: Date.now()
@@ -365,7 +355,6 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.GAME_OVER:
 				this.gameStore.addNotification({
-					
 					type: 'info',
 					message: `Game has ended`,
 					timestamp: Date.now()
@@ -386,7 +375,6 @@ class WebSocketService {
 					};
 					if (payload.success) {
 						this.gameStore.addNotification({
-							
 							type: 'success',
 							message: 'Build queue updated successfully',
 							timestamp: Date.now()
@@ -398,7 +386,6 @@ class WebSocketService {
 						}
 					} else {
 						this.gameStore.addNotification({
-							
 							type: 'error',
 							message: payload.error || 'Failed to update build queue',
 							timestamp: Date.now()
@@ -415,14 +402,12 @@ class WebSocketService {
 					if ('error' in message.payload) {
 						const errorPayload = message.payload as { error?: string };
 						this.gameStore.addNotification({
-							
 							type: 'error',
 							message: errorPayload.error || 'Failed to send ships',
 							timestamp: Date.now()
 						});
 					} else {
 						this.gameStore.addNotification({
-							
 							type: 'success',
 							message: 'Ships sent successfully',
 							timestamp: Date.now()
@@ -431,7 +416,6 @@ class WebSocketService {
 				} else {
 					// Success case - ships sent successfully
 					this.gameStore.addNotification({
-						
 						type: 'success',
 						message: 'Ships sent successfully',
 						timestamp: Date.now()
@@ -442,7 +426,6 @@ class WebSocketService {
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
 					this.gameStore.addNotification({
-						
 						type: 'error',
 						message: message.payload.error || 'An error occurred',
 						timestamp: Date.now()
@@ -497,7 +480,6 @@ class WebSocketService {
 				this.connect().catch((error) => {
 					console.error('Failed to connect for sending message:', error);
 					this.gameStore.addNotification({
-						
 						type: 'error',
 						message: 'Failed to send message - not connected',
 						timestamp: Date.now()
@@ -570,7 +552,6 @@ class WebSocketService {
 
 		if (!currentGameId) {
 			this.gameStore.addNotification({
-				
 				type: 'error',
 				message: 'No game selected to start',
 				timestamp: Date.now()

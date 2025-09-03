@@ -5,7 +5,7 @@
 	import type { Size } from '../types.js';
 
 	interface Props {
-		label: string;
+		label?: string; // Make label optional since we can use children
 		size?: Size;
 		onclick?: () => void;
 		children?: any;
@@ -35,12 +35,16 @@
 	{onclick}
 	{...restProps}
 >
-	<div
-		class="absolute top-5 left-4 z-10 text-sm leading-7 font-normal tracking-[0.14px] text-white"
-	>
-		{label}
+	<!-- Content area where children will be rendered, or fallback to label -->
+	<div class="absolute top-5 left-4 z-10 text-sm leading-7 font-normal tracking-[0.14px]">
+		{#if children}
+			{@render children()}
+		{:else if label}
+			<span class="text-white">{label}</span>
+		{/if}
 	</div>
 
+	<!-- SVG Background -->
 	<div class="absolute top-0 left-0">
 		{#if size === 'xs' || size === 'sm'}
 			<NotificationSvgSmall id={uniqueId} />
@@ -50,8 +54,4 @@
 			<NotificationSvgLarge id={uniqueId} />
 		{/if}
 	</div>
-
-	{#if children}
-		{@render children()}
-	{/if}
 </div>

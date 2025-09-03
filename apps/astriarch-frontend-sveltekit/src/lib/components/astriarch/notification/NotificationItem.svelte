@@ -13,51 +13,35 @@
 	// Animation state
 	let visible = $state(false);
 	let fadeOut = $state(false);
-	let progress = $state(100); // Progress bar percentage (starts at 100%)
 
-	let progressInterval: number | null = null;
-	let fadeOutTimeout: number | null = null;
-	let dismissTimeout: number | null = null;
+	let fadeOutTimeout: ReturnType<typeof setTimeout> | null = null;
+	let dismissTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	// Initialize component visibility
 	onMount(() => {
 		// Trigger slide-in animation after a small delay
 		setTimeout(() => {
 			visible = true;
-		}, 10);
+		}, 50);
 
-		// If auto-remove is enabled, start progress bar and fade-out animation
+		// If auto-remove is enabled, start fade-out animation
 		if (notification.duration) {
 			const duration = notification.duration || 5000;
-			const updateInterval = 50; // Update every 50ms for smooth animation
-			const steps = duration / updateInterval;
-			let currentStep = 0;
 
-			// Start progress bar countdown
-			progressInterval = setInterval(() => {
-				currentStep++;
-				progress = Math.max(0, 100 - (currentStep / steps) * 100);
-				
-				if (progress <= 0) {
-					if (progressInterval) clearInterval(progressInterval);
-				}
-			}, updateInterval);
-
-			// Start fade-out animation 500ms before removal
-			const fadeOutTime = duration - 500;
+			// Start fade-out animation 800ms before removal for smoother transition
+			const fadeOutTime = duration - 800;
 			fadeOutTimeout = setTimeout(() => {
 				fadeOut = true;
-				
+
 				// Dismiss after fade animation completes
 				dismissTimeout = setTimeout(() => {
 					onDismiss();
-				}, 500);
+				}, 800);
 			}, fadeOutTime);
 		}
 
 		// Cleanup function
 		return () => {
-			if (progressInterval) clearInterval(progressInterval);
 			if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
 			if (dismissTimeout) clearTimeout(dismissTimeout);
 		};
@@ -100,43 +84,34 @@
 	// Handle manual dismiss (clicking on notification)
 	function handleClick() {
 		// Clear any existing timeouts
-		if (progressInterval) clearInterval(progressInterval);
 		if (fadeOutTimeout) clearTimeout(fadeOutTimeout);
 		if (dismissTimeout) clearTimeout(dismissTimeout);
-		
+
 		fadeOut = true;
 		setTimeout(() => {
 			onDismiss();
-		}, 300);
+		}, 500);
 	}
 </script>
 
 <div
-	class="notification-item transition-all duration-500 ease-in-out"
+	class="notification-item transition-all duration-700 ease-in-out"
 	class:visible
 	class:fade-out={fadeOut}
 >
-	<div class="relative">
-		<Notification
-			label="{getNotificationTypeLabel(notification.type)}: {notification.message}"
-			size="md"
-			onclick={handleClick}
-		/>
-		
-		<!-- Progress bar for auto-removing notifications -->
-		{#if notification.duration}
-			<div 
-				class="absolute bottom-0 left-0 h-1 rounded-b transition-all duration-75 ease-linear"
-				style="width: {progress}%; background-color: {getNotificationColor(notification.type)};"
-			></div>
-		{/if}
-	</div>
+	<Notification size="md" onclick={handleClick}>
+		<span class="font-medium" style="color: {getNotificationColor(notification.type)};">
+			{getNotificationTypeLabel(notification.type)}:
+		</span>
+		<span class="ml-1 text-white">{notification.message}</span>
+	</Notification>
 </div>
 
 <style>
 	.notification-item {
 		transform: translateX(100%);
 		opacity: 0;
+		transition: all 0.7s ease-in-out;
 	}
 
 	.notification-item.visible {

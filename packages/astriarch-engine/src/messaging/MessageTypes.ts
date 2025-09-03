@@ -3,7 +3,7 @@
  * Based on the original Astriarch architecture from app.js
  */
 
-import { ServerGameOptions } from "../model";
+import { ServerGameOptions } from '../model';
 
 export enum MESSAGE_TYPE {
   // Connection & System

@@ -1,9 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import type {
-	GameModelData,
-	ClientModelData,
-	IGame
-} from 'astriarch-engine';
+import type { GameModelData, ClientModelData, IGame } from 'astriarch-engine';
 
 // WebSocket multiplayer game state interface
 export interface MultiplayerGameState {

@@ -781,8 +781,8 @@ export class GameController {
   static getGameSummaryFromGameDoc(gameDoc: any): any {
     return {
       _id: gameDoc._id.toString(),
-      name: gameDoc.name || 'Unnamed Game',
-      status: gameDoc.status || 'waiting',
+      name: gameDoc.name || "Unnamed Game",
+      status: gameDoc.status || "waiting",
       players: gameDoc.players || [],
       gameOptions: gameDoc.gameOptions || {
         systemsToGenerate: 4,
@@ -792,13 +792,13 @@ export class GameController {
         quickStart: false,
         gameSpeed: 3,
         opponentOptions: [
-          { name: '', type: -1 }, // Player 2: Open
-          { name: '', type: -2 }, // Player 3: Closed
-          { name: '', type: -2 } // Player 4: Closed
-        ]
+          { name: "", type: -1 }, // Player 2: Open
+          { name: "", type: -2 }, // Player 3: Closed
+          { name: "", type: -2 }, // Player 4: Closed
+        ],
       },
       createdAt: gameDoc.createdAt,
-      lastActivity: gameDoc.lastActivity
+      lastActivity: gameDoc.lastActivity,
     };
   }
 
