@@ -218,19 +218,15 @@ class WebSocketService {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 						clientGameModel.set(updatedClientGameModel);
-						this.gameStore.setGameState(updatedClientGameModel);
 						console.log('Received real-time game state update from server');
 					} else if (message.payload.changes) {
-						this.gameStore.applyChanges(message.payload.changes);
-					} else {
-						this.gameStore.setGameState(message.payload.gameState);
-
+						// TODO: Apply incremental changes if needed
+						console.log('Received incremental changes (not implemented):', message.payload.changes);
+					} else if (message.payload.gameState) {
 						// Fallback - update the main game stores if needed
-						if (message.payload.gameState) {
-							const gameState = message.payload.gameState as ClientModelData;
-							clientGameModel.set(gameState);
-							console.log('Updated client game state with fallback format');
-						}
+						const gameState = message.payload.gameState as ClientModelData;
+						clientGameModel.set(gameState);
+						console.log('Updated client game state with fallback format');
 					}
 				} else {
 					console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
@@ -241,7 +237,6 @@ class WebSocketService {
 				if (isStartGameResponse(message)) {
 					if (message.payload.success) {
 						this.gameStore.setCurrentView('game');
-						this.gameStore.setGameState(message.payload.gameState);
 
 						// Update the main game stores for multiplayer
 						if (message.payload.gameState) {
@@ -380,10 +375,7 @@ class WebSocketService {
 							timestamp: Date.now()
 						});
 
-						// Update game state if provided
-						if (payload.gameData) {
-							this.gameStore.setGameState(payload.gameData);
-						}
+						// Game state updates are handled via GAME_STATE_UPDATE messages
 					} else {
 						this.gameStore.addNotification({
 							type: 'error',

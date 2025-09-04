@@ -14,7 +14,6 @@ export interface MultiplayerGameState {
 	currentView: 'lobby' | 'game_options' | 'game';
 	availableGames: IGame[];
 	selectedGame: IGame | null;
-	gameState: unknown | null;
 	selectedPlanet: string | null;
 	selectedFleet: string | null;
 }
@@ -62,7 +61,6 @@ function createMultiplayerGameStore() {
 		currentView: 'lobby',
 		availableGames: [],
 		selectedGame: null,
-		gameState: null,
 		selectedPlanet: null,
 		selectedFleet: null
 	};
@@ -148,43 +146,6 @@ function createMultiplayerGameStore() {
 				...store,
 				selectedGame: game
 			})),
-
-		// Game state
-		setGameState: (gameState: unknown) =>
-			update((store) => ({
-				...store,
-				gameState
-			})),
-
-		applyChanges: (changes: unknown) =>
-			update((store) => {
-				// Apply incremental changes to game state
-				if (store.gameState && changes) {
-					return {
-						...store,
-						gameState: {
-							...(store.gameState as Record<string, unknown>),
-							...(changes as Record<string, unknown>)
-						}
-					};
-				}
-				return store;
-			}),
-
-		// Game time updates
-		updateGameTime: (gameTime: number) =>
-			update((store) => {
-				if (store.gameState) {
-					return {
-						...store,
-						gameState: {
-							...store.gameState,
-							gameTime
-						}
-					};
-				}
-				return store;
-			}),
 
 		// Selection actions
 		selectPlanet: (planetId: string | null) =>
