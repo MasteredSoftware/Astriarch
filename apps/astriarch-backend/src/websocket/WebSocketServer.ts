@@ -259,16 +259,12 @@ export class WebSocketServer {
         await this.handleChangePlayerName(clientId, message);
         break;
 
-      case MESSAGE_TYPE.END_TURN:
-        await this.handleEndTurn(clientId, message);
+      case MESSAGE_TYPE.SYNC_STATE:
+        await this.handleSyncState(clientId, message);
         break;
 
       case MESSAGE_TYPE.SEND_SHIPS:
         await this.handleSendShips(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.UPDATE_PLANET_START:
-        await this.handleUpdatePlanetStart(clientId, message);
         break;
 
       case MESSAGE_TYPE.UPDATE_PLANET_OPTIONS:
@@ -338,9 +334,8 @@ export class WebSocketServer {
   // Real-time game management methods
   private isGameAction(messageType: MESSAGE_TYPE): boolean {
     const gameActionTypes = [
-      MESSAGE_TYPE.END_TURN,
+      MESSAGE_TYPE.SYNC_STATE, // sync state isn't an action but it is a request for state sync
       MESSAGE_TYPE.SEND_SHIPS,
-      MESSAGE_TYPE.UPDATE_PLANET_START,
       MESSAGE_TYPE.UPDATE_PLANET_OPTIONS,
       MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE,
       MESSAGE_TYPE.CLEAR_WAYPOINT,
@@ -678,10 +673,7 @@ export class WebSocketServer {
       });
 
       if (result.success && result.gameData && result.player) {
-        const serializableClientModel = this.getSerializableClientModelFromSerializableModelForPlayer(
-          result.gameData,
-          result.player.Id,
-        );
+        const clientGameModel = constructClientGameModel(result.gameData, result.player.Id);
 
         // Update client info for resumed game
         client.gameId = gameId;
@@ -699,7 +691,7 @@ export class WebSocketServer {
         this.sendToClient(
           clientId,
           new Message(MESSAGE_TYPE.RESUME_GAME, {
-            gameData: serializableClientModel,
+            clientGameModel,
             playerPosition: result.player.position,
           }),
         );
@@ -775,34 +767,20 @@ export class WebSocketServer {
     logger.warn("handleChangePlayerName not yet implemented");
   }
 
-  private async handleEndTurn(clientId: string, message: IMessage<unknown>): Promise<void> {
+  private async handleSyncState(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
     try {
-      const result = await GameController.endPlayerTurn(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send response back to the client
-      const response = new Message(MESSAGE_TYPE.END_TURN, {
-        allPlayersFinished: result.allPlayersFinished,
-        endOfTurnMessages: result.endOfTurnMessages,
-        destroyedClientPlayers: result.destroyedClientPlayers,
+      // NOTE: this doesn't really even have to do anything since we've already synced state
+      const response = new Message(MESSAGE_TYPE.SYNC_STATE, {
+        success: true,
       });
 
       this.sendToClient(clientId, response);
-
-      // If game has other players, broadcast to them too
-      if (result.game && result.game.players) {
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
-      }
     } catch (error) {
-      logger.error("handleEndTurn error:", error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "End turn failed" }));
+      logger.error("handleSyncState error:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Sync state failed" }));
     }
   }
 
@@ -835,11 +813,6 @@ export class WebSocketServer {
       logger.error("handleSendShips error:", error);
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Send ships failed" }));
     }
-  }
-
-  private async handleUpdatePlanetStart(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.startUpdatePlanet
-    logger.warn("handleUpdatePlanetStart not yet implemented");
   }
 
   private async handleUpdatePlanetOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
@@ -1041,17 +1014,6 @@ export class WebSocketServer {
       }
     }
     return playersBySessionKey;
-  }
-
-  // Client model creation (like old app.js)
-  private getSerializableClientModelFromSerializableModelForPlayer(
-    serializableModel: any,
-    targetPlayerId: string,
-  ): any {
-    // TODO: Implement client model filtering based on old app.js logic
-    // This should filter the full game model to only show what the specific player should see
-    logger.warn("getSerializableClientModelFromSerializableModelForPlayer not yet implemented");
-    return serializableModel; // Temporary return full model
   }
 
   // Broadcasting methods (like old app.js)

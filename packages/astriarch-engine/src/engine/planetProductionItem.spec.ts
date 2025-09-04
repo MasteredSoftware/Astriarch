@@ -20,7 +20,7 @@ describe('PlanetProductionItem validation', () => {
   beforeEach(() => {
     // Create a test player
     player = Player.constructPlayer('test-player', PlayerType.Human, 'Test Player', playerColors[0]);
-    
+
     // Create a test grid with proper options
     const gameOptions = {
       systemsToGenerate: 2,
@@ -32,7 +32,7 @@ describe('PlanetProductionItem validation', () => {
       version: '2.0',
     };
     grid = new Grid(640, 480, gameOptions);
-    
+
     // Get the first hex from the grid
     const testHex = grid.hexes[0];
 
@@ -78,7 +78,7 @@ describe('PlanetProductionItem validation', () => {
     test('should return false when planet has no available slots', () => {
       // Fill up all improvement slots
       planet.builtImprovements[PlanetImprovementType.Farm] = planet.maxImprovements;
-      
+
       const item = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Mine);
       const result = PlanetProductionItem.hasSufficientSlots(planet, item);
       expect(result).toBe(false);
@@ -93,11 +93,11 @@ describe('PlanetProductionItem validation', () => {
     test('should account for queued improvements', () => {
       // Build improvements up to one less than max
       planet.builtImprovements[PlanetImprovementType.Farm] = planet.maxImprovements - 1;
-      
+
       // Add an improvement to the queue
       const queuedItem = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Mine);
       planet.buildQueue.push(queuedItem);
-      
+
       // Try to add another improvement
       const newItem = PlanetProductionItem.constructPlanetImprovement(PlanetImprovementType.Colony);
       const result = PlanetProductionItem.hasSufficientSlots(planet, newItem);
@@ -107,7 +107,7 @@ describe('PlanetProductionItem validation', () => {
     test('should not check slots for starships', () => {
       // Fill up all improvement slots
       planet.builtImprovements[PlanetImprovementType.Farm] = planet.maxImprovements;
-      
+
       const item = PlanetProductionItem.constructStarShipInProduction(StarShipType.Scout);
       const result = PlanetProductionItem.hasSufficientSlots(planet, item);
       expect(result).toBe(true);

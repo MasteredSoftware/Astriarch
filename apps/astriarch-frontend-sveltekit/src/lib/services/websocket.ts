@@ -591,11 +591,6 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload));
 	}
 
-	// Game actions
-	sendGameAction(actionType: string, actionData: unknown) {
-		this.send(new Message(MESSAGE_TYPE.END_TURN, { actionType, actionData }));
-	}
-
 	updatePlanetBuildQueue(
 		gameId: string,
 		planetId: number,

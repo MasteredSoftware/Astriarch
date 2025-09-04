@@ -388,41 +388,6 @@ export class GameController {
     return { success: false, error: "Not implemented" };
   }
 
-  static async endPlayerTurn(sessionId: string, data: any): Promise<GameResult> {
-    try {
-      const game = await ServerGameModel.findById(data.gameId);
-      if (!game) {
-        return { success: false, error: "Game not found" };
-      }
-
-      // Find player by sessionId
-      const player = game.players?.find((p) => p.sessionId === sessionId);
-      if (!player) {
-        return { success: false, error: "Player not found in game" };
-      }
-
-      // TODO: Implement end turn logic using engine
-      // This would involve:
-      // 1. Process player's turn actions
-      // 2. Check if all players have ended turn
-      // 3. If so, advance game state using engine
-      // 4. Return updated game state and any end-of-turn messages
-
-      logger.info(`Player ${player.Id} ended turn for game ${data.gameId}`);
-
-      return {
-        success: true,
-        game,
-        allPlayersFinished: false,
-        endOfTurnMessages: [],
-        destroyedClientPlayers: [],
-      };
-    } catch (error) {
-      logger.error("EndPlayerTurn error:", error);
-      return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
-    }
-  }
-
   static async sendShips(sessionId: string, data: any): Promise<GameResult> {
     try {
       const { gameId, planetIdSource, planetIdDest, data: shipsByType } = data;

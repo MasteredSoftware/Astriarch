@@ -9,7 +9,10 @@
 	import { webSocketService } from '$lib/services/websocket';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
-	import { PlanetProductionItem, CanBuildResult } from 'astriarch-engine/src/engine/planetProductionItem';
+	import {
+		PlanetProductionItem,
+		CanBuildResult
+	} from 'astriarch-engine/src/engine/planetProductionItem';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
 	import {
 		PlanetImprovementType,
@@ -225,40 +228,42 @@
 	});
 
 	// Check if buildings can be built using engine validation
-	$: buildingAvailability = currentSelectedPlanet && isOwnedPlanet && $clientGameModel?.mainPlayer
-		? buildingTypes.map(({ type }) => {
-				const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
-				const validation = PlanetProductionItem.canBuild(
-					currentSelectedPlanet,
-					$clientGameModel.mainPlayer,
-					planets,
-					productionItem
-				);
-				return {
-					type,
-					enabled: validation.result === CanBuildResult.CanBuild,
-					reason: validation.reason
-				};
-		  })
-		: [];
+	$: buildingAvailability =
+		currentSelectedPlanet && isOwnedPlanet && $clientGameModel?.mainPlayer
+			? buildingTypes.map(({ type }) => {
+					const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
+					const validation = PlanetProductionItem.canBuild(
+						currentSelectedPlanet,
+						$clientGameModel.mainPlayer,
+						planets,
+						productionItem
+					);
+					return {
+						type,
+						enabled: validation.result === CanBuildResult.CanBuild,
+						reason: validation.reason
+					};
+				})
+			: [];
 
 	// Check if ships can be built using engine validation
-	$: shipAvailability = currentSelectedPlanet && isOwnedPlanet && $clientGameModel?.mainPlayer
-		? shipTypes.map(({ type }) => {
-				const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
-				const validation = PlanetProductionItem.canBuild(
-					currentSelectedPlanet,
-					$clientGameModel.mainPlayer,
-					planets,
-					productionItem
-				);
-				return {
-					type,
-					enabled: validation.result === CanBuildResult.CanBuild,
-					reason: validation.reason
-				};
-		  })
-		: [];
+	$: shipAvailability =
+		currentSelectedPlanet && isOwnedPlanet && $clientGameModel?.mainPlayer
+			? shipTypes.map(({ type }) => {
+					const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
+					const validation = PlanetProductionItem.canBuild(
+						currentSelectedPlanet,
+						$clientGameModel.mainPlayer,
+						planets,
+						productionItem
+					);
+					return {
+						type,
+						enabled: validation.result === CanBuildResult.CanBuild,
+						reason: validation.reason
+					};
+				})
+			: [];
 </script>
 
 <div class="flex h-full flex-col bg-slate-900/95 backdrop-blur-sm">

@@ -165,7 +165,7 @@ export class Player {
     item: PlanetProductionItemData,
   ): boolean {
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
-    
+
     // Use the new comprehensive validation
     const validationResult = PlanetProductionItem.canBuild(planet, mainPlayer, mainPlayerOwnedPlanets, item);
     const canBuild = validationResult.result === 'can-build';
@@ -180,10 +180,7 @@ export class Player {
    * Checks if a production item can be built, returning only true/false for resource availability
    * This is the original simpler check for backwards compatibility
    */
-  public static canBuildBasedOnResources(
-    clientModel: ClientModelData,
-    item: PlanetProductionItemData,
-  ): boolean {
+  public static canBuildBasedOnResources(clientModel: ClientModelData, item: PlanetProductionItemData): boolean {
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     return PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, item);
   }
@@ -204,10 +201,10 @@ export class Player {
           customShipData = Research.getResearchDataByStarshipHullType(p.starshipTypeLastBuilt, mainPlayer)!;
         }
         const s = PlanetProductionItem.constructStarShipInProduction(p.starshipTypeLastBuilt, customShipData);
-        
+
         // Use basic resource check but add special logic for food shipping
         let canBuild = PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, s);
-        
+
         // Additional check: ensure we have surplus energy after food shipping needs
         if (canBuild && totalResources.energy - s.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
           canBuild = false;
