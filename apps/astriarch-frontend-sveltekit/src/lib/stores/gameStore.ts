@@ -9,10 +9,14 @@ import {
 	Planet,
 	type ClientModelData,
 	type PlanetProductionItemData,
-	ResearchType
+	ResearchType,
+	subscribeToEvents,
+	EventNotificationType,
+	type EventNotification
 } from 'astriarch-engine';
 import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 import type { PlanetData } from 'astriarch-engine/src/model/planet';
+import {requestStateSync} from '$lib/services/websocket';
 
 // Galaxy constants (from engine's GameModel)
 const GALAXY_WIDTH = 621.0;
@@ -270,6 +274,43 @@ clientGameModel.subscribe((cgm) => {
 	} else if (!cgm) {
 		// Clear the grid when no game model
 		gameGrid.set(null);
+	}
+});
+
+// Events that should trigger a server sync when they occur
+const SYNC_TRIGGERING_EVENTS = new Set([
+	EventNotificationType.ShipBuilt,
+	EventNotificationType.ImprovementBuilt,
+	EventNotificationType.ResearchComplete,
+	EventNotificationType.DefendedAgainstAttackingFleet,
+	EventNotificationType.AttackingFleetLost,
+	EventNotificationType.PlanetCaptured,
+	EventNotificationType.PlanetLost,
+	EventNotificationType.PopulationGrowth,
+	EventNotificationType.TradesExecuted
+]);
+
+// Subscribe to engine events when we have a client game model
+let eventSubscriptionActive = false;
+clientGameModel.subscribe((cgm) => {
+	if (cgm && cgm.mainPlayer && !eventSubscriptionActive) {
+		// Subscribe to events for the main player
+		subscribeToEvents(cgm.mainPlayer.id, (playerId: string, events: EventNotification[]) => {
+			console.log(`Received ${events.length} client-side events for player ${playerId}`);
+			
+			// Check if any events require server sync
+			const needsSync = events.some(event => SYNC_TRIGGERING_EVENTS.has(event.type));
+			
+			if (needsSync) {
+				console.log('Events require server sync, requesting state synchronization');
+				requestStateSync();
+			}
+		});
+		eventSubscriptionActive = true;
+		console.log('Subscribed to client-side engine events for player:', cgm.mainPlayer.id);
+	} else if (!cgm && eventSubscriptionActive) {
+		// Reset subscription state when no game model
+		eventSubscriptionActive = false;
 	}
 });
 

@@ -331,7 +331,7 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.EVENT_NOTIFICATIONS: {
 				const eventData = message.payload as IEventNotificationsPayload;
-				this.handleEventNotifications(eventData.events);
+				this.handleEventNotifications(eventData.events as EventNotification[]);
 				break;
 			}
 
@@ -449,6 +449,11 @@ class WebSocketService {
 						}
 					}
 				}
+				break;
+
+			case MESSAGE_TYPE.SYNC_STATE:
+				// Handle server state sync response
+				console.log('Received synchronized game state from server');
 				break;
 
 			default:
@@ -649,6 +654,14 @@ class WebSocketService {
 
 		console.log('Sending SEND_SHIPS with payload:', payload);
 		this.send(new Message(MESSAGE_TYPE.SEND_SHIPS, payload));
+	}
+
+	requestStateSync() {
+		console.log('Requesting server state synchronization');
+		const payload = {
+			gameId: multiplayerGameStore.gameId
+		};
+		this.send(new Message(MESSAGE_TYPE.SYNC_STATE, payload));
 	}
 
 	private startPingInterval() {
