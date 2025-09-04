@@ -222,11 +222,6 @@ class WebSocketService {
 					} else if (message.payload.changes) {
 						// TODO: Apply incremental changes if needed
 						console.log('Received incremental changes (not implemented):', message.payload.changes);
-					} else if (message.payload.gameState) {
-						// Fallback - update the main game stores if needed
-						const gameState = message.payload.gameState as ClientModelData;
-						clientGameModel.set(gameState);
-						console.log('Updated client game state with fallback format');
 					}
 				} else {
 					console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
