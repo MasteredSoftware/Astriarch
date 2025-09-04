@@ -97,19 +97,6 @@
 	function actuallyPSendShips(destinationPlanetId: number) {
 		if (!currentSelectedPlanet || selectedShipIds.size === 0) return;
 
-		// Get game ID from multiplayer store
-		let gameId = '';
-		const unsubscribe = multiplayerGameStore.subscribe((state) => {
-			gameId = state.gameId || '';
-		});
-		unsubscribe();
-
-		// Check if we're in a multiplayer game
-		if (!gameId) {
-			console.error('No game ID available');
-			return;
-		}
-
 		// Group selected ships by type
 		const shipsByType = {
 			scouts: [] as number[],
@@ -138,7 +125,7 @@
 		});
 
 		// Send ships via WebSocket
-		webSocketService.sendShips(gameId, currentSelectedPlanet.id, destinationPlanetId, shipsByType);
+		webSocketService.sendShips(currentSelectedPlanet.id, destinationPlanetId, shipsByType);
 
 		console.log(
 			'Ships sent from planet',

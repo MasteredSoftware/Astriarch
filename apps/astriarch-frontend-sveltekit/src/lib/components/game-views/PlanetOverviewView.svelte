@@ -39,14 +39,13 @@
 
 	// Helper function for worker assignment changes
 	function adjustWorkerAssignment(workerType: CitizenWorkerType, delta: number) {
-		if (!currentSelectedPlanet || !$multiplayerGameStore.gameId) return;
+		if (!currentSelectedPlanet) return;
 
 		const farmerDiff = workerType === CitizenWorkerType.Farmer ? delta : 0;
 		const minerDiff = workerType === CitizenWorkerType.Miner ? delta : 0;
 		const builderDiff = workerType === CitizenWorkerType.Builder ? delta : 0;
 
 		webSocketService.updatePlanetWorkerAssignments(
-			$multiplayerGameStore.gameId,
 			currentSelectedPlanet.id,
 			farmerDiff,
 			minerDiff,
@@ -76,20 +75,8 @@
 		}
 
 		try {
-			// Get the current game ID from multiplayer store
-			let gameId = '';
-			const unsubscribe = multiplayerGameStore.subscribe((state) => {
-				gameId = state.gameId || '';
-			});
-			unsubscribe();
-
-			if (!gameId) {
-				console.error('No game ID available');
-				return;
-			}
-
 			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue(gameId, currentSelectedPlanet.id, 'add', item);
+			webSocketService.updatePlanetBuildQueue(currentSelectedPlanet.id, 'add', item);
 
 			console.log(
 				'Added building to queue:',
@@ -119,20 +106,8 @@
 		}
 
 		try {
-			// Get the current game ID from multiplayer store
-			let gameId = '';
-			const unsubscribe = multiplayerGameStore.subscribe((state) => {
-				gameId = state.gameId || '';
-			});
-			unsubscribe();
-
-			if (!gameId) {
-				console.error('No game ID available');
-				return;
-			}
-
 			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue(gameId, currentSelectedPlanet.id, 'add', item);
+			webSocketService.updatePlanetBuildQueue(currentSelectedPlanet.id, 'add', item);
 
 			console.log('Added ship to queue:', GameTools.starShipTypeToFriendlyName(shipType));
 		} catch (error) {
@@ -156,20 +131,8 @@
 		}
 
 		try {
-			// Get the current game ID from multiplayer store
-			let gameId = '';
-			const unsubscribe = multiplayerGameStore.subscribe((state) => {
-				gameId = state.gameId || '';
-			});
-			unsubscribe();
-
-			if (!gameId) {
-				console.error('No game ID available');
-				return;
-			}
-
 			// Send WebSocket message to remove item from build queue
-			webSocketService.updatePlanetBuildQueue(gameId, currentSelectedPlanet.id, 'remove', {
+			webSocketService.updatePlanetBuildQueue(currentSelectedPlanet.id, 'remove', {
 				index: itemIndex
 			});
 

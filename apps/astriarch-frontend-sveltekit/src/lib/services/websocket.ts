@@ -23,8 +23,7 @@ import type { ClientModelData } from 'astriarch-engine';
 // Import multiplayer store types and functionality from the centralized store
 import {
 	multiplayerGameStore,
-	type ChatMessage,
-	type MultiplayerGameState
+	type ChatMessage
 } from '$lib/stores/multiplayerGameStore';
 
 // Re-export types from engine for convenience
@@ -42,6 +41,20 @@ class WebSocketService {
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
+
+	// Helper method to get current gameId from store
+	private getCurrentGameId(): string | null {
+		return get(this.gameStore).gameId;
+	}
+
+	// Helper method to get current gameId with error handling
+	private requireGameId(): string {
+		const gameId = this.getCurrentGameId();
+		if (!gameId) {
+			throw new Error('No active game session - gameId not found in store');
+		}
+		return gameId;
+	}
 
 	connect(url: string = 'ws://localhost:8001'): Promise<void> {
 		if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
@@ -488,11 +501,7 @@ class WebSocketService {
 
 	createGame(gameOptions: ServerGameOptions) {
 		// Get current player name from store or use a default
-		let currentPlayerName = 'Player';
-		const unsubscribe = this.gameStore.subscribe((state: MultiplayerGameState) => {
-			currentPlayerName = state.playerName || 'Player';
-		});
-		unsubscribe();
+		const currentPlayerName = get(this.gameStore).playerName || 'Player';
 
 		console.log('Creating game with player name:', currentPlayerName);
 
@@ -535,23 +544,18 @@ class WebSocketService {
 	}
 
 	startGame() {
-		// Get current game ID from store
-		let currentGameId = '';
-		const unsubscribe = this.gameStore.subscribe((state: MultiplayerGameState) => {
-			currentGameId = state.gameId || '';
-		});
-		unsubscribe();
-
-		if (!currentGameId) {
+		try {
+			const gameId = this.requireGameId();
+			console.log('Starting game:', gameId);
+			this.send(new Message(MESSAGE_TYPE.START_GAME, { gameId }));
+		} catch (error) {
+			console.error('Failed to start game:', error);
 			this.gameStore.addNotification({
 				type: 'error',
 				message: 'No game selected to start',
 				timestamp: Date.now()
 			});
-			return;
 		}
-
-		this.send(new Message(MESSAGE_TYPE.START_GAME, { gameId: currentGameId }));
 	}
 
 	leaveGame() {
@@ -597,45 +601,62 @@ class WebSocketService {
 	}
 
 	updatePlanetBuildQueue(
-		gameId: string,
 		planetId: number,
 		action: 'add' | 'remove',
 		productionItem?: unknown,
-		index?: number
+		index?: number,
 	) {
-		const payload = {
-			gameId,
-			planetId,
-			action,
-			productionItem,
-			index
-		};
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				planetId,
+				action,
+				productionItem,
+				index
+			};
 
-		console.log('Sending UPDATE_PLANET_BUILD_QUEUE with payload:', payload);
-		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload));
+			console.log('Sending UPDATE_PLANET_BUILD_QUEUE with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload));
+		} catch (error) {
+			console.error('Failed to update planet build queue:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot update build queue - no active game session',
+				timestamp: Date.now()
+			});
+		}
 	}
 
 	updatePlanetWorkerAssignments(
-		gameId: string,
 		planetId: number,
 		farmerDiff: number,
 		minerDiff: number,
 		builderDiff: number
 	) {
-		const payload = {
-			gameId,
-			planetId,
-			farmerDiff,
-			minerDiff,
-			builderDiff
-		};
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				planetId,
+				farmerDiff,
+				minerDiff,
+				builderDiff
+			};
 
-		console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
-		this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+			console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+		} catch (error) {
+			console.error('Failed to update planet worker assignments:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot update worker assignments - no active game session',
+				timestamp: Date.now()
+			});
+		}
 	}
 
 	sendShips(
-		gameId: string,
 		planetIdSource: number,
 		planetIdDest: number,
 		shipsByType: {
@@ -643,25 +664,43 @@ class WebSocketService {
 			destroyers: number[];
 			cruisers: number[];
 			battleships: number[];
-		}
+		},
 	) {
-		const payload = {
-			gameId,
-			planetIdSource,
-			planetIdDest,
-			data: shipsByType
-		};
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				planetIdSource,
+				planetIdDest,
+				data: shipsByType
+			};
 
-		console.log('Sending SEND_SHIPS with payload:', payload);
-		this.send(new Message(MESSAGE_TYPE.SEND_SHIPS, payload));
+			console.log('Sending SEND_SHIPS with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.SEND_SHIPS, payload));
+		} catch (error) {
+			console.error('Failed to send ships:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot send ships - no active game session',
+				timestamp: Date.now()
+			});
+		}
 	}
 
 	requestStateSync() {
-		console.log('Requesting server state synchronization');
-		const payload = {
-			gameId: multiplayerGameStore.gameId
-		};
-		this.send(new Message(MESSAGE_TYPE.SYNC_STATE, payload));
+		try {
+			const gameId = this.requireGameId();
+			console.log('Requesting server state synchronization for game:', gameId);
+			const payload = { gameId };
+			this.send(new Message(MESSAGE_TYPE.SYNC_STATE, payload));
+		} catch (error) {
+			console.error('Failed to request state sync:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot sync state - no active game session',
+				timestamp: Date.now()
+			});
+		}
 	}
 
 	private startPingInterval() {

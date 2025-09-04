@@ -16,7 +16,7 @@ import {
 } from 'astriarch-engine';
 import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 import type { PlanetData } from 'astriarch-engine/src/model/planet';
-import {requestStateSync} from '$lib/services/websocket';
+import { webSocketService } from '$lib/services/websocket';
 
 // Galaxy constants (from engine's GameModel)
 const GALAXY_WIDTH = 621.0;
@@ -296,14 +296,16 @@ clientGameModel.subscribe((cgm) => {
 	if (cgm && cgm.mainPlayer && !eventSubscriptionActive) {
 		// Subscribe to events for the main player
 		subscribeToEvents(cgm.mainPlayer.id, (playerId: string, events: EventNotification[]) => {
-			console.log(`Received ${events.length} client-side events for player ${playerId}`);
+			if(events.length) {
+				console.log(`Received ${events.length} client-side events for player ${playerId}`);
+			}
 			
 			// Check if any events require server sync
 			const needsSync = events.some(event => SYNC_TRIGGERING_EVENTS.has(event.type));
 			
 			if (needsSync) {
 				console.log('Events require server sync, requesting state synchronization');
-				requestStateSync();
+				webSocketService.requestStateSync();
 			}
 		});
 		eventSubscriptionActive = true;
