@@ -296,10 +296,6 @@ clientGameModel.subscribe((cgm) => {
 	if (cgm && cgm.mainPlayer && !eventSubscriptionActive) {
 		// Subscribe to events for the main player
 		subscribeToEvents(cgm.mainPlayer.id, (playerId: string, events: EventNotification[]) => {
-			if(events.length) {
-				console.log(`Received ${events.length} client-side events for player ${playerId}`);
-			}
-			
 			// Check if any events require server sync
 			const needsSync = events.some(event => SYNC_TRIGGERING_EVENTS.has(event.type));
 			
