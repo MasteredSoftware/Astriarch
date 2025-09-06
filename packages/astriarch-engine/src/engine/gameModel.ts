@@ -182,14 +182,16 @@ export class GameModel {
           initialPlanetOwner.ownedPlanetIds.push(p.id);
         }
 
-        if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant && initialPlanetOwner) {
-          Player.setPlanetExplored(initialPlanetOwner, p, 0, undefined);
-          p.resources.ore *= 2;
-          p.resources.iridium *= 2;
-          p.builtImprovements[PlanetImprovementType.Farm] = 3;
-          p.builtImprovements[PlanetImprovementType.Colony] = 1;
-          p.builtImprovements[PlanetImprovementType.Factory] = 1;
-          p.planetaryFleet.starships.push(Fleet.generateStarship(StarShipType.Scout));
+        if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant) {
+          Player.setPlanetExplored(players[assignedPlayerIndex], p, 0, undefined);
+          if(initialPlanetOwner) {
+            p.resources.ore *= 2;
+            p.resources.iridium *= 2;
+            p.builtImprovements[PlanetImprovementType.Farm] = 3;
+            p.builtImprovements[PlanetImprovementType.Colony] = 1;
+            p.builtImprovements[PlanetImprovementType.Factory] = 1;
+            p.planetaryFleet.starships.push(Fleet.generateStarship(StarShipType.Scout));
+          }
         }
 
         planets.push(p);
