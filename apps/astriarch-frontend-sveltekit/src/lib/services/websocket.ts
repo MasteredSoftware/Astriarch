@@ -643,6 +643,7 @@ class WebSocketService {
 
 	resumeGame(gameId: string) {
 		console.log('Resuming game:', gameId);
+		this.gameStore.setGameId(gameId);
 		this.send(new Message(MESSAGE_TYPE.RESUME_GAME, { gameId }));
 	}
 
