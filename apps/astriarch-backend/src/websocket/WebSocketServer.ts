@@ -141,17 +141,40 @@ export class WebSocketServer {
   }
 
   private extractSessionId(req: any): string | null {
-    // Extract session ID from cookies similar to old app.js
+    // Extract session ID from signed cookies similar to old app.js
     try {
       if (req.headers.cookie) {
-        const cookies = req.headers.cookie.split(";").reduce((acc: any, cookie: string) => {
-          const [key, value] = cookie.trim().split("=");
-          acc[key] = value;
-          return acc;
-        }, {});
+        logger.info("Raw cookies received:", req.headers.cookie);
 
-        // Look for connect.sid cookie (matches old implementation)
-        return cookies["connect.sid"] || null;
+        const cookie = require("cookie");
+        const signature = require("cookie-signature");
+        const config = require("config");
+        const cookieSecret = config.get("cookie.secret") as string;
+
+        // Parse the cookies first
+        const cookies = cookie.parse(req.headers.cookie);
+        logger.info("Parsed cookies:", cookies);
+
+        // Get the signed connect.sid cookie
+        const signedSessionCookie = cookies["connect.sid"];
+        if (signedSessionCookie) {
+          logger.info("Signed cookie found:", signedSessionCookie);
+
+          // Unsign the cookie using the same secret
+          if (signedSessionCookie.startsWith("s:")) {
+            try {
+              const unsigned = signature.unsign(signedSessionCookie.slice(2), cookieSecret);
+              logger.info("Unsigned session ID:", unsigned);
+              return unsigned;
+            } catch (error) {
+              logger.warn("Failed to unsign cookie:", error);
+            }
+          }
+        }
+
+        logger.info("No valid signed session cookie found");
+      } else {
+        logger.info("No cookies in WebSocket request headers");
       }
     } catch (error) {
       logger.warn("Error extracting session ID:", error);
@@ -488,6 +511,7 @@ export class WebSocketServer {
         gameOptions: game.gameOptions,
         name: game.name,
         playerPosition: 0,
+        sessionId: client.sessionId, // Include session ID
       };
 
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, createResponse));
@@ -527,6 +551,7 @@ export class WebSocketServer {
           name: result.game.name,
           playerPosition: result.playerPosition,
           _id: result.game._id,
+          sessionId: client.sessionId, // Include session ID
         };
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.JOIN_GAME, joinResponse));
@@ -693,6 +718,7 @@ export class WebSocketServer {
           new Message(MESSAGE_TYPE.RESUME_GAME, {
             clientGameModel,
             playerPosition: result.player.position,
+            sessionId: client.sessionId, // Include session ID
           }),
         );
       } else {
@@ -954,8 +980,11 @@ export class WebSocketServer {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    // Always send a basic PONG response
-    let pongPayload: any = { timestamp: new Date().toISOString() };
+    // Always send a basic PONG response with session information
+    let pongPayload: any = {
+      timestamp: new Date().toISOString(),
+      sessionId: client.sessionId, // Include session ID so client knows its own session
+    };
 
     // If client is in an active game, include their current game state
     if (client.gameId && client.playerId) {

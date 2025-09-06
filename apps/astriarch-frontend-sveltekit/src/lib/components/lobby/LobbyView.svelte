@@ -86,6 +86,12 @@
 		webSocketService.joinGame(game._id);
 	}
 
+	function handleResumeGame(event: CustomEvent<IGame>) {
+		const game = event.detail;
+		console.log('Resuming game:', game._id);
+		webSocketService.resumeGame(game._id);
+	}
+
 	function handleCreateGame() {
 		console.log('Create game button clicked - creating game directly');
 		console.log('Connected:', isConnected);
@@ -178,6 +184,7 @@
 							game={selectedGame}
 							on:joinGame={handleJoinGame}
 							on:spectateGame={handleSpectateGame}
+							on:resumeGame={handleResumeGame}
 						/>
 					</div>
 				</div>

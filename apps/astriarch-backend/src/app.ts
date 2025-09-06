@@ -57,10 +57,11 @@ app.use(
       touchAfter: 24 * 3600, // lazy session update
     }),
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true, // Changed to true to force session creation
     cookie: {
       maxAge: 6 * 30 * 24 * 60 * 60 * 1000, // 6 months
       secure: process.env.NODE_ENV === "production",
+      httpOnly: true, // Add httpOnly for security
     },
   }),
 );

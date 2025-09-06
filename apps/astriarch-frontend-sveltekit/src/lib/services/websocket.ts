@@ -21,10 +21,7 @@ import { clientGameModel, isGameRunning, gameActions } from '$lib/stores/gameSto
 import type { ClientModelData } from 'astriarch-engine';
 
 // Import multiplayer store types and functionality from the centralized store
-import {
-	multiplayerGameStore,
-	type ChatMessage
-} from '$lib/stores/multiplayerGameStore';
+import { multiplayerGameStore, type ChatMessage } from '$lib/stores/multiplayerGameStore';
 
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
@@ -56,6 +53,26 @@ class WebSocketService {
 		return gameId;
 	}
 
+	// Helper method to establish session via HTTP before WebSocket connection
+	private async establishSession(): Promise<void> {
+		try {
+			// Make a simple HTTP request to the health endpoint to establish a session
+			// This will create a session and set the connect.sid cookie
+			const response = await fetch('http://localhost:8001/api/health', {
+				method: 'GET',
+				credentials: 'include' // Important: include cookies in the request
+			});
+
+			if (!response.ok) {
+				console.warn('Failed to establish session via health check:', response.status);
+			} else {
+				console.log('Session established via HTTP health check');
+			}
+		} catch (error) {
+			console.warn('Error establishing session:', error);
+		}
+	}
+
 	connect(url: string = 'ws://localhost:8001'): Promise<void> {
 		if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
 			return Promise.resolve();
@@ -63,64 +80,67 @@ class WebSocketService {
 
 		this.isConnecting = true;
 
-		return new Promise((resolve, reject) => {
-			try {
-				this.ws = new WebSocket(url);
+		// First establish a session via HTTP, then connect WebSocket
+		return this.establishSession().then(() => {
+			return new Promise<void>((resolve, reject) => {
+				try {
+					this.ws = new WebSocket(url);
 
-				this.ws.onopen = () => {
-					console.log('WebSocket connected');
-					this.isConnecting = false;
-					this.reconnectAttempts = 0;
-					this.gameStore.setConnected(true);
+					this.ws.onopen = () => {
+						console.log('WebSocket connected');
+						this.isConnecting = false;
+						this.reconnectAttempts = 0;
+						this.gameStore.setConnected(true);
 
-					// Start the ping interval to keep the session alive
-					this.startPingInterval();
+						// Start the ping interval to keep the session alive
+						this.startPingInterval();
 
-					// Set a default player name if none exists
-					this.gameStore.setPlayerName('Player');
+						// Set a default player name if none exists
+						this.gameStore.setPlayerName('Player');
 
-					// Send queued messages
-					while (this.messageQueue.length > 0) {
-						const message = this.messageQueue.shift();
-						if (message) {
-							this.send(message);
+						// Send queued messages
+						while (this.messageQueue.length > 0) {
+							const message = this.messageQueue.shift();
+							if (message) {
+								this.send(message);
+							}
 						}
-					}
 
-					resolve();
-				};
+						resolve();
+					};
 
-				this.ws.onmessage = (event) => {
-					try {
-						const message: IMessage<unknown> = JSON.parse(event.data);
-						this.handleMessage(message);
-					} catch (error) {
-						console.error('Failed to parse WebSocket message:', error);
-					}
-				};
+					this.ws.onmessage = (event) => {
+						try {
+							const message: IMessage<unknown> = JSON.parse(event.data);
+							this.handleMessage(message);
+						} catch (error) {
+							console.error('Failed to parse WebSocket message:', error);
+						}
+					};
 
-				this.ws.onclose = () => {
-					console.log('WebSocket disconnected');
+					this.ws.onclose = () => {
+						console.log('WebSocket disconnected');
+						this.isConnecting = false;
+						this.gameStore.setConnected(false);
+						this.stopPingInterval();
+						this.attemptReconnect();
+					};
+
+					this.ws.onerror = (error) => {
+						console.error('WebSocket error:', error);
+						this.isConnecting = false;
+						this.gameStore.addNotification({
+							type: 'error',
+							message: 'WebSocket connection error',
+							timestamp: Date.now()
+						});
+						reject(error);
+					};
+				} catch (error) {
 					this.isConnecting = false;
-					this.gameStore.setConnected(false);
-					this.stopPingInterval();
-					this.attemptReconnect();
-				};
-
-				this.ws.onerror = (error) => {
-					console.error('WebSocket error:', error);
-					this.isConnecting = false;
-					this.gameStore.addNotification({
-						type: 'error',
-						message: 'WebSocket connection error',
-						timestamp: Date.now()
-					});
 					reject(error);
-				};
-			} catch (error) {
-				this.isConnecting = false;
-				reject(error);
-			}
+				}
+			});
 		});
 	}
 
@@ -281,11 +301,62 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.RESUME_GAME:
+				// Handle resume game response - similar to START_GAME but for existing games
+				if (message.payload && typeof message.payload === 'object') {
+					const payload = message.payload as {
+						clientGameModel?: ClientModelData;
+						playerPosition?: number;
+						sessionId?: string;
+					};
+					if (payload.clientGameModel) {
+						this.gameStore.setCurrentView('game');
+
+						// Store session ID if provided
+						if (payload.sessionId && typeof payload.sessionId === 'string') {
+							this.gameStore.setSessionId(payload.sessionId);
+						}
+
+						// Update the main game stores for multiplayer
+						const clientGameState = payload.clientGameModel as ClientModelData;
+						clientGameModel.set(clientGameState);
+						isGameRunning.set(true);
+						gameActions.selectHomePlanet();
+
+						// Resume the client-side game loop
+						gameActions.resumeGame();
+
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Game resumed successfully!',
+							timestamp: Date.now()
+						});
+
+						console.log('Game resumed successfully! Updated client game state.');
+					} else {
+						this.gameStore.addNotification({
+							type: 'error',
+							message: 'Failed to resume game - invalid response',
+							timestamp: Date.now()
+						});
+					}
+				} else {
+					console.warn('Unexpected RESUME_GAME payload format:', message.payload);
+				}
+				break;
+
 			case MESSAGE_TYPE.CREATE_GAME:
 				if (isCreateGameResponse(message)) {
 					this.gameStore.setGameId(message.payload.gameId);
 					this.gameStore.setGameJoined(true);
 					this.gameStore.setCurrentView('game_options');
+
+					// Store session ID if provided
+					const payload = message.payload as unknown as Record<string, unknown>;
+					if (payload.sessionId && typeof payload.sessionId === 'string') {
+						this.gameStore.setSessionId(payload.sessionId);
+					}
+
 					this.gameStore.addNotification({
 						type: 'success',
 						message: `Game created successfully!`,
@@ -313,6 +384,12 @@ class WebSocketService {
 						this.gameStore.setGameId(message.payload.gameId || '');
 						this.gameStore.setGameJoined(true);
 						this.gameStore.setCurrentView('game_options');
+
+						// Store session ID if provided
+						const payload = message.payload as unknown as Record<string, unknown>;
+						if (payload.sessionId && typeof payload.sessionId === 'string') {
+							this.gameStore.setSessionId(payload.sessionId);
+						}
 					} else {
 						this.gameStore.addNotification({
 							type: 'error',
@@ -439,9 +516,15 @@ class WebSocketService {
 				// Server responded to our ping - session is alive
 				console.log('Received pong from server');
 
-				// Check if PONG includes updated game state
+				// Check if PONG includes session ID or updated game state
 				if (message.payload && typeof message.payload === 'object') {
 					const payload = message.payload as Record<string, unknown>;
+
+					// Store session ID if provided
+					if (payload.sessionId && typeof payload.sessionId === 'string') {
+						this.gameStore.setSessionId(payload.sessionId);
+						console.log('Session ID stored:', payload.sessionId);
+					}
 
 					if (payload.clientGameModel) {
 						console.log('PONG included updated game state, updating client model');
@@ -558,6 +641,11 @@ class WebSocketService {
 		}
 	}
 
+	resumeGame(gameId: string) {
+		console.log('Resuming game:', gameId);
+		this.send(new Message(MESSAGE_TYPE.RESUME_GAME, { gameId }));
+	}
+
 	leaveGame() {
 		this.send(new Message(MESSAGE_TYPE.EXIT_RESIGN, {}));
 	}
@@ -604,7 +692,7 @@ class WebSocketService {
 		planetId: number,
 		action: 'add' | 'remove',
 		productionItem?: unknown,
-		index?: number,
+		index?: number
 	) {
 		try {
 			const gameId = this.requireGameId();
@@ -664,7 +752,7 @@ class WebSocketService {
 			destroyers: number[];
 			cruisers: number[];
 			battleships: number[];
-		},
+		}
 	) {
 		try {
 			const gameId = this.requireGameId();

@@ -2,12 +2,15 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text, Button } from '$lib/components/astriarch';
 	import type { IGame } from '$lib/services/websocket';
+	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+	import { get } from 'svelte/store';
 
 	export let game: IGame | null = null;
 
 	const dispatch = createEventDispatcher<{
 		joinGame: IGame;
 		spectateGame: IGame;
+		resumeGame: IGame;
 	}>();
 
 	function handleJoinGame() {
@@ -19,6 +22,12 @@
 	function handleSpectateGame() {
 		if (game) {
 			dispatch('spectateGame', game);
+		}
+	}
+
+	function handleResumeGame() {
+		if (game) {
+			dispatch('resumeGame', game);
 		}
 	}
 
@@ -54,6 +63,24 @@
 
 	function canSpectateGame(game: IGame): boolean {
 		return game.status === 'in_progress';
+	}
+
+	function canResumeGame(game: IGame): boolean {
+		// Can resume if the game is in progress and the current user is a player in this game
+		if (game.status !== 'in_progress') return false;
+
+		// First, check if we're currently in this specific game
+		const currentGameId = get(multiplayerGameStore).gameId;
+		if (currentGameId === game._id) {
+			return true;
+		}
+
+		// Otherwise, check if our session ID matches any player in the game
+		const currentSessionId = get(multiplayerGameStore).sessionId;
+		if (!currentSessionId) return false;
+
+		// Check if the current user's session ID matches any player in the game
+		return game.players?.some((player) => player.sessionId === currentSessionId) || false;
 	}
 </script>
 
@@ -189,16 +216,25 @@
 				{#if canJoinGame(game)}
 					<Button
 						style="background: linear-gradient(135deg, #00FFFF, #0080FF); color: #000000; font-weight: 600; width: 100%; margin-bottom: 0.5rem;"
-						on:click={handleJoinGame}
+						onclick={handleJoinGame}
 					>
 						Join Game
+					</Button>
+				{/if}
+
+				{#if canResumeGame(game)}
+					<Button
+						style="background: linear-gradient(135deg, #10B981, #059669); color: #FFFFFF; font-weight: 600; width: 100%; margin-bottom: 0.5rem;"
+						onclick={handleResumeGame}
+					>
+						Resume Game
 					</Button>
 				{/if}
 
 				{#if canSpectateGame(game)}
 					<Button
 						style="background: rgba(0, 255, 255, 0.1); border: 1px solid #00FFFF; color: #00FFFF; width: 100%;"
-						on:click={handleSpectateGame}
+						onclick={handleSpectateGame}
 					>
 						Spectate Game
 					</Button>

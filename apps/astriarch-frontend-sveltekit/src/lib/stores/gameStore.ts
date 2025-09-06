@@ -297,8 +297,8 @@ clientGameModel.subscribe((cgm) => {
 		// Subscribe to events for the main player
 		subscribeToEvents(cgm.mainPlayer.id, (playerId: string, events: EventNotification[]) => {
 			// Check if any events require server sync
-			const needsSync = events.some(event => SYNC_TRIGGERING_EVENTS.has(event.type));
-			
+			const needsSync = events.some((event) => SYNC_TRIGGERING_EVENTS.has(event.type));
+
 			if (needsSync) {
 				console.log('Events require server sync, requesting state synchronization');
 				webSocketService.requestStateSync();
