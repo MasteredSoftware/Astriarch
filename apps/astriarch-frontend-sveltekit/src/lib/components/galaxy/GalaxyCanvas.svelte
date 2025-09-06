@@ -15,7 +15,7 @@
 	let uiLayer: Konva.Layer;
 
 	let drawnPlanets: Map<number, DrawnPlanet> = new Map();
-	let drawnFleets: Map<number, DrawnFleet> = new Map();
+	let drawnFleets: Map<string, DrawnFleet> = new Map();
 	let currentGrid: Grid | null = null;
 
 	let animationFrameId: number;
@@ -305,33 +305,32 @@
 	}
 
 	function updateFleets(gameModel: ClientModelData) {
-		// Clear existing fleets that are no longer active
-		const activeFleetIds = new Set<number>();
+		// Clear all existing fleets and remake them from current game state
+		// This matches the approach used in the old system and ensures animations 
+		// continue properly after game state refreshes
+		for (const drawnFleet of drawnFleets.values()) {
+			drawnFleet.group.remove();
+			drawnFleet.destroyFleet();
+		}
+		drawnFleets.clear();
 
-		// Update fleets in transit for main player
+		// Create drawn fleets for all fleets in transit
 		gameModel.mainPlayer.fleetsInTransit.forEach((fleet, index) => {
-			const fleetId = index; // Use index as ID for now
-			activeFleetIds.add(fleetId);
-
-			let drawnFleet = drawnFleets.get(fleetId);
-
-			if (!drawnFleet) {
-				drawnFleet = new DrawnFleet(fleet, gameModel);
-				drawnFleets.set(fleetId, drawnFleet);
-				fleetLayer.add(drawnFleet.group);
-			}
-
-			drawnFleet.update(gameModel);
+			const fleetId = index.toString(); // Simple index-based ID
+			const drawnFleet = new DrawnFleet(fleet, gameModel);
+			drawnFleets.set(fleetId, drawnFleet);
+			fleetLayer.add(drawnFleet.group);
 		});
 
-		// Remove fleets that are no longer active
-		for (const [fleetId, drawnFleet] of drawnFleets.entries()) {
-			if (!activeFleetIds.has(fleetId)) {
-				drawnFleet.group.remove();
-				drawnFleet.destroyFleet();
-				drawnFleets.delete(fleetId);
-			}
-		}
+		// TODO: Add support for outgoing fleets from owned planets
+		// for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
+		//     planet.outgoingFleets.forEach((fleet, index) => {
+		//         const fleetId = `outgoing_${planet.id}_${index}`;
+		//         const drawnFleet = new DrawnFleet(fleet, gameModel);
+		//         drawnFleets.set(fleetId, drawnFleet);
+		//         fleetLayer.add(drawnFleet.group);
+		//     });
+		// }
 	}
 
 	// Handle galaxy interaction
