@@ -252,8 +252,13 @@ function startGameLoop() {
 
 		if (cgm && grid) {
 			// Advance the client game model time continuously
-			const updatedClientGameModel = advanceClientGameModelTime(cgm, grid);
-			clientGameModel.set(updatedClientGameModel);
+			const updatedClientModelData = advanceClientGameModelTime(cgm, grid);
+			clientGameModel.set(updatedClientModelData.clientGameModel);
+			if(updatedClientModelData.fleetsArrivingOnUnownedPlanets.length > 0) {
+				// request data sync with server
+				console.log('Fleets arriving on unowned planets, requesting state synchronization');
+				webSocketService.requestStateSync();
+			}
 		}
 
 		animationFrameId = requestAnimationFrame(gameLoop);

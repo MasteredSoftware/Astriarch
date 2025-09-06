@@ -77,7 +77,7 @@ export class GameController {
     Events.publish();
   }
 
-  public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid) {
+  public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid): FleetData[] {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
     const data: AdvanceGameClockForPlayerData = {
@@ -86,11 +86,12 @@ export class GameController {
       currentCycle,
       grid,
     };
-    Player.advanceGameClockForPlayer(data);
+    const fleetsArrivingOnUnownedPlanets = Player.advanceGameClockForPlayer(data);
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;
     Events.publish();
+    return fleetsArrivingOnUnownedPlanets;
   }
 
   //TODO: this is problematic right now if multiple players show up to battle at a 3rd players planet

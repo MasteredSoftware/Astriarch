@@ -139,10 +139,10 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
   return gameModel;
 };
 
-export const advanceClientGameModelTime = (clientGameModel: ClientModelData, grid: Grid) => {
-  GameController.advanceClientGameClock(clientGameModel, grid);
+export const advanceClientGameModelTime = (clientGameModel: ClientModelData, grid: Grid): {clientGameModel: ClientModelData, fleetsArrivingOnUnownedPlanets: FleetData[]} => {
+  const fleetsArrivingOnUnownedPlanets = GameController.advanceClientGameClock(clientGameModel, grid);
 
-  return clientGameModel;
+  return { clientGameModel, fleetsArrivingOnUnownedPlanets };
 };
 
 export const subscribeToEvents = (playerId: string, callback: Subscription) => {

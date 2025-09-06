@@ -75,7 +75,7 @@ export class Player {
     p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
   }
 
-  public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData) {
+  public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): FleetData[] {
     // addLastStarShipToQueueOnPlanets
 
     Player.generatePlayerResources(data);
