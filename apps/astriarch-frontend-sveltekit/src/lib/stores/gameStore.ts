@@ -254,7 +254,7 @@ function startGameLoop() {
 			// Advance the client game model time continuously
 			const updatedClientModelData = advanceClientGameModelTime(cgm, grid);
 			clientGameModel.set(updatedClientModelData.clientGameModel);
-			if(updatedClientModelData.fleetsArrivingOnUnownedPlanets.length > 0) {
+			if (updatedClientModelData.fleetsArrivingOnUnownedPlanets.length > 0) {
 				// request data sync with server
 				console.log('Fleets arriving on unowned planets, requesting state synchronization');
 				webSocketService.requestStateSync();

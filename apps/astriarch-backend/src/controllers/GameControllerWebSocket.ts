@@ -78,15 +78,13 @@ export class GameController {
             $and: [
               { status: "in_progress" }, // Started but not ended
               { "players.sessionId": options.sessionId }, // Current player is in this game
-              { "players.destroyed": { $ne: true } } // Player is not destroyed
-            ]
-          }
-        ]
+              { "players.destroyed": { $ne: true } }, // Player is not destroyed
+            ],
+          },
+        ],
       };
 
-      const games = await ServerGameModel.find(query)
-        .sort({ lastActivity: -1 })
-        .limit(20);
+      const games = await ServerGameModel.find(query).sort({ lastActivity: -1 }).limit(20);
 
       // Transform to match old app.js format - clean up docs, don't send sessionId to client
       return games.map((game) => this.getGameSummaryFromGameDoc(game));
@@ -787,9 +785,9 @@ export class GameController {
     // This matches the old game_controller.js logic (line 280-283)
     if (gameDoc.players) {
       for (const player of gameDoc.players) {
-        summary.players.push({ 
-          name: player.name, 
-          position: player.position 
+        summary.players.push({
+          name: player.name,
+          position: player.position,
         });
       }
     }

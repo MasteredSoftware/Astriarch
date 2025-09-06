@@ -184,7 +184,7 @@ export class GameModel {
 
         if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant) {
           Player.setPlanetExplored(players[assignedPlayerIndex], p, 0, undefined);
-          if(initialPlanetOwner) {
+          if (initialPlanetOwner) {
             p.resources.ore *= 2;
             p.resources.iridium *= 2;
             p.builtImprovements[PlanetImprovementType.Farm] = 3;

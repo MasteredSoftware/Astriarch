@@ -55,7 +55,11 @@
 	function canJoinGame(game: IGame): boolean {
 		// Can join if the game is waiting for players
 		// The server already filters to only show games we can join
-		return game.status === 'waiting' || game.status === 'waiting_for_players' || (game as any).started === false;
+		return (
+			game.status === 'waiting' ||
+			game.status === 'waiting_for_players' ||
+			(game as any).started === false
+		);
 	}
 
 	function canSpectateGame(game: IGame): boolean {
