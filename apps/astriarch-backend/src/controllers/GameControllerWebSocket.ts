@@ -65,16 +65,30 @@ export class GameController {
 
   /**
    * List games available in the lobby
+   * Same logic as old game: find any game that is not started, or the current player is already in
    */
   static async listLobbyGames(options: { sessionId: string }): Promise<any[]> {
     try {
-      const games = await ServerGameModel.find({
-        status: { $in: ["waiting_for_players", "in_progress"] },
-      })
-        .sort({ createdAt: -1 })
+      // Find any game that is not started, or the current player is already in
+      // This matches the old game_controller.js query exactly
+      const query = {
+        $or: [
+          { status: "waiting_for_players" }, // Not started games (anyone can join)
+          {
+            $and: [
+              { status: "in_progress" }, // Started but not ended
+              { "players.sessionId": options.sessionId }, // Current player is in this game
+              { "players.destroyed": { $ne: true } } // Player is not destroyed
+            ]
+          }
+        ]
+      };
+
+      const games = await ServerGameModel.find(query)
+        .sort({ lastActivity: -1 })
         .limit(20);
 
-      // Transform to match old app.js format
+      // Transform to match old app.js format - clean up docs, don't send sessionId to client
       return games.map((game) => this.getGameSummaryFromGameDoc(game));
     } catch (error) {
       logger.error("Error listing lobby games:", error);
@@ -742,13 +756,14 @@ export class GameController {
   /**
    * Converts a game document from the database to a game summary for the frontend
    * This matches the IGame interface expected by the frontend
+   * Like the old game, we clean up the docs - we don't need to send everything to the client
    */
   static getGameSummaryFromGameDoc(gameDoc: any): any {
-    return {
+    const summary = {
       _id: gameDoc._id.toString(),
       name: gameDoc.name || "Unnamed Game",
       status: gameDoc.status || "waiting",
-      players: gameDoc.players || [],
+      players: [] as any[], // Will be populated below without sessionId
       gameOptions: gameDoc.gameOptions || {
         systemsToGenerate: 4,
         planetsPerSystem: 4,
@@ -764,7 +779,22 @@ export class GameController {
       },
       createdAt: gameDoc.createdAt,
       lastActivity: gameDoc.lastActivity,
+      started: gameDoc.status === "in_progress",
+      ended: gameDoc.status === "completed",
     };
+
+    // Clean up player data - only send name and position, NOT sessionId
+    // This matches the old game_controller.js logic (line 280-283)
+    if (gameDoc.players) {
+      for (const player of gameDoc.players) {
+        summary.players.push({ 
+          name: player.name, 
+          position: player.position 
+        });
+      }
+    }
+
+    return summary;
   }
 
   // ==========================================

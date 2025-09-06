@@ -22,7 +22,6 @@ router.get("/", (req: Request, res: Response) => {
     version: process.env.npm_package_version || "2.0.0",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    sessionId: req.sessionID, // Include session ID for debugging
   };
 
   res.json(response);

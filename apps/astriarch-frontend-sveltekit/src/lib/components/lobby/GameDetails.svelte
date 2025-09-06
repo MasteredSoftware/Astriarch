@@ -2,8 +2,6 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text, Button } from '$lib/components/astriarch';
 	import type { IGame } from '$lib/services/websocket';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
-	import { get } from 'svelte/store';
 
 	export let game: IGame | null = null;
 
@@ -55,10 +53,9 @@
 	}
 
 	function canJoinGame(game: IGame): boolean {
-		if (game.status !== 'waiting') return false;
-		const currentPlayers = game.players?.length || 0;
-		const maxPlayers = game.gameOptions?.maxPlayers || 4;
-		return currentPlayers < maxPlayers;
+		// Can join if the game is waiting for players
+		// The server already filters to only show games we can join
+		return game.status === 'waiting' || game.status === 'waiting_for_players' || (game as any).started === false;
 	}
 
 	function canSpectateGame(game: IGame): boolean {
@@ -66,21 +63,9 @@
 	}
 
 	function canResumeGame(game: IGame): boolean {
-		// Can resume if the game is in progress and the current user is a player in this game
-		if (game.status !== 'in_progress') return false;
-
-		// First, check if we're currently in this specific game
-		const currentGameId = get(multiplayerGameStore).gameId;
-		if (currentGameId === game._id) {
-			return true;
-		}
-
-		// Otherwise, check if our session ID matches any player in the game
-		const currentSessionId = get(multiplayerGameStore).sessionId;
-		if (!currentSessionId) return false;
-
-		// Check if the current user's session ID matches any player in the game
-		return game.players?.some((player) => player.sessionId === currentSessionId) || false;
+		// Can resume if the game is in progress
+		// The server already filters to only show games where we're a player
+		return game.status === 'in_progress' || (game as any).started === true;
 	}
 </script>
 

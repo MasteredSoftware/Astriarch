@@ -511,7 +511,6 @@ export class WebSocketServer {
         gameOptions: game.gameOptions,
         name: game.name,
         playerPosition: 0,
-        sessionId: client.sessionId, // Include session ID
       };
 
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.CREATE_GAME, createResponse));
@@ -551,7 +550,6 @@ export class WebSocketServer {
           name: result.game.name,
           playerPosition: result.playerPosition,
           _id: result.game._id,
-          sessionId: client.sessionId, // Include session ID
         };
 
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.JOIN_GAME, joinResponse));
@@ -718,7 +716,6 @@ export class WebSocketServer {
           new Message(MESSAGE_TYPE.RESUME_GAME, {
             clientGameModel,
             playerPosition: result.player.position,
-            sessionId: client.sessionId, // Include session ID
           }),
         );
       } else {
@@ -983,7 +980,6 @@ export class WebSocketServer {
     // Always send a basic PONG response with session information
     let pongPayload: any = {
       timestamp: new Date().toISOString(),
-      sessionId: client.sessionId, // Include session ID so client knows its own session
     };
 
     // If client is in an active game, include their current game state

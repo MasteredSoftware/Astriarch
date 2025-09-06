@@ -81,9 +81,7 @@ export interface IGame {
 }
 
 export interface IPlayer {
-  sessionId: string;
   position: number;
-  Id: string;
   name: string;
   connected?: boolean;
 }
