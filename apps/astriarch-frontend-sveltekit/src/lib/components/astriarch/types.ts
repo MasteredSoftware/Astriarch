@@ -10,7 +10,20 @@ export type IconImageType =
 	| 'ore'
 	| 'iridium'
 	| 'exit'
-	| 'volume';
+	| 'volume'
+	| 'ship_attack'
+	| 'ship_defense'
+	| 'ship_speed'
+	| 'farm'
+	| 'mine'
+	| 'colony'
+	| 'factory'
+	| 'space_platform'
+	| 'defender'
+	| 'scout'
+	| 'destroyer'
+	| 'cruiser'
+	| 'battleship';
 
 export interface TabControllerTab {
 	label: string;

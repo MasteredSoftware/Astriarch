@@ -1,9 +1,12 @@
 <script lang="ts">
-	import { Text, Button } from '$lib/components/astriarch';
+	import { Text, Button, IconImage } from '$lib/components/astriarch';
 	import { clientGameModel, currentResearch, resourceData } from '$lib/stores/gameStore';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
+	import type { IconImageType } from '$lib/components/astriarch/types';
+	
+	// No need to import SVG icons individually anymore
 
 	$: player = $clientGameModel?.mainPlayer;
 	$: researchPercent = player?.research?.researchPercent || 0;
@@ -13,25 +16,25 @@
 
 	// Research categories for display
 	const shipTypes = [
-		{ type: StarShipType.SystemDefense, name: 'Defender', researchType: ResearchType.NEW_SHIP_TYPE_DEFENDER },
-		{ type: StarShipType.Scout, name: 'Scout', researchType: ResearchType.NEW_SHIP_TYPE_SCOUT },
-		{ type: StarShipType.Destroyer, name: 'Destroyer', researchType: ResearchType.NEW_SHIP_TYPE_DESTROYER },
-		{ type: StarShipType.Cruiser, name: 'Cruiser', researchType: ResearchType.NEW_SHIP_TYPE_CRUISER },
-		{ type: StarShipType.Battleship, name: 'Battleship', researchType: ResearchType.NEW_SHIP_TYPE_BATTLESHIP }
+		{ type: StarShipType.SystemDefense, name: 'Defender', researchType: ResearchType.NEW_SHIP_TYPE_DEFENDER, icon: 'defender' as IconImageType },
+		{ type: StarShipType.Scout, name: 'Scout', researchType: ResearchType.NEW_SHIP_TYPE_SCOUT, icon: 'scout' as IconImageType },
+		{ type: StarShipType.Destroyer, name: 'Destroyer', researchType: ResearchType.NEW_SHIP_TYPE_DESTROYER, icon: 'destroyer' as IconImageType },
+		{ type: StarShipType.Cruiser, name: 'Cruiser', researchType: ResearchType.NEW_SHIP_TYPE_CRUISER, icon: 'cruiser' as IconImageType },
+		{ type: StarShipType.Battleship, name: 'Battleship', researchType: ResearchType.NEW_SHIP_TYPE_BATTLESHIP, icon: 'battleship' as IconImageType }
 	];
 
 	const improvements = [
-		{ name: 'Attack', researchType: ResearchType.COMBAT_IMPROVEMENT_ATTACK },
-		{ name: 'Defense', researchType: ResearchType.COMBAT_IMPROVEMENT_DEFENSE },
-		{ name: 'Propulsion', researchType: ResearchType.PROPULSION_IMPROVEMENT }
+		{ name: 'Attack', researchType: ResearchType.COMBAT_IMPROVEMENT_ATTACK, icon: 'ship_attack' as IconImageType },
+		{ name: 'Defense', researchType: ResearchType.COMBAT_IMPROVEMENT_DEFENSE, icon: 'ship_defense' as IconImageType },
+		{ name: 'Propulsion', researchType: ResearchType.PROPULSION_IMPROVEMENT, icon: 'ship_speed' as IconImageType }
 	];
 
 	const infrastructure = [
-		{ name: 'Farms', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS },
-		{ name: 'Mines', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES },
-		{ name: 'Colonies', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES },
-		{ name: 'Factories', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES },
-		{ name: 'Space Platforms', researchType: ResearchType.SPACE_PLATFORM_IMPROVEMENT }
+		{ name: 'Farms', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS, icon: 'farm' as IconImageType },
+		{ name: 'Mines', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES, icon: 'mine' as IconImageType },
+		{ name: 'Colonies', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES, icon: 'colony' as IconImageType },
+		{ name: 'Factories', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES, icon: 'factory' as IconImageType },
+		{ name: 'Space Platforms', researchType: ResearchType.SPACE_PLATFORM_IMPROVEMENT, icon: 'space_platform' as IconImageType }
 	];
 
 	// Check if current research is a custom ship
@@ -62,6 +65,24 @@
 
 	$: energyBars = renderResourceBar(energyPercent, '#e2c631');
 	$: researchBars = renderResourceBar(researchPercent, '#00ffa3');
+
+	// Function to get the appropriate icon for a research type
+	function getResearchIcon(researchType: ResearchType): IconImageType {
+		// Find in improvements
+		const improvement = improvements.find(imp => imp.researchType === researchType);
+		if (improvement) return improvement.icon;
+		
+		// Find in infrastructure
+		const infra = infrastructure.find(inf => inf.researchType === researchType);
+		if (infra) return infra.icon;
+		
+		// Find in ship types
+		const ship = shipTypes.find(s => s.researchType === researchType);
+		if (ship) return ship.icon;
+		
+		// Default to research icon
+		return 'research';
+	}
 </script>
 
 <!-- Horizontal layout similar to Planet View -->
@@ -88,8 +109,7 @@
 				<div class="mb-8">
 					<div class="flex items-center mb-4">
 						<div class="w-8 h-8 mr-4 flex items-center justify-center">
-							<!-- Energy Icon (simplified) -->
-							<div class="w-6 h-6 bg-yellow-500 rounded-full"></div>
+							<IconImage type="energy" size={24} />
 						</div>
 						<Text class="astriarch-body-16-semibold">
 							Energy
@@ -110,8 +130,7 @@
 				<div class="mb-8">
 					<div class="flex items-center mb-4">
 						<div class="w-8 h-8 mr-4 flex items-center justify-center">
-							<!-- Research Icon (simplified) -->
-							<div class="w-6 h-6 bg-green-500 rounded-full"></div>
+							<IconImage type="research" size={24} />
 						</div>
 						<Text class="astriarch-body-16-semibold">
 							Research
@@ -147,8 +166,7 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each shipTypes as ship}
 								<div class="w-12 h-12 rounded-lg bg-gray-700/50 flex items-center justify-center cursor-pointer hover:bg-gray-600/50 transition-colors border border-transparent hover:border-cyan-500/40">
-									<!-- Ship Icon (simplified for now) -->
-									<div class="w-8 h-8 bg-cyan-400 rounded" style="box-shadow: 0px 0px 18px rgba(125,251,255,0.25);"></div>
+									<IconImage type={ship.icon} size={32} class="text-cyan-400" style="filter: drop-shadow(0px 0px 18px rgba(125,251,255,0.25));" />
 								</div>
 							{/each}
 						</div>
@@ -163,8 +181,7 @@
 						<div class="grid grid-cols-1 gap-2">
 							{#each improvements as improvement}
 								<div class="w-12 h-12 rounded-lg {currentResearchType === improvement.researchType ? 'bg-gray-700 border-2 border-cyan-500' : 'bg-gray-700/50'} flex items-center justify-center cursor-pointer hover:bg-gray-600/50 transition-colors">
-									<!-- Improvement Icon (simplified for now) -->
-									<div class="w-8 h-8 bg-gray-400 rounded"></div>
+									<IconImage type={improvement.icon} size={32} />
 								</div>
 							{/each}
 						</div>
@@ -179,8 +196,7 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each infrastructure as infra}
 								<div class="w-12 h-12 rounded-lg {currentResearchType === infra.researchType ? 'bg-gray-700 border-2 border-cyan-500' : 'bg-gray-700/50'} flex items-center justify-center cursor-pointer hover:bg-gray-600/50 transition-colors">
-									<!-- Infrastructure Icon (simplified for now) -->
-									<div class="w-8 h-8 bg-gray-400 rounded"></div>
+									<IconImage type={infra.icon} size={32} />
 								</div>
 							{/each}
 						</div>
@@ -230,8 +246,7 @@
 								
 								<div class="flex items-start mb-6">
 									<div class="w-8 h-8 mr-4 flex items-center justify-center">
-										<!-- Research Type Icon (simplified for now) -->
-										<div class="w-8 h-8 bg-gray-400 rounded"></div>
+										<IconImage type={getResearchIcon(currentResearchInfo.type)} size={32} />
 									</div>
 									
 									<div class="flex flex-col">

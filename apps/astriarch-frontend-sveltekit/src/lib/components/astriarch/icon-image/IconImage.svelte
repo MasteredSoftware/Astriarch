@@ -14,6 +14,19 @@
 	import populationIcon from '$lib/assets/icons/population.svg';
 	import researchIcon from '$lib/assets/icons/research.svg';
 	import volumeIcon from '$lib/assets/icons/volume.svg';
+	import shipAttackIcon from '$lib/assets/icons/ship_attack.svg';
+	import shipDefenseIcon from '$lib/assets/icons/ship_defense.svg';
+	import shipSpeedIcon from '$lib/assets/icons/ship_speed.svg';
+	import farmIcon from '$lib/assets/icons/farm.svg';
+	import mineIcon from '$lib/assets/icons/mine.svg';
+	import colonyIcon from '$lib/assets/icons/colony.svg';
+	import factoryIcon from '$lib/assets/icons/factory.svg';
+	import spacePlatformIcon from '$lib/assets/icons/space_platform.svg';
+	import defenderIcon from '$lib/assets/icons/defender.svg';
+	import scoutIcon from '$lib/assets/icons/scout.svg';
+	import destroyerIcon from '$lib/assets/icons/destroyer.svg';
+	import cruiserIcon from '$lib/assets/icons/cruiser.svg';
+	import battleshipIcon from '$lib/assets/icons/battleship.svg';
 
 	const iconMap = {
 		energy: energyIcon,
@@ -23,7 +36,20 @@
 		ore: oreIcon,
 		population: populationIcon,
 		research: researchIcon,
-		volume: volumeIcon
+		volume: volumeIcon,
+		ship_attack: shipAttackIcon,
+		ship_defense: shipDefenseIcon,
+		ship_speed: shipSpeedIcon,
+		farm: farmIcon,
+		mine: mineIcon,
+		colony: colonyIcon,
+		factory: factoryIcon,
+		space_platform: spacePlatformIcon,
+		defender: defenderIcon,
+		scout: scoutIcon,
+		destroyer: destroyerIcon,
+		cruiser: cruiserIcon,
+		battleship: battleshipIcon
 	};
 
 	$: icon = iconMap[type];
