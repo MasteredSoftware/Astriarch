@@ -70,15 +70,15 @@
 	<div class="absolute inset-0 backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded"></div>
 	
 	<!-- Title -->
-	<div class="absolute left-8 top-8">
+	<!-- <div class="absolute left-8 top-8">
 		<Text class="astriarch-headline-32">
 			Research
 		</Text>
-	</div>
+	</div> -->
 
 	<div class="absolute inset-0 flex">
 		<!-- Left Section: Allocated Resources -->
-		<div class="w-[461px] h-80 p-8 pt-24">
+		<div class="w-[461px] h-80 p-8">
 			<div class="h-full backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded p-8">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
 					Allocated resources
@@ -131,7 +131,7 @@
 		</div>
 
 		<!-- Right Section: Research Options -->
-		<div class="flex-1 h-80 p-8 pt-24 ml-8">
+		<div class="flex-1 h-80 p-8 ml-8">
 			<div class="h-full backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded p-8">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
 					Custom ships and infra infrastructures
