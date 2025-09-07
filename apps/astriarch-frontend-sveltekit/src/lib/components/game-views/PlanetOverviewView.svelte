@@ -7,7 +7,6 @@
 		selectedPlanetId
 	} from '$lib/stores/gameStore';
 	import { webSocketService } from '$lib/services/websocket';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import {
 		PlanetProductionItem,

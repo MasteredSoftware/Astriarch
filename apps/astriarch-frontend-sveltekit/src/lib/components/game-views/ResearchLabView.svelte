@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { Text, Button, IconImage } from '$lib/components/astriarch';
-	import { clientGameModel, currentResearch, resourceData } from '$lib/stores/gameStore';
+	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { webSocketService } from '$lib/services/websocket';
-	import { MESSAGE_TYPE, Message } from 'astriarch-engine';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
@@ -10,7 +9,16 @@
 
 	// No need to import SVG icons individually anymore
 
-	$: player = $clientGameModel?.mainPlayer;
+	// Get game data from the main game store (for clientGameModel)
+	// and connection state from multiplayer store (for lobby/connection info)
+	import { clientGameModel } from '$lib/stores/gameStore';
+
+	$: gameState = $multiplayerGameStore;
+	$: clientModel = $clientGameModel; // Use clientGameModel from gameStore instead
+	$: currentPlayer = gameState.currentPlayer;
+	
+	// Find the current player's data directly from clientModel (which contains the player data)
+	$: player = clientModel?.mainPlayer; // Use mainPlayer directly from clientModel
 	$: researchPercent = player?.research?.researchPercent || 0;
 	$: energyPercent = 1 - researchPercent;
 	$: researchProgress = player?.research?.researchProgressByType || {};
@@ -151,29 +159,20 @@
 		// Clamp between 0 and 1
 		const clampedPercent = Math.max(0, Math.min(1, newPercent));
 
-		// Send WebSocket message to server
-		webSocketService.send(
-			new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, { researchPercent: clampedPercent })
-		);
+		// Send WebSocket message to server using the service method
+		webSocketService.adjustResearchPercent(clampedPercent);
 	}
 
 	// Function to submit a research item to the server
-	function submitResearchItem(researchType: ResearchType, data: any = {}) {
-		const payload = {
-			researchItem: {
-				type: researchType,
-				data: data
-			}
-		};
-
-		// Send WebSocket message to server
-		webSocketService.send(new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, payload));
+	function submitResearchItem(researchType: ResearchType, data: Record<string, unknown> = {}) {
+		// Send WebSocket message to server using the service method
+		webSocketService.submitResearchItem(researchType, data);
 	}
 
 	// Function to cancel current research
 	function cancelResearchItem() {
-		// Send WebSocket message to server
-		webSocketService.send(new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, {}));
+		// Send WebSocket message to server using the service method
+		webSocketService.cancelResearchItem();
 	} // Handle clicking on resource bars
 	function handleBarClick(event: MouseEvent, isResearchBar: boolean) {
 		const target = event.currentTarget as HTMLElement;

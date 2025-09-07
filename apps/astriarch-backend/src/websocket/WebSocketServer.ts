@@ -934,18 +934,111 @@ export class WebSocketServer {
   }
 
   private async handleAdjustResearchPercent(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.adjustResearchPercent
-    logger.warn("handleAdjustResearchPercent not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.adjustResearchPercent(client.sessionId, message.payload);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, {
+          success: true,
+          message: "Research allocation updated successfully",
+        }),
+      );
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+    } catch (error) {
+      logger.error("handleAdjustResearchPercent error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: "Failed to adjust research percent",
+        }),
+      );
+    }
   }
 
   private async handleSubmitResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.submitResearchItem
-    logger.warn("handleSubmitResearchItem not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.submitResearchItem(client.sessionId, message.payload);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, {
+          success: true,
+          message: "Research started successfully",
+        }),
+      );
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+    } catch (error) {
+      logger.error("handleSubmitResearchItem error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: "Failed to start research",
+        }),
+      );
+    }
   }
 
   private async handleCancelResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.cancelResearchItem
-    logger.warn("handleCancelResearchItem not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.cancelResearchItem(client.sessionId, message.payload);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, {
+          success: true,
+          message: "Research cancelled successfully",
+        }),
+      );
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+    } catch (error) {
+      logger.error("handleCancelResearchItem error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: "Failed to cancel research",
+        }),
+      );
+    }
   }
 
   private async handleSubmitTrade(clientId: string, message: IMessage<unknown>): Promise<void> {

@@ -552,6 +552,69 @@ class WebSocketService {
 				console.log('Received synchronized game state from server');
 				break;
 
+			case MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT:
+				// Handle research percent adjustment response
+				if (message.payload && typeof message.payload === 'object') {
+					if ('error' in message.payload) {
+						const errorPayload = message.payload as { error?: string };
+						this.gameStore.addNotification({
+							type: 'error',
+							message: errorPayload.error || 'Failed to adjust research percent',
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Research allocation updated successfully',
+							timestamp: Date.now()
+						});
+						// Game state updates are handled via GAME_STATE_UPDATE messages
+					}
+				}
+				break;
+
+			case MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM:
+				// Handle submit research item response
+				if (message.payload && typeof message.payload === 'object') {
+					if ('error' in message.payload) {
+						const errorPayload = message.payload as { error?: string };
+						this.gameStore.addNotification({
+							type: 'error',
+							message: errorPayload.error || 'Failed to start research',
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Research started successfully',
+							timestamp: Date.now()
+						});
+						// Game state updates are handled via GAME_STATE_UPDATE messages
+					}
+				}
+				break;
+
+			case MESSAGE_TYPE.CANCEL_RESEARCH_ITEM:
+				// Handle cancel research item response
+				if (message.payload && typeof message.payload === 'object') {
+					if ('error' in message.payload) {
+						const errorPayload = message.payload as { error?: string };
+						this.gameStore.addNotification({
+							type: 'error',
+							message: errorPayload.error || 'Failed to cancel research',
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Research cancelled successfully',
+							timestamp: Date.now()
+						});
+						// Game state updates are handled via GAME_STATE_UPDATE messages
+					}
+				}
+				break;
+
 			default:
 				console.log('Unhandled message type:', message.type);
 		}
@@ -806,6 +869,61 @@ class WebSocketService {
 		if (this.pingInterval !== null) {
 			window.clearInterval(this.pingInterval);
 			this.pingInterval = null;
+		}
+	}
+
+	// Research methods
+	adjustResearchPercent(researchPercent: number) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				researchPercent: Math.max(0, Math.min(1, researchPercent))
+			};
+			this.send(new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, payload));
+		} catch (error) {
+			console.error('Failed to adjust research percent:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'No game selected to adjust research',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	submitResearchItem(researchType: number, data: Record<string, unknown> = {}) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				researchItem: {
+					type: researchType,
+					data: data
+				}
+			};
+			this.send(new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, payload));
+		} catch (error) {
+			console.error('Failed to submit research item:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'No game selected to start research',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	cancelResearchItem() {
+		try {
+			const gameId = this.requireGameId();
+			const payload = { gameId };
+			this.send(new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, payload));
+		} catch (error) {
+			console.error('Failed to cancel research item:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'No game selected to cancel research',
+				timestamp: Date.now()
+			});
 		}
 	}
 

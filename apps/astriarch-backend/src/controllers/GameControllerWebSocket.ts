@@ -677,21 +677,161 @@ export class GameController {
   }
 
   static async adjustResearchPercent(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement research percent adjustment
-    logger.warn("adjustResearchPercent not yet implemented");
-    return { success: false, error: "Not implemented" };
+    try {
+      if (!payload || typeof payload.researchPercent !== 'number') {
+        return { success: false, error: "Invalid research percent value" };
+      }
+
+      if (payload.researchPercent < 0 || payload.researchPercent > 1) {
+        return { success: false, error: "Research percent must be between 0% and 100%" };
+      }
+
+      const { gameId } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the player in the game model
+      const gamePlayer = gameModel.players.find(p => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Update the player's research percent
+      if (!gamePlayer.research) {
+        gamePlayer.research = {
+          researchPercent: 0,
+          researchProgressByType: {},
+          researchTypeInQueue: null,
+        };
+      }
+
+      gamePlayer.research.researchPercent = payload.researchPercent;
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.name} adjusted research percent to ${Math.round(payload.researchPercent * 100)}%`);
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error adjusting research percent:", error);
+      return { success: false, error: "Failed to adjust research percent" };
+    }
   }
 
   static async submitResearchItem(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement research submission
-    logger.warn("submitResearchItem not yet implemented");
-    return { success: false, error: "Not implemented" };
+    try {
+      if (!payload || !payload.researchItem || typeof payload.researchItem.type !== 'number') {
+        return { success: false, error: "Invalid research item" };
+      }
+
+      const { gameId } = payload;
+      const { type: researchType, data: researchData } = payload.researchItem;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the player in the game model
+      const gamePlayer = gameModel.players.find(p => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Initialize research if needed
+      if (!gamePlayer.research) {
+        gamePlayer.research = {
+          researchPercent: 0,
+          researchProgressByType: {} as any, // Will fix the type issue later
+          researchTypeInQueue: null,
+        };
+      }
+
+      // Set the research type in queue
+      gamePlayer.research.researchTypeInQueue = researchType;
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.name} started researching ${researchType}`);
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error submitting research item:", error);
+      return { success: false, error: "Failed to start research" };
+    }
   }
 
   static async cancelResearchItem(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement research cancellation
-    logger.warn("cancelResearchItem not yet implemented");
-    return { success: false, error: "Not implemented" };
+    try {
+      const { gameId } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the player in the game model
+      const gamePlayer = gameModel.players.find(p => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Clear the research queue
+      if (gamePlayer.research) {
+        gamePlayer.research.researchTypeInQueue = null;
+      }
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.name} cancelled research`);
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error cancelling research item:", error);
+      return { success: false, error: "Failed to cancel research" };
+    }
   }
 
   static async submitTrade(sessionId: string, payload: any): Promise<GameResult> {
