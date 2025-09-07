@@ -306,7 +306,7 @@
 
 	function updateFleets(gameModel: ClientModelData) {
 		// Clear all existing fleets and remake them from current game state
-		// This matches the approach used in the old system and ensures animations 
+		// This matches the approach used in the old system and ensures animations
 		// continue properly after game state refreshes
 		for (const drawnFleet of drawnFleets.values()) {
 			drawnFleet.group.remove();

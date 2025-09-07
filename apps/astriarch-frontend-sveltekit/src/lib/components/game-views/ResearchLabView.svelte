@@ -1,11 +1,13 @@
 <script lang="ts">
 	import { Text, Button, IconImage } from '$lib/components/astriarch';
 	import { clientGameModel, currentResearch, resourceData } from '$lib/stores/gameStore';
+	import { webSocketService } from '$lib/services/websocket';
+	import { MESSAGE_TYPE, Message } from 'astriarch-engine';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
 	import type { IconImageType } from '$lib/components/astriarch/types';
-	
+
 	// No need to import SVG icons individually anymore
 
 	$: player = $clientGameModel?.mainPlayer;
@@ -16,43 +18,103 @@
 
 	// Research categories for display
 	const shipTypes = [
-		{ type: StarShipType.SystemDefense, name: 'Defender', researchType: ResearchType.NEW_SHIP_TYPE_DEFENDER, icon: 'defender' as IconImageType },
-		{ type: StarShipType.Scout, name: 'Scout', researchType: ResearchType.NEW_SHIP_TYPE_SCOUT, icon: 'scout' as IconImageType },
-		{ type: StarShipType.Destroyer, name: 'Destroyer', researchType: ResearchType.NEW_SHIP_TYPE_DESTROYER, icon: 'destroyer' as IconImageType },
-		{ type: StarShipType.Cruiser, name: 'Cruiser', researchType: ResearchType.NEW_SHIP_TYPE_CRUISER, icon: 'cruiser' as IconImageType },
-		{ type: StarShipType.Battleship, name: 'Battleship', researchType: ResearchType.NEW_SHIP_TYPE_BATTLESHIP, icon: 'battleship' as IconImageType }
+		{
+			type: StarShipType.SystemDefense,
+			name: 'Defender',
+			researchType: ResearchType.NEW_SHIP_TYPE_DEFENDER,
+			icon: 'defender' as IconImageType
+		},
+		{
+			type: StarShipType.Scout,
+			name: 'Scout',
+			researchType: ResearchType.NEW_SHIP_TYPE_SCOUT,
+			icon: 'scout' as IconImageType
+		},
+		{
+			type: StarShipType.Destroyer,
+			name: 'Destroyer',
+			researchType: ResearchType.NEW_SHIP_TYPE_DESTROYER,
+			icon: 'destroyer' as IconImageType
+		},
+		{
+			type: StarShipType.Cruiser,
+			name: 'Cruiser',
+			researchType: ResearchType.NEW_SHIP_TYPE_CRUISER,
+			icon: 'cruiser' as IconImageType
+		},
+		{
+			type: StarShipType.Battleship,
+			name: 'Battleship',
+			researchType: ResearchType.NEW_SHIP_TYPE_BATTLESHIP,
+			icon: 'battleship' as IconImageType
+		}
 	];
 
 	const improvements = [
-		{ name: 'Attack', researchType: ResearchType.COMBAT_IMPROVEMENT_ATTACK, icon: 'ship_attack' as IconImageType },
-		{ name: 'Defense', researchType: ResearchType.COMBAT_IMPROVEMENT_DEFENSE, icon: 'ship_defense' as IconImageType },
-		{ name: 'Propulsion', researchType: ResearchType.PROPULSION_IMPROVEMENT, icon: 'ship_speed' as IconImageType }
+		{
+			name: 'Attack',
+			researchType: ResearchType.COMBAT_IMPROVEMENT_ATTACK,
+			icon: 'ship_attack' as IconImageType
+		},
+		{
+			name: 'Defense',
+			researchType: ResearchType.COMBAT_IMPROVEMENT_DEFENSE,
+			icon: 'ship_defense' as IconImageType
+		},
+		{
+			name: 'Propulsion',
+			researchType: ResearchType.PROPULSION_IMPROVEMENT,
+			icon: 'ship_speed' as IconImageType
+		}
 	];
 
 	const infrastructure = [
-		{ name: 'Farms', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS, icon: 'farm' as IconImageType },
-		{ name: 'Mines', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES, icon: 'mine' as IconImageType },
-		{ name: 'Colonies', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES, icon: 'colony' as IconImageType },
-		{ name: 'Factories', researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES, icon: 'factory' as IconImageType },
-		{ name: 'Space Platforms', researchType: ResearchType.SPACE_PLATFORM_IMPROVEMENT, icon: 'space_platform' as IconImageType }
+		{
+			name: 'Farms',
+			researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS,
+			icon: 'farm' as IconImageType
+		},
+		{
+			name: 'Mines',
+			researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES,
+			icon: 'mine' as IconImageType
+		},
+		{
+			name: 'Colonies',
+			researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_COLONIES,
+			icon: 'colony' as IconImageType
+		},
+		{
+			name: 'Factories',
+			researchType: ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES,
+			icon: 'factory' as IconImageType
+		},
+		{
+			name: 'Space Platforms',
+			researchType: ResearchType.SPACE_PLATFORM_IMPROVEMENT,
+			icon: 'space_platform' as IconImageType
+		}
 	];
 
 	// Check if current research is a custom ship
-	$: isCustomShipResearch = currentResearchType && [
-		ResearchType.NEW_SHIP_TYPE_DEFENDER,
-		ResearchType.NEW_SHIP_TYPE_SCOUT,
-		ResearchType.NEW_SHIP_TYPE_DESTROYER,
-		ResearchType.NEW_SHIP_TYPE_CRUISER,
-		ResearchType.NEW_SHIP_TYPE_BATTLESHIP
-	].includes(currentResearchType);
+	$: isCustomShipResearch =
+		currentResearchType &&
+		[
+			ResearchType.NEW_SHIP_TYPE_DEFENDER,
+			ResearchType.NEW_SHIP_TYPE_SCOUT,
+			ResearchType.NEW_SHIP_TYPE_DESTROYER,
+			ResearchType.NEW_SHIP_TYPE_CRUISER,
+			ResearchType.NEW_SHIP_TYPE_BATTLESHIP
+		].includes(currentResearchType);
 
-	$: currentResearchInfo = currentResearchType && researchProgress[currentResearchType] 
-		? {
-			name: Research.researchProgressToString(researchProgress[currentResearchType]),
-			type: currentResearchType,
-			progress: researchProgress[currentResearchType]
-		}
-		: null;
+	$: currentResearchInfo =
+		currentResearchType && researchProgress[currentResearchType]
+			? {
+					name: Research.researchProgressToString(researchProgress[currentResearchType]),
+					type: currentResearchType,
+					progress: researchProgress[currentResearchType]
+				}
+			: null;
 
 	function renderResourceBar(percentage: number, color: string) {
 		const filledBars = Math.round(percentage * 20);
@@ -69,27 +131,76 @@
 	// Function to get the appropriate icon for a research type
 	function getResearchIcon(researchType: ResearchType): IconImageType {
 		// Find in improvements
-		const improvement = improvements.find(imp => imp.researchType === researchType);
+		const improvement = improvements.find((imp) => imp.researchType === researchType);
 		if (improvement) return improvement.icon;
-		
+
 		// Find in infrastructure
-		const infra = infrastructure.find(inf => inf.researchType === researchType);
+		const infra = infrastructure.find((inf) => inf.researchType === researchType);
 		if (infra) return infra.icon;
-		
+
 		// Find in ship types
-		const ship = shipTypes.find(s => s.researchType === researchType);
+		const ship = shipTypes.find((s) => s.researchType === researchType);
 		if (ship) return ship.icon;
-		
+
 		// Default to research icon
 		return 'research';
+	}
+
+	// Function to send research percent adjustment to server
+	function adjustResearchPercent(newPercent: number) {
+		// Clamp between 0 and 1
+		const clampedPercent = Math.max(0, Math.min(1, newPercent));
+
+		// Send WebSocket message to server
+		webSocketService.send(
+			new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, { researchPercent: clampedPercent })
+		);
+	}
+
+	// Function to submit a research item to the server
+	function submitResearchItem(researchType: ResearchType, data: any = {}) {
+		const payload = {
+			researchItem: {
+				type: researchType,
+				data: data
+			}
+		};
+
+		// Send WebSocket message to server
+		webSocketService.send(new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, payload));
+	}
+
+	// Function to cancel current research
+	function cancelResearchItem() {
+		// Send WebSocket message to server
+		webSocketService.send(new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, {}));
+	} // Handle clicking on resource bars
+	function handleBarClick(event: MouseEvent, isResearchBar: boolean) {
+		const target = event.currentTarget as HTMLElement;
+		const rect = target.getBoundingClientRect();
+		const clickX = event.clientX - rect.left;
+		const barWidth = rect.width;
+
+		// Calculate which bar was clicked (0-19 for 20 bars)
+		const barIndex = Math.floor((clickX / barWidth) * 20);
+		const newPercent = (barIndex + 1) / 20; // +1 to make it 1-20 range, then divide by 20
+
+		if (isResearchBar) {
+			adjustResearchPercent(newPercent);
+		} else {
+			// Energy bar - set research to complement of energy
+			adjustResearchPercent(1 - newPercent);
+		}
 	}
 </script>
 
 <!-- Horizontal layout similar to Planet View -->
 <div class="relative h-80 w-full">
 	<!-- Background with glass effect -->
-	<div class="absolute inset-0 backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded"></div>
-	
+	<div
+		class="absolute inset-0 rounded bg-gradient-to-b from-white/10 to-gray-800/0 backdrop-blur-md"
+	></div>
+
 	<!-- Title -->
 	<!-- <div class="absolute left-8 top-8">
 		<Text class="astriarch-headline-32">
@@ -99,50 +210,62 @@
 
 	<div class="absolute inset-0 flex">
 		<!-- Left Section: Allocated Resources -->
-		<div class="w-[461px] h-80 p-8">
-			<div class="h-full backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded p-8">
-				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
-					Allocated resources
-				</Text>
+		<div class="h-80 w-[461px] p-8">
+			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
+				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">Allocated resources</Text>
 
 				<!-- Energy Bar -->
 				<div class="mb-8">
-					<div class="flex items-center mb-4">
-						<div class="w-8 h-8 mr-4 flex items-center justify-center">
+					<div class="mb-4 flex items-center">
+						<div class="mr-4 flex h-8 w-8 items-center justify-center">
 							<IconImage type="energy" size={24} />
 						</div>
-						<Text class="astriarch-body-16-semibold">
-							Energy
-						</Text>
+						<Text class="astriarch-body-16-semibold">Energy</Text>
 						<Text class="astriarch-body-16-semibold" style="margin-left: auto;">
 							{Math.round(energyPercent * 100)}%
 						</Text>
 					</div>
-					
-					<div class="flex gap-1 ml-9">
+
+					<div
+						class="ml-9 flex cursor-pointer gap-1"
+						on:click={(e) => handleBarClick(e, false)}
+						role="button"
+						tabindex="0"
+					>
 						{#each energyBars as filled}
-							<div class="w-4 h-12 rounded-sm {filled ? 'bg-yellow-500 shadow-glow-white' : 'bg-white/10'}"></div>
+							<div
+								class="h-12 w-4 rounded-sm {filled
+									? 'shadow-glow-white bg-yellow-500'
+									: 'bg-white/10'} transition-colors hover:bg-yellow-400"
+							></div>
 						{/each}
 					</div>
 				</div>
 
 				<!-- Research Bar -->
 				<div class="mb-8">
-					<div class="flex items-center mb-4">
-						<div class="w-8 h-8 mr-4 flex items-center justify-center">
+					<div class="mb-4 flex items-center">
+						<div class="mr-4 flex h-8 w-8 items-center justify-center">
 							<IconImage type="research" size={24} />
 						</div>
-						<Text class="astriarch-body-16-semibold">
-							Research
-						</Text>
+						<Text class="astriarch-body-16-semibold">Research</Text>
 						<Text class="astriarch-body-16-semibold" style="margin-left: auto;">
 							{Math.round(researchPercent * 100)}%
 						</Text>
 					</div>
-					
-					<div class="flex gap-1 ml-9">
+
+					<div
+						class="ml-9 flex cursor-pointer gap-1"
+						on:click={(e) => handleBarClick(e, true)}
+						role="button"
+						tabindex="0"
+					>
 						{#each researchBars as filled}
-							<div class="w-4 h-12 rounded-sm {filled ? 'bg-green-500 shadow-glow-white' : 'bg-white/10'}"></div>
+							<div
+								class="h-12 w-4 rounded-sm {filled
+									? 'shadow-glow-white bg-green-500'
+									: 'bg-white/10'} transition-colors hover:bg-green-400"
+							></div>
 						{/each}
 					</div>
 				</div>
@@ -150,37 +273,52 @@
 		</div>
 
 		<!-- Right Section: Research Options -->
-		<div class="flex-1 h-80 p-8 ml-8">
-			<div class="h-full backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded p-8">
+		<div class="ml-8 h-80 flex-1 p-8">
+			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
 					Custom ships and research improvements
 				</Text>
 
 				<div class="flex h-40">
 					<!-- Create Ships Column -->
-					<div class="flex flex-col items-center mr-16">
+					<div class="mr-16 flex flex-col items-center">
 						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
 							Create Ships
 						</Text>
-						
+
 						<div class="grid grid-cols-2 gap-2">
 							{#each shipTypes as ship}
-								<div class="w-12 h-12 rounded-lg bg-gray-700/50 flex items-center justify-center cursor-pointer hover:bg-gray-600/50 transition-colors border border-transparent hover:border-cyan-500/40">
-									<IconImage type={ship.icon} size={32} class="text-cyan-400" style="filter: drop-shadow(0px 0px 18px rgba(125,251,255,0.25));" />
+								<div
+									class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-gray-700/50 transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50"
+									on:click={() => submitResearchItem(ship.researchType)}
+									role="button"
+									tabindex="0"
+								>
+									<IconImage
+										type={ship.icon}
+										size={32}
+										class="text-cyan-400"
+										style="filter: drop-shadow(0px 0px 18px rgba(125,251,255,0.25));"
+									/>
 								</div>
 							{/each}
 						</div>
 					</div>
 
 					<!-- Ships Column -->
-					<div class="flex flex-col items-center mr-16">
-						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-							Ships
-						</Text>
-						
+					<div class="mr-16 flex flex-col items-center">
+						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">Ships</Text>
+
 						<div class="grid grid-cols-1 gap-2">
 							{#each improvements as improvement}
-								<div class="w-12 h-12 rounded-lg {currentResearchType === improvement.researchType ? 'bg-gray-700 border-2 border-cyan-500' : 'bg-gray-700/50'} flex items-center justify-center cursor-pointer hover:bg-gray-600/50 transition-colors">
+								<div
+									class="h-12 w-12 rounded-lg {currentResearchType === improvement.researchType
+										? 'border-2 border-cyan-500 bg-gray-700'
+										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
+									on:click={() => submitResearchItem(improvement.researchType)}
+									role="button"
+									tabindex="0"
+								>
 									<IconImage type={improvement.icon} size={32} />
 								</div>
 							{/each}
@@ -188,14 +326,19 @@
 					</div>
 
 					<!-- Buildings -->
-					<div class="flex flex-col items-center mr-16">
-						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-							Buildings
-						</Text>
-						
+					<div class="mr-16 flex flex-col items-center">
+						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">Buildings</Text>
+
 						<div class="grid grid-cols-2 gap-2">
 							{#each infrastructure as infra}
-								<div class="w-12 h-12 rounded-lg {currentResearchType === infra.researchType ? 'bg-gray-700 border-2 border-cyan-500' : 'bg-gray-700/50'} flex items-center justify-center cursor-pointer hover:bg-gray-600/50 transition-colors">
+								<div
+									class="h-12 w-12 rounded-lg {currentResearchType === infra.researchType
+										? 'border-2 border-cyan-500 bg-gray-700'
+										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
+									on:click={() => submitResearchItem(infra.researchType)}
+									role="button"
+									tabindex="0"
+								>
 									<IconImage type={infra.icon} size={32} />
 								</div>
 							{/each}
@@ -203,37 +346,47 @@
 					</div>
 
 					<!-- Conditional Right Section -->
-					<div class="flex-1 flex flex-col">
+					<div class="flex flex-1 flex-col">
 						{#if isCustomShipResearch}
 							<!-- Custom Ship: Advantage/Disadvantage Section -->
-							<div class="flex mb-4">
-								<div class="flex-1 mr-4">
+							<div class="mb-4 flex">
+								<div class="mr-4 flex-1">
 									<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
 										Advantage against
 									</Text>
-									
-									<Button style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;">
+
+									<Button
+										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
+									>
 										DESTROYER
 									</Button>
 								</div>
-								
+
 								<div class="flex-1">
-									<Text style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;">
+									<Text
+										style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
+									>
 										Disadvantage against
 									</Text>
-									
-									<Button style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;">
+
+									<Button
+										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
+									>
 										SCOUTS
 									</Button>
 								</div>
 							</div>
-							
-							<div class="flex mt-auto">
-								<Button style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 24px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px; margin-right: 16px;">
+
+							<div class="mt-auto flex">
+								<Button
+									style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 24px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px; margin-right: 16px;"
+								>
 									RESEARCH SHIPS
 								</Button>
-								
-								<Button style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">
+
+								<Button
+									style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
+								>
 									OKAY
 								</Button>
 							</div>
@@ -243,58 +396,74 @@
 								<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
 									Currently researching
 								</Text>
-								
-								<div class="flex items-start mb-6">
-									<div class="w-8 h-8 mr-4 flex items-center justify-center">
+
+								<div class="mb-6 flex items-start">
+									<div class="mr-4 flex h-8 w-8 items-center justify-center">
 										<IconImage type={getResearchIcon(currentResearchInfo.type)} size={32} />
 									</div>
-									
+
 									<div class="flex flex-col">
 										<Text class="astriarch-body-14" style="margin-bottom: 4px;">
 											{currentResearchInfo.name}.
 										</Text>
-										<Text class="astriarch-body-14">
-											Estimating turns remaining: Infinity
-										</Text>
+										<Text class="astriarch-body-14">Estimating turns remaining: Infinity</Text>
 									</div>
 								</div>
-								
-								<div class="mt-auto">
-									<Button style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">
+
+								<div class="mt-auto flex gap-4">
+									<Button
+										on:click={cancelResearchItem}
+										style="background: #ff4444; color: #ffffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
+									>
+										CANCEL RESEARCH
+									</Button>
+									<Button
+										style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
+									>
 										OKAY
 									</Button>
 								</div>
 							</div>
 						{:else}
 							<!-- Default: No research selected -->
-							<div class="flex mb-4">
-								<div class="flex-1 mr-4">
+							<div class="mb-4 flex">
+								<div class="mr-4 flex-1">
 									<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
 										Advantage against
 									</Text>
-									
-									<Button style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;">
+
+									<Button
+										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
+									>
 										DESTROYER
 									</Button>
 								</div>
-								
+
 								<div class="flex-1">
-									<Text style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;">
+									<Text
+										style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
+									>
 										Disadvantage against
 									</Text>
-									
-									<Button style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;">
+
+									<Button
+										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
+									>
 										SCOUTS
 									</Button>
 								</div>
 							</div>
-							
-							<div class="flex mt-auto">
-								<Button style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 24px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px; margin-right: 16px;">
+
+							<div class="mt-auto flex">
+								<Button
+									style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 24px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px; margin-right: 16px;"
+								>
 									RESEARCH SHIPS
 								</Button>
-								
-								<Button style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">
+
+								<Button
+									style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
+								>
 									OKAY
 								</Button>
 							</div>
