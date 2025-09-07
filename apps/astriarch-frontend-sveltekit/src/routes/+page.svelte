@@ -308,13 +308,13 @@
 						</div>
 					{:else if $currentView === 'research'}
 						<div
-							class="absolute top-4 right-4 max-h-[calc(100%-2rem)] w-96 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/80 backdrop-blur-sm"
+							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
 						>
 							<ResearchLabView />
 						</div>
 					{:else if $currentView === 'activity'}
 						<div
-							class="absolute top-4 right-4 max-h-[calc(100%-2rem)] w-96 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/80 backdrop-blur-sm"
+							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
 						>
 							<DiplomacyView />
 						</div>

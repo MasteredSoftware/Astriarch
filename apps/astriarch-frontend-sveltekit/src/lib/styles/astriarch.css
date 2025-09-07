@@ -46,119 +46,119 @@
 	--astriarch-font-orbitron: 'Orbitron', system-ui, -apple-system, sans-serif;
 
 	/* Typography Scale - Headlines */
-	--astriarch-headline-72-size: 72px;
+	--astriarch-headline-72-size: 4.5rem; /* 72px */
 	--astriarch-headline-72-weight: 600;
-	--astriarch-headline-72-line-height: 86px;
-	--astriarch-headline-72-letter-spacing: 0px;
+	--astriarch-headline-72-line-height: 5.375rem; /* 86px */
+	--astriarch-headline-72-letter-spacing: 0rem;
 
-	--astriarch-headline-56-size: 56px;
+	--astriarch-headline-56-size: 3.5rem; /* 56px */
 	--astriarch-headline-56-weight: 700;
-	--astriarch-headline-56-line-height: 62px;
-	--astriarch-headline-56-letter-spacing: 1.12px;
+	--astriarch-headline-56-line-height: 3.875rem; /* 62px */
+	--astriarch-headline-56-letter-spacing: 0.07rem; /* 1.12px */
 
-	--astriarch-headline-42-size: 42px;
+	--astriarch-headline-42-size: 2.625rem; /* 42px */
 	--astriarch-headline-42-weight: 700;
-	--astriarch-headline-42-line-height: 46px;
-	--astriarch-headline-42-letter-spacing: 0.84px;
+	--astriarch-headline-42-line-height: 2.875rem; /* 46px */
+	--astriarch-headline-42-letter-spacing: 0.0525rem; /* 0.84px */
 
-	--astriarch-headline-38-size: 38px;
+	--astriarch-headline-38-size: 2.375rem; /* 38px */
 	--astriarch-headline-38-weight: 700;
-	--astriarch-headline-38-line-height: 42px;
-	--astriarch-headline-38-letter-spacing: 0.76px;
+	--astriarch-headline-38-line-height: 2.625rem; /* 42px */
+	--astriarch-headline-38-letter-spacing: 0.0475rem; /* 0.76px */
 
-	--astriarch-headline-32-size: 32px;
+	--astriarch-headline-32-size: 2rem; /* 32px */
 	--astriarch-headline-32-weight: 700;
-	--astriarch-headline-32-line-height: 40px;
-	--astriarch-headline-32-letter-spacing: 0.64px;
+	--astriarch-headline-32-line-height: 2.5rem; /* 40px */
+	--astriarch-headline-32-letter-spacing: 0.04rem; /* 0.64px */
 
-	--astriarch-headline-24-size: 24px;
+	--astriarch-headline-24-size: 1.5rem; /* 24px */
 	--astriarch-headline-24-weight: 700;
-	--astriarch-headline-24-line-height: 32px;
-	--astriarch-headline-24-letter-spacing: 0.48px;
+	--astriarch-headline-24-line-height: 2rem; /* 32px */
+	--astriarch-headline-24-letter-spacing: 0.03rem; /* 0.48px */
 
 	/* Typography Scale - Body */
-	--astriarch-body-19-size: 19px;
+	--astriarch-body-19-size: 1.1875rem; /* 19px */
 	--astriarch-body-19-weight: 400;
-	--astriarch-body-19-line-height: 29px;
-	--astriarch-body-19-letter-spacing: 0.095px;
+	--astriarch-body-19-line-height: 1.8125rem; /* 29px */
+	--astriarch-body-19-letter-spacing: 0.00594rem; /* 0.095px */
 
-	--astriarch-body-19-semibold-size: 19px;
+	--astriarch-body-19-semibold-size: 1.1875rem; /* 19px */
 	--astriarch-body-19-semibold-weight: 600;
-	--astriarch-body-19-semibold-line-height: 22px;
-	--astriarch-body-19-semibold-letter-spacing: 0.095px;
+	--astriarch-body-19-semibold-line-height: 1.375rem; /* 22px */
+	--astriarch-body-19-semibold-letter-spacing: 0.00594rem; /* 0.095px */
 
-	--astriarch-body-18-size: 18px;
+	--astriarch-body-18-size: 1.125rem; /* 18px */
 	--astriarch-body-18-weight: 400;
-	--astriarch-body-18-line-height: 26px;
-	--astriarch-body-18-letter-spacing: 0.09px;
+	--astriarch-body-18-line-height: 1.625rem; /* 26px */
+	--astriarch-body-18-letter-spacing: 0.00563rem; /* 0.09px */
 
-	--astriarch-body-18-semibold-size: 18px;
+	--astriarch-body-18-semibold-size: 1.125rem; /* 18px */
 	--astriarch-body-18-semibold-weight: 600;
-	--astriarch-body-18-semibold-line-height: 26px;
-	--astriarch-body-18-semibold-letter-spacing: 0.09px;
+	--astriarch-body-18-semibold-line-height: 1.625rem; /* 26px */
+	--astriarch-body-18-semibold-letter-spacing: 0.00563rem; /* 0.09px */
 
-	--astriarch-body-16-size: 16px;
+	--astriarch-body-16-size: 1rem; /* 16px */
 	--astriarch-body-16-weight: 400;
-	--astriarch-body-16-line-height: 24px;
-	--astriarch-body-16-letter-spacing: 0.16px;
+	--astriarch-body-16-line-height: 1.5rem; /* 24px */
+	--astriarch-body-16-letter-spacing: 0.01rem; /* 0.16px */
 
-	--astriarch-body-16-semibold-size: 16px;
+	--astriarch-body-16-semibold-size: 1rem; /* 16px */
 	--astriarch-body-16-semibold-weight: 600;
-	--astriarch-body-16-semibold-line-height: 24px;
-	--astriarch-body-16-semibold-letter-spacing: 0.08px;
+	--astriarch-body-16-semibold-line-height: 1.5rem; /* 24px */
+	--astriarch-body-16-semibold-letter-spacing: 0.005rem; /* 0.08px */
 
-	--astriarch-body-14-size: 14px;
+	--astriarch-body-14-size: 0.875rem; /* 14px */
 	--astriarch-body-14-weight: 400;
-	--astriarch-body-14-line-height: 28px;
-	--astriarch-body-14-letter-spacing: 0.14px;
+	--astriarch-body-14-line-height: 1.75rem; /* 28px */
+	--astriarch-body-14-letter-spacing: 0.00875rem; /* 0.14px */
 
-	--astriarch-body-14-semibold-size: 14px;
+	--astriarch-body-14-semibold-size: 0.875rem; /* 14px */
 	--astriarch-body-14-semibold-weight: 600;
-	--astriarch-body-14-semibold-line-height: 24px;
-	--astriarch-body-14-semibold-letter-spacing: 0.07px;
+	--astriarch-body-14-semibold-line-height: 1.5rem; /* 24px */
+	--astriarch-body-14-semibold-letter-spacing: 0.00438rem; /* 0.07px */
 
 	/* Typography Scale - Caption */
-	--astriarch-caption-12-size: 12px;
+	--astriarch-caption-12-size: 0.75rem; /* 12px */
 	--astriarch-caption-12-weight: 400;
-	--astriarch-caption-12-line-height: 16px;
-	--astriarch-caption-12-letter-spacing: 0.5px;
+	--astriarch-caption-12-line-height: 1rem; /* 16px */
+	--astriarch-caption-12-letter-spacing: 0.03125rem; /* 0.5px */
 
-	--astriarch-caption-12-semibold-size: 12px;
+	--astriarch-caption-12-semibold-size: 0.75rem; /* 12px */
 	--astriarch-caption-12-semibold-weight: 600;
-	--astriarch-caption-12-semibold-line-height: 16px;
-	--astriarch-caption-12-semibold-letter-spacing: 0.5px;
+	--astriarch-caption-12-semibold-line-height: 1rem; /* 16px */
+	--astriarch-caption-12-semibold-letter-spacing: 0.03125rem; /* 0.5px */
 
-	--astriarch-caption-10-size: 10px;
+	--astriarch-caption-10-size: 0.625rem; /* 10px */
 	--astriarch-caption-10-weight: 400;
-	--astriarch-caption-10-line-height: 14px;
-	--astriarch-caption-10-letter-spacing: 0.5px;
+	--astriarch-caption-10-line-height: 0.875rem; /* 14px */
+	--astriarch-caption-10-letter-spacing: 0.03125rem; /* 0.5px */
 
-	--astriarch-caption-10-semibold-size: 10px;
+	--astriarch-caption-10-semibold-size: 0.625rem; /* 10px */
 	--astriarch-caption-10-semibold-weight: 600;
-	--astriarch-caption-10-semibold-line-height: 14px;
-	--astriarch-caption-10-semibold-letter-spacing: 0.25px;
+	--astriarch-caption-10-semibold-line-height: 0.875rem; /* 14px */
+	--astriarch-caption-10-semibold-letter-spacing: 0.01563rem; /* 0.25px */
 
 	/* Typography Scale - Call to Action */
-	--astriarch-cta-16-size: 16px;
+	--astriarch-cta-16-size: 1rem; /* 16px */
 	--astriarch-cta-16-weight: 800;
-	--astriarch-cta-16-line-height: 20px;
-	--astriarch-cta-16-letter-spacing: 2px;
+	--astriarch-cta-16-line-height: 1.25rem; /* 20px */
+	--astriarch-cta-16-letter-spacing: 0.125rem; /* 2px */
 
-	--astriarch-cta-14-size: 14px;
+	--astriarch-cta-14-size: 0.875rem; /* 14px */
 	--astriarch-cta-14-weight: 800;
-	--astriarch-cta-14-line-height: 20px;
-	--astriarch-cta-14-letter-spacing: 2px;
+	--astriarch-cta-14-line-height: 1.25rem; /* 20px */
+	--astriarch-cta-14-letter-spacing: 0.125rem; /* 2px */
 
-	--astriarch-cta-12-size: 12px;
+	--astriarch-cta-12-size: 0.75rem; /* 12px */
 	--astriarch-cta-12-weight: 800;
-	--astriarch-cta-12-line-height: 16px;
-	--astriarch-cta-12-letter-spacing: 2px;
+	--astriarch-cta-12-line-height: 1rem; /* 16px */
+	--astriarch-cta-12-letter-spacing: 0.125rem; /* 2px */
 
 	/* Typography Scale - Label */
-	--astriarch-label-12-size: 12px;
+	--astriarch-label-12-size: 0.75rem; /* 12px */
 	--astriarch-label-12-weight: 400;
-	--astriarch-label-12-line-height: 16px;
-	--astriarch-label-12-letter-spacing: 3px;
+	--astriarch-label-12-line-height: 1rem; /* 16px */
+	--astriarch-label-12-letter-spacing: 0.1875rem; /* 3px */
 }
 
 @theme inline {
