@@ -153,7 +153,7 @@
 		<div class="flex-1 h-80 p-8 ml-8">
 			<div class="h-full backdrop-blur-md bg-gradient-to-b from-white/10 to-gray-800/0 rounded p-8">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
-					Custom ships and infra infrastructures
+					Custom ships and research improvements
 				</Text>
 
 				<div class="flex h-40">
@@ -172,10 +172,10 @@
 						</div>
 					</div>
 
-					<!-- Improve Column -->
+					<!-- Ships Column -->
 					<div class="flex flex-col items-center mr-16">
 						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-							Improve
+							Ships
 						</Text>
 						
 						<div class="grid grid-cols-1 gap-2">
@@ -187,10 +187,10 @@
 						</div>
 					</div>
 
-					<!-- Boost/Increase Column -->
+					<!-- Buildings -->
 					<div class="flex flex-col items-center mr-16">
 						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-							Boost/Increase
+							Buildings
 						</Text>
 						
 						<div class="grid grid-cols-2 gap-2">
