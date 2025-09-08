@@ -3,7 +3,8 @@ import type {
 	PlanetType,
 	ClientModelData,
 	PlayerData,
-	ClientPlayer
+	ClientPlayer,
+	StarshipData
 } from 'astriarch-engine';
 import Konva from 'konva';
 
@@ -207,30 +208,36 @@ export class DrawnPlanet {
 			this.owner.id === this.gameModel.mainPlayer.id &&
 			this.planetData.planetaryFleet?.starships?.length
 		) {
-			const fleetSize = this.planetData.planetaryFleet.starships.length;
-			strengthText = fleetSize.toString();
+			// Calculate total fleet strength (sum of all ship health/strength)
+			const fleetStrength = this.planetData.planetaryFleet.starships.reduce(
+				(total: number, ship: StarshipData) => total + ship.health, 
+				0
+			);
+			strengthText = fleetStrength.toString();
 		}
 		// For non-owned or other players' planets, check last known fleet data
 		else {
 			const lastKnownData =
 				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
 			if (lastKnownData?.fleetData?.starships?.length) {
-				const lastKnownFleetSize = lastKnownData.fleetData.starships.length;
-				if (lastKnownFleetSize > 0) {
-					// Show exact number if we own the planet, otherwise show "?" for unknown current strength
+				// Calculate last known fleet strength
+				const lastKnownFleetStrength = lastKnownData.fleetData.starships.reduce(
+					(total: number, ship: StarshipData) => total + ship.health, 
+					0
+				);
+				if (lastKnownFleetStrength > 0) {
+					// Show exact strength if we own the planet, otherwise show "?" for unknown current strength
 					if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
-						strengthText = lastKnownFleetSize.toString();
+						strengthText = lastKnownFleetStrength.toString();
 					} else {
-						strengthText = `${lastKnownFleetSize}?`; // Last known strength with uncertainty indicator
+						strengthText = `${lastKnownFleetStrength}?`; // Last known strength with uncertainty indicator
 					}
 				}
 			}
 			// Also check current planetary fleet for visible data
 			else if (this.planetData.planetaryFleet?.starships?.length) {
-				const fleetSize = this.planetData.planetaryFleet.starships.length;
-				if (fleetSize > 0) {
-					strengthText = '?'; // Unknown current strength indicator
-				}
+				// We can see there are ships but don't know the exact strength
+				strengthText = '?'; // Unknown current strength indicator
 			}
 		}
 
