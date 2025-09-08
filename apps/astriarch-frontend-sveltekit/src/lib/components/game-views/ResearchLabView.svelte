@@ -26,11 +26,12 @@
 	$: currentResearchType = player?.research?.researchTypeInQueue;
 
 	// Calculate total credits generated per turn from planets for research estimation
-	$: totalCreditsFromPlanets = clientModel?.mainPlayerOwnedPlanets && player
-		? Object.values(clientModel.mainPlayerOwnedPlanets).reduce((total, planet) => {
-				return total + Planet.getTaxRevenueAtMaxPercent(planet, player);
-			}, 0)
-		: 0;
+	$: totalCreditsFromPlanets =
+		clientModel?.mainPlayerOwnedPlanets && player
+			? Object.values(clientModel.mainPlayerOwnedPlanets).reduce((total, planet) => {
+					return total + Planet.getTaxRevenueAtMaxPercent(planet, player);
+				}, 0)
+			: 0;
 
 	// Estimate cycles remaining for current research
 	$: cyclesRemaining =

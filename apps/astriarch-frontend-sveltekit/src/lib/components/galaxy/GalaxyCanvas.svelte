@@ -21,6 +21,14 @@
 	let animationFrameId: number;
 	let isInitialized = false;
 
+	// Pan and zoom state
+	let zoomLevel = 1;
+	let panX = 0;
+	let panY = 0;
+	const MIN_ZOOM = 0.3;
+	const MAX_ZOOM = 3.0;
+	const ZOOM_SPEED = 1.1;
+
 	onMount(() => {
 		initializeCanvas();
 		startRenderLoop();
@@ -54,7 +62,7 @@
 			container: canvasContainer,
 			width: window.innerWidth - 300, // Account for UI panels
 			height: window.innerHeight - 200, // Account for top bar and navigation
-			draggable: false // Disable panning the galaxy view
+			draggable: true // Enable panning the galaxy view
 		});
 
 		// Create layers (back to front rendering order)
@@ -80,8 +88,16 @@
 			y: (window.innerHeight - 200 - galaxyHeight * scale) / 2
 		});
 
+		// Initialize zoom state
+		zoomLevel = scale;
+		updatePanPosition();
+
 		// Handle window resize
 		window.addEventListener('resize', handleResize);
+
+		// Add zoom and pan event listeners
+		stage.on('wheel', handleZoom);
+		stage.on('dragmove', updatePanPosition);
 
 		console.log('GalaxyCanvas initialization complete');
 	}
@@ -175,9 +191,59 @@
 
 	function handleResize() {
 		if (stage) {
-			stage.width(window.innerWidth - 300);
-			stage.height(window.innerHeight - 200);
+			const oldWidth = stage.width();
+			const oldHeight = stage.height();
+			const newWidth = window.innerWidth - 300;
+			const newHeight = window.innerHeight - 200;
+
+			stage.width(newWidth);
+			stage.height(newHeight);
+
+			// Maintain relative position after resize
+			const pos = stage.position();
+			const widthRatio = newWidth / oldWidth;
+			const heightRatio = newHeight / oldHeight;
+
+			stage.position({
+				x: pos.x * widthRatio,
+				y: pos.y * heightRatio
+			});
+
+			updatePanPosition();
 		}
+	}
+
+	function handleZoom(e: any) {
+		e.evt.preventDefault();
+
+		const oldScale = stage.scaleX();
+		const pointer = stage.getPointerPosition();
+
+		if (!pointer) return;
+
+		const scaleBy = ZOOM_SPEED;
+		const newScale =
+			e.evt.deltaY > 0
+				? Math.max(oldScale / scaleBy, MIN_ZOOM)
+				: Math.min(oldScale * scaleBy, MAX_ZOOM);
+
+		// Zoom toward the mouse pointer
+		const newPos = {
+			x: pointer.x - (pointer.x - stage.x()) * (newScale / oldScale),
+			y: pointer.y - (pointer.y - stage.y()) * (newScale / oldScale)
+		};
+
+		stage.scale({ x: newScale, y: newScale });
+		stage.position(newPos);
+
+		zoomLevel = newScale;
+		updatePanPosition();
+	}
+
+	function updatePanPosition() {
+		const pos = stage.position();
+		panX = pos.x;
+		panY = pos.y;
 	}
 
 	function startRenderLoop() {
@@ -383,20 +449,40 @@
 
 <div
 	bind:this={canvasContainer}
-	class="galaxy-canvas h-full w-full rounded-lg border border-cyan-500/20 bg-black"
+	class="galaxy-canvas relative h-full w-full rounded-lg border border-cyan-500/20 bg-black"
 	on:click={handleStageClick}
 	on:keydown
 	role="button"
 	tabindex="0"
 	aria-label="Galaxy map - Click to interact with planets and fleets"
-></div>
+>
+	<!-- Zoom level indicator -->
+	<div
+		class="absolute top-4 right-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400"
+	>
+		Zoom: {Math.round(zoomLevel * 100)}%
+	</div>
+
+	<!-- Controls hint -->
+	<div
+		class="absolute bottom-4 left-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400/70"
+	>
+		Mouse wheel: zoom • Drag: pan
+	</div>
+</div>
 
 <style>
 	.galaxy-canvas {
 		cursor: grab;
+		user-select: none; /* Prevent text selection during dragging */
 	}
 
 	.galaxy-canvas:active {
 		cursor: grabbing;
+	}
+
+	/* Show crosshair when selecting destination */
+	.galaxy-canvas.destination-mode {
+		cursor: crosshair !important;
 	}
 </style>
