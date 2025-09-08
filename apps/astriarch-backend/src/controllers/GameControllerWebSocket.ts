@@ -678,7 +678,7 @@ export class GameController {
 
   static async adjustResearchPercent(sessionId: string, payload: any): Promise<GameResult> {
     try {
-      if (!payload || typeof payload.researchPercent !== 'number') {
+      if (!payload || typeof payload.researchPercent !== "number") {
         return { success: false, error: "Invalid research percent value" };
       }
 
@@ -705,7 +705,7 @@ export class GameController {
       const gameModel = gameModelData.modelData;
 
       // Find the player in the game model
-      const gamePlayer = gameModel.players.find(p => p.id === player.Id);
+      const gamePlayer = gameModel.players.find((p) => p.id === player.Id);
       if (!gamePlayer) {
         return { success: false, error: "Player not found in game state" };
       }
@@ -736,7 +736,7 @@ export class GameController {
 
   static async submitResearchItem(sessionId: string, payload: any): Promise<GameResult> {
     try {
-      if (!payload || !payload.researchItem || typeof payload.researchItem.type !== 'number') {
+      if (!payload || !payload.researchItem || typeof payload.researchItem.type !== "number") {
         return { success: false, error: "Invalid research item" };
       }
 
@@ -760,7 +760,7 @@ export class GameController {
       const gameModel = gameModelData.modelData;
 
       // Find the player in the game model
-      const gamePlayer = gameModel.players.find(p => p.id === player.Id);
+      const gamePlayer = gameModel.players.find((p) => p.id === player.Id);
       if (!gamePlayer) {
         return { success: false, error: "Player not found in game state" };
       }
@@ -811,7 +811,7 @@ export class GameController {
       const gameModel = gameModelData.modelData;
 
       // Find the player in the game model
-      const gamePlayer = gameModel.players.find(p => p.id === player.Id);
+      const gamePlayer = gameModel.players.find((p) => p.id === player.Id);
       if (!gamePlayer) {
         return { success: false, error: "Player not found in game state" };
       }

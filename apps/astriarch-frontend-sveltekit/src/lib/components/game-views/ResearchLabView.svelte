@@ -16,13 +16,32 @@
 	$: gameState = $multiplayerGameStore;
 	$: clientModel = $clientGameModel; // Use clientGameModel from gameStore instead
 	$: currentPlayer = gameState.currentPlayer;
-	
+
 	// Find the current player's data directly from clientModel (which contains the player data)
 	$: player = clientModel?.mainPlayer; // Use mainPlayer directly from clientModel
 	$: researchPercent = player?.research?.researchPercent || 0;
 	$: energyPercent = 1 - researchPercent;
 	$: researchProgress = player?.research?.researchProgressByType || {};
 	$: currentResearchType = player?.research?.researchTypeInQueue;
+
+	// Calculate total credits from planets for research estimation
+	$: totalCreditsFromPlanets = clientModel?.mainPlayerOwnedPlanets
+		? Object.values(clientModel.mainPlayerOwnedPlanets).reduce((total, planet) => {
+				return total + (planet.resources?.credits || 0);
+			}, 0)
+		: 0;
+
+	// Estimate cycles remaining for current research
+	$: cyclesRemaining =
+		player?.research && currentResearchType
+			? Research.estimateTurnsRemainingInQueue(player.research, totalCreditsFromPlanets)
+			: 999;
+
+	// Get research level data for progress bar
+	$: currentResearchLevelData =
+		currentResearchType && researchProgress[currentResearchType]
+			? Research.getResearchLevelData(researchProgress[currentResearchType])
+			: null;
 
 	// Research categories for display
 	const shipTypes = [
@@ -120,7 +139,9 @@
 			? {
 					name: Research.researchProgressToString(researchProgress[currentResearchType]),
 					type: currentResearchType,
-					progress: researchProgress[currentResearchType]
+					progress: researchProgress[currentResearchType],
+					levelData: currentResearchLevelData,
+					cyclesRemaining: cyclesRemaining
 				}
 			: null;
 
@@ -405,7 +426,29 @@
 										<Text class="astriarch-body-14" style="margin-bottom: 4px;">
 											{currentResearchInfo.name}.
 										</Text>
-										<Text class="astriarch-body-14">Estimating turns remaining: Infinity</Text>
+										<Text class="astriarch-body-14">
+											Estimating turns remaining: {currentResearchInfo.cyclesRemaining < 999
+												? currentResearchInfo.cyclesRemaining
+												: 'Infinity'}
+										</Text>
+										{#if currentResearchInfo.levelData}
+											<Text class="astriarch-body-12" style="margin-top: 4px; opacity: 0.7;">
+												Progress: {Math.round(currentResearchInfo.levelData.percentComplete * 100)}%
+												complete
+											</Text>
+											<!-- Progress bar -->
+											<div class="mt-2 flex gap-1">
+												{#each Array(20) as _, i}
+													<div
+														class="h-2 w-2 rounded-sm"
+														style="background-color: {i <
+														Math.round(currentResearchInfo.levelData.percentComplete * 20)
+															? '#00ffff'
+															: '#333'}"
+													></div>
+												{/each}
+											</div>
+										{/if}
 									</div>
 								</div>
 

@@ -158,6 +158,65 @@ export class Research {
     return { researchAmountEarnedPerTurn, creditAmountEarnedPerTurn };
   }
 
+  public static estimateTurnsRemainingInQueue(researchData: ResearchData, creditAmountAtMaxPercent: number): number {
+    if (!researchData.researchTypeInQueue) {
+      return 999; // No research in queue
+    }
+
+    const { researchAmountEarnedPerTurn } = Research.getCreditAndResearchAmountEarnedPerTurn(
+      researchData,
+      creditAmountAtMaxPercent,
+    );
+
+    if (researchAmountEarnedPerTurn <= 0) {
+      return 999; // No research progress possible
+    }
+
+    const researchProgress = researchData.researchProgressByType[researchData.researchTypeInQueue];
+    const researchTypeData = Research.researchTypeIndex[researchProgress.type];
+
+    // Calculate cost to next level
+    const currentLevel = researchProgress.currentResearchLevel;
+    const nextLevelIndex = currentLevel + 1;
+
+    if (nextLevelIndex >= researchTypeData.researchLevelCosts.length) {
+      return 0; // Already at max level
+    }
+
+    const totalCostToNextLevel = researchTypeData.researchLevelCosts[nextLevelIndex];
+    const researchCostToNextLevel = totalCostToNextLevel - researchProgress.researchPointsCompleted;
+
+    return Math.ceil(researchCostToNextLevel / researchAmountEarnedPerTurn);
+  }
+
+  public static getResearchLevelData(researchProgress: ResearchTypeProgress) {
+    const researchTypeData = Research.researchTypeIndex[researchProgress.type];
+    const currentLevel = researchProgress.currentResearchLevel;
+    const nextLevelIndex = currentLevel + 1;
+
+    const researchLevelData = {
+      currentResearchLevel: currentLevel + 1, // Display level (0-based becomes 1-based)
+      researchCostToNextLevel: 0,
+      percentComplete: 0,
+    };
+
+    if (nextLevelIndex >= researchTypeData.researchLevelCosts.length) {
+      // Already at max level
+      researchLevelData.percentComplete = 1.0;
+      return researchLevelData;
+    }
+
+    const totalCostAtCurrentLevel = currentLevel === -1 ? 0 : researchTypeData.researchLevelCosts[currentLevel];
+    const totalCostToNextLevel = researchTypeData.researchLevelCosts[nextLevelIndex];
+
+    researchLevelData.researchCostToNextLevel = totalCostToNextLevel - researchProgress.researchPointsCompleted;
+    researchLevelData.percentComplete =
+      (researchProgress.researchPointsCompleted - totalCostAtCurrentLevel) /
+      (totalCostToNextLevel - totalCostAtCurrentLevel);
+
+    return researchLevelData;
+  }
+
   public static canResearch(researchProgress: ResearchTypeProgress): boolean {
     return researchProgress.currentResearchLevel < researchProgress.maxResearchLevel;
   }
