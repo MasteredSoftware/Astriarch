@@ -5,6 +5,7 @@
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
+	import { Planet } from 'astriarch-engine/src/engine/planet';
 	import type { IconImageType } from '$lib/components/astriarch/types';
 
 	// No need to import SVG icons individually anymore
@@ -24,10 +25,10 @@
 	$: researchProgress = player?.research?.researchProgressByType || {};
 	$: currentResearchType = player?.research?.researchTypeInQueue;
 
-	// Calculate total credits from planets for research estimation
-	$: totalCreditsFromPlanets = clientModel?.mainPlayerOwnedPlanets
+	// Calculate total credits generated per turn from planets for research estimation
+	$: totalCreditsFromPlanets = clientModel?.mainPlayerOwnedPlanets && player
 		? Object.values(clientModel.mainPlayerOwnedPlanets).reduce((total, planet) => {
-				return total + (planet.resources?.credits || 0);
+				return total + Planet.getTaxRevenueAtMaxPercent(planet, player);
 			}, 0)
 		: 0;
 
