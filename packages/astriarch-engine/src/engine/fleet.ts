@@ -412,7 +412,7 @@ export class Fleet {
    * Moves a fleet
    */
   public static moveFleet(fleet: FleetData, owner: PlayerData, cyclesElapsed: number) {
-    if (!fleet.parsecsToDestination) {
+    if (fleet.parsecsToDestination === null || fleet.parsecsToDestination === undefined) {
       throw new Error('Unable to move fleet until parsecsToDestination is set');
     }
     fleet.locationHexMidPoint = null;
