@@ -9,6 +9,9 @@
 	import { webSocketService } from '$lib/services/websocket';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
+	import { Fleet } from 'astriarch-engine/src/engine/fleet';
+	import IconImage from '$lib/components/astriarch/icon-image/IconImage.svelte';
+	import type { IconImageType } from '$lib/components/astriarch/types.js';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default
 	let selectedShipIds = new Set<number>();
@@ -26,11 +29,12 @@
 		fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
 	}
 
-	// Get ships of the selected type from the selected planet (excluding defenders which can't leave)
+	// Get ships of the selected type from the selected planet (excluding defenders and space platforms which can't leave)
 	$: ships =
 		currentSelectedPlanet?.planetaryFleet.starships.filter((ship: StarshipData) => {
-			// Exclude System Defense ships as they can't leave the planet
-			if (ship.type === StarShipType.SystemDefense) return false;
+			// Exclude System Defense ships and Space Platforms as they can't leave the planet
+			if (ship.type === StarShipType.SystemDefense || ship.type === StarShipType.SpacePlatform)
+				return false;
 			// If "all" is selected, show all mobile ships
 			if (selectedShipType === 'all') return true;
 			// Otherwise filter by specific type
@@ -45,6 +49,46 @@
 		{ type: StarShipType.Cruiser, label: 'CRUISER' },
 		{ type: StarShipType.Battleship, label: 'BATTLESHIP' }
 	];
+
+	// Map StarShipType to IconImageType
+	function getShipIconType(shipType: StarShipType): IconImageType {
+		switch (shipType) {
+			case StarShipType.SystemDefense:
+				return 'defender';
+			case StarShipType.Scout:
+				return 'scout';
+			case StarShipType.Destroyer:
+				return 'destroyer';
+			case StarShipType.Cruiser:
+				return 'cruiser';
+			case StarShipType.Battleship:
+				return 'battleship';
+			case StarShipType.SpacePlatform:
+				return 'space_platform';
+			default:
+				return 'scout'; // fallback
+		}
+	}
+
+	// Get ship type display name
+	function getShipTypeName(shipType: StarShipType): string {
+		switch (shipType) {
+			case StarShipType.SystemDefense:
+				return 'Defender';
+			case StarShipType.Scout:
+				return 'Scout';
+			case StarShipType.Destroyer:
+				return 'Destroyer';
+			case StarShipType.Cruiser:
+				return 'Cruiser';
+			case StarShipType.Battleship:
+				return 'Battleship';
+			case StarShipType.SpacePlatform:
+				return 'Space Platform';
+			default:
+				return 'Unknown';
+		}
+	}
 	function toggleShipSelection(shipId: number) {
 		if (selectedShipIds.has(shipId)) {
 			selectedShipIds.delete(shipId);
@@ -59,15 +103,40 @@
 	}
 
 	function getHealthPercentage(ship: StarshipData): number {
-		// For now, assuming all ships are at full health
-		// In the future, this would be calculated from ship.health / ship.maxHealth
-		return 100;
+		// Calculate actual health percentage based on current health vs max strength
+		const maxHealth = Fleet.maxStrength(ship);
+		const currentHealth = ship.health;
+		return Math.round((currentHealth / maxHealth) * 100);
 	}
 
 	function getExperiencePercentage(ship: StarshipData): number {
-		// Calculate experience percentage based on experienceAmount
-		// This is a simplified calculation - in reality it would depend on level thresholds
-		return Math.min(ship.experienceAmount * 2, 100);
+		// Calculate experience percentage towards next level
+		const baseStrength = Fleet.getStarshipTypeBaseStrength(ship.type);
+		const levelInfo = Fleet.starShipLevel(ship, baseStrength);
+
+		// If at max level, show 100%
+		if (levelInfo.level >= 10) {
+			return 100;
+		}
+
+		// Calculate experience needed for current level and next level
+		const currentExp = ship.experienceAmount;
+		const nextLevelExpRequired = levelInfo.nextLevelExpRequirement;
+
+		// Calculate experience required for current level (simplified approximation)
+		let currentLevelExpRequired = 0;
+		let tempExp = baseStrength / 2; // First level requirement
+
+		for (let i = 0; i < levelInfo.level; i++) {
+			currentLevelExpRequired += tempExp;
+			tempExp += Math.round(tempExp / 2);
+		}
+
+		// Calculate progress towards next level
+		const expForThisLevel = nextLevelExpRequired - currentLevelExpRequired;
+		const expProgress = Math.max(0, currentExp - currentLevelExpRequired);
+
+		return Math.round((expProgress / expForThisLevel) * 100);
 	}
 
 	function sendShips() {
@@ -294,83 +363,115 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="grid grid-cols-12 gap-4">
-				{#each ships as ship, index}
-					<button
-						type="button"
-						class="relative h-[72px] w-[90px] cursor-pointer transition-all hover:scale-105 focus:ring-2 focus:ring-cyan-400 focus:outline-none"
-						onclick={() => toggleShipSelection(ship.id)}
-						aria-label="Toggle selection of ship {ship.id}"
-						aria-pressed={selectedShipIds.has(ship.id)}
-					>
-						<!-- Frame with selection border -->
-						<div
-							class="absolute inset-0 rounded-[4px] border-[3.6px] bg-black/15 {selectedShipIds.has(
-								ship.id
-							)
-								? 'border-[#00FFFF]'
-								: 'border-[#313E46]'}"
-						></div>
-
-						<!-- Ship Icon -->
-						<div
-							class="absolute top-[-7.2px] left-[14.4px] flex h-[61.2px] w-[61.2px] items-center justify-center"
+			<div class="overflow-x-auto pb-6">
+				<div class="flex min-w-max gap-4">
+					{#each ships as ship, index}
+						<button
+							type="button"
+							class="relative h-[72px] w-[90px] cursor-pointer transition-all hover:scale-105 focus:ring-2 focus:ring-cyan-400 focus:outline-none"
+							onclick={() => toggleShipSelection(ship.id)}
+							aria-label="Toggle selection of {getShipTypeName(
+								ship.type
+							)} (ID: {ship.id}, Health: {ship.health})"
+							aria-pressed={selectedShipIds.has(ship.id)}
+							title="{getShipTypeName(ship.type)} - Health: {ship.health}/{Fleet.maxStrength(
+								ship
+							)}, Level: {Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type))
+								.level}, Experience: {ship.experienceAmount}"
 						>
-							<div class="h-[61.2px] w-[61.2px] scale-y-[-100%] rotate-90">
-								<!-- Ship SVG placeholder - in reality this would be the actual ship image -->
-								<div class="h-full w-full">
-									<svg
-										viewBox="0 0 100 100"
-										class="h-full w-full {selectedShipIds.has(ship.id)
-											? 'fill-[#00FFFF]'
-											: 'fill-white'}"
-									>
-										<!-- Simple ship shape -->
-										<polygon points="50,10 80,40 80,60 50,90 20,60 20,40" />
-									</svg>
-								</div>
-							</div>
-						</div>
-
-						<!-- Experience Bars -->
-						<div class="absolute top-[75%] right-[4%] bottom-[5%] left-[4%]">
+							<!-- Frame with selection border -->
 							<div
-								class="absolute inset-0 rounded-br-[3.6px] rounded-bl-[3.6px] bg-[rgba(27,31,37,0.65)]"
+								class="absolute inset-0 rounded-[4px] border-[3.6px] bg-black/15 {selectedShipIds.has(
+									ship.id
+								)
+									? 'border-[#00FFFF]'
+									: 'border-[#313E46]'}"
 							></div>
-							<!-- Experience bars (4 segments) -->
-							{#each Array(4) as _, i}
-								<div
-									class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#23BDFF] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-									style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) >
-									(i + 1) * 25
-										? 1
-										: 0.3}"
-								></div>
-							{/each}
-						</div>
 
-						<!-- Health Bar -->
-						<div
-							class="absolute top-[60%] right-[4%] bottom-[20%] left-[4%] flex items-center justify-center"
-						>
-							<div class="h-[14.4px] w-[82.8px] scale-y-[-100%] rotate-180">
-								<div class="relative h-full w-full">
-									<div class="absolute inset-0 bg-[rgba(27,31,37,0.65)]"></div>
-									<!-- Health bars (4 segments) -->
-									{#each Array(4) as _, i}
+							<!-- Ship Icon - Much larger, takes up most of the card -->
+							<div
+								class="absolute top-[-7.2px] left-[14.4px] h-[61.2px] w-[61.2px] shadow-[0px_0px_14px_0px_rgba(255,255,255,0.24)]"
+							>
+								<div class="absolute inset-0 flex items-center justify-center">
+									<div class="h-[61.2px] w-[61.2px]">
 										<div
-											class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#00FF38] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-											style="left: {2.63 + i * 24.35}%; opacity: {getHealthPercentage(ship) >
-											(i + 1) * 25
-												? 1
-												: 0.3}"
-										></div>
-									{/each}
+											class="relative h-full w-full transition-all duration-200"
+											style="filter: {selectedShipIds.has(ship.id)
+												? 'brightness(0) saturate(100%) invert(85%) sepia(78%) saturate(2476%) hue-rotate(159deg) brightness(103%) contrast(101%)'
+												: 'none'}"
+										>
+											<IconImage
+												type={getShipIconType(ship.type)}
+												size={61}
+												altText={`${ship.type} ship`}
+												class="h-full w-full"
+											/>
+										</div>
+									</div>
 								</div>
 							</div>
-						</div>
-					</button>
-				{/each}
+
+							<!-- Experience Bars - Overlaid on ship icon at bottom -->
+							<div class="absolute top-[75%] right-[4%] bottom-[5%] left-[4%]">
+								<div
+									class="absolute inset-0 rounded-br-[3.6px] rounded-bl-[3.6px] bg-[rgba(27,31,37,0.65)]"
+								></div>
+								<!-- Experience bars (4 segments) -->
+								{#each Array(4) as _, i}
+									<div
+										class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#23BDFF] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
+										style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) >
+										(i + 1) * 25
+											? 1
+											: 0.3}"
+									></div>
+								{/each}
+							</div>
+
+							<!-- Health Bar - Overlaid on ship icon in middle -->
+							<div
+								class="absolute top-[60%] right-[4%] bottom-[20%] left-[4%] flex items-center justify-center"
+							>
+								<div class="h-[14.4px] w-[82.8px] scale-y-[-100%] rotate-180">
+									<div class="relative h-full w-full">
+										<div class="absolute inset-0 bg-[rgba(27,31,37,0.65)]"></div>
+										<!-- Health bars (4 segments) -->
+										{#each Array(4) as _, i}
+											<div
+												class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#00FF38] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
+												style="left: {2.63 + i * 24.35}%; opacity: {getHealthPercentage(ship) >
+												(i + 1) * 25
+													? 1
+													: 0.3}"
+											></div>
+										{/each}
+									</div>
+								</div>
+							</div>
+
+							<!-- Level Indicator - Top left corner -->
+							{#if Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type)).level > 0}
+								<div class="absolute top-[5%] left-[8%]">
+									<div
+										class="min-w-[16px] rounded-sm bg-[rgba(27,31,37,0.8)] px-1 py-0.5 text-center"
+									>
+										<span class="text-[8px] leading-none font-bold text-[#23BDFF]">
+											{Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type))
+												.level}
+										</span>
+									</div>
+								</div>
+							{/if}
+
+							<!-- Ship Type Label -->
+							<div class="absolute right-0 bottom-[-18px] left-0 text-center">
+								<span class="text-[8px] font-bold tracking-wider text-white/60 uppercase">
+									{getShipTypeName(ship.type)}
+								</span>
+							</div>
+						</button>
+					{/each}
+				</div>
 			</div>
 		{/if}
 	</div>

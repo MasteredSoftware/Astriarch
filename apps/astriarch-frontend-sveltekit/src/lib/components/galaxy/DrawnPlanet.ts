@@ -210,7 +210,7 @@ export class DrawnPlanet {
 		) {
 			// Calculate total fleet strength (sum of all ship health/strength)
 			const fleetStrength = this.planetData.planetaryFleet.starships.reduce(
-				(total: number, ship: StarshipData) => total + ship.health, 
+				(total: number, ship: StarshipData) => total + ship.health,
 				0
 			);
 			strengthText = fleetStrength.toString();
@@ -222,7 +222,7 @@ export class DrawnPlanet {
 			if (lastKnownData?.fleetData?.starships?.length) {
 				// Calculate last known fleet strength
 				const lastKnownFleetStrength = lastKnownData.fleetData.starships.reduce(
-					(total: number, ship: StarshipData) => total + ship.health, 
+					(total: number, ship: StarshipData) => total + ship.health,
 					0
 				);
 				if (lastKnownFleetStrength > 0) {
