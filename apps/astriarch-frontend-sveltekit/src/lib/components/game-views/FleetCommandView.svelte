@@ -289,8 +289,8 @@
 			<div class="overflow-x-auto pb-6">
 				<div class="flex min-w-max gap-4">
 					{#each ships as ship, index}
-						<ShipCard 
-							{ship} 
+						<ShipCard
+							{ship}
 							isSelected={selectedShipIds.has(ship.id)}
 							onToggleSelection={() => toggleShipSelection(ship.id)}
 						/>

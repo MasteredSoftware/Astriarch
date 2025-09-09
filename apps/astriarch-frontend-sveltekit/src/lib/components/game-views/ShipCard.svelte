@@ -138,8 +138,7 @@
 		{#each Array(4) as _, i}
 			<div
 				class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#23BDFF] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) >
-				(i + 1) * 25
+				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) > (i + 1) * 25
 					? 1
 					: 0.3}"
 			></div>
@@ -157,8 +156,7 @@
 				{#each Array(4) as _, i}
 					<div
 						class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#00FF38] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-						style="left: {2.63 + i * 24.35}%; opacity: {getHealthPercentage(ship) >
-						(i + 1) * 25
+						style="left: {2.63 + i * 24.35}%; opacity: {getHealthPercentage(ship) > (i + 1) * 25
 							? 1
 							: 0.3}"
 					></div>
@@ -170,12 +168,9 @@
 	<!-- Level Indicator - Top left corner -->
 	{#if Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type)).level > 0}
 		<div class="absolute top-[5%] left-[8%]">
-			<div
-				class="min-w-[16px] rounded-sm bg-[rgba(27,31,37,0.8)] px-1 py-0.5 text-center"
-			>
+			<div class="min-w-[16px] rounded-sm bg-[rgba(27,31,37,0.8)] px-1 py-0.5 text-center">
 				<span class="text-[8px] leading-none font-bold text-[#23BDFF]">
-					{Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type))
-						.level}
+					{Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type)).level}
 				</span>
 			</div>
 		</div>

@@ -533,9 +533,7 @@
 
 			<!-- Dropdown Components Demo -->
 			<div class="mb-8">
-				<h3 class="mb-4 text-center text-lg font-semibold text-cyan-400">
-					Dropdown Components
-				</h3>
+				<h3 class="mb-4 text-center text-lg font-semibold text-cyan-400">Dropdown Components</h3>
 				<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
 					<!-- Ship Type Dropdown -->
 					<div class="flex flex-col items-center space-y-4">

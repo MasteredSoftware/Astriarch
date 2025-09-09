@@ -49,7 +49,7 @@
 	`);
 
 	const textColor = variant === 'primary' ? '#1B1F25' : '#00FFFF';
-	
+
 	const textStyle = $derived(`
 		color: ${textColor};
 		font-family: 'Orbitron', sans-serif;
@@ -69,7 +69,7 @@
 		text-overflow: ellipsis;
 	`);
 
-	const selectedOption = $derived(options.find(opt => opt.value === value));
+	const selectedOption = $derived(options.find((opt) => opt.value === value));
 	const displayText = $derived(selectedOption?.label || placeholder);
 
 	function toggleDropdown() {
@@ -127,39 +127,41 @@
 		<span style={textStyle}>
 			{displayText}
 		</span>
-		
+
 		<!-- Chevron Icon -->
-		<div class="relative z-10 pointer-events-none" style="width: 12px; height: 12px;">
-			<svg 
-				width="12" 
-				height="12" 
-				viewBox="0 0 12 12" 
-				fill="none" 
+		<div class="pointer-events-none relative z-10" style="width: 12px; height: 12px;">
+			<svg
+				width="12"
+				height="12"
+				viewBox="0 0 12 12"
+				fill="none"
 				xmlns="http://www.w3.org/2000/svg"
 				class="transition-transform duration-200 {isOpen ? 'rotate-180' : ''}"
 			>
-				<path 
-					d="M3 4.5L6 7.5L9 4.5" 
-					stroke={textColor} 
-					stroke-width="1.5" 
-					stroke-linecap="round" 
+				<path
+					d="M3 4.5L6 7.5L9 4.5"
+					stroke={textColor}
+					stroke-width="1.5"
+					stroke-linecap="round"
 					stroke-linejoin="round"
 				/>
 			</svg>
 		</div>
-		
+
 		<DropdownSvg {variant} />
 	</button>
 
 	<!-- Dropdown Menu -->
 	{#if isOpen && !disabled}
-		<div 
-			class="absolute top-full left-0 -mt-2 z-50 min-w-full bg-gray-900/95 backdrop-blur-sm border border-cyan-500/30 rounded shadow-lg"
+		<div
+			class="absolute top-full left-0 z-50 -mt-2 min-w-full rounded border border-cyan-500/30 bg-gray-900/95 shadow-lg backdrop-blur-sm"
 			role="listbox"
 		>
 			{#each options as option}
 				<button
-					class="w-full text-left px-4 py-3 text-cyan-100 hover:bg-cyan-500/20 transition-colors font-bold text-sm uppercase tracking-wide border-b border-cyan-500/10 last:border-b-0 {option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
+					class="w-full border-b border-cyan-500/10 px-4 py-3 text-left text-sm font-bold tracking-wide text-cyan-100 uppercase transition-colors last:border-b-0 hover:bg-cyan-500/20 {option.disabled
+						? 'cursor-not-allowed opacity-50'
+						: 'cursor-pointer'}"
 					onclick={() => !option.disabled && selectOption(option.value)}
 					disabled={option.disabled}
 					role="option"

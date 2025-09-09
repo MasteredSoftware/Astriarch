@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Text, Button, IconImage } from '$lib/components/astriarch';
+	import { Text, Button, IconImage, Dropdown } from '$lib/components/astriarch';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
@@ -14,36 +14,39 @@
 	// and connection state from multiplayer store (for lobby/connection info)
 	import { clientGameModel } from '$lib/stores/gameStore';
 
-	$: gameState = $multiplayerGameStore;
-	$: clientModel = $clientGameModel; // Use clientGameModel from gameStore instead
-	$: currentPlayer = gameState.currentPlayer;
+	const gameState = $derived($multiplayerGameStore);
+	const clientModel = $derived($clientGameModel); // Use clientGameModel from gameStore instead
+	const currentPlayer = $derived(gameState.currentPlayer);
 
 	// Find the current player's data directly from clientModel (which contains the player data)
-	$: player = clientModel?.mainPlayer; // Use mainPlayer directly from clientModel
-	$: researchPercent = player?.research?.researchPercent || 0;
-	$: energyPercent = 1 - researchPercent;
-	$: researchProgress = player?.research?.researchProgressByType || {};
-	$: currentResearchType = player?.research?.researchTypeInQueue;
+	const player = $derived(clientModel?.mainPlayer); // Use mainPlayer directly from clientModel
+	const researchPercent = $derived(player?.research?.researchPercent || 0);
+	const energyPercent = $derived(1 - researchPercent);
+	const researchProgress = $derived(player?.research?.researchProgressByType || {});
+	const currentResearchType = $derived(player?.research?.researchTypeInQueue);
 
 	// Calculate total credits generated per turn from planets for research estimation
-	$: totalCreditsFromPlanets =
+	const totalCreditsFromPlanets = $derived(
 		clientModel?.mainPlayerOwnedPlanets && player
 			? Object.values(clientModel.mainPlayerOwnedPlanets).reduce((total, planet) => {
 					return total + Planet.getTaxRevenueAtMaxPercent(planet, player);
 				}, 0)
-			: 0;
+			: 0
+	);
 
 	// Estimate cycles remaining for current research
-	$: cyclesRemaining =
+	const cyclesRemaining = $derived(
 		player?.research && currentResearchType
 			? Research.estimateTurnsRemainingInQueue(player.research, totalCreditsFromPlanets)
-			: 999;
+			: 999
+	);
 
 	// Get research level data for progress bar
-	$: currentResearchLevelData =
+	const currentResearchLevelData = $derived(
 		currentResearchType && researchProgress[currentResearchType]
 			? Research.getResearchLevelData(researchProgress[currentResearchType])
-			: null;
+			: null
+	);
 
 	// Research categories for display
 	const shipTypes = [
@@ -125,18 +128,32 @@
 		}
 	];
 
-	// Check if current research is a custom ship
-	$: isCustomShipResearch =
-		currentResearchType &&
-		[
-			ResearchType.NEW_SHIP_TYPE_DEFENDER,
-			ResearchType.NEW_SHIP_TYPE_SCOUT,
-			ResearchType.NEW_SHIP_TYPE_DESTROYER,
-			ResearchType.NEW_SHIP_TYPE_CRUISER,
-			ResearchType.NEW_SHIP_TYPE_BATTLESHIP
-		].includes(currentResearchType);
+	// Custom ship design state
+	let advantageAgainst = $state('');
+	let disadvantageAgainst = $state('');
 
-	$: currentResearchInfo =
+	// Dropdown options for ship types
+	const shipTypeOptions = [
+		{ value: 'defender', label: 'Defender' },
+		{ value: 'scout', label: 'Scout' },
+		{ value: 'destroyer', label: 'Destroyer' },
+		{ value: 'cruiser', label: 'Cruiser' },
+		{ value: 'battleship', label: 'Battleship' }
+	];
+
+	// Check if current research is a custom ship
+	const isCustomShipResearch = $derived(
+		currentResearchType &&
+			[
+				ResearchType.NEW_SHIP_TYPE_DEFENDER,
+				ResearchType.NEW_SHIP_TYPE_SCOUT,
+				ResearchType.NEW_SHIP_TYPE_DESTROYER,
+				ResearchType.NEW_SHIP_TYPE_CRUISER,
+				ResearchType.NEW_SHIP_TYPE_BATTLESHIP
+			].includes(currentResearchType)
+	);
+
+	const currentResearchInfo = $derived(
 		currentResearchType && researchProgress[currentResearchType]
 			? {
 					name: Research.researchProgressToString(researchProgress[currentResearchType]),
@@ -145,7 +162,8 @@
 					levelData: currentResearchLevelData,
 					cyclesRemaining: cyclesRemaining
 				}
-			: null;
+			: null
+	);
 
 	function renderResourceBar(percentage: number, color: string) {
 		const filledBars = Math.round(percentage * 20);
@@ -156,8 +174,8 @@
 		return bars;
 	}
 
-	$: energyBars = renderResourceBar(energyPercent, '#e2c631');
-	$: researchBars = renderResourceBar(researchPercent, '#00ffa3');
+	const energyBars = $derived(renderResourceBar(energyPercent, '#e2c631'));
+	const researchBars = $derived(renderResourceBar(researchPercent, '#00ffa3'));
 
 	// Function to get the appropriate icon for a research type
 	function getResearchIcon(researchType: ResearchType): IconImageType {
@@ -196,7 +214,18 @@
 	function cancelResearchItem() {
 		// Send WebSocket message to server using the service method
 		webSocketService.cancelResearchItem();
-	} // Handle clicking on resource bars
+	}
+
+	// Handle dropdown selections for custom ship design
+	function handleAdvantageSelection(shipType: string) {
+		advantageAgainst = shipType;
+	}
+
+	function handleDisadvantageSelection(shipType: string) {
+		disadvantageAgainst = shipType;
+	}
+
+	// Handle clicking on resource bars
 	function handleBarClick(event: MouseEvent, isResearchBar: boolean) {
 		const target = event.currentTarget as HTMLElement;
 		const rect = target.getBoundingClientRect();
@@ -377,11 +406,13 @@
 										Advantage against
 									</Text>
 
-									<Button
-										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
-									>
-										DESTROYER
-									</Button>
+									<Dropdown
+										options={shipTypeOptions}
+										value={advantageAgainst}
+										placeholder="Select ship type"
+										variant="secondary"
+										onSelect={handleAdvantageSelection}
+									/>
 								</div>
 
 								<div class="flex-1">
@@ -391,11 +422,13 @@
 										Disadvantage against
 									</Text>
 
-									<Button
-										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
-									>
-										SCOUTS
-									</Button>
+									<Dropdown
+										options={shipTypeOptions}
+										value={disadvantageAgainst}
+										placeholder="Select ship type"
+										variant="secondary"
+										onSelect={handleDisadvantageSelection}
+									/>
 								</div>
 							</div>
 
@@ -476,11 +509,13 @@
 										Advantage against
 									</Text>
 
-									<Button
-										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
-									>
-										DESTROYER
-									</Button>
+									<Dropdown
+										options={shipTypeOptions}
+										value={advantageAgainst}
+										placeholder="Select ship type"
+										variant="secondary"
+										onSelect={handleAdvantageSelection}
+									/>
 								</div>
 
 								<div class="flex-1">
@@ -490,11 +525,13 @@
 										Disadvantage against
 									</Text>
 
-									<Button
-										style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px;"
-									>
-										SCOUTS
-									</Button>
+									<Dropdown
+										options={shipTypeOptions}
+										value={disadvantageAgainst}
+										placeholder="Select ship type"
+										variant="secondary"
+										onSelect={handleDisadvantageSelection}
+									/>
 								</div>
 							</div>
 
