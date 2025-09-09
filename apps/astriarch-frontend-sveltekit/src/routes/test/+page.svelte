@@ -42,7 +42,8 @@
 		NavigationTab,
 		TabController,
 		Tab,
-		AvailablePlanetProductionItem
+		AvailablePlanetProductionItem,
+		Dropdown
 	} from '$lib/components/astriarch';
 	import Logo from '$lib/components/atoms/Logo.svelte';
 	import WindowFrame from '$lib/components/atoms/WindowFrame.svelte';
@@ -102,6 +103,25 @@
 			label: 'Resources'
 		}
 	];
+
+	// Sample dropdown data
+	const shipTypeOptions = [
+		{ value: 'scout', label: 'Scout' },
+		{ value: 'destroyer', label: 'Destroyer' },
+		{ value: 'cruiser', label: 'Cruiser' },
+		{ value: 'battleship', label: 'Battleship' },
+		{ value: 'disabled', label: 'Disabled Option', disabled: true }
+	];
+
+	const researchOptions = [
+		{ value: 'propulsion', label: 'Propulsion' },
+		{ value: 'weapons', label: 'Weapons' },
+		{ value: 'shields', label: 'Shields' },
+		{ value: 'mining', label: 'Mining Tech' }
+	];
+
+	let selectedShipType = $state('');
+	let selectedResearch = $state('propulsion');
 </script>
 
 <div class="font-orbitron min-h-screen bg-gradient-to-b from-slate-900 to-black p-8 text-white">
@@ -508,6 +528,64 @@
 						selected={false}
 						onclick={() => console.log('Planet tab clicked')}
 					/>
+				</div>
+			</div>
+
+			<!-- Dropdown Components Demo -->
+			<div class="mb-8">
+				<h3 class="mb-4 text-center text-lg font-semibold text-cyan-400">
+					Dropdown Components
+				</h3>
+				<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+					<!-- Ship Type Dropdown -->
+					<div class="flex flex-col items-center space-y-4">
+						<h4 class="text-md font-semibold text-cyan-300">Ship Type</h4>
+						<Dropdown
+							options={shipTypeOptions}
+							value={selectedShipType}
+							placeholder="Select Ship"
+							variant="secondary"
+							onSelect={(value) => {
+								selectedShipType = value;
+								console.log('Selected ship:', value);
+							}}
+						/>
+						<p class="text-xs text-cyan-200">Selected: {selectedShipType || 'None'}</p>
+					</div>
+
+					<!-- Research Dropdown -->
+					<div class="flex flex-col items-center space-y-4">
+						<h4 class="text-md font-semibold text-cyan-300">Research</h4>
+						<Dropdown
+							options={researchOptions}
+							value={selectedResearch}
+							placeholder="Select Research"
+							variant="secondary"
+							onSelect={(value) => {
+								selectedResearch = value;
+								console.log('Selected research:', value);
+							}}
+						/>
+						<p class="text-xs text-cyan-200">Selected: {selectedResearch}</p>
+					</div>
+
+					<!-- Primary Variant -->
+					<div class="flex flex-col items-center space-y-4">
+						<h4 class="text-md font-semibold text-cyan-300">Primary Variant</h4>
+						<Dropdown
+							options={researchOptions}
+							value="weapons"
+							variant="primary"
+							onSelect={(value) => console.log('Primary dropdown:', value)}
+						/>
+						<Dropdown
+							options={shipTypeOptions.slice(0, 3)}
+							placeholder="Disabled"
+							variant="secondary"
+							disabled={true}
+							onSelect={(value) => console.log('Disabled dropdown:', value)}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>

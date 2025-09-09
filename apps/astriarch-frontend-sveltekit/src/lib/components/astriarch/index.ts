@@ -6,6 +6,10 @@ export { default as ButtonSvg } from './button/ButtonSvg.svelte';
 export { default as Card } from './card/Card.svelte';
 export { default as CardSvg } from './card/CardSvg.svelte';
 
+// Dropdown components
+export { default as Dropdown } from './dropdown/Dropdown.svelte';
+export { default as DropdownSvg } from './dropdown/DropdownSvg.svelte';
+
 // Icon components
 export { default as IconImage } from './icon-image/IconImage.svelte';
 
