@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as Select from '$lib/components/ui/select';
 	import DropdownSvg from './DropdownSvg.svelte';
 
 	interface DropdownOption {
@@ -28,10 +29,9 @@
 		...restProps
 	}: Props = $props();
 
-	let isOpen = $state(false);
-	let dropdownRef: HTMLDivElement;
-
-	const dropdownStyle = $derived(`
+	const textColor = variant === 'primary' ? '#1B1F25' : '#00FFFF';
+	
+	const triggerStyle = $derived(`
 		width: 241px;
 		height: 84px;
 		background-color: transparent;
@@ -46,10 +46,9 @@
 		justify-content: space-between;
 		padding-left: 24px;
 		padding-right: 40px;
+		box-shadow: none;
 	`);
-
-	const textColor = variant === 'primary' ? '#1B1F25' : '#00FFFF';
-
+	
 	const textStyle = $derived(`
 		color: ${textColor};
 		font-family: 'Orbitron', sans-serif;
@@ -69,108 +68,64 @@
 		text-overflow: ellipsis;
 	`);
 
-	const selectedOption = $derived(options.find((opt) => opt.value === value));
+	// Get the display text for the current value
+	const selectedOption = $derived(options.find(opt => opt.value === value));
 	const displayText = $derived(selectedOption?.label || placeholder);
 
-	function toggleDropdown() {
-		if (!disabled) {
-			isOpen = !isOpen;
+	function handleValueChange(newValue: string | undefined) {
+		if (newValue && onSelect) {
+			onSelect(newValue);
 		}
 	}
-
-	function selectOption(optionValue: string) {
-		if (!disabled) {
-			onSelect?.(optionValue);
-			isOpen = false;
-		}
-	}
-
-	function handleKeydown(event: KeyboardEvent) {
-		if (!disabled) {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				toggleDropdown();
-			} else if (event.key === 'Escape') {
-				isOpen = false;
-			}
-		}
-	}
-
-	// Close dropdown when clicking outside
-	function handleClickOutside(event: MouseEvent) {
-		if (dropdownRef && !dropdownRef.contains(event.target as Node)) {
-			isOpen = false;
-		}
-	}
-
-	$effect(() => {
-		if (isOpen) {
-			document.addEventListener('click', handleClickOutside);
-			return () => {
-				document.removeEventListener('click', handleClickOutside);
-			};
-		}
-	});
 </script>
 
-<div bind:this={dropdownRef} class="relative {className || ''}" {...restProps}>
-	<button
-		onclick={toggleDropdown}
-		onkeydown={handleKeydown}
-		style={dropdownStyle}
-		class="transition-opacity hover:opacity-90 active:opacity-100"
-		{disabled}
-		aria-expanded={isOpen}
-		aria-haspopup="listbox"
-		role="combobox"
-	>
-		<span style={textStyle}>
-			{displayText}
-		</span>
-
-		<!-- Chevron Icon -->
-		<div class="pointer-events-none relative z-10" style="width: 12px; height: 12px;">
-			<svg
-				width="12"
-				height="12"
-				viewBox="0 0 12 12"
-				fill="none"
-				xmlns="http://www.w3.org/2000/svg"
-				class="transition-transform duration-200 {isOpen ? 'rotate-180' : ''}"
-			>
-				<path
-					d="M3 4.5L6 7.5L9 4.5"
-					stroke={textColor}
-					stroke-width="1.5"
-					stroke-linecap="round"
-					stroke-linejoin="round"
-				/>
-			</svg>
-		</div>
-
-		<DropdownSvg {variant} />
-	</button>
-
-	<!-- Dropdown Menu -->
-	{#if isOpen && !disabled}
-		<div
-			class="absolute top-full left-0 z-50 -mt-2 min-w-full rounded border border-cyan-500/30 bg-gray-900/95 shadow-lg backdrop-blur-sm"
-			role="listbox"
+<div class="relative {className || ''}" {...restProps}>
+	<Select.Root type="single" {value} onValueChange={handleValueChange} {disabled}>
+		<Select.Trigger 
+			class="transition-opacity hover:opacity-90 active:opacity-100"
+			style={triggerStyle}
+		>
+			<span style={textStyle}>
+				{displayText}
+			</span>
+			
+			<!-- Custom Chevron Icon -->
+			<div class="relative z-10 pointer-events-none" style="width: 12px; height: 12px;">
+				<svg 
+					width="12" 
+					height="12" 
+					viewBox="0 0 12 12" 
+					fill="none" 
+					xmlns="http://www.w3.org/2000/svg"
+					class="transition-transform duration-200"
+				>
+					<path 
+						d="M3 4.5L6 7.5L9 4.5" 
+						stroke={textColor} 
+						stroke-width="1.5" 
+						stroke-linecap="round" 
+						stroke-linejoin="round"
+					/>
+				</svg>
+			</div>
+			
+			<DropdownSvg {variant} class="size-full" />
+		</Select.Trigger>
+		
+		<Select.Content 
+			class="bg-gray-900/95 backdrop-blur-sm border-cyan-500/30 rounded shadow-lg min-w-[241px]"
+			sideOffset={-4}
 		>
 			{#each options as option}
-				<button
-					class="w-full border-b border-cyan-500/10 px-4 py-3 text-left text-sm font-bold tracking-wide text-cyan-100 uppercase transition-colors last:border-b-0 hover:bg-cyan-500/20 {option.disabled
-						? 'cursor-not-allowed opacity-50'
-						: 'cursor-pointer'}"
-					onclick={() => !option.disabled && selectOption(option.value)}
+				<Select.Item 
+					value={option.value} 
 					disabled={option.disabled}
-					role="option"
-					aria-selected={option.value === value}
+					class="text-cyan-100 hover:bg-cyan-500/20 transition-colors font-bold text-sm uppercase tracking-wide border-b border-cyan-500/10 last:border-b-0 {option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
 					style="font-family: 'Orbitron', sans-serif;"
 				>
 					{option.label}
-				</button>
+				</Select.Item>
 			{/each}
-		</div>
-	{/if}
+		</Select.Content>
+	</Select.Root>
 </div>
