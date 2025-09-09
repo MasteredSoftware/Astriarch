@@ -1,9 +1,10 @@
 <script lang="ts">
 	interface Props {
 		variant?: 'primary' | 'secondary';
+		class?: string;
 	}
 
-	let { variant = 'secondary' }: Props = $props();
+	let { variant = 'secondary', class: className }: Props = $props();
 
 	const { width, height } = { width: 241, height: 84 };
 
@@ -18,7 +19,7 @@
 	viewBox="0 0 241 84"
 	fill="none"
 	xmlns="http://www.w3.org/2000/svg"
-	class="pointer-events-none absolute inset-0"
+	class="pointer-events-none absolute inset-0 {className || ''}"
 >
 	<defs>
 		{#if variant === 'primary'}

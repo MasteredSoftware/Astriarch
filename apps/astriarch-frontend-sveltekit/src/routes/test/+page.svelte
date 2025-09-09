@@ -45,6 +45,7 @@
 		AvailablePlanetProductionItem,
 		Dropdown
 	} from '$lib/components/astriarch';
+	import DropdownSelect from '$lib/components/astriarch/dropdown/DropdownSelect.svelte';
 	import Logo from '$lib/components/atoms/Logo.svelte';
 	import WindowFrame from '$lib/components/atoms/WindowFrame.svelte';
 	import type { IconImageType, TabControllerTab } from '$lib/components/astriarch';
@@ -583,6 +584,44 @@
 							disabled={true}
 							onSelect={(value) => console.log('Disabled dropdown:', value)}
 						/>
+					</div>
+				</div>
+			</div>
+
+			<!-- Dropdown Comparison Demo -->
+			<div class="mb-8">
+				<h3 class="mb-4 text-center text-lg font-semibold text-cyan-400">Dropdown Comparison</h3>
+				<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+					<!-- Custom Dropdown -->
+					<div class="flex flex-col items-center space-y-4">
+						<h4 class="text-md font-semibold text-cyan-300">Custom Dropdown</h4>
+						<Dropdown
+							options={shipTypeOptions}
+							value={selectedShipType}
+							placeholder="Select Ship"
+							variant="secondary"
+							onSelect={(value) => {
+								selectedShipType = value;
+								console.log('Custom dropdown selected:', value);
+							}}
+						/>
+						<p class="text-xs text-cyan-200">Selected: {selectedShipType || 'None'}</p>
+					</div>
+
+					<!-- Shadcn-based Dropdown -->
+					<div class="flex flex-col items-center space-y-4">
+						<h4 class="text-md font-semibold text-cyan-300">Shadcn-based Dropdown</h4>
+						<DropdownSelect
+							options={shipTypeOptions}
+							value={selectedShipType}
+							placeholder="Select Ship"
+							variant="secondary"
+							onSelect={(value) => {
+								selectedShipType = value;
+								console.log('Shadcn dropdown selected:', value);
+							}}
+						/>
+						<p class="text-xs text-cyan-200">Selected: {selectedShipType || 'None'}</p>
 					</div>
 				</div>
 			</div>
