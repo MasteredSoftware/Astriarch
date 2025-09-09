@@ -6,6 +6,7 @@ import { GameModel, GameModelData, playerColors } from './engine/gameModel';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
+import { Research } from './engine/research';
 import { ClientModelData, PlanetById } from './model/clientModel';
 import { StarShipType, FleetData, StarshipData } from './model/fleet';
 import {
@@ -37,6 +38,7 @@ export { ClientGameModel };
 export { GameController };
 export { Events };
 export { Grid };
+export { Research };
 
 // Export model types and enums
 export { PlayerType };

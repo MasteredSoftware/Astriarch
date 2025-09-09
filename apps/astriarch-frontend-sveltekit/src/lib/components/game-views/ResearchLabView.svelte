@@ -131,6 +131,7 @@
 	// Custom ship design state
 	let advantageAgainst = $state('');
 	let disadvantageAgainst = $state('');
+	let selectedCustomShipType = $state<ResearchType | null>(null);
 
 	// Dropdown options for ship types
 	const shipTypeOptions = [
@@ -208,6 +209,81 @@
 	function submitResearchItem(researchType: ResearchType, data: Record<string, unknown> = {}) {
 		// Send WebSocket message to server using the service method
 		webSocketService.submitResearchItem(researchType, data);
+	}
+
+	// Function to submit a ship research item with advantage/disadvantage data
+	function submitShipResearchItem(researchType: ResearchType) {
+		const shipData: Record<string, unknown> = {};
+		
+		// Convert string values to StarShipType enum values
+		const stringToShipType = {
+			'defender': StarShipType.SystemDefense,
+			'scout': StarShipType.Scout,
+			'destroyer': StarShipType.Destroyer,
+			'cruiser': StarShipType.Cruiser,
+			'battleship': StarShipType.Battleship
+		};
+		
+		// Add advantage/disadvantage data if selected
+		if (advantageAgainst) {
+			shipData.advantageAgainst = stringToShipType[advantageAgainst as keyof typeof stringToShipType];
+		}
+		if (disadvantageAgainst) {
+			shipData.disadvantageAgainst = stringToShipType[disadvantageAgainst as keyof typeof stringToShipType];
+		}
+		
+		// Submit with the ship customization data
+		submitResearchItem(researchType, shipData);
+		
+		// Clear the selected custom ship type since we've now submitted it
+		selectedCustomShipType = null;
+		advantageAgainst = '';
+		disadvantageAgainst = '';
+	}
+
+	// Function to handle selecting a custom ship type (but not submitting yet)
+	function selectCustomShipResearch(researchType: ResearchType) {
+		// If this ship type is already being researched, don't allow selection for editing
+		if (currentResearchType === researchType) {
+			return;
+		}
+		
+		// If clicking on the same selected ship type, deselect it
+		if (selectedCustomShipType === researchType) {
+			selectedCustomShipType = null;
+			advantageAgainst = '';
+			disadvantageAgainst = '';
+			return;
+		}
+		
+		selectedCustomShipType = researchType;
+		// Reset the advantage/disadvantage selections when selecting a new ship type
+		advantageAgainst = '';
+		disadvantageAgainst = '';
+	}
+
+	// Function to submit the currently selected custom ship research
+	function submitSelectedCustomShipResearch() {
+		if (selectedCustomShipType) {
+			submitShipResearchItem(selectedCustomShipType);
+		}
+	}
+
+	// Function to update current ship research with new advantage/disadvantage settings
+	function updateCurrentShipResearch() {
+		if (currentResearchType && isCustomShipResearch) {
+			submitShipResearchItem(currentResearchType);
+		}
+	}
+
+	// Function to start a new ship research (used when no research is currently active)
+	function startNewShipResearch() {
+		// We need to know which ship type the user wants to research
+		// For now, we could default to a common ship type or require selection
+		// Let's use scout as a default example, but this might need refinement
+		if (advantageAgainst || disadvantageAgainst) {
+			submitShipResearchItem(ResearchType.NEW_SHIP_TYPE_SCOUT);
+		}
 	}
 
 	// Function to cancel current research
@@ -340,8 +416,10 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each shipTypes as ship}
 								<div
-									class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border border-transparent bg-gray-700/50 transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50"
-									on:click={() => submitResearchItem(ship.researchType)}
+									class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType === ship.researchType || currentResearchType === ship.researchType
+										? 'border-2 border-cyan-500 bg-gray-700'
+										: 'border-transparent bg-gray-700/50'}"
+									on:click={() => selectCustomShipResearch(ship.researchType)}
 									role="button"
 									tabindex="0"
 								>
@@ -398,55 +476,54 @@
 
 					<!-- Conditional Right Section -->
 					<div class="flex flex-1 flex-col">
-						{#if isCustomShipResearch}
-							<!-- Custom Ship: Advantage/Disadvantage Section -->
-							<div class="mb-4 flex">
-								<div class="mr-4 flex-1">
-									<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-										Advantage against
-									</Text>
+						{#if selectedCustomShipType && !isCustomShipResearch}
+							<!-- Custom Ship: Advantage/Disadvantage Section (for new ship selection) -->
+							<div class="mb-4 flex flex-col">
+								<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
+									Configuring {shipTypes.find(s => s.researchType === selectedCustomShipType)?.name} Research
+								</Text>
+								
+								<div class="flex">
+									<div class="mr-4 flex-1">
+										<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
+											Advantage against
+										</Text>
 
-									<Dropdown
-										options={shipTypeOptions}
-										value={advantageAgainst}
-										placeholder="Select ship type"
-										variant="secondary"
-										onSelect={handleAdvantageSelection}
-									/>
-								</div>
+										<Dropdown
+											options={shipTypeOptions}
+											value={advantageAgainst}
+											placeholder="Select ship type"
+											variant="secondary"
+											onSelect={handleAdvantageSelection}
+										/>
+									</div>
 
-								<div class="flex-1">
-									<Text
-										style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
-									>
-										Disadvantage against
-									</Text>
+									<div class="flex-1">
+										<Text
+											style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
+										>
+											Disadvantage against
+										</Text>
 
-									<Dropdown
-										options={shipTypeOptions}
-										value={disadvantageAgainst}
-										placeholder="Select ship type"
-										variant="secondary"
-										onSelect={handleDisadvantageSelection}
-									/>
+										<Dropdown
+											options={shipTypeOptions}
+											value={disadvantageAgainst}
+											placeholder="Select ship type"
+											variant="secondary"
+											onSelect={handleDisadvantageSelection}
+										/>
+									</div>
 								</div>
 							</div>
 
 							<div class="mt-auto flex">
 								<Button
-									style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 24px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px; margin-right: 16px;"
-								>
-									RESEARCH SHIPS
-								</Button>
-
-								<Button
-									style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
-								>
-									OKAY
-								</Button>
+									onclick={submitSelectedCustomShipResearch}
+									label="RESEARCH SHIP"
+								/>
 							</div>
-						{:else if currentResearchInfo && !isCustomShipResearch}
-							<!-- Standard Research: Currently Researching Section -->
+						{:else if currentResearchInfo}
+							<!-- Currently Researching Section (for both standard and custom ship research) -->
 							<div class="flex flex-col">
 								<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
 									Currently researching
@@ -489,64 +566,18 @@
 
 								<div class="mt-auto flex gap-4">
 									<Button
-										on:click={cancelResearchItem}
-										style="background: #ff4444; color: #ffffff; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
+										onclick={cancelResearchItem}
 									>
 										CANCEL RESEARCH
-									</Button>
-									<Button
-										style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
-									>
-										OKAY
 									</Button>
 								</div>
 							</div>
 						{:else}
 							<!-- Default: No research selected -->
-							<div class="mb-4 flex">
-								<div class="mr-4 flex-1">
-									<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-										Advantage against
-									</Text>
-
-									<Dropdown
-										options={shipTypeOptions}
-										value={advantageAgainst}
-										placeholder="Select ship type"
-										variant="secondary"
-										onSelect={handleAdvantageSelection}
-									/>
-								</div>
-
-								<div class="flex-1">
-									<Text
-										style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
-									>
-										Disadvantage against
-									</Text>
-
-									<Dropdown
-										options={shipTypeOptions}
-										value={disadvantageAgainst}
-										placeholder="Select ship type"
-										variant="secondary"
-										onSelect={handleDisadvantageSelection}
-									/>
-								</div>
-							</div>
-
-							<div class="mt-auto flex">
-								<Button
-									style="background: linear-gradient(135deg, #00ffff, #0080ff); color: #00ffff; border: none; padding: 12px 24px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase; text-shadow: rgba(0,0,0,0.15) 0px 0px 8px; margin-right: 16px;"
-								>
-									RESEARCH SHIPS
-								</Button>
-
-								<Button
-									style="background: #00ffff; color: #1b1f25; border: none; padding: 12px 16px; border-radius: 4px; font-family: 'Orbitron', sans-serif; font-weight: 800; font-size: 14px; letter-spacing: 2px; text-transform: uppercase;"
-								>
-									OKAY
-								</Button>
+							<div class="flex flex-col items-center justify-center h-full">
+								<Text class="astriarch-body-14" style="text-align: center; margin-bottom: 16px; opacity: 0.8;">
+									No active research project. Click on a research area below to have your scientists and engineers start researching in that area.
+								</Text>
 							</div>
 						{/if}
 					</div>

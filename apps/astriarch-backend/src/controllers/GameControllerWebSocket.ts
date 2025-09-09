@@ -5,7 +5,7 @@ import { logger } from "../utils/logger";
 import { persistGame } from "../database/DocumentPersistence";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
-import { GameModel, Fleet, StarShipType } from "astriarch-engine";
+import { GameModel, Fleet, StarShipType, ResearchType } from "astriarch-engine";
 
 export interface GameSettings {
   maxPlayers?: number;
@@ -765,13 +765,17 @@ export class GameController {
         return { success: false, error: "Player not found in game state" };
       }
 
-      // Initialize research if needed
-      if (!gamePlayer.research) {
-        gamePlayer.research = {
-          researchPercent: 0,
-          researchProgressByType: {} as any, // Will fix the type issue later
-          researchTypeInQueue: null,
-        };
+      // Get the research progress for this type
+      const researchProgress = gamePlayer.research.researchProgressByType[researchType as ResearchType];
+      if (!researchProgress) {
+        return { success: false, error: "Research type not found" };
+      }
+
+      // Update research progress data with advantage/disadvantage data (for custom ships)
+      if (researchData) {
+        logger.info(`Updating research type ${researchType} with data:`, researchData);
+        engine.Research.updateResearchTypeProgressData(researchProgress, researchData);
+        logger.info(`Research progress after update - base points: ${researchProgress.researchPointsBase}, data:`, researchProgress.data);
       }
 
       // Set the research type in queue
