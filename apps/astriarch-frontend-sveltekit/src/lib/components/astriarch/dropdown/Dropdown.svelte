@@ -154,7 +154,7 @@
 	<!-- Dropdown Menu -->
 	{#if isOpen && !disabled}
 		<div 
-			class="absolute top-full left-0 mt-1 z-50 min-w-full bg-gray-900/95 backdrop-blur-sm border border-cyan-500/30 rounded shadow-lg"
+			class="absolute top-full left-0 -mt-2 z-50 min-w-full bg-gray-900/95 backdrop-blur-sm border border-cyan-500/30 rounded shadow-lg"
 			role="listbox"
 		>
 			{#each options as option}
