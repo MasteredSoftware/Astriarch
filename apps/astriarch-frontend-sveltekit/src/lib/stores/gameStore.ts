@@ -84,6 +84,24 @@ export const currentCycle = derived(clientGameModel, ($clientGameModel) => {
 	return $clientGameModel.currentCycle;
 });
 
+// Research progress derived from client game model (creates new objects for reactivity)
+export const researchProgress = derived(clientGameModel, ($clientGameModel) => {
+	if (!$clientGameModel) return {};
+	// Create new objects to ensure Svelte reactivity works with nested mutations
+	const progress = $clientGameModel.mainPlayer.research.researchProgressByType;
+	const computed: Record<string, unknown> = {};
+	for (const [key, value] of Object.entries(progress)) {
+		computed[key] = { ...value };
+	}
+	return computed;
+});
+
+// Current research type derived from client game model
+export const currentResearchType = derived(clientGameModel, ($clientGameModel) => {
+	if (!$clientGameModel) return null;
+	return $clientGameModel.mainPlayer.research.researchTypeInQueue;
+});
+
 // Friendly time display derived from current cycle
 export const gameTime = derived(currentCycle, ($currentCycle) => {
 	// Convert cycles to a more meaningful time representation

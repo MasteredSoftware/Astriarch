@@ -12,7 +12,7 @@
 
 	// Get game data from the main game store (for clientGameModel)
 	// and connection state from multiplayer store (for lobby/connection info)
-	import { clientGameModel } from '$lib/stores/gameStore';
+	import { clientGameModel, researchProgress, currentResearchType } from '$lib/stores/gameStore';
 
 	const gameState = $derived($multiplayerGameStore);
 	const clientModel = $derived($clientGameModel); // Use clientGameModel from gameStore instead
@@ -22,8 +22,9 @@
 	const player = $derived(clientModel?.mainPlayer); // Use mainPlayer directly from clientModel
 	const researchPercent = $derived(player?.research?.researchPercent || 0);
 	const energyPercent = $derived(1 - researchPercent);
-	const researchProgress = $derived(player?.research?.researchProgressByType || {});
-	const currentResearchType = $derived(player?.research?.researchTypeInQueue);
+	// Use reactive stores for research data instead of accessing directly
+	const progressData = $derived($researchProgress);
+	const currentType = $derived($currentResearchType);
 
 	// Calculate total credits generated per turn from planets for research estimation
 	const totalCreditsFromPlanets = $derived(
@@ -36,15 +37,15 @@
 
 	// Estimate cycles remaining for current research
 	const cyclesRemaining = $derived(
-		player?.research && currentResearchType
+		player?.research && currentType
 			? Research.estimateTurnsRemainingInQueue(player.research, totalCreditsFromPlanets)
 			: 999
 	);
 
 	// Get research level data for progress bar
 	const currentResearchLevelData = $derived(
-		currentResearchType && researchProgress[currentResearchType]
-			? Research.getResearchLevelData(researchProgress[currentResearchType])
+		currentType && progressData && progressData[currentType]
+			? Research.getResearchLevelData(progressData[currentType])
 			: null
 	);
 
@@ -144,27 +145,29 @@
 
 	// Check if current research is a custom ship
 	const isCustomShipResearch = $derived(
-		currentResearchType &&
+		currentType &&
 			[
 				ResearchType.NEW_SHIP_TYPE_DEFENDER,
 				ResearchType.NEW_SHIP_TYPE_SCOUT,
 				ResearchType.NEW_SHIP_TYPE_DESTROYER,
 				ResearchType.NEW_SHIP_TYPE_CRUISER,
 				ResearchType.NEW_SHIP_TYPE_BATTLESHIP
-			].includes(currentResearchType)
+			].includes(currentType)
 	);
 
-	const currentResearchInfo = $derived(
-		currentResearchType && researchProgress[currentResearchType]
+	const currentResearchInfo = $derived.by(() => {
+		const returnVal = currentType && progressData && progressData[currentType]
 			? {
-					name: Research.researchProgressToString(researchProgress[currentResearchType]),
-					type: currentResearchType,
-					progress: researchProgress[currentResearchType],
+					name: Research.researchProgressToString(progressData[currentType]),
+					type: currentType,
+					progress: progressData[currentType],
 					levelData: currentResearchLevelData,
 					cyclesRemaining: cyclesRemaining
 				}
-			: null
-	);
+			: null;
+		console.log('currentResearchInfo recalculated:', returnVal);
+		return returnVal;
+	});
 
 	function renderResourceBar(percentage: number, color: string) {
 		const filledBars = Math.round(percentage * 20);
@@ -244,7 +247,7 @@
 	// Function to handle selecting a custom ship type (but not submitting yet)
 	function selectCustomShipResearch(researchType: ResearchType) {
 		// If this ship type is already being researched, don't allow selection for editing
-		if (currentResearchType === researchType) {
+		if (currentType === researchType) {
 			return;
 		}
 		
@@ -271,8 +274,8 @@
 
 	// Function to update current ship research with new advantage/disadvantage settings
 	function updateCurrentShipResearch() {
-		if (currentResearchType && isCustomShipResearch) {
-			submitShipResearchItem(currentResearchType);
+		if (currentType && isCustomShipResearch) {
+			submitShipResearchItem(currentType);
 		}
 	}
 
@@ -416,7 +419,7 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each shipTypes as ship}
 								<div
-									class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType === ship.researchType || currentResearchType === ship.researchType
+									class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType === ship.researchType || currentType === ship.researchType
 										? 'border-2 border-cyan-500 bg-gray-700'
 										: 'border-transparent bg-gray-700/50'}"
 									on:click={() => selectCustomShipResearch(ship.researchType)}
@@ -441,7 +444,7 @@
 						<div class="grid grid-cols-1 gap-2">
 							{#each improvements as improvement}
 								<div
-									class="h-12 w-12 rounded-lg {currentResearchType === improvement.researchType
+									class="h-12 w-12 rounded-lg {currentType === improvement.researchType
 										? 'border-2 border-cyan-500 bg-gray-700'
 										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
 									on:click={() => submitResearchItem(improvement.researchType)}
@@ -461,7 +464,7 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each infrastructure as infra}
 								<div
-									class="h-12 w-12 rounded-lg {currentResearchType === infra.researchType
+									class="h-12 w-12 rounded-lg {currentType === infra.researchType
 										? 'border-2 border-cyan-500 bg-gray-700'
 										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
 									on:click={() => submitResearchItem(infra.researchType)}
@@ -539,13 +542,13 @@
 											{currentResearchInfo.name}.
 										</Text>
 										<Text class="astriarch-body-14">
-											Estimating turns remaining: {currentResearchInfo.cyclesRemaining < 999
+											Estimated turns remaining: {currentResearchInfo.cyclesRemaining < 999
 												? currentResearchInfo.cyclesRemaining
 												: 'Infinity'}
 										</Text>
 										{#if currentResearchInfo.levelData}
 											<Text class="astriarch-body-12" style="margin-top: 4px; opacity: 0.7;">
-												Progress: {Math.round(currentResearchInfo.levelData.percentComplete * 100)}%
+												Progress: {(currentResearchInfo.levelData.percentComplete * 100).toFixed(1)}%
 												complete
 											</Text>
 											<!-- Progress bar -->
