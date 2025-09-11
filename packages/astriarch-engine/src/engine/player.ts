@@ -283,15 +283,32 @@ export class Player {
           if (pSurplus.resources.food === 0) {
             continue;
           }
-          const amountSpent = PlanetResources.spendEnergyAsPossible(
+          
+          // Calculate how much food we can actually ship (limited by available food and energy for shipping cost)
+          const maxFoodCanShip = Math.min(foodShortageTotal, pSurplus.resources.food);
+          const energyAvailableForShipping = pSurplus.resources.energy;
+          const actualFoodToShip = Math.min(maxFoodCanShip, energyAvailableForShipping);
+          
+          if (actualFoodToShip === 0) {
+            continue; // No energy available for shipping or no food to ship
+          }
+          
+          // Spend the actual food from surplus planet
+          const actualFoodSpent = PlanetResources.spendFoodAsPossible(
             pSurplus.resources,
-            Math.min(foodShortageTotal, pSurplus.resources.food),
+            actualFoodToShip,
+          );
+          
+          // Spend energy for shipping cost (1 energy per food shipped)
+          const shippingCostSpent = PlanetResources.spendEnergyAsPossible(
+            pSurplus.resources,
+            actualFoodSpent,
           );
 
-          totalFoodShipped += amountSpent;
+          totalFoodShipped += actualFoodSpent;
 
-          foodShortageTotal = foodShortageTotal - amountSpent;
-          totalResources.energy = totalResources.energy - amountSpent;
+          foodShortageTotal = foodShortageTotal - actualFoodSpent;
+          totalResources.energy = totalResources.energy - shippingCostSpent;
 
           if (foodShortageTotal === 0) {
             //we shipped enough food

@@ -226,7 +226,7 @@ export class Planet {
    * Removes an item from the build queue and returns resources to the planet based on how far the item is along in being built
    */
   public static removeBuildQueueItemForRefund(planet: PlanetData, index: number): boolean {
-    if (index < 0 || index > planet.buildQueue.length) {
+    if (index < 0 || index >= planet.buildQueue.length) {
       return false;
     }
     const [item] = planet.buildQueue.splice(index, 1);

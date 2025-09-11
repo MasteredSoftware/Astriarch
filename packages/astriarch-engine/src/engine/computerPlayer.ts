@@ -284,7 +284,7 @@ export class ComputerPlayer {
       mineralResourceNeeded,
     );
     let oreAmountNeededWorking = oreAmountNeeded * 1.0;
-    let iridumAmountNeededWorking = iridiumAmountNeeded * 1.0;
+    let iridiumAmountNeededWorking = iridiumAmountNeeded * 1.0;
     //next see if we need miners, look for workers to reassign (don't reassign farmers at this point)
     if (oreAmountNeeded > 0 || iridiumAmountNeeded > 0) {
       const planetCandidatesForRemovingWorkers = []; //List<Planet>
@@ -292,7 +292,7 @@ export class ComputerPlayer {
       allPlanets.sort((a, b) => mineralResourcePotentialComparer.sortFunction(a, b));
 
       for (const p of allPlanets) {
-        if (oreAmountNeededWorking < 0 && iridumAmountNeededWorking < 0) {
+        if (oreAmountNeededWorking < 0 && iridiumAmountNeededWorking < 0) {
           break;
         }
         const rpt = planetResourcesPerTurn[p.id];
@@ -308,7 +308,7 @@ export class ComputerPlayer {
         if (pw.builders > minBuilders && pw.farmers > minFarmers) {
           planetCandidatesForRemovingWorkers.push(p);
           oreAmountNeededWorking -= rpt.amountNextWorkerPerTurn.ore;
-          iridumAmountNeededWorking -= rpt.amountNextWorkerPerTurn.iridium;
+          iridiumAmountNeededWorking -= rpt.amountNextWorkerPerTurn.iridium;
         }
       }
 
@@ -345,7 +345,7 @@ export class ComputerPlayer {
       allPlanets.reverse();
 
       for (const p of allPlanets) {
-        if (oreAmountNeededWorking > 0 || iridumAmountNeededWorking > 0) {
+        if (oreAmountNeededWorking > 0 || iridiumAmountNeededWorking > 0) {
           break;
         }
         const rpt = planetResourcesPerTurn[p.id];
@@ -353,7 +353,7 @@ export class ComputerPlayer {
         if (pw.miners > 0) {
           planetCandidatesForRemovingMiners.push(p);
           oreAmountNeededWorking += rpt.amountPerWorkerPerTurn.ore;
-          iridumAmountNeededWorking += rpt.amountPerWorkerPerTurn.iridium;
+          iridiumAmountNeededWorking += rpt.amountPerWorkerPerTurn.iridium;
         }
       }
 

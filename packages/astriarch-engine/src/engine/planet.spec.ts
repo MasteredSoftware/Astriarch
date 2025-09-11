@@ -1,5 +1,5 @@
 import { PlanetById } from '../model/clientModel';
-import { CitizenWorkerType, PlanetData, PlanetType } from '../model/planet';
+import { CitizenWorkerType, PlanetData, PlanetType, PlanetProductionItemType } from '../model/planet';
 import { PlayerData } from '../model/player';
 import { startNewTestGame, TestGameData } from '../test/testUtils';
 import { ClientGameModel } from './clientGameModel';
@@ -430,6 +430,78 @@ describe('Planet', function () {
 
         consoleSpy.mockRestore();
       });
+    });
+  });
+
+  describe('removeBuildQueueItemForRefund()', () => {
+    beforeEach(() => {
+      // Add some items to the build queue for testing
+      testPlanet.buildQueue = [
+        {
+          itemType: PlanetProductionItemType.PlanetImprovement,
+          baseProductionCost: 100,
+          productionCostComplete: 50,
+          energyCost: 10,
+          oreCost: 5,
+          iridiumCost: 3,
+          resourcesSpent: true,
+          turnsToComplete: 1
+        },
+        {
+          itemType: PlanetProductionItemType.PlanetImprovement,
+          baseProductionCost: 200,
+          productionCostComplete: 25,
+          energyCost: 20,
+          oreCost: 10,
+          iridiumCost: 6,
+          resourcesSpent: true,
+          turnsToComplete: 2
+        }
+      ];
+    });
+
+    it('should return false for negative index', () => {
+      const result = Planet.removeBuildQueueItemForRefund(testPlanet, -1);
+      expect(result).toBe(false);
+      expect(testPlanet.buildQueue.length).toBe(2); // Should be unchanged
+    });
+
+    it('should return false for index equal to array length (out of bounds)', () => {
+      const result = Planet.removeBuildQueueItemForRefund(testPlanet, 2); // array length is 2, so index 2 is out of bounds
+      expect(result).toBe(false);
+      expect(testPlanet.buildQueue.length).toBe(2); // Should be unchanged
+    });
+
+    it('should return false for index greater than array length', () => {
+      const result = Planet.removeBuildQueueItemForRefund(testPlanet, 5);
+      expect(result).toBe(false);
+      expect(testPlanet.buildQueue.length).toBe(2); // Should be unchanged
+    });
+
+    it('should successfully remove item at valid index and provide refund', () => {
+      const initialEnergy = testPlanet.resources.energy;
+      const initialOre = testPlanet.resources.ore;
+      const initialIridium = testPlanet.resources.iridium;
+
+      const result = Planet.removeBuildQueueItemForRefund(testPlanet, 0);
+      
+      expect(result).toBe(true);
+      expect(testPlanet.buildQueue.length).toBe(1); // Should have one less item
+      
+      // Should have received a refund (partial since item was 50% complete)
+      expect(testPlanet.resources.energy).toBeGreaterThan(initialEnergy);
+      expect(testPlanet.resources.ore).toBeGreaterThan(initialOre);
+      expect(testPlanet.resources.iridium).toBeGreaterThan(initialIridium);
+    });
+
+    it('should remove the correct item when removing from middle of queue', () => {
+      const originalSecondItem = testPlanet.buildQueue[1];
+      
+      const result = Planet.removeBuildQueueItemForRefund(testPlanet, 0);
+      
+      expect(result).toBe(true);
+      expect(testPlanet.buildQueue.length).toBe(1);
+      expect(testPlanet.buildQueue[0]).toBe(originalSecondItem); // Second item should now be first
     });
   });
 });
