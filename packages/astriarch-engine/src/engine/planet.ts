@@ -187,8 +187,8 @@ export class Planet {
       for (const p of ownedPlanets) {
         if (energyNeeded !== 0) energyNeeded -= PlanetResources.spendEnergyAsPossible(p.resources, energyNeeded);
         if (foodNeeded !== 0) foodNeeded -= PlanetResources.spendFoodAsPossible(p.resources, foodNeeded);
-        if (oreNeeded !== 0) oreNeeded -= PlanetResources.spendFoodAsPossible(p.resources, oreNeeded);
-        if (iridiumNeeded !== 0) iridiumNeeded -= PlanetResources.spendFoodAsPossible(p.resources, iridiumNeeded);
+        if (oreNeeded !== 0) oreNeeded -= PlanetResources.spendOreAsPossible(p.resources, oreNeeded);
+        if (iridiumNeeded !== 0) iridiumNeeded -= PlanetResources.spendIridiumAsPossible(p.resources, iridiumNeeded);
 
         if (energyNeeded === 0 && foodNeeded === 0 && oreNeeded === 0 && iridiumNeeded === 0) break;
       }

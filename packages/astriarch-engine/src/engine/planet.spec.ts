@@ -279,4 +279,157 @@ describe('Planet', function () {
       expect(result.baseAmountPerWorkerPerTurn).toBeDefined();
     });
   });
+
+  describe('spendResources()', () => {
+    let homePlanet: PlanetData;
+    let remotePlanet: PlanetData;
+
+    beforeEach(() => {
+      // Use the existing test planet as home planet
+      homePlanet = testPlanet;
+
+      // Set specific resource amounts for testing
+      homePlanet.resources.energy = 50;
+      homePlanet.resources.food = 30;
+      homePlanet.resources.ore = 20;
+      homePlanet.resources.iridium = 10;
+
+      // Create a second planet for the player
+      remotePlanet = {
+        id: 999,
+        name: 'Remote Planet',
+        type: PlanetType.PlanetClass1,
+        population: [],
+        buildQueue: [],
+        builtImprovements: homePlanet.builtImprovements,
+        maxImprovements: 6,
+        resources: {
+          energy: 10,
+          food: 100,
+          ore: 80,
+          iridium: 60,
+          research: 5,
+          production: 15,
+        },
+        originPoint: { x: 50, y: 50 },
+        boundingHexMidPoint: { x: 60, y: 60 },
+        planetaryFleet: homePlanet.planetaryFleet,
+        outgoingFleets: [],
+        planetHappiness: homePlanet.planetHappiness,
+        starshipTypeLastBuilt: null,
+        starshipCustomShipLastBuilt: false,
+        buildLastStarship: true,
+        waypointBoundingHexMidPoint: null,
+      };
+
+      // Add the remote planet to the player's owned planets
+      player1.ownedPlanetIds.push(remotePlanet.id);
+      planetById[remotePlanet.id] = remotePlanet;
+    });
+
+    describe('when spending resources on the same planet', () => {
+      it('should spend resources from the local planet only', () => {
+        const initialEnergy = homePlanet.resources.energy;
+        const initialOre = homePlanet.resources.ore;
+        const initialIridium = homePlanet.resources.iridium;
+
+        // Spend some resources that are available locally
+        Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 10, 0, 5, 3);
+
+        // Resources should be deducted from home planet
+        expect(homePlanet.resources.energy).toBe(initialEnergy - 10);
+        expect(homePlanet.resources.ore).toBe(initialOre - 5);
+        expect(homePlanet.resources.iridium).toBe(initialIridium - 3);
+
+        // Remote planet should be unchanged
+        expect(remotePlanet.resources.energy).toBe(10);
+        expect(remotePlanet.resources.ore).toBe(80);
+        expect(remotePlanet.resources.iridium).toBe(60);
+      });
+    });
+
+    describe('when spending resources that require shipping from other planets', () => {
+      it('should spend ore from remote planets when local planet lacks ore', () => {
+        const initialHomePlanetOre = homePlanet.resources.ore; // 20
+        const initialRemotePlanetOre = remotePlanet.resources.ore; // 80
+
+        // Try to spend 30 ore (more than home planet has)
+        Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 0, 0, 30, 0);
+
+        // Home planet should be drained of ore
+        expect(homePlanet.resources.ore).toBe(0);
+        // Remote planet should have ore deducted
+        expect(remotePlanet.resources.ore).toBe(initialRemotePlanetOre - (30 - initialHomePlanetOre));
+        expect(remotePlanet.resources.ore).toBe(70); // 80 - 10 = 70
+      });
+
+      it('should spend iridium from remote planets when local planet lacks iridium', () => {
+        const initialHomePlanetIridium = homePlanet.resources.iridium; // 10
+        const initialRemotePlanetIridium = remotePlanet.resources.iridium; // 60
+
+        // Try to spend 25 iridium (more than home planet has)
+        Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 0, 0, 0, 25);
+
+        // Home planet should be drained of iridium
+        expect(homePlanet.resources.iridium).toBe(0);
+        // Remote planet should have iridium deducted
+        expect(remotePlanet.resources.iridium).toBe(initialRemotePlanetIridium - (25 - initialHomePlanetIridium));
+        expect(remotePlanet.resources.iridium).toBe(45); // 60 - 15 = 45
+      });
+
+      it('should spend energy from remote planets when local planet lacks energy', () => {
+        const initialHomePlanetEnergy = homePlanet.resources.energy; // 50
+        const initialRemotePlanetEnergy = remotePlanet.resources.energy; // 10
+
+        // Try to spend 55 energy (more than home planet has)
+        Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 55, 0, 0, 0);
+
+        // Home planet should be drained of energy
+        expect(homePlanet.resources.energy).toBe(0);
+        // Remote planet should have energy deducted
+        expect(remotePlanet.resources.energy).toBe(initialRemotePlanetEnergy - (55 - initialHomePlanetEnergy));
+        expect(remotePlanet.resources.energy).toBe(5); // 10 - 5 = 5
+      });
+
+      it('should spend food from remote planets when local planet lacks food', () => {
+        const initialHomePlanetFood = homePlanet.resources.food; // 30
+        const initialRemotePlanetFood = remotePlanet.resources.food; // 100
+
+        // Try to spend 80 food (more than home planet has)
+        Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 0, 80, 0, 0);
+
+        // Home planet should be drained of food
+        expect(homePlanet.resources.food).toBe(0);
+        // Remote planet should have food deducted
+        expect(remotePlanet.resources.food).toBe(initialRemotePlanetFood - (80 - initialHomePlanetFood));
+        expect(remotePlanet.resources.food).toBe(50); // 100 - 50 = 50
+      });
+    });
+
+    describe('when there are insufficient resources across all planets', () => {
+      it('should spend what it can and warn about insufficient resources', () => {
+        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+        // Try to spend more ore than available across all planets (20 + 80 = 100 available, asking for 150)
+        Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 0, 0, 150, 0);
+
+        // All ore should be spent
+        expect(homePlanet.resources.ore).toBe(0);
+        expect(remotePlanet.resources.ore).toBe(0);
+
+        // Should warn about insufficient resources
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Problem spending energy, food, ore and iridium as necessary!'),
+          player1.name,
+          homePlanet.name,
+          0, // energyNeeded
+          0, // foodNeeded
+          50, // oreNeeded (150 - 100 available)
+          0, // iridiumNeeded
+        );
+
+        consoleSpy.mockRestore();
+      });
+    });
+  });
 });
