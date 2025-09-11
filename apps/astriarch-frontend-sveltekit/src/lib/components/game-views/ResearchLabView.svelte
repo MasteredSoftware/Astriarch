@@ -156,15 +156,16 @@
 	);
 
 	const currentResearchInfo = $derived.by(() => {
-		const returnVal = currentType && progressData && progressData[currentType]
-			? {
-					name: Research.researchProgressToString(progressData[currentType]),
-					type: currentType,
-					progress: progressData[currentType],
-					levelData: currentResearchLevelData,
-					cyclesRemaining: cyclesRemaining
-				}
-			: null;
+		const returnVal =
+			currentType && progressData && progressData[currentType]
+				? {
+						name: Research.researchProgressToString(progressData[currentType]),
+						type: currentType,
+						progress: progressData[currentType],
+						levelData: currentResearchLevelData,
+						cyclesRemaining: cyclesRemaining
+					}
+				: null;
 		console.log('currentResearchInfo recalculated:', returnVal);
 		return returnVal;
 	});
@@ -199,6 +200,13 @@
 		return 'research';
 	}
 
+	// Function to get the current level for a research type (for level indicators)
+	function getResearchLevel(researchType: ResearchType): number {
+		if (!progressData || !progressData[researchType]) return 0;
+		// Convert from engine level (-1 to 9) to display level (0 to 10)
+		return progressData[researchType].currentResearchLevel + 1;
+	}
+
 	// Function to send research percent adjustment to server
 	function adjustResearchPercent(newPercent: number) {
 		// Clamp between 0 and 1
@@ -217,27 +225,29 @@
 	// Function to submit a ship research item with advantage/disadvantage data
 	function submitShipResearchItem(researchType: ResearchType) {
 		const shipData: Record<string, unknown> = {};
-		
+
 		// Convert string values to StarShipType enum values
 		const stringToShipType = {
-			'defender': StarShipType.SystemDefense,
-			'scout': StarShipType.Scout,
-			'destroyer': StarShipType.Destroyer,
-			'cruiser': StarShipType.Cruiser,
-			'battleship': StarShipType.Battleship
+			defender: StarShipType.SystemDefense,
+			scout: StarShipType.Scout,
+			destroyer: StarShipType.Destroyer,
+			cruiser: StarShipType.Cruiser,
+			battleship: StarShipType.Battleship
 		};
-		
+
 		// Add advantage/disadvantage data if selected
 		if (advantageAgainst) {
-			shipData.advantageAgainst = stringToShipType[advantageAgainst as keyof typeof stringToShipType];
+			shipData.advantageAgainst =
+				stringToShipType[advantageAgainst as keyof typeof stringToShipType];
 		}
 		if (disadvantageAgainst) {
-			shipData.disadvantageAgainst = stringToShipType[disadvantageAgainst as keyof typeof stringToShipType];
+			shipData.disadvantageAgainst =
+				stringToShipType[disadvantageAgainst as keyof typeof stringToShipType];
 		}
-		
+
 		// Submit with the ship customization data
 		submitResearchItem(researchType, shipData);
-		
+
 		// Clear the selected custom ship type since we've now submitted it
 		selectedCustomShipType = null;
 		advantageAgainst = '';
@@ -250,7 +260,7 @@
 		if (currentType === researchType) {
 			return;
 		}
-		
+
 		// If clicking on the same selected ship type, deselect it
 		if (selectedCustomShipType === researchType) {
 			selectedCustomShipType = null;
@@ -258,7 +268,7 @@
 			disadvantageAgainst = '';
 			return;
 		}
-		
+
 		selectedCustomShipType = researchType;
 		// Reset the advantage/disadvantage selections when selecting a new ship type
 		advantageAgainst = '';
@@ -419,7 +429,8 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each shipTypes as ship}
 								<div
-									class="flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType === ship.researchType || currentType === ship.researchType
+									class="relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType ===
+										ship.researchType || currentType === ship.researchType
 										? 'border-2 border-cyan-500 bg-gray-700'
 										: 'border-transparent bg-gray-700/50'}"
 									on:click={() => selectCustomShipResearch(ship.researchType)}
@@ -432,6 +443,17 @@
 										class="text-cyan-400"
 										style="filter: drop-shadow(0px 0px 18px rgba(125,251,255,0.25));"
 									/>
+
+									<!-- Level Indicator -->
+									{#if getResearchLevel(ship.researchType) > 0}
+										<div class="absolute right-0 bottom-0">
+											<span
+												class="inline-block min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
+											>
+												{getResearchLevel(ship.researchType)}
+											</span>
+										</div>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -444,7 +466,7 @@
 						<div class="grid grid-cols-1 gap-2">
 							{#each improvements as improvement}
 								<div
-									class="h-12 w-12 rounded-lg {currentType === improvement.researchType
+									class="relative h-12 w-12 rounded-lg {currentType === improvement.researchType
 										? 'border-2 border-cyan-500 bg-gray-700'
 										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
 									on:click={() => submitResearchItem(improvement.researchType)}
@@ -452,6 +474,17 @@
 									tabindex="0"
 								>
 									<IconImage type={improvement.icon} size={32} />
+
+									<!-- Level Indicator -->
+									{#if getResearchLevel(improvement.researchType) > 0}
+										<div class="absolute right-0 bottom-0">
+											<span
+												class="inline-block min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
+											>
+												{getResearchLevel(improvement.researchType)}
+											</span>
+										</div>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -464,7 +497,7 @@
 						<div class="grid grid-cols-2 gap-2">
 							{#each infrastructure as infra}
 								<div
-									class="h-12 w-12 rounded-lg {currentType === infra.researchType
+									class="relative h-12 w-12 rounded-lg {currentType === infra.researchType
 										? 'border-2 border-cyan-500 bg-gray-700'
 										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
 									on:click={() => submitResearchItem(infra.researchType)}
@@ -472,6 +505,17 @@
 									tabindex="0"
 								>
 									<IconImage type={infra.icon} size={32} />
+
+									<!-- Level Indicator -->
+									{#if getResearchLevel(infra.researchType) > 0}
+										<div class="absolute right-0 bottom-0">
+											<span
+												class="min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
+											>
+												{getResearchLevel(infra.researchType)}
+											</span>
+										</div>
+									{/if}
 								</div>
 							{/each}
 						</div>
@@ -483,9 +527,10 @@
 							<!-- Custom Ship: Advantage/Disadvantage Section (for new ship selection) -->
 							<div class="mb-4 flex flex-col">
 								<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
-									Configuring {shipTypes.find(s => s.researchType === selectedCustomShipType)?.name} Research
+									Configuring {shipTypes.find((s) => s.researchType === selectedCustomShipType)
+										?.name} Research
 								</Text>
-								
+
 								<div class="flex">
 									<div class="mr-4 flex-1">
 										<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
@@ -520,10 +565,7 @@
 							</div>
 
 							<div class="mt-auto flex">
-								<Button
-									onclick={submitSelectedCustomShipResearch}
-									label="RESEARCH SHIP"
-								/>
+								<Button onclick={submitSelectedCustomShipResearch} label="RESEARCH SHIP" />
 							</div>
 						{:else if currentResearchInfo}
 							<!-- Currently Researching Section (for both standard and custom ship research) -->
@@ -548,8 +590,9 @@
 										</Text>
 										{#if currentResearchInfo.levelData}
 											<Text class="astriarch-body-12" style="margin-top: 4px; opacity: 0.7;">
-												Progress: {(currentResearchInfo.levelData.percentComplete * 100).toFixed(1)}%
-												complete
+												Progress: {(currentResearchInfo.levelData.percentComplete * 100).toFixed(
+													1
+												)}% complete
 											</Text>
 											<!-- Progress bar -->
 											<div class="mt-2 flex gap-1">
@@ -568,18 +611,18 @@
 								</div>
 
 								<div class="mt-auto flex gap-4">
-									<Button
-										onclick={cancelResearchItem}
-									>
-										CANCEL RESEARCH
-									</Button>
+									<Button onclick={cancelResearchItem}>CANCEL RESEARCH</Button>
 								</div>
 							</div>
 						{:else}
 							<!-- Default: No research selected -->
-							<div class="flex flex-col items-center justify-center h-full">
-								<Text class="astriarch-body-14" style="text-align: center; margin-bottom: 16px; opacity: 0.8;">
-									No active research project. Click on a research area below to have your scientists and engineers start researching in that area.
+							<div class="flex h-full flex-col items-center justify-center">
+								<Text
+									class="astriarch-body-14"
+									style="text-align: center; margin-bottom: 16px; opacity: 0.8;"
+								>
+									No active research project. Click on a research area below to have your scientists
+									and engineers start researching in that area.
 								</Text>
 							</div>
 						{/if}

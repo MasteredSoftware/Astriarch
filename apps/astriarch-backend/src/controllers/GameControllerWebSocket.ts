@@ -775,7 +775,10 @@ export class GameController {
       if (researchData) {
         logger.info(`Updating research type ${researchType} with data:`, researchData);
         engine.Research.updateResearchTypeProgressData(researchProgress, researchData);
-        logger.info(`Research progress after update - base points: ${researchProgress.researchPointsBase}, data:`, researchProgress.data);
+        logger.info(
+          `Research progress after update - base points: ${researchProgress.researchPointsBase}, data:`,
+          researchProgress.data,
+        );
       }
 
       // Set the research type in queue

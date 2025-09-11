@@ -30,7 +30,7 @@
 	}: Props = $props();
 
 	const textColor = variant === 'primary' ? '#1B1F25' : '#00FFFF';
-	
+
 	const triggerStyle = $derived(`
 		width: 241px;
 		height: 84px;
@@ -48,7 +48,7 @@
 		padding-right: 40px;
 		box-shadow: none;
 	`);
-	
+
 	const textStyle = $derived(`
 		color: ${textColor};
 		font-family: 'Orbitron', sans-serif;
@@ -69,7 +69,7 @@
 	`);
 
 	// Get the display text for the current value
-	const selectedOption = $derived(options.find(opt => opt.value === value));
+	const selectedOption = $derived(options.find((opt) => opt.value === value));
 	const displayText = $derived(selectedOption?.label || placeholder);
 
 	function handleValueChange(newValue: string | undefined) {
@@ -81,46 +81,48 @@
 
 <div class="relative {className || ''}" {...restProps}>
 	<Select.Root type="single" {value} onValueChange={handleValueChange} {disabled}>
-		<Select.Trigger 
+		<Select.Trigger
 			class="transition-opacity hover:opacity-90 active:opacity-100"
 			style={triggerStyle}
 		>
 			<span style={textStyle}>
 				{displayText}
 			</span>
-			
+
 			<!-- Custom Chevron Icon -->
-			<div class="relative z-10 pointer-events-none" style="width: 12px; height: 12px;">
-				<svg 
-					width="12" 
-					height="12" 
-					viewBox="0 0 12 12" 
-					fill="none" 
+			<div class="pointer-events-none relative z-10" style="width: 12px; height: 12px;">
+				<svg
+					width="12"
+					height="12"
+					viewBox="0 0 12 12"
+					fill="none"
 					xmlns="http://www.w3.org/2000/svg"
 					class="transition-transform duration-200"
 				>
-					<path 
-						d="M3 4.5L6 7.5L9 4.5" 
-						stroke={textColor} 
-						stroke-width="1.5" 
-						stroke-linecap="round" 
+					<path
+						d="M3 4.5L6 7.5L9 4.5"
+						stroke={textColor}
+						stroke-width="1.5"
+						stroke-linecap="round"
 						stroke-linejoin="round"
 					/>
 				</svg>
 			</div>
-			
+
 			<DropdownSvg {variant} class="size-full" />
 		</Select.Trigger>
-		
-		<Select.Content 
-			class="bg-gray-900/95 backdrop-blur-sm border-cyan-500/30 rounded shadow-lg min-w-[241px]"
+
+		<Select.Content
+			class="min-w-[241px] rounded border-cyan-500/30 bg-gray-900/95 shadow-lg backdrop-blur-sm"
 			sideOffset={-4}
 		>
 			{#each options as option}
-				<Select.Item 
-					value={option.value} 
+				<Select.Item
+					value={option.value}
 					disabled={option.disabled}
-					class="text-cyan-100 hover:bg-cyan-500/20 transition-colors font-bold text-sm uppercase tracking-wide border-b border-cyan-500/10 last:border-b-0 {option.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}"
+					class="border-b border-cyan-500/10 text-sm font-bold tracking-wide text-cyan-100 uppercase transition-colors last:border-b-0 hover:bg-cyan-500/20 {option.disabled
+						? 'cursor-not-allowed opacity-50'
+						: 'cursor-pointer'}"
 					style="font-family: 'Orbitron', sans-serif;"
 				>
 					{option.label}
