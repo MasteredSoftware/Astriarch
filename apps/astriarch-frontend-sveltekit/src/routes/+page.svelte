@@ -29,7 +29,7 @@
 	import FleetCommandView from '$lib/components/game-views/FleetCommandView.svelte';
 	import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
 	import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
-	import DiplomacyView from '$lib/components/game-views/DiplomacyView.svelte';
+	import ActivityView from '$lib/components/game-views/ActivityView.svelte';
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 
 	// Import lobby components
@@ -215,7 +215,7 @@
 				{:else}
 					<!-- Debug: Test notification button -->
 					<Button
-						label="Test Notification"
+						label="Add Activity"
 						size="sm"
 						variant="outline"
 						onclick={() => {
@@ -246,6 +246,7 @@
 							// Random duration between 3-8 seconds
 							const randomDuration = Math.floor(Math.random() * 5000) + 3000;
 
+							// This will show as both a popup notification AND be added to the Activity Center
 							multiplayerGameStore.addNotification({
 								type: randomType,
 								message: `${randomMessage} ${Math.floor(Math.random() * 1000)}`,
@@ -316,7 +317,7 @@
 						<div
 							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
 						>
-							<DiplomacyView />
+							<ActivityView />
 						</div>
 					{/if}
 				</div>
