@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { Text, Button } from '$lib/components/astriarch';
+	import TabController from '$lib/components/astriarch/tab-controller/TabController.svelte';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import {
 		activityLog,
 		importantActivities,
-		generalActivities,
+		combatActivities,
 		activityStore
 	} from '$lib/stores/activityStore';
 	import { selectedPlanetId, gameActions } from '$lib/stores/gameStore';
@@ -13,17 +14,24 @@
 	import { Fleet, GameTools } from 'astriarch-engine';
 
 	// State for tab selection and UI
-	let selectedTab = 'all';
+	let selectedTab = 0; // Use index instead of string
 	let chatMessage = '';
 	let expandedActivity: string | null = null;
+
+	// Define tabs for the TabController
+	const tabs = [
+		{ label: 'All' },
+		{ label: 'Important' },
+		{ label: 'Combat' }
+	];
 
 	// Filter activities based on selected tab
 	$: filteredActivities = (() => {
 		switch (selectedTab) {
-			case 'important':
+			case 1:
 				return $importantActivities;
-			case 'general':
-				return $generalActivities;
+			case 2:
+				return $combatActivities;
 			default:
 				return $activityLog;
 		}
@@ -41,8 +49,8 @@
 		{ id: 3, sender: 'System', message: 'Your planet is done!', timestamp: Date.now() - 15000 }
 	];
 
-	function setTab(tab: string) {
-		selectedTab = tab;
+	function setTab(tabIndex: number) {
+		selectedTab = tabIndex;
 	}
 
 	function toggleActivityExpansion(activityId: string) {
@@ -413,8 +421,8 @@
 					<!-- Tabs -->
 					<div class="absolute top-0 left-[3px] flex h-[33px] space-x-0">
 						<!-- All Tab -->
-						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab('all')}>
-							{#if selectedTab === 'all'}
+						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab(0)}>
+							{#if selectedTab === 0}
 								<div
 									class="absolute inset-0 rounded-sm border border-cyan-400/40 bg-gradient-to-b from-cyan-400/20 to-cyan-600/10"
 								></div>
@@ -436,8 +444,8 @@
 						</button>
 
 						<!-- Important Tab -->
-						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab('important')}>
-							{#if selectedTab === 'important'}
+						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab(1)}>
+							{#if selectedTab === 1}
 								<div
 									class="absolute inset-0 rounded-sm border border-cyan-400/40 bg-gradient-to-b from-cyan-400/20 to-cyan-600/10"
 								></div>
@@ -458,25 +466,25 @@
 							{/if}
 						</button>
 
-						<!-- General Tab -->
-						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab('general')}>
-							{#if selectedTab === 'general'}
+						<!-- Combat Tab -->
+						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab(2)}>
+							{#if selectedTab === 2}
 								<div
 									class="absolute inset-0 rounded-sm border border-cyan-400/40 bg-gradient-to-b from-cyan-400/20 to-cyan-600/10"
 								></div>
 								<span
 									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white uppercase"
 								>
-									general
+									combat
 								</span>
 							{:else}
 								<div
 									class="absolute inset-0 rounded-sm border border-slate-600/30 bg-slate-700/30 opacity-70"
 								></div>
 								<span
-									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white uppercase"
+									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white/70 uppercase"
 								>
-									general
+									combat
 								</span>
 							{/if}
 						</button>
@@ -661,7 +669,7 @@
 							<div
 								class="font-['Orbitron'] font-normal text-[14px] text-white/50 tracking-[0.14px] leading-[28px] text-center"
 							>
-								No {selectedTab === 'all' ? '' : selectedTab + ' '}activities yet
+								No {tabs[selectedTab]?.label.toLowerCase() || ''} activities yet
 							</div>
 						</div>
 					{/each}

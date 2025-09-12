@@ -168,6 +168,14 @@ export const importantActivities = derived(activityLog, ($log) =>
 	$log.filter((entry) => ['error', 'warning', 'battle'].includes(entry.type))
 );
 
+export const combatActivities = derived(activityLog, ($log) =>
+	$log.filter((entry) => entry.type === 'battle' || (entry.originalEvent && 
+		(entry.originalEvent.type === 13 || // DefendedAgainstAttackingFleet
+		 entry.originalEvent.type === 14 || // AttackingFleetLost
+		 entry.originalEvent.type === 15 || // PlanetCaptured
+		 entry.originalEvent.type === 19))) // PlanetLost
+);
+
 export const generalActivities = derived(activityLog, ($log) =>
 	$log.filter((entry) =>
 		['info', 'success', 'research', 'construction', 'planet', 'fleet', 'diplomacy'].includes(
