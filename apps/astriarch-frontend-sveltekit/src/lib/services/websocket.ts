@@ -23,6 +23,9 @@ import type { ClientModelData } from 'astriarch-engine';
 // Import multiplayer store types and functionality from the centralized store
 import { multiplayerGameStore, type ChatMessage } from '$lib/stores/multiplayerGameStore';
 
+// Import activity store for enhanced event logging
+import { activityStore } from '$lib/stores/activityStore';
+
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
 
@@ -217,11 +220,22 @@ class WebSocketService {
 					notificationType = 'info';
 			}
 
+			// Add to the transient notification system (for popups)
 			this.gameStore.addNotification({
 				type: notificationType,
 				message: event.message,
 				timestamp: Date.now()
 			});
+
+			// Also add to the persistent activity log with full event data
+			activityStore.addNotificationWithEventData(
+				{
+					type: notificationType,
+					message: event.message,
+					timestamp: Date.now()
+				},
+				event // Pass the original EventNotification for rich interactions
+			);
 		}
 	}
 

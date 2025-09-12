@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { multiplayerGameStore, type GameNotification } from './multiplayerGameStore';
+import type { EventNotification, PlanetaryConflictData, PlanetData } from 'astriarch-engine';
 
 export interface ActivityLogEntry {
 	id: string;
@@ -8,6 +9,13 @@ export interface ActivityLogEntry {
 	timestamp: number;
 	category?: string;
 	read?: boolean;
+	// Original event notification data for rich interactions
+	originalEvent?: EventNotification;
+	// Parsed planet information for easy access
+	planetId?: number;
+	planetName?: string;
+	// Additional structured data
+	conflictData?: PlanetaryConflictData;
 }
 
 export interface ActivityStore {
@@ -56,6 +64,32 @@ function createActivityStore() {
 		set,
 		update,
 
+		// Add a notification with enhanced EventNotification data
+		addNotificationWithEventData: (
+			notification: Omit<GameNotification, 'id'>,
+			originalEvent?: EventNotification
+		) => {
+			const newEntry: ActivityLogEntry = {
+				id: `activity-${Date.now()}-${Math.random()}`,
+				type: notification.type,
+				message: notification.message,
+				timestamp: notification.timestamp,
+				read: false,
+				originalEvent,
+				// Extract planet info if available
+				planetId: originalEvent?.planet?.id,
+				planetName: originalEvent?.planet?.name,
+				// Extract conflict data if available
+				conflictData: originalEvent?.data as PlanetaryConflictData
+			};
+
+			update((store) => ({
+				...store,
+				activityLog: [newEntry, ...store.activityLog],
+				unreadCount: store.unreadCount + 1
+			}));
+		},
+
 		// Add a manual activity entry (for system events, chat events, etc.)
 		addActivity: (entry: Omit<ActivityLogEntry, 'id'>) => {
 			const newEntry: ActivityLogEntry = {
@@ -74,11 +108,11 @@ function createActivityStore() {
 		// Mark activities as read
 		markAsRead: (activityIds: string[]) => {
 			update((store) => {
-				const updatedLog = store.activityLog.map((entry) => 
+				const updatedLog = store.activityLog.map((entry) =>
 					activityIds.includes(entry.id) ? { ...entry, read: true } : entry
 				);
 				const newUnreadCount = updatedLog.filter((entry) => !entry.read).length;
-				
+
 				return {
 					...store,
 					activityLog: updatedLog,
@@ -130,10 +164,14 @@ export const activityLog = derived(activityStore, ($store) => $store.activityLog
 export const unreadCount = derived(activityStore, ($store) => $store.unreadCount);
 
 // Filtered activity logs
-export const importantActivities = derived(activityLog, ($log) => 
-	$log.filter(entry => ['error', 'warning', 'battle'].includes(entry.type))
+export const importantActivities = derived(activityLog, ($log) =>
+	$log.filter((entry) => ['error', 'warning', 'battle'].includes(entry.type))
 );
 
-export const generalActivities = derived(activityLog, ($log) => 
-	$log.filter(entry => ['info', 'success', 'research', 'construction', 'planet', 'fleet', 'diplomacy'].includes(entry.type))
+export const generalActivities = derived(activityLog, ($log) =>
+	$log.filter((entry) =>
+		['info', 'success', 'research', 'construction', 'planet', 'fleet', 'diplomacy'].includes(
+			entry.type
+		)
+	)
 );
