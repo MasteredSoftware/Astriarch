@@ -10,6 +10,7 @@
 	import { selectedPlanetId, gameActions } from '$lib/stores/gameStore';
 	import { onMount } from 'svelte';
 	import type { ActivityLogEntry } from '$lib/stores/activityStore';
+	import { Fleet, GameTools } from 'astriarch-engine';
 
 	// State for tab selection and UI
 	let selectedTab = 'all';
@@ -338,51 +339,12 @@
 	}
 
 	function formatFleetStrength(fleet: any): number {
-		if (!fleet || !fleet.starships) return 0;
-		// Calculate fleet strength based on ship types and health
-		return fleet.starships.reduce((total: number, ship: any) => {
-			const baseStrength = getShipBaseStrength(ship.type);
-			return total + baseStrength * (ship.health / 100);
-		}, 0);
-	}
-
-	function getShipBaseStrength(shipType: number): number {
-		// Based on StarShipType enum values
-		switch (shipType) {
-			case 1:
-				return 2; // SystemDefense
-			case 2:
-				return 1; // Scout
-			case 3:
-				return 4; // Destroyer
-			case 4:
-				return 8; // Cruiser
-			case 5:
-				return 16; // Battleship
-			case 6:
-				return 12; // SpacePlatform
-			default:
-				return 1;
-		}
+		if (!fleet) return 0;
+		return Fleet.determineFleetStrength(fleet);
 	}
 
 	function getShipTypeName(shipType: number): string {
-		switch (shipType) {
-			case 1:
-				return 'System Defense';
-			case 2:
-				return 'Scout';
-			case 3:
-				return 'Destroyer';
-			case 4:
-				return 'Cruiser';
-			case 5:
-				return 'Battleship';
-			case 6:
-				return 'Space Platform';
-			default:
-				return 'Unknown';
-		}
+		return GameTools.starShipTypeToFriendlyName(shipType);
 	}
 
 	function formatFleetComposition(fleet: any): string {

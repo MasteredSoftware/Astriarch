@@ -25,6 +25,7 @@ import { CitizenWorkerType } from './model/planet';
 import { Grid } from './engine/grid';
 import { EventNotification, EventNotificationType, PlanetaryConflictData } from './model/eventNotification';
 import { PlanetData } from './model/planet';
+import { GameTools } from './utils/gameTools';
 
 // Export messaging types
 export * from './messaging/MessageTypes';
@@ -40,6 +41,7 @@ export { GameController };
 export { Events };
 export { Grid };
 export { Research };
+export { GameTools };
 
 // Export model types and enums
 export { PlayerType };
