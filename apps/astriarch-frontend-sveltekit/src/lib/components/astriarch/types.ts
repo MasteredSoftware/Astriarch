@@ -28,6 +28,7 @@ export type IconImageType =
 export interface TabControllerTab {
 	label: string;
 	children?: Snippet;
+	onclick?: () => void;
 }
 
 export interface PlanetResourceData {

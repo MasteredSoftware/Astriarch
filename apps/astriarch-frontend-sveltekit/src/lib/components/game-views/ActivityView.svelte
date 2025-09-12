@@ -14,31 +14,48 @@
 	import { Fleet, GameTools } from 'astriarch-engine';
 
 	// State for tab selection and UI
-	let selectedTab = 0; // Use index instead of string
-	let chatMessage = '';
-	let expandedActivity: string | null = null;
+	let currentTabIndex = $state(0); // Track the current tab index
+	let chatMessage = $state('');
+	let expandedActivity = $state<string | null>(null);
 
-	// Define tabs for the TabController
+	// Define tabs for the TabController with click handlers to track state
 	const tabs = [
-		{ label: 'All' },
-		{ label: 'Important' },
-		{ label: 'Combat' }
+		{
+			label: 'All',
+			onclick: () => {
+				currentTabIndex = 0;
+			}
+		},
+		{
+			label: 'Important',
+			onclick: () => {
+				currentTabIndex = 1;
+			}
+		},
+		{
+			label: 'Combat',
+			onclick: () => {
+				currentTabIndex = 2;
+			}
+		}
 	];
 
-	// Filter activities based on selected tab
-	$: filteredActivities = (() => {
-		switch (selectedTab) {
-			case 1:
-				return $importantActivities;
-			case 2:
-				return $combatActivities;
-			default:
-				return $activityLog;
-		}
-	})();
+	// Filter activities based on current tab
+	const filteredActivities = $derived(
+		(() => {
+			switch (currentTabIndex) {
+				case 1:
+					return $importantActivities;
+				case 2:
+					return $combatActivities;
+				default:
+					return $activityLog;
+			}
+		})()
+	);
 
 	// Chat messages (mock data for now)
-	let chatMessages = [
+	let chatMessages = $state([
 		{ id: 1, sender: 'Player1', message: "Hey what's up", timestamp: Date.now() - 60000 },
 		{
 			id: 2,
@@ -47,10 +64,10 @@
 			timestamp: Date.now() - 30000
 		},
 		{ id: 3, sender: 'System', message: 'Your planet is done!', timestamp: Date.now() - 15000 }
-	];
+	]);
 
 	function setTab(tabIndex: number) {
-		selectedTab = tabIndex;
+		currentTabIndex = tabIndex;
 	}
 
 	function toggleActivityExpansion(activityId: string) {
@@ -106,15 +123,17 @@
 	}
 
 	// Mark activities as read when they're viewed in this tab
-	$: if (filteredActivities.length > 0) {
-		const unreadIds = filteredActivities.filter((a) => !a.read).map((a) => a.id);
-		if (unreadIds.length > 0) {
-			// Mark as read after a short delay to allow user to see them
-			setTimeout(() => {
-				activityStore.markAsRead(unreadIds);
-			}, 1000);
+	$effect(() => {
+		if (filteredActivities.length > 0) {
+			const unreadIds = filteredActivities.filter((a) => !a.read).map((a) => a.id);
+			if (unreadIds.length > 0) {
+				// Mark as read after a short delay to allow user to see them
+				setTimeout(() => {
+					activityStore.markAsRead(unreadIds);
+				}, 1000);
+			}
 		}
-	}
+	});
 
 	// Add some sample activities when component mounts for testing
 	onMount(() => {
@@ -412,274 +431,197 @@
 
 			<!-- Tab Controller -->
 			<div class="mb-4 px-8">
-				<div class="relative h-[35px] w-full max-w-[903px]">
-					<!-- Base line -->
-					<div
-						class="absolute top-[97.14%] right-0 bottom-[2.86%] left-[0.33%] h-px bg-gradient-to-r from-cyan-500/30 to-cyan-300/30"
-					></div>
-
-					<!-- Tabs -->
-					<div class="absolute top-0 left-[3px] flex h-[33px] space-x-0">
-						<!-- All Tab -->
-						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab(0)}>
-							{#if selectedTab === 0}
+				<TabController {tabs} size="md">
+					<!-- Activity Feed Content -->
+					<div class="flex-1 overflow-y-auto">
+						<div class="max-h-[268px] space-y-2 overflow-y-auto pr-2">
+							{#each filteredActivities as activity (activity.id)}
 								<div
-									class="absolute inset-0 rounded-sm border border-cyan-400/40 bg-gradient-to-b from-cyan-400/20 to-cyan-600/10"
-								></div>
-								<span
-									class="absolute inset-[21.21%_24%_18.18%_24.5%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white uppercase"
+									class="w-full max-w-[950px] rounded-[4px] bg-[rgba(27,31,37,0.5)] p-4 {hasAdditionalInfo(
+										activity
+									)
+										? 'cursor-pointer hover:bg-[rgba(27,31,37,0.7)]'
+										: ''} transition-colors"
 								>
-									all
-								</span>
-							{:else}
-								<div
-									class="absolute inset-0 rounded-sm border border-slate-600/30 bg-slate-700/30 opacity-70"
-								></div>
-								<span
-									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white/70 uppercase"
-								>
-									all
-								</span>
-							{/if}
-						</button>
-
-						<!-- Important Tab -->
-						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab(1)}>
-							{#if selectedTab === 1}
-								<div
-									class="absolute inset-0 rounded-sm border border-cyan-400/40 bg-gradient-to-b from-cyan-400/20 to-cyan-600/10"
-								></div>
-								<span
-									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white uppercase"
-								>
-									important
-								</span>
-							{:else}
-								<div
-									class="absolute inset-0 rounded-sm border border-slate-600/30 bg-slate-700/30 opacity-70"
-								></div>
-								<span
-									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white/70 uppercase"
-								>
-									important
-								</span>
-							{/if}
-						</button>
-
-						<!-- Combat Tab -->
-						<button class="group relative h-[33px] w-[200px]" on:click={() => setTab(2)}>
-							{#if selectedTab === 2}
-								<div
-									class="absolute inset-0 rounded-sm border border-cyan-400/40 bg-gradient-to-b from-cyan-400/20 to-cyan-600/10"
-								></div>
-								<span
-									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white uppercase"
-								>
-									combat
-								</span>
-							{:else}
-								<div
-									class="absolute inset-0 rounded-sm border border-slate-600/30 bg-slate-700/30 opacity-70"
-								></div>
-								<span
-									class="absolute inset-[21.21%_28.5%_18.18%_39%] flex items-center justify-center font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-white/70 uppercase"
-								>
-									combat
-								</span>
-							{/if}
-						</button>
-					</div>
-				</div>
-			</div>
-
-			<!-- Activity Feed -->
-			<div class="flex-1 overflow-y-auto px-8 pb-4">
-				<div class="max-h-[268px] space-y-2 overflow-y-auto pr-2">
-					{#each filteredActivities as activity (activity.id)}
-						<div
-							class="w-full max-w-[950px] rounded-[4px] bg-[rgba(27,31,37,0.5)] p-4 {hasAdditionalInfo(
-								activity
-							)
-								? 'cursor-pointer hover:bg-[rgba(27,31,37,0.7)]'
-								: ''} transition-colors"
-						>
-							<!-- Main activity content -->
-							<div
-								on:click={() => handleActivityClick(activity)}
-								role="button"
-								tabindex="0"
-								on:keypress={(e) => e.key === 'Enter' && handleActivityClick(activity)}
-							>
-								<!-- Header -->
-								<div class="mb-1 flex items-center gap-2 text-[12px]">
-									<div class="h-2.5 w-2.5 text-cyan-400">
-										{getNotificationIcon(activity.type)}
-									</div>
-									<span class="font-['Orbitron'] font-semibold tracking-[0.5px] text-white/75">
-										{getNotificationTypeLabel(activity.type)}
-									</span>
-									{#if activity.planetName}
-										<span class="font-['Orbitron'] font-normal tracking-[0.5px] text-cyan-400">
-											• {activity.planetName}
-										</span>
-									{/if}
-									<span
-										class="font-['Orbitron'] font-normal tracking-[3px] text-white/50 uppercase"
+									<!-- Main activity content -->
+									<div
+										onclick={() => handleActivityClick(activity)}
+										role="button"
+										tabindex="0"
+										onkeypress={(e) => e.key === 'Enter' && handleActivityClick(activity)}
 									>
-										|
-									</span>
-									<span class="font-['Orbitron'] font-normal tracking-[0.5px] text-white/75">
-										{formatTimestamp(activity.timestamp)}
-									</span>
-									{#if hasAdditionalInfo(activity)}
-										<span class="ml-auto text-xs text-cyan-400">
-											{expandedActivity === activity.id ? '▼' : '▶'}
-										</span>
-									{/if}
-								</div>
-								<!-- Content -->
-								<div
-									class="font-['Orbitron'] text-[14px] leading-[28px] font-normal tracking-[0.14px] text-white"
-								>
-									{activity.message}
-								</div>
-							</div>
-
-							<!-- Expanded details -->
-							{#if expandedActivity === activity.id && hasAdditionalInfo(activity)}
-								<div class="mt-3 space-y-2 border-t border-cyan-500/20 pt-3">
-									<!-- Detailed timestamp -->
-									<div class="font-['Orbitron'] text-[12px] text-white/60">
-										<strong>Time:</strong>
-										{formatDetailedTimestamp(activity.timestamp)}
+										<!-- Header -->
+										<div class="mb-1 flex items-center gap-2 text-[12px]">
+											<div class="h-2.5 w-2.5 text-cyan-400">
+												{getNotificationIcon(activity.type)}
+											</div>
+											<span class="font-['Orbitron'] font-semibold tracking-[0.5px] text-white/75">
+												{getNotificationTypeLabel(activity.type)}
+											</span>
+											{#if activity.planetName}
+												<span class="font-['Orbitron'] font-normal tracking-[0.5px] text-cyan-400">
+													• {activity.planetName}
+												</span>
+											{/if}
+											<span
+												class="font-['Orbitron'] font-normal tracking-[3px] text-white/50 uppercase"
+											>
+												|
+											</span>
+											<span class="font-['Orbitron'] font-normal tracking-[0.5px] text-white/75">
+												{formatTimestamp(activity.timestamp)}
+											</span>
+											{#if hasAdditionalInfo(activity)}
+												<span class="ml-auto text-xs text-cyan-400">
+													{expandedActivity === activity.id ? '▼' : '▶'}
+												</span>
+											{/if}
+										</div>
+										<!-- Content -->
+										<div
+											class="font-['Orbitron'] text-[14px] leading-[28px] font-normal tracking-[0.14px] text-white"
+										>
+											{activity.message}
+										</div>
 									</div>
 
-									<!-- Planet details -->
-									{#if activity.planetName && activity.planetId !== undefined}
-										<div class="font-['Orbitron'] text-[12px] text-cyan-400">
-											<strong>Planet:</strong>
-											{activity.planetName} (ID: {activity.planetId})
-											<button
-												class="ml-2 rounded bg-cyan-600/20 px-2 py-1 text-xs hover:bg-cyan-600/30"
-												on:click|stopPropagation={() =>
-													activity.planetId !== undefined &&
-													gameActions.selectPlanet(activity.planetId ?? null)}
-											>
-												View Planet
-											</button>
-										</div>
-									{/if}
+									<!-- Expanded details -->
+									{#if expandedActivity === activity.id && hasAdditionalInfo(activity)}
+										<div class="mt-3 space-y-2 border-t border-cyan-500/20 pt-3">
+											<!-- Detailed timestamp -->
+											<div class="font-['Orbitron'] text-[12px] text-white/60">
+												<strong>Time:</strong>
+												{formatDetailedTimestamp(activity.timestamp)}
+											</div>
 
-									<!-- Detailed battle information for combat notifications -->
-									{#if activity.originalEvent && activity.originalEvent.data && isBattleNotification(activity)}
-										{@const conflictData = activity.originalEvent.data}
-										<div
-											class="space-y-3 rounded border border-red-500/30 bg-red-900/20 p-3 font-['Orbitron'] text-[12px] text-white/90"
-										>
-											<div class="text-[14px] font-bold text-red-400">BATTLE REPORT</div>
-
-											<!-- Resources looted (if applicable) -->
-											{#if conflictData.resourcesLooted}
-												<div class="text-yellow-400">
-													{formatResourcesLooted(conflictData.resourcesLooted)}
+											<!-- Planet details -->
+											{#if activity.planetName && activity.planetId !== undefined}
+												<div class="font-['Orbitron'] text-[12px] text-cyan-400">
+													<strong>Planet:</strong>
+													{activity.planetName} (ID: {activity.planetId})
+													<button
+														class="ml-2 rounded bg-cyan-600/20 px-2 py-1 text-xs hover:bg-cyan-600/30"
+														onclick={(e) => {
+															e.stopPropagation();
+															if (activity.planetId !== undefined) {
+																gameActions.selectPlanet(activity.planetId ?? null);
+															}
+														}}
+													>
+														View Planet
+													</button>
 												</div>
 											{/if}
 
-											<!-- Attacking Fleet -->
-											{#if conflictData.attackingFleet}
-												<div class="border-l-2 border-red-500 pl-3">
-													<div class="font-semibold text-red-300">
-														Attacking Fleet (Strength: {formatFleetStrength(
-															conflictData.attackingFleet
-														)})
-														{#if conflictData.attackingFleetChances}
-															- Win Chance: {Math.round(conflictData.attackingFleetChances * 100)}%
-														{/if}
-														{formatResearchBonus(conflictData.attackingFleetResearchBoost)}
-													</div>
-													<div class="mt-1 text-white/70">
-														{formatFleetComposition(conflictData.attackingFleet)}
-													</div>
+											<!-- Detailed battle information for combat notifications -->
+											{#if activity.originalEvent && activity.originalEvent.data && isBattleNotification(activity)}
+												{@const conflictData = activity.originalEvent.data}
+												<div
+													class="space-y-3 rounded border border-red-500/30 bg-red-900/20 p-3 font-['Orbitron'] text-[12px] text-white/90"
+												>
+													<div class="text-[14px] font-bold text-red-400">BATTLE REPORT</div>
+
+													<!-- Resources looted (if applicable) -->
+													{#if conflictData.resourcesLooted}
+														<div class="text-yellow-400">
+															{formatResourcesLooted(conflictData.resourcesLooted)}
+														</div>
+													{/if}
+
+													<!-- Attacking Fleet -->
+													{#if conflictData.attackingFleet}
+														<div class="border-l-2 border-red-500 pl-3">
+															<div class="font-semibold text-red-300">
+																Attacking Fleet (Strength: {formatFleetStrength(
+																	conflictData.attackingFleet
+																)})
+																{#if conflictData.attackingFleetChances}
+																	- Win Chance: {Math.round(
+																		conflictData.attackingFleetChances * 100
+																	)}%
+																{/if}
+																{formatResearchBonus(conflictData.attackingFleetResearchBoost)}
+															</div>
+															<div class="mt-1 text-white/70">
+																{formatFleetComposition(conflictData.attackingFleet)}
+															</div>
+														</div>
+													{/if}
+
+													<!-- Defending Fleet -->
+													{#if conflictData.defendingFleet}
+														<div class="border-l-2 border-blue-500 pl-3">
+															<div class="font-semibold text-blue-300">
+																Defending Fleet (Strength: {formatFleetStrength(
+																	conflictData.defendingFleet
+																)})
+																{formatResearchBonus(conflictData.defendingFleetResearchBoost)}
+															</div>
+															<div class="mt-1 text-white/70">
+																{formatFleetComposition(conflictData.defendingFleet)}
+															</div>
+														</div>
+													{/if}
+
+													<!-- Surviving Fleet -->
+													{#if conflictData.winningFleet}
+														<div class="border-l-2 border-green-500 pl-3">
+															<div class="font-semibold text-green-300">Ships Remaining</div>
+															<div class="mt-1 text-white/70">
+																{formatFleetComposition(conflictData.winningFleet)}
+															</div>
+														</div>
+													{:else}
+														<div class="font-semibold text-red-400">All ships destroyed</div>
+													{/if}
+												</div>
+											{:else if activity.conflictData}
+												<!-- Fallback for legacy conflict data -->
+												<div class="space-y-1 font-['Orbitron'] text-[12px] text-white/80">
+													<div><strong>Battle Details:</strong></div>
+													{#if activity.conflictData.attackingFleetChances}
+														<div>
+															• Attack success chance: {Math.round(
+																activity.conflictData.attackingFleetChances * 100
+															)}%
+														</div>
+													{/if}
+													{#if activity.conflictData.winningFleet}
+														<div>
+															• Outcome: {activity.conflictData.winningFleet
+																? 'Fleet survived'
+																: 'Fleet destroyed'}
+														</div>
+													{/if}
 												</div>
 											{/if}
 
-											<!-- Defending Fleet -->
-											{#if conflictData.defendingFleet}
-												<div class="border-l-2 border-blue-500 pl-3">
-													<div class="font-semibold text-blue-300">
-														Defending Fleet (Strength: {formatFleetStrength(
-															conflictData.defendingFleet
-														)})
-														{formatResearchBonus(conflictData.defendingFleetResearchBoost)}
-													</div>
-													<div class="mt-1 text-white/70">
-														{formatFleetComposition(conflictData.defendingFleet)}
-													</div>
+											<!-- Event type details -->
+											{#if activity.originalEvent}
+												<div class="font-['Orbitron'] text-[12px] text-white/60">
+													<strong>Event Type:</strong>
+													{activity.originalEvent.type}
+													{#if activity.originalEvent.playerId}
+														<br /><strong>Player:</strong> {activity.originalEvent.playerId}
+													{/if}
 												</div>
-											{/if}
-
-											<!-- Surviving Fleet -->
-											{#if conflictData.winningFleet}
-												<div class="border-l-2 border-green-500 pl-3">
-													<div class="font-semibold text-green-300">Ships Remaining</div>
-													<div class="mt-1 text-white/70">
-														{formatFleetComposition(conflictData.winningFleet)}
-													</div>
-												</div>
-											{:else}
-												<div class="font-semibold text-red-400">All ships destroyed</div>
-											{/if}
-										</div>
-									{:else if activity.conflictData}
-										<!-- Fallback for legacy conflict data -->
-										<div class="space-y-1 font-['Orbitron'] text-[12px] text-white/80">
-											<div><strong>Battle Details:</strong></div>
-											{#if activity.conflictData.attackingFleetChances}
-												<div>
-													• Attack success chance: {Math.round(
-														activity.conflictData.attackingFleetChances * 100
-													)}%
-												</div>
-											{/if}
-											{#if activity.conflictData.winningFleet}
-												<div>
-													• Outcome: {activity.conflictData.winningFleet
-														? 'Fleet survived'
-														: 'Fleet destroyed'}
-												</div>
-											{/if}
-										</div>
-									{/if}
-
-									<!-- Event type details -->
-									{#if activity.originalEvent}
-										<div class="font-['Orbitron'] text-[12px] text-white/60">
-											<strong>Event Type:</strong>
-											{activity.originalEvent.type}
-											{#if activity.originalEvent.playerId}
-												<br /><strong>Player:</strong> {activity.originalEvent.playerId}
 											{/if}
 										</div>
 									{/if}
 								</div>
-							{/if}
+							{:else}
+								<div class="bg-[rgba(27,31,37,0.5)] rounded-[4px] p-4 w-full max-w-[950px]">
+									<div
+										class="font-['Orbitron'] font-normal text-[14px] text-white/50 tracking-[0.14px] leading-[28px] text-center"
+									>
+										No {tabs[currentTabIndex]?.label.toLowerCase() || ''} activities yet
+									</div>
+								</div>
+							{/each}
 						</div>
-					{:else}
-						<div class="bg-[rgba(27,31,37,0.5)] rounded-[4px] p-4 w-full max-w-[950px]">
-							<div
-								class="font-['Orbitron'] font-normal text-[14px] text-white/50 tracking-[0.14px] leading-[28px] text-center"
-							>
-								No {tabs[selectedTab]?.label.toLowerCase() || ''} activities yet
-							</div>
-						</div>
-					{/each}
-				</div>
+					</div>
+				</TabController>
 			</div>
-
-			<!-- Scrollbar indicator -->
-			<div
-				class="absolute top-[158px] right-4 h-[260px] w-1 rounded-full bg-gradient-to-b from-cyan-500/40 to-cyan-300/20"
-			></div>
 		</div>
 
 		<!-- Right Panel - Chat -->
@@ -727,14 +669,14 @@
 					<div class="relative flex-1">
 						<input
 							bind:value={chatMessage}
-							on:keypress={handleKeyPress}
+							onkeypress={handleKeyPress}
 							placeholder="Type something here..."
 							class="h-12 w-full rounded-[4px] border border-slate-600/30 bg-black/40 px-2 py-3 font-['Orbitron'] text-[14px] font-normal tracking-[0.14px] text-white placeholder-white/50 focus:border-cyan-400/40 focus:outline-none"
 						/>
 						<div class="absolute top-3 right-2 font-['Orbitron'] text-white">|</div>
 					</div>
 					<button
-						on:click={sendChatMessage}
+						onclick={sendChatMessage}
 						class="h-12 w-[87px] rounded-[4px] bg-gradient-to-b from-cyan-400 to-cyan-600 font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-black uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-colors hover:from-cyan-300 hover:to-cyan-500"
 					>
 						send

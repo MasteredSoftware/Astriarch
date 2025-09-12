@@ -21,6 +21,8 @@
 
 	function handleTabChange(index: number) {
 		tabIndex = index;
+		// Call the tab's onclick handler if it exists
+		tabs[index]?.onclick?.();
 	}
 </script>
 
