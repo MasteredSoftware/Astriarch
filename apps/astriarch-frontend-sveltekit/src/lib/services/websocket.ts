@@ -984,13 +984,22 @@ class WebSocketService {
 	}
 
 	// Trading methods
-	submitTrade(trade: import('astriarch-engine/src/model/tradingCenter').TradeData) {
+	submitTrade(
+		planetId: number,
+		tradeType: number,
+		resourceType: number,
+		amount: number
+	) {
 		try {
 			const gameId = this.requireGameId();
 			const payload = {
 				gameId,
-				trade
+				planetId,
+				tradeType,
+				resourceType,
+				amount
 			};
+			console.log('Sending SUBMIT_TRADE with payload:', payload);
 			this.send(new Message(MESSAGE_TYPE.SUBMIT_TRADE, payload));
 		} catch (error) {
 			console.error('Failed to submit trade:', error);
@@ -1002,14 +1011,14 @@ class WebSocketService {
 		}
 	}
 
-	cancelTrade(tradeIndex: number, planetId: number) {
+	cancelTrade(tradeId: string) {
 		try {
 			const gameId = this.requireGameId();
 			const payload = {
 				gameId,
-				tradeIndex,
-				planetId
+				tradeId
 			};
+			console.log('Sending CANCEL_TRADE with payload:', payload);
 			this.send(new Message(MESSAGE_TYPE.CANCEL_TRADE, payload));
 		} catch (error) {
 			console.error('Failed to cancel trade:', error);

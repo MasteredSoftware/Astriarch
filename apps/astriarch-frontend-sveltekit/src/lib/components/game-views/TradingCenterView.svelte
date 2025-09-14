@@ -211,45 +211,43 @@
 			return;
 		}
 
-		const trade: TradeData = {
-			playerId: mainPlayer.id,
-			planetId: currentPlanet.id,
-			tradeType: selectedTradeType,
-			resourceType: selectedResourceType,
-			amount: tradeAmount
-		};
-
 		try {
-			// Send trade to server
-			webSocketService.submitTrade(trade);
-
-			// Optimistically add to local trades
-			if (tradingCenter.mainPlayerTrades) {
-				tradingCenter.mainPlayerTrades.push(trade);
-			}
+			// Send trade to server with individual parameters
+			webSocketService.submitTrade(
+				currentPlanet.id,
+				selectedTradeType,
+				selectedResourceType,
+				tradeAmount
+			);
 
 			// Reset form
 			tradeAmount = 0;
 
-			console.log('Trade submitted:', trade);
+			console.log('Trade submitted:', {
+				planetId: currentPlanet.id,
+				tradeType: selectedTradeType,
+				resourceType: selectedResourceType,
+				amount: tradeAmount
+			});
 		} catch (error) {
 			console.error('Failed to submit trade:', error);
 		}
 	}
 
-	function retractTrade(index: number) {
+	function retractTrade(trade: any) {
 		if (!currentPlanet || !tradingCenter) return;
 
+		// Check if trade has an ID (new format) or fall back to not supporting cancellation
+		if (!trade.id) {
+			console.warn('Cannot cancel trade: Trade missing ID (old format)');
+			return;
+		}
+
 		try {
-			// Send retraction to server
-			webSocketService.cancelTrade(index, currentPlanet.id);
+			// Send retraction to server using trade ID
+			webSocketService.cancelTrade(trade.id);
 
-			// Remove from local trades
-			if (tradingCenter.mainPlayerTrades) {
-				tradingCenter.mainPlayerTrades.splice(index, 1);
-			}
-
-			console.log('Trade retracted at index:', index);
+			console.log('Trade cancellation requested:', trade.id);
 		} catch (error) {
 			console.error('Failed to retract trade:', error);
 		}
@@ -550,7 +548,7 @@
 						</span>
 						<button
 							class="ml-2 text-xs text-red-400 hover:text-red-300"
-							on:click={() => retractTrade(index)}
+							on:click={() => retractTrade(trade)}
 							title="Retract Trade"
 						>
 							✕
