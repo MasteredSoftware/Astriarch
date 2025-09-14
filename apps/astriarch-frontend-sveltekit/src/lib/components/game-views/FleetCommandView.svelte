@@ -19,13 +19,17 @@
 	$: planetList = Object.values(planets);
 	$: currentSelectedPlanet = $selectedPlanetId ? planets[$selectedPlanetId] : null;
 
-	// Auto-start destination selection when the view loads
+	let hasInitializedDestinationSelection = false;
+
+	// Auto-start destination selection when the view loads and no destination is set
 	$: if (
 		currentSelectedPlanet &&
 		!$fleetCommandStore.isSelectingDestination &&
-		!$fleetCommandStore.destinationPlanetId
+		!$fleetCommandStore.destinationPlanetId &&
+		!hasInitializedDestinationSelection
 	) {
 		fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+		hasInitializedDestinationSelection = true;
 	}
 
 	// Get ships of the selected type from the selected planet (excluding defenders and space platforms which can't leave)
@@ -75,15 +79,9 @@
 		// Send ships immediately since we have everything we need
 		actuallyPSendShips($fleetCommandStore.destinationPlanetId);
 
-		// Clear selection and reset to destination selection mode
+		// Clear selection but keep destination for potential additional fleets
 		selectedShipIds.clear();
 		selectedShipIds = new Set();
-		fleetCommandStore.reset();
-
-		// Auto-restart destination selection for next fleet
-		if (currentSelectedPlanet) {
-			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
-		}
 	}
 
 	function actuallyPSendShips(destinationPlanetId: number) {
@@ -132,10 +130,6 @@
 		selectedShipIds = new Set();
 	}
 
-	function cancelSendShips() {
-		fleetCommandStore.cancelDestinationSelection();
-	}
-
 	function handlePlanetChange(event: Event) {
 		const target = event.target as HTMLSelectElement;
 		const planetId = parseInt(target.value);
@@ -180,7 +174,11 @@
 						</div>
 						<button
 							class="rounded bg-gray-600 px-3 py-1 text-sm hover:bg-gray-500"
-							onclick={cancelSendShips}
+							onclick={() => {
+								if (currentSelectedPlanet) {
+									fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+								}
+							}}
 						>
 							Change Destination
 						</button>
