@@ -334,8 +334,7 @@ export function isJoinGameResponse(message: IMessage<unknown>): message is Messa
   return (
     message.type === MESSAGE_TYPE.JOIN_GAME &&
     typeof message.payload === 'object' &&
-    message.payload !== null &&
-    'success' in message.payload
+    message.payload !== null
   );
 }
 

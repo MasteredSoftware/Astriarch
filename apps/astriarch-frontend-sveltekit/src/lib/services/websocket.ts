@@ -742,7 +742,9 @@ class WebSocketService {
 	}
 
 	joinGame(gameId: string, playerName?: string) {
-		this.send(new Message(MESSAGE_TYPE.JOIN_GAME, { gameId, playerName }));
+		// Get current player name from store or use a default
+		const currentPlayerName = playerName || get(this.gameStore).playerName || 'Player';
+		this.send(new Message(MESSAGE_TYPE.JOIN_GAME, { gameId, playerName: currentPlayerName }));
 	}
 
 	startGame() {
