@@ -629,6 +629,48 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.SUBMIT_TRADE:
+				// Handle submit trade response
+				if (message.payload && typeof message.payload === 'object') {
+					if ('error' in message.payload) {
+						const errorPayload = message.payload as { error?: string };
+						this.gameStore.addNotification({
+							type: 'error',
+							message: errorPayload.error || 'Failed to submit trade',
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Trade submitted successfully',
+							timestamp: Date.now()
+						});
+						// Game state updates are handled via GAME_STATE_UPDATE messages
+					}
+				}
+				break;
+
+			case MESSAGE_TYPE.CANCEL_TRADE:
+				// Handle cancel trade response
+				if (message.payload && typeof message.payload === 'object') {
+					if ('error' in message.payload) {
+						const errorPayload = message.payload as { error?: string };
+						this.gameStore.addNotification({
+							type: 'error',
+							message: errorPayload.error || 'Failed to cancel trade',
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Trade cancelled successfully',
+							timestamp: Date.now()
+						});
+						// Game state updates are handled via GAME_STATE_UPDATE messages
+					}
+				}
+				break;
+
 			default:
 				console.log('Unhandled message type:', message.type);
 		}
@@ -936,6 +978,44 @@ class WebSocketService {
 			this.gameStore.addNotification({
 				type: 'error',
 				message: 'No game selected to cancel research',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	// Trading methods
+	submitTrade(trade: import('astriarch-engine/src/model/tradingCenter').TradeData) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				trade
+			};
+			this.send(new Message(MESSAGE_TYPE.SUBMIT_TRADE, payload));
+		} catch (error) {
+			console.error('Failed to submit trade:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'No game selected to submit trade',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	cancelTrade(tradeIndex: number, planetId: number) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				tradeIndex,
+				planetId
+			};
+			this.send(new Message(MESSAGE_TYPE.CANCEL_TRADE, payload));
+		} catch (error) {
+			console.error('Failed to cancel trade:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'No game selected to cancel trade',
 				timestamp: Date.now()
 			});
 		}

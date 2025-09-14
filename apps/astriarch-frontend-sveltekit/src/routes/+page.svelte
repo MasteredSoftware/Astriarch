@@ -29,6 +29,7 @@
 	import FleetCommandView from '$lib/components/game-views/FleetCommandView.svelte';
 	import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
 	import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
+	import TradingCenterView from '$lib/components/game-views/TradingCenterView.svelte';
 	import ActivityView from '$lib/components/game-views/ActivityView.svelte';
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 
@@ -312,6 +313,12 @@
 							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
 						>
 							<ResearchLabView />
+						</div>
+					{:else if $currentView === 'trading'}
+						<div
+							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+						>
+							<TradingCenterView />
 						</div>
 					{:else if $currentView === 'activity'}
 						<div
