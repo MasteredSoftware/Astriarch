@@ -984,12 +984,7 @@ class WebSocketService {
 	}
 
 	// Trading methods
-	submitTrade(
-		planetId: number,
-		tradeType: number,
-		resourceType: number,
-		amount: number
-	) {
+	submitTrade(planetId: number, tradeType: number, resourceType: number, amount: number) {
 		try {
 			const gameId = this.requireGameId();
 			const payload = {

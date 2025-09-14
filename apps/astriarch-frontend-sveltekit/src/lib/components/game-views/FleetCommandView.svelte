@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import {
 		clientGameModel,
 		selectedPlanet,
@@ -21,15 +22,25 @@
 
 	let hasInitializedDestinationSelection = false;
 
-	// Auto-start destination selection when the view loads and no destination is set
-	$: if (
-		currentSelectedPlanet &&
-		!$fleetCommandStore.isSelectingDestination &&
-		!$fleetCommandStore.destinationPlanetId &&
-		!hasInitializedDestinationSelection
-	) {
-		fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
-		hasInitializedDestinationSelection = true;
+	// Auto-select first ship and start destination selection when appropriate
+	$: if (currentSelectedPlanet && ships.length > 0) {
+		// Auto-select first ship if no ships are currently selected
+		if (selectedShipIds.size === 0) {
+			selectedShipIds.add(ships[0].id);
+			selectedShipIds = new Set(selectedShipIds); // Trigger reactivity
+		}
+
+		// Start destination selection if we have ships selected and no destination
+		if (selectedShipIds.size > 0 && !$fleetCommandStore.destinationPlanetId) {
+			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+		}
+	}
+
+	// Cancel destination selection when no ships are available in current tab
+	$: if (currentSelectedPlanet && ships.length === 0 && $fleetCommandStore.isSelectingDestination) {
+		fleetCommandStore.cancelDestinationSelection();
+		selectedShipIds.clear();
+		selectedShipIds = new Set();
 	}
 
 	// Get ships of the selected type from the selected planet (excluding defenders and space platforms which can't leave)
@@ -64,6 +75,14 @@
 
 	function selectAllShips() {
 		selectedShipIds = new Set(ships.map((ship: StarshipData) => ship.id));
+		// Start destination selection if we have ships and no destination
+		if (
+			currentSelectedPlanet &&
+			selectedShipIds.size > 0 &&
+			!$fleetCommandStore.destinationPlanetId
+		) {
+			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+		}
 	}
 
 	function sendShips() {
@@ -79,7 +98,7 @@
 		// Send ships immediately since we have everything we need
 		actuallyPSendShips($fleetCommandStore.destinationPlanetId);
 
-		// Clear selection but keep destination for potential additional fleets
+		// Clear selection - the reactive statement will auto-select the next ship
 		selectedShipIds.clear();
 		selectedShipIds = new Set();
 	}
@@ -141,6 +160,11 @@
 		? $clientGameModel?.mainPlayerOwnedPlanets[$fleetCommandStore.destinationPlanetId] ||
 			$clientGameModel?.clientPlanets.find((p) => p.id === $fleetCommandStore.destinationPlanetId)
 		: null;
+
+	// Cleanup when component is destroyed (user switches views)
+	onDestroy(() => {
+		fleetCommandStore.cancelDestinationSelection();
+	});
 </script>
 
 <!-- Fleet Command Interface -->
@@ -176,7 +200,10 @@
 							class="rounded bg-gray-600 px-3 py-1 text-sm hover:bg-gray-500"
 							onclick={() => {
 								if (currentSelectedPlanet) {
-									fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+									fleetCommandStore.startSelectingDestination(
+										currentSelectedPlanet.id,
+										selectedShipIds
+									);
 								}
 							}}
 						>
@@ -255,6 +282,7 @@
 						selectedShipType = tab.type;
 						selectedShipIds.clear();
 						selectedShipIds = new Set();
+						// The reactive statements will handle auto-selection and destination logic
 					}}
 				>
 					<span
