@@ -26,25 +26,26 @@
 	$: currentPlanet = $selectedPlanet as PlanetData | null;
 
 	// Calculate player's total resources after pending trades
-	$: playerTotalResources = mainPlayer && $clientGameModel
-		? (() => {
-				const base = GameModel.getPlayerTotalResources(mainPlayer, planets);
-				// Apply pending trades impact
-				if (tradingCenter?.mainPlayerTrades) {
-					for (const trade of tradingCenter.mainPlayerTrades) {
-						const amount = trade.tradeType === TradeType.BUY ? trade.amount : -trade.amount;
-						if (trade.resourceType === TradingCenterResourceType.FOOD) {
-							base.food += amount;
-						} else if (trade.resourceType === TradingCenterResourceType.ORE) {
-							base.ore += amount;
-						} else if (trade.resourceType === TradingCenterResourceType.IRIDIUM) {
-							base.iridium += amount;
+	$: playerTotalResources =
+		mainPlayer && $clientGameModel
+			? (() => {
+					const base = GameModel.getPlayerTotalResources(mainPlayer, planets);
+					// Apply pending trades impact
+					if (tradingCenter?.mainPlayerTrades) {
+						for (const trade of tradingCenter.mainPlayerTrades) {
+							const amount = trade.tradeType === TradeType.BUY ? trade.amount : -trade.amount;
+							if (trade.resourceType === TradingCenterResourceType.FOOD) {
+								base.food += amount;
+							} else if (trade.resourceType === TradingCenterResourceType.ORE) {
+								base.ore += amount;
+							} else if (trade.resourceType === TradingCenterResourceType.IRIDIUM) {
+								base.iridium += amount;
+							}
 						}
 					}
-				}
-				return base;
-			})()
-		: { energy: 0, food: 0, ore: 0, iridium: 0, research: 0, production: 0 };
+					return base;
+				})()
+			: { energy: 0, food: 0, ore: 0, iridium: 0, research: 0, production: 0 };
 
 	// Calculate current resource prices
 	$: resourcePrices = tradingCenter
@@ -134,7 +135,7 @@
 		// Calculate which bar was clicked (0-19 for 20 bars)
 		const barIndex = Math.floor((clickX / barWidth) * 20);
 		const newAmount = Math.round(((barIndex + 1) / 20) * maxTradeAmount);
-		
+
 		tradeAmount = Math.min(newAmount, maxTradeAmount);
 	}
 
@@ -267,11 +268,20 @@
 	// Calculate resource progress bars (amount / max for visual representation)
 	$: resourceProgress = (() => {
 		if (!tradingCenter) return { food: 0, ore: 0, iridium: 0 };
-		
-		const maxFood = Math.max(tradingCenter.foodResource.amount, tradingCenter.foodResource.desiredAmount);
-		const maxOre = Math.max(tradingCenter.oreResource.amount, tradingCenter.oreResource.desiredAmount);
-		const maxIridium = Math.max(tradingCenter.iridiumResource.amount, tradingCenter.iridiumResource.desiredAmount);
-		
+
+		const maxFood = Math.max(
+			tradingCenter.foodResource.amount,
+			tradingCenter.foodResource.desiredAmount
+		);
+		const maxOre = Math.max(
+			tradingCenter.oreResource.amount,
+			tradingCenter.oreResource.desiredAmount
+		);
+		const maxIridium = Math.max(
+			tradingCenter.iridiumResource.amount,
+			tradingCenter.iridiumResource.desiredAmount
+		);
+
 		return {
 			food: maxFood > 0 ? (tradingCenter.foodResource.amount / maxFood) * 100 : 0,
 			ore: maxOre > 0 ? (tradingCenter.oreResource.amount / maxOre) * 100 : 0,
@@ -280,10 +290,12 @@
 	})();
 </script>
 
-<div class="relative h-full w-full bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md">
+<div
+	class="relative h-full w-full bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md"
+>
 	<!-- Header -->
 	<div class="p-8">
-		<h1 class="font-['Orbitron'] text-3xl font-bold text-white tracking-wider">
+		<h1 class="font-['Orbitron'] text-3xl font-bold tracking-wider text-white">
 			Galactic Trade Center, Trading from {currentPlanet?.name || 'Unknown'}
 		</h1>
 	</div>
@@ -292,13 +304,13 @@
 		<!-- Left Panel: Resources Overview -->
 		<div class="flex w-[364px] flex-col">
 			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-6 backdrop-blur-sm">
-				<h2 class="font-['Orbitron'] text-2xl font-bold text-white tracking-wider mb-6">
+				<h2 class="mb-6 font-['Orbitron'] text-2xl font-bold tracking-wider text-white">
 					Resources overview
 				</h2>
 
 				<!-- Your Stockpile -->
 				<div class="mb-6">
-					<p class="font-['Orbitron'] text-sm text-white/80 mb-4">Your Stockpile (After trade)</p>
+					<p class="mb-4 font-['Orbitron'] text-sm text-white/80">Your Stockpile (After trade)</p>
 					<div class="flex gap-6">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
@@ -323,7 +335,9 @@
 
 				<!-- Galaxy Trading Center Stockpile -->
 				<div class="mb-6">
-					<p class="font-['Orbitron'] text-sm text-white/80 mb-4">Galaxy Trading Center Stockpile</p>
+					<p class="mb-4 font-['Orbitron'] text-sm text-white/80">
+						Galaxy Trading Center Stockpile
+					</p>
 					<div class="flex gap-6">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
@@ -348,7 +362,7 @@
 
 				<!-- Current Prices -->
 				<div>
-					<p class="font-['Orbitron'] text-sm text-white/80 mb-4">Current Prices</p>
+					<p class="mb-4 font-['Orbitron'] text-sm text-white/80">Current Prices</p>
 					<div class="flex gap-6">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
@@ -378,7 +392,7 @@
 			<!-- Buy/Sell Tabs -->
 			<div class="mb-6 flex">
 				<button
-					class="relative px-8 py-3 font-['Orbitron'] text-sm font-extrabold uppercase tracking-widest
+					class="relative px-8 py-3 font-['Orbitron'] text-sm font-extrabold tracking-widest uppercase
 						{selectedTradeType === TradeType.BUY
 						? 'bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-400/25'
 						: 'bg-transparent text-white/70 hover:text-white'}"
@@ -387,7 +401,7 @@
 					Buy
 				</button>
 				<button
-					class="relative px-8 py-3 font-['Orbitron'] text-sm font-extrabold uppercase tracking-widest
+					class="relative px-8 py-3 font-['Orbitron'] text-sm font-extrabold tracking-widest uppercase
 						{selectedTradeType === TradeType.SELL
 						? 'bg-cyan-400 text-slate-900 shadow-lg shadow-cyan-400/25'
 						: 'bg-transparent text-white/70 hover:text-white'}"
@@ -397,57 +411,61 @@
 				</button>
 			</div>
 
-			<div class="mb-6 flex flex-row">
-                <div class="flex-1">
-                    <p class="font-['Orbitron'] text-sm text-white mb-4">
-                        Select the resource you want to {selectedTradeType === TradeType.BUY ? 'buy from' : 'sell to'} GTC
-                    </p>
+			<!-- Three Column Layout -->
+			<div class="mb-6 flex flex-row gap-8">
+				<!-- Column 1: Resource Selection -->
+				<div class="flex-1">
+					<p class="mb-4 font-['Orbitron'] text-sm text-white">
+						Select the resource you want to {selectedTradeType === TradeType.BUY
+							? 'buy from'
+							: 'sell to'} GTC
+					</p>
 
-                    <!-- Resource Selection Cards -->
-                    <div class="flex gap-4 mb-8">
-                        <button
-                            class="group relative h-34 w-28 rounded-lg bg-gradient-to-b from-slate-700/50 to-slate-800/50 p-4 
-                                {selectedResourceType === TradingCenterResourceType.FOOD
-                                ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/25'
-                                : 'hover:from-slate-600/50 hover:to-slate-700/50'}"
-                            on:click={() => selectResource(TradingCenterResourceType.FOOD)}
-                        >
-                            <div class="flex flex-col items-center gap-2">
-                                <IconImage type="food" size={32} />
-                                <span class="font-['Orbitron'] text-sm font-semibold text-white">Food</span>
-                            </div>
-                        </button>
+					<!-- Resource Selection Cards -->
+					<div class="mb-8 flex gap-4">
+						<button
+							class="group relative h-34 w-28 rounded-lg bg-gradient-to-b from-slate-700/50 to-slate-800/50 p-4
+								{selectedResourceType === TradingCenterResourceType.FOOD
+								? 'shadow-lg ring-2 shadow-cyan-400/25 ring-cyan-400'
+								: 'hover:from-slate-600/50 hover:to-slate-700/50'}"
+							on:click={() => selectResource(TradingCenterResourceType.FOOD)}
+						>
+							<div class="flex flex-col items-center gap-2">
+								<IconImage type="food" size={32} />
+								<span class="font-['Orbitron'] text-sm font-semibold text-white">Food</span>
+							</div>
+						</button>
 
-                        <button
-                            class="group relative h-34 w-28 rounded-lg bg-gradient-to-b from-slate-700/50 to-slate-800/50 p-4 
-                                {selectedResourceType === TradingCenterResourceType.ORE
-                                ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/25'
-                                : 'hover:from-slate-600/50 hover:to-slate-700/50'}"
-                            on:click={() => selectResource(TradingCenterResourceType.ORE)}
-                        >
-                            <div class="flex flex-col items-center gap-2">
-                                <IconImage type="ore" size={32} />
-                                <span class="font-['Orbitron'] text-sm font-semibold text-white">Ore</span>
-                            </div>
-                        </button>
+						<button
+							class="group relative h-34 w-28 rounded-lg bg-gradient-to-b from-slate-700/50 to-slate-800/50 p-4
+								{selectedResourceType === TradingCenterResourceType.ORE
+								? 'shadow-lg ring-2 shadow-cyan-400/25 ring-cyan-400'
+								: 'hover:from-slate-600/50 hover:to-slate-700/50'}"
+							on:click={() => selectResource(TradingCenterResourceType.ORE)}
+						>
+							<div class="flex flex-col items-center gap-2">
+								<IconImage type="ore" size={32} />
+								<span class="font-['Orbitron'] text-sm font-semibold text-white">Ore</span>
+							</div>
+						</button>
 
-                        <button
-                            class="group relative h-34 w-28 rounded-lg bg-gradient-to-b from-slate-700/50 to-slate-800/50 p-4 
-                                {selectedResourceType === TradingCenterResourceType.IRIDIUM
-                                ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/25'
-                                : 'hover:from-slate-600/50 hover:to-slate-700/50'}"
-                            on:click={() => selectResource(TradingCenterResourceType.IRIDIUM)}
-                        >
-                            <div class="flex flex-col items-center gap-2">
-                                <IconImage type="iridium" size={32} />
-                                <span class="font-['Orbitron'] text-sm font-semibold text-white">Iridium</span>
-                            </div>
-                        </button>
-                    </div>
-                </div>
+						<button
+							class="group relative h-34 w-28 rounded-lg bg-gradient-to-b from-slate-700/50 to-slate-800/50 p-4
+								{selectedResourceType === TradingCenterResourceType.IRIDIUM
+								? 'shadow-lg ring-2 shadow-cyan-400/25 ring-cyan-400'
+								: 'hover:from-slate-600/50 hover:to-slate-700/50'}"
+							on:click={() => selectResource(TradingCenterResourceType.IRIDIUM)}
+						>
+							<div class="flex flex-col items-center gap-2">
+								<IconImage type="iridium" size={32} />
+								<span class="font-['Orbitron'] text-sm font-semibold text-white">Iridium</span>
+							</div>
+						</button>
+					</div>
+				</div>
 
-				<!-- Amount Selection with Resource Bar -->
-				<div class="mb-8">
+				<!-- Column 2: Amount Selection with Resource Bar -->
+				<div class="flex-1">
 					<div class="mb-4 flex items-center gap-4">
 						<IconImage type={getResourceIcon(selectedResourceType)} size={24} />
 						<span class="font-['Orbitron'] text-base font-semibold text-white">
@@ -459,50 +477,54 @@
 					</div>
 
 					<!-- Clickable Trade Amount Bars (like Research view) -->
-					<div class="ml-8">
-						<div
-							class="flex cursor-pointer gap-1"
-							on:click={handleTradeAmountBarClick}
-							on:keydown={handleTradeAmountBarKeydown}
-							role="button"
-							tabindex="0"
-						>
-							{#each tradeAmountBars as filled}
-								<div
-									class="h-12 w-4 rounded-sm transition-colors {filled
-										? `${getResourceColor(selectedResourceType)} shadow-sm shadow-white/25`
-										: 'bg-white/10 hover:bg-white/20'}"
-								></div>
-							{/each}
-						</div>
-						
-						<!-- Amount indicators -->
-						<div class="mt-2 flex justify-between text-xs text-white/60">
-							<span>0</span>
-							<span class="font-['Orbitron'] text-sm text-white/80">
-								Estimated {selectedTradeType === TradeType.BUY ? 'cost' : 'gain'}: {estimatedCost.toFixed(0)} energy
-							</span>
-							<span>{maxTradeAmount}</span>
-						</div>
-						
-						<!-- Galaxy trading energy amount -->
-						<div class="mt-4 text-center">
-							<p class="font-['Orbitron'] text-sm text-white/75 mb-1">Galaxy trading energy amount</p>
-							<span class="font-['Orbitron'] text-2xl font-bold text-white">
-								{tradingCenterAmounts.energy.toFixed(0)}
-							</span>
-						</div>
+					<div
+						class="mb-4 flex cursor-pointer gap-1"
+						on:click={handleTradeAmountBarClick}
+						on:keydown={handleTradeAmountBarKeydown}
+						role="button"
+						tabindex="0"
+					>
+						{#each tradeAmountBars as filled}
+							<div
+								class="h-12 w-4 rounded-sm transition-colors {filled
+									? `${getResourceColor(selectedResourceType)} shadow-sm shadow-white/25`
+									: 'bg-white/10 hover:bg-white/20'}"
+							></div>
+						{/each}
 					</div>
+
+					<!-- Amount indicators -->
+					<div class="mb-4 flex justify-between text-xs text-white/60">
+						<span>0</span>
+						<span>{maxTradeAmount}</span>
+					</div>
+
+					<!-- Estimated cost/gain -->
+					<div class="text-center">
+						<span class="font-['Orbitron'] text-sm text-white/80">
+							Estimated {selectedTradeType === TradeType.BUY ? 'cost' : 'gain'}: {estimatedCost.toFixed(
+								0
+							)} energy
+						</span>
+					</div>
+				</div>
+
+				<!-- Column 3: Galaxy Trading Energy -->
+				<div class="flex-1 text-center">
+					<p class="mb-4 font-['Orbitron'] text-sm text-white/75">Galaxy trading energy amount</p>
+					<span class="font-['Orbitron'] text-3xl font-bold text-white">
+						{tradingCenterAmounts.energy.toFixed(0)}
+					</span>
 				</div>
 			</div>
 		</div>
 
 		<!-- Submit Trade Button -->
-		<div class="absolute bottom-8 right-8">
+		<div class="absolute right-8 bottom-8">
 			<button
-				class="bg-cyan-400 hover:bg-cyan-300 text-slate-900 font-['Orbitron'] font-extrabold 
-					text-sm uppercase tracking-widest px-8 py-3 rounded shadow-lg shadow-cyan-400/25
-					disabled:opacity-50 disabled:cursor-not-allowed"
+				class="rounded bg-cyan-400 px-8 py-3 font-['Orbitron']
+					text-sm font-extrabold tracking-widest text-slate-900 uppercase shadow-lg shadow-cyan-400/25 hover:bg-cyan-300
+					disabled:cursor-not-allowed disabled:opacity-50"
 				disabled={tradeAmount <= 0 || !currentPlanet}
 				on:click={submitTrade}
 			>
@@ -513,18 +535,21 @@
 
 	<!-- Submitted Trades List (if any) -->
 	{#if tradingCenter?.mainPlayerTrades && tradingCenter.mainPlayerTrades.length > 0}
-		<div class="absolute bottom-8 left-8 bg-slate-800/90 backdrop-blur-sm rounded-lg p-4 min-w-72">
-			<h3 class="font-['Orbitron'] text-sm font-bold text-white mb-3">Submitted Trades</h3>
-			<div class="space-y-2 max-h-32 overflow-y-auto">
+		<div class="absolute bottom-8 left-8 min-w-72 rounded-lg bg-slate-800/90 p-4 backdrop-blur-sm">
+			<h3 class="mb-3 font-['Orbitron'] text-sm font-bold text-white">Submitted Trades</h3>
+			<div class="max-h-32 space-y-2 overflow-y-auto">
 				{#each tradingCenter.mainPlayerTrades as trade, index}
-					<div class="flex items-center justify-between bg-slate-700/50 rounded px-3 py-2">
+					<div class="flex items-center justify-between rounded bg-slate-700/50 px-3 py-2">
 						<span class="font-['Orbitron'] text-xs text-white">
-							{trade.tradeType === TradeType.BUY ? 'Buy' : 'Sell'} {trade.amount} 
-							{getResourceName(trade.resourceType)} 
-							for {(getResourceByType(trade.resourceType)?.currentPrice || 0 * trade.amount).toFixed(1)} energy
+							{trade.tradeType === TradeType.BUY ? 'Buy' : 'Sell'}
+							{trade.amount}
+							{getResourceName(trade.resourceType)}
+							for {(
+								getResourceByType(trade.resourceType)?.currentPrice || 0 * trade.amount
+							).toFixed(1)} energy
 						</span>
 						<button
-							class="ml-2 text-red-400 hover:text-red-300 text-xs"
+							class="ml-2 text-xs text-red-400 hover:text-red-300"
 							on:click={() => retractTrade(index)}
 							title="Retract Trade"
 						>

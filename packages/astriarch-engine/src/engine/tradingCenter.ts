@@ -87,14 +87,40 @@ export class TradingCenter {
     tradeType: TradeType,
     resourceType: TradingCenterResourceType,
     amount: number,
+    delaySeconds = 5,
   ): TradeData {
+    const now = Date.now();
     return {
+      id: Utils.generateUniqueId(),
       playerId,
       planetId,
       tradeType,
       resourceType,
       amount,
+      submittedAt: now,
+      executeAfter: now + delaySeconds * 1000,
     };
+  }
+
+  public static cancelTrade(tradingCenterData: TradingCenterData, tradeId: string, playerId: string): boolean {
+    const tradeIndex = tradingCenterData.currentTrades.findIndex(
+      (trade) => trade.id === tradeId && trade.playerId === playerId,
+    );
+
+    if (tradeIndex === -1) {
+      return false; // Trade not found or not owned by player
+    }
+
+    const trade = tradingCenterData.currentTrades[tradeIndex];
+    const now = Date.now();
+
+    // Allow cancellation only if trade hasn't been executed yet
+    if (now < trade.executeAfter) {
+      tradingCenterData.currentTrades.splice(tradeIndex, 1);
+      return true; // Successfully cancelled
+    }
+
+    return false; // Too late to cancel
   }
 
   public static adjustCurrentPrice(resource: TradingCenterResource): TradingCenterResource {
@@ -203,6 +229,14 @@ export class TradingCenter {
   public static executeCurrentTrades(gameModel: GameModelData, planetById: PlanetById) {
     //go through the current trades and deduct from the stockpile for buy orders and add to the stockpile for sell orders
     const tc = gameModel.modelData.tradingCenter;
+    const now = Date.now();
+
+    // Separate trades into executable and pending based on timing
+    const executableTrades = tc.currentTrades.filter((trade) => now >= trade.executeAfter);
+    const pendingTrades = tc.currentTrades.filter((trade) => now < trade.executeAfter);
+
+    // Update currentTrades to only contain pending trades
+    tc.currentTrades = pendingTrades;
 
     const playersById: Record<string, PlayerData> = {};
     const executedTradeResultsByPlayerId: Record<string, { trade: TradeData; results: ExecuteTradeResults }[]> = {};
@@ -211,7 +245,8 @@ export class TradingCenter {
       executedTradeResultsByPlayerId[p.id] = [];
     }
 
-    for (const trade of tc.currentTrades) {
+    // Execute only the trades that are ready
+    for (const trade of executableTrades) {
       const player = playersById[trade.playerId];
       if (player) {
         const planet = planetById[trade.planetId];
@@ -307,7 +342,8 @@ export class TradingCenter {
       }
     }
 
-    tc.currentTrades = [];
+    // Note: tc.currentTrades now only contains pending trades (not yet executable)
+    // We no longer clear all trades here since pending trades should remain
     this.earnInterest(tc);
 
     return executedTradeResultsByPlayerId;
@@ -323,5 +359,20 @@ export class TradingCenter {
     totalValue += tradingCenter.oreResource.amount * tradingCenter.oreResource.currentPrice;
     totalValue += tradingCenter.iridiumResource.amount * tradingCenter.iridiumResource.currentPrice;
     return totalValue;
+  }
+
+  public static getPendingTrades(tradingCenterData: TradingCenterData, playerId: string): TradeData[] {
+    return tradingCenterData.currentTrades.filter((trade) => trade.playerId === playerId);
+  }
+
+  public static getTradeTimeRemaining(trade: TradeData): number {
+    const now = Date.now();
+    const remaining = trade.executeAfter - now;
+    return Math.max(0, remaining);
+  }
+
+  public static canCancelTrade(trade: TradeData): boolean {
+    const now = Date.now();
+    return now < trade.executeAfter;
   }
 }

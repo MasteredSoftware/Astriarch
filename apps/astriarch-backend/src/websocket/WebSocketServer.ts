@@ -1042,13 +1042,75 @@ export class WebSocketServer {
   }
 
   private async handleSubmitTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.submitTrade
-    logger.warn("handleSubmitTrade not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.submitTrade(client.sessionId, message.payload);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.SUBMIT_TRADE, {
+          success: true,
+          message: "Trade submitted successfully",
+        }),
+      );
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+    } catch (error) {
+      logger.error("handleSubmitTrade error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: "Failed to submit trade",
+        }),
+      );
+    }
   }
 
   private async handleCancelTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.cancelTrade
-    logger.warn("handleCancelTrade not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.cancelTrade(client.sessionId, message.payload);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Send success response to the requesting client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.CANCEL_TRADE, {
+          success: true,
+          message: "Trade cancelled successfully",
+        }),
+      );
+
+      // Broadcast game state update to all players in the game
+      if (result.game && result.game._id) {
+        await this.broadcastGameStateUpdate(result.game._id.toString());
+      }
+    } catch (error) {
+      logger.error("handleCancelTrade error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: "Failed to cancel trade",
+        }),
+      );
+    }
   }
 
   private async handleChatMessage(clientId: string, message: IMessage<unknown>): Promise<void> {

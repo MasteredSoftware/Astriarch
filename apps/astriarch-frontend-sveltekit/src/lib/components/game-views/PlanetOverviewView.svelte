@@ -33,14 +33,15 @@
 	$: isOwnedPlanet = currentSelectedPlanet && 'planetaryFleet' in currentSelectedPlanet;
 
 	// Calculate current worker assignments for the selected planet
-	$: workerAssignments =
-		isFullPlanetData(currentSelectedPlanet)
-			? Planet.countPopulationWorkerTypes(currentSelectedPlanet)
-			: { farmers: 0, miners: 0, builders: 0 };
+	$: workerAssignments = isFullPlanetData(currentSelectedPlanet)
+		? Planet.countPopulationWorkerTypes(currentSelectedPlanet)
+		: { farmers: 0, miners: 0, builders: 0 };
 
 	// Helper to check if planet is a full PlanetData (owned planet)
 	function isFullPlanetData(planet: PlanetData | ClientPlanet | null): planet is PlanetData {
-		return planet !== null && 'population' in planet && 'resources' in planet && 'buildQueue' in planet;
+		return (
+			planet !== null && 'population' in planet && 'resources' in planet && 'buildQueue' in planet
+		);
 	}
 
 	// Helper function for worker assignment changes
@@ -181,22 +182,24 @@
 	// Check if a custom ship type has been researched
 	function isCustomShipResearched(shipType: StarShipType): boolean {
 		if (!$clientGameModel?.mainPlayer?.research) return false;
-		
+
 		const researchType = customShipResearchMapping[shipType];
 		if (!researchType) return false;
-		
-		const researchProgress = $clientGameModel.mainPlayer.research.researchProgressByType[researchType];
+
+		const researchProgress =
+			$clientGameModel.mainPlayer.research.researchProgressByType[researchType];
 		return researchProgress && researchProgress.currentResearchLevel >= 0;
 	}
 
 	// Get custom ship research data for a ship type
 	function getCustomShipData(shipType: StarShipType): StarshipAdvantageData | null {
 		if (!$clientGameModel?.mainPlayer?.research) return null;
-		
+
 		const researchType = customShipResearchMapping[shipType];
 		if (!researchType) return null;
-		
-		const researchProgress = $clientGameModel.mainPlayer.research.researchProgressByType[researchType];
+
+		const researchProgress =
+			$clientGameModel.mainPlayer.research.researchProgressByType[researchType];
 		return (researchProgress?.data as StarshipAdvantageData) || null;
 	}
 
@@ -218,7 +221,7 @@
 	// Generate available ships with proper costs from engine
 	$: availableShips = (() => {
 		const ships = [];
-		
+
 		// Add standard ships
 		for (const { type, description } of shipTypes) {
 			const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
@@ -235,25 +238,32 @@
 				customShipData: null
 			});
 		}
-		
+
 		// Add custom ships that have been researched
 		for (const { type, description } of shipTypes) {
 			// Skip space platforms - they don't have custom variants
 			if (type === StarShipType.SpacePlatform) continue;
-			
+
 			if (isCustomShipResearched(type)) {
 				const customShipData = getCustomShipData(type);
 				if (customShipData) {
-					const productionItem = PlanetProductionItem.constructStarShipInProduction(type, customShipData);
-					
+					const productionItem = PlanetProductionItem.constructStarShipInProduction(
+						type,
+						customShipData
+					);
+
 					// Get advantage/disadvantage info for description
 					let advantageText = '';
 					if (customShipData.advantageAgainst && customShipData.disadvantageAgainst) {
-						const advantageAgainst = GameTools.starShipTypeToFriendlyName(customShipData.advantageAgainst);
-						const disadvantageAgainst = GameTools.starShipTypeToFriendlyName(customShipData.disadvantageAgainst);
+						const advantageAgainst = GameTools.starShipTypeToFriendlyName(
+							customShipData.advantageAgainst
+						);
+						const disadvantageAgainst = GameTools.starShipTypeToFriendlyName(
+							customShipData.disadvantageAgainst
+						);
 						advantageText = ` • Advantage vs ${advantageAgainst}, Weak vs ${disadvantageAgainst}`;
 					}
-					
+
 					ships.push({
 						type,
 						name: `Custom ${GameTools.starShipTypeToFriendlyName(type)}`,
@@ -269,7 +279,7 @@
 				}
 			}
 		}
-		
+
 		return ships;
 	})();
 
@@ -296,7 +306,10 @@
 	$: shipAvailability =
 		isFullPlanetData(currentSelectedPlanet) && $clientGameModel?.mainPlayer
 			? availableShips.map((ship) => {
-					const productionItem = PlanetProductionItem.constructStarShipInProduction(ship.type, ship.customShipData || undefined);
+					const productionItem = PlanetProductionItem.constructStarShipInProduction(
+						ship.type,
+						ship.customShipData || undefined
+					);
 					const validation = PlanetProductionItem.canBuild(
 						currentSelectedPlanet,
 						$clientGameModel.mainPlayer,
@@ -459,7 +472,9 @@
 					</h4>
 					<div class="grid grid-cols-4 gap-2">
 						{#each availableShips as ship}
-							{@const availability = shipAvailability.find((a) => a.type === ship.type && a.isCustom === ship.isCustom)}
+							{@const availability = shipAvailability.find(
+								(a) => a.type === ship.type && a.isCustom === ship.isCustom
+							)}
 							<AvailablePlanetProductionItem
 								name={ship.name}
 								description={ship.description}
@@ -557,14 +572,20 @@
 					<div class="mt-3 border-t border-slate-700/50 pt-2">
 						<div class="flex justify-between text-xs">
 							<span class="text-slate-400">Total Population:</span>
-							<span class="text-white">{isFullPlanetData(currentSelectedPlanet) ? (currentSelectedPlanet.population?.length || 0) : 0}</span>
+							<span class="text-white"
+								>{isFullPlanetData(currentSelectedPlanet)
+									? currentSelectedPlanet.population?.length || 0
+									: 0}</span
+							>
 						</div>
 						<div class="flex justify-between text-xs">
 							<span class="text-slate-400">Unassigned:</span>
 							<span class="text-white"
 								>{Math.max(
 									0,
-									(isFullPlanetData(currentSelectedPlanet) ? (currentSelectedPlanet.population?.length || 0) : 0) -
+									(isFullPlanetData(currentSelectedPlanet)
+										? currentSelectedPlanet.population?.length || 0
+										: 0) -
 										(workerAssignments.farmers +
 											workerAssignments.miners +
 											workerAssignments.builders)

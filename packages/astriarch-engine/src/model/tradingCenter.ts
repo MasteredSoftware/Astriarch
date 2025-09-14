@@ -10,11 +10,14 @@ export enum TradeType {
 }
 
 export interface TradeData {
+  id: string; // Unique trade ID for cancellation
   playerId: string;
   planetId: number;
   tradeType: TradeType;
   resourceType: TradingCenterResourceType;
   amount: number;
+  submittedAt: number; // Timestamp when trade was submitted
+  executeAfter: number; // Timestamp when trade becomes executable
 }
 
 export interface TradingCenterResource {

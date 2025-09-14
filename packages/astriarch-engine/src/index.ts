@@ -7,6 +7,7 @@ import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
 import { Research } from './engine/research';
+import { TradingCenter } from './engine/tradingCenter';
 import { ClientModelData, PlanetById } from './model/clientModel';
 import { StarShipType, FleetData, StarshipData } from './model/fleet';
 import {
@@ -21,6 +22,7 @@ import {
 import { PlanetProductionItemData } from './model/planet';
 import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
+import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } from './model/tradingCenter';
 import { CitizenWorkerType } from './model/planet';
 import { Grid } from './engine/grid';
 import { EventNotification, EventNotificationType, PlanetaryConflictData } from './model/eventNotification';
@@ -41,6 +43,7 @@ export { GameController };
 export { Events };
 export { Grid };
 export { Research };
+export { TradingCenter };
 export { GameTools };
 
 // Export model types and enums
@@ -54,6 +57,8 @@ export { CitizenWorkerType };
 export { EventNotificationType };
 export { CanBuildResult };
 export { playerColors };
+export { TradeType };
+export { TradingCenterResourceType };
 
 // Export interfaces
 export type { PlayerData };
@@ -71,6 +76,8 @@ export type { StarshipData };
 export type { EventNotification };
 export type { PlanetaryConflictData };
 export type { PlanetData };
+export type { TradeData };
+export type { TradingCenterData };
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"

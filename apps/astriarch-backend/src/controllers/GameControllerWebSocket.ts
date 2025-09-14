@@ -5,7 +5,15 @@ import { logger } from "../utils/logger";
 import { persistGame } from "../database/DocumentPersistence";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
-import { GameModel, Fleet, StarShipType, ResearchType } from "astriarch-engine";
+import {
+  GameModel,
+  Fleet,
+  StarShipType,
+  ResearchType,
+  TradingCenter,
+  TradeType,
+  TradingCenterResourceType,
+} from "astriarch-engine";
 
 export interface GameSettings {
   maxPlayers?: number;
@@ -842,15 +850,130 @@ export class GameController {
   }
 
   static async submitTrade(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement trade submission
-    logger.warn("submitTrade not yet implemented");
-    return { success: false, error: "Not implemented" };
+    try {
+      if (
+        !payload ||
+        !payload.gameId ||
+        !payload.planetId ||
+        typeof payload.tradeType !== "number" ||
+        typeof payload.resourceType !== "number" ||
+        typeof payload.amount !== "number"
+      ) {
+        return { success: false, error: "Invalid trade data" };
+      }
+
+      const { gameId, planetId, tradeType, resourceType, amount } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the player in the game model
+      const gamePlayer = gameModel.players.find((p) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Find the planet in the game model
+      const planet = gameModel.planets?.find((p: any) => p.id === planetId);
+      if (!planet) {
+        return { success: false, error: "Planet not found" };
+      }
+
+      // Verify player owns the planet
+      const ownsPlanet = GameModel.isPlanetOwnedByPlayer(gamePlayer, planetId);
+      if (!ownsPlanet) {
+        return { success: false, error: "Player does not own this planet" };
+      }
+
+      // Create the trade using the engine
+      const trade = TradingCenter.constructTrade(
+        gamePlayer.id,
+        planetId,
+        tradeType as TradeType,
+        resourceType as TradingCenterResourceType,
+        amount,
+        5, // 5 second delay
+      );
+
+      // Add trade to the trading center
+      gameModel.tradingCenter.currentTrades.push(trade);
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(
+        `Player ${player.name} submitted trade: ${TradeType[tradeType]} ${amount} ${TradingCenterResourceType[resourceType]}`,
+      );
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error submitting trade:", error);
+      return { success: false, error: "Failed to submit trade" };
+    }
   }
 
   static async cancelTrade(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement trade cancellation
-    logger.warn("cancelTrade not yet implemented");
-    return { success: false, error: "Not implemented" };
+    try {
+      if (!payload || !payload.gameId || !payload.tradeId) {
+        return { success: false, error: "Invalid cancellation data - gameId and tradeId required" };
+      }
+
+      const { gameId, tradeId } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the player in the game model
+      const gamePlayer = gameModel.players.find((p) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Cancel the trade using the engine
+      const cancelled = TradingCenter.cancelTrade(gameModel.tradingCenter, tradeId, gamePlayer.id);
+
+      if (!cancelled) {
+        return { success: false, error: "Trade not found or cannot be cancelled" };
+      }
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.name} cancelled trade ${tradeId}`);
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error cancelling trade:", error);
+      return { success: false, error: "Failed to cancel trade" };
+    }
   }
 
   static async exitResign(sessionId: string, payload: any): Promise<GameResult> {
