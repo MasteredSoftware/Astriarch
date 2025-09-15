@@ -546,6 +546,8 @@ export class WebSocketServer {
 
       if (result.success && result.game) {
         const joinResponse = {
+          success: true,
+          gameId: gameId,
           gameOptions: result.game.gameOptions,
           name: result.game.name,
           playerPosition: result.playerPosition,
@@ -577,12 +579,21 @@ export class WebSocketServer {
       } else {
         this.sendToClient(
           clientId,
-          new Message(MESSAGE_TYPE.ERROR, { message: result.error || "Failed to join game" }),
+          new Message(MESSAGE_TYPE.JOIN_GAME, {
+            success: false,
+            error: result.error || "Failed to join game",
+          }),
         );
       }
     } catch (error) {
       logger.error("Error joining game:", error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to join game" }));
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.JOIN_GAME, {
+          success: false,
+          error: "Failed to join game",
+        }),
+      );
     }
   }
 

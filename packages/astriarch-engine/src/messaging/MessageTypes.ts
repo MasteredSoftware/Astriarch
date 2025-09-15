@@ -331,11 +331,7 @@ export function isJoinGameRequest(message: IMessage<unknown>): message is Messag
 }
 
 export function isJoinGameResponse(message: IMessage<unknown>): message is Message<IJoinGameResponsePayload> {
-  return (
-    message.type === MESSAGE_TYPE.JOIN_GAME &&
-    typeof message.payload === 'object' &&
-    message.payload !== null
-  );
+  return message.type === MESSAGE_TYPE.JOIN_GAME && typeof message.payload === 'object' && message.payload !== null;
 }
 
 export function isListGamesResponse(message: IMessage<unknown>): message is Message<IListGamesResponsePayload> {

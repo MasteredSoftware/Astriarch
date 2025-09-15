@@ -404,6 +404,12 @@ class WebSocketService {
 						if (payload.sessionId && typeof payload.sessionId === 'string') {
 							this.gameStore.setSessionId(payload.sessionId);
 						}
+
+						this.gameStore.addNotification({
+							type: 'success',
+							message: 'Successfully joined game!',
+							timestamp: Date.now()
+						});
 					} else {
 						this.gameStore.addNotification({
 							type: 'error',
