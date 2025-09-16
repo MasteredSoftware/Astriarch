@@ -36,4 +36,4 @@ const SessionSchema = new Schema<ISession>({
 // Indexes for efficient queries
 SessionSchema.index({ lastPing: 1 });
 
-export const SessionModel = mongoose.model<ISession>("Session", SessionSchema);
+export const SessionModel = mongoose.model<ISession>("Session", SessionSchema, "game_sessions");
