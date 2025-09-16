@@ -405,7 +405,7 @@ class WebSocketService {
 
 						// Store player position if provided (following old game pattern)
 						const payload = message.payload as unknown as Record<string, unknown>;
-						if (payload.playerPosition && typeof payload.playerPosition === 'number') {
+						if (typeof payload.playerPosition === 'number') {
 							this.gameStore.setPlayerPosition(payload.playerPosition);
 							console.log('Joined game at player position:', payload.playerPosition);
 						}

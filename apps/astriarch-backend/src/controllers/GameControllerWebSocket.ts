@@ -171,7 +171,7 @@ export class GameController {
       }
 
       // Check if game is full
-      if (game.players && game.players.length >= (game.gameOptions?.maxPlayers || 4)) {
+      if (game.players && game.players.length >= (game.gameOptions?.systemsToGenerate || 4)) {
         return { success: false, error: "Game is full" };
       }
 
