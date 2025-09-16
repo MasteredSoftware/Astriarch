@@ -1100,11 +1100,13 @@ export class GameController {
 
     // Clean up player data - only send name and position, NOT sessionId
     // This matches the old game_controller.js logic (line 280-283)
+    // Also add 'connected' field based on 'isActive' for frontend compatibility
     if (gameDoc.players) {
       for (const player of gameDoc.players) {
         summary.players.push({
           name: player.name,
           position: player.position,
+          connected: player.isActive || false, // Map isActive to connected for frontend
         });
       }
     }
