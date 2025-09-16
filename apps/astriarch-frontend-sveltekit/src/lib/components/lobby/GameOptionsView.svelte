@@ -176,7 +176,7 @@
 							id="gameName"
 							type="text"
 							bind:value={formData.name}
-							on:input={handleOptionChange}
+							on:blur={handleOptionChange}
 							disabled={!isHost}
 							maxlength="50"
 							class="form-input"
@@ -191,7 +191,7 @@
 							id="playerName"
 							type="text"
 							bind:value={formData.playerName}
-							on:input={handlePlayerNameChange}
+							on:blur={handlePlayerNameChange}
 							maxlength="20"
 							class="form-input"
 						/>
