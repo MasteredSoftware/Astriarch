@@ -11,6 +11,12 @@
 	export let isHost: boolean = false;
 	export let connectedPlayers: IPlayer[] = [];
 
+	// Debug logging for connectedPlayers
+	// Reactive variables to ensure Svelte re-renders when slot occupancy changes
+	$: player1SlotOccupied = connectedPlayers.some((p) => p.position === 1 && p.connected);
+	$: player2SlotOccupied = connectedPlayers.some((p) => p.position === 2 && p.connected);
+	$: player3SlotOccupied = connectedPlayers.some((p) => p.position === 3 && p.connected);
+
 	const dispatch = createEventDispatcher<{
 		startGame: void;
 		backToLobby: void;
@@ -215,7 +221,7 @@
 							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 2:</Text>
 						</label>
 						<div class="player-row">
-							{#if isPlayerSlotOccupied(1)}
+							{#if player1SlotOccupied}
 								<!-- Show connected player name -->
 								<span class="player-name connected-player">
 									{getConnectedPlayerName(1)} (Connected)
@@ -250,7 +256,7 @@
 								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 3:</Text>
 							</label>
 							<div class="player-row">
-								{#if isPlayerSlotOccupied(2)}
+								{#if player2SlotOccupied}
 									<!-- Show connected player name -->
 									<span class="player-name connected-player">
 										{getConnectedPlayerName(2)} (Connected)
@@ -287,7 +293,7 @@
 								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 4:</Text>
 							</label>
 							<div class="player-row">
-								{#if isPlayerSlotOccupied(3)}
+								{#if player3SlotOccupied}
 									<!-- Show connected player name -->
 									<span class="player-name connected-player">
 										{getConnectedPlayerName(3)} (Connected)
