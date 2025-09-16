@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text, Button } from '$lib/components/astriarch';
 	import { webSocketService } from '$lib/services/websocket';
+	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { getDefaultServerGameOptions } from 'astriarch-engine';
 	import type { IPlayer } from 'astriarch-engine';
 
@@ -24,6 +25,14 @@
 
 	// Game options with defaults matching old game
 	let formData = JSON.parse(JSON.stringify(gameOptions));
+
+	// Ensure player name is synced with the store (which loads from localStorage)
+	$: {
+		const storeState = $multiplayerGameStore;
+		if (storeState.playerName && (!formData.playerName || formData.playerName === 'Player')) {
+			formData.playerName = storeState.playerName;
+		}
+	}
 
 	// React to changes in gameOptions prop (from server updates)
 	$: {

@@ -1,5 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import type { IGame } from 'astriarch-engine';
+import { PlayerStorage } from '$lib/utils/playerStorage';
 
 // WebSocket multiplayer game state interface
 export interface MultiplayerGameState {
@@ -52,7 +53,7 @@ function createMultiplayerGameStore() {
 		sessionId: null,
 		gameId: null,
 		currentPlayer: null,
-		playerName: null,
+		playerName: PlayerStorage.getPlayerNameWithFallback('Player'), // Load from localStorage
 		playerPosition: null,
 		connected: false,
 		gameJoined: false,
@@ -89,11 +90,15 @@ function createMultiplayerGameStore() {
 				sessionId
 			})),
 
-		setPlayerName: (playerName: string) =>
-			update((store) => ({
+		setPlayerName: (playerName: string) => {
+			// Save to localStorage for persistence
+			PlayerStorage.setPlayerName(playerName);
+			
+			return update((store) => ({
 				...store,
 				playerName
-			})),
+			}));
+		},
 
 		setPlayerPosition: (playerPosition: number | null) =>
 			update((store) => ({

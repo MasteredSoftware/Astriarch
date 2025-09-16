@@ -18,6 +18,7 @@ import {
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { clientGameModel, isGameRunning, gameActions } from '$lib/stores/gameStore';
+import { PlayerStorage } from '$lib/utils/playerStorage';
 import type { ClientModelData } from 'astriarch-engine';
 
 // Import multiplayer store types and functionality from the centralized store
@@ -98,8 +99,9 @@ class WebSocketService {
 						// Start the ping interval to keep the session alive
 						this.startPingInterval();
 
-						// Set a default player name if none exists
-						this.gameStore.setPlayerName('Player');
+						// Load player name from localStorage, or use default
+						const storedPlayerName = PlayerStorage.getPlayerNameWithFallback('Player');
+						this.gameStore.setPlayerName(storedPlayerName);
 
 						// Send queued messages
 						while (this.messageQueue.length > 0) {
@@ -845,10 +847,15 @@ class WebSocketService {
 	}
 
 	changePlayerName(gameId: string, playerName: string) {
+		const trimmedName = playerName.substring(0, 20); // Limit to 20 characters like old game
+		
 		const payload = {
 			gameId,
-			playerName: playerName.substring(0, 20) // Limit to 20 characters like old game
+			playerName: trimmedName
 		};
+
+		// Update local store (which will also save to localStorage)
+		this.gameStore.setPlayerName(trimmedName);
 
 		console.log('Sending CHANGE_PLAYER_NAME with payload:', payload);
 		this.send(new Message(MESSAGE_TYPE.CHANGE_PLAYER_NAME, payload));
