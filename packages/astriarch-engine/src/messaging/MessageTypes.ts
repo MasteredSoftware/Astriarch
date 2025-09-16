@@ -153,6 +153,11 @@ export interface IChangeGameOptionsPayload {
   playerName?: string;
 }
 
+export interface IChangePlayerNamePayload {
+  gameId: string;
+  playerName: string;
+}
+
 export interface IGameStateUpdatePayload {
   gameState?: unknown;
   changes?: unknown;

@@ -25,6 +25,7 @@ import {
   type IJoinGameRequestPayload,
   type IStartGameRequestPayload,
   type IChangeGameOptionsPayload,
+  type IChangePlayerNamePayload,
   constructClientGameModel,
   advanceGameModelTime,
   GameModel,
@@ -279,7 +280,7 @@ export class WebSocketServer {
         break;
 
       case MESSAGE_TYPE.CHANGE_PLAYER_NAME:
-        await this.handleChangePlayerName(clientId, message);
+        await this.handleChangePlayerName(clientId, message as IMessage<IChangePlayerNamePayload>);
         break;
 
       case MESSAGE_TYPE.SYNC_STATE:
@@ -796,9 +797,56 @@ export class WebSocketServer {
     }
   }
 
-  private async handleChangePlayerName(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.changePlayerName
-    logger.warn("handleChangePlayerName not yet implemented");
+  private async handleChangePlayerName(clientId: string, message: IMessage<IChangePlayerNamePayload>): Promise<void> {
+    try {
+      const client = this.clients.get(clientId);
+      if (!client) return;
+
+      const { gameId, playerName } = message.payload;
+
+      if (!gameId || !playerName) {
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: "Game ID and player name are required" }),
+        );
+        return;
+      }
+
+      const result = await GameController.changePlayerName({
+        sessionId: client.sessionId,
+        gameId,
+        playerName,
+      });
+
+      if (result.success && result.game) {
+        const optionsResponse = {
+          gameOptions: result.game.gameOptions,
+          name: result.game.name,
+          gameId: result.game._id,
+        };
+
+        // Send success response to the player who changed their name
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse));
+
+        // Broadcast to other players in the game (following old game pattern)
+        this.broadcastToOtherPlayersInGame(
+          result.game,
+          client.sessionId,
+          new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, optionsResponse),
+        );
+
+        // Update lobby players about game changes
+        await this.sendUpdatedGameListToLobbyPlayers(result.game);
+      } else {
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, { message: result.error || "Failed to change player name" }),
+        );
+      }
+    } catch (error) {
+      logger.error("Error in handleChangePlayerName:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Internal server error" }));
+    }
   }
 
   private async handleSyncState(clientId: string, message: IMessage<unknown>): Promise<void> {

@@ -435,10 +435,27 @@ class WebSocketService {
 			case MESSAGE_TYPE.CHANGE_GAME_OPTIONS:
 				// Game options have been updated
 				console.log('Received CHANGE_GAME_OPTIONS:', message.payload);
-				// The game options are updated and will be reflected in the lobby and game options view
+
+				// The backend automatically sends updated game list to lobby players
+				// so the current game will be updated with new options
+
 				this.gameStore.addNotification({
 					type: 'info',
 					message: 'Game options updated',
+					timestamp: Date.now()
+				});
+				break;
+
+			case MESSAGE_TYPE.CHANGE_PLAYER_NAME:
+				// Player name has been updated
+				console.log('Received CHANGE_PLAYER_NAME:', message.payload);
+
+				// The backend automatically sends updated game list to lobby players
+				// so the current game will be updated with the new player name
+
+				this.gameStore.addNotification({
+					type: 'info',
+					message: 'Player name updated',
 					timestamp: Date.now()
 				});
 				break;
@@ -825,6 +842,16 @@ class WebSocketService {
 
 		console.log('Sending CHANGE_GAME_OPTIONS with payload:', payload);
 		this.send(new Message(MESSAGE_TYPE.CHANGE_GAME_OPTIONS, payload));
+	}
+
+	changePlayerName(gameId: string, playerName: string) {
+		const payload = {
+			gameId,
+			playerName: playerName.substring(0, 20) // Limit to 20 characters like old game
+		};
+
+		console.log('Sending CHANGE_PLAYER_NAME with payload:', payload);
+		this.send(new Message(MESSAGE_TYPE.CHANGE_PLAYER_NAME, payload));
 	}
 
 	updatePlanetBuildQueue(

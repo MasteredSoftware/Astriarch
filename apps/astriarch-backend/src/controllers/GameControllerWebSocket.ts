@@ -402,10 +402,56 @@ export class GameController {
     }
   }
 
-  static async changePlayerName(data: any): Promise<GameResult> {
-    // TODO: Implement player name change
-    logger.warn("changePlayerName not yet implemented");
-    return { success: false, error: "Not implemented" };
+  static async changePlayerName(data: { sessionId: string; gameId: string; playerName: string }): Promise<GameResult> {
+    try {
+      const { sessionId, gameId, playerName } = data;
+
+      if (!playerName || playerName.trim() === "") {
+        return { success: false, error: "Player name cannot be empty" };
+      }
+
+      // Limit name to 20 characters like the old game
+      const trimmedName = playerName.substring(0, 20);
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find the player making the request
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Update the player's name
+      player.name = trimmedName;
+
+      // Update the corresponding game options based on player position
+      if (player.position === 0) {
+        // Host player - update mainPlayerName and hostPlayerName
+        game.gameOptions.mainPlayerName = trimmedName;
+        game.hostPlayerName = trimmedName;
+      } else {
+        // Non-host player - update the corresponding opponentOptions entry
+        const opponentIndex = player.position - 1;
+        if (game.gameOptions.opponentOptions && game.gameOptions.opponentOptions[opponentIndex]) {
+          game.gameOptions.opponentOptions[opponentIndex].name = trimmedName;
+        }
+      }
+
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(
+        `Player name changed to "${trimmedName}" for player at position ${player.position} in game ${gameId}`,
+      );
+      return { success: true, game };
+    } catch (error) {
+      logger.error("Error changing player name:", error);
+      return { success: false, error: "Failed to change player name" };
+    }
   }
 
   static async sendShips(sessionId: string, data: any): Promise<GameResult> {

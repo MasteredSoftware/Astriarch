@@ -19,6 +19,27 @@
 	// Game options with defaults matching old game
 	let formData = JSON.parse(JSON.stringify(gameOptions));
 
+	// React to changes in gameOptions prop (from server updates)
+	$: {
+		// Only update specific fields from gameOptions if this is not the host
+		// (hosts control the options, non-hosts receive updates)
+		if (!isHost && gameOptions) {
+			// Update only game configuration fields, preserving form structure
+			formData.name = gameOptions.name;
+			formData.systemsToGenerate = gameOptions.systemsToGenerate;
+			formData.planetsPerSystem = gameOptions.planetsPerSystem;
+			formData.galaxySize = gameOptions.galaxySize;
+			formData.distributePlanetsEvenly = gameOptions.distributePlanetsEvenly;
+			formData.quickStart = gameOptions.quickStart;
+			formData.gameSpeed = gameOptions.gameSpeed;
+
+			// Update opponent options if available
+			if (gameOptions.opponentOptions && Array.isArray(gameOptions.opponentOptions)) {
+				formData.opponentOptions = [...gameOptions.opponentOptions];
+			}
+		}
+	}
+
 	// Galaxy size options
 	const galaxySizeOptions = [
 		{ value: 1, label: 'Tiny' },
@@ -97,6 +118,13 @@
 		}
 	}
 
+	function handlePlayerNameChange() {
+		// All players can change their own name
+		if (formData.playerName && formData.playerName.trim()) {
+			webSocketService.changePlayerName(gameId, formData.playerName.trim());
+		}
+	}
+
 	function handleStartGame() {
 		if (isHost) {
 			dispatch('startGame');
@@ -163,8 +191,7 @@
 							id="playerName"
 							type="text"
 							bind:value={formData.playerName}
-							on:input={handleOptionChange}
-							disabled={!isHost}
+							on:input={handlePlayerNameChange}
 							maxlength="20"
 							class="form-input"
 						/>
