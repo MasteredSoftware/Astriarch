@@ -365,6 +365,10 @@ class WebSocketService {
 					this.gameStore.setGameJoined(true);
 					this.gameStore.setCurrentView('game_options');
 
+					// Game creator is always at position 0 (following old game pattern)
+					this.gameStore.setPlayerPosition(0);
+					console.log('Created game as host at position 0');
+
 					// Store session ID if provided
 					const payload = message.payload as unknown as Record<string, unknown>;
 					if (payload.sessionId && typeof payload.sessionId === 'string') {
@@ -399,8 +403,14 @@ class WebSocketService {
 						this.gameStore.setGameJoined(true);
 						this.gameStore.setCurrentView('game_options');
 
-						// Store session ID if provided
+						// Store player position if provided (following old game pattern)
 						const payload = message.payload as unknown as Record<string, unknown>;
+						if (payload.playerPosition && typeof payload.playerPosition === 'number') {
+							this.gameStore.setPlayerPosition(payload.playerPosition);
+							console.log('Joined game at player position:', payload.playerPosition);
+						}
+
+						// Store session ID if provided
 						if (payload.sessionId && typeof payload.sessionId === 'string') {
 							this.gameStore.setSessionId(payload.sessionId);
 						}
@@ -708,18 +718,19 @@ class WebSocketService {
 	}
 
 	createGame(gameOptions: ServerGameOptions) {
-		// Get current player name from store or use a default
-		const currentPlayerName = get(this.gameStore).playerName || 'Player';
+		// Use player name from game options, fallback to store or default
+		const playerName = gameOptions.mainPlayerName || get(this.gameStore).playerName || 'Player';
 
-		console.log('Creating game with player name:', currentPlayerName);
+		// Update the store with the actual player name being used
+		this.gameStore.setPlayerName(playerName);
 
-		// Send both game name and player name as the backend expects
+		console.log('Creating game with player name:', playerName); // Send both game name and player name as the backend expects
 		const payload: Record<string, unknown> = {
 			name: gameOptions.name || 'Unnamed Game',
-			playerName: currentPlayerName,
+			playerName: playerName,
 			gameOptions: {
 				name: gameOptions.name || 'Unnamed Game',
-				mainPlayerName: currentPlayerName,
+				mainPlayerName: playerName,
 				systemsToGenerate: 4, // Default to 4 systems
 				planetsPerSystem: gameOptions.planetsPerSystem || 4,
 				galaxySize:

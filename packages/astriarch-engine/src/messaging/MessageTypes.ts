@@ -74,6 +74,7 @@ export interface IGame {
   _id: string;
   name: string;
   players: IPlayer[];
+  hostPlayerName?: string; // Optional to maintain compatibility
   gameOptions?: ServerGameOptions;
   status: 'waiting' | 'in_progress' | 'completed';
   createdAt: Date;

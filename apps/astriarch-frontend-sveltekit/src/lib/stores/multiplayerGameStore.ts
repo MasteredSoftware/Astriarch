@@ -7,6 +7,7 @@ export interface MultiplayerGameState {
 	gameId: string | null;
 	currentPlayer: string | null;
 	playerName: string | null;
+	playerPosition: number | null; // Store the player position returned by the backend
 	connected: boolean;
 	gameJoined: boolean;
 	currentView: 'lobby' | 'game_options' | 'game';
@@ -52,6 +53,7 @@ function createMultiplayerGameStore() {
 		gameId: null,
 		currentPlayer: null,
 		playerName: null,
+		playerPosition: null,
 		connected: false,
 		gameJoined: false,
 		currentView: 'lobby',
@@ -91,6 +93,12 @@ function createMultiplayerGameStore() {
 			update((store) => ({
 				...store,
 				playerName
+			})),
+
+		setPlayerPosition: (playerPosition: number | null) =>
+			update((store) => ({
+				...store,
+				playerPosition
 			})),
 
 		// Game state actions - removed setGameModel as game data should come from gameStore

@@ -15,6 +15,10 @@
 	let gameJoined = false;
 	let gameId = '';
 	let currentGame: IGame | null = null;
+	let currentPlayerName = '';
+	let currentPlayerPosition = 0;
+	let isCurrentPlayerHost = false;
+	let didCreateCurrentGame = false; // Track if we created the current game
 
 	let unsubscribeWebSocket: (() => void) | null = null;
 
@@ -25,6 +29,10 @@
 			console.log('Store state updated:', state);
 			const wasConnected = isConnected;
 			isConnected = state.connected;
+			currentPlayerName = state.playerName || '';
+			console.log('Store updated - currentPlayerName:', currentPlayerName);
+			console.log('Store updated - playerPosition:', state.playerPosition);
+
 			// Update games list when we receive game updates
 			games = state.availableGames;
 
@@ -37,6 +45,18 @@
 			if (gameId) {
 				currentGame = games.find((game) => game._id === gameId) || null;
 				console.log('Current game updated:', currentGame);
+
+				// Use the player position from the store (set by backend responses)
+				if (currentGame && state.playerPosition !== null) {
+					currentPlayerPosition = state.playerPosition;
+					isCurrentPlayerHost = currentPlayerPosition === 0;
+					console.log(
+						'Using stored player position:',
+						currentPlayerPosition,
+						'Is host:',
+						isCurrentPlayerHost
+					);
+				}
 			}
 
 			// Request games list when connection is first established
@@ -77,6 +97,8 @@
 
 	function handleJoinGame(event: CustomEvent<IGame>) {
 		const game = event.detail;
+		// Track that we are joining (not creating) this game
+		didCreateCurrentGame = false;
 		webSocketService.joinGame(game._id);
 	}
 
@@ -102,6 +124,9 @@
 			return;
 		}
 
+		// Track that we are creating this game (so we know we're the host)
+		didCreateCurrentGame = true;
+
 		// Create game with default options - this will trigger transition to game_options view
 		const defaultGameOptions = getDefaultServerGameOptions({});
 
@@ -117,7 +142,9 @@
 		multiplayerGameStore.setCurrentView('lobby');
 		multiplayerGameStore.setGameJoined(false);
 		multiplayerGameStore.setGameId(null);
+		multiplayerGameStore.setPlayerPosition(null); // Reset player position
 		currentGame = null;
+		didCreateCurrentGame = false; // Reset the flag
 		requestGamesList();
 	}
 </script>
@@ -195,8 +222,9 @@
 				<GameOptionsView
 					{gameId}
 					gameOptions={currentGame.gameOptions}
-					playerPosition={0}
-					isHost={true}
+					playerPosition={currentPlayerPosition}
+					isHost={isCurrentPlayerHost}
+					connectedPlayers={currentGame.players || []}
 					on:startGame={handleStartGame}
 					on:backToLobby={handleBackToLobby}
 				/>

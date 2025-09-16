@@ -1030,6 +1030,7 @@ export class GameController {
     const summary = {
       _id: gameDoc._id.toString(),
       name: gameDoc.name || "Unnamed Game",
+      hostPlayerName: gameDoc.hostPlayerName, // Include host information
       status: gameDoc.status || "waiting",
       players: [] as any[], // Will be populated below without sessionId
       gameOptions: gameDoc.gameOptions || {

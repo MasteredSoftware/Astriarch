@@ -3,11 +3,13 @@
 	import { Text, Button } from '$lib/components/astriarch';
 	import { webSocketService } from '$lib/services/websocket';
 	import { getDefaultServerGameOptions } from 'astriarch-engine';
+	import type { IPlayer } from 'astriarch-engine';
 
 	export let gameId: string;
 	export let gameOptions = getDefaultServerGameOptions({});
 	export let playerPosition: number = 0;
 	export let isHost: boolean = false;
+	export let connectedPlayers: IPlayer[] = [];
 
 	const dispatch = createEventDispatcher<{
 		startGame: void;
@@ -110,6 +112,19 @@
 		const option = playerTypeOptions.find((opt) => opt.value === type);
 		return option ? option.label : 'Unknown';
 	}
+
+	function getConnectedPlayerName(playerIndex: number): string | null {
+		// Player index 0 is the host (playerPosition 0)
+		// Player index 1 corresponds to position 1, etc.
+		const position = playerIndex;
+		const player = connectedPlayers.find((p) => p.position === position);
+		return player?.name || null;
+	}
+
+	function isPlayerSlotOccupied(playerIndex: number): boolean {
+		const position = playerIndex;
+		return connectedPlayers.some((p) => p.position === position && p.connected);
+	}
 </script>
 
 <div class="game-options-container">
@@ -159,7 +174,13 @@
 						<label class="form-label">
 							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 1:</Text>
 						</label>
-						<span class="player-name">You</span>
+						{#if playerPosition === 0}
+							<span class="player-name">You ({formData.playerName || 'Host'})</span>
+						{:else}
+							<span class="player-name connected-player">
+								{getConnectedPlayerName(0)} (Host)
+							</span>
+						{/if}
 					</div>
 
 					<div class="form-group">
@@ -167,22 +188,31 @@
 							<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 2:</Text>
 						</label>
 						<div class="player-row">
-							<span class="player-name"
-								>{getPlayerTypeName(
-									formData.opponentOptions[0]?.type,
-									formData.opponentOptions[0]?.name
-								)}</span
-							>
-							{#if isHost}
-								<select
-									bind:value={formData.opponentOptions[0].type}
-									on:change={handleOptionChange}
-									class="form-select"
-								>
-									{#each playerTypeOptions as option}
-										<option value={option.value} disabled={option.disabled}>{option.label}</option>
-									{/each}
-								</select>
+							{#if isPlayerSlotOccupied(1)}
+								<!-- Show connected player name -->
+								<span class="player-name connected-player">
+									{getConnectedPlayerName(1)} (Connected)
+								</span>
+							{:else}
+								<!-- Show AI selection or slot status -->
+								<span class="player-name">
+									{getPlayerTypeName(
+										formData.opponentOptions[0]?.type,
+										formData.opponentOptions[0]?.name
+									)}
+								</span>
+								{#if isHost}
+									<select
+										bind:value={formData.opponentOptions[0].type}
+										on:change={handleOptionChange}
+										class="form-select"
+									>
+										{#each playerTypeOptions as option}
+											<option value={option.value} disabled={option.disabled}>{option.label}</option
+											>
+										{/each}
+									</select>
+								{/if}
 							{/if}
 						</div>
 					</div>
@@ -193,23 +223,32 @@
 								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 3:</Text>
 							</label>
 							<div class="player-row">
-								<span class="player-name"
-									>{getPlayerTypeName(
-										formData.opponentOptions[1]?.type,
-										formData.opponentOptions[1]?.name
-									)}</span
-								>
-								{#if isHost}
-									<select
-										bind:value={formData.opponentOptions[1].type}
-										on:change={handleOptionChange}
-										class="form-select"
-									>
-										{#each playerTypeOptions as option}
-											<option value={option.value} disabled={option.disabled}>{option.label}</option
-											>
-										{/each}
-									</select>
+								{#if isPlayerSlotOccupied(2)}
+									<!-- Show connected player name -->
+									<span class="player-name connected-player">
+										{getConnectedPlayerName(2)} (Connected)
+									</span>
+								{:else}
+									<!-- Show AI selection or slot status -->
+									<span class="player-name">
+										{getPlayerTypeName(
+											formData.opponentOptions[1]?.type,
+											formData.opponentOptions[1]?.name
+										)}
+									</span>
+									{#if isHost}
+										<select
+											bind:value={formData.opponentOptions[1].type}
+											on:change={handleOptionChange}
+											class="form-select"
+										>
+											{#each playerTypeOptions as option}
+												<option value={option.value} disabled={option.disabled}
+													>{option.label}</option
+												>
+											{/each}
+										</select>
+									{/if}
 								{/if}
 							</div>
 						</div>
@@ -221,23 +260,32 @@
 								<Text style="font-size: 14px; color: #FFFFFF; font-weight: 600;">Player 4:</Text>
 							</label>
 							<div class="player-row">
-								<span class="player-name"
-									>{getPlayerTypeName(
-										formData.opponentOptions[2]?.type,
-										formData.opponentOptions[2]?.name
-									)}</span
-								>
-								{#if isHost}
-									<select
-										bind:value={formData.opponentOptions[2].type}
-										on:change={handleOptionChange}
-										class="form-select"
-									>
-										{#each playerTypeOptions as option}
-											<option value={option.value} disabled={option.disabled}>{option.label}</option
-											>
-										{/each}
-									</select>
+								{#if isPlayerSlotOccupied(3)}
+									<!-- Show connected player name -->
+									<span class="player-name connected-player">
+										{getConnectedPlayerName(3)} (Connected)
+									</span>
+								{:else}
+									<!-- Show AI selection or slot status -->
+									<span class="player-name">
+										{getPlayerTypeName(
+											formData.opponentOptions[2]?.type,
+											formData.opponentOptions[2]?.name
+										)}
+									</span>
+									{#if isHost}
+										<select
+											bind:value={formData.opponentOptions[2].type}
+											on:change={handleOptionChange}
+											class="form-select"
+										>
+											{#each playerTypeOptions as option}
+												<option value={option.value} disabled={option.disabled}
+													>{option.label}</option
+												>
+											{/each}
+										</select>
+									{/if}
 								{/if}
 							</div>
 						</div>
@@ -484,6 +532,11 @@
 		min-width: 120px;
 		font-weight: bold;
 		color: #00ffff;
+	}
+
+	.player-name.connected-player {
+		color: #10b981; /* Green color for connected players */
+		font-weight: 600;
 	}
 
 	.checkbox-group {
