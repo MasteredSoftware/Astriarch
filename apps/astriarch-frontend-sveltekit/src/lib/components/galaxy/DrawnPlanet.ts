@@ -116,6 +116,26 @@ export class DrawnPlanet {
 	update(gameModel: ClientModelData): void {
 		this.gameModel = gameModel;
 
+		// Update planet data reference with fresh data from the game model
+		if (gameModel.mainPlayerOwnedPlanets[this.planetData.id]) {
+			// Update with owned planet data (full PlanetData)
+			this.planetData = gameModel.mainPlayerOwnedPlanets[this.planetData.id];
+		} else {
+			// Check if this is a known client planet and update accordingly
+			const clientPlanet = gameModel.clientPlanets.find(cp => cp.id === this.planetData.id);
+			if (clientPlanet) {
+				// Update the planet data with fresh client data while preserving the original type structure
+				this.planetData = {
+					...this.planetData, // Keep existing data structure
+					name: clientPlanet.name,
+					originPoint: clientPlanet.originPoint,
+					boundingHexMidPoint: clientPlanet.boundingHexMidPoint,
+					// Only update type if clientPlanet has a non-null type
+					...(clientPlanet.type && { type: clientPlanet.type })
+				};
+			}
+		}
+
 		// Enhanced owner detection using multiple data sources
 		this.owner = null;
 
