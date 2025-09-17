@@ -303,9 +303,6 @@
 				drawnPlanet = new DrawnPlanet(planet, gameModel);
 				drawnPlanets.set(planet.id, drawnPlanet);
 				galaxyLayer.add(drawnPlanet.group);
-
-				// Add click handler for planet selection
-				drawnPlanet.onClick(handlePlanetClick);
 			}
 
 			drawnPlanet.update(gameModel);
@@ -359,9 +356,6 @@
 				drawnPlanet = new DrawnPlanet(planetData, gameModel);
 				drawnPlanets.set(clientPlanet.id, drawnPlanet);
 				galaxyLayer.add(drawnPlanet.group);
-
-				// Add click handler for planet selection
-				drawnPlanet.onClick(handlePlanetClick);
 			}
 
 			drawnPlanet.update(gameModel);
@@ -406,17 +400,71 @@
 		// }
 	}
 
-	// Handle galaxy interaction
+	// Handle galaxy interaction with hex-based planet selection
 	function handleStageClick(e: any) {
-		const pos = stage.getPointerPosition();
-		console.log('Galaxy clicked at:', pos);
-		// TODO: Implement planet selection, fleet commands, etc.
+		const stagePos = stage.getPointerPosition();
+		if (!stagePos || !currentGrid) return;
+
+		// Convert stage coordinates to galaxy layer coordinates
+		// This accounts for pan/zoom transformations
+		const layerPos = galaxyLayer.getRelativePointerPosition();
+		if (!layerPos) return;
+
+		console.log('Galaxy clicked at stage pos:', stagePos, 'layer pos:', layerPos);
+
+		// Find the hex that contains this click position (using layer coordinates)
+		const clickedHex = currentGrid.getHexAt(layerPos);
+		if (!clickedHex) {
+			console.log('No hex found at click position');
+			return;
+		}
+
+		console.log('Clicked hex:', clickedHex.data.id, 'at midpoint:', clickedHex.midPoint);
+
+		// Find if there's a planet at this hex location
+		const gameModel = $clientGameModel;
+		if (!gameModel) return;
+
+		// Look for a planet at this hex midpoint
+		let planetAtHex: any = null;
+
+		// Check owned planets first
+		for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
+			if (
+				planet.boundingHexMidPoint.x === clickedHex.midPoint.x &&
+				planet.boundingHexMidPoint.y === clickedHex.midPoint.y
+			) {
+				planetAtHex = planet;
+				break;
+			}
+		}
+
+		// If not found in owned planets, check known planets
+		if (!planetAtHex) {
+			for (const clientPlanet of gameModel.clientPlanets) {
+				if (
+					clientPlanet.boundingHexMidPoint.x === clickedHex.midPoint.x &&
+					clientPlanet.boundingHexMidPoint.y === clickedHex.midPoint.y
+				) {
+					planetAtHex = clientPlanet;
+					break;
+				}
+			}
+		}
+
+		if (planetAtHex) {
+			console.log('Found planet at hex:', planetAtHex.name, planetAtHex.id);
+			handlePlanetSelection(planetAtHex);
+		} else {
+			console.log('No planet found at clicked hex');
+			// Clear planet selection when clicking empty space
+			gameActions.selectPlanet(null);
+		}
 	}
 
-	// Handle planet clicks for fleet command destination selection
-	function handlePlanetClick(drawnPlanet: DrawnPlanet) {
-		const planetData = drawnPlanet.getPlanetData();
-		console.log('Planet clicked:', planetData.name, planetData.id);
+	// Handle planet selection for fleet command destination selection and normal planet selection
+	function handlePlanetSelection(planetData: any) {
+		console.log('Planet selected:', planetData.name, planetData.id);
 
 		// Check if we're in destination selection mode
 		const fleetState = $fleetCommandStore;

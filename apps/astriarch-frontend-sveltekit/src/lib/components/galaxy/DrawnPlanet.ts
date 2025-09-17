@@ -788,23 +788,4 @@ export class DrawnPlanet {
 			this.group.visible(visible);
 		}
 	}
-
-	// Event handling methods
-	onClick(callback: (planet: DrawnPlanet) => void): void {
-		if (this.group) {
-			this.group.on('click', () => callback(this));
-		}
-	}
-
-	onMouseEnter(callback: (planet: DrawnPlanet) => void): void {
-		if (this.group) {
-			this.group.on('mouseenter', () => callback(this));
-		}
-	}
-
-	onMouseLeave(callback: (planet: DrawnPlanet) => void): void {
-		if (this.group) {
-			this.group.on('mouseleave', () => callback(this));
-		}
-	}
 }
