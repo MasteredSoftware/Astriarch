@@ -93,7 +93,7 @@ function createMultiplayerGameStore() {
 		setPlayerName: (playerName: string) => {
 			// Save to localStorage for persistence
 			PlayerStorage.setPlayerName(playerName);
-			
+
 			return update((store) => ({
 				...store,
 				playerName

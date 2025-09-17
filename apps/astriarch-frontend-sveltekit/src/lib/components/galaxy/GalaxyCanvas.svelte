@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { clientGameModel, gameGrid, gameActions } from '$lib/stores/gameStore';
+	import { clientGameModel, gameGrid, gameActions, selectedPlanetId } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import type { ClientModelData, Grid } from 'astriarch-engine';
 	import { PlanetHappinessType, PlanetImprovementType } from 'astriarch-engine/src/model/planet';
@@ -28,6 +28,13 @@
 	const MIN_ZOOM = 0.3;
 	const MAX_ZOOM = 3.0;
 	const ZOOM_SPEED = 1.1;
+
+	// Handle planet selection changes
+	$: if ($selectedPlanetId !== null) {
+		updatePlanetSelection($selectedPlanetId);
+	} else {
+		clearPlanetSelection();
+	}
 
 	onMount(() => {
 		initializeCanvas();
@@ -444,6 +451,27 @@
 				canvasContainer.style.cursor = 'grab';
 			}
 		}
+	}
+
+	// Planet selection management functions
+	function updatePlanetSelection(selectedId: number) {
+		// Clear all previous selections
+		drawnPlanets.forEach((drawnPlanet) => {
+			drawnPlanet.setSelected(false);
+		});
+
+		// Set the newly selected planet
+		const selectedPlanet = drawnPlanets.get(selectedId);
+		if (selectedPlanet) {
+			selectedPlanet.setSelected(true);
+		}
+	}
+
+	function clearPlanetSelection() {
+		// Clear all planet selections
+		drawnPlanets.forEach((drawnPlanet) => {
+			drawnPlanet.setSelected(false);
+		});
 	}
 </script>
 

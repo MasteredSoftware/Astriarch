@@ -18,6 +18,7 @@ const PLANET_SIZE = 20; // Base planet size matching original
 const PLANET_IMAGE_WIDTH = 36; // Width for planet images (wider aspect ratio)
 const PLANET_IMAGE_HEIGHT = 32; // Height for planet images (shorter aspect ratio)
 const FLEET_ICON_SIZE = 11;
+const SELECTION_COLOR = '#13f3fb'; // Cyan color for selection indicators
 
 export function createDrawnPlanet(planetData: PlanetData, gameModel: ClientModelData) {
 	return new DrawnPlanet(planetData, gameModel);
@@ -44,6 +45,12 @@ export class DrawnPlanet {
 	private platformIcon: Konva.Rect | null = null;
 	private statusIndicator: Konva.Circle | null = null;
 	private waypointLine: Konva.Line | null = null;
+
+	// Selection state and elements
+	private isSelected: boolean = false;
+	private selectionRingOuter: Konva.Circle | null = null;
+	private selectionRingMiddle: Konva.Circle | null = null;
+	private selectionRingInner: Konva.Circle | null = null;
 
 	constructor(planetData: PlanetData, gameModel: ClientModelData) {
 		this.group = new Konva.Group();
@@ -156,7 +163,7 @@ export class DrawnPlanet {
 		// Update planet type if available and planet is known (explored)
 		// Check if this planet is in the player's known planets list
 		const isKnownPlanet = gameModel.mainPlayer.knownPlanetIds.includes(this.planetData.id);
-		
+
 		if (isKnownPlanet && this.planetData.type) {
 			this.knownPlanetType = this.planetData.type;
 		} else {
@@ -173,6 +180,7 @@ export class DrawnPlanet {
 		this.updateFleetStrength();
 		this.updateFleetIcon();
 		this.updateProductionStatus();
+		this.updateSelectionState();
 	}
 
 	private getPlanetImageUrl(planetType: PlanetType): string {
@@ -202,20 +210,13 @@ export class DrawnPlanet {
 
 	private updatePlanetImage(): void {
 		// Only show planet image if we know the planet type (explored)
-		console.log(`Updating planet image for ${this.planetData.name}:`, {
-			knownPlanetType: this.knownPlanetType,
-			hasImage: !!this.planetImage
-		});
-		
 		if (this.knownPlanetType) {
 			if (!this.planetImage) {
 				// Create new image
 				const imageObj = new Image();
 				const imageUrl = this.getPlanetImageUrl(this.knownPlanetType);
-				console.log(`Loading planet image from: ${imageUrl}`);
-				
+
 				imageObj.onload = () => {
-					console.log(`Image loaded successfully for ${this.planetData.name}`);
 					this.planetImage = new Konva.Image({
 						x: -PLANET_IMAGE_WIDTH / 2,
 						y: -PLANET_IMAGE_HEIGHT / 2,
@@ -224,51 +225,55 @@ export class DrawnPlanet {
 						image: imageObj,
 						visible: true
 					});
-					
+
 					// Add image to the group
 					if (this.planetCircle) {
 						this.group.add(this.planetImage);
-						
+
 						// Proper layering: ownership ring at bottom, then planet image, then UI elements
 						if (this.ownershipRing) {
 							this.ownershipRing.moveToBottom();
 						}
-						
+
 						// Hide the fallback circle when we have an image
 						this.planetCircle.visible(false);
-						console.log(`Planet image added and circle hidden for ${this.planetData.name}`);
 					}
 				};
-				
+
 				imageObj.onerror = (error) => {
-					console.error(`Failed to load planet image for ${this.planetData.name}:`, error, imageUrl);
+					console.error(
+						`Failed to load planet image for ${this.planetData.name}:`,
+						error,
+						imageUrl
+					);
 				};
-				
+
 				imageObj.src = imageUrl;
 			} else {
 				// Update existing image if planet type changed
 				const newImageUrl = this.getPlanetImageUrl(this.knownPlanetType);
-				console.log(`Updating existing image for ${this.planetData.name} to: ${newImageUrl}`);
-				
+
 				const imageObj = new Image();
 				imageObj.onload = () => {
 					if (this.planetImage) {
 						this.planetImage.image(imageObj);
 						this.planetImage.visible(true);
 						this.planetCircle?.visible(false);
-						console.log(`Image updated for ${this.planetData.name}`);
 					}
 				};
-				
+
 				imageObj.onerror = (error) => {
-					console.error(`Failed to update planet image for ${this.planetData.name}:`, error, newImageUrl);
+					console.error(
+						`Failed to update planet image for ${this.planetData.name}:`,
+						error,
+						newImageUrl
+					);
 				};
-				
+
 				imageObj.src = newImageUrl;
 			}
 		} else {
 			// Hide planet image and show fallback circle for unexplored planets
-			console.log(`${this.planetData.name} is unexplored, showing circle`);
 			if (this.planetImage) {
 				this.planetImage.visible(false);
 			}
@@ -283,8 +288,8 @@ export class DrawnPlanet {
 		if (this.owner) {
 			if (!this.ownershipRing) {
 				// Create the ownership ring - larger than the planet to create a halo effect
-				const ringRadius = (PLANET_SIZE / 2) + 4; // 4px larger than planet radius
-				
+				const ringRadius = PLANET_SIZE / 2 + 4; // 4px larger than planet radius
+
 				this.ownershipRing = new Konva.Circle({
 					x: 0,
 					y: 0,
@@ -295,11 +300,11 @@ export class DrawnPlanet {
 					opacity: 0.8,
 					visible: true
 				});
-				
+
 				// Add ring behind the planet but above background elements
 				this.group.add(this.ownershipRing);
 				this.ownershipRing.moveToBottom();
-				
+
 				// Make sure planet elements stay on top
 				if (this.planetImage) {
 					this.planetImage.moveToTop();
@@ -321,7 +326,7 @@ export class DrawnPlanet {
 
 	private getOwnerColor(): string {
 		if (!this.owner) return 'white';
-		
+
 		const ownerColor = this.owner.color;
 		if (typeof ownerColor === 'string') {
 			return ownerColor;
@@ -499,6 +504,73 @@ export class DrawnPlanet {
 		}
 	}
 
+	private createSelectionRings(): void {
+		if (!this.selectionRingOuter) {
+			// Outer selection ring (matches Figma design: white stroke, 16% opacity, thick stroke)
+			this.selectionRingOuter = new Konva.Circle({
+				x: 0,
+				y: 0,
+				radius: 30, // Based on Figma: r="59"
+				fill: 'transparent',
+				stroke: 'white', // White stroke like Figma
+				strokeWidth: 14, // Thick stroke like Figma: stroke-width="14"
+				opacity: 0.16, // Low opacity like Figma: stroke-opacity="0.16"
+				visible: false,
+				listening: false
+			});
+			this.group.add(this.selectionRingOuter);
+
+			// Middle selection ring (cyan, medium thickness)
+			this.selectionRingMiddle = new Konva.Circle({
+				x: 0,
+				y: 0,
+				radius: 25, // Smaller than outer ring
+				fill: 'transparent',
+				stroke: SELECTION_COLOR, // Keep the cyan color for inner rings
+				strokeWidth: 2,
+				opacity: 0.8,
+				visible: false,
+				listening: false
+			});
+			this.group.add(this.selectionRingMiddle);
+
+			// Inner selection ring (cyan, thin)
+			this.selectionRingInner = new Konva.Circle({
+				x: 0,
+				y: 0,
+				radius: 18, // Just outside the planet/ownership ring
+				fill: 'transparent',
+				stroke: SELECTION_COLOR,
+				strokeWidth: 1,
+				opacity: 0.6,
+				visible: false,
+				listening: false
+			});
+			this.group.add(this.selectionRingInner);
+		}
+	}
+
+	private updateSelectionState(): void {
+		if (this.isSelected) {
+			this.createSelectionRings();
+
+			if (this.selectionRingOuter) this.selectionRingOuter.visible(true);
+			if (this.selectionRingMiddle) this.selectionRingMiddle.visible(true);
+			if (this.selectionRingInner) this.selectionRingInner.visible(true);
+
+			// Update text color to selection color when selected
+			this.nameText.fill(SELECTION_COLOR);
+		} else {
+			// Hide selection rings
+			if (this.selectionRingOuter) this.selectionRingOuter.visible(false);
+			if (this.selectionRingMiddle) this.selectionRingMiddle.visible(false);
+			if (this.selectionRingInner) this.selectionRingInner.visible(false);
+
+			// Restore normal text color
+			this.nameText.fill(this.textBlockForeground);
+		}
+	}
+
 	private lightenColor(color: string, factor: number): string {
 		// Simple color lightening - in a real implementation you'd want a proper color utility
 		if (color.startsWith('#')) {
@@ -520,6 +592,15 @@ export class DrawnPlanet {
 		return this.planetData;
 	}
 
+	setSelected(selected: boolean): void {
+		this.isSelected = selected;
+		this.updateSelectionState();
+	}
+
+	getSelected(): boolean {
+		return this.isSelected;
+	}
+
 	destroy(): void {
 		if (this.planetImage) {
 			this.planetImage.destroy();
@@ -528,6 +609,18 @@ export class DrawnPlanet {
 		if (this.ownershipRing) {
 			this.ownershipRing.destroy();
 			this.ownershipRing = null;
+		}
+		if (this.selectionRingOuter) {
+			this.selectionRingOuter.destroy();
+			this.selectionRingOuter = null;
+		}
+		if (this.selectionRingMiddle) {
+			this.selectionRingMiddle.destroy();
+			this.selectionRingMiddle = null;
+		}
+		if (this.selectionRingInner) {
+			this.selectionRingInner.destroy();
+			this.selectionRingInner = null;
 		}
 		if (this.group) {
 			this.group.destroy();

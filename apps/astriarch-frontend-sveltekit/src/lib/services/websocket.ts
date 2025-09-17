@@ -848,7 +848,7 @@ class WebSocketService {
 
 	changePlayerName(gameId: string, playerName: string) {
 		const trimmedName = playerName.substring(0, 20); // Limit to 20 characters like old game
-		
+
 		const payload = {
 			gameId,
 			playerName: trimmedName
