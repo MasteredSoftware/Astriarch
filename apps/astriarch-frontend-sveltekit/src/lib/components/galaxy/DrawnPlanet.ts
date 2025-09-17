@@ -36,9 +36,8 @@ export class DrawnPlanet {
 	private productionItemStatusColor: string | null = null;
 
 	// Visual elements
-	private planetCircle!: Konva.Circle;
 	private planetImage: Konva.Image | null = null;
-	private ownershipRing: Konva.Circle | null = null;
+	private planetRing: Konva.Circle | null = null; // Persistent ring for all planets
 	private nameText!: Konva.Text;
 	private strengthText!: Konva.Text;
 	private fleetIcon: Konva.Rect | null = null;
@@ -80,23 +79,11 @@ export class DrawnPlanet {
 	}
 
 	private createVisualElements() {
-		// Main planet circle (fallback when no sprite is available)
-		this.planetCircle = new Konva.Circle({
-			x: 0,
-			y: 0,
-			radius: PLANET_SIZE / 2,
-			fill: 'black',
-			stroke: 'white',
-			strokeWidth: 2,
-			visible: true
-		});
-		this.group.add(this.planetCircle);
-
 		// Planet image - will be shown when planet type is known
 		this.createPlanetImage();
 
-		// Ownership ring - larger circle that acts as a halo around the planet
-		this.createOwnershipRing();
+		// Planet ring - persistent ring for all planets (matches Figma design)
+		this.createPlanetRing();
 
 		// Planet name text - positioned below planet
 		this.nameText = new Konva.Text({
@@ -176,7 +163,7 @@ export class DrawnPlanet {
 	private updateVisuals(): void {
 		this.updatePlanetAppearance();
 		this.updatePlanetImage();
-		this.updateOwnershipRing();
+		this.updatePlanetRing();
 		this.updateFleetStrength();
 		this.updateFleetIcon();
 		this.updateProductionStatus();
@@ -203,9 +190,9 @@ export class DrawnPlanet {
 		this.planetImage = null;
 	}
 
-	private createOwnershipRing(): void {
-		// Ownership ring will be created/updated when we have ownership info
-		this.ownershipRing = null;
+	private createPlanetRing(): void {
+		// Planet ring will be created for all planets
+		this.planetRing = null;
 	}
 
 	private updatePlanetImage(): void {
@@ -227,16 +214,11 @@ export class DrawnPlanet {
 					});
 
 					// Add image to the group
-					if (this.planetCircle) {
-						this.group.add(this.planetImage);
+					this.group.add(this.planetImage);
 
-						// Proper layering: ownership ring at bottom, then planet image, then UI elements
-						if (this.ownershipRing) {
-							this.ownershipRing.moveToBottom();
-						}
-
-						// Hide the fallback circle when we have an image
-						this.planetCircle.visible(false);
+					// Proper layering: planet ring at bottom, then planet image, then UI elements
+					if (this.planetRing) {
+						this.planetRing.moveToBottom();
 					}
 				};
 
@@ -258,7 +240,6 @@ export class DrawnPlanet {
 					if (this.planetImage) {
 						this.planetImage.image(imageObj);
 						this.planetImage.visible(true);
-						this.planetCircle?.visible(false);
 					}
 				};
 
@@ -277,50 +258,42 @@ export class DrawnPlanet {
 			if (this.planetImage) {
 				this.planetImage.visible(false);
 			}
-			if (this.planetCircle) {
-				this.planetCircle.visible(true);
-			}
 		}
 	}
 
-	private updateOwnershipRing(): void {
-		// Show ownership ring for owned planets
-		if (this.owner) {
-			if (!this.ownershipRing) {
-				// Create the ownership ring - larger than the planet to create a halo effect
-				const ringRadius = PLANET_SIZE / 2 + 4; // 4px larger than planet radius
+	private updatePlanetRing(): void {
+		// Create persistent ring for all planets
+		const ringRadius = PLANET_SIZE / 2 + 4; // 4px larger than planet radius
 
-				this.ownershipRing = new Konva.Circle({
-					x: 0,
-					y: 0,
-					radius: ringRadius,
-					fill: 'transparent',
-					stroke: this.getOwnerColor(),
-					strokeWidth: 2,
-					opacity: 0.8,
-					visible: true
-				});
+		if (!this.planetRing) {
+			// Get owner color or use default metallic colors
+			const ownerColor = this.owner ? this.getOwnerColor() : '#3B4350';
+			
+			// Create sophisticated ring - use Circle with stroke for ring effect
+			this.planetRing = new Konva.Circle({
+				x: 0,
+				y: 0,
+				radius: ringRadius,
+				fill: 'transparent',
+				stroke: ownerColor,
+				strokeWidth: 2,
+				opacity: this.owner ? 0.7 : 0.6,
+				visible: true
+			});
 
-				// Add ring behind the planet but above background elements
-				this.group.add(this.ownershipRing);
-				this.ownershipRing.moveToBottom();
+			// Add ring behind the planet but above background elements
+			this.group.add(this.planetRing);
+			this.planetRing.moveToBottom();
 
-				// Make sure planet elements stay on top
-				if (this.planetImage) {
-					this.planetImage.moveToTop();
-				} else if (this.planetCircle) {
-					this.planetCircle.moveToTop();
-				}
-			} else {
-				// Update existing ring color
-				this.ownershipRing.stroke(this.getOwnerColor());
-				this.ownershipRing.visible(true);
+			// Make sure planet elements stay on top
+			if (this.planetImage) {
+				this.planetImage.moveToTop();
 			}
 		} else {
-			// Hide ownership ring for unowned planets
-			if (this.ownershipRing) {
-				this.ownershipRing.visible(false);
-			}
+			// Update existing ring color
+			const ownerColor = this.owner ? this.getOwnerColor() : '#3B4350';
+			this.planetRing.stroke(ownerColor);
+			this.planetRing.opacity(this.owner ? 0.7 : 0.6);
 		}
 	}
 
@@ -337,8 +310,6 @@ export class DrawnPlanet {
 	}
 
 	private updatePlanetAppearance(): void {
-		if (!this.planetCircle) return;
-
 		let fillColor = 'black';
 		let strokeColor = 'white';
 
@@ -376,9 +347,6 @@ export class DrawnPlanet {
 				}
 			}
 		}
-
-		this.planetCircle.fill(fillColor);
-		this.planetCircle.stroke(strokeColor);
 	}
 
 	private updateFleetStrength(): void {
@@ -617,9 +585,9 @@ export class DrawnPlanet {
 			this.planetImage.destroy();
 			this.planetImage = null;
 		}
-		if (this.ownershipRing) {
-			this.ownershipRing.destroy();
-			this.ownershipRing = null;
+		if (this.planetRing) {
+			this.planetRing.destroy();
+			this.planetRing = null;
 		}
 		if (this.selectionRingOuter) {
 			this.selectionRingOuter.destroy();
