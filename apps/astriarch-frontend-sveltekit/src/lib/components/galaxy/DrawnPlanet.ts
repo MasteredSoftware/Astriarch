@@ -17,7 +17,6 @@ import planetTerrestrialImage from '$lib/assets/images/planet-terestrial.png';
 const PLANET_SIZE = 20; // Base planet size matching original
 const PLANET_IMAGE_WIDTH = 36; // Width for planet images (wider aspect ratio)
 const PLANET_IMAGE_HEIGHT = 32; // Height for planet images (shorter aspect ratio)
-const FLEET_ICON_SIZE = 11;
 const SELECTION_COLOR = '#13f3fb'; // Cyan color for selection indicators
 
 export function createDrawnPlanet(planetData: PlanetData, gameModel: ClientModelData) {
@@ -40,7 +39,7 @@ export class DrawnPlanet {
 	private planetRing: Konva.Circle | null = null; // Persistent ring for all planets
 	private nameText!: Konva.Text;
 	private strengthText!: Konva.Text;
-	private fleetIcon: Konva.Rect | null = null;
+	private fleetStrengthIndicator: Konva.Group | null = null; // New visual fleet strength indicator
 	private platformIcon: Konva.Rect | null = null;
 	private statusIndicator: Konva.Circle | null = null;
 	private waypointLine: Konva.Line | null = null;
@@ -164,8 +163,7 @@ export class DrawnPlanet {
 		this.updatePlanetAppearance();
 		this.updatePlanetImage();
 		this.updatePlanetRing();
-		this.updateFleetStrength();
-		this.updateFleetIcon();
+		this.updateFleetStrengthIndicator();
 		this.updateProductionStatus();
 		this.updateSelectionState();
 	}
@@ -216,9 +214,10 @@ export class DrawnPlanet {
 					// Add image to the group
 					this.group.add(this.planetImage);
 
-					// Proper layering: planet ring at bottom, then planet image, then UI elements
+					// Proper layering: planet image at bottom, then ring on top, then UI elements
+					this.planetImage.moveToBottom();
 					if (this.planetRing) {
-						this.planetRing.moveToBottom();
+						this.planetRing.moveUp(); // Move ring above planet image
 					}
 				};
 
@@ -325,13 +324,13 @@ export class DrawnPlanet {
 				});
 			}
 
-			// Add ring behind the planet but above background elements
+			// Add ring and position it above planet image
 			this.group.add(this.planetRing);
-			this.planetRing.moveToBottom();
 
-			// Make sure planet elements stay on top
+			// Proper layering: planet image at bottom, then ring on top, then UI elements on top
 			if (this.planetImage) {
-				this.planetImage.moveToTop();
+				this.planetImage.moveToBottom();
+				this.planetRing.moveUp(); // Move ring above planet image
 			}
 		} else {
 			// Update existing ring - need to recreate for gradient changes
@@ -399,11 +398,11 @@ export class DrawnPlanet {
 
 			// Add to group and position properly
 			this.group.add(this.planetRing);
-			this.planetRing.moveToBottom();
 
-			// Make sure planet elements stay on top
+			// Proper layering: planet image at bottom, then ring on top, then UI elements on top
 			if (this.planetImage) {
-				this.planetImage.moveToTop();
+				this.planetImage.moveToBottom();
+				this.planetRing.moveUp(); // Move ring above planet image
 			}
 		}
 	}
@@ -448,23 +447,20 @@ export class DrawnPlanet {
 		// Could be used for future planet appearance customizations
 	}
 
-	private updateFleetStrength(): void {
-		if (!this.strengthText) return;
+	private calculateFleetStrength(): number {
+		let fleetStrength = 0;
 
-		let strengthText = '';
-
-		// Show fleet strength for owned planets with planetary fleet data
+		// For owned planets with planetary fleet data
 		if (
 			this.owner &&
 			this.owner.id === this.gameModel.mainPlayer.id &&
 			this.planetData.planetaryFleet?.starships?.length
 		) {
 			// Calculate total fleet strength (sum of all ship health/strength)
-			const fleetStrength = this.planetData.planetaryFleet.starships.reduce(
+			fleetStrength = this.planetData.planetaryFleet.starships.reduce(
 				(total: number, ship: StarshipData) => total + ship.health,
 				0
 			);
-			strengthText = fleetStrength.toString();
 		}
 		// For non-owned or other players' planets, check last known fleet data
 		else {
@@ -472,64 +468,89 @@ export class DrawnPlanet {
 				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
 			if (lastKnownData?.fleetData?.starships?.length) {
 				// Calculate last known fleet strength
-				const lastKnownFleetStrength = lastKnownData.fleetData.starships.reduce(
+				fleetStrength = lastKnownData.fleetData.starships.reduce(
 					(total: number, ship: StarshipData) => total + ship.health,
 					0
 				);
-				if (lastKnownFleetStrength > 0) {
-					// Show exact strength if we own the planet, otherwise show "?" for unknown current strength
-					if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
-						strengthText = lastKnownFleetStrength.toString();
-					} else {
-						strengthText = `${lastKnownFleetStrength}?`; // Last known strength with uncertainty indicator
-					}
-				}
 			}
 			// Also check current planetary fleet for visible data
 			else if (this.planetData.planetaryFleet?.starships?.length) {
-				// We can see there are ships but don't know the exact strength
-				strengthText = '?'; // Unknown current strength indicator
+				// We can see there are ships, use a default strength value
+				fleetStrength = this.planetData.planetaryFleet.starships.reduce(
+					(total: number, ship: StarshipData) => total + ship.health,
+					0
+				);
 			}
 		}
 
-		this.strengthText.text(strengthText);
-		this.textBlockStrengthText = strengthText;
+		return fleetStrength;
 	}
 
-	private updateFleetIcon(): void {
-		const hasFleet = this.textBlockStrengthText !== '';
+	private updateFleetStrengthIndicator(): void {
+		const fleetStrength = this.calculateFleetStrength();
 
-		if (hasFleet && !this.fleetIcon) {
-			this.createFleetIcon();
-		} else if (!hasFleet && this.fleetIcon) {
-			this.fleetIcon.destroy();
-			this.fleetIcon = null;
+		// Remove existing indicator
+		if (this.fleetStrengthIndicator) {
+			this.fleetStrengthIndicator.destroy();
+			this.fleetStrengthIndicator = null;
 		}
+
+		// Only show indicator if there's a fleet
+		if (fleetStrength > 0) {
+			this.createFleetStrengthIndicator(fleetStrength);
+		}
+
+		// Clear the old text-based strength display
+		this.strengthText.text('');
+		this.textBlockStrengthText = '';
 	}
 
-	private createFleetIcon(): void {
-		// Get owner color as string - handle both PlayerData and ClientPlayer
-		let ownerColor = 'white';
-		if (this.owner?.color) {
-			const color = this.owner.color;
-			if (typeof color === 'string') {
-				ownerColor = color;
-			} else if (typeof color === 'object') {
-				ownerColor = `rgb(${color.r || 0}, ${color.g || 0}, ${color.b || 0})`;
-			}
-		}
+	private createFleetStrengthIndicator(fleetStrength: number): void {
+		// Calculate relative strength - we'll need all known fleet strengths to determine this
+		// For now, let's use a simple scale based on strength ranges
+		const relativeStrength = this.calculateRelativeStrength(fleetStrength);
 
-		this.fleetIcon = new Konva.Rect({
-			x: -FLEET_ICON_SIZE / 2,
-			y: -FLEET_ICON_SIZE / 2,
-			width: FLEET_ICON_SIZE,
-			height: FLEET_ICON_SIZE,
-			fill: ownerColor,
-			stroke: 'black',
-			strokeWidth: 1,
-			cornerRadius: 2
+		// Get owner color for the dots
+		const ownerColor = this.owner ? this.getOwnerColor() : '#FFFFFF';
+
+		// Create group for the indicator
+		this.fleetStrengthIndicator = new Konva.Group({
+			x: 0,
+			y: -PLANET_SIZE / 2 - 12 // Position above the planet
 		});
-		this.group.add(this.fleetIcon);
+
+		// Create dots based on relative strength (1-5 dots)
+		const numDots = Math.min(5, Math.max(1, relativeStrength));
+		const dotSize = 2;
+		const dotSpacing = 3;
+		const totalWidth = numDots * dotSize + (numDots - 1) * dotSpacing;
+		const startX = -totalWidth / 2;
+
+		for (let i = 0; i < numDots; i++) {
+			const dot = new Konva.Circle({
+				x: startX + i * (dotSize + dotSpacing) + dotSize / 2,
+				y: 0,
+				radius: dotSize / 2,
+				fill: ownerColor,
+				stroke: 'black',
+				strokeWidth: 0.5,
+				opacity: 0.8
+			});
+			this.fleetStrengthIndicator.add(dot);
+		}
+
+		// Add the indicator to the main group
+		this.group.add(this.fleetStrengthIndicator);
+	}
+
+	private calculateRelativeStrength(fleetStrength: number): number {
+		// Simple strength categorization for now
+		// In a full implementation, you'd want to calculate this based on all known fleet strengths
+		if (fleetStrength >= 100) return 5;
+		if (fleetStrength >= 75) return 4;
+		if (fleetStrength >= 50) return 3;
+		if (fleetStrength >= 25) return 2;
+		return 1;
 	}
 
 	private updateProductionStatus(): void {
@@ -691,6 +712,10 @@ export class DrawnPlanet {
 		if (this.planetRing) {
 			this.planetRing.destroy();
 			this.planetRing = null;
+		}
+		if (this.fleetStrengthIndicator) {
+			this.fleetStrengthIndicator.destroy();
+			this.fleetStrengthIndicator = null;
 		}
 		if (this.selectionRingOuter) {
 			this.selectionRingOuter.destroy();
