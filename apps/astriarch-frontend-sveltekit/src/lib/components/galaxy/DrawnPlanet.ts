@@ -122,7 +122,7 @@ export class DrawnPlanet {
 			this.planetData = gameModel.mainPlayerOwnedPlanets[this.planetData.id];
 		} else {
 			// Check if this is a known client planet and update accordingly
-			const clientPlanet = gameModel.clientPlanets.find(cp => cp.id === this.planetData.id);
+			const clientPlanet = gameModel.clientPlanets.find((cp) => cp.id === this.planetData.id);
 			if (clientPlanet) {
 				// Update the planet data with fresh client data while preserving the original type structure
 				this.planetData = {

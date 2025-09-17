@@ -18,6 +18,9 @@
 	let drawnFleets: Map<string, DrawnFleet> = new Map();
 	let currentGrid: Grid | null = null;
 
+	// Spatial index for fast planet lookups by hex coordinates
+	let planetByHexCoords: Map<string, any> = new Map();
+
 	let animationFrameId: number;
 	let isInitialized = false;
 
@@ -292,9 +295,16 @@
 	function updatePlanets(gameModel: ClientModelData) {
 		const allPlanetsToRender = new Set<number>();
 
+		// Clear and rebuild the spatial index
+		planetByHexCoords.clear();
+
 		// First, render all owned planets (these have full PlanetData)
 		for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
 			allPlanetsToRender.add(planet.id);
+
+			// Add to spatial index
+			const hexKey = `${planet.boundingHexMidPoint.x},${planet.boundingHexMidPoint.y}`;
+			planetByHexCoords.set(hexKey, planet);
 
 			let drawnPlanet = drawnPlanets.get(planet.id);
 
@@ -314,6 +324,10 @@
 			if (allPlanetsToRender.has(clientPlanet.id)) continue;
 
 			allPlanetsToRender.add(clientPlanet.id);
+
+			// Add to spatial index
+			const hexKey = `${clientPlanet.boundingHexMidPoint.x},${clientPlanet.boundingHexMidPoint.y}`;
+			planetByHexCoords.set(hexKey, clientPlanet);
 
 			let drawnPlanet = drawnPlanets.get(clientPlanet.id);
 
@@ -410,53 +424,19 @@
 		const layerPos = galaxyLayer.getRelativePointerPosition();
 		if (!layerPos) return;
 
-		console.log('Galaxy clicked at stage pos:', stagePos, 'layer pos:', layerPos);
-
 		// Find the hex that contains this click position (using layer coordinates)
 		const clickedHex = currentGrid.getHexAt(layerPos);
 		if (!clickedHex) {
-			console.log('No hex found at click position');
 			return;
 		}
 
-		console.log('Clicked hex:', clickedHex.data.id, 'at midpoint:', clickedHex.midPoint);
-
-		// Find if there's a planet at this hex location
-		const gameModel = $clientGameModel;
-		if (!gameModel) return;
-
-		// Look for a planet at this hex midpoint
-		let planetAtHex: any = null;
-
-		// Check owned planets first
-		for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
-			if (
-				planet.boundingHexMidPoint.x === clickedHex.midPoint.x &&
-				planet.boundingHexMidPoint.y === clickedHex.midPoint.y
-			) {
-				planetAtHex = planet;
-				break;
-			}
-		}
-
-		// If not found in owned planets, check known planets
-		if (!planetAtHex) {
-			for (const clientPlanet of gameModel.clientPlanets) {
-				if (
-					clientPlanet.boundingHexMidPoint.x === clickedHex.midPoint.x &&
-					clientPlanet.boundingHexMidPoint.y === clickedHex.midPoint.y
-				) {
-					planetAtHex = clientPlanet;
-					break;
-				}
-			}
-		}
+		// Fast lookup using spatial index
+		const hexKey = `${clickedHex.midPoint.x},${clickedHex.midPoint.y}`;
+		const planetAtHex = planetByHexCoords.get(hexKey);
 
 		if (planetAtHex) {
-			console.log('Found planet at hex:', planetAtHex.name, planetAtHex.id);
 			handlePlanetSelection(planetAtHex);
 		} else {
-			console.log('No planet found at clicked hex');
 			// Clear planet selection when clicking empty space
 			gameActions.selectPlanet(null);
 		}
@@ -464,29 +444,19 @@
 
 	// Handle planet selection for fleet command destination selection and normal planet selection
 	function handlePlanetSelection(planetData: any) {
-		console.log('Planet selected:', planetData.name, planetData.id);
-
 		// Check if we're in destination selection mode
 		const fleetState = $fleetCommandStore;
 		if (fleetState.isSelectingDestination) {
 			// Prevent selecting source planet as destination
 			if (planetData.id === fleetState.sourcePlanetId) {
-				console.log('Cannot select source planet as destination');
 				return;
 			}
 
 			// Set the destination planet
 			fleetCommandStore.setDestinationPlanet(planetData.id);
-			console.log('Destination planet selected:', planetData.name);
 		} else {
 			// Normal planet selection - always select the planet to show info
 			gameActions.selectPlanet(planetData.id);
-			const gameModel = $clientGameModel;
-			if (gameModel && gameModel.mainPlayerOwnedPlanets[planetData.id]) {
-				console.log('Selected owned planet:', planetData.name);
-			} else {
-				console.log('Selected unowned planet:', planetData.name, '- showing info');
-			}
 		}
 	}
 
