@@ -506,35 +506,43 @@ export class DrawnPlanet {
 	}
 
 	private createFleetStrengthIndicator(fleetStrength: number): void {
-		// Calculate relative strength - we'll need all known fleet strengths to determine this
-		// For now, let's use a simple scale based on strength ranges
+		// Calculate relative strength based on all known fleet strengths
 		const relativeStrength = this.calculateRelativeStrength(fleetStrength);
 
 		// Get owner color for the dots
 		const ownerColor = this.owner ? this.getOwnerColor() : '#FFFFFF';
 
-		// Create group for the indicator
+		// Create group for the indicator - positioned to the left of the planet
 		this.fleetStrengthIndicator = new Konva.Group({
-			x: 0,
-			y: -PLANET_SIZE / 2 - 12 // Position above the planet
+			x: -PLANET_SIZE / 2 - 8, // Position to the left of the planet
+			y: 0 // Centered vertically on the planet
 		});
 
-		// Create dots based on relative strength (1-5 dots)
-		const numDots = Math.min(5, Math.max(1, relativeStrength));
-		const dotSize = 2;
-		const dotSpacing = 3;
-		const totalWidth = numDots * dotSize + (numDots - 1) * dotSpacing;
-		const startX = -totalWidth / 2;
+		// Larger, more visible dots
+		const dotSize = 4; // Increased from 2
+		const dotSpacing = 2; // Spacing between dots
+		const maxDotsPerColumn = 5; // Maximum dots in a single column
+		const columnSpacing = 6; // Spacing between columns
 
-		for (let i = 0; i < numDots; i++) {
+		// Create dots in vertical columns, starting from bottom
+		for (let i = 0; i < relativeStrength; i++) {
+			const columnIndex = Math.floor(i / maxDotsPerColumn);
+			const dotInColumn = i % maxDotsPerColumn;
+
+			// Position dots vertically from bottom up
+			const x = -(columnIndex * columnSpacing);
+			const y =
+				(maxDotsPerColumn - 1 - dotInColumn) * (dotSize + dotSpacing) -
+				((maxDotsPerColumn - 1) * (dotSize + dotSpacing)) / 2;
+
 			const dot = new Konva.Circle({
-				x: startX + i * (dotSize + dotSpacing) + dotSize / 2,
-				y: 0,
+				x: x,
+				y: y,
 				radius: dotSize / 2,
 				fill: ownerColor,
 				stroke: 'black',
 				strokeWidth: 0.5,
-				opacity: 0.8
+				opacity: 0.9
 			});
 			this.fleetStrengthIndicator.add(dot);
 		}
@@ -544,13 +552,54 @@ export class DrawnPlanet {
 	}
 
 	private calculateRelativeStrength(fleetStrength: number): number {
-		// Simple strength categorization for now
-		// In a full implementation, you'd want to calculate this based on all known fleet strengths
-		if (fleetStrength >= 100) return 5;
-		if (fleetStrength >= 75) return 4;
-		if (fleetStrength >= 50) return 3;
-		if (fleetStrength >= 25) return 2;
-		return 1;
+		// Collect all known fleet strengths across the galaxy to establish relative scale
+		const allFleetStrengths: number[] = [];
+
+		// Add fleet strengths from owned planets
+		Object.entries(this.gameModel.mainPlayerOwnedPlanets).forEach(([, planetData]) => {
+			if (planetData?.planetaryFleet?.starships?.length) {
+				const strength = planetData.planetaryFleet.starships.reduce(
+					(total: number, ship: StarshipData) => total + ship.health,
+					0
+				);
+				if (strength > 0) allFleetStrengths.push(strength);
+			}
+		});
+
+		// Add fleet strengths from last known data for all planets
+		Object.values(this.gameModel.mainPlayer.lastKnownPlanetFleetStrength).forEach((knownData) => {
+			if (knownData?.fleetData?.starships?.length) {
+				const strength = knownData.fleetData.starships.reduce(
+					(total: number, ship: StarshipData) => total + ship.health,
+					0
+				);
+				if (strength > 0) allFleetStrengths.push(strength);
+			}
+		});
+
+		// If no other fleets are known, use a simple 1-dot system
+		if (allFleetStrengths.length <= 1) {
+			return 1;
+		}
+
+		// Sort fleet strengths to establish percentiles
+		allFleetStrengths.sort((a, b) => a - b);
+
+		// Calculate percentile of current fleet strength
+		const position = allFleetStrengths.findIndex((strength) => strength >= fleetStrength);
+		const percentile = position >= 0 ? position / (allFleetStrengths.length - 1) : 1;
+
+		// Map percentile to dot count (1-15 dots, allowing for multiple columns)
+		// Bottom 20% = 1-2 dots, next 20% = 3-4 dots, etc.
+		if (percentile <= 0.1) return 1; // Bottom 10%
+		if (percentile <= 0.25) return 2; // Bottom 25%
+		if (percentile <= 0.4) return 3; // Bottom 40%
+		if (percentile <= 0.55) return 4; // Bottom 55%
+		if (percentile <= 0.7) return 5; // Bottom 70%
+		if (percentile <= 0.8) return 7; // Bottom 80%
+		if (percentile <= 0.9) return 9; // Bottom 90%
+		if (percentile <= 0.95) return 12; // Bottom 95%
+		return 15; // Top 5% - maximum dots
 	}
 
 	private updateProductionStatus(): void {
