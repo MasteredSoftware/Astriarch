@@ -266,20 +266,64 @@ export class DrawnPlanet {
 		const ringRadius = PLANET_SIZE / 2 + 4; // 4px larger than planet radius
 
 		if (!this.planetRing) {
-			// Get owner color or use default metallic colors
-			const ownerColor = this.owner ? this.getOwnerColor() : '#3B4350';
-			
-			// Create sophisticated ring - use Circle with stroke for ring effect
-			this.planetRing = new Konva.Circle({
-				x: 0,
-				y: 0,
-				radius: ringRadius,
-				fill: 'transparent',
-				stroke: ownerColor,
-				strokeWidth: 2,
-				opacity: this.owner ? 0.7 : 0.6,
-				visible: true
-			});
+			// Create sophisticated metallic ring with gradient matching Figma design
+			const ownerColor = this.owner ? this.getOwnerColor() : null;
+
+			if (ownerColor) {
+				// For owned planets, create a gradient that incorporates the owner color
+				this.planetRing = new Konva.Circle({
+					x: 0,
+					y: 0,
+					radius: ringRadius,
+					fill: 'transparent',
+					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
+					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
+					strokeLinearGradientColorStops: [
+						0,
+						'#313E46', // Dark metallic start
+						0.31,
+						ownerColor + '88', // Owner color with transparency
+						0.51,
+						'#FFFFFF', // White highlight
+						1,
+						ownerColor + 'D4' // Owner color with more transparency
+					],
+					strokeWidth: 2,
+					opacity: 0.8,
+					shadowColor: 'black',
+					shadowBlur: 2,
+					shadowOffset: { x: 0, y: 2 },
+					shadowOpacity: 0.25,
+					visible: true
+				});
+			} else {
+				// For unowned planets, use the original metallic gradient from Figma
+				this.planetRing = new Konva.Circle({
+					x: 0,
+					y: 0,
+					radius: ringRadius,
+					fill: 'transparent',
+					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
+					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
+					strokeLinearGradientColorStops: [
+						0,
+						'#313E46', // Dark metallic start
+						0.31,
+						'#A0B0BA88', // Semi-transparent light metallic
+						0.51,
+						'#FFFFFF', // White highlight
+						1,
+						'#69747BD4' // Semi-transparent dark metallic end
+					],
+					strokeWidth: 2,
+					opacity: 0.7,
+					shadowColor: 'black',
+					shadowBlur: 2,
+					shadowOffset: { x: 0, y: 2 },
+					shadowOpacity: 0.25,
+					visible: true
+				});
+			}
 
 			// Add ring behind the planet but above background elements
 			this.group.add(this.planetRing);
@@ -290,63 +334,118 @@ export class DrawnPlanet {
 				this.planetImage.moveToTop();
 			}
 		} else {
-			// Update existing ring color
-			const ownerColor = this.owner ? this.getOwnerColor() : '#3B4350';
-			this.planetRing.stroke(ownerColor);
-			this.planetRing.opacity(this.owner ? 0.7 : 0.6);
+			// Update existing ring - need to recreate for gradient changes
+			this.planetRing.destroy();
+			this.planetRing = null;
+
+			// Recreate with new gradient
+			const ownerColor = this.owner ? this.getOwnerColor() : null;
+
+			if (ownerColor) {
+				// For owned planets, create a gradient that incorporates the owner color
+				this.planetRing = new Konva.Circle({
+					x: 0,
+					y: 0,
+					radius: ringRadius,
+					fill: 'transparent',
+					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
+					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
+					strokeLinearGradientColorStops: [
+						0,
+						'#313E46', // Dark metallic start
+						0.31,
+						ownerColor + '88', // Owner color with transparency
+						0.51,
+						'#FFFFFF', // White highlight
+						1,
+						ownerColor + 'D4' // Owner color with more transparency
+					],
+					strokeWidth: 2,
+					opacity: 0.8,
+					shadowColor: 'black',
+					shadowBlur: 2,
+					shadowOffset: { x: 0, y: 2 },
+					shadowOpacity: 0.25,
+					visible: true
+				});
+			} else {
+				// For unowned planets, use the original metallic gradient from Figma
+				this.planetRing = new Konva.Circle({
+					x: 0,
+					y: 0,
+					radius: ringRadius,
+					fill: 'transparent',
+					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
+					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
+					strokeLinearGradientColorStops: [
+						0,
+						'#313E46', // Dark metallic start
+						0.31,
+						'#A0B0BA88', // Semi-transparent light metallic
+						0.51,
+						'#FFFFFF', // White highlight
+						1,
+						'#69747BD4' // Semi-transparent dark metallic end
+					],
+					strokeWidth: 2,
+					opacity: 0.7,
+					shadowColor: 'black',
+					shadowBlur: 2,
+					shadowOffset: { x: 0, y: 2 },
+					shadowOpacity: 0.25,
+					visible: true
+				});
+			}
+
+			// Add to group and position properly
+			this.group.add(this.planetRing);
+			this.planetRing.moveToBottom();
+
+			// Make sure planet elements stay on top
+			if (this.planetImage) {
+				this.planetImage.moveToTop();
+			}
 		}
 	}
 
 	private getOwnerColor(): string {
-		if (!this.owner) return 'white';
+		if (!this.owner) return '#FFFFFF';
 
 		const ownerColor = this.owner.color;
 		if (typeof ownerColor === 'string') {
-			return ownerColor;
+			// Ensure it's in hex format for gradient concatenation
+			const colorStr = ownerColor as string;
+			return colorStr.startsWith('#')
+				? colorStr
+				: colorStr.startsWith('rgb')
+					? this.rgbToHex(colorStr)
+					: colorStr;
 		} else if (ownerColor && typeof ownerColor === 'object') {
-			return `rgb(${ownerColor.r || 0}, ${ownerColor.g || 0}, ${ownerColor.b || 0})`;
+			// Convert ColorRgbaData to hex
+			const r = Math.round(ownerColor.r || 0);
+			const g = Math.round(ownerColor.g || 0);
+			const b = Math.round(ownerColor.b || 0);
+			return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 		}
-		return 'white';
+		return '#FFFFFF';
+	}
+
+	private rgbToHex(rgb: string): string {
+		// Simple rgb() to hex conversion
+		const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+		if (match) {
+			const r = parseInt(match[1]).toString(16).padStart(2, '0');
+			const g = parseInt(match[2]).toString(16).padStart(2, '0');
+			const b = parseInt(match[3]).toString(16).padStart(2, '0');
+			return `#${r}${g}${b}`;
+		}
+		return '#FFFFFF';
 	}
 
 	private updatePlanetAppearance(): void {
-		let fillColor = 'black';
-		let strokeColor = 'white';
-
-		// For unexplored planets, color by owner if known
-		if (!this.knownPlanetType) {
-			if (this.owner) {
-				// Convert ColorRgbaData to string if needed
-				const ownerColor = this.owner.color;
-				if (typeof ownerColor === 'string') {
-					fillColor = ownerColor;
-				} else if (ownerColor && typeof ownerColor === 'object') {
-					// Assume it's a ColorRgbaData object with r, g, b properties
-					fillColor = `rgb(${ownerColor.r || 0}, ${ownerColor.g || 0}, ${ownerColor.b || 0})`;
-				} else {
-					fillColor = '#444';
-				}
-				strokeColor = this.lightenColor(fillColor, 0.3);
-			} else {
-				// Modify based on planet type if we have some knowledge
-				if (this.planetData.type) {
-					switch (this.planetData.type) {
-						case 1: // AsteroidBelt
-							fillColor = '#8a8a8a';
-							break;
-						case 2: // DeadPlanet
-							fillColor = '#444444';
-							break;
-						case 3: // PlanetClass1
-							fillColor = '#4a90e2';
-							break;
-						case 4: // PlanetClass2
-							fillColor = '#50c878';
-							break;
-					}
-				}
-			}
-		}
+		// This method previously updated planet circle colors
+		// Now that we use planet images and rings, this is a placeholder
+		// Could be used for future planet appearance customizations
 	}
 
 	private updateFleetStrength(): void {
@@ -497,10 +596,14 @@ export class DrawnPlanet {
 				strokeLinearGradientStartPoint: { x: -25, y: -25 },
 				strokeLinearGradientEndPoint: { x: 25, y: 25 },
 				strokeLinearGradientColorStops: [
-					0, '#313E46',           // Dark start
-					0.31, '#A0B0BA88',     // Semi-transparent light gray
-					0.51, '#FFFFFF',       // White middle
-					1, '#69747BD4'         // Semi-transparent dark gray end
+					0,
+					'#313E46', // Dark start
+					0.31,
+					'#A0B0BA88', // Semi-transparent light gray
+					0.51,
+					'#FFFFFF', // White middle
+					1,
+					'#69747BD4' // Semi-transparent dark gray end
 				],
 				strokeWidth: 1,
 				opacity: 1.0, // Full opacity since gradient handles transparency
