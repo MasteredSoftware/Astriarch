@@ -510,25 +510,36 @@ export class DrawnPlanet {
 			this.selectionRingOuter = new Konva.Circle({
 				x: 0,
 				y: 0,
-				radius: 30, // Based on Figma: r="59"
+				radius: 26,
 				fill: 'transparent',
 				stroke: 'white', // White stroke like Figma
-				strokeWidth: 14, // Thick stroke like Figma: stroke-width="14"
+				strokeWidth: 6, // Thick stroke like Figma: stroke-width="14"
 				opacity: 0.16, // Low opacity like Figma: stroke-opacity="0.16"
 				visible: false,
 				listening: false
 			});
 			this.group.add(this.selectionRingOuter);
 
-			// Middle selection ring (cyan, medium thickness)
+			// Middle selection ring (complex gradient design matching Figma)
 			this.selectionRingMiddle = new Konva.Circle({
 				x: 0,
 				y: 0,
-				radius: 25, // Smaller than outer ring
+				radius: 22, // Smaller than outer ring
 				fill: 'transparent',
-				stroke: SELECTION_COLOR, // Keep the cyan color for inner rings
-				strokeWidth: 2,
-				opacity: 0.8,
+				strokeLinearGradientStartPoint: { x: -25, y: -25 },
+				strokeLinearGradientEndPoint: { x: 25, y: 25 },
+				strokeLinearGradientColorStops: [
+					0, '#313E46',           // Dark start
+					0.31, '#A0B0BA88',     // Semi-transparent light gray
+					0.51, '#FFFFFF',       // White middle
+					1, '#69747BD4'         // Semi-transparent dark gray end
+				],
+				strokeWidth: 1,
+				opacity: 1.0, // Full opacity since gradient handles transparency
+				shadowColor: 'black',
+				shadowBlur: 4,
+				shadowOffset: { x: 0, y: 4 },
+				shadowOpacity: 0.25,
 				visible: false,
 				listening: false
 			});
