@@ -8,7 +8,15 @@ import type {
 } from 'astriarch-engine';
 import Konva from 'konva';
 
+// Import planet images
+import planetAsteroidImage from '$lib/assets/images/planet-asteroid.png';
+import planetDeadImage from '$lib/assets/images/planet-dead.png';
+import planetAridImage from '$lib/assets/images/planet-arid.png';
+import planetTerrestrialImage from '$lib/assets/images/planet-terestrial.png';
+
 const PLANET_SIZE = 20; // Base planet size matching original
+const PLANET_IMAGE_WIDTH = 36; // Width for planet images (wider aspect ratio)
+const PLANET_IMAGE_HEIGHT = 32; // Height for planet images (shorter aspect ratio)
 const FLEET_ICON_SIZE = 11;
 
 export function createDrawnPlanet(planetData: PlanetData, gameModel: ClientModelData) {
@@ -29,6 +37,7 @@ export class DrawnPlanet {
 	// Visual elements
 	private planetCircle!: Konva.Circle;
 	private planetImage: Konva.Image | null = null;
+	private ownershipRing: Konva.Circle | null = null;
 	private nameText!: Konva.Text;
 	private strengthText!: Konva.Text;
 	private fleetIcon: Konva.Rect | null = null;
@@ -75,6 +84,12 @@ export class DrawnPlanet {
 			visible: true
 		});
 		this.group.add(this.planetCircle);
+
+		// Planet image - will be shown when planet type is known
+		this.createPlanetImage();
+
+		// Ownership ring - larger circle that acts as a halo around the planet
+		this.createOwnershipRing();
 
 		// Planet name text - positioned below planet
 		this.nameText = new Konva.Text({
@@ -138,10 +153,14 @@ export class DrawnPlanet {
 			}
 		}
 
-		// Update planet type if available in the planet data
-		if (this.planetData.type) {
+		// Update planet type if available and planet is known (explored)
+		// Check if this planet is in the player's known planets list
+		const isKnownPlanet = gameModel.mainPlayer.knownPlanetIds.includes(this.planetData.id);
+		
+		if (isKnownPlanet && this.planetData.type) {
 			this.knownPlanetType = this.planetData.type;
-			//console.log(`Planet ${this.planetData.name} type: ${this.knownPlanetType}`);
+		} else {
+			this.knownPlanetType = null;
 		}
 
 		this.updateVisuals();
@@ -149,9 +168,167 @@ export class DrawnPlanet {
 
 	private updateVisuals(): void {
 		this.updatePlanetAppearance();
+		this.updatePlanetImage();
+		this.updateOwnershipRing();
 		this.updateFleetStrength();
 		this.updateFleetIcon();
 		this.updateProductionStatus();
+	}
+
+	private getPlanetImageUrl(planetType: PlanetType): string {
+		switch (planetType) {
+			case 1: // AsteroidBelt
+				return planetAsteroidImage;
+			case 2: // DeadPlanet
+				return planetDeadImage;
+			case 3: // PlanetClass1 (Arid)
+				return planetAridImage;
+			case 4: // PlanetClass2 (Terrestrial)
+				return planetTerrestrialImage;
+			default:
+				return planetAridImage; // fallback
+		}
+	}
+
+	private createPlanetImage(): void {
+		// Planet image will be created/updated when we know the planet type
+		this.planetImage = null;
+	}
+
+	private createOwnershipRing(): void {
+		// Ownership ring will be created/updated when we have ownership info
+		this.ownershipRing = null;
+	}
+
+	private updatePlanetImage(): void {
+		// Only show planet image if we know the planet type (explored)
+		console.log(`Updating planet image for ${this.planetData.name}:`, {
+			knownPlanetType: this.knownPlanetType,
+			hasImage: !!this.planetImage
+		});
+		
+		if (this.knownPlanetType) {
+			if (!this.planetImage) {
+				// Create new image
+				const imageObj = new Image();
+				const imageUrl = this.getPlanetImageUrl(this.knownPlanetType);
+				console.log(`Loading planet image from: ${imageUrl}`);
+				
+				imageObj.onload = () => {
+					console.log(`Image loaded successfully for ${this.planetData.name}`);
+					this.planetImage = new Konva.Image({
+						x: -PLANET_IMAGE_WIDTH / 2,
+						y: -PLANET_IMAGE_HEIGHT / 2,
+						width: PLANET_IMAGE_WIDTH,
+						height: PLANET_IMAGE_HEIGHT,
+						image: imageObj,
+						visible: true
+					});
+					
+					// Add image to the group
+					if (this.planetCircle) {
+						this.group.add(this.planetImage);
+						
+						// Proper layering: ownership ring at bottom, then planet image, then UI elements
+						if (this.ownershipRing) {
+							this.ownershipRing.moveToBottom();
+						}
+						
+						// Hide the fallback circle when we have an image
+						this.planetCircle.visible(false);
+						console.log(`Planet image added and circle hidden for ${this.planetData.name}`);
+					}
+				};
+				
+				imageObj.onerror = (error) => {
+					console.error(`Failed to load planet image for ${this.planetData.name}:`, error, imageUrl);
+				};
+				
+				imageObj.src = imageUrl;
+			} else {
+				// Update existing image if planet type changed
+				const newImageUrl = this.getPlanetImageUrl(this.knownPlanetType);
+				console.log(`Updating existing image for ${this.planetData.name} to: ${newImageUrl}`);
+				
+				const imageObj = new Image();
+				imageObj.onload = () => {
+					if (this.planetImage) {
+						this.planetImage.image(imageObj);
+						this.planetImage.visible(true);
+						this.planetCircle?.visible(false);
+						console.log(`Image updated for ${this.planetData.name}`);
+					}
+				};
+				
+				imageObj.onerror = (error) => {
+					console.error(`Failed to update planet image for ${this.planetData.name}:`, error, newImageUrl);
+				};
+				
+				imageObj.src = newImageUrl;
+			}
+		} else {
+			// Hide planet image and show fallback circle for unexplored planets
+			console.log(`${this.planetData.name} is unexplored, showing circle`);
+			if (this.planetImage) {
+				this.planetImage.visible(false);
+			}
+			if (this.planetCircle) {
+				this.planetCircle.visible(true);
+			}
+		}
+	}
+
+	private updateOwnershipRing(): void {
+		// Show ownership ring for owned planets
+		if (this.owner) {
+			if (!this.ownershipRing) {
+				// Create the ownership ring - larger than the planet to create a halo effect
+				const ringRadius = (PLANET_SIZE / 2) + 4; // 4px larger than planet radius
+				
+				this.ownershipRing = new Konva.Circle({
+					x: 0,
+					y: 0,
+					radius: ringRadius,
+					fill: 'transparent',
+					stroke: this.getOwnerColor(),
+					strokeWidth: 2,
+					opacity: 0.8,
+					visible: true
+				});
+				
+				// Add ring behind the planet but above background elements
+				this.group.add(this.ownershipRing);
+				this.ownershipRing.moveToBottom();
+				
+				// Make sure planet elements stay on top
+				if (this.planetImage) {
+					this.planetImage.moveToTop();
+				} else if (this.planetCircle) {
+					this.planetCircle.moveToTop();
+				}
+			} else {
+				// Update existing ring color
+				this.ownershipRing.stroke(this.getOwnerColor());
+				this.ownershipRing.visible(true);
+			}
+		} else {
+			// Hide ownership ring for unowned planets
+			if (this.ownershipRing) {
+				this.ownershipRing.visible(false);
+			}
+		}
+	}
+
+	private getOwnerColor(): string {
+		if (!this.owner) return 'white';
+		
+		const ownerColor = this.owner.color;
+		if (typeof ownerColor === 'string') {
+			return ownerColor;
+		} else if (ownerColor && typeof ownerColor === 'object') {
+			return `rgb(${ownerColor.r || 0}, ${ownerColor.g || 0}, ${ownerColor.b || 0})`;
+		}
+		return 'white';
 	}
 
 	private updatePlanetAppearance(): void {
@@ -160,36 +337,38 @@ export class DrawnPlanet {
 		let fillColor = 'black';
 		let strokeColor = 'white';
 
-		// Color by owner
-		if (this.owner) {
-			// Convert ColorRgbaData to string if needed
-			const ownerColor = this.owner.color;
-			if (typeof ownerColor === 'string') {
-				fillColor = ownerColor;
-			} else if (ownerColor && typeof ownerColor === 'object') {
-				// Assume it's a ColorRgbaData object with r, g, b properties
-				fillColor = `rgb(${ownerColor.r || 0}, ${ownerColor.g || 0}, ${ownerColor.b || 0})`;
+		// For unexplored planets, color by owner if known
+		if (!this.knownPlanetType) {
+			if (this.owner) {
+				// Convert ColorRgbaData to string if needed
+				const ownerColor = this.owner.color;
+				if (typeof ownerColor === 'string') {
+					fillColor = ownerColor;
+				} else if (ownerColor && typeof ownerColor === 'object') {
+					// Assume it's a ColorRgbaData object with r, g, b properties
+					fillColor = `rgb(${ownerColor.r || 0}, ${ownerColor.g || 0}, ${ownerColor.b || 0})`;
+				} else {
+					fillColor = '#444';
+				}
+				strokeColor = this.lightenColor(fillColor, 0.3);
 			} else {
-				fillColor = '#444';
-			}
-			strokeColor = this.lightenColor(fillColor, 0.3);
-		}
-
-		// Modify based on planet type if known
-		if (this.knownPlanetType) {
-			switch (this.knownPlanetType) {
-				case 1: // AsteroidBelt
-					fillColor = this.owner ? fillColor : '#8a8a8a';
-					break;
-				case 2: // DeadPlanet
-					fillColor = this.owner ? fillColor : '#444444';
-					break;
-				case 3: // PlanetClass1
-					fillColor = this.owner ? fillColor : '#4a90e2';
-					break;
-				case 4: // PlanetClass2
-					fillColor = this.owner ? fillColor : '#50c878';
-					break;
+				// Modify based on planet type if we have some knowledge
+				if (this.planetData.type) {
+					switch (this.planetData.type) {
+						case 1: // AsteroidBelt
+							fillColor = '#8a8a8a';
+							break;
+						case 2: // DeadPlanet
+							fillColor = '#444444';
+							break;
+						case 3: // PlanetClass1
+							fillColor = '#4a90e2';
+							break;
+						case 4: // PlanetClass2
+							fillColor = '#50c878';
+							break;
+					}
+				}
 			}
 		}
 
@@ -342,6 +521,14 @@ export class DrawnPlanet {
 	}
 
 	destroy(): void {
+		if (this.planetImage) {
+			this.planetImage.destroy();
+			this.planetImage = null;
+		}
+		if (this.ownershipRing) {
+			this.ownershipRing.destroy();
+			this.ownershipRing = null;
+		}
 		if (this.group) {
 			this.group.destroy();
 		}
