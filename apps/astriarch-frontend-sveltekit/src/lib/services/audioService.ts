@@ -204,12 +204,12 @@ export class AudioService {
 		}
 
 		console.log('AudioService: startMenu() called, currentPhase:', this.currentPhase);
-		
+
 		// Only fade out if we're switching from a different phase
 		if (this.currentPhase !== 'StartMenu') {
 			this.startFadeOut();
 		}
-		
+
 		this.currentPhase = 'StartMenu';
 
 		const track = this.tracks.get('menu-start');
@@ -233,7 +233,7 @@ export class AudioService {
 		if (this.currentPhase !== 'InGame') {
 			this.startFadeOut();
 		}
-		
+
 		this.currentPhase = 'InGame';
 		this.currentInGameTrack = 0;
 
@@ -253,7 +253,7 @@ export class AudioService {
 		if (this.currentPhase !== 'GameOver') {
 			this.startFadeOut();
 		}
-		
+
 		this.currentPhase = 'GameOver';
 
 		const track = this.tracks.get('game-over');

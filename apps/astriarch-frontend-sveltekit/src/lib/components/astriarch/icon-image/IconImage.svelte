@@ -14,6 +14,7 @@
 	import populationIcon from '$lib/assets/icons/population.svg';
 	import researchIcon from '$lib/assets/icons/research.svg';
 	import volumeIcon from '$lib/assets/icons/volume.svg';
+	import volumeMutedIcon from '$lib/assets/icons/volume_muted.svg';
 	import shipAttackIcon from '$lib/assets/icons/ship_attack.svg';
 	import shipDefenseIcon from '$lib/assets/icons/ship_defense.svg';
 	import shipSpeedIcon from '$lib/assets/icons/ship_speed.svg';
@@ -37,6 +38,7 @@
 		population: populationIcon,
 		research: researchIcon,
 		volume: volumeIcon,
+		volume_muted: volumeMutedIcon,
 		ship_attack: shipAttackIcon,
 		ship_defense: shipDefenseIcon,
 		ship_speed: shipSpeedIcon,

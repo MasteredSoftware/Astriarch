@@ -11,6 +11,7 @@ export type IconImageType =
 	| 'iridium'
 	| 'exit'
 	| 'volume'
+	| 'volume_muted'
 	| 'ship_attack'
 	| 'ship_defense'
 	| 'ship_speed'

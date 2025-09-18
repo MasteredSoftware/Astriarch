@@ -42,9 +42,6 @@
 	// Import lobby components
 	import { LobbyView } from '$lib/components/lobby';
 
-	// Import audio components
-	import AudioControls from '$lib/components/audio/AudioControls.svelte';
-
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
 	let GalaxyCanvas: any = $state(null);
 
@@ -80,6 +77,13 @@
 		showLobby = false;
 	}
 
+	function handleExitGame() {
+		// Add any cleanup logic here if needed
+		// For now, just reset to the main menu
+		showLobby = false;
+		// Could also call gameActions to properly exit/reset the game
+	}
+
 	onMount(() => {
 		console.log('Astriarch game component mounted');
 
@@ -111,7 +115,12 @@
 	$effect(() => {
 		try {
 			if (browser && multiplayerState) {
-				console.log('Audio effect - multiplayerState.currentView:', multiplayerState.currentView, 'currentAudioPhase:', $currentAudioPhase);
+				console.log(
+					'Audio effect - multiplayerState.currentView:',
+					multiplayerState.currentView,
+					'currentAudioPhase:',
+					$currentAudioPhase
+				);
 				// Handle audio phase transitions based on game state
 				if (multiplayerState.currentView === 'lobby') {
 					// We're in the lobby/menu phase
@@ -273,7 +282,11 @@
 					</div>
 					<!-- Resource Overview -->
 					<div class="mb-6 flex justify-center">
-						<TopOverview resourceData={$resourceData} population={$population} />
+						<TopOverview
+							resourceData={$resourceData}
+							population={$population}
+							onExitGame={handleExitGame}
+						/>
 					</div>
 				{/if}
 			</div>
@@ -467,7 +480,4 @@
 			No notifications ({$notifications.length})
 		</div>
 	{/if}
-
-	<!-- Audio Controls -->
-	<AudioControls showVolumeSlider={true} compact={false} position="top-left" />
 </main>

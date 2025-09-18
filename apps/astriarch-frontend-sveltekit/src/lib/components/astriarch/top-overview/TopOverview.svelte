@@ -1,6 +1,10 @@
 <script lang="ts">
 	import TopOverviewItem from '../top-overview-item/TopOverviewItem.svelte';
 	import TopOverviewFrameSvg from './TopOverviewFrameSvg.svelte';
+	import TopOverviewButton from '../top-overview-button/TopOverviewButton.svelte';
+	import TopOverviewButtonBackgroundSvg from '../top-overview-button/TopOverviewButtonBackgroundSvg.svelte';
+	import VolumeButton from '../top-overview-button/VolumeButton.svelte';
+	import IconImage from '../icon-image/IconImage.svelte';
 	import type { ResourceData } from '../types.js';
 
 	export let resourceData: ResourceData = {
@@ -8,13 +12,21 @@
 		perTurn: { research: 0, energy: 0, food: 0, ore: 0, iridium: 0, production: 0 }
 	};
 	export let population: number = 0;
+	export let onExitGame: (() => void) | undefined = undefined;
 
 	type $$Props = {
 		resourceData: ResourceData;
 		population: number;
+		onExitGame?: () => void;
 		class?: string;
 		[key: string]: any;
 	};
+
+	function handleExitClick() {
+		if (onExitGame) {
+			onExitGame();
+		}
+	}
 </script>
 
 <div class="relative inline-flex gap-[26px] {$$props.class || ''}" {...$$restProps}>
@@ -45,9 +57,29 @@
 		amountPerTurn={resourceData.perTurn.iridium}
 	/>
 
+	<!-- Volume Control Button -->
+	<VolumeButton />
+
+	<!-- Exit Game Button -->
+	{#if onExitGame}
+		<TopOverviewButton onclick={handleExitClick} title="Exit Game">
+			<IconImage type="exit" size={24} altText="Exit Game" />
+		</TopOverviewButton>
+	{/if}
+
 	<!-- SVG Background Frame -->
 	<div class="pointer-events-none absolute top-0 left-0" style="z-index: 2;">
 		<TopOverviewFrameSvg />
+
+		<!-- Volume Button Background positioned to align with volume button -->
+		<div class="absolute top-0" style="left: 805px;">
+			<TopOverviewButtonBackgroundSvg />
+		</div>
+
+		<!-- Exit Button Background positioned to align with exit button -->
+		<div class="absolute top-0" style="left: 874px;">
+			<TopOverviewButtonBackgroundSvg />
+		</div>
 	</div>
 
 	<slot />
