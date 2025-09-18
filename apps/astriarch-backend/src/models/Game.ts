@@ -17,7 +17,7 @@ export interface IGame extends Document {
   gameType: string;
   isPrivate: boolean;
   gameState: object;
-  status: "waiting_for_players" | "in_progress" | "completed";
+  status: "waiting_for_players" | "in_progress" | "paused_disconnection" | "completed";
   players: IPlayer[]; // Array of players in the game
   gameOptions: ServerGameOptions; // Game configuration options
   createdAt: Date;
@@ -61,7 +61,7 @@ const GameSchema = new Schema<IGame>({
   },
   status: {
     type: String,
-    enum: ["waiting_for_players", "in_progress", "completed"],
+    enum: ["waiting_for_players", "in_progress", "paused_disconnection", "completed"],
     default: "waiting_for_players",
   },
   players: {

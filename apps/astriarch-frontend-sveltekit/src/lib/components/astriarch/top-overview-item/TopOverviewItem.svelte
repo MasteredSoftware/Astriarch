@@ -24,7 +24,9 @@
 	}: Props = $props();
 
 	const amountFormatted = $derived(toShortNumberString(amount ?? 0));
-	const amountPerTurnFormatted = $derived(amountPerTurn ? toShortNumberString(amountPerTurn) : null);
+	const amountPerTurnFormatted = $derived(
+		amountPerTurn ? toShortNumberString(amountPerTurn) : null
+	);
 	const amountPerTurnSign = $derived(amountPerTurn ? (amountPerTurn > 0 ? '+' : '') : '');
 	const amountContent = $derived(
 		amountPerTurn

@@ -28,6 +28,7 @@ import {
   type IChangePlayerNamePayload,
   constructClientGameModel,
   advanceGameModelTime,
+  resetGameSnapshotTime,
   GameModel,
   ModelData,
   Events,
@@ -125,6 +126,9 @@ export class WebSocketServer {
 
       this.clients.set(clientId, client);
       this.sessionLookup.set(sessionId, clientId);
+
+      // Check for reconnection to paused games
+      this.handlePotentialReconnection(client);
 
       ws.on("message", (data: string) => {
         this.handleMessage(clientId, data);
@@ -1285,6 +1289,11 @@ export class WebSocketServer {
     if (!client) return;
 
     try {
+      // Check if this is a human player in an active game
+      if (client.gameId && client.playerId) {
+        await this.handlePlayerDisconnection(client);
+      }
+
       // Update session status
       await Session.findOneAndUpdate({ sessionId: client.sessionId }, { connectionStatus: "disconnected" });
 
@@ -1306,6 +1315,135 @@ export class WebSocketServer {
       logger.info(`Session ${client.sessionId} disconnected`);
     } catch (error) {
       logger.error("Error handling disconnection:", error);
+    }
+  }
+
+  private async handlePlayerDisconnection(client: IConnectedClient): Promise<void> {
+    const game = await Game.findById(client.gameId);
+    if (!game || game.status !== "in_progress") return;
+
+    // Check if this is a human player
+    const player = game.players?.find((p) => p.sessionId === client.sessionId);
+    if (!player || player.isAI) return;
+
+    // Pause the game and notify other players
+    await this.pauseGameForDisconnection(game, player);
+  }
+
+  private async pauseGameForDisconnection(game: IGame, disconnectedPlayer: any): Promise<void> {
+    // Update game status
+    game.status = "paused_disconnection";
+    game.lastActivity = new Date();
+    await persistGame(game);
+
+    // Notify all connected players
+    const gameRoom = this.gameRooms.get(game.id);
+    if (gameRoom) {
+      for (const sessionId of gameRoom) {
+        const clientId = this.getClientIdBySessionId(sessionId);
+        if (clientId) {
+          this.sendToClient(
+            clientId,
+            new Message(MESSAGE_TYPE.PLAYER_DISCONNECTED, {
+              playerName: disconnectedPlayer.name,
+              gameId: game.id,
+            }),
+          );
+        }
+      }
+    }
+
+    logger.info(`Game ${game.id} paused due to ${disconnectedPlayer.name} disconnection`);
+  }
+
+  private async handlePotentialReconnection(client: IConnectedClient): Promise<void> {
+    try {
+      // Find games where this session is a player and the game is paused due to disconnection
+      const pausedGame = await Game.findOne({
+        "players.sessionId": client.sessionId,
+        status: "paused_disconnection",
+      });
+
+      if (pausedGame) {
+        // Update client with game info
+        client.gameId = pausedGame.id;
+        const player = pausedGame.players?.find((p) => p.sessionId === client.sessionId);
+        if (player) {
+          client.playerId = player.Id;
+          client.playerName = player.name;
+
+          // Add client to game room
+          let gameRoom = this.gameRooms.get(pausedGame.id);
+          if (!gameRoom) {
+            gameRoom = new Set();
+            this.gameRooms.set(pausedGame.id, gameRoom);
+          }
+          gameRoom.add(client.sessionId);
+
+          // Check if all human players are now connected
+          const allHumansConnected = await this.areAllHumanPlayersConnected(pausedGame);
+
+          if (allHumansConnected) {
+            await this.resumeGameFromDisconnection(pausedGame);
+          } else {
+            // Notify this player that game is still paused
+            this.sendToClient(
+              this.sessionLookup.get(client.sessionId)!,
+              new Message(MESSAGE_TYPE.GAME_PAUSED, {
+                reason: "waiting_for_players",
+                gameId: pausedGame.id,
+              }),
+            );
+          }
+        }
+      }
+    } catch (error) {
+      logger.error("Error handling potential reconnection:", error);
+    }
+  }
+
+  private async areAllHumanPlayersConnected(game: IGame): Promise<boolean> {
+    const gameRoom = this.gameRooms.get(game.id);
+    if (!gameRoom) return false;
+
+    const humanPlayers = game.players?.filter((p) => !p.isAI) || [];
+    return humanPlayers.every((player) => player.sessionId && gameRoom.has(player.sessionId));
+  }
+
+  private async resumeGameFromDisconnection(game: IGame): Promise<void> {
+    try {
+      // Reset the game snapshot time to prevent time jump
+      // For now, we'll do this manually since we're having import issues
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+
+      // Reset the snapshot time to current time
+      const currentTime = new Date().getTime();
+      gameModelData.modelData.lastSnapshotTime = currentTime;
+
+      // Update game status
+      game.status = "in_progress";
+      game.gameState = gameModelData.modelData;
+      await persistGame(game);
+
+      // Notify all players
+      const gameRoom = this.gameRooms.get(game.id);
+      if (gameRoom) {
+        for (const sessionId of gameRoom) {
+          const clientId = this.getClientIdBySessionId(sessionId);
+          if (clientId) {
+            this.sendToClient(
+              clientId,
+              new Message(MESSAGE_TYPE.GAME_RESUMED, {
+                gameId: game.id,
+              }),
+            );
+          }
+        }
+      }
+
+      logger.info(`Game ${game.id} resumed - all players reconnected`);
+    } catch (error) {
+      logger.error("Error resuming game from disconnection:", error);
     }
   }
 

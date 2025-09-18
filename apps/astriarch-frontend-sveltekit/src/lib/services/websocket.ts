@@ -490,6 +490,63 @@ class WebSocketService {
 				});
 				break;
 
+			case MESSAGE_TYPE.PLAYER_DISCONNECTED:
+				if (
+					message.payload &&
+					typeof message.payload === 'object' &&
+					'playerName' in message.payload
+				) {
+					const payload = message.payload as { playerName: string; gameId: string };
+					this.gameStore.addNotification({
+						type: 'warning',
+						message: `${payload.playerName} has disconnected. Game paused.`,
+						timestamp: Date.now()
+					});
+					// Pause the client-side game loop
+					gameActions.pauseGame();
+				}
+				break;
+
+			case MESSAGE_TYPE.GAME_PAUSED:
+				if (message.payload && typeof message.payload === 'object' && 'reason' in message.payload) {
+					const payload = message.payload as { reason: string; gameId: string };
+					this.gameStore.addNotification({
+						type: 'warning',
+						message: `Game paused - ${payload.reason === 'waiting_for_players' ? 'waiting for disconnected player to reconnect' : payload.reason}`,
+						timestamp: Date.now()
+					});
+					// Pause the client-side game loop
+					gameActions.pauseGame();
+				}
+				break;
+
+			case MESSAGE_TYPE.GAME_RESUMED:
+				if (message.payload && typeof message.payload === 'object' && 'gameId' in message.payload) {
+					this.gameStore.addNotification({
+						type: 'success',
+						message: 'All players reconnected. Game resumed.',
+						timestamp: Date.now()
+					});
+					// Resume the client-side game loop
+					gameActions.resumeGame();
+				}
+				break;
+
+			case MESSAGE_TYPE.PLAYER_RECONNECTED:
+				if (
+					message.payload &&
+					typeof message.payload === 'object' &&
+					'playerName' in message.payload
+				) {
+					const payload = message.payload as { playerName: string; gameId: string };
+					this.gameStore.addNotification({
+						type: 'info',
+						message: `${payload.playerName} has reconnected.`,
+						timestamp: Date.now()
+					});
+				}
+				break;
+
 			case MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
 				// Handle build queue update response
 				if (

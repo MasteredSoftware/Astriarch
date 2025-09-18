@@ -77,6 +77,15 @@ export class GameController {
     Events.publish();
   }
 
+  /**
+   * Reset the snapshot time to the current time to prevent time jumps
+   * when resuming a paused game. This is called during game resume operations.
+   */
+  public static resetSnapshotTime(modelDataBase: ModelBase): void {
+    const currentTime = new Date().getTime();
+    modelDataBase.lastSnapshotTime = currentTime;
+  }
+
   public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid): FleetData[] {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 

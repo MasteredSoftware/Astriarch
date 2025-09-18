@@ -173,6 +173,11 @@ export const advanceClientGameModelTime = (
   return { clientGameModel, fleetsArrivingOnUnownedPlanets };
 };
 
+export const resetGameSnapshotTime = (gameModel: GameModelData) => {
+  GameController.resetSnapshotTime(gameModel.modelData);
+  return gameModel;
+};
+
 export const subscribeToEvents = (playerId: string, callback: Subscription) => {
   Events.subscribe(playerId, callback);
 };
