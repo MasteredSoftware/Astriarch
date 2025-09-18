@@ -708,18 +708,12 @@ export class WebSocketServer {
       if (game && game.status === "in_progress") {
         const allHumansConnected = await this.areAllHumanPlayersConnected(game);
 
-        if (!allHumansConnected) {
-          this.sendToClient(
-            clientId,
-            new Message(MESSAGE_TYPE.ERROR, {
-              message: "Cannot resume game - waiting for all players to reconnect",
-            }),
-          );
-          return;
+        if (allHumansConnected) {
+          // Reset the snapshot time to prevent time jumps when resuming
+          await this.resetGameSnapshotTime(game);
         }
-
-        // Reset the snapshot time to prevent time jumps when resuming
-        await this.resetGameSnapshotTime(game);
+        // If not all humans are connected, we still allow the player to join
+        // but the game will remain in a paused state
       }
 
       const result = await GameController.resumeGame({
@@ -751,21 +745,35 @@ export class WebSocketServer {
           }),
         );
 
-        // If this was the resume after reconnection, notify all players that the game has resumed
+        // Check if all human players are now connected after this player joined
         if (game && game.status === "in_progress") {
+          const allHumansConnected = await this.areAllHumanPlayersConnected(game);
           const gameRoom = this.gameRooms.get(gameId);
+
           if (gameRoom) {
-            for (const sessionId of gameRoom) {
-              const notifyClientId = this.getClientIdBySessionId(sessionId);
-              if (notifyClientId && notifyClientId !== clientId) {
-                // Don't send to the player who resumed
-                this.sendToClient(
-                  notifyClientId,
-                  new Message(MESSAGE_TYPE.GAME_RESUMED, {
-                    gameId: gameId,
-                  }),
-                );
+            if (allHumansConnected) {
+              // All players are now connected - notify everyone that the game has resumed
+              for (const sessionId of gameRoom) {
+                const notifyClientId = this.getClientIdBySessionId(sessionId);
+                if (notifyClientId && notifyClientId !== clientId) {
+                  // Don't send to the player who just resumed
+                  this.sendToClient(
+                    notifyClientId,
+                    new Message(MESSAGE_TYPE.GAME_RESUMED, {
+                      gameId: gameId,
+                    }),
+                  );
+                }
               }
+            } else {
+              // Still waiting for other players - notify this player the game is paused
+              this.sendToClient(
+                clientId,
+                new Message(MESSAGE_TYPE.GAME_PAUSED, {
+                  reason: "waiting_for_players",
+                  gameId: gameId,
+                }),
+              );
             }
           }
         }
