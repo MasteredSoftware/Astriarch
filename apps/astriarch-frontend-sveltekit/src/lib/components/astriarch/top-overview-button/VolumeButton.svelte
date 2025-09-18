@@ -52,7 +52,7 @@
 
 	<!-- AudioControls Popup -->
 	{#if showAudioControls}
-		<div class="absolute top-full left-0 z-50 mt-2">
+		<div class="absolute left-0 z-50">
 			<AudioControls showVolumeSlider={true} compact={false} position="top-left" />
 		</div>
 	{/if}
