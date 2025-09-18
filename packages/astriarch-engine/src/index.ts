@@ -2,7 +2,7 @@ import { ClientGameModel } from './engine/clientGameModel';
 import { Events, Subscription } from './engine/events';
 import { Fleet } from './engine/fleet';
 import { GameController } from './engine/gameController';
-import { GameModel, GameModelData, playerColors } from './engine/gameModel';
+import { GameModel, GameModelData, playerColors, GALAXY_WIDTH, GALAXY_HEIGHT } from './engine/gameModel';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
@@ -19,14 +19,19 @@ import {
   PlanetsPerSystemOption,
   ServerGameOptions,
 } from './model/model';
-import { PlanetProductionItemData } from './model/planet';
+import {
+  PlanetProductionItemData,
+  PlanetImprovementType,
+  CitizenWorkerType,
+  PlanetType,
+  PlanetHappinessType,
+  PlanetData,
+} from './model/planet';
 import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } from './model/tradingCenter';
-import { CitizenWorkerType, PlanetType } from './model/planet';
 import { Grid } from './engine/grid';
 import { EventNotification, EventNotificationType, PlanetaryConflictData } from './model/eventNotification';
-import { PlanetData } from './model/planet';
 import { GameTools } from './utils/gameTools';
 
 // Export messaging types
@@ -55,9 +60,13 @@ export { PlanetsPerSystemOption };
 export { ResearchType };
 export { CitizenWorkerType };
 export { PlanetType };
+export { PlanetImprovementType };
+export { PlanetHappinessType };
 export { EventNotificationType };
 export { CanBuildResult };
 export { playerColors };
+export { GALAXY_WIDTH };
+export { GALAXY_HEIGHT };
 export { TradeType };
 export { TradingCenterResourceType };
 

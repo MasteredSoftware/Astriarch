@@ -3,7 +3,12 @@
 	import { clientGameModel, gameGrid, gameActions, selectedPlanetId } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import type { ClientModelData, Grid } from 'astriarch-engine';
-	import { PlanetHappinessType, PlanetImprovementType } from 'astriarch-engine/src/model/planet';
+	import {
+		PlanetHappinessType,
+		PlanetImprovementType,
+		GALAXY_WIDTH,
+		GALAXY_HEIGHT
+	} from 'astriarch-engine';
 	import Konva from 'konva';
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
@@ -57,8 +62,8 @@
 
 		// Get galaxy dimensions from the grid when available
 		const grid = $gameGrid;
-		const galaxyWidth = grid ? 621 : 800; // Default fallback
-		const galaxyHeight = grid ? 480 : 600; // Default fallback
+		const galaxyWidth = grid ? GALAXY_WIDTH : 800; // Default fallback
+		const galaxyHeight = grid ? GALAXY_HEIGHT : 600; // Default fallback
 
 		console.log('Galaxy dimensions:', { galaxyWidth, galaxyHeight, hasGrid: !!grid });
 
@@ -276,8 +281,8 @@
 			console.log('Grid updated, recreating background');
 			// Recreate background with hex grid
 			galaxyLayer.destroyChildren();
-			const galaxyWidth = 621;
-			const galaxyHeight = 480;
+			const galaxyWidth = GALAXY_WIDTH;
+			const galaxyHeight = GALAXY_HEIGHT;
 			createSpaceBackground(galaxyWidth, galaxyHeight);
 		}
 

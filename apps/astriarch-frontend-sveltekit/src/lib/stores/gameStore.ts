@@ -12,15 +12,13 @@ import {
 	ResearchType,
 	subscribeToEvents,
 	EventNotificationType,
-	type EventNotification
+	type EventNotification,
+	GALAXY_WIDTH,
+	GALAXY_HEIGHT
 } from 'astriarch-engine';
 import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 import type { PlanetData } from 'astriarch-engine/src/model/planet';
 import { webSocketService } from '$lib/services/websocket';
-
-// Galaxy constants (from engine's GameModel)
-const GALAXY_WIDTH = 621.0;
-const GALAXY_HEIGHT = 480.0;
 
 // Game state stores
 export const clientGameModel = writable<ClientModelData | null>(null);
