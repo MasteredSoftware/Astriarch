@@ -20,7 +20,7 @@
 	}
 </script>
 
-<div class="relative h-12 w-[87px] {$$props.class || ''}" {...$$restProps}>
+<div class="relative h-12 {$$props.class || ''}" {...$$restProps}>
 	<!-- Button Content -->
 	<button
 		class="relative z-10 flex h-full w-full items-center justify-center transition-colors hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-50"

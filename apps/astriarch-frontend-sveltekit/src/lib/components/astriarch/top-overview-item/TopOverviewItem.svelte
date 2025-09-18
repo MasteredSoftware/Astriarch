@@ -2,6 +2,7 @@
 	import type { IconImageType } from '../types.js';
 	import Text from '../text/Text.svelte';
 	import IconImage from '../icon-image/IconImage.svelte';
+	import { toShortNumberString } from '$lib/utils/number-helper';
 
 	interface Props {
 		amount: number;
@@ -22,8 +23,8 @@
 		...restProps
 	}: Props = $props();
 
-	const amountFormatted = $derived((amount ?? 0).toFixed(1));
-	const amountPerTurnFormatted = $derived(amountPerTurn ? amountPerTurn.toFixed(1) : null);
+	const amountFormatted = $derived(toShortNumberString(amount ?? 0));
+	const amountPerTurnFormatted = $derived(amountPerTurn ? toShortNumberString(amountPerTurn) : null);
 	const amountPerTurnSign = $derived(amountPerTurn ? (amountPerTurn > 0 ? '+' : '') : '');
 	const amountContent = $derived(
 		amountPerTurn
