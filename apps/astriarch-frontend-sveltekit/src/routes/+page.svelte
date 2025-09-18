@@ -10,10 +10,16 @@
 		gameActions
 	} from '$lib/stores/gameStore';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+	import type { MultiplayerGameState } from '$lib/stores/multiplayerGameStore';
 
 	// Get the notifications store from the multiplayerGameStore
 	const { notifications } = multiplayerGameStore;
+
+	// Create a reactive value for the multiplayer game state
+	let multiplayerState = $state<MultiplayerGameState | undefined>();
+
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
+	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
 
 	import {
 		TopOverview,
@@ -36,20 +42,25 @@
 	// Import lobby components
 	import { LobbyView } from '$lib/components/lobby';
 
+	// Import audio components
+	import AudioControls from '$lib/components/audio/AudioControls.svelte';
+
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
-	let GalaxyCanvas: any = null;
+	let GalaxyCanvas: any = $state(null);
 
 	// UI state
-	let showLobby = false;
+	let showLobby = $state(false);
 
 	// Computed values
-	$: gameStarted = $clientGameModel !== null;
+	const gameStarted = $derived($clientGameModel !== null);
 
-	$: if (browser && !GalaxyCanvas) {
-		import('$lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
-			GalaxyCanvas = module.default;
-		});
-	}
+	$effect(() => {
+		if (browser && !GalaxyCanvas) {
+			import('$lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
+				GalaxyCanvas = module.default;
+			});
+		}
+	});
 
 	let navigationItems = [
 		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
@@ -60,6 +71,8 @@
 	];
 
 	function handleShowLobby() {
+		// Enable audio on first user interaction
+		audioActions.enableAudio();
 		showLobby = true;
 	}
 
@@ -83,6 +96,73 @@
 		});
 
 		return () => unsubscribe();
+	});
+
+	// Keep multiplayerState reactive by subscribing to the store
+	$effect(() => {
+		const unsubscribe = multiplayerGameStore.subscribe((state) => {
+			multiplayerState = state;
+		});
+
+		return () => unsubscribe();
+	});
+
+	// Audio state management based on game phases
+	$effect(() => {
+		try {
+			if (browser && multiplayerState) {
+				console.log('Audio effect - multiplayerState.currentView:', multiplayerState.currentView, 'currentAudioPhase:', $currentAudioPhase);
+				// Handle audio phase transitions based on game state
+				if (multiplayerState.currentView === 'lobby') {
+					// We're in the lobby/menu phase
+					// Always call startMenu() when in lobby to ensure music plays after user interaction
+					console.log('Starting menu music...');
+					audioActions.startMenu();
+				} else if (multiplayerState.currentView === 'game' && gameStarted) {
+					// We're in the active game phase
+					if ($currentAudioPhase !== 'InGame') {
+						console.log('Starting game music...');
+						audioActions.beginGame();
+					}
+				}
+			}
+		} catch (error) {
+			console.warn('Audio state management error:', error);
+		}
+	});
+
+	// Monitor game end state for audio transitions
+	$effect(() => {
+		try {
+			// Check if game is over (no gameStarted but we were previously in game)
+			if (browser && !gameStarted && $currentAudioPhase === 'InGame') {
+				// Game has ended, transition to game over music
+				audioActions.endGame();
+			}
+		} catch (error) {
+			console.warn('Game end audio transition error:', error);
+		}
+	});
+
+	// Turn-based audio effects
+	let previousCycle = $state(-1);
+	$effect(() => {
+		try {
+			if (browser && $clientGameModel && gameStarted) {
+				const currentCycle = $clientGameModel.currentCycle;
+
+				// Play turn start sound when cycle advances
+				if (previousCycle !== -1 && currentCycle > previousCycle) {
+					audioActions.playTurnStart();
+					console.log('New turn started, playing turn start sound');
+				}
+
+				// Update previous cycle for next comparison
+				previousCycle = currentCycle;
+			}
+		} catch (error) {
+			console.warn('Turn-based audio effects error:', error);
+		}
 	});
 
 	onDestroy(() => {
@@ -284,7 +364,7 @@
 					<!-- Galaxy Canvas - Always visible as background (client-side only) -->
 					<div class="absolute inset-0">
 						{#if GalaxyCanvas}
-							<svelte:component this={GalaxyCanvas} />
+							<GalaxyCanvas />
 						{/if}
 					</div>
 
@@ -387,4 +467,7 @@
 			No notifications ({$notifications.length})
 		</div>
 	{/if}
+
+	<!-- Audio Controls -->
+	<AudioControls showVolumeSlider={true} compact={false} position="top-left" />
 </main>
