@@ -127,9 +127,6 @@ export class WebSocketServer {
       this.clients.set(clientId, client);
       this.sessionLookup.set(sessionId, clientId);
 
-      // Check for reconnection to paused games
-      this.handlePotentialReconnection(client);
-
       ws.on("message", (data: string) => {
         this.handleMessage(clientId, data);
       });
@@ -1387,68 +1384,6 @@ export class WebSocketServer {
     }
 
     logger.info(`Notified players about ${disconnectedPlayer.name} disconnection in game ${game.id}`);
-  }
-
-  private async handlePotentialReconnection(client: IConnectedClient): Promise<void> {
-    try {
-      // Find in-progress games where this session is a player
-      const activeGame = await Game.findOne({
-        "players.sessionId": client.sessionId,
-        status: "in_progress",
-      });
-
-      if (activeGame) {
-        // Update client with game info
-        client.gameId = activeGame.id;
-        const player = activeGame.players?.find((p) => p.sessionId === client.sessionId);
-        if (player) {
-          client.playerId = player.Id;
-          client.playerName = player.name;
-
-          // Add client to game room
-          let gameRoom = this.gameRooms.get(activeGame.id);
-          if (!gameRoom) {
-            gameRoom = new Set();
-            this.gameRooms.set(activeGame.id, gameRoom);
-          }
-          gameRoom.add(client.sessionId);
-
-          // Check if all human players are now connected
-          const allHumansConnected = await this.areAllHumanPlayersConnected(activeGame);
-
-          if (allHumansConnected) {
-            // Notify all players that everyone is reconnected and game can be resumed
-            const gameRoom = this.gameRooms.get(activeGame.id);
-            if (gameRoom) {
-              for (const sessionId of gameRoom) {
-                const clientId = this.getClientIdBySessionId(sessionId);
-                if (clientId) {
-                  this.sendToClient(
-                    clientId,
-                    new Message(MESSAGE_TYPE.PLAYER_RECONNECTED, {
-                      playerName: player.name,
-                      gameId: activeGame.id,
-                      allPlayersConnected: true,
-                    }),
-                  );
-                }
-              }
-            }
-          } else {
-            // Notify this player that game is waiting for others
-            this.sendToClient(
-              this.sessionLookup.get(client.sessionId)!,
-              new Message(MESSAGE_TYPE.GAME_PAUSED, {
-                reason: "waiting_for_players",
-                gameId: activeGame.id,
-              }),
-            );
-          }
-        }
-      }
-    } catch (error) {
-      logger.error("Error handling potential reconnection:", error);
-    }
   }
 
   private async areAllHumanPlayersConnected(game: IGame): Promise<boolean> {
