@@ -538,12 +538,24 @@ class WebSocketService {
 					typeof message.payload === 'object' &&
 					'playerName' in message.payload
 				) {
-					const payload = message.payload as { playerName: string; gameId: string };
-					this.gameStore.addNotification({
-						type: 'info',
-						message: `${payload.playerName} has reconnected.`,
-						timestamp: Date.now()
-					});
+					const payload = message.payload as {
+						playerName: string;
+						gameId: string;
+						allPlayersConnected?: boolean;
+					};
+					if (payload.allPlayersConnected) {
+						this.gameStore.addNotification({
+							type: 'success',
+							message: `All players have reconnected. You can now resume the game.`,
+							timestamp: Date.now()
+						});
+					} else {
+						this.gameStore.addNotification({
+							type: 'info',
+							message: `${payload.playerName} has reconnected.`,
+							timestamp: Date.now()
+						});
+					}
 				}
 				break;
 

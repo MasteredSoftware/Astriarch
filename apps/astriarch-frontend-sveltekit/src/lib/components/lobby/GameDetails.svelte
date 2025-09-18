@@ -39,37 +39,40 @@
 	}
 
 	function getStatusDisplay(game: IGame): string {
-		if (game.status === 'waiting') return 'Waiting for Players';
-		if (game.status === 'in_progress') return 'In Progress';
-		if (game.status === 'completed') return 'Completed';
+		const status = (game as any).status;
+		if (status === 'waiting' || status === 'waiting_for_players') return 'Waiting for Players';
+		if (status === 'in_progress') return 'In Progress';
+		if (status === 'completed') return 'Completed';
 		return 'Unknown';
 	}
 
 	function getStatusColor(game: IGame): string {
-		if (game.status === 'waiting') return '#10B981';
-		if (game.status === 'in_progress') return '#F59E0B';
-		if (game.status === 'completed') return '#6B7280';
+		const status = (game as any).status;
+		if (status === 'waiting' || status === 'waiting_for_players') return '#10B981';
+		if (status === 'in_progress') return '#F59E0B';
+		if (status === 'completed') return '#6B7280';
 		return '#6B7280';
 	}
 
 	function canJoinGame(game: IGame): boolean {
 		// Can join if the game is waiting for players
 		// The server already filters to only show games we can join
+		const status = (game as any).status;
 		return (
-			game.status === 'waiting' ||
-			game.status === 'waiting_for_players' ||
-			(game as any).started === false
+			status === 'waiting' || status === 'waiting_for_players' || (game as any).started === false
 		);
 	}
 
 	function canSpectateGame(game: IGame): boolean {
-		return game.status === 'in_progress';
+		const status = (game as any).status;
+		return status === 'in_progress';
 	}
 
 	function canResumeGame(game: IGame): boolean {
 		// Can resume if the game is in progress
 		// The server already filters to only show games where we're a player
-		return game.status === 'in_progress' || (game as any).started === true;
+		const status = (game as any).status;
+		return status === 'in_progress' || (game as any).started === true;
 	}
 </script>
 
