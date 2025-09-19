@@ -27,6 +27,28 @@ export const notifications = writable<string[]>([]);
 export const isGameRunning = writable<boolean>(true);
 export const selectedPlanetId = writable<number | null>(null);
 
+// Galaxy canvas reference for event-driven updates
+interface GalaxyCanvasComponent {
+	markPlanetsChanged(): void;
+	markFleetsChanged(): void;
+	markSelectionChanged(): void;
+	markViewChanged(): void;
+	markGameStateChanged(): void;
+}
+
+let galaxyCanvasRef: GalaxyCanvasComponent | null = null;
+export function setGalaxyCanvasRef(ref: GalaxyCanvasComponent | null) {
+	galaxyCanvasRef = ref;
+	console.log('Galaxy canvas reference set for event-driven updates');
+}
+
+// Helper function to trigger galaxy canvas updates
+function notifyGalaxyCanvas(method: keyof GalaxyCanvasComponent) {
+	if (galaxyCanvasRef && typeof galaxyCanvasRef[method] === 'function') {
+		galaxyCanvasRef[method]();
+	}
+}
+
 // Resource data derived from client game model
 export const resourceData = derived(clientGameModel, ($clientGameModel) => {
 	if (!$clientGameModel) {
@@ -168,6 +190,7 @@ export const gameActions = {
 	selectPlanet(planetId: number | null) {
 		console.log('gameActions.selectPlanet called with ID:', planetId);
 		selectedPlanetId.set(planetId);
+		notifyGalaxyCanvas('markSelectionChanged');
 	},
 
 	selectHomePlanet() {
@@ -176,10 +199,12 @@ export const gameActions = {
 		const homePlanetId = cgm?.mainPlayer.homePlanetId;
 		if (!homePlanetId) {
 			selectedPlanetId.set(null);
+			notifyGalaxyCanvas('markSelectionChanged');
 			return;
 		}
 
 		selectedPlanetId.set(homePlanetId);
+		notifyGalaxyCanvas('markSelectionChanged');
 	},
 
 	pauseGame() {
@@ -217,6 +242,7 @@ export const gameActions = {
 			// The engine method already updated the planet's build queue and spent resources
 			// We need to trigger a store update to notify components
 			clientGameModel.update((current) => (current ? { ...current } : null));
+			notifyGalaxyCanvas('markPlanetsChanged');
 		}
 
 		return canBuild;
@@ -235,9 +261,20 @@ export const gameActions = {
 		if (success) {
 			// Trigger a store update to notify components
 			clientGameModel.update((current) => (current ? { ...current } : null));
+			notifyGalaxyCanvas('markPlanetsChanged');
 		}
 
 		return success;
+	},
+
+	// Notify galaxy canvas when fleets are sent (call this after sending via WebSocket)
+	notifyFleetSent() {
+		notifyGalaxyCanvas('markFleetsChanged');
+	},
+
+	// Notify galaxy canvas when planets are changed (call this after planet-related events)
+	notifyPlanetsChanged() {
+		notifyGalaxyCanvas('markPlanetsChanged');
 	}
 };
 
@@ -292,9 +329,13 @@ clientGameModel.subscribe((cgm) => {
 		const grid = new Grid(GALAXY_WIDTH, GALAXY_HEIGHT, cgm.gameOptions);
 		gameGrid.set(grid);
 		console.log('Client-side grid constructed with', grid.hexes.length, 'hexes');
+		notifyGalaxyCanvas('markGameStateChanged');
 	} else if (!cgm) {
 		// Clear the grid when no game model
 		gameGrid.set(null);
+	} else if (cgm) {
+		// Game model updated - mark everything as potentially changed
+		notifyGalaxyCanvas('markGameStateChanged');
 	}
 });
 
@@ -324,6 +365,28 @@ clientGameModel.subscribe((cgm) => {
 				console.log('Events require server sync, requesting state synchronization');
 				webSocketService.requestStateSync();
 			}
+
+			// Notify galaxy canvas of specific changes
+			events.forEach((event) => {
+				switch (event.type) {
+					case EventNotificationType.ShipBuilt:
+					case EventNotificationType.ImprovementBuilt:
+					case EventNotificationType.PopulationGrowth:
+						notifyGalaxyCanvas('markPlanetsChanged');
+						break;
+					case EventNotificationType.PlanetCaptured:
+					case EventNotificationType.PlanetLost:
+						notifyGalaxyCanvas('markGameStateChanged');
+						break;
+					case EventNotificationType.DefendedAgainstAttackingFleet:
+					case EventNotificationType.AttackingFleetLost:
+						notifyGalaxyCanvas('markFleetsChanged');
+						break;
+					default:
+						// For other events, mark general game state changed
+						notifyGalaxyCanvas('markGameStateChanged');
+				}
+			});
 		});
 		eventSubscriptionActive = true;
 		console.log('Subscribed to client-side engine events for player:', cgm.mainPlayer.id);

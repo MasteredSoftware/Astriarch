@@ -7,7 +7,8 @@
 		population,
 		gameTime,
 		isGameRunning,
-		gameActions
+		gameActions,
+		setGalaxyCanvasRef
 	} from '$lib/stores/gameStore';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import type { MultiplayerGameState } from '$lib/stores/multiplayerGameStore';
@@ -44,6 +45,7 @@
 
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
 	let GalaxyCanvas: any = $state(null);
+	let galaxyCanvasRef: any = $state(null);
 
 	// UI state
 	let showLobby = $state(false);
@@ -56,6 +58,13 @@
 			import('$lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
 				GalaxyCanvas = module.default;
 			});
+		}
+	});
+
+	// Set galaxy canvas reference when it becomes available
+	$effect(() => {
+		if (galaxyCanvasRef) {
+			setGalaxyCanvasRef(galaxyCanvasRef);
 		}
 	});
 
@@ -371,7 +380,7 @@
 					<!-- Galaxy Canvas - Always visible as background (client-side only) -->
 					<div class="absolute inset-0">
 						{#if GalaxyCanvas}
-							<GalaxyCanvas />
+							<GalaxyCanvas bind:this={galaxyCanvasRef} />
 						{/if}
 					</div>
 

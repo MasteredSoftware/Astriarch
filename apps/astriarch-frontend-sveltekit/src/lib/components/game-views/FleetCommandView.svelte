@@ -147,6 +147,9 @@
 		// Clear selection
 		selectedShipIds.clear();
 		selectedShipIds = new Set();
+		
+		// Notify galaxy canvas of fleet changes
+		gameActions.notifyFleetSent();
 	}
 
 	function handlePlanetChange(event: Event) {
@@ -175,7 +178,7 @@
 	<div class="flex items-center justify-between p-8">
 		<div>
 			<h1 class="text-[32px] leading-[40px] font-bold tracking-[0.64px] text-white">
-				Send available ships from Planet {currentSelectedPlanet?.name || 'Unknown'}
+				Send ships from Planet {currentSelectedPlanet?.name || 'Unknown'}
 			</h1>
 			<p class="mt-2 text-[14px] leading-[28px] tracking-[0.14px] text-white/75 opacity-80">
 				Select one or multiple ships from your fleet to explore or attack the planet

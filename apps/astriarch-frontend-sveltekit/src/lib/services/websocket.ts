@@ -180,6 +180,9 @@ class WebSocketService {
 	}
 
 	private handleEventNotifications(events: EventNotification[]) {
+		let shouldUpdateFleets = false;
+		let shouldUpdatePlanets = false;
+		
 		for (const event of events) {
 			// Convert EventNotificationType to a user-friendly notification type
 			let notificationType:
@@ -204,17 +207,24 @@ class WebSocketService {
 				case EventNotificationType.ShipBuilt:
 				case EventNotificationType.ImprovementDemolished:
 					notificationType = 'construction';
+					if (event.type === EventNotificationType.ShipBuilt) {
+						shouldUpdateFleets = true;
+					}
+					shouldUpdatePlanets = true;
 					break;
 				case EventNotificationType.DefendedAgainstAttackingFleet:
 				case EventNotificationType.AttackingFleetLost:
 				case EventNotificationType.PlanetCaptured:
 				case EventNotificationType.PlanetLost:
 					notificationType = 'battle';
+					shouldUpdateFleets = true;
+					shouldUpdatePlanets = true;
 					break;
 				case EventNotificationType.PopulationGrowth:
 				case EventNotificationType.PopulationStarvation:
 				case EventNotificationType.PlanetLostDueToStarvation:
 					notificationType = 'planet';
+					shouldUpdatePlanets = true;
 					break;
 				case EventNotificationType.InsufficientFood:
 				case EventNotificationType.FoodShortageRiots:
@@ -248,6 +258,14 @@ class WebSocketService {
 				event // Pass the original EventNotification for rich interactions
 			);
 		}
+		
+		// Notify galaxy canvas of changes after processing all events
+		if (shouldUpdateFleets) {
+			gameActions.notifyFleetSent();
+		}
+		if (shouldUpdatePlanets) {
+			gameActions.notifyPlanetsChanged();
+		}
 	}
 
 	private handleMessage(message: IMessage<unknown>) {
@@ -277,6 +295,9 @@ class WebSocketService {
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 						clientGameModel.set(updatedClientGameModel);
 						console.log('Received real-time game state update from server');
+						
+						// Notify galaxy canvas that game state has changed (including fleets)
+						gameActions.notifyFleetSent();
 					} else if (message.payload.changes) {
 						// TODO: Apply incremental changes if needed
 						console.log('Received incremental changes (not implemented):', message.payload.changes);
