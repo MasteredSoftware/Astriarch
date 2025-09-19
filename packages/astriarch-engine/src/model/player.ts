@@ -33,6 +33,7 @@ export interface PlayerData {
   research: ResearchData;
   color: ColorRgbaData;
   lastTurnFoodNeededToBeShipped: number; //this is to know how much energy to keep in surplus for food shipments
+  lastTurnFoodShipped: number; //how much food was actually shipped last turn
   options: PlayerGameOptions;
   ownedPlanetIds: number[];
   knownPlanetIds: number[];

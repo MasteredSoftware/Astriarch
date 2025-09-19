@@ -29,6 +29,7 @@ export class Player {
       research,
       color,
       lastTurnFoodNeededToBeShipped: 0,
+      lastTurnFoodShipped: 0,
       options: { showPlanetaryConflictPopups: false },
       ownedPlanetIds: [],
       knownPlanetIds: [],
@@ -240,8 +241,6 @@ export class Player {
     //determine food surplus and shortages
     //shortages will kill off a percentage of the population due to starvation depending on the amount of shortage
 
-    mainPlayer.lastTurnFoodNeededToBeShipped = 0;
-
     const foodDeficitByPlanet: Record<number, number> = {}; //for calculating starvation later
     const foodSurplusPlanets: PlanetData[] = []; //for costing shipments and starvation later
 
@@ -411,11 +410,7 @@ export class Player {
     }
 
     if (totalFoodShipped != 0) {
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.ResourcesAutoSpent,
-        totalFoodShipped + ' Energy spent shipping Food',
-      );
+      mainPlayer.lastTurnFoodShipped += totalFoodShipped;
     }
   }
 

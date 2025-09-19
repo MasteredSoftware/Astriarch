@@ -73,8 +73,27 @@ export class GameController {
     }
 
     modelData.lastSnapshotTime = newSnapshotTime;
-    modelData.currentCycle = currentCycle;
+    if(currentCycle > modelData.currentCycle) {
+      this.handleCycleAdvancement(gameModel);
+      modelData.currentCycle = currentCycle;
+    }
     Events.publish();
+  }
+
+  public static handleCycleAdvancement(gameModel: GameModelData) {
+    // Handle any game logic that needs to occur at the end of a cycle
+    const { modelData } = gameModel;
+    for (const p of modelData.players) {
+      if(p.lastTurnFoodShipped > 0) {
+        Events.enqueueNewEvent(
+          p.id,
+          EventNotificationType.ResourcesAutoSpent,
+          `${p.lastTurnFoodShipped.toFixed(1)} Energy spent shipping Food`,
+        );
+        p.lastTurnFoodShipped = 0;
+      }
+      p.lastTurnFoodNeededToBeShipped = 0;
+    } 
   }
 
   /**
