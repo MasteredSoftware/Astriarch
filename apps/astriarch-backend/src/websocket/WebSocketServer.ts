@@ -219,9 +219,9 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
-    // If this is a game action and the client is in an active game, advance game time
-    if (this.isGameAction(message.type) && client.gameId) {
-      await this.advanceGameTimeForAction(client.gameId);
+    // If this is a sync request and the client is in an active game, advance game time
+    if (this.isGameSyncRequired(message.type) && client.gameId) {
+      await this.advanceGameTimeForSync(client.gameId);
     }
 
     switch (message.type) {
@@ -357,23 +357,13 @@ export class WebSocketServer {
   }
 
   // Real-time game management methods
-  private isGameAction(messageType: MESSAGE_TYPE): boolean {
-    const gameActionTypes = [
-      MESSAGE_TYPE.SYNC_STATE, // sync state isn't an action but it is a request for state sync
-      MESSAGE_TYPE.SEND_SHIPS,
-      MESSAGE_TYPE.UPDATE_PLANET_OPTIONS,
-      MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE,
-      MESSAGE_TYPE.CLEAR_WAYPOINT,
-      MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT,
-      MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM,
-      MESSAGE_TYPE.CANCEL_RESEARCH_ITEM,
-      MESSAGE_TYPE.SUBMIT_TRADE,
-      MESSAGE_TYPE.CANCEL_TRADE,
-    ];
-    return gameActionTypes.includes(messageType);
+  private isGameSyncRequired(messageType: MESSAGE_TYPE): boolean {
+    // Only sync game state when explicitly requested via SYNC_STATE
+    // This allows the client (host) to control when game time advances
+    return messageType === MESSAGE_TYPE.SYNC_STATE;
   }
 
-  private async advanceGameTimeForAction(gameId: string): Promise<void> {
+  private async advanceGameTimeForSync(gameId: string): Promise<void> {
     try {
       const game = await Game.findById(gameId);
       if (!game || game.status !== "in_progress") {
@@ -381,6 +371,7 @@ export class WebSocketServer {
       }
 
       // Use the engine's advanceGameModelTime function which handles time properly
+      // This will advance game time and process any AI/computer player actions
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
       advanceGameModelTime(gameModelData);
 
