@@ -300,12 +300,6 @@
 					>
 						{$isGameRunning ? '● RUNNING' : '⏸ PAUSED'}
 					</Text>
-					<Button
-						label={$isGameRunning ? 'Pause Game' : 'Resume Game'}
-						size="md"
-						variant={$isGameRunning ? 'outline' : 'primary'}
-						onclick={$isGameRunning ? gameActions.pauseGame : gameActions.resumeGame}
-					/>
 				{:else}
 					<!-- Debug: Test notification button -->
 					<Button

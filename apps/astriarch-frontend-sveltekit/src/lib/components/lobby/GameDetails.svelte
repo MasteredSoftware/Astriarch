@@ -7,19 +7,12 @@
 
 	const dispatch = createEventDispatcher<{
 		joinGame: IGame;
-		spectateGame: IGame;
 		resumeGame: IGame;
 	}>();
 
 	function handleJoinGame() {
 		if (game) {
 			dispatch('joinGame', game);
-		}
-	}
-
-	function handleSpectateGame() {
-		if (game) {
-			dispatch('spectateGame', game);
 		}
 	}
 
@@ -61,11 +54,6 @@
 		return (
 			status === 'waiting' || status === 'waiting_for_players' || (game as any).started === false
 		);
-	}
-
-	function canSpectateGame(game: IGame): boolean {
-		const status = (game as any).status;
-		return status === 'in_progress';
 	}
 
 	function canResumeGame(game: IGame): boolean {
@@ -211,10 +199,6 @@
 
 				{#if canResumeGame(game)}
 					<Button onclick={handleResumeGame}>Resume Game</Button>
-				{/if}
-
-				{#if canSpectateGame(game)}
-					<Button onclick={handleSpectateGame}>Spectate Game</Button>
 				{/if}
 
 				{#if game.status === 'completed'}

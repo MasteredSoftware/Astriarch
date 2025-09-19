@@ -102,12 +102,6 @@
 		webSocketService.joinGame(game._id);
 	}
 
-	function handleSpectateGame(event: CustomEvent<IGame>) {
-		const game = event.detail;
-		// For now, spectate works the same as join - the backend will handle the difference
-		webSocketService.joinGame(game._id);
-	}
-
 	function handleResumeGame(event: CustomEvent<IGame>) {
 		const game = event.detail;
 		console.log('Resuming game:', game._id);
@@ -210,7 +204,6 @@
 						<GameDetails
 							game={selectedGame}
 							on:joinGame={handleJoinGame}
-							on:spectateGame={handleSpectateGame}
 							on:resumeGame={handleResumeGame}
 						/>
 					</div>
