@@ -441,9 +441,6 @@
 
 		if (planetAtHex) {
 			handlePlanetSelection(planetAtHex);
-		} else {
-			// Clear planet selection when clicking empty space
-			gameActions.selectPlanet(null);
 		}
 	}
 
