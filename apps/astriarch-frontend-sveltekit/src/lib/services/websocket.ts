@@ -1086,9 +1086,14 @@ class WebSocketService {
 
 		this.stopGameSyncInterval(); // Clear any existing interval
 		console.log('Starting game sync interval (host player)');
-		
+
 		this.gameSyncInterval = window.setInterval(() => {
-			if (this.ws && this.ws.readyState === WebSocket.OPEN && this.getCurrentGameId() && this.isHost()) {
+			if (
+				this.ws &&
+				this.ws.readyState === WebSocket.OPEN &&
+				this.getCurrentGameId() &&
+				this.isHost()
+			) {
 				console.log('Sending SYNC_STATE to advance game time for AI players');
 				this.send(new Message(MESSAGE_TYPE.SYNC_STATE, {}));
 			} else {

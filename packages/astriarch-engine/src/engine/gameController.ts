@@ -73,7 +73,7 @@ export class GameController {
     }
 
     modelData.lastSnapshotTime = newSnapshotTime;
-    if(currentCycle > modelData.currentCycle) {
+    if (currentCycle > modelData.currentCycle) {
       this.handleCycleAdvancement(gameModel);
       modelData.currentCycle = currentCycle;
     }
@@ -84,7 +84,7 @@ export class GameController {
     // Handle any game logic that needs to occur at the end of a cycle
     const { modelData } = gameModel;
     for (const p of modelData.players) {
-      if(p.lastTurnFoodShipped > 0) {
+      if (p.lastTurnFoodShipped > 0) {
         Events.enqueueNewEvent(
           p.id,
           EventNotificationType.ResourcesAutoSpent,
@@ -93,7 +93,7 @@ export class GameController {
         p.lastTurnFoodShipped = 0;
       }
       p.lastTurnFoodNeededToBeShipped = 0;
-    } 
+    }
   }
 
   /**
