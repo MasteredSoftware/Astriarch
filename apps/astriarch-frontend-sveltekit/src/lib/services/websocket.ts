@@ -336,19 +336,20 @@ class WebSocketService {
 						// Update the main game stores for multiplayer
 						const clientGameState = payload.clientGameModel as ClientModelData;
 						clientGameModel.set(clientGameState);
-						isGameRunning.set(true);
-						gameActions.selectHomePlanet();
 
-						// Resume the client-side game loop
-						gameActions.resumeGame();
+						// Don't automatically set game as running - wait for server to tell us
+						// if the game is paused or resumed based on player connectivity
+						gameActions.selectHomePlanet();
 
 						this.gameStore.addNotification({
 							type: 'success',
-							message: 'Game resumed successfully!',
+							message: 'Rejoined game successfully!',
 							timestamp: Date.now()
 						});
 
-						console.log('Game resumed successfully! Updated client game state.');
+						console.log(
+							'Game rejoined successfully! Updated client game state. Waiting for server status...'
+						);
 					} else {
 						this.gameStore.addNotification({
 							type: 'error',
@@ -515,7 +516,8 @@ class WebSocketService {
 						message: `Game paused - ${payload.reason === 'waiting_for_players' ? 'waiting for disconnected player to reconnect' : payload.reason}`,
 						timestamp: Date.now()
 					});
-					// Pause the client-side game loop
+					// Pause the client-side game loop and set game as not running
+					isGameRunning.set(false);
 					gameActions.pauseGame();
 				}
 				break;
@@ -527,7 +529,8 @@ class WebSocketService {
 						message: 'All players reconnected. Game resumed.',
 						timestamp: Date.now()
 					});
-					// Resume the client-side game loop
+					// Resume the client-side game loop and set game as running
+					isGameRunning.set(true);
 					gameActions.resumeGame();
 				}
 				break;
@@ -650,11 +653,8 @@ class WebSocketService {
 						// Update the main game store with the fresh data from the server
 						clientGameModel.set(payload.clientGameModel as ClientModelData);
 
-						// Update game running state if needed
-						const currentGameRunning = get(isGameRunning);
-						if (payload.clientGameModel && !currentGameRunning) {
-							isGameRunning.set(true);
-						}
+						// Don't automatically set game as running - let explicit game state messages handle that
+						// The PONG is just providing updated data, not changing game state
 
 						// Optionally update current cycle if provided
 						if (payload.currentCycle !== undefined) {

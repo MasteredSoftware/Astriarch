@@ -206,30 +206,15 @@
 			<!-- Actions -->
 			<div class="actions">
 				{#if canJoinGame(game)}
-					<Button
-						style="background: linear-gradient(135deg, #00FFFF, #0080FF); color: #000000; font-weight: 600; width: 100%; margin-bottom: 0.5rem;"
-						onclick={handleJoinGame}
-					>
-						Join Game
-					</Button>
+					<Button onclick={handleJoinGame}>Join Game</Button>
 				{/if}
 
 				{#if canResumeGame(game)}
-					<Button
-						style="background: linear-gradient(135deg, #10B981, #059669); color: #FFFFFF; font-weight: 600; width: 100%; margin-bottom: 0.5rem;"
-						onclick={handleResumeGame}
-					>
-						Resume Game
-					</Button>
+					<Button onclick={handleResumeGame}>Resume Game</Button>
 				{/if}
 
 				{#if canSpectateGame(game)}
-					<Button
-						style="background: rgba(0, 255, 255, 0.1); border: 1px solid #00FFFF; color: #00FFFF; width: 100%;"
-						onclick={handleSpectateGame}
-					>
-						Spectate Game
-					</Button>
+					<Button onclick={handleSpectateGame}>Spectate Game</Button>
 				{/if}
 
 				{#if game.status === 'completed'}
