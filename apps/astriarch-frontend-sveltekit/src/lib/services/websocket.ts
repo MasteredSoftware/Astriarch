@@ -40,6 +40,8 @@ class WebSocketService {
 	private isConnecting = false;
 	private pingInterval: number | null = null;
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
+	private gameSyncInterval: number | null = null;
+	private readonly gameSyncIntervalMs = 1000; // 1 second for game state synchronization
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
@@ -55,6 +57,12 @@ class WebSocketService {
 			throw new Error('No active game session - gameId not found in store');
 		}
 		return gameId;
+	}
+
+	// Helper method to check if current player is the host (position 0)
+	private isHost(): boolean {
+		const storeState = get(this.gameStore);
+		return storeState.playerPosition === 0;
 	}
 
 	// Helper method to establish session via HTTP before WebSocket connection
@@ -128,6 +136,7 @@ class WebSocketService {
 						this.isConnecting = false;
 						this.gameStore.setConnected(false);
 						this.stopPingInterval();
+						this.stopGameSyncInterval();
 						this.attemptReconnect();
 					};
 
@@ -305,6 +314,9 @@ class WebSocketService {
 							message: 'Game started!',
 							timestamp: Date.now()
 						});
+
+						// Start game sync interval if this player is the host
+						this.startGameSyncInterval();
 					} else {
 						this.gameStore.addNotification({
 							type: 'error',
@@ -350,6 +362,14 @@ class WebSocketService {
 						console.log(
 							'Game rejoined successfully! Updated client game state. Waiting for server status...'
 						);
+
+						// If player position is provided, update it
+						if (typeof payload.playerPosition === 'number') {
+							this.gameStore.setPlayerPosition(payload.playerPosition);
+						}
+
+						// Start game sync interval if this player is the host and game is in progress
+						this.startGameSyncInterval();
 					} else {
 						this.gameStore.addNotification({
 							type: 'error',
@@ -371,6 +391,9 @@ class WebSocketService {
 					// Game creator is always at position 0 (following old game pattern)
 					this.gameStore.setPlayerPosition(0);
 					console.log('Created game as host at position 0');
+
+					// As the host, we may need to start sync interval when the game actually starts
+					// (The interval will only start if we're in an active game)
 
 					// Store session ID if provided
 					const payload = message.payload as unknown as Record<string, unknown>;
@@ -519,6 +542,8 @@ class WebSocketService {
 					// Pause the client-side game loop and set game as not running
 					isGameRunning.set(false);
 					gameActions.pauseGame();
+					// Stop game sync interval when game is paused
+					this.stopGameSyncInterval();
 				}
 				break;
 
@@ -532,6 +557,8 @@ class WebSocketService {
 					// Resume the client-side game loop and set game as running
 					isGameRunning.set(true);
 					gameActions.resumeGame();
+					// Start game sync interval if this player is the host
+					this.startGameSyncInterval();
 				}
 				break;
 
@@ -874,6 +901,7 @@ class WebSocketService {
 	}
 
 	leaveGame() {
+		this.stopGameSyncInterval();
 		this.send(new Message(MESSAGE_TYPE.EXIT_RESIGN, {}));
 	}
 
@@ -1050,6 +1078,34 @@ class WebSocketService {
 		}
 	}
 
+	private startGameSyncInterval() {
+		// Only start sync interval if player is the host and there's an active game
+		if (!this.isHost() || !this.getCurrentGameId()) {
+			return;
+		}
+
+		this.stopGameSyncInterval(); // Clear any existing interval
+		console.log('Starting game sync interval (host player)');
+		
+		this.gameSyncInterval = window.setInterval(() => {
+			if (this.ws && this.ws.readyState === WebSocket.OPEN && this.getCurrentGameId() && this.isHost()) {
+				console.log('Sending SYNC_STATE to advance game time for AI players');
+				this.send(new Message(MESSAGE_TYPE.SYNC_STATE, {}));
+			} else {
+				// Stop interval if conditions are no longer met
+				this.stopGameSyncInterval();
+			}
+		}, this.gameSyncIntervalMs);
+	}
+
+	private stopGameSyncInterval() {
+		if (this.gameSyncInterval !== null) {
+			console.log('Stopping game sync interval');
+			window.clearInterval(this.gameSyncInterval);
+			this.gameSyncInterval = null;
+		}
+	}
+
 	// Research methods
 	adjustResearchPercent(researchPercent: number) {
 		try {
@@ -1149,6 +1205,7 @@ class WebSocketService {
 
 	disconnect() {
 		this.stopPingInterval();
+		this.stopGameSyncInterval();
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;
