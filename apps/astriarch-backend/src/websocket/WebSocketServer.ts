@@ -33,6 +33,10 @@ import {
   ModelData,
   Events,
   type EventNotification,
+  type PlayerData,
+  GameController as EngineGameController,
+  AdvanceGameClockResult,
+  GameEndConditions,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -373,7 +377,15 @@ export class WebSocketServer {
       // Use the engine's advanceGameModelTime function which handles time properly
       // This will advance game time and process any AI/computer player actions
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-      advanceGameModelTime(gameModelData);
+      const result = advanceGameModelTime(gameModelData);
+
+      // Update the game state in the database
+      game.gameState = result.gameModel.modelData;
+
+      // Check for destroyed players and game over conditions
+      if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
+        await this.handleGameOverConditions(gameId, result, game);
+      }
 
       // Save the updated game state with automatic Mixed field handling
       await persistGame(game);
@@ -1409,6 +1421,165 @@ export class WebSocketServer {
     } catch (error) {
       logger.error("Error resetting game snapshot time:", error);
     }
+  }
+
+  private async handleGameOverConditions(
+    gameId: string,
+    result: AdvanceGameClockResult,
+    game: IGame,
+  ): Promise<void> {
+    try {
+      logger.info(`Handling game over conditions for game ${gameId}`);
+
+      // Mark game as completed if it has ended
+      if (result.gameEndConditions.gameEnded) {
+        game.status = "completed";
+        logger.info(`Game ${gameId} has ended`);
+      }
+
+      // Handle destroyed players
+      for (const destroyedPlayer of result.destroyedPlayers) {
+        await this.handlePlayerDestruction(gameId, destroyedPlayer, game);
+      }
+
+      // If game has ended, handle game over for all players
+      if (result.gameEndConditions.gameEnded) {
+        await this.handleGameOver(gameId, result.gameEndConditions, game);
+      }
+    } catch (error) {
+      logger.error("Error handling game over conditions:", error);
+    }
+  }
+
+  private async handlePlayerDestruction(gameId: string, destroyedPlayer: PlayerData, game: IGame): Promise<void> {
+    try {
+      logger.info(`Player ${destroyedPlayer.name} (${destroyedPlayer.id}) has been destroyed in game ${gameId}`);
+
+      // Find the corresponding database player
+      const dbPlayer = game.players?.find((p) => p.Id === destroyedPlayer.id);
+      if (!dbPlayer) {
+        logger.warn(`Could not find database player for destroyed player ${destroyedPlayer.id}`);
+        return;
+      }
+
+      // Calculate end game score for destroyed player
+      const ownedPlanets = {}; // Empty since player is destroyed
+      const score = EngineGameController.calculateEndGamePoints(
+        game.gameState as ModelData,
+        destroyedPlayer,
+        ownedPlanets,
+        false, // playerWon = false for destroyed players
+      );
+
+      // Send GAME_OVER message to destroyed player if they're human
+      if (dbPlayer.sessionId && !dbPlayer.isAI) {
+        const clientId = this.sessionLookup.get(dbPlayer.sessionId);
+        if (clientId) {
+          const gameOverMessage = new Message(MESSAGE_TYPE.GAME_OVER, {
+            winningPlayer: null,
+            playerWon: false,
+            score,
+            gameData: constructClientGameModel(game.gameState as ModelData, destroyedPlayer.id),
+            allHumansDestroyed: false,
+          });
+
+          this.sendToClient(clientId, gameOverMessage);
+          logger.info(`Sent GAME_OVER message to destroyed player ${destroyedPlayer.name}`);
+        }
+      }
+    } catch (error) {
+      logger.error("Error handling player destruction:", error);
+    }
+  }
+
+  private async handleGameOver(
+    gameId: string,
+    gameEndConditions: GameEndConditions,
+    game: IGame,
+  ): Promise<void> {
+    try {
+      logger.info(`Handling game over for game ${gameId}`);
+
+      const gameRoom = this.gameRooms.get(gameId);
+      if (!gameRoom) {
+        logger.warn(`No game room found for completed game ${gameId}`);
+        return;
+      }
+
+      // Send GAME_OVER messages to all remaining players
+      for (const sessionId of gameRoom) {
+        const clientId = this.sessionLookup.get(sessionId);
+        if (!clientId) {
+          continue;
+        }
+
+        const client = this.clients.get(clientId);
+        if (!client || !client.playerId) {
+          continue;
+        }
+
+        const dbPlayer = game.players?.find((p) => p.sessionId === sessionId);
+        if (!dbPlayer) {
+          continue;
+        }
+
+        // Determine if this player won
+        const playerWon = gameEndConditions.winningPlayer?.id === client.playerId;
+
+        // Calculate final score
+        const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+        const player = gameModelData.modelData.players.find((p) => p.id === client.playerId);
+        if (!player) {
+          continue;
+        }
+
+        const ownedPlanets = gameModelData.modelData.planets
+          .filter((p) => player.ownedPlanetIds.includes(p.id))
+          .reduce((acc, planet) => {
+            acc[planet.id] = planet;
+            return acc;
+          }, {} as any);
+
+        const score = EngineGameController.calculateEndGamePoints(
+          game.gameState as ModelData,
+          player,
+          ownedPlanets,
+          playerWon,
+        );
+
+        // Send GAME_OVER message
+        const gameOverMessage = new Message(MESSAGE_TYPE.GAME_OVER, {
+          winningPlayer: gameEndConditions.winningPlayer
+            ? {
+                id: gameEndConditions.winningPlayer.id,
+                name: gameEndConditions.winningPlayer.name,
+                position: dbPlayer.position,
+              }
+            : null,
+          playerWon,
+          score,
+          gameData: constructClientGameModel(game.gameState as ModelData, client.playerId),
+          allHumansDestroyed: gameEndConditions.allHumansDestroyed,
+        });
+
+        this.sendToClient(clientId, gameOverMessage);
+        logger.info(`Sent GAME_OVER message to player ${dbPlayer.name} (won: ${playerWon})`);
+      }
+
+      // Clean up game room
+      this.gameRooms.delete(gameId);
+      this.chatRooms.delete(gameId);
+
+      logger.info(`Game ${gameId} completed and cleaned up`);
+    } catch (error) {
+      logger.error("Error handling game over:", error);
+    }
+  }
+
+  private getClientBySessionId(sessionId: string): IConnectedClient | null {
+    const clientId = this.sessionLookup.get(sessionId);
+    if (!clientId) return null;
+    return this.clients.get(clientId) || null;
   }
 
   private startPingInterval(): void {

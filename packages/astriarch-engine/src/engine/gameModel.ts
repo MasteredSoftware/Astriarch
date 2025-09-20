@@ -8,7 +8,7 @@ import {
   PlanetResourceData,
   PlanetType,
 } from '../model/planet';
-import { PlayerData } from '../model/player';
+import { PlayerData, PlayerType } from '../model/player';
 import { Utils } from '../utils/utils';
 import { Fleet } from './fleet';
 import { Grid, GridHex } from './grid';
@@ -27,6 +27,17 @@ export interface AdvanceGameClockForPlayerData {
   cyclesElapsed: number;
   currentCycle: number;
   grid: Grid;
+}
+
+export interface GameEndConditions {
+  gameEnded: boolean;
+  winningPlayer: PlayerData | null;
+  allHumansDestroyed: boolean;
+}
+
+export interface AdvanceGameClockResult {
+  destroyedPlayers: PlayerData[];
+  gameEndConditions: GameEndConditions;
 }
 
 export const playerColors = [
@@ -57,6 +68,7 @@ export class GameModel {
       tradingCenter,
       players,
       planets,
+      playersDestroyed: [],
     };
 
     return { modelData, grid };
@@ -395,5 +407,80 @@ export class GameModel {
     if (planet.population.length === 0) {
       planet.population.push(Planet.constructCitizen(planet.type, newOwner?.id));
     }
+  }
+
+  /**
+   * Check if any players should be marked as destroyed (no owned planets and no fleets in transit)
+   * Returns array of newly destroyed players
+   */
+  public static checkPlayersDestroyed(gameModel: GameModelData): PlayerData[] {
+    const newlyDestroyed: PlayerData[] = [];
+    const { modelData } = gameModel;
+
+    for (const player of modelData.players) {
+      // Skip if already destroyed
+      if (player.destroyed) {
+        continue;
+      }
+
+      // Check if player has no owned planets and no fleets in transit
+      const hasOwnedPlanets = player.ownedPlanetIds.length > 0;
+      const hasFleeetsInTransit = player.fleetsInTransit.length > 0;
+
+      if (!hasOwnedPlanets && !hasFleeetsInTransit) {
+        // Mark player as destroyed
+        player.destroyed = true;
+        newlyDestroyed.push(player);
+
+        // Move player to playersDestroyed array
+        modelData.playersDestroyed.push(player);
+
+        // Remove from active players array
+        const playerIndex = modelData.players.indexOf(player);
+        if (playerIndex !== -1) {
+          modelData.players.splice(playerIndex, 1);
+        }
+      }
+    }
+
+    return newlyDestroyed;
+  }
+
+  /**
+   * Check if the game should end (only one player remaining or all humans destroyed)
+   * Returns game end information
+   */
+  public static checkGameEndConditions(gameModel: GameModelData): {
+    gameEnded: boolean;
+    winningPlayer: PlayerData | null;
+    allHumansDestroyed: boolean;
+  } {
+    const { modelData } = gameModel;
+    const activePlayers = modelData.players.filter((p) => !p.destroyed);
+    const activeHumanPlayers = activePlayers.filter((p) => p.type === PlayerType.Human);
+
+    // Game ends if only one player remains
+    if (activePlayers.length <= 1) {
+      return {
+        gameEnded: true,
+        winningPlayer: activePlayers.length === 1 ? activePlayers[0] : null,
+        allHumansDestroyed: activeHumanPlayers.length === 0,
+      };
+    }
+
+    // Game ends if all human players are destroyed (computers continue playing)
+    if (activeHumanPlayers.length === 0) {
+      return {
+        gameEnded: true,
+        winningPlayer: null, // No human winner
+        allHumansDestroyed: true,
+      };
+    }
+
+    return {
+      gameEnded: false,
+      winningPlayer: null,
+      allHumansDestroyed: false,
+    };
   }
 }

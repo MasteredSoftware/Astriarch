@@ -10,7 +10,7 @@ import { ClientGameModel } from './clientGameModel';
 import { ComputerPlayer } from './computerPlayer';
 import { Events } from './events';
 import { Fleet } from './fleet';
-import { AdvanceGameClockForPlayerData, GameModel, GameModelData } from './gameModel';
+import { AdvanceGameClockForPlayerData, AdvanceGameClockResult, GameModel, GameModelData } from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
 import { Player } from './player';
@@ -37,7 +37,7 @@ export class GameController {
     };
   }
 
-  public static advanceGameClock(gameModel: GameModelData) {
+  public static advanceGameClock(gameModel: GameModelData): AdvanceGameClockResult {
     const { modelData, grid } = gameModel;
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(modelData);
     const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
@@ -77,7 +77,17 @@ export class GameController {
       this.handleCycleAdvancement(gameModel);
       modelData.currentCycle = currentCycle;
     }
+
+    // Check for destroyed players and game end conditions
+    const destroyedPlayers = GameModel.checkPlayersDestroyed(gameModel);
+    const gameEndConditions = GameModel.checkGameEndConditions(gameModel);
+
     Events.publish();
+
+    return {
+      destroyedPlayers,
+      gameEndConditions,
+    };
   }
 
   public static handleCycleAdvancement(gameModel: GameModelData) {

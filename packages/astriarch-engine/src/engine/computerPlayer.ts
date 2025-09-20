@@ -580,6 +580,11 @@ export class ComputerPlayer {
     const totalPopulation = Player.getTotalPopulation(player, ownedPlanets);
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
 
+    // Early return if player has no owned planets
+    if (ownedPlanetsSorted.length === 0) {
+      return;
+    }
+
     let energyDesired = 0;
     let oreDesired = 0;
     let iridiumDesired = 0;

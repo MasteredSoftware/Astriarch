@@ -2,7 +2,7 @@ import { ClientGameModel } from './engine/clientGameModel';
 import { Events, Subscription } from './engine/events';
 import { Fleet } from './engine/fleet';
 import { GameController } from './engine/gameController';
-import { GameModel, GameModelData, playerColors, GALAXY_WIDTH, GALAXY_HEIGHT } from './engine/gameModel';
+import { GameModel, GameModelData, GameEndConditions, AdvanceGameClockResult, playerColors, GALAXY_WIDTH, GALAXY_HEIGHT } from './engine/gameModel';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
@@ -76,6 +76,8 @@ export type { GameOptions };
 export type { ServerGameOptions };
 export type { ModelData };
 export type { GameModelData };
+export type { GameEndConditions };
+export type { AdvanceGameClockResult };
 export type { ClientModelData };
 export type { PlanetById };
 export type { ClientPlayer };
@@ -159,9 +161,13 @@ export const startNewGame = () => {
 };
 
 export const advanceGameModelTime = (gameModel: GameModelData) => {
-  GameController.advanceGameClock(gameModel);
+  const result = GameController.advanceGameClock(gameModel);
 
-  return gameModel;
+  return {
+    gameModel,
+    destroyedPlayers: result.destroyedPlayers,
+    gameEndConditions: result.gameEndConditions,
+  };
 };
 
 export const advanceClientGameModelTime = (

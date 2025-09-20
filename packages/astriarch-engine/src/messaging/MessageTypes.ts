@@ -179,6 +179,25 @@ export interface IEventNotificationsPayload {
   }[];
 }
 
+export interface IGameOverPayload {
+  winningPlayer?: {
+    id: string;
+    name: string;
+    position: number;
+  } | null;
+  playerWon: boolean;
+  score: number;
+  endOfTurnMessages?: {
+    playerId: string;
+    type: number; // EventNotificationType
+    message: string;
+    planet?: unknown; // PlanetData
+    data?: unknown; // PlanetaryConflictData
+  }[];
+  gameData?: unknown; // ClientModelData for final game state
+  allHumansDestroyed?: boolean;
+}
+
 export interface IChatMessagePayload {
   id: string;
   playerId: string;

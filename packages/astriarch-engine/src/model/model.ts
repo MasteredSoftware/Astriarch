@@ -67,4 +67,5 @@ export interface ModelData extends ModelBase {
   tradingCenter: TradingCenterData;
   players: PlayerData[];
   planets: PlanetData[];
+  playersDestroyed: PlayerData[];
 }
