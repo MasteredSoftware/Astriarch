@@ -506,11 +506,38 @@ class WebSocketService {
 				});
 				break;
 
-			case MESSAGE_TYPE.GAME_OVER:
-				this.gameStore.addNotification({
-					type: 'info',
-					message: `Game has ended`,
-					timestamp: Date.now()
+			case 'GAME_OVER':
+				console.log('Game over:', data.data);
+
+				// Extract game over information
+				const gameOverData = data.data;
+				const currentPlayerPosition = get(multiplayerGameStore).playerPosition;
+
+				// Determine if current player won
+				const playerWon =
+					gameOverData.winningPlayer &&
+					gameOverData.winningPlayer.position === currentPlayerPosition;
+
+				// Set game over state
+				multiplayerGameStore.setGameOver({
+					gameEnded: true,
+					playerWon: playerWon || false,
+					finalScore: gameOverData.finalScore || 0,
+					winningPlayer: gameOverData.winningPlayer || null,
+					allHumansDestroyed: gameOverData.allHumansDestroyed || false
+				});
+
+				// Add notification
+				const gameOverMessage = playerWon
+					? 'Congratulations! You won the game!'
+					: gameOverData.allHumansDestroyed
+						? 'Game Over - All human players have been destroyed!'
+						: `Game Over - ${gameOverData.winningPlayer?.name || 'Unknown'} wins!`;
+
+				multiplayerGameStore.addNotification({
+					type: playerWon ? 'success' : 'info',
+					message: gameOverMessage,
+					duration: 10000 // Show for 10 seconds
 				});
 				break;
 

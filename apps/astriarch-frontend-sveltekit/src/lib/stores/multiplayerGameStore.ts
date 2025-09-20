@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import type { IGame } from 'astriarch-engine';
+import type { IGame } from '$lib/services/websocket';
 import { PlayerStorage } from '$lib/utils/playerStorage';
 
 // WebSocket multiplayer game state interface
@@ -16,6 +16,20 @@ export interface MultiplayerGameState {
 	selectedGame: IGame | null;
 	selectedPlanet: string | null;
 	selectedFleet: string | null;
+	gameOver: GameOverState | null;
+}
+
+// Game over state
+export interface GameOverState {
+	gameEnded: boolean;
+	playerWon: boolean;
+	finalScore: number;
+	winningPlayer: {
+		id: string;
+		name: string;
+		position: number;
+	} | null;
+	allHumansDestroyed: boolean;
 }
 
 // Chat and notifications
@@ -61,7 +75,8 @@ function createMultiplayerGameStore() {
 		availableGames: [],
 		selectedGame: null,
 		selectedPlanet: null,
-		selectedFleet: null
+		selectedFleet: null,
+		gameOver: null
 	};
 
 	const { subscribe, set, update } = writable(initialState);
@@ -155,6 +170,13 @@ function createMultiplayerGameStore() {
 			update((store) => ({
 				...store,
 				selectedFleet: fleetId
+			})),
+
+		// Game over actions
+		setGameOver: (gameOverState: GameOverState) =>
+			update((store) => ({
+				...store,
+				gameOver: gameOverState
 			})),
 
 		// Chat actions

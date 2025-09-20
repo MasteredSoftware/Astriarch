@@ -1423,11 +1423,7 @@ export class WebSocketServer {
     }
   }
 
-  private async handleGameOverConditions(
-    gameId: string,
-    result: AdvanceGameClockResult,
-    game: IGame,
-  ): Promise<void> {
+  private async handleGameOverConditions(gameId: string, result: AdvanceGameClockResult, game: IGame): Promise<void> {
     try {
       logger.info(`Handling game over conditions for game ${gameId}`);
 
@@ -1492,11 +1488,7 @@ export class WebSocketServer {
     }
   }
 
-  private async handleGameOver(
-    gameId: string,
-    gameEndConditions: GameEndConditions,
-    game: IGame,
-  ): Promise<void> {
+  private async handleGameOver(gameId: string, gameEndConditions: GameEndConditions, game: IGame): Promise<void> {
     try {
       logger.info(`Handling game over for game ${gameId}`);
 

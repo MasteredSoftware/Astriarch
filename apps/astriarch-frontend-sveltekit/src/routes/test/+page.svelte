@@ -2,7 +2,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import * as Dialog from '$lib/components/ui/dialog';
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 
@@ -15,17 +14,6 @@
 		Content: CardContent,
 		Footer: CardFooter
 	} = Card;
-
-	// Destructure Dialog components
-	const {
-		Dialog: ShadcnDialog,
-		DialogContent,
-		DialogDescription,
-		DialogFooter,
-		DialogHeader,
-		DialogTitle,
-		DialogTrigger
-	} = Dialog;
 
 	// Import Astriarch components
 	import {
@@ -47,10 +35,16 @@
 	} from '$lib/components/astriarch';
 	import Logo from '$lib/components/atoms/Logo.svelte';
 	import WindowFrame from '$lib/components/atoms/WindowFrame.svelte';
+	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
+	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
 	import type { IconImageType, TabControllerTab } from '$lib/components/astriarch';
 
 	let showDialog = $state(false);
 	let showAstriarchDialog = $state(false);
+	let showGameOverModal = $state(false);
+	let gameOverScenario = $state('victory');
+	let showAstriarchDialogTest = $state(false);
+	let showSvgDialog = $state(false);
 
 	// Sample data for TopOverview
 	const resourceData = {
@@ -122,6 +116,88 @@
 
 	let selectedShipType = $state('');
 	let selectedResearch = $state('propulsion');
+
+	// Sample game over data for testing
+	const gameOverScenarios = {
+		victory: {
+			gameEnded: true,
+			playerWon: true,
+			finalScore: 15750,
+			winningPlayer: {
+				id: 'player1',
+				name: 'Test Player',
+				position: 1
+			},
+			allHumansDestroyed: false
+		},
+		defeat: {
+			gameEnded: true,
+			playerWon: false,
+			finalScore: 8320,
+			winningPlayer: {
+				id: 'player2',
+				name: 'Admiral Smith',
+				position: 2
+			},
+			allHumansDestroyed: false
+		},
+		allDestroyed: {
+			gameEnded: true,
+			playerWon: false,
+			finalScore: 4150,
+			winningPlayer: null,
+			allHumansDestroyed: true
+		}
+	};
+
+	function openGameOverModal(scenario: 'victory' | 'defeat' | 'allDestroyed') {
+		gameOverScenario = scenario;
+		showGameOverModal = true;
+	}
+
+	function handleGameOverClose() {
+		showGameOverModal = false;
+	}
+
+	function handleNewGame() {
+		console.log('New game requested');
+		showGameOverModal = false;
+	}
+
+	function handleReturnToLobby() {
+		console.log('Return to lobby requested');
+		showGameOverModal = false;
+	}
+
+	// Astriarch Dialog test functions
+	function openAstriarchDialog() {
+		showAstriarchDialogTest = true;
+	}
+
+	function handleDialogSave() {
+		console.log('Dialog save action');
+		showAstriarchDialogTest = false;
+	}
+
+	function handleDialogCancel() {
+		console.log('Dialog cancel action');
+		showAstriarchDialogTest = false;
+	}
+
+	// SVG Dialog test functions
+	function openSvgDialog() {
+		showSvgDialog = true;
+	}
+
+	function handleSvgDialogSave() {
+		console.log('SVG Dialog save action');
+		showSvgDialog = false;
+	}
+
+	function handleSvgDialogCancel() {
+		console.log('SVG Dialog cancel action');
+		showSvgDialog = false;
+	}
 </script>
 
 <div class="font-orbitron min-h-screen bg-gradient-to-b from-slate-900 to-black p-8 text-white">
@@ -129,6 +205,34 @@
 		<h1 class="font-orbitron mb-8 text-center text-4xl font-bold text-cyan-400">
 			Astriarch - Ruler of the Stars
 		</h1>
+
+		<!-- Dialog Test Buttons -->
+		<div class="mb-8 flex flex-wrap justify-center gap-4">
+			<AstriarchButton
+				label="Show Astriarch Dialog"
+				size="md"
+				variant="primary"
+				onClick={openAstriarchDialog}
+			/>
+			<AstriarchButton
+				label="Show SVG Figma Dialog"
+				size="md"
+				variant="outline"
+				onClick={openSvgDialog}
+			/>
+			<AstriarchButton
+				label="Game Over (Victory)"
+				size="md"
+				variant="primary"
+				onClick={() => openGameOverModal('victory')}
+			/>
+			<AstriarchButton
+				label="Game Over (Defeat)"
+				size="md"
+				variant="destructive"
+				onClick={() => openGameOverModal('defeat')}
+			/>
+		</div>
 
 		<!-- Logo Component Demo -->
 		<div class="mb-12">
@@ -671,43 +775,6 @@
 				<CardContent class="space-y-4">
 					<Button class="w-full bg-green-600 hover:bg-green-700">End Turn</Button>
 
-					<ShadcnDialog>
-						<DialogTrigger
-							class="w-full rounded bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
-						>
-							Research Tech
-						</DialogTrigger>
-						<DialogContent class="border-cyan-500/20 bg-slate-800">
-							<DialogHeader>
-								<DialogTitle class="text-cyan-400">Research Laboratory</DialogTitle>
-								<DialogDescription class="text-slate-300">
-									Choose your next technological advancement
-								</DialogDescription>
-							</DialogHeader>
-							<div class="grid gap-4 py-4">
-								<div class="grid grid-cols-4 items-center gap-4">
-									<Label for="tech" class="text-right text-slate-300">Technology</Label>
-									<Input
-										id="tech"
-										placeholder="Advanced Propulsion"
-										class="col-span-3 border-cyan-500/20 bg-slate-700 text-white"
-									/>
-								</div>
-								<div class="grid grid-cols-4 items-center gap-4">
-									<Label for="cost" class="text-right text-slate-300">Research Cost</Label>
-									<Input
-										id="cost"
-										placeholder="1,250 RP"
-										class="col-span-3 border-cyan-500/20 bg-slate-700 text-white"
-									/>
-								</div>
-							</div>
-							<DialogFooter>
-								<Button class="bg-cyan-600 hover:bg-cyan-700">Begin Research</Button>
-							</DialogFooter>
-						</DialogContent>
-					</ShadcnDialog>
-
 					<Button
 						variant="outline"
 						class="w-full border-cyan-500 text-cyan-400 hover:bg-cyan-500/10"
@@ -737,6 +804,45 @@
 					<Badge variant="outline" class="border-purple-500 text-purple-400">Turn</Badge>
 					<span class="font-bold text-purple-400">42</span>
 				</div>
+			</div>
+		</div>
+
+		<!-- Game Over Modal Testing -->
+		<div class="mt-8 rounded-lg border border-cyan-500/20 bg-slate-800 p-6">
+			<h3 class="mb-4 text-center text-xl font-bold text-cyan-400">🎮 Game Over Modal Testing</h3>
+			<p class="mb-6 text-center text-slate-300">Test different game over scenarios</p>
+
+			<div class="flex flex-wrap justify-center gap-4">
+				<Button
+					class="bg-green-600 hover:bg-green-700"
+					onclick={() => openGameOverModal('victory')}
+				>
+					🏆 Victory
+				</Button>
+				<Button class="bg-red-600 hover:bg-red-700" onclick={() => openGameOverModal('defeat')}>
+					💀 Defeat
+				</Button>
+				<Button
+					class="bg-orange-600 hover:bg-orange-700"
+					onclick={() => openGameOverModal('allDestroyed')}
+				>
+					☠️ All Humans Destroyed
+				</Button>
+			</div>
+		</div>
+
+		<!-- Astriarch Dialog Testing -->
+		<div class="mt-8 rounded-lg border border-cyan-500/20 bg-slate-800 p-6">
+			<h3 class="mb-4 text-center text-xl font-bold text-cyan-400">🚀 Astriarch Dialog Testing</h3>
+			<p class="mb-6 text-center text-slate-300">Test the space-themed dialog component variants</p>
+
+			<div class="flex flex-wrap justify-center gap-4">
+				<Button class="bg-cyan-600 hover:bg-cyan-700" onclick={openAstriarchDialog}>
+					✨ Default Style Dialog
+				</Button>
+				<Button class="bg-purple-600 hover:bg-purple-700" onclick={openSvgDialog}>
+					🎨 SVG Figma Style Dialog
+				</Button>
 			</div>
 		</div>
 
@@ -893,3 +999,67 @@
 		</div>
 	</div>
 </div>
+
+<!-- Game Over Modal for Testing -->
+{#if showGameOverModal}
+	<GameOverModal
+		gameOverState={gameOverScenarios[gameOverScenario]}
+		onClose={handleGameOverClose}
+		onNewGame={handleNewGame}
+		onReturnToLobby={handleReturnToLobby}
+	/>
+{/if}
+
+<!-- Astriarch Dialog for Testing -->
+<Dialog
+	bind:open={showAstriarchDialogTest}
+	title="Space Command Center"
+	cancelButtonText="Abort Mission"
+	saveButtonText="Execute"
+	onCancel={handleDialogCancel}
+	onSave={handleDialogSave}
+	size="large"
+	variant="info"
+>
+	<div class="space-y-4">
+		<p class="font-orbitron text-base leading-relaxed text-white/90">
+			You are about to launch a deep space exploration mission to the outer rim of the galaxy. This
+			mission will require significant resources and may take several cycles to complete.
+		</p>
+
+		<div class="rounded-lg border border-cyan-500/20 bg-black/30 p-4">
+			<h4 class="font-orbitron mb-2 text-sm font-bold tracking-wider text-cyan-400">
+				MISSION REQUIREMENTS
+			</h4>
+			<ul class="font-orbitron space-y-1 text-sm text-white/70">
+				<li>• 500 Energy Units</li>
+				<li>• 3 Exploration Vessels</li>
+				<li>• Advanced Propulsion Technology</li>
+			</ul>
+		</div>
+
+		<p class="font-orbitron text-sm tracking-wide text-yellow-400">
+			⚠️ Warning: This action cannot be undone once initiated.
+		</p>
+	</div>
+</Dialog>
+
+<!-- SVG Figma Style Dialog for Testing -->
+<Dialog
+	bind:open={showSvgDialog}
+	title="Send all your available ships"
+	cancelButtonText="Cancel"
+	saveButtonText="Medium"
+	onCancel={handleSvgDialogCancel}
+	onSave={handleSvgDialogSave}
+	size="large"
+	variant="info"
+	style="svg"
+>
+	<div class="space-y-4">
+		<p class="leading-relaxed">
+			This is how you will be able to go beyond this galaxy. This is how you will be able to go
+			beyond this galaxy and expand your universe, your mind, and the ability to destroy your enemy.
+		</p>
+	</div>
+</Dialog>

@@ -2,7 +2,15 @@ import { ClientGameModel } from './engine/clientGameModel';
 import { Events, Subscription } from './engine/events';
 import { Fleet } from './engine/fleet';
 import { GameController } from './engine/gameController';
-import { GameModel, GameModelData, GameEndConditions, AdvanceGameClockResult, playerColors, GALAXY_WIDTH, GALAXY_HEIGHT } from './engine/gameModel';
+import {
+  GameModel,
+  GameModelData,
+  GameEndConditions,
+  AdvanceGameClockResult,
+  playerColors,
+  GALAXY_WIDTH,
+  GALAXY_HEIGHT,
+} from './engine/gameModel';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';

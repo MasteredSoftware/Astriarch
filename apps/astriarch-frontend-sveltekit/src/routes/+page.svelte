@@ -38,6 +38,7 @@
 	import TradingCenterView from '$lib/components/game-views/TradingCenterView.svelte';
 	import ActivityView from '$lib/components/game-views/ActivityView.svelte';
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
+	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
 
 	// Import lobby components
 	import { LobbyView } from '$lib/components/lobby';
@@ -82,6 +83,30 @@
 		// For now, just reset to the main menu
 		showLobby = false;
 		// Could also call gameActions to properly exit/reset the game
+	}
+
+	// Game over modal handlers
+	function handleGameOverClose() {
+		// Clear the game over state
+		multiplayerGameStore.setGameOver({
+			gameEnded: false,
+			playerWon: false,
+			finalScore: 0,
+			winningPlayer: null,
+			allHumansDestroyed: false
+		});
+	}
+
+	function handleNewGame() {
+		// Reset game state and return to lobby
+		multiplayerGameStore.reset();
+		showLobby = true;
+	}
+
+	function handleReturnToLobby() {
+		// Clear game over state and return to lobby
+		handleGameOverClose();
+		showLobby = true;
 	}
 
 	onMount(() => {
@@ -457,6 +482,16 @@
 			</div>
 		{/if}
 	</div>
+
+	<!-- Game Over Modal -->
+	{#if multiplayerState && multiplayerState.gameOver && multiplayerState.gameOver.gameEnded}
+		<GameOverModal
+			gameOverState={multiplayerState.gameOver}
+			onClose={handleGameOverClose}
+			onNewGame={handleNewGame}
+			onReturnToLobby={handleReturnToLobby}
+		/>
+	{/if}
 
 	<!-- Notifications Panel -->
 	{#if $notifications.length > 0}
