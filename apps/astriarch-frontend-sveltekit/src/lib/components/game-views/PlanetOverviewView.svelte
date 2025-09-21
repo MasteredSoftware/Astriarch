@@ -120,7 +120,7 @@
 		if (!success) {
 			console.warn(
 				'Insufficient resources to build:',
-				GameTools.starShipTypeToFriendlyName(shipType) + (customShipData ? ' (Custom)' : '')
+				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData))
 			);
 			// Could add user notification here
 			return;
@@ -132,7 +132,7 @@
 
 			console.log(
 				'Added ship to queue:',
-				GameTools.starShipTypeToFriendlyName(shipType) + (customShipData ? ' (Custom)' : '')
+				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData))
 			);
 		} catch (error) {
 			console.error('Failed to add ship to queue:', error);
@@ -241,7 +241,7 @@
 			const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
 			ships.push({
 				type,
-				name: GameTools.starShipTypeToFriendlyName(type),
+				name: GameTools.starShipTypeToFriendlyName(type, false),
 				description,
 				cost: {
 					energy: productionItem.energyCost,
@@ -270,17 +270,19 @@
 					let advantageText = '';
 					if (customShipData.advantageAgainst && customShipData.disadvantageAgainst) {
 						const advantageAgainst = GameTools.starShipTypeToFriendlyName(
-							customShipData.advantageAgainst
+							customShipData.advantageAgainst,
+							false
 						);
 						const disadvantageAgainst = GameTools.starShipTypeToFriendlyName(
-							customShipData.disadvantageAgainst
+							customShipData.disadvantageAgainst,
+							false
 						);
 						advantageText = ` • Advantage vs ${advantageAgainst}, Weak vs ${disadvantageAgainst}`;
 					}
 
 					ships.push({
 						type,
-						name: `Custom ${GameTools.starShipTypeToFriendlyName(type)}`,
+						name: GameTools.starShipTypeToFriendlyName(type, true),
 						description: description + advantageText,
 						cost: {
 							energy: productionItem.energyCost,
@@ -623,7 +625,7 @@
 										{#if item.itemType === 1 && item.improvementData?.type}
 											{GameTools.planetImprovementTypeToFriendlyName(item.improvementData.type)}
 										{:else if item.itemType === 2 && item.starshipData?.type}
-											{GameTools.starShipTypeToFriendlyName(item.starshipData.type)}
+											{GameTools.starShipTypeToFriendlyName(item.starshipData.type, Boolean(item.starshipData.customShipData))}
 										{:else}
 											Unknown Item
 										{/if}

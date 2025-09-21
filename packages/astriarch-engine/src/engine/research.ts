@@ -285,19 +285,19 @@ export class Research {
     let defaultName = 'Unknown';
     switch (researchProgress.type) {
       case ResearchType.NEW_SHIP_TYPE_DEFENDER:
-        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.SystemDefense);
+        defaultName = GameTools.starShipTypeToFriendlyName(StarShipType.SystemDefense, true);
         break;
       case ResearchType.NEW_SHIP_TYPE_SCOUT:
-        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Scout);
+        defaultName = GameTools.starShipTypeToFriendlyName(StarShipType.Scout, true);
         break;
       case ResearchType.NEW_SHIP_TYPE_DESTROYER:
-        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Destroyer);
+        defaultName = GameTools.starShipTypeToFriendlyName(StarShipType.Destroyer, true);
         break;
       case ResearchType.NEW_SHIP_TYPE_CRUISER:
-        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Cruiser);
+        defaultName = GameTools.starShipTypeToFriendlyName(StarShipType.Cruiser, true);
         break;
       case ResearchType.NEW_SHIP_TYPE_BATTLESHIP:
-        defaultName = 'Custom ' + GameTools.starShipTypeToFriendlyName(StarShipType.Battleship);
+        defaultName = GameTools.starShipTypeToFriendlyName(StarShipType.Battleship, true);
         break;
       case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
         defaultName = 'Ship Attack';

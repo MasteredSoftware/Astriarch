@@ -151,7 +151,8 @@ export class PlanetProductionItem {
     if (!item.starshipData) {
       throw new Error('No starshipData for PlanetProductionItemData');
     }
-    return GameTools.starShipTypeToFriendlyName(item.starshipData.type);
+    const isCustom = Boolean(item.starshipData.customShipData);
+    return GameTools.starShipTypeToFriendlyName(item.starshipData.type, isCustom);
   }
 
   /**

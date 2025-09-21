@@ -456,13 +456,13 @@ export class Fleet {
       const key = currType as unknown as StarShipType;
       if (currCounts.standard) {
         if (accum != '') accum += ', ';
-        accum += `${currCounts.standard} ${GameTools.starShipTypeToFriendlyName(key)}${
+        accum += `${currCounts.standard} ${GameTools.starShipTypeToFriendlyName(key, false)}${
           currCounts.standard > 1 ? 's' : ''
         }`;
       }
       if (currCounts.custom) {
         if (accum != '') accum += ', ';
-        accum += `${currCounts.custom} ${GameTools.starShipTypeToFriendlyName(key)}${currCounts.custom > 1 ? 's' : ''}`;
+        accum += `${currCounts.custom} ${GameTools.starShipTypeToFriendlyName(key, true)}${currCounts.custom > 1 ? 's' : ''}`;
       }
       return accum;
     }, '');

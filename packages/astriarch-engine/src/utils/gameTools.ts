@@ -2,7 +2,7 @@ import { StarShipType } from '../model/fleet';
 import { PlanetImprovementType, PlanetType } from '../model/planet';
 
 export class GameTools {
-  public static starShipTypeToFriendlyName(t: StarShipType) {
+  public static starShipTypeToFriendlyName(t: StarShipType, isCustom = false) {
     let name = '';
     switch (t) {
       case StarShipType.SystemDefense:
@@ -24,7 +24,7 @@ export class GameTools {
         name = 'Space Platform';
         break;
     }
-    return name;
+    return isCustom ? `Custom ${name}` : name;
   }
 
   public static planetImprovementTypeToFriendlyName(t: PlanetImprovementType): string {

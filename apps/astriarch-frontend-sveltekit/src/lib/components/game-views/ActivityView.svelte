@@ -12,6 +12,7 @@
 	import { onMount } from 'svelte';
 	import type { ActivityLogEntry } from '$lib/stores/activityStore';
 	import { Fleet, GameTools } from 'astriarch-engine';
+	import type { StarshipData } from 'astriarch-engine';
 
 	// State for tab selection and UI
 	let currentTabIndex = $state(0); // Track the current tab index
@@ -370,8 +371,9 @@
 		return Fleet.determineFleetStrength(fleet);
 	}
 
-	function getShipTypeName(shipType: number): string {
-		return GameTools.starShipTypeToFriendlyName(shipType);
+	function getShipTypeName(ship: StarshipData): string {
+		const isCustom = Boolean(ship.customShipData);
+		return GameTools.starShipTypeToFriendlyName(ship.type, isCustom);
 	}
 
 	function formatFleetComposition(fleet: any): string {
@@ -381,7 +383,7 @@
 
 		const shipCounts: { [key: string]: number } = {};
 		fleet.starships.forEach((ship: any) => {
-			const typeName = getShipTypeName(ship.type);
+			const typeName = getShipTypeName(ship);
 			shipCounts[typeName] = (shipCounts[typeName] || 0) + 1;
 		});
 
