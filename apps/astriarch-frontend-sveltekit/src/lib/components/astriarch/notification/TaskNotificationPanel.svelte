@@ -16,12 +16,10 @@
 
 		for (const notificationGroup of Object.values($clientGameModel.taskNotifications)) {
 			for (const notification of Object.values(notificationGroup)) {
-				console.log('Inside $derived - pushing:', notification);
 				result.push(notification);
 			}
 		}
 
-		console.log('Inside $derived - result length:', result.length);
 		return result;
 	});
 </script>

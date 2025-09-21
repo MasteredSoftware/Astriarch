@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { TaskNotification } from 'astriarch-engine/src/model/clientModel';
 	import { TaskNotificationType } from 'astriarch-engine/src/model/clientModel';
+	import { gameActions } from '$lib/stores/gameStore';
 	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {
@@ -37,6 +38,12 @@
 		});
 	});
 
+	// Click handler to select the planet
+	function handleClick() {
+		console.log(`TaskItem clicked - selecting planet ${notification.planetId} (${notification.planetName})`);
+		gameActions.selectPlanet(notification.planetId);
+	}
+
 	// Helper function to get task notification color
 	function getTaskNotificationColor(type: TaskNotificationType): string {
 		switch (type) {
@@ -65,7 +72,7 @@
 	function getShortTaskLabel(type: TaskNotificationType): string {
 		switch (type) {
 			case TaskNotificationType.BuildQueueEmpty:
-				return 'Build Queue';
+				return 'Build Queue Empty';
 			case TaskNotificationType.InsufficientFood:
 				return 'Food Shortage';
 			default:
@@ -75,8 +82,17 @@
 </script>
 
 <div
-	class="task-item relative max-w-[220px] min-w-[180px] rounded-lg border border-gray-600/50 bg-black/40 p-2 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/50 hover:bg-black/60"
+	class="task-item relative max-w-[220px] min-w-[180px] rounded-lg border border-gray-600/50 bg-black/40 p-2 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/50 hover:bg-black/60 cursor-pointer"
 	title={notification.message}
+	onclick={handleClick}
+	role="button"
+	tabindex="0"
+	onkeydown={(e) => {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			handleClick();
+		}
+	}}
 >
 	<!-- Glowing border effect -->
 	<div
@@ -110,12 +126,6 @@
 				{notification.planetName}
 			</div>
 		</div>
-
-		<!-- Status indicator -->
-		<div
-			class="h-2 w-2 flex-shrink-0 animate-pulse rounded-full"
-			style="background-color: {getTaskNotificationColor(notification.type)};"
-		></div>
 	</div>
 
 	<!-- Subtle scan line effect -->
