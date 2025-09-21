@@ -8,23 +8,25 @@
 	export let isSelected: boolean = false;
 	export let onToggleSelection: () => void;
 
-	// Map StarShipType to IconImageType
-	function getShipIconType(shipType: StarShipType): IconImageType {
+	// Map StarShipType to IconImageType, considering if it's a custom ship
+	function getShipIconType(shipType: StarShipType, isCustom: boolean = false): IconImageType {
+		const suffix = isCustom ? '_custom' : '';
+		
 		switch (shipType) {
 			case StarShipType.SystemDefense:
-				return 'defender';
+				return `defender${suffix}` as IconImageType;
 			case StarShipType.Scout:
-				return 'scout';
+				return `scout${suffix}` as IconImageType;
 			case StarShipType.Destroyer:
-				return 'destroyer';
+				return `destroyer${suffix}` as IconImageType;
 			case StarShipType.Cruiser:
-				return 'cruiser';
+				return `cruiser${suffix}` as IconImageType;
 			case StarShipType.Battleship:
-				return 'battleship';
+				return `battleship${suffix}` as IconImageType;
 			case StarShipType.SpacePlatform:
-				return 'space_platform';
+				return `space_platform${suffix}` as IconImageType;
 			default:
-				return 'scout'; // fallback
+				return `scout${suffix}` as IconImageType; // fallback
 		}
 	}
 
@@ -119,7 +121,7 @@
 						: 'none'}"
 				>
 					<IconImage
-						type={getShipIconType(ship.type)}
+						type={getShipIconType(ship.type, !!ship.customShipData)}
 						size={61}
 						altText={`${ship.type} ship`}
 						class="h-full w-full"

@@ -20,11 +20,17 @@ export type IconImageType =
 	| 'colony'
 	| 'factory'
 	| 'space_platform'
+	| 'space_platform_custom'
 	| 'defender'
+	| 'defender_custom'
 	| 'scout'
+	| 'scout_custom'
 	| 'destroyer'
+	| 'destroyer_custom'
 	| 'cruiser'
-	| 'battleship';
+	| 'cruiser_custom'
+	| 'battleship'
+	| 'battleship_custom';
 
 export interface TabControllerTab {
 	label: string;
