@@ -39,11 +39,13 @@ export interface TaskNotification {
   type: TaskNotificationType;
   planetId: number;
   planetName: string;
-  data: { energyGenerated: number };
+  message: string;
+  data?: { energyGenerated?: number }; // Make data optional and flexible
 }
 
 export enum TaskNotificationType {
   BuildQueueEmpty = 0,
+  InsufficientFood = 1,
 }
 
 export type TaskNotificationIndex = Record<TaskNotificationType, TaskNotificationByPlanetId>;

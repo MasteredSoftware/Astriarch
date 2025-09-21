@@ -29,6 +29,7 @@
 		Notification
 	} from '$lib/components/astriarch';
 	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
+	import TaskNotificationPanel from '$lib/components/astriarch/notification/TaskNotificationPanel.svelte';
 	import { Logo } from '$lib/components/atoms';
 
 	// Import game view components
@@ -405,6 +406,11 @@
 						class="absolute top-4 left-4 z-20 max-h-80 w-64 overflow-y-auto rounded-lg border border-cyan-500/30 bg-black/80 backdrop-blur-sm"
 					>
 						<PlanetInfoPanel />
+					</div>
+
+					<!-- Task Notifications Panel - Top Right -->
+					<div class="absolute top-4 right-4 z-20">
+						<TaskNotificationPanel />
 					</div>
 
 					<!-- Overlay Panels for different views -->

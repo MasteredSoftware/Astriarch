@@ -625,7 +625,10 @@
 										{#if item.itemType === 1 && item.improvementData?.type}
 											{GameTools.planetImprovementTypeToFriendlyName(item.improvementData.type)}
 										{:else if item.itemType === 2 && item.starshipData?.type}
-											{GameTools.starShipTypeToFriendlyName(item.starshipData.type, Boolean(item.starshipData.customShipData))}
+											{GameTools.starShipTypeToFriendlyName(
+												item.starshipData.type,
+												Boolean(item.starshipData.customShipData)
+											)}
 										{:else}
 											Unknown Item
 										{/if}

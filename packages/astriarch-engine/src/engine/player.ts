@@ -394,19 +394,23 @@ export class Player {
       }
     }
 
-    if (protestingPlanetCount > 0) {
+    if (protestingPlanetCount > 0 && lastProtestingPlanet) {
       let protestingPlanetReason = '.';
       if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0)
-        protestingPlanetReason = ', insufficient Gold to ship Food.';
+        protestingPlanetReason = ', insufficient Energy to ship Food.';
       let planetPluralized = 'planet: ';
       if (protestingPlanetCount > 1) planetPluralized = 'planets: ';
-      //notify user of population unrest
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.InsufficientFood,
-        'Population unrest over lack of Food on ' + planetPluralized + protestingPlanetNames + protestingPlanetReason,
-        lastProtestingPlanet,
-      );
+
+      const message =
+        'Population unrest over lack of Food on ' + planetPluralized + protestingPlanetNames + protestingPlanetReason;
+
+      // Add as persistent task notification
+      TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
+        type: TaskNotificationType.InsufficientFood,
+        planetId: lastProtestingPlanet.id,
+        planetName: protestingPlanetNames,
+        message: message,
+      });
     }
 
     if (totalFoodShipped != 0) {
@@ -430,10 +434,14 @@ export class Player {
         const energyProduced = p.resources.production / 4.0;
         p.resources.energy += energyProduced;
         p.resources.production = 0;
+
+        const message = `Build queue empty on ${p.name}${energyProduced > 0 ? `, ${energyProduced} Energy generated` : ''}`;
+
         TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
           type: TaskNotificationType.BuildQueueEmpty,
           planetId: p.id,
           planetName: p.name,
+          message: message,
           data: { energyGenerated: energyProduced },
         });
       }

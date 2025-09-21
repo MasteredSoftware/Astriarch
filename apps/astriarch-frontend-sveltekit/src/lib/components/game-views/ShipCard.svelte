@@ -11,7 +11,7 @@
 	// Map StarShipType to IconImageType, considering if it's a custom ship
 	function getShipIconType(shipType: StarShipType, isCustom: boolean = false): IconImageType {
 		const suffix = isCustom ? '_custom' : '';
-		
+
 		switch (shipType) {
 			case StarShipType.SystemDefense:
 				return `defender${suffix}` as IconImageType;
