@@ -13,10 +13,10 @@
 	// Determine dialog variant and title based on game over state
 	$: dialogVariant = gameOverState.playerWon ? 'success' : 'error';
 	$: dialogTitle = gameOverState.playerWon
-		? '🏆 VICTORY!'
+		? 'VICTORY'
 		: gameOverState.allHumansDestroyed
-			? '💀 DEFEAT'
-			: '🌌 GAME OVER';
+			? 'DEFEAT'
+			: 'GAME OVER';
 
 	function handleClose() {
 		open = false;
@@ -51,61 +51,55 @@
 	style="svg"
 >
 	<!-- Game Over Content -->
-	<div class="space-y-6">
+	<div class="max-h-[280px] space-y-4 overflow-y-auto">
 		<!-- Victory/Defeat Message -->
 		<div class="text-center">
 			{#if gameOverState.playerWon}
-				<p class="font-orbitron mb-2 text-xl font-bold tracking-wide text-green-400">
-					Congratulations! You have conquered the galaxy!
+				<p class="font-orbitron text-lg font-bold tracking-wide text-green-400">
+					You conquered the galaxy!
 				</p>
 			{:else if gameOverState.allHumansDestroyed}
-				<p class="font-orbitron mb-2 text-xl font-bold tracking-wide text-red-400">
-					All human players have been destroyed...
+				<p class="font-orbitron text-lg font-bold tracking-wide text-red-400">
+					All humans destroyed
 				</p>
 			{:else}
-				<p class="font-orbitron mb-2 text-xl font-bold tracking-wide text-orange-400">
+				<p class="font-orbitron text-lg font-bold tracking-wide text-orange-400">
 					{#if gameOverState.winningPlayer}
-						{gameOverState.winningPlayer.name} has conquered the galaxy!
+						{gameOverState.winningPlayer.name} conquered the galaxy
 					{:else}
-						The game has ended.
+						Game ended
 					{/if}
 				</p>
 			{/if}
 		</div>
 
 		<!-- Game Statistics -->
-		<div class="rounded-lg border border-cyan-500/20 bg-black/20 p-6">
-			<h3 class="font-orbitron mb-4 text-lg font-bold tracking-wider text-cyan-400">
+		<div class="rounded border border-cyan-500/20 bg-black/20 p-4">
+			<h3 class="font-orbitron mb-3 text-base font-bold tracking-wider text-cyan-400">
 				FINAL RESULTS
 			</h3>
 
-			<div class="space-y-3">
+			<div class="space-y-2 text-sm">
 				{#if gameOverState.winningPlayer}
-					<div class="flex items-center justify-between border-b border-white/10 py-2">
-						<span class="font-orbitron text-sm tracking-wide text-white/70">WINNER:</span>
-						<span class="font-orbitron text-lg font-bold text-green-400">
+					<div class="flex items-center justify-between">
+						<span class="font-orbitron tracking-wide text-white/70">Winner:</span>
+						<span class="font-orbitron font-bold text-green-400">
 							{gameOverState.winningPlayer.name}
-						</span>
-					</div>
-					<div class="flex items-center justify-between border-b border-white/10 py-2">
-						<span class="font-orbitron text-sm tracking-wide text-white/70">POSITION:</span>
-						<span class="font-orbitron font-bold text-white">
-							Player {gameOverState.winningPlayer.position}
 						</span>
 					</div>
 				{/if}
 
-				<div class="flex items-center justify-between border-b border-white/10 py-2">
-					<span class="font-orbitron text-sm tracking-wide text-white/70">YOUR FINAL SCORE:</span>
-					<span class="font-orbitron font-mono text-xl font-bold text-cyan-400">
+				<div class="flex items-center justify-between">
+					<span class="font-orbitron tracking-wide text-white/70">Your Score:</span>
+					<span class="font-orbitron font-mono text-lg font-bold text-cyan-400">
 						{formatScore(gameOverState.finalScore)}
 					</span>
 				</div>
 
-				<div class="flex items-center justify-between py-2">
-					<span class="font-orbitron text-sm tracking-wide text-white/70">RESULT:</span>
+				<div class="flex items-center justify-between border-t border-white/10 pt-2">
+					<span class="font-orbitron tracking-wide text-white/70">Result:</span>
 					<span
-						class="font-orbitron text-lg font-bold {gameOverState.playerWon
+						class="font-orbitron font-bold {gameOverState.playerWon
 							? 'text-green-400'
 							: 'text-red-400'}"
 					>
@@ -117,9 +111,9 @@
 
 		<!-- Additional Details -->
 		{#if gameOverState.allHumansDestroyed}
-			<div class="rounded-lg border border-red-500/30 bg-red-900/20 p-4">
-				<p class="font-orbitron text-center text-sm tracking-wide text-red-300">
-					⚠️ All human civilizations have been eliminated from the galaxy
+			<div class="rounded border border-red-500/30 bg-red-900/20 p-3">
+				<p class="font-orbitron text-center text-xs tracking-wide text-red-300">
+					⚠️ All human civilizations eliminated
 				</p>
 			</div>
 		{/if}
@@ -135,5 +129,24 @@
 	/* Enhanced space-themed styling */
 	:global(.font-mono) {
 		font-family: 'Courier New', monospace;
+	}
+
+	/* Custom scrollbar for content area */
+	.max-h-\[280px\]::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.max-h-\[280px\]::-webkit-scrollbar-track {
+		background: rgba(0, 0, 0, 0.3);
+		border-radius: 3px;
+	}
+
+	.max-h-\[280px\]::-webkit-scrollbar-thumb {
+		background: rgba(0, 255, 255, 0.4);
+		border-radius: 3px;
+	}
+
+	.max-h-\[280px\]::-webkit-scrollbar-thumb:hover {
+		background: rgba(0, 255, 255, 0.6);
 	}
 </style>

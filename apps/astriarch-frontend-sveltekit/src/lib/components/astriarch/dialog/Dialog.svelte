@@ -155,7 +155,7 @@
 					<!-- Content positioned at 36.46% from top -->
 					<div
 						class="font-orbitron absolute text-[16px] leading-[24px] font-normal tracking-[0.16px] text-white/75"
-						style="top: 36.46%; left: 7.92%; right: 7.92%; bottom: 32.29%;"
+						style="left: 7.92%; right: 7.92%; bottom: 32.29%;"
 					>
 						{@render children?.()}
 					</div>
