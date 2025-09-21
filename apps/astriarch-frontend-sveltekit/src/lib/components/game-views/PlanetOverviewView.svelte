@@ -23,6 +23,20 @@
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import type { ClientModelData, ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 
+	// Interface for ship build elements in the availableShips array
+	interface AvailableShip {
+		type: StarShipType;
+		name: string;
+		description: string;
+		cost: {
+			energy: number;
+			ore: number;
+			iridium: number;
+		};
+		isCustom: boolean;
+		customShipData?: StarshipAdvantageData;
+	}
+
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
 
@@ -95,7 +109,7 @@
 		}
 	}
 
-	function addShipToQueue(shipType: StarShipType, customShipData?: any) {
+	function addShipToQueue(shipType: StarShipType, customShipData?: StarshipAdvantageData) {
 		if (!currentSelectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType, customShipData);
@@ -220,7 +234,7 @@
 
 	// Generate available ships with proper costs from engine
 	$: availableShips = (() => {
-		const ships = [];
+		const ships: AvailableShip[] = [];
 
 		// Add standard ships
 		for (const { type, description } of shipTypes) {
@@ -235,7 +249,7 @@
 					iridium: productionItem.iridiumCost
 				},
 				isCustom: false,
-				customShipData: null
+				customShipData: undefined
 			});
 		}
 
@@ -490,33 +504,8 @@
 			<!-- Column 2: Resources per Turn & Worker Management -->
 			<div class="flex-1 overflow-y-auto border-r border-cyan-500/20 p-3">
 				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
-					Production & Workers
+					Workers & Production
 				</h3>
-
-				<!-- Resource Production -->
-				<div class="mb-4">
-					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
-						Resource Production per Turn
-					</h4>
-					<div class="space-y-2 text-xs">
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-green-400">Food:</span>
-							<span class="text-white">+2.4 / turn</span>
-						</div>
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-yellow-400">Energy:</span>
-							<span class="text-white">+3.6 / turn</span>
-						</div>
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-orange-400">Ore:</span>
-							<span class="text-white">+1.8 / turn</span>
-						</div>
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-purple-400">Iridium:</span>
-							<span class="text-white">+0.9 / turn</span>
-						</div>
-					</div>
-				</div>
 
 				<!-- Worker Assignment -->
 				<div>
@@ -591,6 +580,31 @@
 											workerAssignments.builders)
 								)}</span
 							>
+						</div>
+					</div>
+				</div>
+
+				<!-- Resource Production -->
+				<div class="mb-4">
+					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
+						Resource Production per Turn
+					</h4>
+					<div class="space-y-2 text-xs">
+						<div class="flex justify-between rounded bg-slate-800/30 p-2">
+							<span class="text-green-400">Food:</span>
+							<span class="text-white">+2.4 / turn</span>
+						</div>
+						<div class="flex justify-between rounded bg-slate-800/30 p-2">
+							<span class="text-yellow-400">Energy:</span>
+							<span class="text-white">+3.6 / turn</span>
+						</div>
+						<div class="flex justify-between rounded bg-slate-800/30 p-2">
+							<span class="text-orange-400">Ore:</span>
+							<span class="text-white">+1.8 / turn</span>
+						</div>
+						<div class="flex justify-between rounded bg-slate-800/30 p-2">
+							<span class="text-purple-400">Iridium:</span>
+							<span class="text-white">+0.9 / turn</span>
 						</div>
 					</div>
 				</div>
