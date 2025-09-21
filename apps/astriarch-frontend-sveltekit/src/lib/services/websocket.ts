@@ -506,11 +506,17 @@ class WebSocketService {
 				});
 				break;
 
-			case 'GAME_OVER':
-				console.log('Game over:', data.data);
+			case MESSAGE_TYPE.GAME_OVER: {
+				console.log('Game over:', message.payload);
 
 				// Extract game over information
-				const gameOverData = data.data;
+				const gameOverData = message.payload as {
+					winningPlayer?: { id: string; name: string; position: number } | null;
+					playerWon: boolean;
+					score: number;
+					gameData?: unknown;
+					allHumansDestroyed: boolean;
+				};
 				const currentPlayerPosition = get(multiplayerGameStore).playerPosition;
 
 				// Determine if current player won
@@ -522,7 +528,7 @@ class WebSocketService {
 				multiplayerGameStore.setGameOver({
 					gameEnded: true,
 					playerWon: playerWon || false,
-					finalScore: gameOverData.finalScore || 0,
+					finalScore: gameOverData.score || 0,
 					winningPlayer: gameOverData.winningPlayer || null,
 					allHumansDestroyed: gameOverData.allHumansDestroyed || false
 				});
@@ -537,9 +543,11 @@ class WebSocketService {
 				multiplayerGameStore.addNotification({
 					type: playerWon ? 'success' : 'info',
 					message: gameOverMessage,
+					timestamp: Date.now(),
 					duration: 10000 // Show for 10 seconds
 				});
 				break;
+			}
 
 			case MESSAGE_TYPE.PLAYER_DISCONNECTED:
 				if (

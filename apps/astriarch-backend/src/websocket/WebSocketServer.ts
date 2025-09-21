@@ -1475,7 +1475,7 @@ export class WebSocketServer {
             winningPlayer: null,
             playerWon: false,
             score,
-            gameData: constructClientGameModel(game.gameState as ModelData, destroyedPlayer.id),
+            gameData: null, // No game data needed for destroyed players
             allHumansDestroyed: false,
           });
 

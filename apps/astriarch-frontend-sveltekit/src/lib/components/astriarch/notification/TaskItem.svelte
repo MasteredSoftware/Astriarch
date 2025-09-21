@@ -28,16 +28,6 @@
 		);
 	});
 
-	// Also log when notification prop changes
-	$effect(() => {
-		console.log(`TaskItem ${componentId} notification updated:`, {
-			type: notification.type,
-			planetId: notification.planetId,
-			planetName: notification.planetName,
-			message: notification.message
-		});
-	});
-
 	// Click handler to select the planet
 	function handleClick() {
 		console.log(`TaskItem clicked - selecting planet ${notification.planetId} (${notification.planetName})`);
