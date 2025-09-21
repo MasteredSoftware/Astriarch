@@ -159,16 +159,6 @@
 		showGameOverModal = false;
 	}
 
-	function handleNewGame() {
-		console.log('New game requested');
-		showGameOverModal = false;
-	}
-
-	function handleReturnToLobby() {
-		console.log('Return to lobby requested');
-		showGameOverModal = false;
-	}
-
 	// Astriarch Dialog test functions
 	function openAstriarchDialog() {
 		showAstriarchDialogTest = true;
@@ -1005,8 +995,6 @@
 	<GameOverModal
 		gameOverState={gameOverScenarios[gameOverScenario]}
 		onClose={handleGameOverClose}
-		onNewGame={handleNewGame}
-		onReturnToLobby={handleReturnToLobby}
 	/>
 {/if}
 

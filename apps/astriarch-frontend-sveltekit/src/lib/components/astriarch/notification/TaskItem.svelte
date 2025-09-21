@@ -30,7 +30,9 @@
 
 	// Click handler to select the planet
 	function handleClick() {
-		console.log(`TaskItem clicked - selecting planet ${notification.planetId} (${notification.planetName})`);
+		console.log(
+			`TaskItem clicked - selecting planet ${notification.planetId} (${notification.planetName})`
+		);
 		gameActions.selectPlanet(notification.planetId);
 	}
 
@@ -72,7 +74,7 @@
 </script>
 
 <div
-	class="task-item relative max-w-[220px] min-w-[180px] rounded-lg border border-gray-600/50 bg-black/40 p-2 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/50 hover:bg-black/60 cursor-pointer"
+	class="task-item relative max-w-[220px] min-w-[180px] cursor-pointer rounded-lg border border-gray-600/50 bg-black/40 p-2 backdrop-blur-sm transition-all duration-300 hover:border-cyan-400/50 hover:bg-black/60"
 	title={notification.message}
 	onclick={handleClick}
 	role="button"

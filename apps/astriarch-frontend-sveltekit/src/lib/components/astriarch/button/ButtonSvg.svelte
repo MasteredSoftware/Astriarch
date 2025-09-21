@@ -33,6 +33,10 @@
 	);
 </script>
 
-<div class="pointer-events-none absolute top-0 left-0">
-	<Component />
+<div
+	class="pointer-events-none absolute top-0 left-0 flex h-full w-full items-center justify-center"
+>
+	<div style="position: relative;">
+		<Component />
+	</div>
 </div>

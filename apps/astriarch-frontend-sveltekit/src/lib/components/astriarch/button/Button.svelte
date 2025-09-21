@@ -50,6 +50,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: visible;
   `);
 
 	const textColor = $derived(variant === 'outline' ? '#0FF' : '#1B1F25');
@@ -60,7 +61,7 @@
     font-weight: 800;
     line-height: 20px;
     letter-spacing: 2px;
-    z-index: 10;
+    z-index: 20;
     text-transform: uppercase;
     text-align: center;
     position: relative;

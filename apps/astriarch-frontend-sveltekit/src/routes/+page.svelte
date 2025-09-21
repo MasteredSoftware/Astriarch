@@ -88,26 +88,8 @@
 
 	// Game over modal handlers
 	function handleGameOverClose() {
-		// Clear the game over state
-		multiplayerGameStore.setGameOver({
-			gameEnded: false,
-			playerWon: false,
-			finalScore: 0,
-			winningPlayer: null,
-			allHumansDestroyed: false
-		});
-	}
-
-	function handleNewGame() {
-		// Reset game state and return to lobby
-		multiplayerGameStore.reset();
-		showLobby = true;
-	}
-
-	function handleReturnToLobby() {
-		// Clear game over state and return to lobby
-		handleGameOverClose();
-		showLobby = true;
+		// For now just refresh the page to reset everything
+		window.location.reload();
 	}
 
 	onMount(() => {
@@ -491,12 +473,7 @@
 
 	<!-- Game Over Modal -->
 	{#if multiplayerState && multiplayerState.gameOver && multiplayerState.gameOver.gameEnded}
-		<GameOverModal
-			gameOverState={multiplayerState.gameOver}
-			onClose={handleGameOverClose}
-			onNewGame={handleNewGame}
-			onReturnToLobby={handleReturnToLobby}
-		/>
+		<GameOverModal gameOverState={multiplayerState.gameOver} onClose={handleGameOverClose} />
 	{/if}
 
 	<!-- Notifications Panel -->

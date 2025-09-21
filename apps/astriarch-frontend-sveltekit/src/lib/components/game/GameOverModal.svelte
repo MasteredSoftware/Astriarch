@@ -5,8 +5,6 @@
 
 	export let gameOverState: GameOverState;
 	export let onClose: () => void = () => {};
-	export let onNewGame: () => void = () => {};
-	export let onReturnToLobby: () => void = () => {};
 
 	let open = true;
 
@@ -23,16 +21,6 @@
 		onClose();
 	}
 
-	function handleNewGame() {
-		open = false;
-		onNewGame();
-	}
-
-	function handleReturnToLobby() {
-		open = false;
-		onReturnToLobby();
-	}
-
 	// Format score with commas
 	function formatScore(score: number): string {
 		return score.toLocaleString();
@@ -42,10 +30,8 @@
 <Dialog
 	bind:open
 	title={dialogTitle}
-	cancelButtonText="Return to Lobby"
-	saveButtonText="New Game"
-	onCancel={handleReturnToLobby}
-	onSave={handleNewGame}
+	cancelButtonText="Exit"
+	onCancel={handleClose}
 	size="large"
 	variant={dialogVariant}
 	style="svg"
