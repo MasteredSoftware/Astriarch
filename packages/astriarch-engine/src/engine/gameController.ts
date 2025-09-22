@@ -49,7 +49,7 @@ export class GameController {
       }
     }
 
-    TradingCenter.executeCurrentTrades(gameModel, planetById);
+    TradingCenter.executeCurrentTrades(gameModel, planetById, cyclesElapsed);
 
     // NOTE: advanceGameClockForPlayer contains all methods that can run client-side to keep the ui updating w/o trips to the server
     const fleetsArrivingOnUnownedPlanetsByPlayerId: Record<string, FleetData[]> = {};

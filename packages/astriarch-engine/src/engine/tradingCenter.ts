@@ -226,7 +226,7 @@ export class TradingCenter {
     return executedStatus;
   }
 
-  public static executeCurrentTrades(gameModel: GameModelData, planetById: PlanetById) {
+  public static executeCurrentTrades(gameModel: GameModelData, planetById: PlanetById, cyclesElapsed: number) {
     //go through the current trades and deduct from the stockpile for buy orders and add to the stockpile for sell orders
     const tc = gameModel.modelData.tradingCenter;
     const now = Date.now();
@@ -300,7 +300,7 @@ export class TradingCenter {
           message +=
             ' Spent ' +
             Utils.decimalToFixed(resourcesBought.energySpent, 2) +
-            ' gold buying: ' +
+            ' energy buying: ' +
             (resourcesBought.food ? resourcesBought.food + ' food, ' : '') +
             (resourcesBought.ore ? resourcesBought.ore + ' ore, ' : '') +
             (resourcesBought.iridium ? resourcesBought.iridium + ' iridium, ' : '');
@@ -309,7 +309,7 @@ export class TradingCenter {
           message +=
             ' Earned ' +
             Utils.decimalToFixed(resourcesSold.energyEarned, 2) +
-            ' gold selling: ' +
+            ' energy selling: ' +
             (resourcesSold.food ? resourcesSold.food + ' food, ' : '') +
             (resourcesSold.ore ? resourcesSold.ore + ' ore, ' : '') +
             (resourcesSold.iridium ? resourcesSold.iridium + ' iridium, ' : '');
@@ -344,13 +344,13 @@ export class TradingCenter {
 
     // Note: tc.currentTrades now only contains pending trades (not yet executable)
     // We no longer clear all trades here since pending trades should remain
-    this.earnInterest(tc);
+    this.earnInterest(tc, cyclesElapsed);
 
     return executedTradeResultsByPlayerId;
   }
 
-  public static earnInterest(tradingCenter: TradingCenterData) {
-    tradingCenter.energyAmount += this.getResourcesTotalValue(tradingCenter) * tradingCenter.interestPercentage;
+  public static earnInterest(tradingCenter: TradingCenterData, cyclesElapsed: number) {
+    tradingCenter.energyAmount += this.getResourcesTotalValue(tradingCenter) * tradingCenter.interestPercentage * cyclesElapsed;
   }
 
   public static getResourcesTotalValue(tradingCenter: TradingCenterData) {

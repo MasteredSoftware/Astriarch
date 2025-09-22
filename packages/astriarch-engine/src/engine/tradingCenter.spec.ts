@@ -149,6 +149,7 @@ describe('tradingCenter', () => {
           TradeType.SELL,
           TradingCenterResourceType.FOOD,
           1,
+          0, // 0 second delay to execute immediately
         ),
       );
       newTrades.push(
@@ -158,12 +159,13 @@ describe('tradingCenter', () => {
           TradeType.BUY,
           TradingCenterResourceType.FOOD,
           1,
+          0, // 0 second delay to execute immediately
         ),
       );
 
       testGameData.gameModel.modelData.tradingCenter.currentTrades =
         testGameData.gameModel.modelData.tradingCenter.currentTrades.concat(newTrades);
-      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById);
+      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
 
       const executed = Object.values(executedStatusListByPlayerId).reduce(
         (accum, curr) => accum.concat(curr.filter((t) => t.results.executed)),
@@ -181,6 +183,7 @@ describe('tradingCenter', () => {
           TradeType.BUY,
           TradingCenterResourceType.FOOD,
           15,
+          0, // 0 second delay to execute immediately
         ),
       );
       newTrades.push(
@@ -190,12 +193,13 @@ describe('tradingCenter', () => {
           TradeType.BUY,
           TradingCenterResourceType.FOOD,
           15,
+          0, // 0 second delay to execute immediately
         ),
       );
 
       testGameData.gameModel.modelData.tradingCenter.currentTrades =
         testGameData.gameModel.modelData.tradingCenter.currentTrades.concat(newTrades);
-      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById);
+      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
 
       const executed = Object.values(executedStatusListByPlayerId).reduce(
         (accum, curr) => accum.concat(curr.filter((t) => t.results.executed)),
