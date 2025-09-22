@@ -27,6 +27,9 @@ import { multiplayerGameStore, type ChatMessage } from '$lib/stores/multiplayerG
 // Import activity store for enhanced event logging
 import { activityStore } from '$lib/stores/activityStore';
 
+// Import audio service for game music
+import { audioService } from '$lib/services/audioService';
+
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
 
@@ -523,6 +526,11 @@ class WebSocketService {
 				const playerWon =
 					gameOverData.winningPlayer &&
 					gameOverData.winningPlayer.position === currentPlayerPosition;
+
+				// Play end game music
+				if (audioService) {
+					audioService.endGame();
+				}
 
 				// Set game over state
 				multiplayerGameStore.setGameOver({
