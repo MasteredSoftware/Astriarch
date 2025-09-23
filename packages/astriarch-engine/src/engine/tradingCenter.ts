@@ -350,7 +350,8 @@ export class TradingCenter {
   }
 
   public static earnInterest(tradingCenter: TradingCenterData, cyclesElapsed: number) {
-    tradingCenter.energyAmount += this.getResourcesTotalValue(tradingCenter) * tradingCenter.interestPercentage * cyclesElapsed;
+    tradingCenter.energyAmount +=
+      this.getResourcesTotalValue(tradingCenter) * tradingCenter.interestPercentage * cyclesElapsed;
   }
 
   public static getResourcesTotalValue(tradingCenter: TradingCenterData) {
