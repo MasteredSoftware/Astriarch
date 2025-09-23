@@ -32,6 +32,9 @@
 	// Track pending selection to retry if planet not ready
 	let pendingSelectionId: number | null = null;
 
+	// Track the source of planet selection to determine if we should auto-pan
+	let lastSelectionWasFromClick = false;
+
 	// Pan and zoom state
 	let zoomLevel = 1;
 	let panX = 0;
@@ -42,7 +45,8 @@
 
 	// Handle planet selection changes
 	$: if ($selectedPlanetId !== null && isInitialized) {
-		updatePlanetSelection($selectedPlanetId);
+		updatePlanetSelection($selectedPlanetId, !lastSelectionWasFromClick);
+		lastSelectionWasFromClick = false; // Reset after processing
 	} else if ($selectedPlanetId !== null && !isInitialized) {
 		// Store the selection for when canvas is ready
 		pendingSelectionId = $selectedPlanetId;
@@ -58,7 +62,7 @@
 
 		// Handle any pending selection that came in before initialization
 		if (pendingSelectionId !== null) {
-			updatePlanetSelection(pendingSelectionId);
+			updatePlanetSelection(pendingSelectionId, true); // Auto-pan for pending selections
 			pendingSelectionId = null;
 		}
 	});
@@ -409,7 +413,7 @@
 
 		// If new planets were created and we have a selected planet, make sure it's visually selected
 		if (newPlanetsCreated && $selectedPlanetId !== null) {
-			updatePlanetSelection($selectedPlanetId);
+			updatePlanetSelection($selectedPlanetId, !lastSelectionWasFromClick);
 		}
 	}
 
@@ -481,6 +485,7 @@
 			fleetCommandStore.setDestinationPlanet(planetData.id);
 		} else {
 			// Normal planet selection - always select the planet to show info
+			lastSelectionWasFromClick = true; // Mark as click-initiated selection
 			gameActions.selectPlanet(planetData.id);
 		}
 	}
@@ -497,7 +502,7 @@
 	}
 
 	// Planet selection management functions
-	function updatePlanetSelection(selectedId: number) {
+	function updatePlanetSelection(selectedId: number, shouldZoomTo: boolean = false) {
 		// Clear all previous selections
 		drawnPlanets.forEach((drawnPlanet) => {
 			drawnPlanet.setSelected(false);
@@ -508,6 +513,11 @@
 		if (selectedPlanet) {
 			selectedPlanet.setSelected(true);
 			console.log('Updated planet selection for planet:', selectedId);
+
+			// Auto-pan to planet if requested (for programmatic selections)
+			if (shouldZoomTo) {
+				zoomToPlanet(selectedPlanet);
+			}
 		} else {
 			console.log('Planet not yet drawn for selection:', selectedId, 'Available planets:', Array.from(drawnPlanets.keys()));
 			// Planet might not be drawn yet - it will be handled in updatePlanets when created
@@ -519,6 +529,52 @@
 		drawnPlanets.forEach((drawnPlanet) => {
 			drawnPlanet.setSelected(false);
 		});
+	}
+
+	function zoomToPlanet(drawnPlanet: DrawnPlanet) {
+		if (!stage) return;
+
+		const planetData = drawnPlanet.getPlanetData();
+		const planetWorldPos = {
+			x: planetData.boundingHexMidPoint.x,
+			y: planetData.boundingHexMidPoint.y
+		};
+
+		// Calculate the desired position to place the planet in the top half of the screen
+		const stageWidth = stage.width();
+		const stageHeight = stage.height();
+		const currentScale = stage.scaleX();
+
+		// Target position: center horizontally, 1/3 from top vertically
+		const targetScreenX = stageWidth / 2;
+		const targetScreenY = stageHeight / 3;
+
+		// Calculate what the stage position should be to place the planet at the target screen position
+		const targetStageX = targetScreenX - planetWorldPos.x * currentScale;
+		const targetStageY = targetScreenY - planetWorldPos.y * currentScale;
+
+		// Animate to the new position
+		const currentPos = stage.position();
+		const deltaX = targetStageX - currentPos.x;
+		const deltaY = targetStageY - currentPos.y;
+
+		// Only animate if the movement is significant (more than 50 pixels)
+		if (Math.abs(deltaX) > 50 || Math.abs(deltaY) > 50) {
+			console.log('Zooming to planet:', planetData.name, 'at position:', planetWorldPos);
+
+			// Use Konva's built-in animation
+			stage.to({
+				x: targetStageX,
+				y: targetStageY,
+				duration: 0.8, // 800ms animation
+				easing: Konva.Easings.EaseOut
+			});
+
+			// Update our internal pan tracking
+			setTimeout(() => {
+				updatePanPosition();
+			}, 800);
+		}
 	}
 </script>
 
