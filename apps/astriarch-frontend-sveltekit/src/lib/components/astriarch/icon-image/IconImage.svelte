@@ -24,10 +24,15 @@
 	import factoryIcon from '$lib/assets/icons/factory.svg';
 	import spacePlatformIcon from '$lib/assets/icons/space_platform.svg';
 	import defenderIcon from '$lib/assets/icons/defender.svg';
+	import defenderCustomIcon from '$lib/assets/icons/defender_custom.svg';
 	import scoutIcon from '$lib/assets/icons/scout.svg';
+	import scoutCustomIcon from '$lib/assets/icons/scout_custom.svg';
 	import destroyerIcon from '$lib/assets/icons/destroyer.svg';
+	import destroyerCustomIcon from '$lib/assets/icons/destroyer_custom.svg';
 	import cruiserIcon from '$lib/assets/icons/cruiser.svg';
+	import cruiserCustomIcon from '$lib/assets/icons/cruiser_custom.svg';
 	import battleshipIcon from '$lib/assets/icons/battleship.svg';
+	import battleshipCustomIcon from '$lib/assets/icons/battleship_custom.svg';
 
 	const iconMap = {
 		energy: energyIcon,
@@ -48,10 +53,15 @@
 		factory: factoryIcon,
 		space_platform: spacePlatformIcon,
 		defender: defenderIcon,
+		defender_custom: defenderCustomIcon,
 		scout: scoutIcon,
+		scout_custom: scoutCustomIcon,
 		destroyer: destroyerIcon,
+		destroyer_custom: destroyerCustomIcon,
 		cruiser: cruiserIcon,
-		battleship: battleshipIcon
+		cruiser_custom: cruiserCustomIcon,
+		battleship: battleshipIcon,
+		battleship_custom: battleshipCustomIcon
 	};
 
 	$: icon = iconMap[type];

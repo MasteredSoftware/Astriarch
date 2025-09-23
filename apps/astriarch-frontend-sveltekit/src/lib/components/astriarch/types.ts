@@ -20,7 +20,6 @@ export type IconImageType =
 	| 'colony'
 	| 'factory'
 	| 'space_platform'
-	| 'space_platform_custom'
 	| 'defender'
 	| 'defender_custom'
 	| 'scout'

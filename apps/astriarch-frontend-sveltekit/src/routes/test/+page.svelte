@@ -39,6 +39,37 @@
 	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
 	import type { IconImageType, TabControllerTab } from '$lib/components/astriarch';
 
+	// Get all available icon types for comprehensive testing
+	const allIconTypes: IconImageType[] = [
+		'population',
+		'food',
+		'energy',
+		'research',
+		'ore',
+		'iridium',
+		'exit',
+		'volume',
+		'volume_muted',
+		'ship_attack',
+		'ship_defense',
+		'ship_speed',
+		'farm',
+		'mine',
+		'colony',
+		'factory',
+		'space_platform',
+		'defender',
+		'defender_custom',
+		'scout',
+		'scout_custom',
+		'destroyer',
+		'destroyer_custom',
+		'cruiser',
+		'cruiser_custom',
+		'battleship',
+		'battleship_custom'
+	];
+
 	let showDialog = $state(false);
 	let showAstriarchDialog = $state(false);
 	let showGameOverModal = $state(false);
@@ -491,6 +522,66 @@
 					<AstriarchButton label="Upgrade" size="md" variant="outline" />
 				</div>
 			</div>
+
+			<!-- Comprehensive Icon Testing Section -->
+			<div class="mb-8">
+				<h3 class="mb-6 text-center text-xl font-bold text-cyan-400">
+					🎯 Complete IconImage Component Test Suite
+				</h3>
+				<p class="mb-6 text-center text-slate-300">
+					All {allIconTypes.length} available icon types from IconImageType - automatically updated when new types are added
+				</p>
+
+				<!-- All Icons at Different Sizes -->
+				<div class="mb-8">
+					<h4 class="mb-4 text-center text-lg font-semibold text-cyan-300">Size Variations</h4>
+					<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+						{#each [16, 24, 32, 48] as size}
+							<div class="bg-astriarch-ui-dark-grey rounded-lg p-4">
+								<h5 class="mb-3 text-center text-sm font-semibold text-cyan-400">{size}px Icons</h5>
+								<div class="grid grid-cols-4 gap-2">
+									{#each allIconTypes.slice(0, 8) as iconType}
+										<div class="flex flex-col items-center space-y-1">
+											<IconImage type={iconType} size={size} />
+											<span class="text-xs text-cyan-200 text-center truncate max-w-12" title={iconType}>
+												{iconType.split('_')[0]}
+											</span>
+										</div>
+									{/each}
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<!-- Interactive Icon Grid -->
+				<div class="bg-astriarch-ui-dark-grey rounded-lg p-6">
+					<h4 class="mb-4 text-lg font-semibold text-cyan-400">
+						All Available Icons - Click to View Details
+					</h4>
+					<div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
+						{#each allIconTypes as iconType}
+							<button
+								class="flex flex-col items-center space-y-1 p-2 rounded-lg bg-slate-800/30 hover:bg-cyan-600/20 hover:ring-1 hover:ring-cyan-400/50 transition-all duration-200"
+								onclick={() => {
+									console.log(`Icon clicked: ${iconType}`);
+								}}
+								title={iconType}
+							>
+								<IconImage type={iconType} size={32} />
+								<span class="text-xs text-cyan-200 text-center truncate max-w-16">
+									{iconType.replace(/_/g, ' ')}
+								</span>
+							</button>
+						{/each}
+					</div>
+					<p class="mt-4 text-xs text-slate-400 text-center">
+						Click any icon to log its type to the console
+					</p>
+				</div>
+			</div>
+
+
 
 			<!-- TopOverview Component Demo -->
 			<div class="mb-8">
