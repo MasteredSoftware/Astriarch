@@ -1,9 +1,9 @@
 import type { FleetData, PlayerData, ClientModelData, StarShipType } from 'astriarch-engine';
 import Konva from 'konva';
+import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
 
 const FLEET_ICON_SIZE = 16;
 const ETA_TEXT_SIZE = 8;
-const TRAVEL_LINE_WIDTH = 1;
 
 // SVG path data for different ship types
 const SHIP_PATHS = {
@@ -28,7 +28,7 @@ export class DrawnFleet {
 	private owner: PlayerData | null = null;
 
 	// Visual elements
-	private travelLine!: Konva.Line;
+	private travelLine!: DrawnTravelLine;
 	private fleetIcon!: Konva.Path; // Changed from Konva.Rect to Konva.Path for SVG
 	private etaText!: Konva.Text;
 
@@ -98,15 +98,6 @@ export class DrawnFleet {
 	}
 
 	private createVisualElements() {
-		// Travel line from origin to destination
-		this.travelLine = new Konva.Line({
-			points: [0, 0, 0, 0],
-			stroke: '#00FFFF',
-			strokeWidth: TRAVEL_LINE_WIDTH,
-			visible: false
-		});
-		this.group.add(this.travelLine);
-
 		// Fleet icon (starship representation) - will be updated in updateFleetIcon
 		const largestHullType = this.getLargestHullType();
 		const pathData = this.getShipIconPath(largestHullType);
@@ -136,6 +127,8 @@ export class DrawnFleet {
 			visible: false
 		});
 		this.group.add(this.etaText);
+
+		// Travel line will be created when needed in updateTravelLine
 	}
 	public update(clientGameModel: ClientModelData) {
 		this.gameModel = clientGameModel;
@@ -206,6 +199,18 @@ export class DrawnFleet {
 			return;
 		}
 
+		// Create travel line if it doesn't exist
+		if (!this.travelLine) {
+			this.travelLine = new DrawnTravelLine({
+				type: TravelLineType.FLEET_IN_TRANSIT,
+				fromX: 0,
+				fromY: 0,
+				toX: 0,
+				toY: 0
+			});
+			this.group.add(this.travelLine.group);
+		}
+
 		// Calculate travel progress
 		const traveled =
 			(this.fleetData.totalTravelDistance - this.fleetData.parsecsToDestination) /
@@ -244,11 +249,11 @@ export class DrawnFleet {
 
 		if (shouldShowTravelLine) {
 			// Update travel line from offset position to destination
-			this.travelLine.points([lineStartX, lineStartY, toX, toY]);
-			this.travelLine.visible(true);
+			this.travelLine.updateEndpoints(lineStartX, lineStartY, toX, toY);
+			this.travelLine.show();
 		} else {
 			// Hide travel line when fleet is too close to destination
-			this.travelLine.visible(false);
+			this.travelLine.hide();
 		}
 
 		// Position fleet icon at current travel position
@@ -299,8 +304,10 @@ export class DrawnFleet {
 		// Always use cyan for consistent UI theme
 		const color = '#00FFFF';
 
-		// Update colors based on cyan theme
-		this.travelLine.stroke(color);
+		// Update colors based on cyan theme  
+		if (this.travelLine) {
+			this.travelLine.updateStyleCustom(color);
+		}
 		this.fleetIcon.fill(color);
 		this.etaText.fill(color);
 
@@ -320,13 +327,17 @@ export class DrawnFleet {
 	}
 
 	private showAllElements() {
-		this.travelLine.visible(true);
+		if (this.travelLine) {
+			this.travelLine.show();
+		}
 		this.fleetIcon.visible(true);
 		this.etaText.visible(true);
 	}
 
 	private hideAllElements() {
-		this.travelLine.visible(false);
+		if (this.travelLine) {
+			this.travelLine.hide();
+		}
 		this.fleetIcon.visible(false);
 		this.etaText.visible(false);
 	}
