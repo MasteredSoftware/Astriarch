@@ -29,6 +29,9 @@
 	let animationFrameId: number;
 	let isInitialized = false;
 
+	// Track pending selection to retry if planet not ready
+	let pendingSelectionId: number | null = null;
+
 	// Pan and zoom state
 	let zoomLevel = 1;
 	let panX = 0;
@@ -38,16 +41,26 @@
 	const ZOOM_SPEED = 1.1;
 
 	// Handle planet selection changes
-	$: if ($selectedPlanetId !== null) {
+	$: if ($selectedPlanetId !== null && isInitialized) {
 		updatePlanetSelection($selectedPlanetId);
-	} else {
+	} else if ($selectedPlanetId !== null && !isInitialized) {
+		// Store the selection for when canvas is ready
+		pendingSelectionId = $selectedPlanetId;
+	} else if (isInitialized) {
 		clearPlanetSelection();
+		pendingSelectionId = null;
 	}
 
 	onMount(() => {
 		initializeCanvas();
 		startRenderLoop();
 		isInitialized = true;
+
+		// Handle any pending selection that came in before initialization
+		if (pendingSelectionId !== null) {
+			updatePlanetSelection(pendingSelectionId);
+			pendingSelectionId = null;
+		}
 	});
 
 	onDestroy(() => {
@@ -303,6 +316,9 @@
 		// Clear and rebuild the spatial index
 		planetByHexCoords.clear();
 
+		// Track if any new planets were created
+		let newPlanetsCreated = false;
+
 		// First, render all owned planets (these have full PlanetData)
 		for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
 			allPlanetsToRender.add(planet.id);
@@ -318,6 +334,7 @@
 				drawnPlanet = new DrawnPlanet(planet, gameModel);
 				drawnPlanets.set(planet.id, drawnPlanet);
 				galaxyLayer.add(drawnPlanet.group);
+				newPlanetsCreated = true;
 			}
 
 			drawnPlanet.update(gameModel);
@@ -375,6 +392,7 @@
 				drawnPlanet = new DrawnPlanet(planetData, gameModel);
 				drawnPlanets.set(clientPlanet.id, drawnPlanet);
 				galaxyLayer.add(drawnPlanet.group);
+				newPlanetsCreated = true;
 			}
 
 			drawnPlanet.update(gameModel);
@@ -387,6 +405,11 @@
 				drawnPlanet.group.destroy();
 				drawnPlanets.delete(planetId);
 			}
+		}
+
+		// If new planets were created and we have a selected planet, make sure it's visually selected
+		if (newPlanetsCreated && $selectedPlanetId !== null) {
+			updatePlanetSelection($selectedPlanetId);
 		}
 	}
 
@@ -484,6 +507,10 @@
 		const selectedPlanet = drawnPlanets.get(selectedId);
 		if (selectedPlanet) {
 			selectedPlanet.setSelected(true);
+			console.log('Updated planet selection for planet:', selectedId);
+		} else {
+			console.log('Planet not yet drawn for selection:', selectedId, 'Available planets:', Array.from(drawnPlanets.keys()));
+			// Planet might not be drawn yet - it will be handled in updatePlanets when created
 		}
 	}
 
