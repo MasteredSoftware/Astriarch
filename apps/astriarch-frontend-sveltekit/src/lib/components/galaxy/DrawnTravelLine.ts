@@ -102,12 +102,7 @@ export class DrawnTravelLine {
 	}
 
 	private updatePoints() {
-		this.line.points([
-			this.fromPoint.x,
-			this.fromPoint.y,
-			this.toPoint.x,
-			this.toPoint.y
-		]);
+		this.line.points([this.fromPoint.x, this.fromPoint.y, this.toPoint.x, this.toPoint.y]);
 	}
 
 	/**
@@ -200,8 +195,13 @@ export class DrawnTravelLine {
 				onFinish: () => {
 					this.hide();
 					// Restore opacity for future use
-					this.line.opacity(this.type === TravelLineType.WAYPOINT ? 0.6 : 
-						this.type === TravelLineType.PROSPECTIVE ? 0.9 : 0.8);
+					this.line.opacity(
+						this.type === TravelLineType.WAYPOINT
+							? 0.6
+							: this.type === TravelLineType.PROSPECTIVE
+								? 0.9
+								: 0.8
+					);
 					resolve();
 				}
 			});

@@ -5,13 +5,15 @@ export interface FleetCommandState {
 	sourcePlanetId: number | null;
 	selectedShipIds: Set<number>;
 	destinationPlanetId: number | null;
+	isViewActive: boolean; // Track if Fleet Command View is currently active
 }
 
 const initialState: FleetCommandState = {
 	isSelectingDestination: false,
 	sourcePlanetId: null,
 	selectedShipIds: new Set(),
-	destinationPlanetId: null
+	destinationPlanetId: null,
+	isViewActive: false
 };
 
 function createFleetCommandStore() {
@@ -40,6 +42,66 @@ function createFleetCommandStore() {
 		cancelDestinationSelection: () =>
 			update((state) => ({
 				...state,
+				isSelectingDestination: false,
+				destinationPlanetId: null
+			})),
+
+		// Ship selection methods
+		toggleShipSelection: (shipId: number) =>
+			update((state) => {
+				const newSelectedShipIds = new Set(state.selectedShipIds);
+				if (newSelectedShipIds.has(shipId)) {
+					newSelectedShipIds.delete(shipId);
+				} else {
+					newSelectedShipIds.add(shipId);
+				}
+				return {
+					...state,
+					selectedShipIds: newSelectedShipIds
+				};
+			}),
+
+		setSelectedShips: (shipIds: number[]) =>
+			update((state) => ({
+				...state,
+				selectedShipIds: new Set(shipIds)
+			})),
+
+		clearSelectedShips: () =>
+			update((state) => ({
+				...state,
+				selectedShipIds: new Set()
+			})),
+
+		// Clear destination but keep the selected ships and source planet
+		clearDestination: () =>
+			update((state) => ({
+				...state,
+				destinationPlanetId: null,
+				isSelectingDestination: false
+			})),
+
+		// Clear everything when ships are sent or planet changes
+		clearSelection: () =>
+			update((state) => ({
+				...state,
+				isSelectingDestination: false,
+				sourcePlanetId: null,
+				selectedShipIds: new Set(),
+				destinationPlanetId: null
+			})),
+
+		// View lifecycle methods
+		activateView: () =>
+			update((state) => ({
+				...state,
+				isViewActive: true
+			})),
+
+		deactivateView: () =>
+			update((state) => ({
+				...state,
+				isViewActive: false,
 				isSelectingDestination: false,
 				destinationPlanetId: null
 			})),

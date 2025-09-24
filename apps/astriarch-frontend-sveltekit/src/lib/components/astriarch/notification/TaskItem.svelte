@@ -12,20 +12,20 @@
 
 	// Debug logging to track component lifecycle
 	const componentId = Math.random().toString(36).substr(2, 9);
-	console.log(
-		`TaskItem ${componentId} created for ${notification.type}-${notification.planetId} (${notification.planetName})`
-	);
+	// console.log(
+	// 	`TaskItem ${componentId} created for ${notification.type}-${notification.planetId} (${notification.planetName})`
+	// );
 
 	onMount(() => {
-		console.log(
-			`TaskItem ${componentId} mounted for ${notification.type}-${notification.planetId}`
-		);
+		// console.log(
+		// 	`TaskItem ${componentId} mounted for ${notification.type}-${notification.planetId}`
+		// );
 	});
 
 	onDestroy(() => {
-		console.log(
-			`TaskItem ${componentId} destroyed for ${notification.type}-${notification.planetId}`
-		);
+		// console.log(
+		// 	`TaskItem ${componentId} destroyed for ${notification.type}-${notification.planetId}`
+		// );
 	});
 
 	// Click handler to select the planet

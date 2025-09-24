@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import {
 		clientGameModel,
 		selectedPlanet,
@@ -14,33 +14,31 @@
 	import ShipCard from './ShipCard.svelte';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default
-	let selectedShipIds = new Set<number>();
 
 	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
 	$: planetList = Object.values(planets);
 	$: currentSelectedPlanet = $selectedPlanetId ? planets[$selectedPlanetId] : null;
 
-	let hasInitializedDestinationSelection = false;
-
 	// Auto-select first ship and start destination selection when appropriate
 	$: if (currentSelectedPlanet && ships.length > 0) {
 		// Auto-select first ship if no ships are currently selected
-		if (selectedShipIds.size === 0) {
-			selectedShipIds.add(ships[0].id);
-			selectedShipIds = new Set(selectedShipIds); // Trigger reactivity
+		if ($fleetCommandStore.selectedShipIds.size === 0) {
+			fleetCommandStore.toggleShipSelection(ships[0].id);
 		}
 
 		// Start destination selection if we have ships selected and no destination
-		if (selectedShipIds.size > 0 && !$fleetCommandStore.destinationPlanetId) {
-			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+		if ($fleetCommandStore.selectedShipIds.size > 0 && !$fleetCommandStore.destinationPlanetId) {
+			fleetCommandStore.startSelectingDestination(
+				currentSelectedPlanet.id,
+				$fleetCommandStore.selectedShipIds
+			);
 		}
 	}
 
 	// Cancel destination selection when no ships are available in current tab
 	$: if (currentSelectedPlanet && ships.length === 0 && $fleetCommandStore.isSelectingDestination) {
 		fleetCommandStore.cancelDestinationSelection();
-		selectedShipIds.clear();
-		selectedShipIds = new Set();
+		fleetCommandStore.clearSelectedShips();
 	}
 
 	// Get ships of the selected type from the selected planet (excluding defenders and space platforms which can't leave)
@@ -64,47 +62,46 @@
 		{ type: StarShipType.Battleship, label: 'BATTLESHIP' }
 	];
 
-	function toggleShipSelection(shipId: number) {
-		if (selectedShipIds.has(shipId)) {
-			selectedShipIds.delete(shipId);
+	function autoSelectFirstShip() {
+		console.log('Auto-selecting first ship if none selected');
+		// Auto-select first ship if no ships are currently selected
+		if (ships.length > 0 && $fleetCommandStore.selectedShipIds.size === 0) {
+			fleetCommandStore.toggleShipSelection(ships[0].id);
 		} else {
-			selectedShipIds.add(shipId);
+			console.log('No ships available to select');
 		}
-		selectedShipIds = new Set(selectedShipIds); // Trigger reactivity
+	}
+
+	function toggleShipSelection(shipId: number) {
+		fleetCommandStore.toggleShipSelection(shipId);
 	}
 
 	function selectAllShips() {
-		selectedShipIds = new Set(ships.map((ship: StarshipData) => ship.id));
+		fleetCommandStore.setSelectedShips(ships.map((ship: StarshipData) => ship.id));
 		// Start destination selection if we have ships and no destination
 		if (
 			currentSelectedPlanet &&
-			selectedShipIds.size > 0 &&
+			$fleetCommandStore.selectedShipIds.size > 0 &&
 			!$fleetCommandStore.destinationPlanetId
 		) {
-			fleetCommandStore.startSelectingDestination(currentSelectedPlanet.id, selectedShipIds);
+			fleetCommandStore.startSelectingDestination(
+				currentSelectedPlanet.id,
+				$fleetCommandStore.selectedShipIds
+			);
 		}
 	}
 
 	function sendShips() {
 		if (
 			!currentSelectedPlanet ||
-			selectedShipIds.size === 0 ||
+			$fleetCommandStore.selectedShipIds.size === 0 ||
 			!$fleetCommandStore.destinationPlanetId
 		) {
 			console.warn('Cannot send ships: missing planet, ships, or destination');
 			return;
 		}
 
-		// Send ships immediately since we have everything we need
-		actuallyPSendShips($fleetCommandStore.destinationPlanetId);
-
-		// Clear selection - the reactive statement will auto-select the next ship
-		selectedShipIds.clear();
-		selectedShipIds = new Set();
-	}
-
-	function actuallyPSendShips(destinationPlanetId: number) {
-		if (!currentSelectedPlanet || selectedShipIds.size === 0) return;
+		const destinationPlanetId = $fleetCommandStore.destinationPlanetId;
 
 		// Group selected ships by type
 		const shipsByType = {
@@ -115,7 +112,7 @@
 		};
 
 		ships.forEach((ship: StarshipData) => {
-			if (selectedShipIds.has(ship.id)) {
+			if ($fleetCommandStore.selectedShipIds.has(ship.id)) {
 				switch (ship.type) {
 					case StarShipType.Scout:
 						shipsByType.scouts.push(ship.id);
@@ -144,9 +141,14 @@
 			shipsByType
 		);
 
-		// Clear selection
-		selectedShipIds.clear();
-		selectedShipIds = new Set();
+		// Clear destination selection after sending ships
+		fleetCommandStore.clearDestination();
+
+		// Clear ship selection
+		fleetCommandStore.clearSelectedShips();
+
+		// Auto-select first remaining ship for next batch
+		autoSelectFirstShip();
 	}
 
 	function handlePlanetChange(event: Event) {
@@ -161,8 +163,15 @@
 			$clientGameModel?.clientPlanets.find((p) => p.id === $fleetCommandStore.destinationPlanetId)
 		: null;
 
+	// Activate view when component mounts
+	onMount(() => {
+		fleetCommandStore.activateView();
+		autoSelectFirstShip();
+	});
+
 	// Cleanup when component is destroyed (user switches views)
 	onDestroy(() => {
+		fleetCommandStore.deactivateView();
 		fleetCommandStore.cancelDestinationSelection();
 	});
 </script>
@@ -202,7 +211,7 @@
 								if (currentSelectedPlanet) {
 									fleetCommandStore.startSelectingDestination(
 										currentSelectedPlanet.id,
-										selectedShipIds
+										$fleetCommandStore.selectedShipIds
 									);
 								}
 							}}
@@ -242,7 +251,8 @@
 			<button
 				class="h-12 rounded-[4px] bg-gradient-to-b from-[#00FFFF] to-[#00CCCC] px-8 text-[14px] font-extrabold tracking-[2px] text-[#1B1F25] uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#00DDDD] hover:to-[#00AAAA] disabled:cursor-not-allowed disabled:opacity-50"
 				onclick={sendShips}
-				disabled={selectedShipIds.size === 0 || !$fleetCommandStore.destinationPlanetId}
+				disabled={$fleetCommandStore.selectedShipIds.size === 0 ||
+					!$fleetCommandStore.destinationPlanetId}
 			>
 				Send Ships
 			</button>
@@ -280,8 +290,7 @@
 						: 'border-b border-white/20 bg-transparent'}"
 					onclick={() => {
 						selectedShipType = tab.type;
-						selectedShipIds.clear();
-						selectedShipIds = new Set();
+						fleetCommandStore.clearSelectedShips();
 						// The reactive statements will handle auto-selection and destination logic
 					}}
 				>
@@ -317,7 +326,7 @@
 					{#each ships as ship, index}
 						<ShipCard
 							{ship}
-							isSelected={selectedShipIds.has(ship.id)}
+							isSelected={$fleetCommandStore.selectedShipIds.has(ship.id)}
 							onToggleSelection={() => toggleShipSelection(ship.id)}
 						/>
 					{/each}

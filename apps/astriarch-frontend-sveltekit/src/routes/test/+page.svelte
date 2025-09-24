@@ -529,7 +529,8 @@
 					🎯 Complete IconImage Component Test Suite
 				</h3>
 				<p class="mb-6 text-center text-slate-300">
-					All {allIconTypes.length} available icon types from IconImageType - automatically updated when new types are added
+					All {allIconTypes.length} available icon types from IconImageType - automatically updated when
+					new types are added
 				</p>
 
 				<!-- All Icons at Different Sizes -->
@@ -542,8 +543,11 @@
 								<div class="grid grid-cols-4 gap-2">
 									{#each allIconTypes.slice(0, 8) as iconType}
 										<div class="flex flex-col items-center space-y-1">
-											<IconImage type={iconType} size={size} />
-											<span class="text-xs text-cyan-200 text-center truncate max-w-12" title={iconType}>
+											<IconImage type={iconType} {size} />
+											<span
+												class="max-w-12 truncate text-center text-xs text-cyan-200"
+												title={iconType}
+											>
 												{iconType.split('_')[0]}
 											</span>
 										</div>
@@ -562,26 +566,24 @@
 					<div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
 						{#each allIconTypes as iconType}
 							<button
-								class="flex flex-col items-center space-y-1 p-2 rounded-lg bg-slate-800/30 hover:bg-cyan-600/20 hover:ring-1 hover:ring-cyan-400/50 transition-all duration-200"
+								class="flex flex-col items-center space-y-1 rounded-lg bg-slate-800/30 p-2 transition-all duration-200 hover:bg-cyan-600/20 hover:ring-1 hover:ring-cyan-400/50"
 								onclick={() => {
 									console.log(`Icon clicked: ${iconType}`);
 								}}
 								title={iconType}
 							>
 								<IconImage type={iconType} size={32} />
-								<span class="text-xs text-cyan-200 text-center truncate max-w-16">
+								<span class="max-w-16 truncate text-center text-xs text-cyan-200">
 									{iconType.replace(/_/g, ' ')}
 								</span>
 							</button>
 						{/each}
 					</div>
-					<p class="mt-4 text-xs text-slate-400 text-center">
+					<p class="mt-4 text-center text-xs text-slate-400">
 						Click any icon to log its type to the console
 					</p>
 				</div>
 			</div>
-
-
 
 			<!-- TopOverview Component Demo -->
 			<div class="mb-8">

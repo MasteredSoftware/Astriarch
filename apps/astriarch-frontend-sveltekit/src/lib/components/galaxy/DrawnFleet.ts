@@ -304,7 +304,7 @@ export class DrawnFleet {
 		// Always use cyan for consistent UI theme
 		const color = '#00FFFF';
 
-		// Update colors based on cyan theme  
+		// Update colors based on cyan theme
 		if (this.travelLine) {
 			this.travelLine.updateStyleCustom(color);
 		}

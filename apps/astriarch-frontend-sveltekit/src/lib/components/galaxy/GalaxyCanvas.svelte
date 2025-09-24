@@ -12,6 +12,7 @@
 	import Konva from 'konva';
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
+	import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
 
 	let canvasContainer: HTMLDivElement;
 	let stage: Konva.Stage;
@@ -43,6 +44,10 @@
 	const MAX_ZOOM = 3.0;
 	const ZOOM_SPEED = 1.1;
 
+	// Prospective travel line for fleet command destination previews
+	let prospectiveTravelLine: DrawnTravelLine | null = null;
+	let hoveredDestinationPlanetId: number | null = null;
+
 	// Handle planet selection changes
 	$: if ($selectedPlanetId !== null && isInitialized) {
 		updatePlanetSelection($selectedPlanetId, !lastSelectionWasFromClick);
@@ -53,6 +58,36 @@
 	} else if (isInitialized) {
 		clearPlanetSelection();
 		pendingSelectionId = null;
+	}
+
+	// Clean up prospective travel line when Fleet Command View is not active
+	$: if (!$fleetCommandStore.isViewActive && prospectiveTravelLine) {
+		// Hide when Fleet Command View is not active
+		if (prospectiveTravelLine.isVisible()) {
+			prospectiveTravelLine.animateOut(0.2);
+		}
+		hoveredDestinationPlanetId = null;
+	}
+
+	// Show prospective travel line for confirmed destination in fleet command mode
+	$: if (
+		$fleetCommandStore.isViewActive &&
+		$fleetCommandStore.destinationPlanetId &&
+		$fleetCommandStore.sourcePlanetId &&
+		!$fleetCommandStore.isSelectingDestination
+	) {
+		// Show the confirmed destination line when we have both source and destination, and aren't actively selecting
+		showConfirmedDestinationLine();
+	}
+
+	// Update prospective line when destination planet changes
+	$: if (
+		$fleetCommandStore.isViewActive &&
+		$fleetCommandStore.destinationPlanetId &&
+		hoveredDestinationPlanetId === null
+	) {
+		// Only update if we're in Fleet Command View and not currently hovering over a planet (which would override this)
+		showConfirmedDestinationLine();
 	}
 
 	onMount(() => {
@@ -70,6 +105,11 @@
 	onDestroy(() => {
 		if (animationFrameId) {
 			cancelAnimationFrame(animationFrameId);
+		}
+		// Clean up prospective travel line
+		if (prospectiveTravelLine) {
+			prospectiveTravelLine.destroy();
+			prospectiveTravelLine = null;
 		}
 		stage?.destroy();
 	});
@@ -130,6 +170,7 @@
 		// Add zoom and pan event listeners
 		stage.on('wheel', handleZoom);
 		stage.on('dragmove', updatePanPosition);
+		stage.on('mousemove', handleMouseMove);
 
 		console.log('GalaxyCanvas initialization complete');
 	}
@@ -446,6 +487,167 @@
 		// }
 	}
 
+	// Handle mouse movement for prospective travel line preview during destination selection
+	function handleMouseMove(e: any) {
+		// Only handle mouse moves when Fleet Command View is active AND actively selecting destination
+		// If we already have a confirmed destination, don't show hover previews
+		if (
+			!$fleetCommandStore.isViewActive ||
+			!$fleetCommandStore.isSelectingDestination ||
+			!currentGrid
+		) {
+			return;
+		}
+
+		const stagePos = stage.getPointerPosition();
+		if (!stagePos) return;
+
+		// Convert stage coordinates to galaxy layer coordinates
+		const layerPos = galaxyLayer.getRelativePointerPosition();
+		if (!layerPos) return;
+
+		// Find the hex that contains this mouse position
+		const hoveredHex = currentGrid.getHexAt(layerPos);
+		if (!hoveredHex) {
+			// When not over any hex during destination selection, hide prospective line
+			if (prospectiveTravelLine && prospectiveTravelLine.isVisible()) {
+				prospectiveTravelLine.animateOut(0.2);
+			}
+			hoveredDestinationPlanetId = null;
+			return;
+		}
+
+		// Look for a planet at this hex position
+		const hexKey = `${hoveredHex.midPoint.x},${hoveredHex.midPoint.y}`;
+		const planetAtHex = planetByHexCoords.get(hexKey);
+
+		if (planetAtHex && planetAtHex.id !== $fleetCommandStore.sourcePlanetId) {
+			// Found a valid destination planet (not the source planet)
+			if (hoveredDestinationPlanetId !== planetAtHex.id) {
+				hoveredDestinationPlanetId = planetAtHex.id;
+				updateProspectiveTravelLine(planetAtHex);
+			}
+		} else {
+			// No planet or it's the source planet - hide prospective line
+			if (prospectiveTravelLine && prospectiveTravelLine.isVisible()) {
+				prospectiveTravelLine.hide();
+			}
+			hoveredDestinationPlanetId = null;
+		}
+	}
+
+	// Update or create the prospective travel line from source to destination
+	function updateProspectiveTravelLine(destinationPlanet: any) {
+		const fleetState = $fleetCommandStore;
+		if (!fleetState.sourcePlanetId || !destinationPlanet) return;
+
+		// Find the source planet
+		const sourcePlanet = $clientGameModel?.mainPlayerOwnedPlanets
+			? $clientGameModel.mainPlayerOwnedPlanets[fleetState.sourcePlanetId]
+			: null;
+
+		if (!sourcePlanet) return;
+
+		// Get planet positions from their hex coordinates
+		const sourceX = sourcePlanet.boundingHexMidPoint.x;
+		const sourceY = sourcePlanet.boundingHexMidPoint.y;
+		const destX = destinationPlanet.boundingHexMidPoint.x;
+		const destY = destinationPlanet.boundingHexMidPoint.y;
+
+		// Create prospective travel line if it doesn't exist
+		if (!prospectiveTravelLine) {
+			prospectiveTravelLine = new DrawnTravelLine({
+				type: TravelLineType.PROSPECTIVE,
+				fromX: sourceX,
+				fromY: sourceY,
+				toX: destX,
+				toY: destY,
+				zIndex: 1000 // Ensure it renders on top
+			});
+			uiLayer.add(prospectiveTravelLine.group);
+
+			// Animate the line drawing in smoothly
+			prospectiveTravelLine.animateIn(0.3);
+		} else {
+			// Update existing line endpoints
+			prospectiveTravelLine.updateEndpoints(sourceX, sourceY, destX, destY);
+
+			// Show the line if it was hidden
+			if (!prospectiveTravelLine.isVisible()) {
+				prospectiveTravelLine.animateIn(0.2);
+			}
+		}
+
+		// Redraw the layer to show the line
+		uiLayer.batchDraw();
+	}
+
+	// Show prospective travel line for confirmed destination selection
+	function showConfirmedDestinationLine() {
+		const fleetState = $fleetCommandStore;
+		if (!fleetState.sourcePlanetId || !fleetState.destinationPlanetId) return;
+
+		// Find the source planet
+		const sourcePlanet = $clientGameModel?.mainPlayerOwnedPlanets
+			? $clientGameModel.mainPlayerOwnedPlanets[fleetState.sourcePlanetId]
+			: null;
+
+		if (!sourcePlanet) return;
+
+		// Find the destination planet - check both owned planets and all client planets
+		let destinationPlanet = null;
+
+		// First check if it's one of the player's own planets
+		if ($clientGameModel?.mainPlayerOwnedPlanets) {
+			destinationPlanet = $clientGameModel.mainPlayerOwnedPlanets[fleetState.destinationPlanetId];
+		}
+
+		// If not found in owned planets, check all client planets
+		if (!destinationPlanet && $clientGameModel?.clientPlanets) {
+			destinationPlanet = $clientGameModel.clientPlanets.find(
+				(planet) => planet.id === fleetState.destinationPlanetId
+			);
+		}
+
+		if (!destinationPlanet) return;
+
+		// Get planet positions from their hex coordinates
+		const sourceX = sourcePlanet.boundingHexMidPoint.x;
+		const sourceY = sourcePlanet.boundingHexMidPoint.y;
+		const destX = destinationPlanet.boundingHexMidPoint.x;
+		const destY = destinationPlanet.boundingHexMidPoint.y;
+
+		// Create prospective travel line if it doesn't exist
+		if (!prospectiveTravelLine) {
+			prospectiveTravelLine = new DrawnTravelLine({
+				type: TravelLineType.PROSPECTIVE,
+				fromX: sourceX,
+				fromY: sourceY,
+				toX: destX,
+				toY: destY,
+				zIndex: 1000 // Ensure it renders on top
+			});
+			uiLayer.add(prospectiveTravelLine.group);
+
+			// Animate the line drawing in smoothly
+			prospectiveTravelLine.animateIn(0.3);
+		} else {
+			// Update existing line endpoints
+			prospectiveTravelLine.updateEndpoints(sourceX, sourceY, destX, destY);
+
+			// Show the line if it was hidden
+			if (!prospectiveTravelLine.isVisible()) {
+				prospectiveTravelLine.animateIn(0.2);
+			}
+		}
+
+		// Reset hover state since this is showing confirmed destination
+		hoveredDestinationPlanetId = null;
+
+		// Redraw the layer to show the line
+		uiLayer.batchDraw();
+	}
+
 	// Handle galaxy interaction with hex-based planet selection
 	function handleStageClick(e: any) {
 		const stagePos = stage.getPointerPosition();
@@ -519,7 +721,12 @@
 				zoomToPlanet(selectedPlanet);
 			}
 		} else {
-			console.log('Planet not yet drawn for selection:', selectedId, 'Available planets:', Array.from(drawnPlanets.keys()));
+			console.log(
+				'Planet not yet drawn for selection:',
+				selectedId,
+				'Available planets:',
+				Array.from(drawnPlanets.keys())
+			);
 			// Planet might not be drawn yet - it will be handled in updatePlanets when created
 		}
 	}
