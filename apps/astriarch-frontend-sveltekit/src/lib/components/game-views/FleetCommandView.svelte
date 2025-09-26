@@ -21,8 +21,17 @@
 
 	// Auto-select first ship and start destination selection when appropriate
 	$: if (currentSelectedPlanet && ships.length > 0) {
-		// Auto-select first ship if no ships are currently selected
-		if ($fleetCommandStore.selectedShipIds.size === 0) {
+		const selectedShipIds = Array.from($fleetCommandStore.selectedShipIds);
+		const currentShipIds = ships.map((s) => s.id);
+		const validSelections = selectedShipIds.filter((id) => currentShipIds.includes(id));
+
+		// Clear invalid selections (ships that no longer exist)
+		if (validSelections.length !== selectedShipIds.length) {
+			fleetCommandStore.setSelectedShips(validSelections);
+		}
+
+		// Auto-select first ship if no valid ships are currently selected
+		if (validSelections.length === 0) {
 			fleetCommandStore.toggleShipSelection(ships[0].id);
 		}
 
@@ -62,16 +71,6 @@
 		{ type: StarShipType.Battleship, label: 'BATTLESHIP' }
 	];
 
-	function autoSelectFirstShip() {
-		console.log('Auto-selecting first ship if none selected');
-		// Auto-select first ship if no ships are currently selected
-		if (ships.length > 0 && $fleetCommandStore.selectedShipIds.size === 0) {
-			fleetCommandStore.toggleShipSelection(ships[0].id);
-		} else {
-			console.log('No ships available to select');
-		}
-	}
-
 	function toggleShipSelection(shipId: number) {
 		fleetCommandStore.toggleShipSelection(shipId);
 	}
@@ -91,7 +90,7 @@
 		}
 	}
 
-	function sendShips() {
+	async function sendShips() {
 		if (
 			!currentSelectedPlanet ||
 			$fleetCommandStore.selectedShipIds.size === 0 ||
@@ -146,9 +145,6 @@
 
 		// Clear ship selection
 		fleetCommandStore.clearSelectedShips();
-
-		// Auto-select first remaining ship for next batch
-		autoSelectFirstShip();
 	}
 
 	function handlePlanetChange(event: Event) {
@@ -166,7 +162,7 @@
 	// Activate view when component mounts
 	onMount(() => {
 		fleetCommandStore.activateView();
-		autoSelectFirstShip();
+		// Note: Auto-selection will happen via reactive statement
 	});
 
 	// Cleanup when component is destroyed (user switches views)

@@ -44,7 +44,7 @@ class WebSocketService {
 	private pingInterval: number | null = null;
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
 	private gameSyncInterval: number | null = null;
-	private readonly gameSyncIntervalMs = 1000; // 1 second for game state synchronization
+	private readonly gameSyncIntervalMs = 10000; // 10 seconds for game state synchronization
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 

@@ -62,16 +62,20 @@ function createFleetCommandStore() {
 			}),
 
 		setSelectedShips: (shipIds: number[]) =>
-			update((state) => ({
-				...state,
-				selectedShipIds: new Set(shipIds)
-			})),
+			update((state) => {
+				return {
+					...state,
+					selectedShipIds: new Set(shipIds)
+				};
+			}),
 
 		clearSelectedShips: () =>
-			update((state) => ({
-				...state,
-				selectedShipIds: new Set()
-			})),
+			update((state) => {
+				return {
+					...state,
+					selectedShipIds: new Set()
+				};
+			}),
 
 		// Clear destination but keep the selected ships and source planet
 		clearDestination: () =>

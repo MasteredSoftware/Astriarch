@@ -70,24 +70,30 @@
 	}
 
 	// Show prospective travel line for confirmed destination in fleet command mode
+	// Only show this when we have a confirmed destination AND we're not actively selecting
 	$: if (
 		$fleetCommandStore.isViewActive &&
 		$fleetCommandStore.destinationPlanetId &&
 		$fleetCommandStore.sourcePlanetId &&
-		!$fleetCommandStore.isSelectingDestination
+		!$fleetCommandStore.isSelectingDestination &&
+		hoveredDestinationPlanetId === null  // Don't interfere with hover previews
 	) {
 		// Show the confirmed destination line when we have both source and destination, and aren't actively selecting
 		showConfirmedDestinationLine();
 	}
 
-	// Update prospective line when destination planet changes
+	// Hide prospective travel line when destination is cleared (e.g., after sending ships)
+	// Only trigger this when we're NOT actively selecting destination (i.e., we HAD a destination that got cleared)
 	$: if (
 		$fleetCommandStore.isViewActive &&
-		$fleetCommandStore.destinationPlanetId &&
-		hoveredDestinationPlanetId === null
+		!$fleetCommandStore.destinationPlanetId &&
+		!$fleetCommandStore.isSelectingDestination &&  // Key addition: don't trigger during active selection
+		prospectiveTravelLine &&
+		prospectiveTravelLine.isVisible()
 	) {
-		// Only update if we're in Fleet Command View and not currently hovering over a planet (which would override this)
-		showConfirmedDestinationLine();
+		// Hide the line when destination is cleared but view is still active
+		prospectiveTravelLine.animateOut(0.2);
+		hoveredDestinationPlanetId = null;
 	}
 
 	onMount(() => {
