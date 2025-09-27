@@ -709,12 +709,11 @@ export class WebSocketServer {
       // Always check if all human players are connected before resuming any in-progress game
       const game = await Game.findById(gameId);
       if (game && game.status === "in_progress") {
-        const allHumansConnected = await this.areAllHumanPlayersConnected(game);
+        // Reset the snapshot time to prevent time jumps when resuming
+        // This should happen for the first player to resume, not just when all are connected
+        await this.resetGameSnapshotTime(game);
 
-        if (allHumansConnected) {
-          // Reset the snapshot time to prevent time jumps when resuming
-          await this.resetGameSnapshotTime(game);
-        }
+        const allHumansConnected = await this.areAllHumanPlayersConnected(game);
         // If not all humans are connected, we still allow the player to join
         // but the game will remain in a paused state
       }
