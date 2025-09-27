@@ -648,7 +648,7 @@
 									<div class="mb-2">
 										<div class="h-1.5 w-full rounded-full bg-slate-700">
 											<div
-												class="h-1.5 rounded-full bg-cyan-500 transition-all duration-300"
+												class="h-1.5 rounded-full bg-cyan-500"
 												style="width: {Math.min(
 													100,
 													((item.productionCostComplete || 0) / (item.baseProductionCost || 1)) *

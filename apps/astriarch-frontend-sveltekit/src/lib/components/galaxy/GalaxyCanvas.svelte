@@ -76,7 +76,7 @@
 		$fleetCommandStore.destinationPlanetId &&
 		$fleetCommandStore.sourcePlanetId &&
 		!$fleetCommandStore.isSelectingDestination &&
-		hoveredDestinationPlanetId === null  // Don't interfere with hover previews
+		hoveredDestinationPlanetId === null // Don't interfere with hover previews
 	) {
 		// Show the confirmed destination line when we have both source and destination, and aren't actively selecting
 		showConfirmedDestinationLine();
@@ -87,7 +87,7 @@
 	$: if (
 		$fleetCommandStore.isViewActive &&
 		!$fleetCommandStore.destinationPlanetId &&
-		!$fleetCommandStore.isSelectingDestination &&  // Key addition: don't trigger during active selection
+		!$fleetCommandStore.isSelectingDestination && // Key addition: don't trigger during active selection
 		prospectiveTravelLine &&
 		prospectiveTravelLine.isVisible()
 	) {
