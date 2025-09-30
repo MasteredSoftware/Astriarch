@@ -270,7 +270,7 @@ export class DrawnFleet {
 
 		// Calculate ETA
 		const turnsToDestination = this.calculateTurnsToDestination();
-		const turnText = turnsToDestination > 1 ? ' Turns' : ' Turn';
+		const turnText = turnsToDestination > 1 ? ' Years' : ' Year';
 		const etaString = `${turnsToDestination}${turnText}`;
 		this.etaText.text(etaString);
 
