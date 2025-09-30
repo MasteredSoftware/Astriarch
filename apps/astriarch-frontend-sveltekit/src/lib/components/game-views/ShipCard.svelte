@@ -86,6 +86,13 @@
 
 		return Math.round((expProgress / expForThisLevel) * 100);
 	}
+
+	function getHealthColor(percentage: number): string {
+		if (percentage >= 75) return '#00FF38'; // Status/Good - Green
+		if (percentage >= 50) return '#FFF500'; // Status/Medium - Yellow
+		if (percentage >= 25) return '#FFA500'; // Orange
+		return '#FF0000'; // Status/bad - Red
+	}
 </script>
 
 <button
@@ -136,13 +143,11 @@
 		<div
 			class="absolute inset-0 rounded-br-[3.6px] rounded-bl-[3.6px] bg-[rgba(27,31,37,0.65)]"
 		></div>
-		<!-- Experience bars (4 segments) -->
+		<!-- Experience bar fill - continuous left to right -->
 		{#each Array(4) as _, i}
 			<div
 				class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#23BDFF] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) > (i + 1) * 25
-					? 1
-					: 0.3}"
+				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) > (i + 1) * 25 ? 1 : getExperiencePercentage(ship) > i * 25 ? Math.min(1, (getExperiencePercentage(ship) - i * 25) / 25) : 0.1}"
 			></div>
 		{/each}
 	</div>
@@ -151,16 +156,14 @@
 	<div
 		class="absolute top-[60%] right-[4%] bottom-[20%] left-[4%] flex items-center justify-center"
 	>
-		<div class="h-[14.4px] w-[82.8px] scale-y-[-100%] rotate-180">
+		<div class="h-[14.4px] w-[82.8px]">
 			<div class="relative h-full w-full">
 				<div class="absolute inset-0 bg-[rgba(27,31,37,0.65)]"></div>
 				<!-- Health bars (4 segments) -->
 				{#each Array(4) as _, i}
 					<div
-						class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#00FF38] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-						style="left: {2.63 + i * 24.35}%; opacity: {getHealthPercentage(ship) > (i + 1) * 25
-							? 1
-							: 0.3}"
+						class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
+						style="left: {2.63 + i * 24.35}%; background-color: {getHealthColor(getHealthPercentage(ship))}; opacity: {getHealthPercentage(ship) > (i + 1) * 25 ? 1 : getHealthPercentage(ship) > i * 25 ? Math.min(1, (getHealthPercentage(ship) - i * 25) / 25) : 0.1}"
 					></div>
 				{/each}
 			</div>
