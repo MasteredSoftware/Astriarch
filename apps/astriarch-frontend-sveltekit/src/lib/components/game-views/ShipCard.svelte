@@ -147,7 +147,11 @@
 		{#each Array(4) as _, i}
 			<div
 				class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#23BDFF] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) > (i + 1) * 25 ? 1 : getExperiencePercentage(ship) > i * 25 ? Math.min(1, (getExperiencePercentage(ship) - i * 25) / 25) : 0.1}"
+				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) > (i + 1) * 25
+					? 1
+					: getExperiencePercentage(ship) > i * 25
+						? Math.min(1, (getExperiencePercentage(ship) - i * 25) / 25)
+						: 0.1}"
 			></div>
 		{/each}
 	</div>
@@ -163,7 +167,13 @@
 				{#each Array(4) as _, i}
 					<div
 						class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
-						style="left: {2.63 + i * 24.35}%; background-color: {getHealthColor(getHealthPercentage(ship))}; opacity: {getHealthPercentage(ship) > (i + 1) * 25 ? 1 : getHealthPercentage(ship) > i * 25 ? Math.min(1, (getHealthPercentage(ship) - i * 25) / 25) : 0.1}"
+						style="left: {2.63 + i * 24.35}%; background-color: {getHealthColor(
+							getHealthPercentage(ship)
+						)}; opacity: {getHealthPercentage(ship) > (i + 1) * 25
+							? 1
+							: getHealthPercentage(ship) > i * 25
+								? Math.min(1, (getHealthPercentage(ship) - i * 25) / 25)
+								: 0.1}"
 					></div>
 				{/each}
 			</div>

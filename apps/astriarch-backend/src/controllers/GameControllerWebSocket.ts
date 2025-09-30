@@ -713,8 +713,31 @@ export class GameController {
           gameData: gameModel,
         };
       } else if (action === "remove") {
-        // TODO: Implement remove from queue
-        return { success: false, error: "Remove from queue not yet implemented" };
+        // Remove item from build queue with refund
+        const { index } = productionItem;
+
+        if (typeof index !== "number" || index < 0) {
+          return { success: false, error: "Invalid item index" };
+        }
+
+        // Use engine method to remove item and handle refund
+        const success = engine.Planet.removeBuildQueueItemForRefund(planet, index);
+
+        if (!success) {
+          return { success: false, error: "Failed to remove item from build queue" };
+        }
+
+        // Save the updated game state
+        game.gameState = gameModel;
+        game.lastActivity = new Date();
+        await persistGame(game);
+
+        logger.info(`Player ${player.name} removed item at index ${index} from build queue on planet ${planetId}`);
+        return {
+          success: true,
+          game,
+          gameData: gameModel,
+        };
       } else {
         return { success: false, error: "Invalid action" };
       }

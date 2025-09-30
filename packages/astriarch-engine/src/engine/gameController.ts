@@ -35,7 +35,6 @@ export class GameController {
     const msPerCycle =
       GameController.GAME_SPEED_MS_PER_CYCLE[modelDataBase.gameOptions.gameSpeed] ||
       GameController.MS_PER_CYCLE_DEFAULT;
-    console.log('GameController.startModelSnapshot:', modelDataBase.gameOptions.gameSpeed, 'msPerCycle', msPerCycle);
     const cyclesElapsed = elapsedSinceLastSnapshot / msPerCycle;
 
     const currentCycle = modelDataBase.currentCycle + cyclesElapsed;
