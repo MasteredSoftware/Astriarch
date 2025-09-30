@@ -103,13 +103,9 @@ export const currentResearchType = derived(clientGameModel, ($clientGameModel) =
 // Friendly time display derived from current cycle
 export const gameTime = derived(currentCycle, ($currentCycle) => {
 	// Convert cycles to a more meaningful time representation
-	const minutes = Math.floor($currentCycle / 2); // Rough conversion
-	const hours = Math.floor(minutes / 60);
-	const remainingMinutes = minutes % 60;
-	const truncatedCycle = Math.trunc($currentCycle);
+	const truncatedCycle = Math.floor($currentCycle) + 1;
 	return {
 		cycle: truncatedCycle,
-		timeString: `${hours.toString().padStart(2, '0')}:${remainingMinutes.toString().padStart(2, '0')}`,
 		stardate: 3000 + truncatedCycle
 	};
 });

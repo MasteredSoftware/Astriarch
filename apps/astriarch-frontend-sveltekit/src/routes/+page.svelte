@@ -282,9 +282,6 @@
 				{#if gameStarted}
 					<div class="flex flex-col items-center">
 						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
-							Turn {$gameTime.cycle} • {$gameTime.timeString}
-						</Text>
-						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
 							Stardate {$gameTime.stardate}
 						</Text>
 					</div>
