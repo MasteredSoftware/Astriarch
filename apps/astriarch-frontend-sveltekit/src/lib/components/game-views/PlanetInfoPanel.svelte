@@ -70,14 +70,15 @@
 		return parts.length > 0 ? parts.join(', ') : 'No Ships';
 	}
 
-	// Helper function to get turns since exploration
-	function getTurnsSinceExploration(lastKnownData: LastKnownFleetData | null): string {
+	// Helper function to get years since exploration
+	function getYearsSinceExploration(lastKnownData: LastKnownFleetData | null): string {
 		if (!lastKnownData || !gameModel) return '';
 
-		const turnsSince = gameModel.currentCycle - lastKnownData.cycleLastExplored;
-		if (turnsSince === 0) return 'Explored this cycle';
-		if (turnsSince === 1) return 'Explored last cycle';
-		return `Explored ${turnsSince} cycles ago`;
+		const turnsSince =
+			Math.trunc(gameModel.currentCycle) - Math.trunc(lastKnownData.cycleLastExplored);
+		if (turnsSince === 0) return 'Explored this year';
+		if (turnsSince === 1) return 'Explored last year';
+		return `Explored ${turnsSince} years ago`;
 	}
 
 	$: planetStatus = getPlanetStatus(currentSelectedPlanet);
@@ -155,7 +156,7 @@
 			<div>
 				<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Last Explored</Text>
 				<Text style="font-size: 12px; color: #64748B;">
-					{getTurnsSinceExploration(lastKnownData)}
+					{getYearsSinceExploration(lastKnownData)}
 				</Text>
 			</div>
 

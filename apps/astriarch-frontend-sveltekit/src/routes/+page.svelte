@@ -166,7 +166,7 @@
 	$effect(() => {
 		try {
 			if (browser && $clientGameModel && gameStarted) {
-				const currentCycle = $clientGameModel.currentCycle;
+				const currentCycle = Math.trunc($clientGameModel.currentCycle);
 
 				// Play turn start sound when cycle advances
 				if (previousCycle !== -1 && currentCycle > previousCycle) {
@@ -282,7 +282,7 @@
 				{#if gameStarted}
 					<div class="flex flex-col items-center">
 						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
-							Cycle {$gameTime.cycle} • {$gameTime.timeString}
+							Turn {$gameTime.cycle} • {$gameTime.timeString}
 						</Text>
 						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
 							Stardate {$gameTime.stardate}

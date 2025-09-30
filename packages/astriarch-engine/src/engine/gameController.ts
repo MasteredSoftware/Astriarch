@@ -27,13 +27,12 @@ export class GameController {
     const elapsedSinceLastSnapshot = newSnapshotTime - lastSnapshotTime;
     const cyclesElapsed = elapsedSinceLastSnapshot / GameController.MS_PER_CYCLE;
 
-    const elapsedSinceStart = newSnapshotTime - modelDataBase.gameStartedAtTime;
-    const advancedCyclesTotal = elapsedSinceStart / GameController.MS_PER_CYCLE;
+    const currentCycle = modelDataBase.currentCycle + cyclesElapsed;
 
     return {
       newSnapshotTime,
       cyclesElapsed,
-      currentCycle: Math.trunc(advancedCyclesTotal),
+      currentCycle,
     };
   }
 
@@ -73,10 +72,10 @@ export class GameController {
     }
 
     modelData.lastSnapshotTime = newSnapshotTime;
-    if (currentCycle > modelData.currentCycle) {
+    if (Math.trunc(currentCycle) > Math.trunc(modelData.currentCycle)) {
       this.handleCycleAdvancement(gameModel);
-      modelData.currentCycle = currentCycle;
     }
+    modelData.currentCycle = currentCycle;
 
     // Check for destroyed players and game end conditions
     const destroyedPlayers = GameModel.checkPlayersDestroyed(gameModel);
