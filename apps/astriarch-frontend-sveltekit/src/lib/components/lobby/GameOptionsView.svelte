@@ -84,11 +84,11 @@
 
 	// Game speed options
 	const gameSpeedOptions = [
-		{ value: 0, label: 'Very Slow' },
-		{ value: 1, label: 'Slow' },
-		{ value: 2, label: 'Normal' },
-		{ value: 3, label: 'Fast' },
-		{ value: 4, label: 'Very Fast' }
+		{ value: 1, label: 'Very Slow' },
+		{ value: 2, label: 'Slow' },
+		{ value: 3, label: 'Normal' },
+		{ value: 4, label: 'Fast' },
+		{ value: 5, label: 'Very Fast' }
 	];
 
 	// Player type options

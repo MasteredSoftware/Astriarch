@@ -903,7 +903,7 @@ class WebSocketService {
 						: gameOptions.galaxySize || 4,
 				distributePlanetsEvenly: gameOptions.distributePlanetsEvenly ?? true,
 				quickStart: gameOptions.quickStart ?? false,
-				gameSpeed: 3, // Default to no time limit
+				gameSpeed: gameOptions.gameSpeed,
 				opponentOptions: [
 					{ name: '', type: -1 }, // Player 2: Open
 					{ name: '', type: -2 }, // Player 3: Closed

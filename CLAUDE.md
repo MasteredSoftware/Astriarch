@@ -49,7 +49,7 @@ The engine exports game models, controllers, and messaging types that are consum
 - Game state is managed centrally in the astriarch-engine package
 - Backend maintains authoritative GameModel, clients receive filtered ClientGameModel
 - Real-time updates flow through WebSocket connections managed by the backend
-- Game timing: MS_PER_TICK (200ms) for client updates, MS_PER_CYCLE (30s) for game turns
+- Game timing: MS_PER_TICK (200ms) for client updates, MS_PER_CYCLE_DEFAULT (30s) for game turns
 
 ### Database
 - MongoDB is used for persistent game state and session management

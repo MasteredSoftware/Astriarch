@@ -294,7 +294,7 @@ export class GameController {
         galaxySize: gameOptions?.galaxySize || engine.GalaxySizeOption.SMALL,
         distributePlanetsEvenly: gameOptions?.distributePlanetsEvenly ?? true,
         quickStart: gameOptions?.quickStart ?? false,
-        gameSpeed: engine.GameSpeed.NORMAL,
+        gameSpeed: gameOptions?.gameSpeed || engine.GameSpeed.NORMAL,
         version: "2.0",
       });
 

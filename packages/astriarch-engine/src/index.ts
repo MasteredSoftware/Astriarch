@@ -101,7 +101,6 @@ export type { TradeData };
 export type { TradingCenterData };
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
-export const MS_PER_CYCLE = 30 * 1000; // Time per "turn"
 
 export const createGame = (hostPlayerId: string, hostPlayerName: string, gameOptions: GameOptions) => {
   const players = [] as PlayerData[];

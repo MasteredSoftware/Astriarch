@@ -1,7 +1,7 @@
 import { ClientModelData, PlanetById } from '../model/clientModel';
 import { EventNotificationType } from '../model/eventNotification';
 import { FleetData } from '../model/fleet';
-import { GalaxySizeOption, ModelBase, ModelData } from '../model/model';
+import { GalaxySizeOption, GameSpeed, ModelBase, ModelData } from '../model/model';
 import { PlayerData, PlayerType } from '../model/player';
 import { ResearchType } from '../model/research';
 import { Utils } from '../utils/utils';
@@ -18,14 +18,25 @@ import { Research } from './research';
 import { TradingCenter } from './tradingCenter';
 
 export class GameController {
-  public static MS_PER_CYCLE = 30 * 1000; // Time per cycle (or "turn")
+  public static MS_PER_CYCLE_DEFAULT = 30 * 1000; // Time per cycle (or "turn")
+  public static GAME_SPEED_MS_PER_CYCLE = {
+    [GameSpeed.SLOWEST]: 90 * 1000,
+    [GameSpeed.SLOW]: 45 * 1000,
+    [GameSpeed.NORMAL]: GameController.MS_PER_CYCLE_DEFAULT,
+    [GameSpeed.FAST]: 20 * 1000,
+    [GameSpeed.FASTEST]: 10 * 1000,
+  };
 
   public static startModelSnapshot(modelDataBase: ModelBase) {
     const newSnapshotTime = new Date().getTime();
     const lastSnapshotTime = modelDataBase.lastSnapshotTime;
 
     const elapsedSinceLastSnapshot = newSnapshotTime - lastSnapshotTime;
-    const cyclesElapsed = elapsedSinceLastSnapshot / GameController.MS_PER_CYCLE;
+    const msPerCycle =
+      GameController.GAME_SPEED_MS_PER_CYCLE[modelDataBase.gameOptions.gameSpeed] ||
+      GameController.MS_PER_CYCLE_DEFAULT;
+    console.log('GameController.startModelSnapshot:', modelDataBase.gameOptions.gameSpeed, 'msPerCycle', msPerCycle);
+    const cyclesElapsed = elapsedSinceLastSnapshot / msPerCycle;
 
     const currentCycle = modelDataBase.currentCycle + cyclesElapsed;
 
