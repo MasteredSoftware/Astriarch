@@ -321,6 +321,11 @@ export class GameController {
         //merge/land fleet
         Fleet.landFleet(destinationPlanet.planetaryFleet, playerFleet);
 
+        // Now record the last known fleet strength for the old owner (after the attacking fleet has landed)
+        if (defendingPlayer) {
+          Player.setPlanetLastKnownFleetStrength(defendingPlayer, destinationPlanet, gameModel.modelData.currentCycle, player?.id);
+        }
+
         //notify user of planet capture or loss
         if (player.type == PlayerType.Human) {
           //the attacking player is a human player and won
