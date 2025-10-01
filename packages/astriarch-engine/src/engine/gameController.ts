@@ -323,7 +323,12 @@ export class GameController {
 
         // Now record the last known fleet strength for the old owner (after the attacking fleet has landed)
         if (defendingPlayer) {
-          Player.setPlanetLastKnownFleetStrength(defendingPlayer, destinationPlanet, gameModel.modelData.currentCycle, player?.id);
+          Player.setPlanetLastKnownFleetStrength(
+            defendingPlayer,
+            destinationPlanet,
+            gameModel.modelData.currentCycle,
+            player?.id,
+          );
         }
 
         //notify user of planet capture or loss
