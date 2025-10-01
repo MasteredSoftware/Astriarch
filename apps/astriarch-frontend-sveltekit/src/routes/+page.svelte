@@ -273,7 +273,7 @@
 	</div>
 
 	<!-- Top HUD -->
-	<header class="relative z-10 p-2">
+	<header class="relative z-100 p-2">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center space-x-4">
 				<Logo size="lg" variant="primary" />
