@@ -695,6 +695,7 @@
 			// Normal planet selection - always select the planet to show info
 			lastSelectionWasFromClick = true; // Mark as click-initiated selection
 			gameActions.selectPlanet(planetData.id);
+			fleetCommandStore.clearDestination();
 		}
 	}
 
