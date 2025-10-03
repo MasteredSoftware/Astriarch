@@ -186,10 +186,11 @@
 		display: flex;
 		align-items: center;
 		gap: 8px;
-		background: rgba(0, 0, 0, 0.8);
+		background: rgba(0, 20, 40, 0.95);
 		border: 1px solid rgba(0, 255, 255, 0.3);
-		border-radius: 6px;
+		border-radius: 8px;
 		padding: 8px;
+		box-shadow: 0 4px 12px rgba(0, 255, 255, 0.2);
 		backdrop-filter: blur(4px);
 	}
 

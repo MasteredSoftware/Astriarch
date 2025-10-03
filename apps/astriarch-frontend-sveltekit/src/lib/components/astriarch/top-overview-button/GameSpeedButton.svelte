@@ -41,11 +41,6 @@
 		// Use the centralized game action
 		gameActions.setGameSpeed(newSpeed);
 	}
-
-	function handleSaveSpeed() {
-		// The speed is already set via the slider, just close the panel
-		showSpeedPanel = false;
-	}
 </script>
 
 <div bind:this={buttonElement} class="relative {className || ''}" {...restProps}>
@@ -87,7 +82,6 @@
 						<span>4</span>
 						<span>5</span>
 					</div>
-					<button class="save-button" onclick={handleSaveSpeed} type="button"> Save </button>
 				</div>
 			</div>
 		</div>
@@ -119,12 +113,12 @@
 	.speed-panel {
 		position: relative;
 		background: rgba(0, 20, 40, 0.95);
-		border: 1px solid #00ffff;
+		border: 1px solid rgba(0, 255, 255, 0.3);
 		border-radius: 8px;
-		padding: 16px;
+		padding: 8px;
 		min-width: 200px;
 		box-shadow: 0 4px 12px rgba(0, 255, 255, 0.2);
-		backdrop-filter: blur(8px);
+		backdrop-filter: blur(4px);
 	}
 
 	.speed-panel-content {
