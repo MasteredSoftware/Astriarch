@@ -19,6 +19,7 @@
 	let currentTabIndex = $state(0); // Track the current tab index
 	let chatMessage = $state('');
 	let expandedActivity = $state<string | null>(null);
+	let chatScrollContainer: HTMLDivElement;
 
 	// Get chat messages from multiplayer store
 	const { chatMessages } = multiplayerGameStore;
@@ -109,6 +110,13 @@
 		}
 	}
 
+	// Function to scroll chat to bottom
+	function scrollChatToBottom() {
+		if (chatScrollContainer) {
+			chatScrollContainer.scrollTop = chatScrollContainer.scrollHeight;
+		}
+	}
+
 	// Mark activities as read when they're viewed in this tab
 	$effect(() => {
 		if (filteredActivities.length > 0) {
@@ -119,6 +127,16 @@
 					activityStore.markAsRead(unreadIds);
 				}, 1000);
 			}
+		}
+	});
+
+	// Auto-scroll chat to bottom when new messages arrive
+	$effect(() => {
+		if ($chatMessages.length > 0) {
+			// Use setTimeout to ensure DOM has updated before scrolling
+			setTimeout(() => {
+				scrollChatToBottom();
+			}, 0);
 		}
 	});
 
@@ -622,7 +640,7 @@
 			<!-- Chat content -->
 			<div class="relative z-10 flex h-full flex-col p-[18px]">
 				<!-- Chat messages -->
-				<div class="mb-4 flex-1 space-y-4 overflow-y-auto">
+				<div bind:this={chatScrollContainer} class="mb-4 flex-1 space-y-4 overflow-y-auto">
 					{#each $chatMessages as message (message.id)}
 						<div
 							class="max-w-[331px] rounded-[4px] bg-[rgba(27,31,37,0.5)] p-4 {message.playerName ===
