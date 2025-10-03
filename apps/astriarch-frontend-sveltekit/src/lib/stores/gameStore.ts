@@ -100,6 +100,18 @@ export const currentResearchType = derived(clientGameModel, ($clientGameModel) =
 	return $clientGameModel.mainPlayer.research.researchTypeInQueue;
 });
 
+// Current game speed derived from client game model
+export const currentGameSpeed = derived(clientGameModel, ($clientGameModel) => {
+	if (!$clientGameModel) return 3; // Default to normal speed
+	return $clientGameModel.gameOptions.gameSpeed || 3;
+});
+
+// Current game speed as number (1-5) for UI display
+export const currentGameSpeedNumber = derived(currentGameSpeed, ($gameSpeed) => {
+	// GameSpeed enum values map directly to numbers 1-5
+	return $gameSpeed;
+});
+
 // Friendly time display derived from current cycle
 export const gameTime = derived(currentCycle, ($currentCycle) => {
 	// Convert cycles to a more meaningful time representation
@@ -191,6 +203,37 @@ export const gameActions = {
 	resumeGame() {
 		isGameRunning.set(true);
 		startGameLoop();
+	},
+
+	// Game speed adjustment with optimistic update
+	setGameSpeed(newSpeed: number) {
+		const cgm = get(clientGameModel);
+		if (!cgm) return;
+
+		// Convert number (1-5) to GameSpeed enum
+		const gameSpeedMap = {
+			1: 1, // GameSpeed.SLOWEST
+			2: 2, // GameSpeed.SLOW
+			3: 3, // GameSpeed.NORMAL
+			4: 4, // GameSpeed.FAST
+			5: 5 // GameSpeed.FASTEST
+		};
+
+		const gameSpeedEnum = gameSpeedMap[newSpeed as keyof typeof gameSpeedMap];
+		if (!gameSpeedEnum) return;
+
+		// Optimistic update - immediately update the client game model
+		const updatedCgm = {
+			...cgm,
+			gameOptions: {
+				...cgm.gameOptions,
+				gameSpeed: gameSpeedEnum
+			}
+		};
+		clientGameModel.set(updatedCgm);
+
+		// Send to server for persistence and broadcast
+		webSocketService.setGameSpeed(gameSpeedEnum);
 	},
 
 	// Validate with engine then add item to planet's build queue if resources are sufficient

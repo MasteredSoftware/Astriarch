@@ -20,16 +20,19 @@ import {
   isListGamesResponse,
   isGameStateUpdate,
   isErrorMessage,
+  isGameSpeedAdjustment,
   // Import available payload types
   type ICreateGameRequestPayload,
   type IJoinGameRequestPayload,
   type IStartGameRequestPayload,
   type IChangeGameOptionsPayload,
   type IChangePlayerNamePayload,
+  type IGameSpeedAdjustmentPayload,
   constructClientGameModel,
   advanceGameModelTime,
   resetGameSnapshotTime,
   GameModel,
+  GameSpeed,
   ModelData,
   Events,
   type EventNotification,
@@ -330,6 +333,10 @@ export class WebSocketServer {
 
       case MESSAGE_TYPE.CHAT_MESSAGE:
         await this.handleChatMessage(clientId, message);
+        break;
+
+      case MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT:
+        await this.handleGameSpeedAdjustment(clientId, message as IMessage<IGameSpeedAdjustmentPayload>);
         break;
 
       case MESSAGE_TYPE.EXIT_RESIGN:
@@ -895,6 +902,51 @@ export class WebSocketServer {
     } catch (error) {
       logger.error("Error in handleChangePlayerName:", error);
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Internal server error" }));
+    }
+  }
+
+  private async handleGameSpeedAdjustment(
+    clientId: string,
+    message: IMessage<IGameSpeedAdjustmentPayload>,
+  ): Promise<void> {
+    try {
+      const client = this.clients.get(clientId);
+      if (!client || !client.gameId) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Client not in a game" }));
+        return;
+      }
+
+      const { newSpeed } = message.payload;
+
+      // Prepare payload for GameController
+      const payload = {
+        gameId: client.gameId,
+        newSpeed,
+      };
+
+      const result = await GameController.adjustGameSpeed(client.sessionId, payload);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Broadcast the new speed to all players in the game (including the requester)
+      const speedUpdateMessage = new Message(MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT, {
+        newSpeed,
+        playerId: result.gameData?.playerId,
+      });
+
+      // Send to the requester
+      this.sendToClient(clientId, speedUpdateMessage);
+
+      // Broadcast to other players in the game
+      if (result.game) {
+        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, speedUpdateMessage);
+      }
+    } catch (error) {
+      logger.error("Error in handleGameSpeedAdjustment:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to adjust game speed" }));
     }
   }
 

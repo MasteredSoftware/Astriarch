@@ -3,7 +3,7 @@
  * Based on the original Astriarch architecture from app.js
  */
 
-import { ServerGameOptions } from '../model';
+import { ServerGameOptions, GameSpeed } from '../model';
 
 export enum MESSAGE_TYPE {
   // Connection & System
@@ -46,6 +46,7 @@ export enum MESSAGE_TYPE {
   GAME_OVER = 'GAME_OVER',
   GAME_PAUSED = 'GAME_PAUSED',
   GAME_RESUMED = 'GAME_RESUMED',
+  GAME_SPEED_ADJUSTMENT = 'GAME_SPEED_ADJUSTMENT',
   PLAYER_DISCONNECTED = 'PLAYER_DISCONNECTED',
   PLAYER_RECONNECTED = 'PLAYER_RECONNECTED',
 
@@ -160,6 +161,11 @@ export interface IChangeGameOptionsPayload {
 export interface IChangePlayerNamePayload {
   gameId: string;
   playerName: string;
+}
+
+export interface IGameSpeedAdjustmentPayload {
+  newSpeed: GameSpeed;
+  playerId?: string; // Optional: track who requested the change
 }
 
 export interface IGameStateUpdatePayload {
@@ -326,6 +332,12 @@ export class ChatMessage extends Message<IChatMessagePayload> {
   }
 }
 
+export class GameSpeedAdjustmentMessage extends Message<IGameSpeedAdjustmentPayload> {
+  constructor(payload: IGameSpeedAdjustmentPayload, sessionId?: string, gameId?: string) {
+    super(MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT, payload, sessionId, gameId);
+  }
+}
+
 // =============================================
 // TYPE GUARDS FOR RUNTIME TYPE CHECKING
 // =============================================
@@ -407,6 +419,15 @@ export function isErrorMessage(message: IMessage<unknown>): message is Message<I
   );
 }
 
+export function isGameSpeedAdjustment(message: IMessage<unknown>): message is Message<IGameSpeedAdjustmentPayload> {
+  return (
+    message.type === MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT &&
+    typeof message.payload === 'object' &&
+    message.payload !== null &&
+    'newSpeed' in message.payload
+  );
+}
+
 export function getMessageTypeName(type: MESSAGE_TYPE): string {
   return MESSAGE_TYPE[type] || 'UNKNOWN';
 }
@@ -448,9 +469,10 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.GAME_OVER]: 64,
     [MESSAGE_TYPE.GAME_PAUSED]: 65,
     [MESSAGE_TYPE.GAME_RESUMED]: 66,
-    [MESSAGE_TYPE.PLAYER_DISCONNECTED]: 67,
-    [MESSAGE_TYPE.PLAYER_RECONNECTED]: 68,
-    [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 69,
+    [MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT]: 67,
+    [MESSAGE_TYPE.PLAYER_DISCONNECTED]: 68,
+    [MESSAGE_TYPE.PLAYER_RECONNECTED]: 69,
+    [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 70,
   };
 
   return typeMap[type] ?? -1;
@@ -492,9 +514,10 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     64: MESSAGE_TYPE.GAME_OVER,
     65: MESSAGE_TYPE.GAME_PAUSED,
     66: MESSAGE_TYPE.GAME_RESUMED,
-    67: MESSAGE_TYPE.PLAYER_DISCONNECTED,
-    68: MESSAGE_TYPE.PLAYER_RECONNECTED,
-    69: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
+    67: MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT,
+    68: MESSAGE_TYPE.PLAYER_DISCONNECTED,
+    69: MESSAGE_TYPE.PLAYER_RECONNECTED,
+    70: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
   };
 
   return reverseMap[typeNum] ?? null;

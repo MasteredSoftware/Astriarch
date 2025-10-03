@@ -13,7 +13,8 @@ import {
 	isListGamesResponse,
 	isStartGameResponse,
 	isGameStateUpdate,
-	isErrorMessage
+	isErrorMessage,
+	isGameSpeedAdjustment
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
@@ -279,6 +280,7 @@ class WebSocketService {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 						clientGameModel.set(updatedClientGameModel);
+
 						console.log('Received real-time game state update from server');
 					} else if (message.payload.changes) {
 						// TODO: Apply incremental changes if needed
@@ -299,6 +301,7 @@ class WebSocketService {
 							// The server sends a ClientModelData (player-specific view of the game)
 							const clientGameState = message.payload.gameState as ClientModelData;
 							clientGameModel.set(clientGameState);
+
 							isGameRunning.set(true);
 							gameActions.selectHomePlanet();
 
@@ -605,6 +608,34 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT:
+				if (isGameSpeedAdjustment(message)) {
+					const { newSpeed, playerId } = message.payload;
+
+					// Update the client game model's game speed directly
+					const currentClientModel = get(clientGameModel);
+					if (currentClientModel) {
+						const updatedClientModel = {
+							...currentClientModel,
+							gameOptions: {
+								...currentClientModel.gameOptions,
+								gameSpeed: newSpeed
+							}
+						};
+						clientGameModel.set(updatedClientModel);
+					}
+
+					// Optional: Show notification about who changed the speed
+					if (playerId) {
+						this.gameStore.addNotification({
+							type: 'info',
+							message: `Game speed changed to ${newSpeed}`,
+							timestamp: Date.now()
+						});
+					}
+				}
+				break;
+
 			case MESSAGE_TYPE.PLAYER_RECONNECTED:
 				if (
 					message.payload &&
@@ -721,7 +752,8 @@ class WebSocketService {
 						console.log('PONG included updated game state, updating client model');
 
 						// Update the main game store with the fresh data from the server
-						clientGameModel.set(payload.clientGameModel as ClientModelData);
+						const updatedClientGameModel = payload.clientGameModel as ClientModelData;
+						clientGameModel.set(updatedClientGameModel);
 
 						// Don't automatically set game as running - let explicit game state messages handle that
 						// The PONG is just providing updated data, not changing game state
@@ -1024,6 +1056,26 @@ class WebSocketService {
 			this.gameStore.addNotification({
 				type: 'error',
 				message: 'Cannot update build queue - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	setGameSpeed(newSpeed: number) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				newSpeed
+			};
+
+			console.log('Sending GAME_SPEED_ADJUSTMENT with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT, payload));
+		} catch (error) {
+			console.error('Failed to set game speed:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot adjust game speed - no active game session',
 				timestamp: Date.now()
 			});
 		}

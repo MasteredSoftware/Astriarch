@@ -4,6 +4,7 @@
 	import TopOverviewButton from '../top-overview-button/TopOverviewButton.svelte';
 	import TopOverviewButtonBackgroundSvg from '../top-overview-button/TopOverviewButtonBackgroundSvg.svelte';
 	import VolumeButton from '../top-overview-button/VolumeButton.svelte';
+	import GameSpeedButton from '../top-overview-button/GameSpeedButton.svelte';
 	import IconImage from '../icon-image/IconImage.svelte';
 	import type { ResourceData } from '../types.js';
 
@@ -60,6 +61,9 @@
 	<!-- Volume Control Button -->
 	<VolumeButton />
 
+	<!-- Game Speed Control Button -->
+	<GameSpeedButton />
+
 	<!-- Exit Game Button -->
 	{#if onExitGame}
 		<TopOverviewButton onclick={handleExitClick} title="Exit Game">
@@ -76,8 +80,13 @@
 			<TopOverviewButtonBackgroundSvg />
 		</div>
 
-		<!-- Exit Button Background positioned to align with exit button -->
+		<!-- Game Speed Button Background positioned to align with speed button -->
 		<div class="absolute top-0" style="left: 874px;">
+			<TopOverviewButtonBackgroundSvg />
+		</div>
+
+		<!-- Exit Button Background positioned to align with exit button -->
+		<div class="absolute top-0" style="left: 943px;">
 			<TopOverviewButtonBackgroundSvg />
 		</div>
 	</div>

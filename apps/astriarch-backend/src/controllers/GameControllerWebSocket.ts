@@ -1045,6 +1045,64 @@ export class GameController {
     }
   }
 
+  static async adjustGameSpeed(sessionId: string, payload: any): Promise<GameResult> {
+    try {
+      if (!payload || typeof payload.newSpeed !== "number") {
+        return { success: false, error: "Invalid game speed adjustment request" };
+      }
+
+      const { gameId, newSpeed } = payload;
+
+      if (!gameId) {
+        return { success: false, error: "Game ID is required" };
+      }
+
+      // Validate the speed value using the GameSpeed enum
+      if (!Object.values(engine.GameSpeed).includes(newSpeed)) {
+        return { success: false, error: "Invalid game speed value" };
+      }
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Update the game speed in the game's options
+      if (!game.gameOptions) {
+        return { success: false, error: "Game options not found" };
+      }
+
+      game.gameOptions.gameSpeed = newSpeed;
+
+      // Also update the game speed in the game state model data to keep them in sync
+      if (game.gameState && typeof game.gameState === "object" && "gameOptions" in game.gameState) {
+        (game.gameState as any).gameOptions.gameSpeed = newSpeed;
+      }
+
+      game.lastActivity = new Date();
+
+      // Save the updated game
+      await persistGame(game);
+
+      logger.info(`Game speed changed to ${newSpeed} in game ${gameId} by player ${player.name}`);
+      return {
+        success: true,
+        game,
+        gameData: { newSpeed, playerId: player.Id },
+      };
+    } catch (error) {
+      logger.error("Error adjusting game speed:", error);
+      return { success: false, error: "Failed to adjust game speed" };
+    }
+  }
+
   static async exitResign(sessionId: string, payload: any): Promise<GameResult> {
     // TODO: Implement exit/resign
     logger.warn("exitResign not yet implemented");
