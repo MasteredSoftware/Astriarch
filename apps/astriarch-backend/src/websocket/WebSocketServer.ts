@@ -2,6 +2,7 @@ import WebSocket from "ws";
 import { Server } from "http";
 import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
+import { ChatMessageModel, IChatMessage } from "../models/ChatMessage";
 import { GameController } from "../controllers/GameControllerWebSocket";
 import { persistGame } from "../database/DocumentPersistence";
 import { v4 as uuidv4 } from "uuid";
@@ -588,6 +589,9 @@ export class WebSocketServer {
 
         // Update lobby
         await this.sendUpdatedGameListToLobbyPlayers(result.game);
+
+        // Send chat history to the newly joined player
+        await this.sendChatHistory(clientId, gameId);
       } else {
         this.sendToClient(
           clientId,
@@ -753,6 +757,9 @@ export class WebSocketServer {
             playerPosition: result.player.position,
           }),
         );
+
+        // Send chat history to the resuming player
+        await this.sendChatHistory(clientId, gameId);
 
         // Check if all human players are now connected after this player joined
         if (game && game.status === "in_progress") {
@@ -1274,8 +1281,117 @@ export class WebSocketServer {
   }
 
   private async handleChatMessage(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement chat system like old app.js
-    logger.warn("handleChatMessage not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      // Extract message content and gameId from payload
+      const messagePayload = message.payload as { message: string; gameId: string };
+      const chatText = messagePayload.message;
+      const gameId = messagePayload.gameId;
+
+      if (!chatText || !chatText.trim()) {
+        logger.warn(`Empty chat message from ${client.sessionId}`);
+        return;
+      }
+
+      if (!gameId) {
+        logger.warn(`Chat message without gameId from ${client.sessionId}`);
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, {
+            error: "CHAT_ERROR",
+            message: "Game ID required for chat messages",
+          }),
+        );
+        return;
+      }
+
+      // Verify the client is actually in this game
+      if (client.gameId !== gameId) {
+        logger.warn(`Chat message gameId mismatch for ${client.sessionId}: expected ${client.gameId}, got ${gameId}`);
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, {
+            error: "CHAT_ERROR",
+            message: "Invalid game session for chat",
+          }),
+        );
+        return;
+      }
+
+      // Create and save chat message to database
+      const chatDocument = new ChatMessageModel({
+        gameId: gameId,
+        playerName: client.playerName || "Unknown Player",
+        message: chatText.trim(),
+        messageType: "public", // Default to public chat
+      });
+
+      await chatDocument.save();
+      logger.info(`Chat message saved to database from ${client.playerName}: ${chatText.trim()}`);
+
+      // Create formatted chat message for broadcast
+      const chatMessage = {
+        id: chatDocument.id || uuidv4(), // Use mongoose document id or fallback to uuid
+        playerId: client.playerId || client.sessionId,
+        playerName: client.playerName || "Unknown Player",
+        message: chatText.trim(),
+        timestamp: chatDocument.timestamp.getTime(),
+        messageType: "public",
+      };
+
+      // Broadcast to all players in the game
+      const gameRoom = this.gameRooms.get(gameId);
+      if (gameRoom) {
+        const chatBroadcast = new Message(MESSAGE_TYPE.CHAT_MESSAGE, chatMessage);
+
+        for (const sessionId of gameRoom) {
+          this.broadcastToSession(sessionId, chatBroadcast);
+        }
+      } else {
+        logger.warn(`No game room found for gameId: ${gameId}`);
+        // Echo back to sender only
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.CHAT_MESSAGE, chatMessage));
+      }
+    } catch (error) {
+      logger.error("Error handling chat message:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          error: "CHAT_ERROR",
+          message: "Failed to send chat message",
+        }),
+      );
+    }
+  }
+
+  private async sendChatHistory(clientId: string, gameId: string): Promise<void> {
+    try {
+      // Retrieve recent chat messages for this game (last 50 messages)
+      const chatHistory = await ChatMessageModel.find({ gameId }).sort({ timestamp: -1 }).limit(50).exec();
+
+      // Convert to client format and reverse to show oldest first
+      const chatMessages = chatHistory.reverse().map((chat) => ({
+        id: chat.id,
+        playerId: chat.playerName, // Using playerName as playerId for backward compatibility
+        playerName: chat.playerName,
+        message: chat.message,
+        timestamp: chat.timestamp.getTime(),
+        messageType: chat.messageType,
+      }));
+
+      if (chatMessages.length > 0) {
+        logger.info(`Sending ${chatMessages.length} chat history messages to client ${clientId}`);
+
+        // Send each chat message individually to populate the chat history
+        for (const chatMessage of chatMessages) {
+          this.sendToClient(clientId, new Message(MESSAGE_TYPE.CHAT_MESSAGE, chatMessage));
+        }
+      }
+    } catch (error) {
+      logger.error("Error retrieving chat history:", error);
+    }
   }
 
   private async handleExitResign(clientId: string, message: IMessage<unknown>): Promise<void> {

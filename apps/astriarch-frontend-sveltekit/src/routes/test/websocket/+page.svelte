@@ -16,6 +16,7 @@
 	let playerName = 'TestPlayer';
 	let gameName = 'Test Game';
 	let gameIdToJoin = '';
+	let chatMessage = '';
 	let rawMessageType = 'NOOP';
 	let rawMessagePayload = '{}';
 
@@ -115,6 +116,24 @@
 		}
 	}
 
+	function sendChatMessage() {
+		if (!chatMessage.trim()) {
+			log('❌ Please enter a chat message');
+			return;
+		}
+
+		if (!currentGameId) {
+			log('❌ You must be in a game to send chat messages');
+			return;
+		}
+
+		sendMessage(MESSAGE_TYPE.CHAT_MESSAGE, {
+			gameId: currentGameId,
+			message: chatMessage.trim()
+		});
+		chatMessage = '';
+	}
+
 	function clearLog() {
 		messageLog = [];
 	}
@@ -204,6 +223,29 @@
 				{currentGameId}
 			</div>
 		{/if}
+	</div>
+
+	<!-- Chat Testing -->
+	<div class="card">
+		<h2>Chat Testing</h2>
+		<div class="form-group">
+			<label>
+				Chat Message:
+				<input
+					type="text"
+					bind:value={chatMessage}
+					placeholder="Type a message..."
+					on:keydown={(e) => e.key === 'Enter' && sendChatMessage()}
+				/>
+			</label>
+			<button
+				on:click={sendChatMessage}
+				disabled={!connected || !chatMessage.trim()}
+				class="btn-primary"
+			>
+				Send Chat
+			</button>
+		</div>
 	</div>
 
 	<!-- Raw Message Testing -->

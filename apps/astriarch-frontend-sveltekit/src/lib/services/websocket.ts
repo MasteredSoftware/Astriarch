@@ -14,7 +14,8 @@ import {
 	isStartGameResponse,
 	isGameStateUpdate,
 	isErrorMessage,
-	isGameSpeedAdjustment
+	isGameSpeedAdjustment,
+	isChatMessage
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
@@ -23,7 +24,7 @@ import { PlayerStorage } from '$lib/utils/playerStorage';
 import type { ClientModelData } from 'astriarch-engine';
 
 // Import multiplayer store types and functionality from the centralized store
-import { multiplayerGameStore, type ChatMessage } from '$lib/stores/multiplayerGameStore';
+import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 
 // Import activity store for enhanced event logging
 import { activityStore } from '$lib/stores/activityStore';
@@ -493,8 +494,10 @@ class WebSocketService {
 				break;
 
 			case MESSAGE_TYPE.CHAT_MESSAGE: {
-				const chatData = message.payload as unknown as ChatMessage;
-				this.gameStore.addChatMessage(chatData);
+				if (isChatMessage(message)) {
+					const chatData = message.payload;
+					this.gameStore.addChatMessage(chatData);
+				}
 				break;
 			}
 
@@ -981,7 +984,23 @@ class WebSocketService {
 	}
 
 	sendChatMessage(message: string) {
-		this.send(new Message(MESSAGE_TYPE.CHAT_MESSAGE, { message }));
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				message: message.trim()
+			};
+
+			console.log('Sending CHAT_MESSAGE with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.CHAT_MESSAGE, payload));
+		} catch (error) {
+			console.error('Failed to send chat message:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot send chat message - no active game session',
+				timestamp: Date.now()
+			});
+		}
 	}
 
 	changeGameOptions(

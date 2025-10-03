@@ -13,11 +13,15 @@
 	import type { ActivityLogEntry } from '$lib/stores/activityStore';
 	import { Fleet, GameTools } from 'astriarch-engine';
 	import type { StarshipData } from 'astriarch-engine';
+	import { webSocketService } from '$lib/services/websocket';
 
 	// State for tab selection and UI
 	let currentTabIndex = $state(0); // Track the current tab index
 	let chatMessage = $state('');
 	let expandedActivity = $state<string | null>(null);
+
+	// Get chat messages from multiplayer store
+	const { chatMessages } = multiplayerGameStore;
 
 	// Define tabs for the TabController with click handlers to track state
 	const tabs = [
@@ -55,18 +59,6 @@
 		})()
 	);
 
-	// Chat messages (mock data for now)
-	let chatMessages = $state([
-		{ id: 1, sender: 'Player1', message: "Hey what's up", timestamp: Date.now() - 60000 },
-		{
-			id: 2,
-			sender: 'Player2',
-			message: "What'ssssss uuuuuuuuuuppp!! I just logged in I'm killing it. How is it going?",
-			timestamp: Date.now() - 30000
-		},
-		{ id: 3, sender: 'System', message: 'Your planet is done!', timestamp: Date.now() - 15000 }
-	]);
-
 	function setTab(tabIndex: number) {
 		currentTabIndex = tabIndex;
 	}
@@ -96,14 +88,8 @@
 
 	function sendChatMessage() {
 		if (chatMessage.trim()) {
-			const newMessage = {
-				id: Date.now(),
-				sender: 'You',
-				message: chatMessage.trim(),
-				timestamp: Date.now()
-			};
-
-			chatMessages = [...chatMessages, newMessage];
+			// Send chat message via WebSocket
+			webSocketService.sendChatMessage(chatMessage.trim());
 
 			// Also add to activity log
 			activityStore.addActivity({
@@ -637,17 +623,17 @@
 			<div class="relative z-10 flex h-full flex-col p-[18px]">
 				<!-- Chat messages -->
 				<div class="mb-4 flex-1 space-y-4 overflow-y-auto">
-					{#each chatMessages as message (message.id)}
+					{#each $chatMessages as message (message.id)}
 						<div
-							class="max-w-[331px] rounded-[4px] bg-[rgba(27,31,37,0.5)] p-4 {message.sender ===
-							'You'
+							class="max-w-[331px] rounded-[4px] bg-[rgba(27,31,37,0.5)] p-4 {message.playerName ===
+							$multiplayerGameStore.playerName
 								? 'ml-auto bg-slate-700/50'
 								: ''}"
 						>
 							<!-- Message header -->
 							<div class="mb-1 flex items-center gap-2 text-[12px]">
 								<span class="font-['Orbitron'] font-semibold tracking-[0.5px] text-white/75">
-									{message.sender}
+									{message.playerName}
 								</span>
 								<span class="font-['Orbitron'] font-normal tracking-[3px] text-white/50 uppercase">
 									|
@@ -677,12 +663,7 @@
 						/>
 						<div class="absolute top-3 right-2 font-['Orbitron'] text-white">|</div>
 					</div>
-					<button
-						onclick={sendChatMessage}
-						class="h-12 w-[87px] rounded-[4px] bg-gradient-to-b from-cyan-400 to-cyan-600 font-['Orbitron'] text-[14px] font-extrabold tracking-[2px] text-black uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-colors hover:from-cyan-300 hover:to-cyan-500"
-					>
-						send
-					</button>
+					<Button onclick={sendChatMessage}>send</Button>
 				</div>
 
 				<!-- Chat scrollbar indicator -->
