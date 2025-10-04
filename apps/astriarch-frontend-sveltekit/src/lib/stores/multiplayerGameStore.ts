@@ -53,7 +53,7 @@ export interface GameNotification {
 		| 'construction'
 		| 'fleet'
 		| 'planet'
-		| 'diplomacy';
+		| 'chat';
 	message: string;
 	timestamp: number;
 	actionText?: string;

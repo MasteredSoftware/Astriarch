@@ -92,14 +92,6 @@
 			// Send chat message via WebSocket
 			webSocketService.sendChatMessage(chatMessage.trim());
 
-			// Also add to activity log
-			activityStore.addActivity({
-				type: 'info',
-				message: `Chat: ${chatMessage.trim()}`,
-				timestamp: Date.now(),
-				category: 'chat'
-			});
-
 			chatMessage = '';
 		}
 	}

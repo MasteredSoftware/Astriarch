@@ -182,6 +182,59 @@
 		}
 	});
 
+	// Chat notification system - notify user of new messages when not on activity tab
+	const { chatMessages } = multiplayerGameStore;
+	let isLoadingInitialChatHistory = $state(true); // Track when we're loading initial chat history
+	let previousChatCount = $state(0); // Track previous chat message count for detecting new messages
+
+	$effect(() => {
+		const messageCount = $chatMessages.length;
+
+		// Skip notifications during initial load or if no messages
+		if (isLoadingInitialChatHistory || messageCount === 0) {
+			previousChatCount = messageCount;
+			return;
+		}
+
+		// Check if there are new messages (more than before)
+		if (messageCount > previousChatCount) {
+			const newMessageCount = messageCount - previousChatCount;
+
+			// Only notify if user is not currently on the activity tab
+			if ($currentView !== 'activity') {
+				// Get the latest message(s) for the notification
+				const latestMessage = $chatMessages[$chatMessages.length - 1];
+				const notificationMessage =
+					newMessageCount === 1
+						? `${latestMessage.playerName}: ${
+								latestMessage.message.length > 30
+									? latestMessage.message.substring(0, 30) + '...'
+									: latestMessage.message
+							}`
+						: `${newMessageCount} new chat messages`;
+
+				multiplayerGameStore.addNotification({
+					type: 'chat',
+					message: notificationMessage,
+					timestamp: Date.now(),
+					duration: 4000 // Show for 4 seconds
+				});
+			}
+		}
+
+		previousChatCount = messageCount;
+	});
+
+	// Reset chat history loading flag after a brief delay (to allow initial messages to load)
+	$effect(() => {
+		if ($chatMessages.length > 0 && isLoadingInitialChatHistory) {
+			// Wait a bit to ensure initial chat history has fully loaded
+			setTimeout(() => {
+				isLoadingInitialChatHistory = false;
+			}, 1000);
+		}
+	});
+
 	onDestroy(() => {
 		console.log('Astriarch game component destroyed');
 	});
@@ -205,7 +258,7 @@
 				return '#EF4444'; // Red
 			case 'success':
 				return '#10B981'; // Green
-			case 'diplomacy':
+			case 'chat':
 				return '#EC4899'; // Pink
 			default:
 				return '#00FFFF'; // Cyan
@@ -230,8 +283,8 @@
 				return 'ERROR';
 			case 'success':
 				return 'SUCCESS';
-			case 'diplomacy':
-				return 'DIPLOMACY';
+			case 'chat':
+				return 'CHAT';
 			default:
 				return 'INFO';
 		}
@@ -322,7 +375,7 @@
 								'construction',
 								'fleet',
 								'planet',
-								'diplomacy'
+								'chat'
 							] as const;
 							const randomType =
 								notificationTypes[Math.floor(Math.random() * notificationTypes.length)];

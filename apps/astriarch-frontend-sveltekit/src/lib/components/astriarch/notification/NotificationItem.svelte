@@ -59,7 +59,7 @@
 			construction: 'Construction',
 			fleet: 'Fleet',
 			planet: 'Planet',
-			diplomacy: 'Diplomacy'
+			chat: 'Chat'
 		};
 		return typeLabels[type] || 'Notification';
 	}
