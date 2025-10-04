@@ -13,6 +13,7 @@ import {
   TradingCenter,
   TradeType,
   TradingCenterResourceType,
+  PlayerType,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -28,8 +29,24 @@ export interface CreateGameData {
     sessionId: string;
     position: number;
   }>;
+  gameOptions?: any;
 }
 
+// Helper function to convert opponent option type to PlayerType
+function mapOpponentTypeToPlayerType(opponentType: number): PlayerType {
+  switch (opponentType) {
+    case 1: // EASY_COMPUTER
+      return PlayerType.Computer_Easy;
+    case 2: // NORMAL_COMPUTER
+      return PlayerType.Computer_Normal;
+    case 3: // HARD_COMPUTER
+      return PlayerType.Computer_Hard;
+    case 4: // EXPERT_COMPUTER
+      return PlayerType.Computer_Expert;
+    default:
+      return PlayerType.Computer_Normal; // Default fallback
+  }
+}
 export interface JoinGameData {
   gameId: string;
   sessionId: string;
@@ -266,10 +283,11 @@ export class GameController {
         if (dbPlayer.isAI) {
           // Create computer player with appropriate AI level
           const aiLevel = gameOptions?.opponentOptions?.[dbPlayer.position - 1]?.type || 2; // Default to Normal
+          const playerType = mapOpponentTypeToPlayerType(aiLevel);
           enginePlayers.push(
             engine.Player.constructPlayer(
               dbPlayer.Id,
-              aiLevel, // AI difficulty level maps to PlayerType enum
+              playerType, // AI difficulty level maps to PlayerType enum
               dbPlayer.name,
               engine.playerColors[dbPlayer.position] || engine.playerColors[0],
             ),
@@ -791,7 +809,7 @@ export class GameController {
       if (!gamePlayer.research) {
         gamePlayer.research = {
           researchPercent: 0,
-          researchProgressByType: {},
+          researchProgressByType: {} as any, // Will be properly initialized by the engine
           researchTypeInQueue: null,
         };
       }

@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable } from 'svelte/store';
 import type { IGame } from '$lib/services/websocket';
 import { PlayerStorage } from '$lib/utils/playerStorage';
 

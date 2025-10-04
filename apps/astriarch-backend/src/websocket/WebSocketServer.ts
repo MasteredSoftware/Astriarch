@@ -378,7 +378,7 @@ export class WebSocketServer {
         return "Unknown Player";
       }
 
-      const player = game.players.find(p => p.sessionId === sessionId);
+      const player = game.players.find((p) => p.sessionId === sessionId);
       return player?.name || "Unknown Player";
     } catch (error) {
       logger.error("Error getting player name:", error);

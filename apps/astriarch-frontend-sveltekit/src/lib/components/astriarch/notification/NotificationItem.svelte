@@ -76,7 +76,8 @@
 			construction: '#f97316', // orange-500
 			fleet: '#06b6d4', // cyan-500
 			planet: '#65a30d', // lime-600
-			diplomacy: '#d946ef' // fuchsia-500
+			diplomacy: '#d946ef', // fuchsia-500
+			chat: '#6b7280' // gray-500
 		};
 		return colors[type] || '#0ea5e9';
 	}
