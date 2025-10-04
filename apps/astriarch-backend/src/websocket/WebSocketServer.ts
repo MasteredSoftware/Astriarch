@@ -49,7 +49,6 @@ export interface IConnectedClient {
   sessionId: string;
   gameId?: string;
   playerId?: string;
-  playerName?: string;
   lastPing: Date;
   upgradeReq?: any; // For backward compatibility with cookie parsing
 }
@@ -368,6 +367,25 @@ export class WebSocketServer {
     return this.sessionLookup.get(sessionId) || null;
   }
 
+  private async getPlayerNameBySessionId(gameId: string, sessionId: string): Promise<string> {
+    try {
+      if (!gameId) {
+        return "Unknown Player";
+      }
+
+      const game = await Game.findById(gameId);
+      if (!game || !game.players) {
+        return "Unknown Player";
+      }
+
+      const player = game.players.find(p => p.sessionId === sessionId);
+      return player?.name || "Unknown Player";
+    } catch (error) {
+      logger.error("Error getting player name:", error);
+      return "Unknown Player";
+    }
+  }
+
   // Real-time game management methods
   private isGameSyncRequired(messageType: MESSAGE_TYPE): boolean {
     // Only sync game state when explicitly requested via SYNC_STATE
@@ -510,7 +528,6 @@ export class WebSocketServer {
 
       // Add client to game room
       client.gameId = game._id.toString();
-      client.playerName = playerName;
       client.playerId = `player_0`;
 
       if (!this.gameRooms.has(game._id.toString())) {
@@ -571,7 +588,6 @@ export class WebSocketServer {
 
         // Update client info
         client.gameId = gameId;
-        client.playerName = playerName;
         client.playerId = result.playerId;
 
         // Add to game room
@@ -1320,22 +1336,25 @@ export class WebSocketServer {
         return;
       }
 
+      // Get player name from game document
+      const playerName = await this.getPlayerNameBySessionId(gameId, client.sessionId);
+
       // Create and save chat message to database
       const chatDocument = new ChatMessageModel({
         gameId: gameId,
-        playerName: client.playerName || "Unknown Player",
+        playerName: playerName,
         message: chatText.trim(),
         messageType: "public", // Default to public chat
       });
 
       await chatDocument.save();
-      logger.info(`Chat message saved to database from ${client.playerName}: ${chatText.trim()}`);
+      logger.info(`Chat message saved to database from ${playerName}: ${chatText.trim()}`);
 
       // Create formatted chat message for broadcast
       const chatMessage = {
         id: chatDocument.id || uuidv4(), // Use mongoose document id or fallback to uuid
         playerId: client.playerId || client.sessionId,
-        playerName: client.playerName || "Unknown Player",
+        playerName: playerName,
         message: chatText.trim(),
         timestamp: chatDocument.timestamp.getTime(),
         messageType: "public",
