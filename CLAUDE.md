@@ -10,7 +10,7 @@ The project follows a monorepo structure with clear separation of concerns:
 
 - **packages/astriarch-engine**: Core game engine with business logic, game state management, and turn-based mechanics. Provides TypeScript types and game controllers used across all applications.
 - **apps/astriarch-backend**: Express.js server with WebSocket support, MongoDB integration, and session management. Handles multiplayer game state and real-time communication.
-- **apps/astriarch-frontend-sveltekit**: Primary SvelteKit frontend with component library, game canvas using Konva, and real-time multiplayer UI.
+- **apps/astriarch-frontend**: Primary SvelteKit frontend with component library, game canvas using Konva, and real-time multiplayer UI.
 - **packages/astriarch-ui**: Shared React component library using Chakra UI for consistent styling across frontends.
 
 The engine exports game models, controllers, and messaging types that are consumed by both frontend and backend applications. The backend maintains authoritative game state while clients receive filtered views through the ClientGameModel.
@@ -32,11 +32,11 @@ The engine exports game models, controllers, and messaging types that are consum
 - `pnpm --filter astriarch-backend type-check` - Run TypeScript type checking
 
 ### SvelteKit Frontend Development  
-- `pnpm --filter astriarch-frontend-sveltekit dev` - Start SvelteKit dev server
-- `pnpm --filter astriarch-frontend-sveltekit build` - Build SvelteKit app
-- `pnpm --filter astriarch-frontend-sveltekit test` - Run Vitest unit tests
-- `pnpm --filter astriarch-frontend-sveltekit lint` - Lint and format check
-- `pnpm --filter astriarch-frontend-sveltekit storybook` - Start Storybook component development
+- `pnpm --filter astriarch-frontend dev` - Start SvelteKit dev server
+- `pnpm --filter astriarch-frontend build` - Build SvelteKit app
+- `pnpm --filter astriarch-frontend test` - Run Vitest unit tests
+- `pnpm --filter astriarch-frontend lint` - Lint and format check
+- `pnpm --filter astriarch-frontend storybook` - Start Storybook component development
 
 ### Engine Package Development
 - `pnpm --filter astriarch-engine build` - Build engine package  
