@@ -33,6 +33,10 @@ app.use(
 
 // CORS configuration
 const corsOptions = config.get("cors") as cors.CorsOptions;
+const allowedOrigins = (process.env.CORS_ORIGIN_LIST || "").split(",").map(origin => origin.trim()).filter(origin => origin);
+if (allowedOrigins.length > 0) {
+  corsOptions.origin = allowedOrigins;
+}
 app.use(cors(corsOptions));
 
 // Logging
@@ -43,7 +47,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Cookie parsing
-const cookieSecret = config.get("cookie.secret") as string;
+const cookieSecret = process.env.COOKIE_SECRET || config.get("cookie.secret") as string;
 app.use(cookieParser(cookieSecret));
 
 // Session configuration
