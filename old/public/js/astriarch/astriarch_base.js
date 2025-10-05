@@ -1,5 +1,5 @@
 var Astriarch = Astriarch || {
-  Version: "1.9.2",
+  Version: "1.9.3",
   ClientGameModel: null,
   PlayerGameOptions: null,
   GameId: null,

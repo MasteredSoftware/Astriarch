@@ -253,7 +253,7 @@ Astriarch.Model.prototype.populatePlanets = function() {
             }
             var chance = quadrantChances[iSQ];
             var max = quadrantChances.reduce(function(a, b) {
-              return a + b;
+              return Math.max(a, b);
             }, 0);
             if (Astriarch.NextRandom(0, max) < chance) {
               //pick a planet bounding hex at random from the sub-quadrant (at lest for now)
