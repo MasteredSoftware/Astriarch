@@ -23,7 +23,7 @@ services:
       - '8001:8001'
     environment:
       NODE_ENV: development
-      MONGODB_CONNECTION_STRING: mongodb://astriarch:astriarch_password@mongodb:27017/astriarch_v2
+      MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/astriarch_v2
       HOST: 0.0.0.0
       PORT: 8001
     depends_on:

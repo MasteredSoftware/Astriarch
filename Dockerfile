@@ -18,7 +18,8 @@ RUN pnpm install --frozen-lockfile
 # Build the backend
 RUN pnpm run --filter=astriarch-backend... build
 
-RUN pnpm deploy --filter=astriarch-backend --legacy --prod /prod/astriarch-backend
+# Deploy with inject-workspace-packages
+RUN pnpm deploy --filter=astriarch-backend --prod /prod/astriarch-backend
 
 FROM node:22-alpine AS backend
 

@@ -1,6 +1,9 @@
 # pnpm-workspace.yaml
 packages:
-  # executable/launchable applications
-  - "apps/*"
-  # all packages in subdirs of packages/ and components/
-  - "packages/*"
+# executable/launchable applications
+- "apps/*"
+# all packages in subdirs of packages/ and components/
+- "packages/*"
+
+# Configure pnpm to inject workspace packages for deployment
+injectWorkspacePackages: true
