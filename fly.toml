@@ -1,7 +1,7 @@
 app = "astriarch"
 
 [[services]]
-  internal_port = 8080
+  internal_port = 8001
   protocol = "tcp"
 
   [services.concurrency]
@@ -22,6 +22,6 @@ app = "astriarch"
 
 [env]
   HOST = "127.0.0.1"
-  PORT = "8080"
+  PORT = "8001"
   WS_PORT = "443"
   WS_PROTOCOL = "wss"
