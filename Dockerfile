@@ -1,14 +1,26 @@
-FROM node:current-alpine
+FROM node:18-alpine AS build
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
-COPY package.json .
-COPY package-lock.json .
+# Install pnpm globally
+RUN npm install -g pnpm
 
-RUN npm install --production
-
+# Copy source code
 COPY . .
 
-ENV PORT=8080
+RUN pnpm install --frozen-lockfile
 
-CMD [ "npm","start" ]
+RUN pnpm run --filter=astriarch-backend... build
+
+RUN pnpm deploy --filter=astriarch-backend --prod /prod/astriarch-backend
+
+FROM node:18-alpine AS backend
+
+COPY --from=build /prod/astriarch-backend /prod/astriarch-backend
+WORKDIR /prod/astriarch-backend
+
+# Expose port
+EXPOSE 8001
+
+# Start the application
+CMD ["pnpm", "start"]

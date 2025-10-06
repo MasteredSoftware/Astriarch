@@ -1,31 +1,42 @@
-# see ./scripts/docker/README.md
-version: '2'
+version: '3.8'
+
 services:
-  astriarchapp:
-    container_name: astriarch_app
-    build:
-      context: .
-      dockerfile: Dockerfile-local
-    image: astriarch
-    depends_on:
-      - "db"
+  mongodb:
+    image: mongo:7.0
+    container_name: astriarch_mongodb
+    restart: unless-stopped
     ports:
-      - '8000:8000'
-    volumes:
-        - .:/usr/src/app
-    working_dir: /usr/src/app
-    command: npm start
+      - '27017:27017'
     environment:
-      NODE_ENV: local
+      MONGO_INITDB_DATABASE: astriarch_v2
+    volumes:
+      - mongodb_data:/data/db
     networks:
       - astriarch_net
 
-  db:
-    image: mongo:3.2.8
-    container_name: astriarch_mongo
+  # Backend service (optional - can run locally during development)
+  astriarch-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: astriarch_backend
+    restart: unless-stopped
+    ports:
+      - '8001:8001'
+    environment:
+      NODE_ENV: development
+      MONGODB_CONNECTION_STRING: mongodb://astriarch:astriarch_password@mongodb:27017/astriarch_v2
+      HOST: 0.0.0.0
+      PORT: 8001
+    depends_on:
+      - mongodb
     networks:
-     - astriarch_net
+      - astriarch_net
+    command: npm run dev
 
+volumes:
+  mongodb_data:
 
 networks:
   astriarch_net:
+    driver: bridge

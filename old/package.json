@@ -1,0 +1,32 @@
+{
+  "name": "Astriarch",
+  "version": "1.9.3",
+  "private": true,
+  "dependencies": {
+    "async": "2.6.4",
+    "body-parser": "^1.18.3",
+    "config": "0.4.34",
+    "connect-mongo": "^2.0.1",
+    "console-ten": "0.0.5",
+    "cookie-parser": "^1.4.3",
+    "errorhandler": "^1.5.0",
+    "express": "^4.16.4",
+    "express-session": "^1.15.6",
+    "extend": "2.0.2",
+    "mongoose": "^5.7.5",
+    "morgan": "^1.9.1",
+    "pug": "^3.0.1",
+    "serve-favicon": "^2.5.0",
+    "ws": "^6.2.2"
+  },
+  "devDependencies": {
+    "mocha": "^5.2.0",
+    "prettier": "^1.14.3",
+    "should": "4.6.0"
+  },
+  "scripts": {
+    "prettier-write": "prettier --write \"{.,models,controllers,test,public/js,public/js/astriarch,}/*.js\" --print-width 120",
+    "start": "node app.js",
+    "test": "./node_modules/.bin/mocha --reporter list"
+  }
+}

@@ -1,32 +1,29 @@
 {
-  "name": "Astriarch",
-  "version": "1.9.3",
-  "private": true,
-  "dependencies": {
-    "async": "2.6.4",
-    "body-parser": "^1.18.3",
-    "config": "0.4.34",
-    "connect-mongo": "^2.0.1",
-    "console-ten": "0.0.5",
-    "cookie-parser": "^1.4.3",
-    "errorhandler": "^1.5.0",
-    "express": "^4.16.4",
-    "express-session": "^1.15.6",
-    "extend": "2.0.2",
-    "mongoose": "^5.7.5",
-    "morgan": "^1.9.1",
-    "pug": "^3.0.1",
-    "serve-favicon": "^2.5.0",
-    "ws": "^6.2.2"
-  },
-  "devDependencies": {
-    "mocha": "^5.2.0",
-    "prettier": "^1.14.3",
-    "should": "4.6.0"
-  },
+  "name": "astriarch",
+  "version": "1.0.0",
+  "description": "Astriarch space strategy game monorepo",
   "scripts": {
-    "prettier-write": "prettier --write \"{.,models,controllers,test,public/js,public/js/astriarch,}/*.js\" --print-width 120",
-    "start": "node app.js",
-    "test": "./node_modules/.bin/mocha --reporter list"
+    "clean": "rm -rf node_modules && pnpm run -r clean",
+    "build": "pnpm run -r build",
+    "test": "pnpm run -r test",
+    "format": "pnpm run -r format",
+    "format:check": "pnpm run -r format:check",
+    "lint": "pnpm run -r lint",
+    "lint:check": "pnpm run -r lint:check",
+    "prepare": "husky"
+  },
+  "keywords": [
+    
+  ],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.11.1+sha512.e519b9f7639869dc8d5c3c5dfef73b3f091094b0a006d7317353c72b124e80e1afd429732e28705ad6bfa1ee879c1fce46c128ccebd3192101f43dd67c667912",
+  "devDependencies": {
+    "husky": "^9.1.7"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

@@ -43,3 +43,6 @@ Thumbs.db
 node_modules
 .sass-cache
 .idea
+
+dist
+build

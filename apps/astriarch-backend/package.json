@@ -1,0 +1,56 @@
+{
+  "name": "astriarch-backend",
+  "version": "2.0.0",
+  "description": "Astriarch game server backend with TypeScript, Express, MongoDB, and WebSockets",
+  "main": "dist/app.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/app.ts",
+    "start": "node --enable-source-maps dist/app.js",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch"
+  },
+  "dependencies": {
+    "astriarch-engine": "workspace:*",
+    "async": "^3.2.4",
+    "config": "^3.3.9",
+    "connect-mongo": "^5.1.0",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "helmet": "^7.1.0",
+    "mongoose": "^8.0.3",
+    "morgan": "^1.10.0",
+    "uuid": "^11.1.0",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.24",
+    "@types/config": "^3.3.3",
+    "@types/cookie-parser": "^1.4.6",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/express-session": "^1.17.10",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^20.10.4",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.5.9",
+    "@typescript-eslint/eslint-plugin": "^6.13.1",
+    "@typescript-eslint/parser": "^6.13.1",
+    "@types/jest": "^29.5.8",
+    "eslint": "^8.55.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.1.1",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
