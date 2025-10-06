@@ -6,6 +6,7 @@
 		getMessageTypeName,
 		getMessageTypeNumeric
 	} from 'astriarch-engine';
+	import { getBackendWsUrl } from '$lib/config/environment';
 
 	let ws: WebSocket | null = null;
 	let connected = false;
@@ -34,10 +35,11 @@
 			return;
 		}
 
-		ws = new WebSocket('ws://localhost:8001');
+		const wsUrl = getBackendWsUrl();
+		ws = new WebSocket(wsUrl);
 
 		ws.onopen = () => {
-			log('✅ Connected to WebSocket server');
+			log(`✅ Connected to WebSocket server at ${wsUrl}`);
 			connected = true;
 		};
 
@@ -50,7 +52,7 @@
 
 				// Handle specific message types
 				if (message.type === MESSAGE_TYPE.CREATE_GAME && message.payload) {
-					currentGameId = message.payload;
+					currentGameId = message.payload as string;
 					log(`🎮 Game created with ID: ${currentGameId}`);
 					gameIdToJoin = currentGameId;
 				}
@@ -112,7 +114,7 @@
 			const messageType = rawMessageType as MESSAGE_TYPE;
 			sendMessage(messageType, payload);
 		} catch (error) {
-			log(`❌ Invalid JSON payload: ${error.message}`);
+			log(`❌ Invalid JSON payload: ${error instanceof Error ? error.message : String(error)}`);
 		}
 	}
 
@@ -139,7 +141,9 @@
 	}
 
 	onMount(() => {
-		log('🚀 WebSocket test client loaded. Click Connect to start.');
+		const wsUrl = getBackendWsUrl();
+		log(`🚀 WebSocket test client loaded. Backend: ${wsUrl}`);
+		log('Click Connect to start.');
 	});
 
 	onDestroy(() => {

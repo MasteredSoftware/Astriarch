@@ -32,6 +32,9 @@ import { activityStore } from '$lib/stores/activityStore';
 // Import audio service for game music
 import { audioService } from '$lib/services/audioService';
 
+// Import environment configuration
+import { getBackendHttpUrl, getBackendWsUrl, getHealthCheckUrl } from '$lib/config/environment';
+
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
 
@@ -75,7 +78,7 @@ class WebSocketService {
 		try {
 			// Make a simple HTTP request to the health endpoint to establish a session
 			// This will create a session and set the connect.sid cookie
-			const response = await fetch('http://localhost:8001/api/health', {
+			const response = await fetch(getHealthCheckUrl(), {
 				method: 'GET',
 				credentials: 'include' // Important: include cookies in the request
 			});
@@ -90,18 +93,21 @@ class WebSocketService {
 		}
 	}
 
-	connect(url: string = 'ws://localhost:8001'): Promise<void> {
+	connect(url?: string): Promise<void> {
 		if (this.isConnecting || (this.ws && this.ws.readyState === WebSocket.OPEN)) {
 			return Promise.resolve();
 		}
 
 		this.isConnecting = true;
 
+		// Use provided URL or default to environment configuration
+		const wsUrl = url || getBackendWsUrl();
+
 		// First establish a session via HTTP, then connect WebSocket
 		return this.establishSession().then(() => {
 			return new Promise<void>((resolve, reject) => {
 				try {
-					this.ws = new WebSocket(url);
+					this.ws = new WebSocket(wsUrl);
 
 					this.ws.onopen = () => {
 						console.log('WebSocket connected');

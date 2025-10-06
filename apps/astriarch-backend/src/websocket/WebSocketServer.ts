@@ -158,7 +158,7 @@ export class WebSocketServer {
         const cookie = require("cookie");
         const signature = require("cookie-signature");
         const config = require("config");
-        const cookieSecret = process.env.COOKIE_SECRET || config.get("cookie.secret") as string;
+        const cookieSecret = process.env.COOKIE_SECRET || (config.get("cookie.secret") as string);
 
         // Parse the cookies first
         const cookies = cookie.parse(req.headers.cookie);
