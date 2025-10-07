@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -32,14 +33,17 @@ app.use(
 );
 
 // CORS configuration
-const corsOptions = config.get("cors") as cors.CorsOptions;
+const baseCorsOptions = config.get("cors") as cors.CorsOptions;
 const allowedOrigins = (process.env.CORS_ORIGIN_LIST || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter((origin) => origin);
-if (allowedOrigins.length > 0) {
-  corsOptions.origin = allowedOrigins;
-}
+
+// Create a new CORS options object without mutating the config
+const corsOptions: cors.CorsOptions = {
+  ...baseCorsOptions,
+  ...(allowedOrigins.length > 0 && { origin: allowedOrigins }),
+};
 app.use(cors(corsOptions));
 
 // Logging
