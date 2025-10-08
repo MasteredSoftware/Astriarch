@@ -12,7 +12,7 @@ services:
     networks:
       - astriarch_net
 
-  # Backend service (optional - can run locally during development)
+  # Backend service
   astriarch-backend:
     build:
       context: .
@@ -26,8 +26,26 @@ services:
       MONGODB_CONNECTION_STRING: mongodb://mongodb:27017/astriarch_v2
       HOST: 0.0.0.0
       PORT: 8001
+      CORS_ORIGIN_LIST: http://localhost:3000,http://127.0.0.1:3000
     depends_on:
       - mongodb
+    networks:
+      - astriarch_net
+
+  # Frontend service
+  astriarch-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: astriarch_frontend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      PUBLIC_BACKEND_HTTP_URL: http://localhost:8001
+      PUBLIC_BACKEND_WS_URL: ws://localhost:8001
+    depends_on:
+      - astriarch-backend
     networks:
       - astriarch_net
 
