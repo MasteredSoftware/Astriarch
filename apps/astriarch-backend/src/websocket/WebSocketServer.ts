@@ -1,5 +1,8 @@
 import WebSocket from "ws";
 import { Server } from "http";
+import { parse as parseCookie } from "cookie";
+import * as signature from "cookie-signature";
+import config from "config";
 import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
 import { ChatMessageModel, IChatMessage } from "../models/ChatMessage";
@@ -155,13 +158,10 @@ export class WebSocketServer {
       if (req.headers.cookie) {
         logger.info("Raw cookies received:", req.headers.cookie);
 
-        const cookie = require("cookie");
-        const signature = require("cookie-signature");
-        const config = require("config");
         const cookieSecret = process.env.COOKIE_SECRET || (config.get("cookie.secret") as string);
 
         // Parse the cookies first
-        const cookies = cookie.parse(req.headers.cookie);
+        const cookies = parseCookie(req.headers.cookie);
         logger.info("Parsed cookies:", cookies);
 
         // Get the signed connect.sid cookie
@@ -173,8 +173,12 @@ export class WebSocketServer {
           if (signedSessionCookie.startsWith("s:")) {
             try {
               const unsigned = signature.unsign(signedSessionCookie.slice(2), cookieSecret);
-              logger.info("Unsigned session ID:", unsigned);
-              return unsigned;
+              if (unsigned !== false) {
+                logger.info("Unsigned session ID:", unsigned);
+                return unsigned;
+              } else {
+                logger.warn("Cookie signature verification failed");
+              }
             } catch (error) {
               logger.warn("Failed to unsign cookie:", error);
             }
