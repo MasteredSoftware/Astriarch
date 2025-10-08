@@ -1,0 +1,51 @@
+FROM node:22-alpine AS build
+
+WORKDIR /usr/src/app
+
+# Install specific pnpm version to match local development
+RUN npm install -g pnpm@10.11.1
+
+# Copy workspace files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+
+# Copy all package.json files to maintain workspace structure
+COPY apps/ apps/
+COPY packages/ packages/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Build the frontend
+RUN pnpm run --filter=astriarch-frontend... build
+
+FROM nginx:alpine AS frontend
+
+# Copy the built SvelteKit app to nginx
+COPY --from=build /usr/src/app/apps/astriarch-frontend/build /usr/share/nginx/html
+
+# Copy custom nginx configuration if needed
+COPY <<EOF /etc/nginx/conf.d/default.conf
+server {
+    listen 3000;
+    server_name localhost;
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    # Handle SvelteKit client-side routing
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+    
+    # Optional: Add headers for better caching of static assets
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+EOF
+
+# Expose port
+EXPOSE 3000
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
