@@ -7,6 +7,10 @@ http://www.astriarch.com/
 
 `docker-compose up`
 
+Then visit the frontend at:
+
+`http://localhost:3000`
+
 
 Database only:
 
