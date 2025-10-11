@@ -94,7 +94,8 @@ export class DrawnPlanet {
 			fontFamily: 'Orbitron, monospace',
 			fontStyle: 'bold',
 			fill: this.textBlockForeground,
-			align: 'center'
+			align: 'center',
+			perfectDrawEnabled: false
 		});
 		this.group.add(this.nameText);
 
@@ -108,7 +109,8 @@ export class DrawnPlanet {
 			fontFamily: 'Orbitron, monospace',
 			fontStyle: 'bold',
 			fill: this.textBlockStrengthForeground,
-			align: 'center'
+			align: 'center',
+			perfectDrawEnabled: false
 		});
 		this.group.add(this.strengthText);
 	}
@@ -228,7 +230,8 @@ export class DrawnPlanet {
 						width: PLANET_IMAGE_WIDTH,
 						height: PLANET_IMAGE_HEIGHT,
 						image: imageObj,
-						visible: true
+						visible: true,
+						perfectDrawEnabled: false
 					});
 
 					// Add image to the group
@@ -313,7 +316,9 @@ export class DrawnPlanet {
 					shadowBlur: 2,
 					shadowOffset: { x: 0, y: 2 },
 					shadowOpacity: 0.25,
-					visible: true
+					visible: true,
+					perfectDrawEnabled: false,
+					shadowForStrokeEnabled: false
 				});
 			} else {
 				// For unowned planets, use the original metallic gradient from Figma
@@ -340,7 +345,9 @@ export class DrawnPlanet {
 					shadowBlur: 2,
 					shadowOffset: { x: 0, y: 2 },
 					shadowOpacity: 0.25,
-					visible: true
+					visible: true,
+					perfectDrawEnabled: false,
+					shadowForStrokeEnabled: false
 				});
 			}
 
@@ -385,7 +392,9 @@ export class DrawnPlanet {
 					shadowBlur: 2,
 					shadowOffset: { x: 0, y: 2 },
 					shadowOpacity: 0.25,
-					visible: true
+					visible: true,
+					perfectDrawEnabled: false,
+					shadowForStrokeEnabled: false
 				});
 			} else {
 				// For unowned planets, use the original metallic gradient from Figma
@@ -412,7 +421,9 @@ export class DrawnPlanet {
 					shadowBlur: 2,
 					shadowOffset: { x: 0, y: 2 },
 					shadowOpacity: 0.25,
-					visible: true
+					visible: true,
+					perfectDrawEnabled: false,
+					shadowForStrokeEnabled: false
 				});
 			}
 
@@ -535,7 +546,8 @@ export class DrawnPlanet {
 		// Create group for the indicator - positioned to the left of the planet
 		this.fleetStrengthIndicator = new Konva.Group({
 			x: -PLANET_SIZE / 2 - 8, // Position to the left of the planet
-			y: 0 // Centered vertically on the planet
+			y: 0, // Centered vertically on the planet
+			perfectDrawEnabled: false
 		});
 
 		// Larger, more visible dots
@@ -562,7 +574,9 @@ export class DrawnPlanet {
 				fill: ownerColor,
 				stroke: 'black',
 				strokeWidth: 0.5,
-				opacity: 0.9
+				opacity: 0.9,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			this.fleetStrengthIndicator.add(dot);
 		}
@@ -655,7 +669,9 @@ export class DrawnPlanet {
 				radius: 3,
 				fill: this.productionItemStatusColor || 'yellow',
 				stroke: 'black',
-				strokeWidth: 1
+				strokeWidth: 1,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			this.group.add(this.statusIndicator);
 		}
@@ -673,7 +689,9 @@ export class DrawnPlanet {
 				strokeWidth: 6, // Thick stroke like Figma: stroke-width="14"
 				opacity: 0.16, // Low opacity like Figma: stroke-opacity="0.16"
 				visible: false,
-				listening: false
+				listening: false,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			this.group.add(this.selectionRingOuter);
 
@@ -702,7 +720,9 @@ export class DrawnPlanet {
 				shadowOffset: { x: 0, y: 4 },
 				shadowOpacity: 0.25,
 				visible: false,
-				listening: false
+				listening: false,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			this.group.add(this.selectionRingMiddle);
 
@@ -716,7 +736,9 @@ export class DrawnPlanet {
 				strokeWidth: 1,
 				opacity: 0.6,
 				visible: false,
-				listening: false
+				listening: false,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			this.group.add(this.selectionRingInner);
 		}
