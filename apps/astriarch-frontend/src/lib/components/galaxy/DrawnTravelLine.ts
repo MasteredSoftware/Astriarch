@@ -25,7 +25,7 @@ export class DrawnTravelLine {
 	private toPoint: { x: number; y: number };
 
 	constructor(options: TravelLineOptions) {
-		this.group = new Konva.Group();
+		this.group = new Konva.Group({ perfectDrawEnabled: false });
 		this.type = options.type;
 		this.fromPoint = { x: options.fromX, y: options.fromY };
 		this.toPoint = { x: options.toX, y: options.toY };
@@ -45,7 +45,9 @@ export class DrawnTravelLine {
 			stroke: '#00FFFF',
 			strokeWidth: 1,
 			lineCap: 'round',
-			lineJoin: 'round'
+			lineJoin: 'round',
+			perfectDrawEnabled: false,
+			shadowForStrokeEnabled: false
 		});
 
 		this.group.add(this.line);

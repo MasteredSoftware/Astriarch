@@ -111,7 +111,9 @@ export class DrawnFleet {
 			scaleY: FLEET_ICON_SIZE / 55,
 			offsetX: 27.5, // Center the icon (half of original width)
 			offsetY: 35, // Center the icon (half of original height)
-			visible: false
+			visible: false,
+			perfectDrawEnabled: false,
+			shadowForStrokeEnabled: false
 		});
 		this.group.add(this.fleetIcon);
 
@@ -124,7 +126,8 @@ export class DrawnFleet {
 			fontFamily: 'Orbitron, monospace',
 			fontStyle: 'bold',
 			fill: '#00FFFF',
-			visible: false
+			visible: false,
+			perfectDrawEnabled: false
 		});
 		this.group.add(this.etaText);
 

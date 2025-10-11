@@ -192,6 +192,7 @@ export class GameModel {
           playerHomePlanetHex = planetBoundingHex;
           initialPlanetOwner.homePlanetId = p.id;
           initialPlanetOwner.ownedPlanetIds.push(p.id);
+          Player.setPlanetExplored(initialPlanetOwner, p, 0, undefined);
         }
 
         if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant) {

@@ -7,7 +7,7 @@ export interface AudioTrack {
 }
 
 export class AudioService {
-	private volume = 1.0;
+	private volume = 0.5;
 	private muted = false;
 	private enabled = true;
 	private currentPhase: GamePhase = 'StartMenu';

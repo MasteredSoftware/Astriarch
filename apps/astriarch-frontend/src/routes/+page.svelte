@@ -65,7 +65,7 @@
 		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
 		{ label: 'Research', onclick: () => navigationActions.setView('research') },
 		{ label: 'Trading', onclick: () => navigationActions.setView('trading') },
-		{ label: 'Fleet Command', onclick: () => navigationActions.setView('fleet') },
+		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet') },
 		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
 	];
 

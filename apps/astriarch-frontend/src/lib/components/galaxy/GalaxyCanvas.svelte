@@ -123,6 +123,9 @@
 	function initializeCanvas() {
 		console.log('Initializing GalaxyCanvas...');
 
+		// Set Konva performance optimizations globally
+		Konva.pixelRatio = 1;
+
 		// Get galaxy dimensions from the grid when available
 		const grid = $gameGrid;
 		const galaxyWidth = grid ? GALAXY_WIDTH : 800; // Default fallback
@@ -132,7 +135,7 @@
 
 		if (grid) {
 			currentGrid = grid;
-			console.log('Grid loaded with', grid.hexes.length, 'hexes');
+			console.log('Grid loaded w`ith', grid.hexes.length, 'hexes');
 		}
 
 		// Create Konva stage with proper galaxy dimensions
@@ -140,13 +143,19 @@
 			container: canvasContainer,
 			width: window.innerWidth - 300, // Account for UI panels
 			height: window.innerHeight - 200, // Account for top bar and navigation
-			draggable: true // Enable panning the galaxy view
+			draggable: true, // Enable panning the galaxy view
+			perfectDrawEnabled: false
 		});
 
 		// Create layers (back to front rendering order)
 		galaxyLayer = new Konva.Layer();
 		fleetLayer = new Konva.Layer();
 		uiLayer = new Konva.Layer();
+
+		// Performance optimization: disable listening for layers that don't need events
+		galaxyLayer.listening(false);
+		fleetLayer.listening(false);
+		uiLayer.listening(false);
 
 		stage.add(galaxyLayer);
 		stage.add(fleetLayer);
@@ -188,7 +197,8 @@
 			y: 0,
 			width: galaxyWidth,
 			height: galaxyHeight,
-			fill: '#000011'
+			fill: '#000011',
+			perfectDrawEnabled: false
 		});
 		galaxyLayer.add(background);
 
@@ -205,7 +215,9 @@
 				radius: Math.random() * 1.5 + 0.5,
 				fill: `rgba(255, 255, 255, ${Math.random() * 0.6 + 0.4})`,
 				shadowColor: 'white',
-				shadowBlur: Math.random() * 2
+				shadowBlur: Math.random() * 2,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			galaxyLayer.add(star);
 		}
@@ -250,7 +262,9 @@
 				stroke: 'rgba(0, 255, 255, 0.15)',
 				strokeWidth: 1,
 				fill: 'transparent',
-				closed: true
+				closed: true,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false
 			});
 			galaxyLayer.add(hexShape);
 
@@ -262,7 +276,8 @@
 				fontSize: 7,
 				fill: 'rgba(0, 255, 255, 0.2)',
 				align: 'center',
-				fontFamily: 'monospace'
+				fontFamily: 'monospace',
+				perfectDrawEnabled: false
 			});
 			galaxyLayer.add(label);
 		}
