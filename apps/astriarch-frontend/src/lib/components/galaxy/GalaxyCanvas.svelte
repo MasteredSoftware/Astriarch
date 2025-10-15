@@ -807,25 +807,31 @@
 	}
 </script>
 
-<div
-	bind:this={canvasContainer}
-	class="galaxy-canvas relative h-full w-full rounded-lg border border-cyan-500/20 bg-black"
-	on:click={handleStageClick}
-	on:keydown
-	role="button"
-	tabindex="0"
-	aria-label="Galaxy map - Click to interact with planets and fleets"
->
+<!-- Wrapper container for both canvas and UI overlays -->
+<div class="galaxy-container relative h-full w-full">
+	<!-- Konva canvas container -->
+	<div
+		bind:this={canvasContainer}
+		class="galaxy-canvas absolute inset-0 rounded-lg border border-cyan-500/20 bg-black"
+		on:click={handleStageClick}
+		on:keydown
+		role="button"
+		tabindex="0"
+		aria-label="Galaxy map - Click to interact with planets and fleets"
+	>
+	</div>
 	<!-- Zoom level indicator -->
 	<div
-		class="absolute top-4 right-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400"
+		class="absolute top-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400 pointer-events-none"
+		style="right: 13rem"
 	>
 		Zoom: {Math.round(zoomLevel * 100)}%
 	</div>
 
 	<!-- Controls hint -->
 	<div
-		class="absolute bottom-4 left-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400/70"
+		class="absolute top-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400/70 pointer-events-none"
+		style="left: 18rem"
 	>
 		Mouse wheel: zoom • Drag: pan
 	</div>

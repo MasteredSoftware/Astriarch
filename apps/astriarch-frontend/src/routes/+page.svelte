@@ -63,9 +63,9 @@
 
 	let navigationItems = [
 		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
+		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet') },
 		{ label: 'Research', onclick: () => navigationActions.setView('research') },
 		{ label: 'Trading', onclick: () => navigationActions.setView('trading') },
-		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet') },
 		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
 	];
 
@@ -502,15 +502,15 @@
 						<Logo size="xl" variant="primary" />
 					</div>
 					<Text style="font-size: 20px; color: #94A3B8; margin-bottom: 32px; line-height: 1.6;">
-						Command vast fleets across the galaxy in real-time. Manage planetary resources and
-						populations. Research advanced technologies. Forge alliances or crush your enemies.
+						Real-time multiplayer space strategy game.
 					</Text>
+					<br />
 					<Text style="font-size: 16px; color: #64748B; margin-bottom: 48px;">
-						The galaxy awaits your strategic genius in this real-time space conquest.
+						 Manage planetary resources, research advanced technologies, crush your enemies with vast fleets, and rule the stars.
 					</Text>
-					<div class="flex justify-center">
+					<div class="flex justify-center mt-4">
 						<Button
-							label="Join Multiplayer Game"
+							label="Play Now"
 							size="lg"
 							variant="primary"
 							onclick={handleShowLobby}
