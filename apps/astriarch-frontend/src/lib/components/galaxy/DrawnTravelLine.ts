@@ -47,7 +47,8 @@ export class DrawnTravelLine {
 			lineCap: 'round',
 			lineJoin: 'round',
 			perfectDrawEnabled: false,
-			shadowForStrokeEnabled: false
+			shadowForStrokeEnabled: false,
+			listening: false // Disable events
 		});
 
 		this.group.add(this.line);

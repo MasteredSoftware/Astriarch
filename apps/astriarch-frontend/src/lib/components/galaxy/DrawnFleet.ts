@@ -113,7 +113,8 @@ export class DrawnFleet {
 			offsetY: 35, // Center the icon (half of original height)
 			visible: false,
 			perfectDrawEnabled: false,
-			shadowForStrokeEnabled: false
+			shadowForStrokeEnabled: false,
+			listening: false // Disable events
 		});
 		this.group.add(this.fleetIcon);
 
@@ -127,7 +128,8 @@ export class DrawnFleet {
 			fontStyle: 'bold',
 			fill: '#00FFFF',
 			visible: false,
-			perfectDrawEnabled: false
+			perfectDrawEnabled: false,
+			listening: false // Disable events
 		});
 		this.group.add(this.etaText);
 
