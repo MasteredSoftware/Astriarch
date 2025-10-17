@@ -1134,6 +1134,27 @@ class WebSocketService {
 		}
 	}
 
+	updatePlanetOptions(planetId: number, options: { buildLastStarship?: boolean }) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				planetId,
+				...options
+			};
+
+			console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+		} catch (error) {
+			console.error('Failed to update planet options:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot update planet options - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
 	sendShips(
 		planetIdSource: number,
 		planetIdDest: number,

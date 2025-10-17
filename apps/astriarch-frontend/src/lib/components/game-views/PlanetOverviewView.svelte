@@ -167,6 +167,19 @@
 		}
 	}
 
+	function updateBuildLastStarship(buildLastStarship: boolean) {
+		if (!currentSelectedPlanet) return;
+
+		try {
+			// Send WebSocket message to update planet buildLastStarship option
+			webSocketService.updatePlanetOptions(currentSelectedPlanet.id, { buildLastStarship });
+
+			console.log('Updated buildLastStarship setting:', buildLastStarship);
+		} catch (error) {
+			console.error('Failed to update buildLastStarship setting:', error);
+		}
+	}
+
 	// Available building types with descriptions
 	const buildingTypes = [
 		{ type: PlanetImprovementType.Farm, description: 'Increases food production' },
@@ -614,7 +627,25 @@
 
 			<!-- Column 3: Build Queue -->
 			<div class="flex-1 overflow-y-auto p-3">
-				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">Build Queue</h3>
+				<div class="mb-2 flex items-center justify-between">
+					<h3 class="text-astriarch-body-16-semibold text-astriarch-primary">Build Queue</h3>
+					{#if isFullPlanetData(currentSelectedPlanet)}
+						<div class="flex items-center space-x-2">
+							<label class="flex cursor-pointer items-center space-x-1 text-xs text-slate-300">
+								<input
+									type="checkbox"
+									class="form-checkbox h-3 w-3 rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-900"
+									checked={currentSelectedPlanet.buildLastStarship}
+									onchange={(e) => {
+										const target = e.target as HTMLInputElement;
+										updateBuildLastStarship(target.checked);
+									}}
+								/>
+								<span>Build Last Ship</span>
+							</label>
+						</div>
+					{/if}
+				</div>
 
 				{#if isFullPlanetData(currentSelectedPlanet) && currentSelectedPlanet.buildQueue && currentSelectedPlanet.buildQueue.length > 0}
 					<div class="space-y-2">

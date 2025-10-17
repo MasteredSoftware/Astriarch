@@ -601,7 +601,7 @@ export class GameController {
 
   static async updatePlanetOptions(sessionId: string, payload: any): Promise<GameResult> {
     try {
-      const { gameId, planetId, farmerDiff, minerDiff, builderDiff } = payload;
+      const { gameId, planetId, farmerDiff, minerDiff, builderDiff, buildLastStarship } = payload;
 
       // Find the game
       const game = await ServerGameModel.findById(gameId);
@@ -638,7 +638,20 @@ export class GameController {
       }
 
       // Update worker assignments using the new engine method that handles rebalancing
-      engine.Planet.updatePopulationWorkerTypes(planet, gamePlayer, farmerDiff || 0, minerDiff || 0, builderDiff || 0);
+      if (farmerDiff !== undefined || minerDiff !== undefined || builderDiff !== undefined) {
+        engine.Planet.updatePopulationWorkerTypes(
+          planet,
+          gamePlayer,
+          farmerDiff || 0,
+          minerDiff || 0,
+          builderDiff || 0,
+        );
+      }
+
+      // Update buildLastStarship option if provided
+      if (buildLastStarship !== undefined) {
+        planet.buildLastStarship = buildLastStarship;
+      }
 
       // Save the updated game state
       game.gameState = gameModel;
