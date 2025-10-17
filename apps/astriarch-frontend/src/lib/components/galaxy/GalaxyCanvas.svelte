@@ -144,7 +144,8 @@
 			width: window.innerWidth - 300, // Account for UI panels
 			height: window.innerHeight - 200, // Account for top bar and navigation
 			draggable: true, // Enable panning the galaxy view
-			perfectDrawEnabled: false
+			perfectDrawEnabled: false,
+			listening: false // Disable events
 		});
 
 		// Create layers (back to front rendering order)
@@ -198,7 +199,8 @@
 			width: galaxyWidth,
 			height: galaxyHeight,
 			fill: '#000011',
-			perfectDrawEnabled: false
+			perfectDrawEnabled: false,
+			listening: false // Disable events
 		});
 		galaxyLayer.add(background);
 
@@ -217,7 +219,8 @@
 				shadowColor: 'white',
 				shadowBlur: Math.random() * 2,
 				perfectDrawEnabled: false,
-				shadowForStrokeEnabled: false
+				shadowForStrokeEnabled: false,
+				listening: false // Disable events
 			});
 			galaxyLayer.add(star);
 		}
@@ -264,7 +267,8 @@
 				fill: 'transparent',
 				closed: true,
 				perfectDrawEnabled: false,
-				shadowForStrokeEnabled: false
+				shadowForStrokeEnabled: false,
+				listening: false // Disable events
 			});
 			galaxyLayer.add(hexShape);
 
@@ -277,7 +281,8 @@
 				fill: 'rgba(0, 255, 255, 0.2)',
 				align: 'center',
 				fontFamily: 'monospace',
-				perfectDrawEnabled: false
+				perfectDrawEnabled: false,
+				listening: false // Disable events
 			});
 			galaxyLayer.add(label);
 		}
