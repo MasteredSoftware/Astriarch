@@ -2,6 +2,15 @@
 @import 'tw-animate-css';
 @import './lib/styles/astriarch.css';
 
+/* Load local Orbitron font */
+@font-face {
+	font-family: 'Orbitron';
+	src: url('/fonts/orbitron/Orbitron-VariableFont_wght.ttf') format('truetype-variations');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
