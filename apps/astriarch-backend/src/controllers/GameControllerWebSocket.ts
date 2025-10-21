@@ -601,7 +601,7 @@ export class GameController {
 
   static async updatePlanetOptions(sessionId: string, payload: any): Promise<GameResult> {
     try {
-      const { gameId, planetId, farmerDiff, minerDiff, builderDiff } = payload;
+      const { gameId, planetId, farmerDiff, minerDiff, builderDiff, buildLastStarship } = payload;
 
       // Find the game
       const game = await ServerGameModel.findById(gameId);
@@ -638,7 +638,20 @@ export class GameController {
       }
 
       // Update worker assignments using the new engine method that handles rebalancing
-      engine.Planet.updatePopulationWorkerTypes(planet, gamePlayer, farmerDiff || 0, minerDiff || 0, builderDiff || 0);
+      if (farmerDiff !== undefined || minerDiff !== undefined || builderDiff !== undefined) {
+        engine.Planet.updatePopulationWorkerTypes(
+          planet,
+          gamePlayer,
+          farmerDiff || 0,
+          minerDiff || 0,
+          builderDiff || 0,
+        );
+      }
+
+      // Update buildLastStarship option if provided
+      if (buildLastStarship !== undefined) {
+        planet.buildLastStarship = buildLastStarship;
+      }
 
       // Save the updated game state
       game.gameState = gameModel;
@@ -765,10 +778,116 @@ export class GameController {
     }
   }
 
+  static async setWaypoint(sessionId: string, payload: any): Promise<GameResult> {
+    try {
+      const { gameId, planetId, waypointPlanetId } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the source planet in the game state
+      const planet = gameModel.planets?.find((p: any) => p.id === planetId);
+      if (!planet) {
+        return { success: false, error: "Source planet not found" };
+      }
+
+      // Find the waypoint planet in the game state
+      const waypointPlanet = gameModel.planets?.find((p: any) => p.id === waypointPlanetId);
+      if (!waypointPlanet) {
+        return { success: false, error: "Waypoint planet not found" };
+      }
+
+      const gamePlayer = gameModel.players?.find((p: any) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Check if this player owns the source planet
+      const ownsPlanet = GameModel.isPlanetOwnedByPlayer(gamePlayer, planetId);
+      if (!ownsPlanet) {
+        return { success: false, error: "You do not own this planet" };
+      }
+
+      // Set the waypoint
+      planet.waypointBoundingHexMidPoint = waypointPlanet.boundingHexMidPoint;
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.name} set waypoint from planet ${planetId} to planet ${waypointPlanetId}`);
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error setting waypoint:", error);
+      return { success: false, error: "Failed to set waypoint" };
+    }
+  }
+
   static async clearWaypoint(sessionId: string, payload: any): Promise<GameResult> {
-    // TODO: Implement waypoint clearing
-    logger.warn("clearWaypoint not yet implemented");
-    return { success: false, error: "Not implemented" };
+    try {
+      const { gameId, planetId } = payload;
+
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+      const gameModel = gameModelData.modelData;
+
+      // Find the planet in the game state
+      const planet = gameModel.planets?.find((p: any) => p.id === planetId);
+      if (!planet) {
+        return { success: false, error: "Planet not found" };
+      }
+
+      const gamePlayer = gameModel.players?.find((p: any) => p.id === player.Id);
+      if (!gamePlayer) {
+        return { success: false, error: "Player not found in game state" };
+      }
+
+      // Check if this player owns the planet
+      const ownsPlanet = GameModel.isPlanetOwnedByPlayer(gamePlayer, planetId);
+      if (!ownsPlanet) {
+        return { success: false, error: "You do not own this planet" };
+      }
+
+      // Clear the waypoint
+      planet.waypointBoundingHexMidPoint = null;
+
+      // Save the updated game state
+      game.gameState = gameModel;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      logger.info(`Player ${player.name} cleared waypoint for planet ${planetId}`);
+      return { success: true, game, gameData: gameModel };
+    } catch (error) {
+      logger.error("Error clearing waypoint:", error);
+      return { success: false, error: "Failed to clear waypoint" };
+    }
   }
 
   static async adjustResearchPercent(sessionId: string, payload: any): Promise<GameResult> {

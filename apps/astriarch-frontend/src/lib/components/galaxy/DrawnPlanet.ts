@@ -190,6 +190,7 @@ export class DrawnPlanet {
 		this.updateFleetStrengthIndicator();
 		this.updateProductionStatus();
 		this.updateSelectionState();
+		this.updateWaypointLine();
 	}
 
 	private getPlanetImageUrl(planetType: PlanetType): string {
@@ -805,6 +806,68 @@ export class DrawnPlanet {
 		return this.isSelected;
 	}
 
+	private updateWaypointLine(): void {
+		// Check if this planet has a waypoint set
+		if (this.planetData.waypointBoundingHexMidPoint) {
+			const dx =
+				this.planetData.waypointBoundingHexMidPoint.x - this.planetData.boundingHexMidPoint.x;
+			const dy =
+				this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y;
+
+			// Create or update waypoint line with gradient transparency
+			if (!this.waypointLine) {
+				this.waypointLine = new Konva.Line({
+					points: [
+						0,
+						0, // Start at planet center
+						dx,
+						dy // End at waypoint
+					],
+					stroke: '#7F7F7F',
+					strokeWidth: 1,
+					dash: [8, 4], // Dashed line to distinguish from fleet travel lines
+					// Gradient opacity from opaque to transparent shows direction
+					opacity: 1,
+					strokeLinearGradientStartPoint: { x: 0, y: 0 },
+					strokeLinearGradientEndPoint: { x: dx, y: dy },
+					strokeLinearGradientColorStops: [
+						0,
+						'#7F7F7F',
+						0.7,
+						'#7F7F7F99',
+						1,
+						'#7F7F7F33' // Transparent at destination
+					],
+					perfectDrawEnabled: false,
+					listening: false // Disable events
+				});
+
+				// Add line to the group, but behind other elements
+				this.group.add(this.waypointLine);
+				this.waypointLine.moveToBottom();
+
+				// Move planet image above waypoint line if it exists
+				if (this.planetImage) {
+					this.planetImage.moveUp();
+				}
+				if (this.planetRing) {
+					this.planetRing.moveUp();
+				}
+			} else {
+				// Update existing line points and gradient
+				this.waypointLine.points([0, 0, dx, dy]);
+				this.waypointLine.strokeLinearGradientStartPoint({ x: 0, y: 0 });
+				this.waypointLine.strokeLinearGradientEndPoint({ x: dx, y: dy });
+				this.waypointLine.visible(true);
+			}
+		} else {
+			// No waypoint set, hide the line if it exists
+			if (this.waypointLine) {
+				this.waypointLine.visible(false);
+			}
+		}
+	}
+
 	destroy(): void {
 		if (this.planetImage) {
 			this.planetImage.destroy();
@@ -829,6 +892,10 @@ export class DrawnPlanet {
 		if (this.selectionRingInner) {
 			this.selectionRingInner.destroy();
 			this.selectionRingInner = null;
+		}
+		if (this.waypointLine) {
+			this.waypointLine.destroy();
+			this.waypointLine = null;
 		}
 		if (this.group) {
 			this.group.destroy();

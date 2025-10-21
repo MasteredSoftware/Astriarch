@@ -77,7 +77,7 @@ export class Player {
   }
 
   public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): FleetData[] {
-    // addLastStarShipToQueueOnPlanets
+    Player.addLastStarShipToQueueOnPlanets(data);
 
     Player.generatePlayerResources(data);
 

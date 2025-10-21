@@ -441,7 +441,7 @@ export class Fleet {
     const shipsByType = Fleet.getStarshipsByType(fleet);
     const customCountsByType = Object.entries(shipsByType).reduce(
       (accum, [currType, currShips]) => {
-        const key = currType as unknown as StarShipType;
+        const key = parseInt(currType) as StarShipType;
         if (!(key in accum)) {
           accum[key] = { standard: 0, custom: 0 };
         }
@@ -453,7 +453,7 @@ export class Fleet {
     );
 
     const fleetSummary = Object.entries(customCountsByType).reduce((accum, [currType, currCounts]) => {
-      const key = currType as unknown as StarShipType;
+      const key = parseInt(currType) as StarShipType;
       if (currCounts.standard) {
         if (accum != '') accum += ', ';
         accum += `${currCounts.standard} ${GameTools.starShipTypeToFriendlyName(key, false)}${
@@ -467,7 +467,7 @@ export class Fleet {
       return accum;
     }, '');
 
-    return fleetSummary ?? 'No Ships';
+    return fleetSummary || 'No Ships';
   }
 
   /**

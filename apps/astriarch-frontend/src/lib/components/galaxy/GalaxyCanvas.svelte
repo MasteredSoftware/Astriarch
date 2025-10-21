@@ -823,11 +823,10 @@
 		role="button"
 		tabindex="0"
 		aria-label="Galaxy map - Click to interact with planets and fleets"
-	>
-	</div>
+	></div>
 	<!-- Zoom level indicator -->
 	<div
-		class="absolute top-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400 pointer-events-none"
+		class="pointer-events-none absolute top-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400"
 		style="right: 13rem"
 	>
 		Zoom: {Math.round(zoomLevel * 100)}%
@@ -835,7 +834,7 @@
 
 	<!-- Controls hint -->
 	<div
-		class="absolute top-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400/70 pointer-events-none"
+		class="pointer-events-none absolute top-4 z-10 rounded border border-cyan-500/30 bg-black/70 px-2 py-1 text-xs text-cyan-400/70"
 		style="left: 18rem"
 	>
 		Mouse wheel: zoom • Drag: pan

@@ -506,15 +506,11 @@
 					</Text>
 					<br />
 					<Text style="font-size: 16px; color: #64748B; margin-bottom: 48px;">
-						 Manage planetary resources, research advanced technologies, crush your enemies with vast fleets, and rule the stars.
+						Manage planetary resources, research advanced technologies, crush your enemies with vast
+						fleets, and rule the stars.
 					</Text>
-					<div class="flex justify-center mt-4">
-						<Button
-							label="Play Now"
-							size="lg"
-							variant="primary"
-							onclick={handleShowLobby}
-						/>
+					<div class="mt-4 flex justify-center">
+						<Button label="Play Now" size="lg" variant="primary" onclick={handleShowLobby} />
 					</div>
 				</div>
 			</div>

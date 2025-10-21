@@ -311,6 +311,10 @@ export class WebSocketServer {
         await this.handleUpdatePlanetBuildQueue(clientId, message);
         break;
 
+      case MESSAGE_TYPE.SET_WAYPOINT:
+        await this.handleSetWaypoint(clientId, message);
+        break;
+
       case MESSAGE_TYPE.CLEAR_WAYPOINT:
         await this.handleClearWaypoint(clientId, message);
         break;
@@ -1092,6 +1096,34 @@ export class WebSocketServer {
         clientId,
         new Message(MESSAGE_TYPE.ERROR, {
           message: error instanceof Error ? error.message : "Unknown error occurred while updating build queue",
+        }),
+      );
+    }
+  }
+
+  private async handleSetWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const result = await GameController.setWaypoint(client.sessionId, message.payload);
+
+      if (result.success) {
+        logger.info(`Waypoint set for player ${client.sessionId}`);
+        // Broadcast the game state update to all players in the game
+        if (result.game && result.game._id) {
+          await this.broadcastGameStateUpdate(result.game._id.toString());
+        }
+      } else {
+        const response = new Message(MESSAGE_TYPE.SET_WAYPOINT, message.payload);
+        this.sendToClient(clientId, response);
+      }
+    } catch (error) {
+      logger.error("handleSetWaypoint error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: error instanceof Error ? error.message : "Unknown error occurred while setting waypoint",
         }),
       );
     }

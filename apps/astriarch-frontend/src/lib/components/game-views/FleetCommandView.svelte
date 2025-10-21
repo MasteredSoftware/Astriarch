@@ -153,6 +153,39 @@
 		gameActions.selectPlanet(planetId);
 	}
 
+	async function setWaypoint() {
+		if (!currentSelectedPlanet || !$fleetCommandStore.destinationPlanetId) {
+			console.warn('Cannot set waypoint: no planet or destination selected');
+			return;
+		}
+
+		console.log(
+			'Setting waypoint for planet:',
+			currentSelectedPlanet.id,
+			'to destination:',
+			$fleetCommandStore.destinationPlanetId
+		);
+
+		// Set the waypoint using the currently selected destination
+		webSocketService.setWaypoint(currentSelectedPlanet.id, $fleetCommandStore.destinationPlanetId);
+	}
+
+	async function clearWaypoint() {
+		if (!currentSelectedPlanet) {
+			console.warn('Cannot clear waypoint: no planet selected');
+			return;
+		}
+
+		console.log(
+			'Clearing waypoint for planet:',
+			currentSelectedPlanet.id,
+			currentSelectedPlanet.name
+		);
+
+		// Call WebSocket service to clear the waypoint
+		webSocketService.clearWaypoint(currentSelectedPlanet.id);
+	}
+
 	// Get destination planet name if one is selected
 	$: destinationPlanet = $fleetCommandStore.destinationPlanetId
 		? $clientGameModel?.mainPlayerOwnedPlanets[$fleetCommandStore.destinationPlanetId] ||
@@ -198,7 +231,7 @@
 								Destination: <strong>{destinationPlanet?.name || 'Unknown Planet'}</strong>
 							</p>
 							<p class="mt-1 text-xs text-green-300/80">
-								Select ships above and click "Send Ships" to launch your fleet
+								Select ships and click "Send Ships" to launch your fleet
 							</p>
 						</div>
 						<button
@@ -258,6 +291,26 @@
 			>
 				Select All
 			</button>
+
+			<!-- Waypoint Buttons - only show when planet and destination are selected -->
+			{#if currentSelectedPlanet && $fleetCommandStore.destinationPlanetId}
+				<button
+					class="h-12 rounded-[4px] bg-gradient-to-b from-[#FF6B35] to-[#E85A2B] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#FF7A45] hover:to-[#F86A3B] disabled:cursor-not-allowed disabled:opacity-50"
+					onclick={setWaypoint}
+					title="Set waypoint to {destinationPlanet?.name || 'selected destination'}"
+				>
+					Set Waypoint
+				</button>
+			{/if}
+			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
+				<button
+					class="h-12 rounded-[4px] bg-gradient-to-b from-[#DC2626] to-[#B91C1C] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#EF4444] hover:to-[#DC2626]"
+					onclick={clearWaypoint}
+					title="Clear waypoint for this planet"
+				>
+					Clear Waypoint
+				</button>
+			{/if}
 		</div>
 	</div>
 
