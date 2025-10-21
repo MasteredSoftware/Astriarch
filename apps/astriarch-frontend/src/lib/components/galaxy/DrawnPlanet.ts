@@ -809,19 +809,35 @@ export class DrawnPlanet {
 	private updateWaypointLine(): void {
 		// Check if this planet has a waypoint set
 		if (this.planetData.waypointBoundingHexMidPoint) {
-			// Create or update waypoint line
+			const dx =
+				this.planetData.waypointBoundingHexMidPoint.x - this.planetData.boundingHexMidPoint.x;
+			const dy =
+				this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y;
+
+			// Create or update waypoint line with gradient transparency
 			if (!this.waypointLine) {
 				this.waypointLine = new Konva.Line({
 					points: [
 						0,
 						0, // Start at planet center
-						this.planetData.waypointBoundingHexMidPoint.x - this.planetData.boundingHexMidPoint.x,
-						this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y
+						dx,
+						dy // End at waypoint
 					],
-					stroke: '#FF6B35', // Orange color for waypoint lines
-					strokeWidth: 2,
-					dash: [5, 5], // Dashed line to distinguish from fleet travel lines
-					opacity: 0.8,
+					stroke: '#7F7F7F', // Orange color for waypoint lines
+					strokeWidth: 1,
+					dash: [8, 4], // Dashed line to distinguish from fleet travel lines
+					// Gradient opacity from opaque to transparent shows direction
+					opacity: 1,
+					strokeLinearGradientStartPoint: { x: 0, y: 0 },
+					strokeLinearGradientEndPoint: { x: dx, y: dy },
+					strokeLinearGradientColorStops: [
+						0,
+						'#7F7F7F', // Orange at source (full opacity)
+						0.7,
+						'#7F7F7F99', // Hold color
+						1,
+						'#7F7F7F33' // Transparent at destination
+					],
 					perfectDrawEnabled: false,
 					listening: false // Disable events
 				});
@@ -838,13 +854,10 @@ export class DrawnPlanet {
 					this.planetRing.moveUp();
 				}
 			} else {
-				// Update existing line points
-				this.waypointLine.points([
-					0,
-					0, // Start at planet center
-					this.planetData.waypointBoundingHexMidPoint.x - this.planetData.boundingHexMidPoint.x,
-					this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y
-				]);
+				// Update existing line points and gradient
+				this.waypointLine.points([0, 0, dx, dy]);
+				this.waypointLine.strokeLinearGradientStartPoint({ x: 0, y: 0 });
+				this.waypointLine.strokeLinearGradientEndPoint({ x: dx, y: dy });
 				this.waypointLine.visible(true);
 			}
 		} else {
