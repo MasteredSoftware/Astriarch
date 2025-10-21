@@ -769,6 +769,53 @@ export class GameController {
           game,
           gameData: gameModel,
         };
+      } else if (action === "demolish") {
+        // Add demolish improvement to build queue
+        const improvementType = productionItem.improvementData?.type as number;
+
+        if (improvementType === undefined || typeof improvementType !== "number") {
+          return { success: false, error: "Invalid improvement type for demolition" };
+        }
+
+        // Validate that the planet has this improvement
+        const builtCount = planet.builtImprovements[improvementType as keyof typeof planet.builtImprovements] || 0;
+        if (builtCount <= 0) {
+          return {
+            success: false,
+            error: `No improvements of this type available to demolish`,
+          };
+        }
+
+        // Count existing demolish orders in queue for this improvement type
+        const demolishInQueue = planet.buildQueue.filter(
+          (item: any) =>
+            item.itemType === 3 && // PlanetProductionItemType.PlanetImprovementToDestroy
+            item.improvementData?.type === improvementType,
+        ).length;
+
+        if (builtCount <= demolishInQueue) {
+          return {
+            success: false,
+            error: "All improvements of this type already queued for demolition",
+          };
+        }
+
+        // Add demolish item to build queue (no resource cost for demolishing)
+        planet.buildQueue.push(productionItem);
+
+        // Save the updated game state
+        game.gameState = gameModel;
+        game.lastActivity = new Date();
+        await persistGame(game);
+
+        logger.info(
+          `Player ${player.name} added demolish order for improvement type ${improvementType} on planet ${planetId}`,
+        );
+        return {
+          success: true,
+          game,
+          gameData: gameModel,
+        };
       } else {
         return { success: false, error: "Invalid action" };
       }

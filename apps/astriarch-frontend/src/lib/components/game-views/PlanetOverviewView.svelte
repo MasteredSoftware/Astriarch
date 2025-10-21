@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Text, AvailablePlanetProductionItem } from '$lib/components/astriarch';
+	import { Text, AvailablePlanetProductionItem, Dialog } from '$lib/components/astriarch';
 	import {
 		clientGameModel,
 		gameActions,
@@ -16,12 +16,23 @@
 	import { Research } from 'astriarch-engine/src/engine/research';
 	import {
 		PlanetImprovementType,
+		PlanetProductionItemType,
 		CitizenWorkerType,
-		type PlanetData
+		type PlanetData,
+		type PlanetProductionItemData
 	} from 'astriarch-engine/src/model/planet';
 	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import type { ClientModelData, ClientPlanet } from 'astriarch-engine/src/model/clientModel';
+
+	// Dialog state for colony demolition confirmation
+	let showColonyDemolishDialog = $state(false);
+	let pendingColonyDemolish: {
+		improvementType: PlanetImprovementType;
+		currentMaxPop: number;
+		newMaxPop: number;
+		popLoss: number;
+	} | null = $state(null);
 
 	// Interface for ship build elements in the availableShips array
 	interface AvailableShip {
@@ -37,19 +48,20 @@
 		customShipData?: StarshipAdvantageData;
 	}
 
-	$: planets = $clientGameModel?.mainPlayerOwnedPlanets || {};
-	$: planetList = Object.values(planets);
-
-	// Use the central selected planet from gameStore
-	$: currentSelectedPlanet = $selectedPlanet;
+	// Derived values that depend on store values
+	// Note: We use $selectedPlanet directly in template for reactivity
+	let planets = $derived($clientGameModel?.mainPlayerOwnedPlanets || {});
+	let planetList = $derived(Object.values(planets));
 
 	// Check if the selected planet is an owned planet (has PlanetData structure)
-	$: isOwnedPlanet = currentSelectedPlanet && 'planetaryFleet' in currentSelectedPlanet;
+	let isOwnedPlanet = $derived($selectedPlanet && 'planetaryFleet' in $selectedPlanet);
 
 	// Calculate current worker assignments for the selected planet
-	$: workerAssignments = isFullPlanetData(currentSelectedPlanet)
-		? Planet.countPopulationWorkerTypes(currentSelectedPlanet)
-		: { farmers: 0, miners: 0, builders: 0 };
+	let workerAssignments = $derived(
+		isFullPlanetData($selectedPlanet)
+			? Planet.countPopulationWorkerTypes($selectedPlanet)
+			: { farmers: 0, miners: 0, builders: 0 }
+	);
 
 	// Helper to check if planet is a full PlanetData (owned planet)
 	function isFullPlanetData(planet: PlanetData | ClientPlanet | null): planet is PlanetData {
@@ -60,14 +72,14 @@
 
 	// Helper function for worker assignment changes
 	function adjustWorkerAssignment(workerType: CitizenWorkerType, delta: number) {
-		if (!currentSelectedPlanet) return;
+		if (!$selectedPlanet) return;
 
 		const farmerDiff = workerType === CitizenWorkerType.Farmer ? delta : 0;
 		const minerDiff = workerType === CitizenWorkerType.Miner ? delta : 0;
 		const builderDiff = workerType === CitizenWorkerType.Builder ? delta : 0;
 
 		webSocketService.updatePlanetWorkerAssignments(
-			currentSelectedPlanet.id,
+			$selectedPlanet.id,
 			farmerDiff,
 			minerDiff,
 			builderDiff
@@ -79,12 +91,12 @@
 	}
 
 	function addBuildingToQueue(buildingType: PlanetImprovementType) {
-		if (!currentSelectedPlanet || !$clientGameModel) return;
+		if (!$selectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
 		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic(currentSelectedPlanet.id, item);
+		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, item);
 
 		if (!success) {
 			console.warn(
@@ -97,7 +109,7 @@
 
 		try {
 			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue(currentSelectedPlanet.id, 'add', item);
+			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
 
 			console.log(
 				'Added building to queue:',
@@ -110,12 +122,12 @@
 	}
 
 	function addShipToQueue(shipType: StarShipType, customShipData?: StarshipAdvantageData) {
-		if (!currentSelectedPlanet || !$clientGameModel) return;
+		if (!$selectedPlanet || !$clientGameModel) return;
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType, customShipData);
 
 		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic(currentSelectedPlanet.id, item);
+		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, item);
 
 		if (!success) {
 			console.warn(
@@ -128,7 +140,7 @@
 
 		try {
 			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue(currentSelectedPlanet.id, 'add', item);
+			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
 
 			console.log(
 				'Added ship to queue:',
@@ -141,13 +153,10 @@
 	}
 
 	function removeFromBuildQueue(itemIndex: number) {
-		if (!currentSelectedPlanet || !$clientGameModel) return;
+		if (!$selectedPlanet || !$clientGameModel) return;
 
 		// Remove from build queue with engine refund handling
-		const success = gameActions.removeFromPlanetBuildQueueOptimistic(
-			currentSelectedPlanet.id,
-			itemIndex
-		);
+		const success = gameActions.removeFromPlanetBuildQueueOptimistic($selectedPlanet.id, itemIndex);
 
 		if (!success) {
 			console.warn('Failed to remove item from build queue at index:', itemIndex);
@@ -156,7 +165,7 @@
 
 		try {
 			// Send WebSocket message to remove item from build queue
-			webSocketService.updatePlanetBuildQueue(currentSelectedPlanet.id, 'remove', {
+			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', {
 				index: itemIndex
 			});
 
@@ -167,12 +176,108 @@
 		}
 	}
 
+	function demolishImprovement(improvementType: PlanetImprovementType) {
+		if (!$selectedPlanet || !$clientGameModel || !isFullPlanetData($selectedPlanet)) return;
+
+		// Check if we have any built improvements of this type
+		const builtCount = $selectedPlanet.builtImprovements?.[improvementType] || 0;
+
+		// Count how many demolish orders are already in queue
+		const demolishInQueue =
+			$selectedPlanet.buildQueue?.filter(
+				(item: PlanetProductionItemData) =>
+					item.itemType === PlanetProductionItemType.PlanetImprovementToDestroy &&
+					item.improvementData?.type === improvementType
+			).length || 0;
+
+		if (builtCount - demolishInQueue <= 0) {
+			console.warn('No improvements of this type available to demolish');
+			return;
+		}
+
+		// Special handling for Colony demolition - check if it will cause population loss
+		if (improvementType === PlanetImprovementType.Colony) {
+			const currentMaxPop = Planet.maxPopulation($selectedPlanet);
+			const newMaxPop = currentMaxPop - 1;
+			const currentPop = $selectedPlanet.population?.length || 0;
+
+			if (currentPop > newMaxPop) {
+				const popLoss = currentPop - newMaxPop;
+				// Show confirmation dialog instead of blocking confirm
+				pendingColonyDemolish = {
+					improvementType,
+					currentMaxPop,
+					newMaxPop,
+					popLoss
+				};
+				showColonyDemolishDialog = true;
+				return;
+			}
+		}
+
+		// Proceed with demolition
+		executeDemolish(improvementType);
+	}
+
+	function executeDemolish(improvementType: PlanetImprovementType) {
+		if (!$selectedPlanet || !$clientGameModel) return;
+
+		// Create demolish item
+		const demolishItem = PlanetProductionItem.constructPlanetImprovementToDestroy(improvementType);
+
+		// Add to build queue optimistically
+		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, demolishItem);
+
+		if (!success) {
+			console.error('Failed to add demolish order to queue');
+			return;
+		}
+
+		try {
+			// Send WebSocket message
+			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'demolish', demolishItem);
+			console.log(
+				'Added demolish order for:',
+				GameTools.planetImprovementTypeToFriendlyName(improvementType)
+			);
+		} catch (error) {
+			console.error('Failed to send demolish order:', error);
+		}
+	}
+
+	function handleColonyDemolishConfirm() {
+		if (pendingColonyDemolish) {
+			executeDemolish(pendingColonyDemolish.improvementType);
+		}
+		showColonyDemolishDialog = false;
+		pendingColonyDemolish = null;
+	}
+
+	function handleColonyDemolishCancel() {
+		showColonyDemolishDialog = false;
+		pendingColonyDemolish = null;
+	}
+
+	function canDemolish(improvementType: PlanetImprovementType): boolean {
+		if (!$selectedPlanet || !isFullPlanetData($selectedPlanet)) return false;
+
+		const builtCount = $selectedPlanet.builtImprovements?.[improvementType] || 0;
+		const demolishInQueue =
+			$selectedPlanet.buildQueue?.filter(
+				(item: PlanetProductionItemData) =>
+					item.itemType === PlanetProductionItemType.PlanetImprovementToDestroy &&
+					item.improvementData?.type === improvementType
+			).length || 0;
+
+		return builtCount - demolishInQueue > 0;
+	}
+
 	function updateBuildLastStarship(buildLastStarship: boolean) {
-		if (!currentSelectedPlanet) return;
+		if (!$selectedPlanet) return;
 
 		try {
 			// Send WebSocket message to update planet buildLastStarship option
-			webSocketService.updatePlanetOptions(currentSelectedPlanet.id, { buildLastStarship });
+			webSocketService.updatePlanetOptions($selectedPlanet.id, { buildLastStarship });
 
 			console.log('Updated buildLastStarship setting:', buildLastStarship);
 		} catch (error) {
@@ -231,94 +336,98 @@
 	}
 
 	// Generate available buildings with proper costs from engine
-	$: availableBuildings = buildingTypes.map(({ type, description }) => {
-		const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
-		return {
-			type,
-			name: GameTools.planetImprovementTypeToFriendlyName(type),
-			description,
-			cost: {
-				energy: productionItem.energyCost,
-				ore: productionItem.oreCost,
-				iridium: productionItem.iridiumCost
-			}
-		};
-	});
-
-	// Generate available ships with proper costs from engine
-	$: availableShips = (() => {
-		const ships: AvailableShip[] = [];
-
-		// Add standard ships
-		for (const { type, description } of shipTypes) {
-			const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
-			ships.push({
+	let availableBuildings = $derived(
+		buildingTypes.map(({ type, description }) => {
+			const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
+			return {
 				type,
-				name: GameTools.starShipTypeToFriendlyName(type, false),
+				name: GameTools.planetImprovementTypeToFriendlyName(type),
 				description,
 				cost: {
 					energy: productionItem.energyCost,
 					ore: productionItem.oreCost,
 					iridium: productionItem.iridiumCost
-				},
-				isCustom: false,
-				customShipData: undefined
-			});
-		}
+				}
+			};
+		})
+	);
 
-		// Add custom ships that have been researched
-		for (const { type, description } of shipTypes) {
-			// Skip space platforms - they don't have custom variants
-			if (type === StarShipType.SpacePlatform) continue;
+	// Generate available ships with proper costs from engine
+	let availableShips = $derived(
+		(() => {
+			const ships: AvailableShip[] = [];
 
-			if (isCustomShipResearched(type)) {
-				const customShipData = getCustomShipData(type);
-				if (customShipData) {
-					const productionItem = PlanetProductionItem.constructStarShipInProduction(
-						type,
-						customShipData
-					);
+			// Add standard ships
+			for (const { type, description } of shipTypes) {
+				const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
+				ships.push({
+					type,
+					name: GameTools.starShipTypeToFriendlyName(type, false),
+					description,
+					cost: {
+						energy: productionItem.energyCost,
+						ore: productionItem.oreCost,
+						iridium: productionItem.iridiumCost
+					},
+					isCustom: false,
+					customShipData: undefined
+				});
+			}
 
-					// Get advantage/disadvantage info for description
-					let advantageText = '';
-					if (customShipData.advantageAgainst && customShipData.disadvantageAgainst) {
-						const advantageAgainst = GameTools.starShipTypeToFriendlyName(
-							customShipData.advantageAgainst,
-							false
+			// Add custom ships that have been researched
+			for (const { type, description } of shipTypes) {
+				// Skip space platforms - they don't have custom variants
+				if (type === StarShipType.SpacePlatform) continue;
+
+				if (isCustomShipResearched(type)) {
+					const customShipData = getCustomShipData(type);
+					if (customShipData) {
+						const productionItem = PlanetProductionItem.constructStarShipInProduction(
+							type,
+							customShipData
 						);
-						const disadvantageAgainst = GameTools.starShipTypeToFriendlyName(
-							customShipData.disadvantageAgainst,
-							false
-						);
-						advantageText = ` • Advantage vs ${advantageAgainst}, Weak vs ${disadvantageAgainst}`;
+
+						// Get advantage/disadvantage info for description
+						let advantageText = '';
+						if (customShipData.advantageAgainst && customShipData.disadvantageAgainst) {
+							const advantageAgainst = GameTools.starShipTypeToFriendlyName(
+								customShipData.advantageAgainst,
+								false
+							);
+							const disadvantageAgainst = GameTools.starShipTypeToFriendlyName(
+								customShipData.disadvantageAgainst,
+								false
+							);
+							advantageText = ` • Advantage vs ${advantageAgainst}, Weak vs ${disadvantageAgainst}`;
+						}
+
+						ships.push({
+							type,
+							name: GameTools.starShipTypeToFriendlyName(type, true),
+							description: description + advantageText,
+							cost: {
+								energy: productionItem.energyCost,
+								ore: productionItem.oreCost,
+								iridium: productionItem.iridiumCost
+							},
+							isCustom: true,
+							customShipData
+						});
 					}
-
-					ships.push({
-						type,
-						name: GameTools.starShipTypeToFriendlyName(type, true),
-						description: description + advantageText,
-						cost: {
-							energy: productionItem.energyCost,
-							ore: productionItem.oreCost,
-							iridium: productionItem.iridiumCost
-						},
-						isCustom: true,
-						customShipData
-					});
 				}
 			}
-		}
 
-		return ships;
-	})();
+			return ships;
+		})()
+	);
 
 	// Check if buildings can be built using engine validation
-	$: buildingAvailability =
-		isFullPlanetData(currentSelectedPlanet) && $clientGameModel?.mainPlayer
+	let buildingAvailability = $derived(
+		isFullPlanetData($selectedPlanet) && $clientGameModel?.mainPlayer
 			? buildingTypes.map(({ type }) => {
 					const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
 					const validation = PlanetProductionItem.canBuild(
-						currentSelectedPlanet,
+						$selectedPlanet,
 						$clientGameModel.mainPlayer,
 						planets,
 						productionItem
@@ -329,18 +438,19 @@
 						reason: validation.reason
 					};
 				})
-			: [];
+			: []
+	);
 
 	// Check if ships can be built using engine validation
-	$: shipAvailability =
-		isFullPlanetData(currentSelectedPlanet) && $clientGameModel?.mainPlayer
+	let shipAvailability = $derived(
+		isFullPlanetData($selectedPlanet) && $clientGameModel?.mainPlayer
 			? availableShips.map((ship) => {
 					const productionItem = PlanetProductionItem.constructStarShipInProduction(
 						ship.type,
 						ship.customShipData || undefined
 					);
 					const validation = PlanetProductionItem.canBuild(
-						currentSelectedPlanet,
+						$selectedPlanet,
 						$clientGameModel.mainPlayer,
 						planets,
 						productionItem
@@ -352,21 +462,22 @@
 						reason: validation.reason
 					};
 				})
-			: [];
+			: []
+	);
 </script>
 
 <div class="flex h-full flex-col bg-slate-900/95 backdrop-blur-sm">
-	{#if currentSelectedPlanet && isOwnedPlanet}
+	{#if $selectedPlanet && isOwnedPlanet}
 		<!-- Planet Header Summary -->
 		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-3">
 			<div id="selected-planet-header" class="flex items-center justify-between gap-6">
 				<!-- Left: Planet Name & Info -->
 				<div class="flex items-center space-x-4">
 					<h2 class="text-astriarch-headline-24 text-astriarch-primary">
-						{currentSelectedPlanet.name}
+						{$selectedPlanet.name}
 					</h2>
 					<span class="text-astriarch-body-14 text-astriarch-ui-light-grey">
-						{GameTools.planetTypeToFriendlyName(currentSelectedPlanet.type || 1)}
+						{GameTools.planetTypeToFriendlyName($selectedPlanet.type || 1)}
 					</span>
 					{#if planetList.length > 1}
 						<select
@@ -383,9 +494,9 @@
 						</select>
 					{/if}
 					<div class="text-xs text-slate-400">
-						{#if isFullPlanetData(currentSelectedPlanet)}
-							Pop: {currentSelectedPlanet.population?.length || 0} | Max: {currentSelectedPlanet.maxImprovements +
-								(currentSelectedPlanet.builtImprovements?.[2] || 0)}
+						{#if isFullPlanetData($selectedPlanet)}
+							Pop: {$selectedPlanet.population?.length || 0} | Max: {$selectedPlanet.maxImprovements +
+								($selectedPlanet.builtImprovements?.[2] || 0)}
 						{:else}
 							Planet Info: Limited View
 						{/if}
@@ -395,35 +506,35 @@
 				<!-- Middle: Resources -->
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Resources:</span>
-					{#if isFullPlanetData(currentSelectedPlanet)}
+					{#if isFullPlanetData($selectedPlanet)}
 						<div class="flex space-x-2 text-xs">
 							<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 								<span class="text-astriarch-food"
-									>{(currentSelectedPlanet.resources?.food || 0).toFixed(1)}</span
+									>{($selectedPlanet.resources?.food || 0).toFixed(1)}</span
 								>
 								<span class="text-astriarch-ui-light-grey text-xs">F</span>
 							</div>
 							<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 								<span class="text-astriarch-food"
-									>{(currentSelectedPlanet.resources?.production || 0).toFixed(1)}</span
+									>{($selectedPlanet.resources?.production || 0).toFixed(1)}</span
 								>
 								<span class="text-astriarch-ui-light-grey text-xs">P</span>
 							</div>
 							<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 								<span class="text-astriarch-energy"
-									>{(currentSelectedPlanet.resources?.energy || 0).toFixed(1)}</span
+									>{($selectedPlanet.resources?.energy || 0).toFixed(1)}</span
 								>
 								<span class="text-astriarch-ui-light-grey text-xs">E</span>
 							</div>
 							<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 								<span class="text-astriarch-ore"
-									>{(currentSelectedPlanet.resources?.ore || 0).toFixed(1)}</span
+									>{($selectedPlanet.resources?.ore || 0).toFixed(1)}</span
 								>
 								<span class="text-astriarch-ui-light-grey text-xs">O</span>
 							</div>
 							<div class="flex items-center space-x-1 rounded bg-slate-800/30 px-2 py-1">
 								<span class="text-astriarch-iridium"
-									>{(currentSelectedPlanet.resources?.iridium || 0).toFixed(1)}</span
+									>{($selectedPlanet.resources?.iridium || 0).toFixed(1)}</span
 								>
 								<span class="text-astriarch-ui-light-grey text-xs">I</span>
 							</div>
@@ -436,29 +547,73 @@
 				<!-- Right: Improvements -->
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Improvements:</span>
-					{#if isFullPlanetData(currentSelectedPlanet)}
+					{#if isFullPlanetData($selectedPlanet)}
 						<div class="flex flex-wrap gap-1 text-xs">
-							{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Farm] > 0}
-								<span class="rounded bg-slate-800/30 px-2 py-1 text-green-400">
-									Farm: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Farm]}
+							{#if $selectedPlanet.builtImprovements?.[PlanetImprovementType.Farm] > 0}
+								<span
+									class="flex items-center gap-1 rounded bg-slate-800/30 px-2 py-1 text-green-400"
+								>
+									Farm: {$selectedPlanet.builtImprovements[PlanetImprovementType.Farm]}
+									{#if canDemolish(PlanetImprovementType.Farm)}
+										<button
+											class="ml-1 text-red-400 hover:text-red-300"
+											onclick={() => demolishImprovement(PlanetImprovementType.Farm)}
+											title="Demolish Farm"
+										>
+											✕
+										</button>
+									{/if}
 								</span>
 							{/if}
-							{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Mine] > 0}
-								<span class="rounded bg-slate-800/30 px-2 py-1 text-orange-400">
-									Mine: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Mine]}
+							{#if $selectedPlanet.builtImprovements?.[PlanetImprovementType.Mine] > 0}
+								<span
+									class="flex items-center gap-1 rounded bg-slate-800/30 px-2 py-1 text-orange-400"
+								>
+									Mine: {$selectedPlanet.builtImprovements[PlanetImprovementType.Mine]}
+									{#if canDemolish(PlanetImprovementType.Mine)}
+										<button
+											class="ml-1 text-red-400 hover:text-red-300"
+											onclick={() => demolishImprovement(PlanetImprovementType.Mine)}
+											title="Demolish Mine"
+										>
+											✕
+										</button>
+									{/if}
 								</span>
 							{/if}
-							{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Factory] > 0}
-								<span class="rounded bg-slate-800/30 px-2 py-1 text-blue-400">
-									Factory: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Factory]}
+							{#if $selectedPlanet.builtImprovements?.[PlanetImprovementType.Factory] > 0}
+								<span
+									class="flex items-center gap-1 rounded bg-slate-800/30 px-2 py-1 text-blue-400"
+								>
+									Factory: {$selectedPlanet.builtImprovements[PlanetImprovementType.Factory]}
+									{#if canDemolish(PlanetImprovementType.Factory)}
+										<button
+											class="ml-1 text-red-400 hover:text-red-300"
+											onclick={() => demolishImprovement(PlanetImprovementType.Factory)}
+											title="Demolish Factory"
+										>
+											✕
+										</button>
+									{/if}
 								</span>
 							{/if}
-							{#if currentSelectedPlanet.builtImprovements?.[PlanetImprovementType.Colony] > 0}
-								<span class="rounded bg-slate-800/30 px-2 py-1 text-purple-400">
-									Colony: {currentSelectedPlanet.builtImprovements[PlanetImprovementType.Colony]}
+							{#if $selectedPlanet.builtImprovements?.[PlanetImprovementType.Colony] > 0}
+								<span
+									class="flex items-center gap-1 rounded bg-slate-800/30 px-2 py-1 text-purple-400"
+								>
+									Colony: {$selectedPlanet.builtImprovements[PlanetImprovementType.Colony]}
+									{#if canDemolish(PlanetImprovementType.Colony)}
+										<button
+											class="ml-1 text-red-400 hover:text-red-300"
+											onclick={() => demolishImprovement(PlanetImprovementType.Colony)}
+											title="Demolish Colony"
+										>
+											✕
+										</button>
+									{/if}
 								</span>
 							{/if}
-							{#if !currentSelectedPlanet.builtImprovements || Object.values(currentSelectedPlanet.builtImprovements).every((count) => count === 0)}
+							{#if !$selectedPlanet.builtImprovements || Object.values($selectedPlanet.builtImprovements).every((count) => count === 0)}
 								<span class="text-xs text-slate-500">None</span>
 							{/if}
 						</div>
@@ -577,8 +732,8 @@
 						<div class="flex justify-between text-xs">
 							<span class="text-slate-400">Total Population:</span>
 							<span class="text-white"
-								>{isFullPlanetData(currentSelectedPlanet)
-									? currentSelectedPlanet.population?.length || 0
+								>{isFullPlanetData($selectedPlanet)
+									? $selectedPlanet.population?.length || 0
 									: 0}</span
 							>
 						</div>
@@ -587,8 +742,8 @@
 							<span class="text-white"
 								>{Math.max(
 									0,
-									(isFullPlanetData(currentSelectedPlanet)
-										? currentSelectedPlanet.population?.length || 0
+									(isFullPlanetData($selectedPlanet)
+										? $selectedPlanet.population?.length || 0
 										: 0) -
 										(workerAssignments.farmers +
 											workerAssignments.miners +
@@ -629,13 +784,13 @@
 			<div class="flex-1 overflow-y-auto p-3">
 				<div class="mb-2 flex items-center justify-between">
 					<h3 class="text-astriarch-body-16-semibold text-astriarch-primary">Build Queue</h3>
-					{#if isFullPlanetData(currentSelectedPlanet)}
+					{#if isFullPlanetData($selectedPlanet)}
 						<div class="flex items-center space-x-2">
 							<label class="flex cursor-pointer items-center space-x-1 text-xs text-slate-300">
 								<input
 									type="checkbox"
 									class="form-checkbox h-3 w-3 rounded border-slate-500 bg-slate-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-slate-900"
-									checked={currentSelectedPlanet.buildLastStarship}
+									checked={$selectedPlanet.buildLastStarship}
 									onchange={(e) => {
 										const target = e.target as HTMLInputElement;
 										updateBuildLastStarship(target.checked);
@@ -647,22 +802,36 @@
 					{/if}
 				</div>
 
-				{#if isFullPlanetData(currentSelectedPlanet) && currentSelectedPlanet.buildQueue && currentSelectedPlanet.buildQueue.length > 0}
+				{#if isFullPlanetData($selectedPlanet) && $selectedPlanet.buildQueue && $selectedPlanet.buildQueue.length > 0}
 					<div class="space-y-2">
-						{#each currentSelectedPlanet.buildQueue as item, index}
+						{#each $selectedPlanet.buildQueue as item, index}
 							<div class="rounded border border-slate-600/50 bg-slate-800/50 p-2">
 								<div class="mb-1 flex items-center justify-between text-xs">
-									<div class="font-medium text-cyan-400">
-										{#if item.itemType === 1 && item.improvementData?.type}
-											{GameTools.planetImprovementTypeToFriendlyName(item.improvementData.type)}
-										{:else if item.itemType === 2 && item.starshipData?.type}
-											{GameTools.starShipTypeToFriendlyName(
-												item.starshipData.type,
-												Boolean(item.starshipData.customShipData)
-											)}
-										{:else}
-											Unknown Item
+									<div class="flex items-center space-x-2">
+										{#if item.itemType === PlanetProductionItemType.PlanetImprovementToDestroy}
+											<span class="text-red-400">🔨</span>
 										{/if}
+										<div
+											class="font-medium {item.itemType ===
+											PlanetProductionItemType.PlanetImprovementToDestroy
+												? 'text-red-400'
+												: 'text-cyan-400'}"
+										>
+											{#if item.itemType === PlanetProductionItemType.PlanetImprovementToDestroy && item.improvementData?.type}
+												Demolish {GameTools.planetImprovementTypeToFriendlyName(
+													item.improvementData.type
+												)}
+											{:else if item.itemType === 1 && item.improvementData?.type}
+												{GameTools.planetImprovementTypeToFriendlyName(item.improvementData.type)}
+											{:else if item.itemType === 2 && item.starshipData?.type}
+												{GameTools.starShipTypeToFriendlyName(
+													item.starshipData.type,
+													Boolean(item.starshipData.customShipData)
+												)}
+											{:else}
+												Unknown Item
+											{/if}
+										</div>
 									</div>
 									<button
 										class="text-xs text-red-400 hover:text-red-300"
@@ -679,7 +848,10 @@
 									<div class="mb-2">
 										<div class="h-1.5 w-full rounded-full bg-slate-700">
 											<div
-												class="h-1.5 rounded-full bg-cyan-500"
+												class="h-1.5 rounded-full {item.itemType ===
+												PlanetProductionItemType.PlanetImprovementToDestroy
+													? 'bg-red-500'
+													: 'bg-cyan-500'}"
 												style="width: {Math.min(
 													100,
 													((item.productionCostComplete || 0) / (item.baseProductionCost || 1)) *
@@ -715,12 +887,12 @@
 				{/if}
 			</div>
 		</div>
-	{:else if currentSelectedPlanet && !isOwnedPlanet}
+	{:else if $selectedPlanet && !isOwnedPlanet}
 		<!-- Selected planet is not owned -->
 		<div class="flex h-full items-center justify-center">
 			<div class="text-center">
 				<Text style="color: #94A3B8; font-size: 14px;"
-					>Planet "{currentSelectedPlanet.name}" is not under your control</Text
+					>Planet "{$selectedPlanet.name}" is not under your control</Text
 				>
 				<Text style="color: #64748B; font-size: 12px; margin-top: 4px;">
 					Only owned planets can be managed here
@@ -739,3 +911,35 @@
 		</div>
 	{/if}
 </div>
+
+<!-- Colony Demolition Confirmation Dialog -->
+<Dialog
+	open={showColonyDemolishDialog}
+	title="Confirm Colony Demolition"
+	variant="warning"
+	size="small"
+	style="default"
+	cancelButtonText="Cancel"
+	saveButtonText="Demolish"
+	onCancel={handleColonyDemolishCancel}
+	onSave={handleColonyDemolishConfirm}
+>
+	{#if pendingColonyDemolish}
+		<div class="space-y-3">
+			<p class="text-yellow-400">⚠️ Warning: This action will cause population loss!</p>
+			<div class="space-y-2 text-sm">
+				<p>
+					Demolishing this Colony will reduce max population from
+					<span class="font-bold text-white">{pendingColonyDemolish.currentMaxPop}</span>
+					to
+					<span class="font-bold text-white">{pendingColonyDemolish.newMaxPop}</span>.
+				</p>
+				<p class="text-red-400">
+					You will lose <span class="font-bold">{pendingColonyDemolish.popLoss}</span>
+					population immediately.
+				</p>
+				<p class="mt-4 text-slate-400">Are you sure you want to proceed?</p>
+			</div>
+		</div>
+	{/if}
+</Dialog>
