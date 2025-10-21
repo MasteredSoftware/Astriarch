@@ -1155,6 +1155,47 @@ class WebSocketService {
 		}
 	}
 
+	setWaypoint(planetId: number, waypointPlanetId: number) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				planetId,
+				waypointPlanetId
+			};
+
+			console.log('Sending SET_WAYPOINT with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.SET_WAYPOINT, payload));
+		} catch (error) {
+			console.error('Failed to set waypoint:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot set waypoint - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	clearWaypoint(planetId: number) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				planetId
+			};
+
+			console.log('Sending CLEAR_WAYPOINT with payload:', payload);
+			this.send(new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, payload));
+		} catch (error) {
+			console.error('Failed to clear waypoint:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot clear waypoint - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
 	sendShips(
 		planetIdSource: number,
 		planetIdDest: number,

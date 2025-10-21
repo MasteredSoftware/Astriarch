@@ -190,6 +190,7 @@ export class DrawnPlanet {
 		this.updateFleetStrengthIndicator();
 		this.updateProductionStatus();
 		this.updateSelectionState();
+		this.updateWaypointLine();
 	}
 
 	private getPlanetImageUrl(planetType: PlanetType): string {
@@ -805,6 +806,55 @@ export class DrawnPlanet {
 		return this.isSelected;
 	}
 
+	private updateWaypointLine(): void {
+		// Check if this planet has a waypoint set
+		if (this.planetData.waypointBoundingHexMidPoint) {
+			// Create or update waypoint line
+			if (!this.waypointLine) {
+				this.waypointLine = new Konva.Line({
+					points: [
+						0,
+						0, // Start at planet center
+						this.planetData.waypointBoundingHexMidPoint.x - this.planetData.boundingHexMidPoint.x,
+						this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y
+					],
+					stroke: '#FF6B35', // Orange color for waypoint lines
+					strokeWidth: 2,
+					dash: [5, 5], // Dashed line to distinguish from fleet travel lines
+					opacity: 0.8,
+					perfectDrawEnabled: false,
+					listening: false // Disable events
+				});
+
+				// Add line to the group, but behind other elements
+				this.group.add(this.waypointLine);
+				this.waypointLine.moveToBottom();
+
+				// Move planet image above waypoint line if it exists
+				if (this.planetImage) {
+					this.planetImage.moveUp();
+				}
+				if (this.planetRing) {
+					this.planetRing.moveUp();
+				}
+			} else {
+				// Update existing line points
+				this.waypointLine.points([
+					0,
+					0, // Start at planet center
+					this.planetData.waypointBoundingHexMidPoint.x - this.planetData.boundingHexMidPoint.x,
+					this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y
+				]);
+				this.waypointLine.visible(true);
+			}
+		} else {
+			// No waypoint set, hide the line if it exists
+			if (this.waypointLine) {
+				this.waypointLine.visible(false);
+			}
+		}
+	}
+
 	destroy(): void {
 		if (this.planetImage) {
 			this.planetImage.destroy();
@@ -829,6 +879,10 @@ export class DrawnPlanet {
 		if (this.selectionRingInner) {
 			this.selectionRingInner.destroy();
 			this.selectionRingInner = null;
+		}
+		if (this.waypointLine) {
+			this.waypointLine.destroy();
+			this.waypointLine = null;
 		}
 		if (this.group) {
 			this.group.destroy();
