@@ -823,7 +823,7 @@ export class DrawnPlanet {
 						dx,
 						dy // End at waypoint
 					],
-					stroke: '#7F7F7F', // Orange color for waypoint lines
+					stroke: '#7F7F7F',
 					strokeWidth: 1,
 					dash: [8, 4], // Dashed line to distinguish from fleet travel lines
 					// Gradient opacity from opaque to transparent shows direction
@@ -832,9 +832,9 @@ export class DrawnPlanet {
 					strokeLinearGradientEndPoint: { x: dx, y: dy },
 					strokeLinearGradientColorStops: [
 						0,
-						'#7F7F7F', // Orange at source (full opacity)
+						'#7F7F7F',
 						0.7,
-						'#7F7F7F99', // Hold color
+						'#7F7F7F99',
 						1,
 						'#7F7F7F33' // Transparent at destination
 					],
