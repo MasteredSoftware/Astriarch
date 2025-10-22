@@ -1060,7 +1060,7 @@ class WebSocketService {
 
 	updatePlanetBuildQueue(
 		planetId: number,
-		action: 'add' | 'remove',
+		action: 'add' | 'remove' | 'demolish',
 		productionItem?: unknown,
 		index?: number
 	) {
