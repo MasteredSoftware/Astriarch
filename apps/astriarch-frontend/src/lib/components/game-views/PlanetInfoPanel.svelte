@@ -75,7 +75,7 @@
 	// Helper function to group ships by type
 	function groupShipsByType(fleetData: any): Map<StarShipType, StarshipData[]> {
 		const groups = new Map<StarShipType, StarshipData[]>();
-		
+
 		if (!fleetData) return groups;
 
 		const fleet = fleetData.fleetData || fleetData;

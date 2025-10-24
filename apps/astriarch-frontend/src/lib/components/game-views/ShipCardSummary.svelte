@@ -54,28 +54,34 @@
 	$: hasCustomShip = ships.some((ship) => !!ship.customShipData);
 </script>
 
-<div
-	class="relative h-[36px] w-[50px]"
-	title="{shipCount} ships - Avg Health: {averageHealth}%"
->
-	<!-- Frame with border -->
-	<div
-		class="absolute inset-0 rounded-[2px] border-2 border-[#313E46] bg-black/15"
-	></div>
+<div class="relative h-[36px] w-[50px]" title="{shipCount} ships - Avg Health: {averageHealth}%">
+	<!-- Frame with gradient border using clip-path technique -->
+	<div class="absolute inset-0">
+		<!-- Gradient border background -->
+		<div
+			class="absolute inset-0 rounded-[0.125rem]"
+			style="background: linear-gradient(349deg, #313E46 -1.31%, rgba(160, 176, 186, 0.54) 29.03%, #FFF 48.61%, rgba(105, 116, 123, 0.83) 95.74%);"
+		></div>
+		<!-- Inner content area that covers the gradient, leaving only the border visible -->
+		<div class="absolute inset-[2px] rounded-[1px] bg-[rgba(0,0,0,0.85)]"></div>
+	</div>
 
 	<!-- Ship Count - Centered at top -->
-	<div class="absolute left-[35px] top-[0px] -translate-x-1/2">
-		<span class="text-[12px] leading-[16px] font-black tracking-[0.5px] text-white whitespace-nowrap" style="font-family: 'Orbitron', sans-serif;">
+	<div class="absolute top-[0px] left-[35px] -translate-x-1/2">
+		<span
+			class="text-[12px] leading-[16px] font-black tracking-[0.5px] whitespace-nowrap text-white"
+			style="font-family: 'Orbitron', sans-serif;"
+		>
 			{shipCount}
 		</span>
 	</div>
 
 	<!-- Ship Icon - Left side with shadow -->
 	<div
-		class="absolute left-[4px] top-[4px] h-[24px] w-[24px] shadow-[0px_0px_18px_0px_rgba(125,251,255,0.25)]"
+		class="absolute top-[4px] left-[4px] h-[24px] w-[24px] shadow-[0px_0px_18px_0px_rgba(125,251,255,0.25)]"
 	>
 		<div class="absolute inset-0 flex items-center justify-center">
-			<div class="h-[34px] w-[34px] rotate-180 scale-y-[-1]">
+			<div class="h-[34px] w-[34px] scale-y-[-1] rotate-180">
 				<IconImage
 					type={getShipIconType(shipType, hasCustomShip)}
 					size={34}
