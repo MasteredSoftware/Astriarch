@@ -5,8 +5,10 @@
 	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 	import type { PlanetData } from 'astriarch-engine/src/model/planet';
 	import type { LastKnownFleetData } from 'astriarch-engine/src/model/fleet';
-	import { Fleet } from 'astriarch-engine';
+	import { Fleet, StarShipType } from 'astriarch-engine';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
+	import ShipCardSummary from './ShipCardSummary.svelte';
+	import type { StarshipData } from 'astriarch-engine/src/model/fleet';
 
 	// Reactive values from the store
 	$: currentSelectedPlanet = $selectedPlanet;
@@ -70,6 +72,35 @@
 		return parts.length > 0 ? parts.join(', ') : 'No Ships';
 	}
 
+	// Helper function to group ships by type
+	function groupShipsByType(fleetData: any): Map<StarShipType, StarshipData[]> {
+		const groups = new Map<StarShipType, StarshipData[]>();
+
+		if (!fleetData) return groups;
+
+		const fleet = fleetData.fleetData || fleetData;
+		const ships = fleet.starships || [];
+
+		for (const ship of ships) {
+			if (!groups.has(ship.type)) {
+				groups.set(ship.type, []);
+			}
+			groups.get(ship.type)!.push(ship);
+		}
+
+		return groups;
+	}
+
+	// Order for displaying ship types
+	const shipTypeOrder = [
+		StarShipType.SystemDefense,
+		StarShipType.Scout,
+		StarShipType.Destroyer,
+		StarShipType.Cruiser,
+		StarShipType.Battleship,
+		StarShipType.SpacePlatform
+	];
+
 	// Helper function to get years since exploration
 	function getYearsSinceExploration(lastKnownData: LastKnownFleetData | null): string {
 		if (!lastKnownData || !gameModel) return '';
@@ -124,12 +155,19 @@
 
 			<!-- Fleet Strength -->
 			{#if currentSelectedPlanet.planetaryFleet}
-				<div>
-					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Fleet</Text>
-					<Text style="font-size: 12px; color: #E2E8F0;">
-						{formatFleetStrength(currentSelectedPlanet.planetaryFleet)}
-					</Text>
-				</div>
+				{@const shipGroups = groupShipsByType(currentSelectedPlanet.planetaryFleet)}
+				{#if shipGroups.size > 0}
+					<div>
+						<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Fleet</Text>
+						<div class="flex flex-wrap gap-1">
+							{#each shipTypeOrder as shipType}
+								{#if shipGroups.has(shipType)}
+									<ShipCardSummary ships={shipGroups.get(shipType) || []} {shipType} />
+								{/if}
+							{/each}
+						</div>
+					</div>
+				{/if}
 			{/if}
 
 			<!-- Explored but not owned -->
@@ -161,12 +199,19 @@
 			</div>
 
 			<!-- Last Known Fleet -->
-			<div>
-				<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Last Known Fleet</Text>
-				<Text style="font-size: 12px; color: #E2E8F0;">
-					{formatFleetStrength(lastKnownData)}
-				</Text>
-			</div>
+			{@const shipGroups = groupShipsByType(lastKnownData)}
+			{#if shipGroups.size > 0}
+				<div>
+					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Last Known Fleet</Text>
+					<div class="flex flex-wrap gap-1">
+						{#each shipTypeOrder as shipType}
+							{#if shipGroups.has(shipType)}
+								<ShipCardSummary ships={shipGroups.get(shipType) || []} {shipType} />
+							{/if}
+						{/each}
+					</div>
+				</div>
+			{/if}
 
 			<!-- Unexplored planet -->
 		{:else if planetStatus === 'unexplored'}
