@@ -67,7 +67,7 @@
 	</div>
 
 	<!-- Ship Count - Centered at top -->
-	<div class="absolute top-[0px] left-[35px] -translate-x-1/2">
+	<div class="absolute top-[0px] left-[35px] -translate-x-1/2 z-10">
 		<span
 			class="text-[12px] leading-[16px] font-black tracking-[0.5px] whitespace-nowrap text-white"
 			style="font-family: 'Orbitron', sans-serif;"

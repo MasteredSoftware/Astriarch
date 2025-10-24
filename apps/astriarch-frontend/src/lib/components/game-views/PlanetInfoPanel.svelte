@@ -159,7 +159,7 @@
 				{#if shipGroups.size > 0}
 					<div>
 						<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Fleet</Text>
-						<div class="flex flex-wrap gap-2">
+						<div class="flex flex-wrap gap-1">
 							{#each shipTypeOrder as shipType}
 								{#if shipGroups.has(shipType)}
 									<ShipCardSummary ships={shipGroups.get(shipType) || []} {shipType} />
@@ -203,7 +203,7 @@
 			{#if shipGroups.size > 0}
 				<div>
 					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Last Known Fleet</Text>
-					<div class="flex flex-wrap gap-2">
+					<div class="flex flex-wrap gap-1">
 						{#each shipTypeOrder as shipType}
 							{#if shipGroups.has(shipType)}
 								<ShipCardSummary ships={shipGroups.get(shipType) || []} {shipType} />
