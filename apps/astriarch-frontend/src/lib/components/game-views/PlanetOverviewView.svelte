@@ -63,6 +63,13 @@
 			: { farmers: 0, miners: 0, builders: 0 }
 	);
 
+	// Calculate resource generation for the selected planet
+	let resourceGeneration = $derived(
+		isFullPlanetData($selectedPlanet) && $clientGameModel?.mainPlayer
+			? Planet.getPlanetWorkerResourceGeneration($selectedPlanet, $clientGameModel.mainPlayer)
+			: null
+	);
+
 	// Helper to check if planet is a full PlanetData (owned planet)
 	function isFullPlanetData(planet: PlanetData | ClientPlanet | null): planet is PlanetData {
 		return (
@@ -759,24 +766,76 @@
 					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
 						Resource Production per Turn
 					</h4>
-					<div class="space-y-2 text-xs">
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-green-400">Food:</span>
-							<span class="text-white">+2.4 / turn</span>
+					{#if resourceGeneration}
+						<div class="space-y-2 text-xs">
+							<div class="flex justify-between rounded bg-slate-800/30 p-2">
+								<span class="text-green-400">Food:</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.food.toFixed(1)} / turn</span>
+							</div>
+							<div class="flex justify-between rounded bg-slate-800/30 p-2">
+								<span class="text-yellow-400">Energy:</span>
+								<span class="text-white">
+									{#if $clientGameModel?.mainPlayer && isFullPlanetData($selectedPlanet)}
+										+{Planet.getTaxRevenueAtMaxPercent($selectedPlanet, $clientGameModel.mainPlayer).toFixed(1)} / turn
+									{:else}
+										+0.0 / turn
+									{/if}
+								</span>
+							</div>
+							<div class="flex justify-between rounded bg-slate-800/30 p-2">
+								<span class="text-orange-400">Ore:</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.ore.toFixed(1)} / turn</span>
+							</div>
+							<div class="flex justify-between rounded bg-slate-800/30 p-2">
+								<span class="text-purple-400">Iridium:</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.iridium.toFixed(1)} / turn</span>
+							</div>
+							<div class="flex justify-between rounded bg-slate-800/30 p-2">
+								<span class="text-blue-400">Production:</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.production.toFixed(1)} / turn</span>
+							</div>
 						</div>
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-yellow-400">Energy:</span>
-							<span class="text-white">+3.6 / turn</span>
+					{:else}
+						<div class="text-xs text-slate-500">Resource generation not available</div>
+					{/if}
+				</div>
+
+				<!-- Resource Production per Worker -->
+				<div class="mb-4">
+					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
+						Production per Worker
+					</h4>
+					{#if resourceGeneration}
+						<div class="space-y-2 text-xs">
+							{#if workerAssignments.farmers > 0}
+								<div class="flex justify-between rounded bg-slate-800/30 p-2">
+									<span class="text-green-400">Food (per Farmer):</span>
+									<span class="text-white">+{resourceGeneration.amountPerWorkerPerTurn.food.toFixed(1)} / turn</span>
+								</div>
+							{/if}
+							{#if workerAssignments.miners > 0}
+								<div class="flex justify-between rounded bg-slate-800/30 p-2">
+									<span class="text-orange-400">Ore (per Miner):</span>
+									<span class="text-white">+{resourceGeneration.amountPerWorkerPerTurn.ore.toFixed(1)} / turn</span>
+								</div>
+								<div class="flex justify-between rounded bg-slate-800/30 p-2">
+									<span class="text-purple-400">Iridium (per Miner):</span>
+									<span class="text-white">+{resourceGeneration.amountPerWorkerPerTurn.iridium.toFixed(1)} / turn</span>
+								</div>
+							{/if}
+							{#if workerAssignments.builders > 0}
+								<div class="flex justify-between rounded bg-slate-800/30 p-2">
+									<span class="text-blue-400">Production (per Builder):</span>
+									<span class="text-white">+{resourceGeneration.amountPerWorkerPerTurn.production.toFixed(1)} / turn</span>
+								</div>
+							{/if}
+							{#if workerAssignments.farmers === 0 && workerAssignments.miners === 0 && workerAssignments.builders === 0}
+								<div class="text-xs text-slate-500">No workers assigned</div>
+							{/if}
 						</div>
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-orange-400">Ore:</span>
-							<span class="text-white">+1.8 / turn</span>
-						</div>
-						<div class="flex justify-between rounded bg-slate-800/30 p-2">
-							<span class="text-purple-400">Iridium:</span>
-							<span class="text-white">+0.9 / turn</span>
-						</div>
-					</div>
+					{:else}
+						<div class="text-xs text-slate-500">Resource generation not available</div>
+					{/if}
 				</div>
 			</div>
 

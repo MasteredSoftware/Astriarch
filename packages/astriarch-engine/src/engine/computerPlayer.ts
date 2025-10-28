@@ -474,7 +474,7 @@ export class ComputerPlayer {
       } else if (p.type == PlanetType.DeadPlanet) {
         recommendedMines = 1;
       } else if (p.type == PlanetType.AsteroidBelt) {
-        recommendedMines = 2;
+        recommendedMines = 1;
       }
       recommendedFactories = p.maxImprovements - recommendedMines - recommendedFarms - recommendedColonies;
 
