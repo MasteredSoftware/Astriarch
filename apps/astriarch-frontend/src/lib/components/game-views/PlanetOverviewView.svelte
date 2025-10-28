@@ -70,6 +70,13 @@
 			: null
 	);
 
+	// Calculate population contentment for the selected planet
+	let populationByContentment = $derived(
+		isFullPlanetData($selectedPlanet)
+			? Planet.getPopulationByContentment($selectedPlanet)
+			: { protesting: [], content: [] }
+	);
+
 	// Helper to check if planet is a full PlanetData (owned planet)
 	function isFullPlanetData(planet: PlanetData | ClientPlanet | null): planet is PlanetData {
 		return (
@@ -745,18 +752,12 @@
 							>
 						</div>
 						<div class="flex justify-between text-xs">
-							<span class="text-slate-400">Unassigned:</span>
-							<span class="text-white"
-								>{Math.max(
-									0,
-									(isFullPlanetData($selectedPlanet)
-										? $selectedPlanet.population?.length || 0
-										: 0) -
-										(workerAssignments.farmers +
-											workerAssignments.miners +
-											workerAssignments.builders)
-								)}</span
-							>
+							<span class="text-slate-400">Content:</span>
+							<span class="text-green-400">{populationByContentment.content.length}</span>
+						</div>
+						<div class="flex justify-between text-xs">
+							<span class="text-slate-400">Protesting:</span>
+							<span class="text-red-400">{populationByContentment.protesting.length}</span>
 						</div>
 					</div>
 				</div>
@@ -770,29 +771,29 @@
 						<div class="space-y-2 text-xs">
 							<div class="flex justify-between rounded bg-slate-800/30 p-2">
 								<span class="text-green-400">Food:</span>
-								<span class="text-white">+{resourceGeneration.amountPerTurn.food.toFixed(1)} / turn</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.food.toFixed(1)} / year</span>
 							</div>
 							<div class="flex justify-between rounded bg-slate-800/30 p-2">
 								<span class="text-yellow-400">Energy:</span>
 								<span class="text-white">
 									{#if $clientGameModel?.mainPlayer && isFullPlanetData($selectedPlanet)}
-										+{Planet.getTaxRevenueAtMaxPercent($selectedPlanet, $clientGameModel.mainPlayer).toFixed(1)} / turn
+										+{Planet.getTaxRevenueAtMaxPercent($selectedPlanet, $clientGameModel.mainPlayer).toFixed(1)} / year
 									{:else}
-										+0.0 / turn
+										+0.0 / year
 									{/if}
 								</span>
 							</div>
 							<div class="flex justify-between rounded bg-slate-800/30 p-2">
 								<span class="text-orange-400">Ore:</span>
-								<span class="text-white">+{resourceGeneration.amountPerTurn.ore.toFixed(1)} / turn</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.ore.toFixed(1)} / year</span>
 							</div>
 							<div class="flex justify-between rounded bg-slate-800/30 p-2">
 								<span class="text-purple-400">Iridium:</span>
-								<span class="text-white">+{resourceGeneration.amountPerTurn.iridium.toFixed(1)} / turn</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.iridium.toFixed(1)} / year</span>
 							</div>
 							<div class="flex justify-between rounded bg-slate-800/30 p-2">
 								<span class="text-blue-400">Production:</span>
-								<span class="text-white">+{resourceGeneration.amountPerTurn.production.toFixed(1)} / turn</span>
+								<span class="text-white">+{resourceGeneration.amountPerTurn.production.toFixed(1)} / year</span>
 							</div>
 						</div>
 					{:else}
@@ -929,7 +930,7 @@
 									</span>
 									{#if index === 0}
 										<span class="text-slate-400">
-											{item.turnsToComplete || '?'} turns
+											{item.turnsToComplete === 1 ? '1 year' : `${item.turnsToComplete || '?'} years`}
 										</span>
 									{/if}
 								</div>
