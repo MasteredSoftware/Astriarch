@@ -532,31 +532,32 @@
 		const layerPos = galaxyLayer.getRelativePointerPosition();
 		if (!layerPos) return;
 
-		// Find the hex that contains this mouse position
-		const hoveredHex = currentGrid.getHexAt(layerPos);
-		if (!hoveredHex) {
-			// When not over any hex during destination selection, hide prospective line
-			if (prospectiveTravelLine && prospectiveTravelLine.isVisible()) {
-				prospectiveTravelLine.animateOut(0.2);
+		// Find the closest planet to the mouse position
+		let closestPlanet = null;
+		let closestDistance = Infinity;
+
+		// Check all planets in the spatial index
+		for (const planet of planetByHexCoords.values()) {
+			const dx = planet.boundingHexMidPoint.x - layerPos.x;
+			const dy = planet.boundingHexMidPoint.y - layerPos.y;
+			const distance = Math.sqrt(dx * dx + dy * dy);
+
+			if (distance < closestDistance) {
+				closestDistance = distance;
+				closestPlanet = planet;
 			}
-			hoveredDestinationPlanetId = null;
-			return;
 		}
 
-		// Look for a planet at this hex position
-		const hexKey = `${hoveredHex.midPoint.x},${hoveredHex.midPoint.y}`;
-		const planetAtHex = planetByHexCoords.get(hexKey);
-
-		if (planetAtHex && planetAtHex.id !== $fleetCommandStore.sourcePlanetId) {
+		if (closestPlanet && closestPlanet.id !== $fleetCommandStore.sourcePlanetId) {
 			// Found a valid destination planet (not the source planet)
-			if (hoveredDestinationPlanetId !== planetAtHex.id) {
-				hoveredDestinationPlanetId = planetAtHex.id;
-				updateProspectiveTravelLine(planetAtHex);
+			if (hoveredDestinationPlanetId !== closestPlanet.id) {
+				hoveredDestinationPlanetId = closestPlanet.id;
+				updateProspectiveTravelLine(closestPlanet);
 			}
 		} else {
-			// No planet or it's the source planet - hide prospective line
+			// No planet nearby or it's the source planet - hide prospective line
 			if (prospectiveTravelLine && prospectiveTravelLine.isVisible()) {
-				prospectiveTravelLine.hide();
+				prospectiveTravelLine.animateOut(0.2);
 			}
 			hoveredDestinationPlanetId = null;
 		}
