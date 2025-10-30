@@ -9,6 +9,7 @@
 	let open = true;
 
 	// Determine dialog variant and title based on game over state
+	let dialogVariant: 'success' | 'error';
 	$: dialogVariant = gameOverState.playerWon ? 'success' : 'error';
 	$: dialogTitle = gameOverState.playerWon
 		? 'VICTORY'
@@ -35,6 +36,7 @@
 	size="large"
 	variant={dialogVariant}
 	style="svg"
+	showCloseButton={false}
 >
 	<!-- Game Over Content -->
 	<div class="max-h-[280px] space-y-4 overflow-y-auto">

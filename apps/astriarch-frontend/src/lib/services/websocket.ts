@@ -581,6 +581,8 @@ class WebSocketService {
 						message: `${payload.playerName} has disconnected. Game paused.`,
 						timestamp: Date.now()
 					});
+					// Set the game paused state (will be followed by GAME_PAUSED message with reason)
+					this.gameStore.setGamePaused(true, 'waiting_for_players');
 					// Pause the client-side game loop
 					gameActions.pauseGame();
 				}
@@ -589,11 +591,20 @@ class WebSocketService {
 			case MESSAGE_TYPE.GAME_PAUSED:
 				if (message.payload && typeof message.payload === 'object' && 'reason' in message.payload) {
 					const payload = message.payload as { reason: string; gameId: string };
+					const displayReason =
+						payload.reason === 'waiting_for_players'
+							? 'waiting for disconnected player to reconnect'
+							: payload.reason;
+
 					this.gameStore.addNotification({
 						type: 'warning',
-						message: `Game paused - ${payload.reason === 'waiting_for_players' ? 'waiting for disconnected player to reconnect' : payload.reason}`,
+						message: `Game paused - ${displayReason}`,
 						timestamp: Date.now()
 					});
+
+					// Set the game paused state to show the modal
+					this.gameStore.setGamePaused(true, payload.reason);
+
 					// Pause the client-side game loop and set game as not running
 					isGameRunning.set(false);
 					gameActions.pauseGame();
@@ -609,6 +620,10 @@ class WebSocketService {
 						message: 'All players reconnected. Game resumed.',
 						timestamp: Date.now()
 					});
+
+					// Clear the game paused state to hide the modal
+					this.gameStore.setGamePaused(false);
+
 					// Resume the client-side game loop and set game as running
 					isGameRunning.set(true);
 					gameActions.resumeGame();

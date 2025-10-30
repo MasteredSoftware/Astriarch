@@ -17,6 +17,8 @@ export interface MultiplayerGameState {
 	selectedPlanet: string | null;
 	selectedFleet: string | null;
 	gameOver: GameOverState | null;
+	gamePaused: boolean;
+	pauseReason: string | null;
 }
 
 // Game over state
@@ -76,7 +78,9 @@ function createMultiplayerGameStore() {
 		selectedGame: null,
 		selectedPlanet: null,
 		selectedFleet: null,
-		gameOver: null
+		gameOver: null,
+		gamePaused: false,
+		pauseReason: null
 	};
 
 	const { subscribe, set, update } = writable(initialState);
@@ -177,6 +181,14 @@ function createMultiplayerGameStore() {
 			update((store) => ({
 				...store,
 				gameOver: gameOverState
+			})),
+
+		// Game pause actions
+		setGamePaused: (paused: boolean, reason?: string) =>
+			update((store) => ({
+				...store,
+				gamePaused: paused,
+				pauseReason: paused ? reason || null : null
 			})),
 
 		// Chat actions

@@ -14,19 +14,21 @@
 		size?: 'small' | 'large';
 		variant?: 'info' | 'warning' | 'success' | 'error';
 		style?: 'default' | 'svg';
+		showCloseButton?: boolean;
 	}
 
 	let {
 		title = 'Dialog Title',
 		cancelButtonText = 'Cancel',
 		saveButtonText = 'Save',
-		open = false,
+		open = $bindable(false),
 		onCancel,
 		onSave,
 		children,
 		size = 'small',
 		variant = 'info',
 		style = 'default',
+		showCloseButton = true,
 		...restProps
 	}: Props = $props();
 
@@ -70,7 +72,10 @@
 </script>
 
 <Dialog.Root bind:open>
-	<Dialog.Content class="astriarch-modal {modalClasses} border-none bg-transparent p-0 shadow-none">
+	<Dialog.Content
+		class="astriarch-modal {modalClasses} border-none bg-transparent p-0 shadow-none"
+		{showCloseButton}
+	>
 		{#if style === 'svg'}
 			<!-- SVG Background Modal (Exact Figma Design) -->
 			<div
@@ -303,6 +308,18 @@
 
 	.astriarch-modal-svg svg {
 		display: block;
+	}
+
+	/* Ensure close button is above SVG background */
+	:global(.astriarch-modal [data-dialog-close]) {
+		z-index: 20 !important;
+		color: rgba(255, 255, 255, 0.7) !important;
+		transition: all 0.2s ease;
+	}
+
+	:global(.astriarch-modal [data-dialog-close]:hover) {
+		color: rgba(255, 255, 255, 1) !important;
+		transform: scale(1.1);
 	}
 
 	/* Custom button styling for SVG modal to make them flexible */

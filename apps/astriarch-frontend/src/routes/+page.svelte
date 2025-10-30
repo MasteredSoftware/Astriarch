@@ -40,6 +40,7 @@
 	import ActivityView from '$lib/components/game-views/ActivityView.svelte';
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
+	import GamePausedModal from '$lib/components/game/GamePausedModal.svelte';
 
 	// Import lobby components
 	import { LobbyView } from '$lib/components/lobby';
@@ -520,6 +521,11 @@
 	<!-- Game Over Modal -->
 	{#if multiplayerState && multiplayerState.gameOver && multiplayerState.gameOver.gameEnded}
 		<GameOverModal gameOverState={multiplayerState.gameOver} onClose={handleGameOverClose} />
+	{/if}
+
+	<!-- Game Paused Modal -->
+	{#if multiplayerState && multiplayerState.gamePaused}
+		<GamePausedModal pauseReason={multiplayerState.pauseReason} />
 	{/if}
 
 	<!-- Notifications Panel -->
