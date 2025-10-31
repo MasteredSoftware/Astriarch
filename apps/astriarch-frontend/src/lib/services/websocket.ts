@@ -585,6 +585,8 @@ class WebSocketService {
 					this.gameStore.setGamePaused(true, 'waiting_for_players');
 					// Pause the client-side game loop
 					gameActions.pauseGame();
+					// Stop game sync interval when game is paused
+					this.stopGameSyncInterval();
 				}
 				break;
 
