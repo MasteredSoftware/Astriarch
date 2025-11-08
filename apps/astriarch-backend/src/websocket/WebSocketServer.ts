@@ -1677,7 +1677,7 @@ export class WebSocketServer {
 
     // Check if this is a human player
     const player = game.players?.find((p) => p.sessionId === client.sessionId);
-    if (!player || player.isAI) return;
+    if (!player || player.isAI || player.destroyed) return;
 
     // Notify other players about the disconnection (don't change game state)
     await this.notifyForPlayerDisconnection(game, player);

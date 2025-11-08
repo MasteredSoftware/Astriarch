@@ -92,14 +92,18 @@
 
 	function cleanupGameAndReturnToLobby() {
 		// Reset game state
-		clientGameModel.set(null);
-		gameActions.pauseGame();
+		// clientGameModel.set(null);
+		// gameActions.pauseGame();
 
-		// Reset multiplayer store to lobby view
-		multiplayerGameStore.setCurrentView('lobby');
-		multiplayerGameStore.setGameJoined(false);
-		multiplayerGameStore.setGameId(null);
-		multiplayerGameStore.setPlayerPosition(null);
+		// // Reset multiplayer store to lobby view
+		// multiplayerGameStore.setCurrentView('lobby');
+		// multiplayerGameStore.setGameJoined(false);
+		// multiplayerGameStore.setGameId(null);
+		// multiplayerGameStore.setPlayerPosition(null);
+
+		// NOTE: the above does not fully reset everything correctly and disconnect the user from the game
+		// For now just refresh the page to reset everything
+		window.location.reload();
 	}
 
 	function handleExitToMainMenu() {
