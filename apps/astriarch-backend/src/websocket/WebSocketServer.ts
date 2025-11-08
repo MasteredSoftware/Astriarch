@@ -1481,6 +1481,9 @@ export class WebSocketServer {
       }
       Player.resignPlayer(player);
 
+      // Mark the database player record as destroyed
+      dbPlayer.destroyed = true;
+
       // Save the updated game state
       game.gameState = gameModelData.modelData;
       await persistGame(game);
@@ -1705,7 +1708,8 @@ export class WebSocketServer {
     const gameRoom = this.gameRooms.get(game.id);
     if (!gameRoom) return false;
 
-    const humanPlayers = game.players?.filter((p) => !p.isAI) || [];
+    // Only check for active (non-destroyed) human players
+    const humanPlayers = game.players?.filter((p) => !p.isAI && !p.destroyed) || [];
     return humanPlayers.every((player) => player.sessionId && gameRoom.has(player.sessionId));
   }
 
@@ -1761,6 +1765,9 @@ export class WebSocketServer {
         logger.warn(`Could not find database player for destroyed player ${destroyedPlayer.id}`);
         return;
       }
+
+      // Mark the database player record as destroyed
+      dbPlayer.destroyed = true;
 
       // Calculate end game score for destroyed player
       const score = EngineGameController.calculateEndGamePoints(
