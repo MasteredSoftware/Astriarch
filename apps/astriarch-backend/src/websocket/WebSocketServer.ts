@@ -41,6 +41,7 @@ import {
   Events,
   type EventNotification,
   type PlayerData,
+  Player,
   GameController as EngineGameController,
   AdvanceGameClockResult,
   GameEndConditions,
@@ -1450,8 +1451,89 @@ export class WebSocketServer {
   }
 
   private async handleExitResign(clientId: string, message: IMessage<unknown>): Promise<void> {
-    // TODO: Implement based on GameController.exitResign
-    logger.warn("handleExitResign not yet implemented");
+    const client = this.clients.get(clientId);
+    if (!client || !client.gameId || !client.sessionId) {
+      logger.warn(`Exit/Resign attempted by client without active game session`);
+      return;
+    }
+
+    try {
+      const game = await Game.findById(client.gameId);
+      if (!game || game.status !== "in_progress") {
+        logger.error(`Game ${client.gameId} not found or not in progress for exit/resign`);
+        return;
+      }
+
+      // Find the player
+      const dbPlayer = game.players?.find((p) => p.sessionId === client.sessionId);
+      if (!dbPlayer) {
+        logger.error(`Player not found in game ${game.id} for session ${client.sessionId}`);
+        return;
+      }
+
+      logger.info(`Player ${dbPlayer.name} (${dbPlayer.Id}) is resigning from game ${game.id}`);
+
+      // Use engine to resign player - this marks them as destroyed and clears their owned planets/fleets
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+      const player = gameModelData.modelData.players.find((p) => p.id === client.playerId);
+      if (!player) {
+        return;
+      }
+      Player.resignPlayer(player);
+
+      // Save the updated game state
+      game.gameState = gameModelData.modelData;
+      await persistGame(game);
+
+      const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, false);
+
+      // Send GAME_OVER message to the resigning player
+      const payload = {
+        winningSerializablePlayer: null,
+        playerWon: false,
+        score,
+        endOfTurnMessages: [],
+        gameData: null, // No game data needed for destroyed players
+      };
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.GAME_OVER, payload));
+
+      // Notify all other players about the resignation
+      const gameRoom = this.gameRooms.get(game.id);
+      if (gameRoom) {
+        for (const sessionId of gameRoom) {
+          if (sessionId !== client.sessionId) {
+            const otherClientId = this.getClientIdBySessionId(sessionId);
+            if (otherClientId) {
+              this.sendToClient(
+                otherClientId,
+                new Message(MESSAGE_TYPE.EXIT_RESIGN, {
+                  playerName: player.name,
+                  playerId: player.id,
+                  gameId: game.id,
+                }),
+              );
+            }
+          }
+        }
+      }
+
+      // Remove client from game room
+      if (gameRoom) {
+        gameRoom.delete(client.sessionId);
+        if (gameRoom.size === 0) {
+          this.gameRooms.delete(game.id);
+        }
+      }
+
+      // Clear client's game state
+      client.gameId = undefined;
+      client.playerId = undefined;
+
+      logger.info(`Player ${player.name} successfully resigned from game ${game.id}`);
+    } catch (error) {
+      logger.error("Error handling exit/resign:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Failed to exit game" }));
+    }
   }
 
   private async handleLogout(clientId: string, message: IMessage<unknown>): Promise<void> {
@@ -1681,11 +1763,9 @@ export class WebSocketServer {
       }
 
       // Calculate end game score for destroyed player
-      const ownedPlanets = {}; // Empty since player is destroyed
       const score = EngineGameController.calculateEndGamePoints(
         game.gameState as ModelData,
         destroyedPlayer,
-        ownedPlanets,
         false, // playerWon = false for destroyed players
       );
 
@@ -1747,19 +1827,7 @@ export class WebSocketServer {
           continue;
         }
 
-        const ownedPlanets = gameModelData.modelData.planets
-          .filter((p) => player.ownedPlanetIds.includes(p.id))
-          .reduce((acc, planet) => {
-            acc[planet.id] = planet;
-            return acc;
-          }, {} as any);
-
-        const score = EngineGameController.calculateEndGamePoints(
-          game.gameState as ModelData,
-          player,
-          ownedPlanets,
-          playerWon,
-        );
+        const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, playerWon);
 
         // Send GAME_OVER message
         const gameOverMessage = new Message(MESSAGE_TYPE.GAME_OVER, {

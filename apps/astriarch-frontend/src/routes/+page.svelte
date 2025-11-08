@@ -41,6 +41,7 @@
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
 	import GamePausedModal from '$lib/components/game/GamePausedModal.svelte';
+	import PlayerResignedModal from '$lib/components/modals/PlayerResignedModal.svelte';
 	import ExitGameDialog from '$lib/components/game/ExitGameDialog.svelte';
 
 	// Import lobby components
@@ -108,18 +109,10 @@
 	}
 
 	function handleResignCommand() {
-		// Send resign message to server
+		// Send resign message to server - server will respond with GAME_OVER message
+		// which will trigger the game over modal
 		showExitDialog = false;
-		webSocketService.leaveGame();
-
-		// Clean up and return to lobby
-		cleanupGameAndReturnToLobby();
-
-		multiplayerGameStore.addNotification({
-			type: 'info',
-			message: 'You have resigned from the game',
-			timestamp: Date.now()
-		});
+		webSocketService.exitResignGame();
 	}
 
 	function handleCancelExit() {
@@ -129,8 +122,8 @@
 
 	// Game over modal handlers
 	function handleGameOverClose() {
-		// For now just refresh the page to reset everything
-		window.location.reload();
+		// Clean up game state and return to lobby
+		cleanupGameAndReturnToLobby();
 	}
 
 	onMount(() => {
@@ -566,6 +559,11 @@
 	<!-- Game Paused Modal -->
 	{#if multiplayerState && multiplayerState.gamePaused}
 		<GamePausedModal pauseReason={multiplayerState.pauseReason} />
+	{/if}
+
+	<!-- Player Resigned Modal -->
+	{#if multiplayerState && multiplayerState.playerResignedModal && multiplayerState.playerResignedModal.show}
+		<PlayerResignedModal modalState={multiplayerState.playerResignedModal} />
 	{/if}
 
 	<!-- Exit Game Dialog -->

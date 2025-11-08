@@ -11,7 +11,7 @@ export interface MultiplayerGameState {
 	playerPosition: number | null; // Store the player position returned by the backend
 	connected: boolean;
 	gameJoined: boolean;
-	currentView: 'lobby' | 'game_options' | 'game';
+	currentView: 'welcome' | 'lobby' | 'game_options' | 'game';
 	availableGames: IGame[];
 	selectedGame: IGame | null;
 	selectedPlanet: string | null;
@@ -19,6 +19,7 @@ export interface MultiplayerGameState {
 	gameOver: GameOverState | null;
 	gamePaused: boolean;
 	pauseReason: string | null;
+	playerResignedModal: PlayerResignedModalState | null;
 }
 
 // Game over state
@@ -32,6 +33,13 @@ export interface GameOverState {
 		position: number;
 	} | null;
 	allHumansDestroyed: boolean;
+}
+
+// Player resigned modal state
+export interface PlayerResignedModalState {
+	show: boolean;
+	playerName: string;
+	playerId: string;
 }
 
 // Chat and notifications
@@ -73,14 +81,15 @@ function createMultiplayerGameStore() {
 		playerPosition: null,
 		connected: false,
 		gameJoined: false,
-		currentView: 'lobby',
+		currentView: 'welcome',
 		availableGames: [],
 		selectedGame: null,
 		selectedPlanet: null,
 		selectedFleet: null,
 		gameOver: null,
 		gamePaused: false,
-		pauseReason: null
+		pauseReason: null,
+		playerResignedModal: null
 	};
 
 	const { subscribe, set, update } = writable(initialState);
@@ -189,6 +198,13 @@ function createMultiplayerGameStore() {
 				...store,
 				gamePaused: paused,
 				pauseReason: paused ? reason || null : null
+			})),
+
+		// Player resigned modal actions
+		setPlayerResignedModal: (modalState: PlayerResignedModalState | null) =>
+			update((store) => ({
+				...store,
+				playerResignedModal: modalState
 			})),
 
 		// Chat actions

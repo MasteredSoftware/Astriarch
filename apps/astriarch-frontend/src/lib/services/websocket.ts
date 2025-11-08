@@ -283,6 +283,13 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.GAME_STATE_UPDATE:
 				if (isGameStateUpdate(message)) {
+					// Only process if we're actually in a game
+					const currentGameId = get(this.gameStore).gameId;
+					if (!currentGameId) {
+						console.log('Ignoring GAME_STATE_UPDATE - not in a game');
+						break;
+					}
+
 					if (message.payload.clientGameModel) {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
@@ -568,6 +575,34 @@ class WebSocketService {
 				});
 				break;
 			}
+
+			case MESSAGE_TYPE.EXIT_RESIGN:
+				if (
+					message.payload &&
+					typeof message.payload === 'object' &&
+					'playerName' in message.payload
+				) {
+					const payload = message.payload as {
+						playerName: string;
+						playerId: string;
+						gameId: string;
+					};
+
+					// Show a modal to inform the player about the resignation
+					this.gameStore.setPlayerResignedModal({
+						show: true,
+						playerName: payload.playerName,
+						playerId: payload.playerId
+					});
+
+					// Also add a notification for the activity log
+					this.gameStore.addNotification({
+						type: 'warning',
+						message: `${payload.playerName} has resigned from the game`,
+						timestamp: Date.now()
+					});
+				}
+				break;
 
 			case MESSAGE_TYPE.PLAYER_DISCONNECTED:
 				if (
@@ -1001,7 +1036,7 @@ class WebSocketService {
 		this.send(new Message(MESSAGE_TYPE.RESUME_GAME, { gameId }));
 	}
 
-	leaveGame() {
+	exitResignGame() {
 		this.stopGameSyncInterval();
 		this.send(new Message(MESSAGE_TYPE.EXIT_RESIGN, {}));
 	}
