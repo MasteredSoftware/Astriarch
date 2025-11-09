@@ -8,6 +8,7 @@ export interface IPlayer {
   Id: string;
   isActive: boolean;
   isAI: boolean;
+  destroyed: boolean;
 }
 
 export interface IGame extends Document {
@@ -31,6 +32,7 @@ const PlayerSchema = new Schema<IPlayer>({
   Id: { type: String, required: true },
   isActive: { type: Boolean, default: true },
   isAI: { type: Boolean, default: false },
+  destroyed: { type: Boolean, default: false },
 });
 
 const GameSchema = new Schema<IGame>({

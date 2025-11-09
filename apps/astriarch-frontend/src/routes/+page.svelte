@@ -41,15 +41,20 @@
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
 	import GamePausedModal from '$lib/components/game/GamePausedModal.svelte';
+	import PlayerEliminatedModal from '$lib/components/modals/PlayerEliminatedModal.svelte';
+	import ExitGameDialog from '$lib/components/game/ExitGameDialog.svelte';
 
 	// Import lobby components
 	import { LobbyView } from '$lib/components/lobby';
+
+	// Import websocket service
+	import { webSocketService } from '$lib/services/websocket';
 
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
 	let GalaxyCanvas: any = $state(null);
 
 	// UI state
-	let showLobby = $state(false);
+	let showExitDialog = $state(false);
 
 	// Computed values
 	const gameStarted = $derived($clientGameModel !== null);
@@ -73,24 +78,56 @@
 	function handleShowLobby() {
 		// Enable audio on first user interaction
 		audioActions.enableAudio();
-		showLobby = true;
+		multiplayerGameStore.setCurrentView('lobby');
 	}
 
 	function handleBackToMain() {
-		showLobby = false;
+		multiplayerGameStore.setCurrentView('lobby');
 	}
 
 	function handleExitGame() {
-		// Add any cleanup logic here if needed
-		// For now, just reset to the main menu
-		showLobby = false;
-		// Could also call gameActions to properly exit/reset the game
+		// Show the exit dialog
+		showExitDialog = true;
+	}
+
+	function cleanupGameAndReturnToLobby() {
+		// Reset game state
+		// clientGameModel.set(null);
+		// gameActions.pauseGame();
+
+		// // Reset multiplayer store to lobby view
+		// multiplayerGameStore.setCurrentView('lobby');
+		// multiplayerGameStore.setGameJoined(false);
+		// multiplayerGameStore.setGameId(null);
+		// multiplayerGameStore.setPlayerPosition(null);
+
+		// NOTE: the above does not fully reset everything correctly and disconnect the user from the game
+		// For now just refresh the page to reset everything
+		window.location.reload();
+	}
+
+	function handleExitToMainMenu() {
+		// Return to lobby without resigning
+		showExitDialog = false;
+		cleanupGameAndReturnToLobby();
+	}
+
+	function handleResignCommand() {
+		// Send resign message to server - server will respond with GAME_OVER message
+		// which will trigger the game over modal
+		showExitDialog = false;
+		webSocketService.exitResignGame();
+	}
+
+	function handleCancelExit() {
+		// Just close the dialog
+		showExitDialog = false;
 	}
 
 	// Game over modal handlers
 	function handleGameOverClose() {
-		// For now just refresh the page to reset everything
-		window.location.reload();
+		// Clean up game state and return to lobby
+		cleanupGameAndReturnToLobby();
 	}
 
 	onMount(() => {
@@ -422,7 +459,17 @@
 
 	<!-- Main Game Area -->
 	<div class="relative z-10 flex-1">
-		{#if gameStarted}
+		{#if multiplayerState?.currentView === 'lobby' || multiplayerState?.currentView === 'game_options'}
+			<!-- Multiplayer Lobby -->
+			<div class="flex h-[calc(100vh-200px)] flex-col">
+				<div class="flex items-center justify-between px-4">
+					<Button label="← Back to Main" size="sm" variant="outline" onclick={handleBackToMain} />
+				</div>
+				<div class="flex-1">
+					<LobbyView />
+				</div>
+			</div>
+		{:else if gameStarted}
 			<!-- Game View -->
 			<div class="flex h-[calc(100vh-80px)] flex-col">
 				<!-- Central Game Content Area with Galaxy Canvas as background -->
@@ -485,16 +532,6 @@
 					<NavigationController items={navigationItems} />
 				</div>
 			</div>
-		{:else if showLobby}
-			<!-- Multiplayer Lobby -->
-			<div class="flex h-[calc(100vh-200px)] flex-col">
-				<div class="flex items-center justify-between px-4">
-					<Button label="← Back to Main" size="sm" variant="outline" onclick={handleBackToMain} />
-				</div>
-				<div class="flex-1">
-					<LobbyView />
-				</div>
-			</div>
 		{:else}
 			<!-- Welcome Screen -->
 			<div class="flex h-[calc(100vh-200px)] items-center justify-center">
@@ -526,6 +563,20 @@
 	<!-- Game Paused Modal -->
 	{#if multiplayerState && multiplayerState.gamePaused}
 		<GamePausedModal pauseReason={multiplayerState.pauseReason} />
+	{/if}
+
+	<!-- Player Resigned Modal -->
+	{#if multiplayerState && multiplayerState.playerEliminatedModal && multiplayerState.playerEliminatedModal.show}
+		<PlayerEliminatedModal modalState={multiplayerState.playerEliminatedModal} />
+	{/if}
+
+	<!-- Exit Game Dialog -->
+	{#if showExitDialog}
+		<ExitGameDialog
+			onExitToMainMenu={handleExitToMainMenu}
+			onResignCommand={handleResignCommand}
+			onCancel={handleCancelExit}
+		/>
 	{/if}
 
 	<!-- Notifications Panel -->

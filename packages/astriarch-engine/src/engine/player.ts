@@ -2,6 +2,7 @@ import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clie
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
 import { EventNotificationType } from '../model/eventNotification';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
+import { ModelData } from '../model/model';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Utils } from '../utils/utils';
@@ -626,5 +627,22 @@ export class Player {
       }
     }
     return fleetsArrivingOnUnownedPlanets;
+  }
+
+  /**
+   * Resign a player from the game
+   * Marks the player as destroyed, clears their owned planets and fleets in transit
+   * @param modelData - The model data
+   * @param playerId - The ID of the player to resign
+   */
+  public static resignPlayer(p: PlayerData): void {
+    // Mark player as destroyed
+    p.destroyed = true;
+
+    // Clear all owned planets - other players can now capture them
+    p.ownedPlanetIds = [];
+
+    // Clear all fleets in transit
+    p.fleetsInTransit = [];
   }
 }

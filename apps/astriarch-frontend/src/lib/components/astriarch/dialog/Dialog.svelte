@@ -151,7 +151,7 @@
 
 					<!-- Title positioned at 8.33% from top, 7.92% from sides -->
 					<div
-						class="font-orbitron absolute text-[38px] leading-[42px] font-bold tracking-[0.76px] text-white"
+						class="font-orbitron absolute text-[28px] leading-[42px] font-bold tracking-[0.76px] text-white"
 						style="top: 8.33%; left: 7.92%; right: 7.92%; height: auto;"
 					>
 						{title}

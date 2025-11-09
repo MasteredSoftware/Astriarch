@@ -94,16 +94,21 @@ export class GameController {
    */
   static async listLobbyGames(options: { sessionId: string }): Promise<any[]> {
     try {
-      // Find any game that is not started, or the current player is already in
-      // This matches the old game_controller.js query exactly
+      // Find any game that is not started, or the current player is already in and not destroyed
       const query = {
         $or: [
           { status: "waiting_for_players" }, // Not started games (anyone can join)
           {
             $and: [
               { status: "in_progress" }, // Started but not ended
-              { "players.sessionId": options.sessionId }, // Current player is in this game
-              { "players.destroyed": { $ne: true } }, // Player is not destroyed
+              {
+                players: {
+                  $elemMatch: {
+                    sessionId: options.sessionId,
+                    destroyed: { $ne: true },
+                  },
+                },
+              },
             ],
           },
         ],
@@ -149,6 +154,7 @@ export class GameController {
           Id: `player_${p.position}`, // Generate player ID
           isActive: true,
           isAI: false,
+          destroyed: false,
         })),
         gameOptions: defaultGameOptions,
         gameState: gameModel.modelData,
@@ -203,6 +209,7 @@ export class GameController {
         Id: playerId,
         isActive: true,
         isAI: false,
+        destroyed: false,
       };
 
       if (!game.players) {
@@ -263,6 +270,7 @@ export class GameController {
               Id: getPlayerId(i + 1),
               isActive: true,
               isAI: true,
+              destroyed: false,
             };
             allPlayers.push(computerPlayer);
           }

@@ -366,12 +366,8 @@ export class GameController {
     }
   }
 
-  public static calculateEndGamePoints(
-    model: ModelData,
-    player: PlayerData,
-    ownedPlanets: PlanetById,
-    playerWon: boolean,
-  ) {
+  public static calculateEndGamePoints(model: ModelData, player: PlayerData, playerWon: boolean) {
+    const ownedPlanets = ClientGameModel.getOwnedPlanets(player.ownedPlanetIds, model.planets);
     return this.getEndGamePlayerPoints(model, player, ownedPlanets, playerWon);
   }
 

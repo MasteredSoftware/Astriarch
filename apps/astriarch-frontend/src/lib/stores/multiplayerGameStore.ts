@@ -11,7 +11,7 @@ export interface MultiplayerGameState {
 	playerPosition: number | null; // Store the player position returned by the backend
 	connected: boolean;
 	gameJoined: boolean;
-	currentView: 'lobby' | 'game_options' | 'game';
+	currentView: 'welcome' | 'lobby' | 'game_options' | 'game';
 	availableGames: IGame[];
 	selectedGame: IGame | null;
 	selectedPlanet: string | null;
@@ -19,6 +19,7 @@ export interface MultiplayerGameState {
 	gameOver: GameOverState | null;
 	gamePaused: boolean;
 	pauseReason: string | null;
+	playerEliminatedModal: PlayerEliminatedModalState | null;
 }
 
 // Game over state
@@ -32,6 +33,14 @@ export interface GameOverState {
 		position: number;
 	} | null;
 	allHumansDestroyed: boolean;
+}
+
+// Player eliminated modal state (for both resignation and destruction)
+export interface PlayerEliminatedModalState {
+	show: boolean;
+	playerName: string;
+	playerId: string;
+	reason: 'resigned' | 'destroyed';
 }
 
 // Chat and notifications
@@ -73,14 +82,15 @@ function createMultiplayerGameStore() {
 		playerPosition: null,
 		connected: false,
 		gameJoined: false,
-		currentView: 'lobby',
+		currentView: 'welcome',
 		availableGames: [],
 		selectedGame: null,
 		selectedPlanet: null,
 		selectedFleet: null,
 		gameOver: null,
 		gamePaused: false,
-		pauseReason: null
+		pauseReason: null,
+		playerEliminatedModal: null
 	};
 
 	const { subscribe, set, update } = writable(initialState);
@@ -189,6 +199,13 @@ function createMultiplayerGameStore() {
 				...store,
 				gamePaused: paused,
 				pauseReason: paused ? reason || null : null
+			})),
+
+		// Player eliminated modal actions
+		setPlayerEliminatedModal: (modalState: PlayerEliminatedModalState | null) =>
+			update((store) => ({
+				...store,
+				playerEliminatedModal: modalState
 			})),
 
 		// Chat actions

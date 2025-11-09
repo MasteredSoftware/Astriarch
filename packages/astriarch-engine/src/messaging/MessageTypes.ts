@@ -54,6 +54,7 @@ export enum MESSAGE_TYPE {
   // Player Actions
   EXIT_RESIGN = 'EXIT_RESIGN',
   LOGOUT = 'LOGOUT',
+  PLAYER_ELIMINATED = 'PLAYER_ELIMINATED',
 }
 
 export enum ERROR_TYPE {
@@ -212,6 +213,13 @@ export interface IChatMessagePayload {
   message: string;
   timestamp: number;
   messageType?: CHAT_MESSAGE_TYPE;
+}
+
+export interface IPlayerEliminatedPayload {
+  playerName: string;
+  playerId: string;
+  gameId: string;
+  reason: 'resigned' | 'destroyed';
 }
 
 // =============================================
@@ -475,6 +483,7 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.PLAYER_DISCONNECTED]: 68,
     [MESSAGE_TYPE.PLAYER_RECONNECTED]: 69,
     [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 70,
+    [MESSAGE_TYPE.PLAYER_ELIMINATED]: 71,
   };
 
   return typeMap[type] ?? -1;
@@ -520,6 +529,7 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     68: MESSAGE_TYPE.PLAYER_DISCONNECTED,
     69: MESSAGE_TYPE.PLAYER_RECONNECTED,
     70: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
+    71: MESSAGE_TYPE.PLAYER_ELIMINATED,
   };
 
   return reverseMap[typeNum] ?? null;
