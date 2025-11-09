@@ -576,29 +576,37 @@ class WebSocketService {
 				break;
 			}
 
-			case MESSAGE_TYPE.EXIT_RESIGN:
+			case MESSAGE_TYPE.PLAYER_ELIMINATED:
 				if (
 					message.payload &&
 					typeof message.payload === 'object' &&
-					'playerName' in message.payload
+					'playerName' in message.payload &&
+					'reason' in message.payload
 				) {
 					const payload = message.payload as {
 						playerName: string;
 						playerId: string;
 						gameId: string;
+						reason: 'resigned' | 'destroyed';
 					};
 
-					// Show a modal to inform the player about the resignation
-					this.gameStore.setPlayerResignedModal({
+					// Show a modal to inform the player about the elimination
+					this.gameStore.setPlayerEliminatedModal({
 						show: true,
 						playerName: payload.playerName,
-						playerId: payload.playerId
+						playerId: payload.playerId,
+						reason: payload.reason
 					});
 
 					// Also add a notification for the activity log
+					const notificationMessage =
+						payload.reason === 'resigned'
+							? `${payload.playerName} has resigned from the game`
+							: `${payload.playerName} has been destroyed`;
+
 					this.gameStore.addNotification({
 						type: 'warning',
-						message: `${payload.playerName} has resigned from the game`,
+						message: notificationMessage,
 						timestamp: Date.now()
 					});
 				}

@@ -1,25 +1,29 @@
 <script lang="ts">
 	import {
 		multiplayerGameStore,
-		type PlayerResignedModalState
+		type PlayerEliminatedModalState
 	} from '$lib/stores/multiplayerGameStore';
 	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
 
-	export let modalState: PlayerResignedModalState;
+	export let modalState: PlayerEliminatedModalState;
 	export let onClose: () => void = () => {};
 
 	let open = true;
 
+	$: title = modalState.reason === 'resigned' ? 'PLAYER RESIGNED' : 'PLAYER DESTROYED';
+	$: description =
+		modalState.reason === 'resigned' ? 'has resigned from the game' : 'has been destroyed';
+
 	function handleClose() {
 		open = false;
 		onClose();
-		multiplayerGameStore.setPlayerResignedModal(null);
+		multiplayerGameStore.setPlayerEliminatedModal(null);
 	}
 </script>
 
 <Dialog
 	bind:open
-	title="PLAYER RESIGNED"
+	{title}
 	cancelButtonText="Continue"
 	onCancel={handleClose}
 	size="small"
@@ -30,7 +34,8 @@
 	<div class="space-y-4">
 		<div class="text-center">
 			<p class="font-orbitron text-lg font-bold tracking-wide text-orange-400">
-				<span class="text-white">{modalState.playerName}</span> has resigned from the game
+				<span class="text-white">{modalState.playerName}</span>
+				{description}
 			</p>
 		</div>
 

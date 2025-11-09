@@ -32,6 +32,7 @@ import {
   type IChangeGameOptionsPayload,
   type IChangePlayerNamePayload,
   type IGameSpeedAdjustmentPayload,
+  type IPlayerEliminatedPayload,
   constructClientGameModel,
   advanceGameModelTime,
   resetGameSnapshotTime,
@@ -1503,18 +1504,18 @@ export class WebSocketServer {
       // Notify all other players about the resignation
       const gameRoom = this.gameRooms.get(game.id);
       if (gameRoom) {
+        const playerEliminatedPayload: IPlayerEliminatedPayload = {
+          playerName: player.name,
+          playerId: player.id,
+          gameId: game.id,
+          reason: "resigned",
+        };
+
         for (const sessionId of gameRoom) {
           if (sessionId !== client.sessionId) {
             const otherClientId = this.getClientIdBySessionId(sessionId);
             if (otherClientId) {
-              this.sendToClient(
-                otherClientId,
-                new Message(MESSAGE_TYPE.EXIT_RESIGN, {
-                  playerName: player.name,
-                  playerId: player.id,
-                  gameId: game.id,
-                }),
-              );
+              this.sendToClient(otherClientId, new Message(MESSAGE_TYPE.PLAYER_ELIMINATED, playerEliminatedPayload));
             }
           }
         }
@@ -1790,6 +1791,30 @@ export class WebSocketServer {
 
           this.sendToClient(clientId, gameOverMessage);
           logger.info(`Sent GAME_OVER message to destroyed player ${destroyedPlayer.name}`);
+        }
+      }
+
+      // Notify other players about the destruction
+      const gameRoom = this.gameRooms.get(gameId);
+      if (gameRoom) {
+        const playerEliminatedPayload: IPlayerEliminatedPayload = {
+          playerName: destroyedPlayer.name,
+          playerId: destroyedPlayer.id,
+          gameId,
+          reason: "destroyed",
+        };
+
+        for (const otherSessionId of gameRoom) {
+          // Skip the destroyed player
+          if (otherSessionId === dbPlayer.sessionId) {
+            continue;
+          }
+
+          const otherClientId = this.sessionLookup.get(otherSessionId);
+          if (otherClientId) {
+            this.sendToClient(otherClientId, new Message(MESSAGE_TYPE.PLAYER_ELIMINATED, playerEliminatedPayload));
+            logger.info(`Notified ${otherSessionId} that player ${destroyedPlayer.name} was destroyed`);
+          }
         }
       }
     } catch (error) {

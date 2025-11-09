@@ -41,7 +41,7 @@
 	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
 	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
 	import GamePausedModal from '$lib/components/game/GamePausedModal.svelte';
-	import PlayerResignedModal from '$lib/components/modals/PlayerResignedModal.svelte';
+	import PlayerEliminatedModal from '$lib/components/modals/PlayerEliminatedModal.svelte';
 	import ExitGameDialog from '$lib/components/game/ExitGameDialog.svelte';
 
 	// Import lobby components
@@ -566,8 +566,8 @@
 	{/if}
 
 	<!-- Player Resigned Modal -->
-	{#if multiplayerState && multiplayerState.playerResignedModal && multiplayerState.playerResignedModal.show}
-		<PlayerResignedModal modalState={multiplayerState.playerResignedModal} />
+	{#if multiplayerState && multiplayerState.playerEliminatedModal && multiplayerState.playerEliminatedModal.show}
+		<PlayerEliminatedModal modalState={multiplayerState.playerEliminatedModal} />
 	{/if}
 
 	<!-- Exit Game Dialog -->

@@ -19,7 +19,7 @@ export interface MultiplayerGameState {
 	gameOver: GameOverState | null;
 	gamePaused: boolean;
 	pauseReason: string | null;
-	playerResignedModal: PlayerResignedModalState | null;
+	playerEliminatedModal: PlayerEliminatedModalState | null;
 }
 
 // Game over state
@@ -35,11 +35,12 @@ export interface GameOverState {
 	allHumansDestroyed: boolean;
 }
 
-// Player resigned modal state
-export interface PlayerResignedModalState {
+// Player eliminated modal state (for both resignation and destruction)
+export interface PlayerEliminatedModalState {
 	show: boolean;
 	playerName: string;
 	playerId: string;
+	reason: 'resigned' | 'destroyed';
 }
 
 // Chat and notifications
@@ -89,7 +90,7 @@ function createMultiplayerGameStore() {
 		gameOver: null,
 		gamePaused: false,
 		pauseReason: null,
-		playerResignedModal: null
+		playerEliminatedModal: null
 	};
 
 	const { subscribe, set, update } = writable(initialState);
@@ -200,11 +201,11 @@ function createMultiplayerGameStore() {
 				pauseReason: paused ? reason || null : null
 			})),
 
-		// Player resigned modal actions
-		setPlayerResignedModal: (modalState: PlayerResignedModalState | null) =>
+		// Player eliminated modal actions
+		setPlayerEliminatedModal: (modalState: PlayerEliminatedModalState | null) =>
 			update((store) => ({
 				...store,
-				playerResignedModal: modalState
+				playerEliminatedModal: modalState
 			})),
 
 		// Chat actions
