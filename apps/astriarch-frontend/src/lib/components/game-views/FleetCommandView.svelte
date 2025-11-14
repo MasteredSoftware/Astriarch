@@ -153,6 +153,9 @@
 		gameActions.selectPlanet(planetId);
 	}
 
+	// Feature flag for testing new command architecture
+	const USE_NEW_COMMAND_ARCHITECTURE = true;
+
 	async function setWaypoint() {
 		if (!currentSelectedPlanet || !$fleetCommandStore.destinationPlanetId) {
 			console.warn('Cannot set waypoint: no planet or destination selected');
@@ -166,8 +169,21 @@
 			$fleetCommandStore.destinationPlanetId
 		);
 
-		// Set the waypoint using the currently selected destination
-		webSocketService.setWaypoint(currentSelectedPlanet.id, $fleetCommandStore.destinationPlanetId);
+		// Use new command architecture or legacy method
+		if (USE_NEW_COMMAND_ARCHITECTURE && $clientGameModel?.mainPlayer?.id) {
+			console.log('✨ Using NEW command architecture for SET_WAYPOINT');
+			webSocketService.setWaypointCommand(
+				currentSelectedPlanet.id,
+				$fleetCommandStore.destinationPlanetId,
+				$clientGameModel.mainPlayer.id
+			);
+		} else {
+			console.log('📌 Using LEGACY method for SET_WAYPOINT');
+			webSocketService.setWaypoint(
+				currentSelectedPlanet.id,
+				$fleetCommandStore.destinationPlanetId
+			);
+		}
 	}
 
 	async function clearWaypoint() {
@@ -182,8 +198,17 @@
 			currentSelectedPlanet.name
 		);
 
-		// Call WebSocket service to clear the waypoint
-		webSocketService.clearWaypoint(currentSelectedPlanet.id);
+		// Use new command architecture or legacy method
+		if (USE_NEW_COMMAND_ARCHITECTURE && $clientGameModel?.mainPlayer?.id) {
+			console.log('✨ Using NEW command architecture for CLEAR_WAYPOINT');
+			webSocketService.clearWaypointCommand(
+				currentSelectedPlanet.id,
+				$clientGameModel.mainPlayer.id
+			);
+		} else {
+			console.log('📌 Using LEGACY method for CLEAR_WAYPOINT');
+			webSocketService.clearWaypoint(currentSelectedPlanet.id);
+		}
 	}
 
 	// Get destination planet name if one is selected

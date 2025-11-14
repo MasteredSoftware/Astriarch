@@ -341,6 +341,10 @@ export class WebSocketServer {
         await this.handleCancelTrade(clientId, message);
         break;
 
+      case MESSAGE_TYPE.GAME_COMMAND:
+        await this.handleGameCommand(clientId, message);
+        break;
+
       case MESSAGE_TYPE.CHAT_MESSAGE:
         await this.handleChatMessage(clientId, message);
         break;
@@ -460,6 +464,12 @@ export class WebSocketServer {
 
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
+
+          // Include the current rolling checksum in the synced state
+          const currentChecksum = GameController.getPlayerEventChecksum(client.playerId);
+          if (currentChecksum) {
+            clientGameModel.lastEventChecksum = currentChecksum;
+          }
 
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
@@ -1062,6 +1072,57 @@ export class WebSocketServer {
         clientId,
         new Message(MESSAGE_TYPE.ERROR, {
           message: error instanceof Error ? error.message : "Unknown error occurred while updating worker assignments",
+        }),
+      );
+    }
+  }
+
+  /**
+   * Handle new GAME_COMMAND message type (event-driven architecture)
+   */
+  private async handleGameCommand(clientId: string, message: IMessage<unknown>): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const payload = message.payload as { command: any; gameId: string };
+      const { command, gameId } = payload;
+
+      // Process the command using the new architecture
+      const result = await GameController.handleGameCommand(client.sessionId, gameId, command);
+
+      if (!result.success) {
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        return;
+      }
+
+      // Broadcast events to all players in the game
+      if (result.events && result.events.length > 0) {
+        const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
+          events: result.events,
+          stateChecksum: result.checksum,
+          currentCycle: result.currentCycle,
+        });
+
+        // Get all clients in this game using gameRooms
+        const gameRoom = this.gameRooms.get(gameId);
+        if (gameRoom) {
+          for (const sessionId of gameRoom) {
+            const playerClientId = this.getClientIdBySessionId(sessionId);
+            if (playerClientId) {
+              this.sendToClient(playerClientId, eventMessage);
+            }
+          }
+        }
+      }
+
+      logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
+    } catch (error) {
+      logger.error("handleGameCommand error:", error);
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.ERROR, {
+          message: error instanceof Error ? error.message : "Unknown error occurred while processing command",
         }),
       );
     }

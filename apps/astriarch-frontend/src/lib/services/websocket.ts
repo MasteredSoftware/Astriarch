@@ -15,7 +15,12 @@ import {
 	isGameStateUpdate,
 	isErrorMessage,
 	isGameSpeedAdjustment,
-	isChatMessage
+	isChatMessage,
+	type GameCommand,
+	type ClientEvent,
+	GameCommandType,
+	EventApplicator,
+	calculateRollingEventChecksum
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
@@ -791,6 +796,64 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.CLIENT_EVENT: {
+				// Handle new event-driven architecture messages
+				const payload = message.payload as {
+					events: ClientEvent[];
+					stateChecksum: string;
+					currentCycle: number;
+				};
+				console.log(`Received ${payload.events.length} client events from server`);
+
+				// Get current client model
+				const currentModel = get(clientGameModel);
+				if (!currentModel) {
+					console.warn('No client model available to apply events');
+					break;
+				}
+
+				// Apply each event to the client model
+				for (const event of payload.events) {
+					console.log(`Applying event: ${event.type}`);
+					EventApplicator.applyEvent(currentModel, event);
+				}
+
+				// Calculate rolling checksum using our previous checksum
+				const previousChecksum = currentModel.lastEventChecksum || '';
+				calculateRollingEventChecksum(payload.events, previousChecksum)
+					.then((ourChecksum) => {
+						if (ourChecksum !== payload.stateChecksum) {
+							console.error('Event chain broken! Desync detected.');
+							console.error(`Expected: ${payload.stateChecksum}`);
+							console.error(`Got: ${ourChecksum}`);
+							console.error(`Previous checksum: ${previousChecksum}`);
+
+							// This is serious - the event chain is broken
+							this.gameStore.addNotification({
+								type: 'error',
+								message: 'Game sync error - requesting full resync',
+								timestamp: Date.now()
+							});
+
+							// Request full state sync to recover
+							this.requestStateSync();
+						} else {
+							console.debug('Event chain valid ✓', ourChecksum);
+
+							// Update the model with the new checksum
+							currentModel.lastEventChecksum = ourChecksum;
+						}
+
+						// Update the store with the mutated model (including new checksum)
+						clientGameModel.set(currentModel);
+					})
+					.catch((error) => {
+						console.error('Error calculating rolling checksum:', error);
+					});
+
+				break;
+			}
+
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
 					this.gameStore.addNotification({
@@ -1214,6 +1277,60 @@ class WebSocketService {
 			});
 		}
 	}
+
+	/**
+	 * Send a game command using the new event-driven architecture
+	 */
+	sendCommand(command: GameCommand) {
+		try {
+			const gameId = this.requireGameId();
+			const payload = {
+				gameId,
+				command
+			};
+
+			console.log(`Sending GAME_COMMAND: ${command.type}`, command);
+			this.send(new Message(MESSAGE_TYPE.GAME_COMMAND, payload));
+		} catch (error) {
+			console.error('Failed to send game command:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot send command - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	/**
+	 * Set waypoint using new command architecture
+	 * (Keeping old method for backwards compatibility during migration)
+	 */
+	setWaypointCommand(planetId: number, waypointPlanetId: number, playerId: string) {
+		this.sendCommand({
+			type: GameCommandType.SET_WAYPOINT,
+			playerId,
+			timestamp: Date.now(),
+			planetId,
+			waypointPlanetId
+		} as GameCommand);
+	}
+
+	/**
+	 * Clear waypoint using new command architecture
+	 * (Keeping old method for backwards compatibility during migration)
+	 */
+	clearWaypointCommand(planetId: number, playerId: string) {
+		this.sendCommand({
+			type: GameCommandType.CLEAR_WAYPOINT,
+			playerId,
+			timestamp: Date.now(),
+			planetId
+		} as GameCommand);
+	}
+
+	// ==========================================
+	// Legacy Methods (being migrated to commands)
+	// ==========================================
 
 	setWaypoint(planetId: number, waypointPlanetId: number) {
 		try {
