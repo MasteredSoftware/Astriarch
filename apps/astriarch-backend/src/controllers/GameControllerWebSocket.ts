@@ -15,7 +15,9 @@ import {
   TradingCenterResourceType,
   PlayerType,
   GameCommand,
+  GameCommandType,
   ClientEvent,
+  ClientEventType,
   CommandProcessor,
   calculateRollingEventChecksum,
 } from "astriarch-engine";
@@ -1427,26 +1429,27 @@ export class GameController {
       // Get the current game state
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
 
-      // Process the command using the CommandProcessor
-      const result = CommandProcessor.processCommand(gameModelData, command);
+      // Process command using CommandProcessor - this validates AND mutates the game state
+      const commandResult = CommandProcessor.processCommand(gameModelData, command);
 
-      if (!result.success) {
+      if (!commandResult.success) {
         return {
           success: false,
-          error: result.error || "Command processing failed",
+          error: commandResult.error || "Command processing failed",
         };
       }
 
-      // Save the updated game state
+      // CommandProcessor has already mutated the game state, just save it
       game.gameState = gameModelData.modelData;
       game.lastActivity = new Date();
       await persistGame(game);
 
+      const events = commandResult.events;
+
       // Calculate rolling event checksum for desync detection
-      // Get player's previous checksum and chain it with new events
       const playerId = command.playerId;
       const previousChecksum = this.playerEventChecksums.get(playerId) || "";
-      const newChecksum = await calculateRollingEventChecksum(result.events, previousChecksum);
+      const newChecksum = await calculateRollingEventChecksum(events, previousChecksum);
 
       // Store the new checksum for next time
       this.playerEventChecksums.set(playerId, newChecksum);
@@ -1457,9 +1460,9 @@ export class GameController {
         success: true,
         game,
         gameData: gameModelData.modelData,
-        events: result.events,
+        events,
         checksum: newChecksum,
-        currentCycle: gameModelData.modelData.currentCycle,
+        currentCycle: gameModelData.modelData.currentCycle || 0,
       };
     } catch (error) {
       logger.error(`handleGameCommand error for ${command.type}:`, error);

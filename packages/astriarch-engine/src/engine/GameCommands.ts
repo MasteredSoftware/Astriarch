@@ -85,17 +85,21 @@ export interface CommandResult {
 // SPECIFIC COMMAND PAYLOADS
 // ============================================================================
 
-export interface BuildShipCommand extends GameCommand {
-  type: GameCommandType.BUILD_SHIP;
+export interface BuildQueueCommand extends GameCommand {
+  type: GameCommandType.BUILD_SHIP | GameCommandType.BUILD_IMPROVEMENT;
   planetId: number;
-  shipType: number;
-  quantity?: number;
+  action: 'add' | 'remove' | 'demolish';
+  productionItem: unknown; // Full production item data (created by client/existing UI logic)
+  index?: number; // For remove action
 }
 
-export interface BuildImprovementCommand extends GameCommand {
+// Specific command types for clarity
+export interface BuildShipCommand extends BuildQueueCommand {
+  type: GameCommandType.BUILD_SHIP;
+}
+
+export interface BuildImprovementCommand extends BuildQueueCommand {
   type: GameCommandType.BUILD_IMPROVEMENT;
-  planetId: number;
-  improvementType: number;
 }
 
 export interface SendShipsCommand extends GameCommand {

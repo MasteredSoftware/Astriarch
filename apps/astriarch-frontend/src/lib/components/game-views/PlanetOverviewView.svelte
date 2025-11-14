@@ -179,9 +179,7 @@
 
 		try {
 			// Send WebSocket message to remove item from build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', {
-				index: itemIndex
-			});
+			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', undefined, itemIndex);
 
 			console.log('Removed item from build queue at index:', itemIndex);
 		} catch (error) {

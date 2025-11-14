@@ -20,7 +20,8 @@ import {
 	type ClientEvent,
 	GameCommandType,
 	EventApplicator,
-	calculateRollingEventChecksum
+	calculateRollingEventChecksum,
+	type PlanetProductionItemData
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
@@ -55,6 +56,11 @@ class WebSocketService {
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
 	private gameSyncInterval: number | null = null;
 	private readonly gameSyncIntervalMs = 10000; // 10 seconds for game state synchronization
+
+	// PlanetProductionItemType enum values (from astriarch-engine)
+	private readonly ITEM_TYPE_IMPROVEMENT = 1;
+	private readonly ITEM_TYPE_STARSHIP = 2;
+	private readonly ITEM_TYPE_DEMOLISH = 3;
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
@@ -1184,21 +1190,64 @@ class WebSocketService {
 	updatePlanetBuildQueue(
 		planetId: number,
 		action: 'add' | 'remove' | 'demolish',
-		productionItem?: unknown,
+		productionItem?: PlanetProductionItemData,
 		index?: number
 	) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				action,
-				productionItem,
-				index
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending UPDATE_PLANET_BUILD_QUEUE with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload));
+			// Determine command type based on action
+			let command: GameCommand;
+
+			if (action === 'add' && productionItem) {
+				// Check if it's a ship or improvement using proper typing
+				const isShip = productionItem.itemType === this.ITEM_TYPE_STARSHIP;
+
+				command = {
+					type: isShip ? GameCommandType.BUILD_SHIP : GameCommandType.BUILD_IMPROVEMENT,
+					playerId,
+					timestamp: Date.now(),
+					planetId,
+					action: 'add',
+					item: productionItem
+				} as GameCommand;
+			} else if (action === 'remove' && typeof index === 'number') {
+				// For removing, we need to know if it's a ship or improvement
+				// Check the build queue to determine the type
+				const planet = Object.values(cgm.mainPlayerOwnedPlanets).find((p) => p.id === planetId);
+				if (planet && planet.buildQueue && planet.buildQueue[index]) {
+					const queueItem = planet.buildQueue[index];
+					const isShip = queueItem.itemType === this.ITEM_TYPE_STARSHIP;
+
+					command = {
+						type: isShip ? GameCommandType.BUILD_SHIP : GameCommandType.BUILD_IMPROVEMENT,
+						playerId,
+						timestamp: Date.now(),
+						planetId,
+						action: 'remove',
+						itemIndex: index
+					} as GameCommand;
+				} else {
+					throw new Error('Item not found in build queue');
+				}
+			} else if (action === 'demolish' && typeof index === 'number') {
+				command = {
+					type: GameCommandType.BUILD_IMPROVEMENT,
+					playerId,
+					timestamp: Date.now(),
+					planetId,
+					action: 'demolish',
+					itemIndex: index
+				} as GameCommand;
+			} else {
+				throw new Error(`Invalid build queue action: ${action}`);
+			}
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to update planet build queue:', error);
 			this.gameStore.addNotification({
@@ -1236,17 +1285,25 @@ class WebSocketService {
 		builderDiff: number
 	) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				farmerDiff,
-				minerDiff,
-				builderDiff
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+			const command: GameCommand = {
+				type: GameCommandType.UPDATE_PLANET_WORKER_ASSIGNMENTS,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				workers: {
+					farmerDiff,
+					minerDiff,
+					builderDiff
+				}
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to update planet worker assignments:', error);
 			this.gameStore.addNotification({
@@ -1329,20 +1386,26 @@ class WebSocketService {
 	}
 
 	// ==========================================
-	// Legacy Methods (being migrated to commands)
+	// Legacy Methods (migrated to commands - keeping for compatibility)
 	// ==========================================
 
 	setWaypoint(planetId: number, waypointPlanetId: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.SET_WAYPOINT,
+				playerId,
+				timestamp: Date.now(),
 				planetId,
 				waypointPlanetId
-			};
+			} as GameCommand;
 
-			console.log('Sending SET_WAYPOINT with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.SET_WAYPOINT, payload));
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to set waypoint:', error);
 			this.gameStore.addNotification({
@@ -1355,14 +1418,20 @@ class WebSocketService {
 
 	clearWaypoint(planetId: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending CLEAR_WAYPOINT with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, payload));
+			const command: GameCommand = {
+				type: GameCommandType.CLEAR_WAYPOINT,
+				playerId,
+				timestamp: Date.now(),
+				planetId
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to clear waypoint:', error);
 			this.gameStore.addNotification({
@@ -1384,16 +1453,45 @@ class WebSocketService {
 		}
 	) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetIdSource,
-				planetIdDest,
-				data: shipsByType
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending SEND_SHIPS with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.SEND_SHIPS, payload));
+			// Convert ship arrays to ship counts by type
+			const ships: Record<number, number> = {};
+
+			// Add scouts (type 0)
+			if (shipsByType.scouts && shipsByType.scouts.length > 0) {
+				ships[0] = shipsByType.scouts.length;
+			}
+
+			// Add destroyers (type 1)
+			if (shipsByType.destroyers && shipsByType.destroyers.length > 0) {
+				ships[1] = shipsByType.destroyers.length;
+			}
+
+			// Add cruisers (type 2)
+			if (shipsByType.cruisers && shipsByType.cruisers.length > 0) {
+				ships[2] = shipsByType.cruisers.length;
+			}
+
+			// Add battleships (type 3)
+			if (shipsByType.battleships && shipsByType.battleships.length > 0) {
+				ships[3] = shipsByType.battleships.length;
+			}
+
+			const command: GameCommand = {
+				type: GameCommandType.SEND_SHIPS,
+				playerId,
+				timestamp: Date.now(),
+				fromPlanetId: planetIdSource,
+				toPlanetId: planetIdDest,
+				ships
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to send ships:', error);
 			this.gameStore.addNotification({
@@ -1446,20 +1544,20 @@ class WebSocketService {
 		this.stopGameSyncInterval(); // Clear any existing interval
 		console.log('Starting game sync interval (host player)');
 
-		this.gameSyncInterval = window.setInterval(() => {
-			if (
-				this.ws &&
-				this.ws.readyState === WebSocket.OPEN &&
-				this.getCurrentGameId() &&
-				this.isHost()
-			) {
-				console.log('Sending SYNC_STATE to advance game time for AI players');
-				this.send(new Message(MESSAGE_TYPE.SYNC_STATE, {}));
-			} else {
-				// Stop interval if conditions are no longer met
-				this.stopGameSyncInterval();
-			}
-		}, this.gameSyncIntervalMs);
+		// this.gameSyncInterval = window.setInterval(() => {
+		// 	if (
+		// 		this.ws &&
+		// 		this.ws.readyState === WebSocket.OPEN &&
+		// 		this.getCurrentGameId() &&
+		// 		this.isHost()
+		// 	) {
+		// 		console.log('Sending SYNC_STATE to advance game time for AI players');
+		// 		this.send(new Message(MESSAGE_TYPE.SYNC_STATE, {}));
+		// 	} else {
+		// 		// Stop interval if conditions are no longer met
+		// 		this.stopGameSyncInterval();
+		// 	}
+		// }, this.gameSyncIntervalMs);
 	}
 
 	private stopGameSyncInterval() {
@@ -1473,12 +1571,20 @@ class WebSocketService {
 	// Research methods
 	adjustResearchPercent(researchPercent: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.ADJUST_RESEARCH_PERCENT,
+				playerId,
+				timestamp: Date.now(),
 				researchPercent: Math.max(0, Math.min(1, researchPercent))
-			};
-			this.send(new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, payload));
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to adjust research percent:', error);
 			this.gameStore.addNotification({
@@ -1491,15 +1597,21 @@ class WebSocketService {
 
 	submitResearchItem(researchType: number, data: Record<string, unknown> = {}) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				researchItem: {
-					type: researchType,
-					data: data
-				}
-			};
-			this.send(new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, payload));
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.SUBMIT_RESEARCH_ITEM,
+				playerId,
+				timestamp: Date.now(),
+				researchType,
+				data
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to submit research item:', error);
 			this.gameStore.addNotification({
@@ -1512,9 +1624,19 @@ class WebSocketService {
 
 	cancelResearchItem() {
 		try {
-			const gameId = this.requireGameId();
-			const payload = { gameId };
-			this.send(new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, payload));
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.CANCEL_RESEARCH_ITEM,
+				playerId,
+				timestamp: Date.now()
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to cancel research item:', error);
 			this.gameStore.addNotification({
@@ -1528,16 +1650,33 @@ class WebSocketService {
 	// Trading methods
 	submitTrade(planetId: number, tradeType: number, resourceType: number, amount: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				tradeType,
-				resourceType,
-				amount
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			// Map numeric resource type to string
+			const resourceTypeMap: Record<number, string> = {
+				1: 'food',
+				2: 'ore',
+				3: 'iridium'
 			};
-			console.log('Sending SUBMIT_TRADE with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.SUBMIT_TRADE, payload));
+
+			// Map trade type to action
+			const action = tradeType === 1 ? 'buy' : 'sell';
+
+			const command: GameCommand = {
+				type: GameCommandType.SUBMIT_TRADE,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				resourceType: resourceTypeMap[resourceType] || 'food',
+				amount,
+				action
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to submit trade:', error);
 			this.gameStore.addNotification({
@@ -1550,13 +1689,20 @@ class WebSocketService {
 
 	cancelTrade(tradeId: string) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.CANCEL_TRADE,
+				playerId,
+				timestamp: Date.now(),
 				tradeId
-			};
-			console.log('Sending CANCEL_TRADE with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.CANCEL_TRADE, payload));
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to cancel trade:', error);
 			this.gameStore.addNotification({

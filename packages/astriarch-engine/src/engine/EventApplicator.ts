@@ -12,6 +12,7 @@ import {
   ClientEvent,
   ClientEventType,
   ProductionItemQueuedEvent,
+  ProductionItemRemovedEvent,
   FleetLaunchedEvent,
   PlanetWorkerAssignmentsUpdatedEvent,
   WaypointSetEvent,
@@ -19,6 +20,8 @@ import {
   ResearchPercentAdjustedEvent,
   ResearchQueuedEvent,
   ResearchCancelledEvent,
+  TradeSubmittedEvent,
+  TradeCancelledEvent,
 } from './GameCommands';
 
 /**
@@ -30,6 +33,10 @@ export class EventApplicator {
     switch (event.type) {
       case ClientEventType.PRODUCTION_ITEM_QUEUED:
         this.applyProductionItemQueued(clientModel, event as ProductionItemQueuedEvent);
+        break;
+
+      case ClientEventType.PRODUCTION_ITEM_REMOVED:
+        this.applyProductionItemRemoved(clientModel, event as ProductionItemRemovedEvent);
         break;
 
       case ClientEventType.FLEET_LAUNCHED:
@@ -60,7 +67,13 @@ export class EventApplicator {
         this.applyResearchCancelled(clientModel, event as ResearchCancelledEvent);
         break;
 
-      // Add other event handlers...
+      case ClientEventType.TRADE_SUBMITTED:
+        this.applyTradeSubmitted(clientModel, event as TradeSubmittedEvent);
+        break;
+
+      case ClientEventType.TRADE_CANCELLED:
+        this.applyTradeCancelled(clientModel, event as TradeCancelledEvent);
+        break;
 
       default:
         console.warn(`Unhandled client event type: ${event.type}`);
@@ -68,44 +81,62 @@ export class EventApplicator {
   }
 
   private static applyProductionItemQueued(clientModel: ClientModelData, event: ProductionItemQueuedEvent): void {
-    const { planetId, playerResources } = event.data;
+    const { planetId } = event.data;
 
-    // Update planet build queue
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
-    if (planet) {
-      // The production item in the event is a simplified version
-      // In a full implementation, we'd convert this to a full PlanetProductionItemData
-      // For now, we'll just note that the build queue has changed
-      // The next full state sync will have the complete build queue
-
-      // Update player resources (placeholder - need proper resource update logic)
-      console.log('Player resources updated:', playerResources);
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
     }
+
+    // The backend has already added the item to the build queue
+    // Resources are stored on planets, not the player
+    // We rely on periodic full state syncs to get the complete and accurate build queue
+    // since PlanetProductionItemData is complex (linked list, progress tracking, etc.)
+  }
+
+  private static applyProductionItemRemoved(clientModel: ClientModelData, event: ProductionItemRemovedEvent): void {
+    const { planetId, itemIndex } = event.data;
+
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
+
+    // Remove the item from build queue
+    if (itemIndex >= 0 && itemIndex < planet.buildQueue.length) {
+      planet.buildQueue.splice(itemIndex, 1);
+    }
+
+    // Resources are refunded on the planet server-side, will sync on next update
   }
 
   private static applyFleetLaunched(clientModel: ClientModelData, event: FleetLaunchedEvent): void {
     const { fromPlanetId, ships } = event.data;
 
-    // Remove ships from source planet
     const planet = clientModel.mainPlayerOwnedPlanets[fromPlanetId];
-    if (planet) {
-      // Update planet's fleet
-      for (const [shipTypeStr, quantity] of Object.entries(ships)) {
-        const shipType = parseInt(shipTypeStr);
-        // Find and reduce starships of this type
-        const starshipsToRemove = planet.planetaryFleet.starships.filter((s) => s.type === shipType).slice(0, quantity);
-        for (const ship of starshipsToRemove) {
-          const index = planet.planetaryFleet.starships.indexOf(ship);
-          if (index > -1) {
-            planet.planetaryFleet.starships.splice(index, 1);
-          }
+    if (!planet) {
+      console.warn(`Planet ${fromPlanetId} not found in player's owned planets`);
+      return;
+    }
+
+    // Remove ships from source planet's planetary fleet
+    for (const [shipTypeStr, quantity] of Object.entries(ships)) {
+      const shipType = parseInt(shipTypeStr);
+      let remaining = quantity;
+
+      // Remove ships of this type
+      for (let i = planet.planetaryFleet.starships.length - 1; i >= 0 && remaining > 0; i--) {
+        if (planet.planetaryFleet.starships[i].type === shipType) {
+          planet.planetaryFleet.starships.splice(i, 1);
+          remaining--;
         }
       }
     }
 
-    // Note: We don't add the fleet here because the regular game clock
-    // advancement will handle fleet updates (position, arrival, etc.)
-    // This event just confirms the action was successful
+    // Note: The outgoing fleet will appear in planet.outgoingFleets on next full sync
+    // The game clock advancement handles fleet movement and arrival
   }
 
   private static applyPlanetWorkerAssignmentsUpdated(
@@ -115,12 +146,19 @@ export class EventApplicator {
     const { planetId, workers } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
-    if (planet) {
-      // Update worker assignments - this would require manipulating the citizen array
-      // For now, just note that workers have been updated
-      // The full implementation would require engine methods to properly update citizens
-      console.log(`Worker assignments updated for planet ${planetId}:`, workers);
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
     }
+
+    // Worker assignments are reflected in the citizen array assignments
+    // The server has already updated this, so we rely on full state sync
+    // to get the updated citizen array with correct assignments
+    // For now, just log that we received the event
+    console.log(`Worker assignments updated for planet ${planetId}:`, workers);
+
+    // TODO: If we want immediate feedback, we could update citizen.assignment values
+    // but this is complex and the full state sync will provide the authoritative state
   }
 
   private static applyWaypointSet(clientModel: ClientModelData, event: WaypointSetEvent): void {
@@ -153,8 +191,50 @@ export class EventApplicator {
     clientModel.mainPlayer.research.researchTypeInQueue = researchType;
   }
 
-  private static applyResearchCancelled(clientModel: ClientModelData, _event: ResearchCancelledEvent): void {
+  private static applyResearchCancelled(clientModel: ClientModelData, event: ResearchCancelledEvent): void {
     // Clear research queue
     clientModel.mainPlayer.research.researchTypeInQueue = null;
+
+    // Unused but kept for consistency
+    void event;
+  }
+
+  private static applyTradeSubmitted(clientModel: ClientModelData, event: TradeSubmittedEvent): void {
+    const { tradeId, resourceType, amount, action } = event.data;
+
+    // Map resource type string to enum value
+    const resourceTypeMap: Record<string, number> = {
+      food: 1, // TradingCenterResourceType.FOOD
+      ore: 2, // TradingCenterResourceType.ORE
+      iridium: 3, // TradingCenterResourceType.IRIDIUM
+    };
+
+    // Add the trade to the client's trading center
+    const trade: import('../model/tradingCenter').TradeData = {
+      id: tradeId,
+      playerId: clientModel.mainPlayer.id,
+      planetId: -1, // Will be set server-side with actual planet
+      tradeType: action === 'buy' ? 1 : 2, // TradeType.BUY or TradeType.SELL
+      resourceType: resourceTypeMap[resourceType] || 1,
+      amount: amount,
+      submittedAt: Date.now(), // Approximate, server has authoritative timestamp
+      executeAfter: Date.now() + 1000, // Approximate delay
+    };
+
+    clientModel.clientTradingCenter.mainPlayerTrades.push(trade);
+
+    // Resources and prices updated server-side, will sync on next update
+  }
+
+  private static applyTradeCancelled(clientModel: ClientModelData, event: TradeCancelledEvent): void {
+    const { tradeId } = event.data;
+
+    // Remove the trade from the client's trading center
+    const index = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
+    if (index >= 0) {
+      clientModel.clientTradingCenter.mainPlayerTrades.splice(index, 1);
+    }
+
+    // Resources refunded server-side, will sync on next update
   }
 }
