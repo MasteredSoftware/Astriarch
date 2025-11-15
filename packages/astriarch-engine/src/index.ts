@@ -45,6 +45,12 @@ import { GameTools } from './utils/gameTools';
 // Export messaging types
 export * from './messaging/MessageTypes';
 
+// Export command/event system
+export * from './engine/GameCommands';
+export { CommandProcessor } from './engine/CommandProcessor';
+export { EventApplicator } from './engine/EventApplicator';
+export { calculateRollingEventChecksum } from './engine/StateChecksum';
+
 // Export engine classes
 export { Player };
 export { Planet };

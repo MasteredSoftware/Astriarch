@@ -14,6 +14,12 @@ import {
   TradeType,
   TradingCenterResourceType,
   PlayerType,
+  GameCommand,
+  GameCommandType,
+  ClientEvent,
+  ClientEventType,
+  CommandProcessor,
+  calculateRollingEventChecksum,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -84,6 +90,9 @@ export interface GameResult {
  * This provides WebSocket-compatible methods for game management
  */
 export class GameController {
+  // Track rolling event checksums per player for desync detection
+  private static playerEventChecksums = new Map<string, string>();
+
   // ==========================================
   // Game Management Methods (like old app.js)
   // ==========================================
@@ -1385,6 +1394,101 @@ export class GameController {
     }
 
     return summary;
+  }
+
+  // ==========================================
+  // Command/Event Architecture
+  // ==========================================
+
+  /**
+   * Handle a game command using the new event-driven architecture
+   *
+   * @param sessionId - Session ID of the player issuing the command
+   * @param gameId - ID of the game
+   * @param command - The game command to process
+   * @returns GameResult with events to broadcast and checksum
+   */
+  static async handleGameCommand(
+    sessionId: string,
+    gameId: string,
+    command: GameCommand,
+  ): Promise<GameResult & { checksum?: string; events?: ClientEvent[]; currentCycle?: number }> {
+    try {
+      // Find the game
+      const game = await ServerGameModel.findById(gameId);
+      if (!game) {
+        return { success: false, error: "Game not found" };
+      }
+
+      // Find player by sessionId
+      const player = game.players?.find((p) => p.sessionId === sessionId);
+      if (!player) {
+        return { success: false, error: "Player not found in game" };
+      }
+
+      // Get the current game state
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+
+      // Process command using CommandProcessor - this validates AND mutates the game state
+      const commandResult = CommandProcessor.processCommand(gameModelData, command);
+
+      if (!commandResult.success) {
+        return {
+          success: false,
+          error: commandResult.error || "Command processing failed",
+        };
+      }
+
+      // CommandProcessor has already mutated the game state, just save it
+      game.gameState = gameModelData.modelData;
+      game.lastActivity = new Date();
+      await persistGame(game);
+
+      const events = commandResult.events;
+
+      // Calculate rolling event checksum for desync detection
+      const playerId = command.playerId;
+      const previousChecksum = this.playerEventChecksums.get(playerId) || "";
+      const newChecksum = await calculateRollingEventChecksum(events, previousChecksum);
+
+      // Store the new checksum for next time
+      this.playerEventChecksums.set(playerId, newChecksum);
+
+      logger.info(`Processed ${command.type} command for player ${player.name} in game ${gameId}`);
+
+      return {
+        success: true,
+        game,
+        gameData: gameModelData.modelData,
+        events,
+        checksum: newChecksum,
+        currentCycle: gameModelData.modelData.currentCycle || 0,
+      };
+    } catch (error) {
+      logger.error(`handleGameCommand error for ${command.type}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  // ==========================================
+  // Event Checksum Management
+  // ==========================================
+
+  /**
+   * Get the current rolling event checksum for a player
+   */
+  static getPlayerEventChecksum(playerId: string): string | undefined {
+    return this.playerEventChecksums.get(playerId);
+  }
+
+  /**
+   * Reset event checksum for a player (useful when they rejoin)
+   */
+  static resetPlayerEventChecksum(playerId: string): void {
+    this.playerEventChecksums.delete(playerId);
   }
 
   // ==========================================

@@ -4,6 +4,7 @@
  */
 
 import { ServerGameOptions, GameSpeed } from '../model';
+import { GameCommand, ClientEvent } from '../engine/GameCommands';
 
 export enum MESSAGE_TYPE {
   // Connection & System
@@ -22,13 +23,17 @@ export enum MESSAGE_TYPE {
   CHANGE_GAME_OPTIONS = 'CHANGE_GAME_OPTIONS',
   CHANGE_PLAYER_NAME = 'CHANGE_PLAYER_NAME',
 
-  // Game Actions
+  // Game Actions (Legacy - being migrated to GAME_COMMAND)
   SYNC_STATE = 'SYNC_STATE',
   SEND_SHIPS = 'SEND_SHIPS',
   UPDATE_PLANET_OPTIONS = 'UPDATE_PLANET_OPTIONS',
   UPDATE_PLANET_BUILD_QUEUE = 'UPDATE_PLANET_BUILD_QUEUE',
   SET_WAYPOINT = 'SET_WAYPOINT',
   CLEAR_WAYPOINT = 'CLEAR_WAYPOINT',
+
+  // New Command/Event Architecture
+  GAME_COMMAND = 'GAME_COMMAND', // Client -> Server: Player command
+  CLIENT_EVENT = 'CLIENT_EVENT', // Server -> Client: State change event
 
   // Research & Trading
   ADJUST_RESEARCH_PERCENT = 'ADJUST_RESEARCH_PERCENT',
@@ -175,6 +180,7 @@ export interface IGameStateUpdatePayload {
   changes?: unknown;
   clientGameModel?: unknown;
   currentCycle?: number;
+  stateChecksum?: string; // SHA256 hash for desync detection (calculated by backend)
 }
 
 export interface IEventNotificationsPayload {
@@ -220,6 +226,20 @@ export interface IPlayerEliminatedPayload {
   playerId: string;
   gameId: string;
   reason: 'resigned' | 'destroyed';
+}
+
+// =============================================
+// COMMAND/EVENT ARCHITECTURE
+// =============================================
+
+export interface IGameCommandPayload {
+  command: GameCommand;
+}
+
+export interface IClientEventPayload {
+  events: ClientEvent[];
+  stateChecksum: string; // SHA256 hash for desync detection
+  currentCycle: number; // Game cycle when events occurred
 }
 
 // =============================================
@@ -484,6 +504,8 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.PLAYER_RECONNECTED]: 69,
     [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 70,
     [MESSAGE_TYPE.PLAYER_ELIMINATED]: 71,
+    [MESSAGE_TYPE.GAME_COMMAND]: 80,
+    [MESSAGE_TYPE.CLIENT_EVENT]: 81,
   };
 
   return typeMap[type] ?? -1;

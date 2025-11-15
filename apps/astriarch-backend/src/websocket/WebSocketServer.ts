@@ -301,44 +301,8 @@ export class WebSocketServer {
         await this.handleSyncState(clientId, message);
         break;
 
-      case MESSAGE_TYPE.SEND_SHIPS:
-        await this.handleSendShips(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.UPDATE_PLANET_OPTIONS:
-        await this.handleUpdatePlanetOptions(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
-        await this.handleUpdatePlanetBuildQueue(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.SET_WAYPOINT:
-        await this.handleSetWaypoint(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.CLEAR_WAYPOINT:
-        await this.handleClearWaypoint(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT:
-        await this.handleAdjustResearchPercent(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM:
-        await this.handleSubmitResearchItem(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.CANCEL_RESEARCH_ITEM:
-        await this.handleCancelResearchItem(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.SUBMIT_TRADE:
-        await this.handleSubmitTrade(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.CANCEL_TRADE:
-        await this.handleCancelTrade(clientId, message);
+      case MESSAGE_TYPE.GAME_COMMAND:
+        await this.handleGameCommand(clientId, message);
         break;
 
       case MESSAGE_TYPE.CHAT_MESSAGE:
@@ -460,6 +424,12 @@ export class WebSocketServer {
 
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
+
+          // Include the current rolling checksum in the synced state
+          const currentChecksum = GameController.getPlayerEventChecksum(client.playerId);
+          if (currentChecksum) {
+            clientGameModel.lastEventChecksum = currentChecksum;
+          }
 
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
@@ -1000,335 +970,52 @@ export class WebSocketServer {
     }
   }
 
-  private async handleSendShips(clientId: string, message: IMessage<unknown>): Promise<void> {
+  /**
+   * Handle new GAME_COMMAND message type (event-driven architecture)
+   */
+  private async handleGameCommand(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
     try {
-      const result = await GameController.sendShips(client.sessionId, message.payload);
+      const payload = message.payload as { command: any; gameId: string };
+      const { command, gameId } = payload;
+
+      // Process the command using the new architecture
+      const result = await GameController.handleGameCommand(client.sessionId, gameId, command);
 
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
       }
 
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.SEND_SHIPS, {
-          success: true,
-          message: "Ships sent successfully",
-        }),
-      );
+      // Broadcast events to all players in the game
+      if (result.events && result.events.length > 0) {
+        const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
+          events: result.events,
+          stateChecksum: result.checksum,
+          currentCycle: result.currentCycle,
+        });
 
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleSendShips error:", error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Send ships failed" }));
-    }
-  }
-
-  private async handleUpdatePlanetOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.updatePlanetOptions(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, {
-          success: true,
-          message: "Worker assignments updated successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleUpdatePlanetOptions error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: error instanceof Error ? error.message : "Unknown error occurred while updating worker assignments",
-        }),
-      );
-    }
-  }
-
-  private async handleUpdatePlanetBuildQueue(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.updatePlanetBuildQueue(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, {
-          success: true,
-          message: "Production item added to queue",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleUpdatePlanetBuildQueue error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: error instanceof Error ? error.message : "Unknown error occurred while updating build queue",
-        }),
-      );
-    }
-  }
-
-  private async handleSetWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.setWaypoint(client.sessionId, message.payload);
-
-      if (result.success) {
-        logger.info(`Waypoint set for player ${client.sessionId}`);
-        // Broadcast the game state update to all players in the game
-        if (result.game && result.game._id) {
-          await this.broadcastGameStateUpdate(result.game._id.toString());
+        // Get all clients in this game using gameRooms
+        const gameRoom = this.gameRooms.get(gameId);
+        if (gameRoom) {
+          for (const sessionId of gameRoom) {
+            const playerClientId = this.getClientIdBySessionId(sessionId);
+            if (playerClientId) {
+              this.sendToClient(playerClientId, eventMessage);
+            }
+          }
         }
-      } else {
-        const response = new Message(MESSAGE_TYPE.SET_WAYPOINT, message.payload);
-        this.sendToClient(clientId, response);
       }
+
+      logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
-      logger.error("handleSetWaypoint error:", error);
+      logger.error("handleGameCommand error:", error);
       this.sendToClient(
         clientId,
         new Message(MESSAGE_TYPE.ERROR, {
-          message: error instanceof Error ? error.message : "Unknown error occurred while setting waypoint",
-        }),
-      );
-    }
-  }
-
-  private async handleClearWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.clearWaypoint(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // If game has other players, broadcast the waypoint clearing
-      if (result.game && result.game.players) {
-        const response = new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, message.payload);
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
-      }
-    } catch (error) {
-      logger.error("handleClearWaypoint error:", error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Clear waypoint failed" }));
-    }
-  }
-
-  private async handleAdjustResearchPercent(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.adjustResearchPercent(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, {
-          success: true,
-          message: "Research allocation updated successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleAdjustResearchPercent error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to adjust research percent",
-        }),
-      );
-    }
-  }
-
-  private async handleSubmitResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.submitResearchItem(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, {
-          success: true,
-          message: "Research started successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleSubmitResearchItem error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to start research",
-        }),
-      );
-    }
-  }
-
-  private async handleCancelResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.cancelResearchItem(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, {
-          success: true,
-          message: "Research cancelled successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleCancelResearchItem error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to cancel research",
-        }),
-      );
-    }
-  }
-
-  private async handleSubmitTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.submitTrade(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.SUBMIT_TRADE, {
-          success: true,
-          message: "Trade submitted successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleSubmitTrade error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to submit trade",
-        }),
-      );
-    }
-  }
-
-  private async handleCancelTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.cancelTrade(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.CANCEL_TRADE, {
-          success: true,
-          message: "Trade cancelled successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleCancelTrade error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to cancel trade",
+          message: error instanceof Error ? error.message : "Unknown error occurred while processing command",
         }),
       );
     }
