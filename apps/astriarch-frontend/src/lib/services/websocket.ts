@@ -25,7 +25,7 @@ import {
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
-import { clientGameModel, isGameRunning, gameActions } from '$lib/stores/gameStore';
+import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
 import { PlayerStorage } from '$lib/utils/playerStorage';
 import type { ClientModelData } from 'astriarch-engine';
 
@@ -818,10 +818,13 @@ class WebSocketService {
 					break;
 				}
 
+				// Get the grid for event application (needed for fleet distance calculations)
+				const grid = get(gameGrid);
+
 				// Apply each event to the client model
 				for (const event of payload.events) {
 					console.log(`Applying event: ${event.type}`);
-					EventApplicator.applyEvent(currentModel, event);
+					EventApplicator.applyEvent(currentModel, event, grid || undefined);
 				}
 
 				// Calculate rolling checksum using our previous checksum
@@ -1213,7 +1216,7 @@ class WebSocketService {
 					timestamp: Date.now(),
 					planetId,
 					action: 'add',
-					item: productionItem
+					productionItem
 				} as GameCommand;
 			} else if (action === 'remove' && typeof index === 'number') {
 				// For removing, we need to know if it's a ship or improvement
@@ -1459,36 +1462,19 @@ class WebSocketService {
 			}
 			const playerId = cgm.mainPlayer.id;
 
-			// Convert ship arrays to ship counts by type
-			const ships: Record<number, number> = {};
-
-			// Add scouts (type 0)
-			if (shipsByType.scouts && shipsByType.scouts.length > 0) {
-				ships[0] = shipsByType.scouts.length;
-			}
-
-			// Add destroyers (type 1)
-			if (shipsByType.destroyers && shipsByType.destroyers.length > 0) {
-				ships[1] = shipsByType.destroyers.length;
-			}
-
-			// Add cruisers (type 2)
-			if (shipsByType.cruisers && shipsByType.cruisers.length > 0) {
-				ships[2] = shipsByType.cruisers.length;
-			}
-
-			// Add battleships (type 3)
-			if (shipsByType.battleships && shipsByType.battleships.length > 0) {
-				ships[3] = shipsByType.battleships.length;
-			}
-
+			// Send command with ship IDs (user selected specific ships)
 			const command: GameCommand = {
 				type: GameCommandType.SEND_SHIPS,
 				playerId,
 				timestamp: Date.now(),
 				fromPlanetId: planetIdSource,
 				toPlanetId: planetIdDest,
-				ships
+				shipIds: {
+					scouts: shipsByType.scouts,
+					destroyers: shipsByType.destroyers,
+					cruisers: shipsByType.cruisers,
+					battleships: shipsByType.battleships
+				}
 			} as GameCommand;
 
 			this.sendCommand(command);

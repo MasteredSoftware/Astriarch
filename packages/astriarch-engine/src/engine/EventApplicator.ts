@@ -8,6 +8,9 @@
  */
 
 import { ClientModelData } from '../model/clientModel';
+import { PlanetProductionItemData } from '../model/planet';
+import { Planet } from './planet';
+import { Fleet } from './fleet';
 import {
   ClientEvent,
   ClientEventType,
@@ -23,13 +26,14 @@ import {
   TradeSubmittedEvent,
   TradeCancelledEvent,
 } from './GameCommands';
+import { Grid } from './grid';
 
 /**
  * Apply client events to a client model
  * This mutates the client model in place
  */
 export class EventApplicator {
-  public static applyEvent(clientModel: ClientModelData, event: ClientEvent): void {
+  public static applyEvent(clientModel: ClientModelData, event: ClientEvent, grid?: Grid): void {
     switch (event.type) {
       case ClientEventType.PRODUCTION_ITEM_QUEUED:
         this.applyProductionItemQueued(clientModel, event as ProductionItemQueuedEvent);
@@ -40,7 +44,7 @@ export class EventApplicator {
         break;
 
       case ClientEventType.FLEET_LAUNCHED:
-        this.applyFleetLaunched(clientModel, event as FleetLaunchedEvent);
+        this.applyFleetLaunched(clientModel, event as FleetLaunchedEvent, grid);
         break;
 
       case ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED:
@@ -81,7 +85,7 @@ export class EventApplicator {
   }
 
   private static applyProductionItemQueued(clientModel: ClientModelData, event: ProductionItemQueuedEvent): void {
-    const { planetId } = event.data;
+    const { planetId, productionItem, playerResources } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
@@ -89,10 +93,33 @@ export class EventApplicator {
       return;
     }
 
-    // The backend has already added the item to the build queue
-    // Resources are stored on planets, not the player
-    // We rely on periodic full state syncs to get the complete and accurate build queue
-    // since PlanetProductionItemData is complex (linked list, progress tracking, etc.)
+    // Convert ProductionItemData from event to PlanetProductionItemData for build queue
+    const queueItem: PlanetProductionItemData = {
+      itemType: productionItem.starShipType !== undefined ? 2 : 1, // StarShipInProduction : PlanetImprovement
+      energyCost: 0, // Costs already spent, not needed in queue display
+      oreCost: 0,
+      iridiumCost: 0,
+      baseProductionCost: productionItem.turnsRemaining || 1,
+      productionCostComplete: 0,
+      turnsToComplete: productionItem.turnsRemaining || 1,
+      resourcesSpent: true, // Resources are spent when item is enqueued
+      improvementData:
+        productionItem.improvementType !== undefined ? { type: productionItem.improvementType } : undefined,
+      starshipData:
+        productionItem.starShipType !== undefined
+          ? {
+              type: productionItem.starShipType,
+              customShipData: undefined, // TODO: Extract from productionItem if present
+            }
+          : undefined,
+    };
+
+    // Add to build queue
+    planet.buildQueue.push(queueItem);
+
+    // Update aggregate player resource display
+    // Resources are actually stored on planets, but events include totals for UI
+    console.log(`Production item queued on planet ${planetId}, player resources now:`, playerResources);
   }
 
   private static applyProductionItemRemoved(clientModel: ClientModelData, event: ProductionItemRemovedEvent): void {
@@ -104,16 +131,16 @@ export class EventApplicator {
       return;
     }
 
-    // Remove the item from build queue
-    if (itemIndex >= 0 && itemIndex < planet.buildQueue.length) {
-      planet.buildQueue.splice(itemIndex, 1);
-    }
-
-    // Resources are refunded on the planet server-side, will sync on next update
+    // Use engine method to remove item and handle refund - same pattern as server
+    Planet.removeBuildQueueItemForRefund(planet, itemIndex);
   }
 
-  private static applyFleetLaunched(clientModel: ClientModelData, event: FleetLaunchedEvent): void {
-    const { fromPlanetId, ships } = event.data;
+  private static applyFleetLaunched(
+    clientModel: ClientModelData,
+    event: FleetLaunchedEvent,
+    grid?: import('./grid').Grid,
+  ): void {
+    const { fromPlanetId, toPlanetId, shipIds } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[fromPlanetId];
     if (!planet) {
@@ -121,22 +148,32 @@ export class EventApplicator {
       return;
     }
 
-    // Remove ships from source planet's planetary fleet
-    for (const [shipTypeStr, quantity] of Object.entries(ships)) {
-      const shipType = parseInt(shipTypeStr);
-      let remaining = quantity;
-
-      // Remove ships of this type
-      for (let i = planet.planetaryFleet.starships.length - 1; i >= 0 && remaining > 0; i--) {
-        if (planet.planetaryFleet.starships[i].type === shipType) {
-          planet.planetaryFleet.starships.splice(i, 1);
-          remaining--;
-        }
-      }
+    const destPlanet = clientModel.clientPlanets.find((p) => p.id === toPlanetId);
+    if (!destPlanet) {
+      console.warn(`Destination planet ${toPlanetId} not found`);
+      return;
     }
 
-    // Note: The outgoing fleet will appear in planet.outgoingFleets on next full sync
-    // The game clock advancement handles fleet movement and arrival
+    // Split the fleet by specific ship IDs using the Fleet engine method
+    const outgoingFleet = Fleet.splitFleetByShipIds(planet.planetaryFleet, shipIds);
+
+    // Set destination points
+    outgoingFleet.travelingFromHexMidPoint = planet.boundingHexMidPoint;
+    outgoingFleet.destinationHexMidPoint = destPlanet.boundingHexMidPoint;
+    outgoingFleet.parsecsToDestination = null;
+    outgoingFleet.totalTravelDistance = null;
+
+    // If grid is available, use Fleet.setDestination to calculate distances properly
+    if (grid && planet.boundingHexMidPoint && destPlanet.boundingHexMidPoint) {
+      Fleet.setDestination(outgoingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
+    }
+
+    // Add the fleet to outgoing fleets
+    planet.outgoingFleets.push(outgoingFleet);
+
+    const totalShips =
+      shipIds.scouts.length + shipIds.destroyers.length + shipIds.cruisers.length + shipIds.battleships.length;
+    console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`);
   }
 
   private static applyPlanetWorkerAssignmentsUpdated(
@@ -151,14 +188,120 @@ export class EventApplicator {
       return;
     }
 
-    // Worker assignments are reflected in the citizen array assignments
-    // The server has already updated this, so we rely on full state sync
-    // to get the updated citizen array with correct assignments
-    // For now, just log that we received the event
-    console.log(`Worker assignments updated for planet ${planetId}:`, workers);
+    // Apply worker assignments by updating citizen workerType fields
+    // The event contains the final counts that the server calculated
+    const targetFarmers = workers.farmers;
+    const targetMiners = workers.miners;
+    const targetBuilders = workers.builders;
 
-    // TODO: If we want immediate feedback, we could update citizen.assignment values
-    // but this is complex and the full state sync will provide the authoritative state
+    // Count current workers
+    let currentFarmers = 0;
+    let currentMiners = 0;
+    let currentBuilders = 0;
+
+    for (const citizen of planet.population) {
+      if (citizen.workerType === 1)
+        currentFarmers++; // CitizenWorkerType.Farmer
+      else if (citizen.workerType === 2)
+        currentMiners++; // CitizenWorkerType.Miner
+      else if (citizen.workerType === 3) currentBuilders++; // CitizenWorkerType.Builder
+    }
+
+    // Calculate diffs
+    const farmerDiff = targetFarmers - currentFarmers;
+    const minerDiff = targetMiners - currentMiners;
+    const builderDiff = targetBuilders - currentBuilders;
+
+    // Apply the diffs by reassigning workers
+    // Priority: Farmers first, then miners, then builders
+    let remainingFarmerDiff = farmerDiff;
+    let remainingMinerDiff = minerDiff;
+    let remainingBuilderDiff = builderDiff;
+
+    // Helper to find a citizen of a specific type
+    const findCitizen = (workerType: number): number => {
+      return planet.population.findIndex((c) => c.workerType === workerType && c.protestLevel === 0);
+    };
+
+    // Apply farmer changes
+    while (remainingFarmerDiff !== 0) {
+      if (remainingFarmerDiff > 0) {
+        // Need more farmers - convert miners or builders
+        if (remainingMinerDiff < 0) {
+          const idx = findCitizen(2); // Miner
+          if (idx >= 0) {
+            planet.population[idx].workerType = 1; // Farmer
+            remainingFarmerDiff--;
+            remainingMinerDiff++;
+            continue;
+          }
+        }
+        if (remainingBuilderDiff < 0) {
+          const idx = findCitizen(3); // Builder
+          if (idx >= 0) {
+            planet.population[idx].workerType = 1; // Farmer
+            remainingFarmerDiff--;
+            remainingBuilderDiff++;
+            continue;
+          }
+        }
+        break; // Can't find anyone to convert
+      } else {
+        // Need fewer farmers - convert to miners or builders
+        if (remainingMinerDiff > 0) {
+          const idx = findCitizen(1); // Farmer
+          if (idx >= 0) {
+            planet.population[idx].workerType = 2; // Miner
+            remainingFarmerDiff++;
+            remainingMinerDiff--;
+            continue;
+          }
+        }
+        if (remainingBuilderDiff > 0) {
+          const idx = findCitizen(1); // Farmer
+          if (idx >= 0) {
+            planet.population[idx].workerType = 3; // Builder
+            remainingFarmerDiff++;
+            remainingBuilderDiff--;
+            continue;
+          }
+        }
+        break; // Can't find anyone to convert
+      }
+    }
+
+    // Apply miner changes
+    while (remainingMinerDiff !== 0) {
+      if (remainingMinerDiff > 0) {
+        // Need more miners - convert builders
+        if (remainingBuilderDiff < 0) {
+          const idx = findCitizen(3); // Builder
+          if (idx >= 0) {
+            planet.population[idx].workerType = 2; // Miner
+            remainingMinerDiff--;
+            remainingBuilderDiff++;
+            continue;
+          }
+        }
+        break;
+      } else {
+        // Need fewer miners - convert to builders
+        if (remainingBuilderDiff > 0) {
+          const idx = findCitizen(2); // Miner
+          if (idx >= 0) {
+            planet.population[idx].workerType = 3; // Builder
+            remainingMinerDiff++;
+            remainingBuilderDiff--;
+            continue;
+          }
+        }
+        break;
+      }
+    }
+
+    console.log(
+      `Worker assignments updated for planet ${planetId}: ${targetFarmers}F/${targetMiners}M/${targetBuilders}B`,
+    );
   }
 
   private static applyWaypointSet(clientModel: ClientModelData, event: WaypointSetEvent): void {

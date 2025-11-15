@@ -6,6 +6,7 @@
  */
 
 import { GameModelData } from './gameModel';
+import { Planet } from './planet';
 import {
   GameCommand,
   CommandResult,
@@ -29,6 +30,7 @@ import {
   ResearchQueuedEvent,
   ResearchCancelledEvent,
   ProductionItemQueuedEvent,
+  FleetLaunchedEvent,
 } from './GameCommands';
 import { ClientGameModel } from './clientGameModel';
 import { Player } from './player';
@@ -104,38 +106,65 @@ export class CommandProcessor {
       return { success: false, error: 'Player does not own this planet', events: [] };
     }
 
-    const productionItem = command.productionItem;
-    if (!productionItem) {
-      return { success: false, error: 'Production item not provided', events: [] };
+    // Handle different actions
+    if (command.action === 'add') {
+      const productionItem = command.productionItem;
+      if (!productionItem) {
+        return { success: false, error: 'Production item not provided', events: [] };
+      }
+
+      // Build client model and enqueue using engine method
+      const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
+      const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+        clientModel,
+        grid,
+        planet,
+        productionItem as any, // TODO: Fix type
+      );
+
+      if (!canBuild) {
+        return { success: false, error: 'Not enough resources to build item', events: [] };
+      }
+
+      // Get player resources after spending
+      const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+
+      const event: ProductionItemQueuedEvent = {
+        type: ClientEventType.PRODUCTION_ITEM_QUEUED,
+        affectedPlayerIds: [command.playerId],
+        data: {
+          planetId: command.planetId,
+          productionItem: productionItem as any, // TODO: Fix type
+          playerResources: totalResources,
+        },
+      };
+
+      return { success: true, events: [event] };
+    } else if (command.action === 'remove') {
+      const index = command.index;
+      if (typeof index !== 'number' || index < 0) {
+        return { success: false, error: 'Invalid item index', events: [] };
+      }
+
+      // Use engine method to remove item and handle refund
+      const success = Planet.removeBuildQueueItemForRefund(planet, index);
+      if (!success) {
+        return { success: false, error: 'Failed to remove item from build queue', events: [] };
+      }
+
+      const event = {
+        type: ClientEventType.PRODUCTION_ITEM_REMOVED,
+        affectedPlayerIds: [command.playerId],
+        data: {
+          planetId: command.planetId,
+          itemIndex: index,
+        },
+      };
+
+      return { success: true, events: [event] };
     }
 
-    // Build client model and enqueue
-    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
-      clientModel,
-      grid,
-      planet,
-      productionItem as any, // TODO: Fix type
-    );
-
-    if (!canBuild) {
-      return { success: false, error: 'Not enough resources to build item', events: [] };
-    }
-
-    // Get player resources after spending
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
-
-    const event: ProductionItemQueuedEvent = {
-      type: ClientEventType.PRODUCTION_ITEM_QUEUED,
-      affectedPlayerIds: [command.playerId],
-      data: {
-        planetId: command.planetId,
-        productionItem: productionItem as any, // TODO: Fix type
-        playerResources: totalResources,
-      },
-    };
-
-    return { success: true, events: [event] };
+    return { success: false, error: `Unknown action: ${command.action}`, events: [] };
   }
 
   private static processBuildImprovement(gameModel: GameModelData, command: BuildImprovementCommand): CommandResult {
@@ -150,42 +179,102 @@ export class CommandProcessor {
       return { success: false, error: 'Player does not own this planet', events: [] };
     }
 
-    const productionItem = command.productionItem;
-    if (!productionItem) {
-      return { success: false, error: 'Production item not provided', events: [] };
+    // Handle different actions
+    if (command.action === 'add') {
+      const productionItem = command.productionItem;
+      if (!productionItem) {
+        return { success: false, error: 'Production item not provided', events: [] };
+      }
+
+      // Build client model and enqueue using engine method
+      const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
+      const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+        clientModel,
+        grid,
+        planet,
+        productionItem as any, // TODO: Fix type
+      );
+
+      if (!canBuild) {
+        return { success: false, error: 'Not enough resources to build item', events: [] };
+      }
+
+      // Get player resources after spending
+      const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+
+      const event: ProductionItemQueuedEvent = {
+        type: ClientEventType.PRODUCTION_ITEM_QUEUED,
+        affectedPlayerIds: [command.playerId],
+        data: {
+          planetId: command.planetId,
+          productionItem: productionItem as any, // TODO: Fix type
+          playerResources: totalResources,
+        },
+      };
+
+      return { success: true, events: [event] };
+    } else if (command.action === 'remove') {
+      const index = command.index;
+      if (typeof index !== 'number' || index < 0) {
+        return { success: false, error: 'Invalid item index', events: [] };
+      }
+
+      // Use engine method to remove item and handle refund
+      const success = Planet.removeBuildQueueItemForRefund(planet, index);
+      if (!success) {
+        return { success: false, error: 'Failed to remove item from build queue', events: [] };
+      }
+
+      const event = {
+        type: ClientEventType.PRODUCTION_ITEM_REMOVED,
+        affectedPlayerIds: [command.playerId],
+        data: {
+          planetId: command.planetId,
+          itemIndex: index,
+        },
+      };
+
+      return { success: true, events: [event] };
+    } else if (command.action === 'demolish') {
+      const productionItem = command.productionItem;
+      if (!productionItem) {
+        return { success: false, error: 'Production item not provided for demolish', events: [] };
+      }
+
+      // Build client model and enqueue demolish order using engine method
+      const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
+      const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+        clientModel,
+        grid,
+        planet,
+        productionItem as any, // TODO: Fix type
+      );
+
+      if (!canBuild) {
+        return { success: false, error: 'Cannot demolish improvement', events: [] };
+      }
+
+      // Get player resources after spending (no actual cost for demolish, but might get refund)
+      const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+
+      const event: ProductionItemQueuedEvent = {
+        type: ClientEventType.PRODUCTION_ITEM_QUEUED,
+        affectedPlayerIds: [command.playerId],
+        data: {
+          planetId: command.planetId,
+          productionItem: productionItem as any, // TODO: Fix type
+          playerResources: totalResources,
+        },
+      };
+
+      return { success: true, events: [event] };
     }
 
-    // Build client model and enqueue
-    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
-      clientModel,
-      grid,
-      planet,
-      productionItem as any, // TODO: Fix type
-    );
-
-    if (!canBuild) {
-      return { success: false, error: 'Not enough resources to build item', events: [] };
-    }
-
-    // Get player resources after spending
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
-
-    const event: ProductionItemQueuedEvent = {
-      type: ClientEventType.PRODUCTION_ITEM_QUEUED,
-      affectedPlayerIds: [command.playerId],
-      data: {
-        planetId: command.planetId,
-        productionItem: productionItem as any, // TODO: Fix type
-        playerResources: totalResources,
-      },
-    };
-
-    return { success: true, events: [event] };
+    return { success: false, error: `Unknown action: ${command.action}`, events: [] };
   }
 
   private static processSendShips(gameModel: GameModelData, command: SendShipsCommand): CommandResult {
-    const { modelData } = gameModel;
+    const { modelData, grid } = gameModel;
     const sourcePlanet = modelData.planets.find((p) => p.id === command.fromPlanetId);
     if (!sourcePlanet) {
       return { success: false, error: 'Source planet not found', events: [] };
@@ -201,9 +290,38 @@ export class CommandProcessor {
       return { success: false, error: 'Player does not own source planet', events: [] };
     }
 
-    // Defer to backend for now - this needs access to the grid and Fleet utilities
-    // which require refactoring to work in CommandProcessor
-    return { success: true, events: [] };
+    // Validate that we have ships to send
+    const totalShipsToSend =
+      command.shipIds.scouts.length +
+      command.shipIds.destroyers.length +
+      command.shipIds.cruisers.length +
+      command.shipIds.battleships.length;
+
+    if (totalShipsToSend === 0) {
+      return { success: false, error: 'No ships selected to send', events: [] };
+    }
+
+    // Split the fleet by specific ship IDs using the Fleet engine method
+    const newFleet = Fleet.splitFleetByShipIds(sourcePlanet.planetaryFleet, command.shipIds);
+
+    // Set the destination for the new fleet
+    Fleet.setDestination(newFleet, grid, sourcePlanet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
+
+    // Add the fleet to the source planet's outgoing fleets
+    sourcePlanet.outgoingFleets.push(newFleet);
+
+    // Generate event with the ship IDs that were moved
+    const event: FleetLaunchedEvent = {
+      type: ClientEventType.FLEET_LAUNCHED,
+      affectedPlayerIds: [command.playerId],
+      data: {
+        fromPlanetId: command.fromPlanetId,
+        toPlanetId: command.toPlanetId,
+        shipIds: command.shipIds,
+      },
+    };
+
+    return { success: true, events: [event] };
   }
 
   private static processUpdatePlanetWorkerAssignments(
@@ -238,26 +356,22 @@ export class CommandProcessor {
       };
     }
 
-    // Validate worker assignments don't exceed population
-    const totalWorkers = command.workers.industry + command.workers.science + command.workers.energy;
-    if (totalWorkers > planet.population.length) {
-      return {
-        success: false,
-        error: 'Worker assignments exceed population',
-        events: [],
-      };
-    }
+    // Update worker assignments using the engine method that handles rebalancing
+    const { farmerDiff, minerDiff, builderDiff } = command.workers;
+    Planet.updatePopulationWorkerTypes(planet, player, farmerDiff, minerDiff, builderDiff);
 
-    // Update worker assignments using engine - need to manipulate citizen array
-    // For now, just track the counts (the actual citizen assignment logic is complex)
-    // The engine should have a method for this, but for MVP we can just validate and store
-
+    // Generate event with updated worker counts
+    const updatedWorkers = Planet.countPopulationWorkerTypes(planet);
     const event: PlanetWorkerAssignmentsUpdatedEvent = {
       type: ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED,
       affectedPlayerIds: [command.playerId],
       data: {
         planetId: planet.id,
-        workers: command.workers,
+        workers: {
+          farmers: updatedWorkers.farmers,
+          miners: updatedWorkers.miners,
+          builders: updatedWorkers.builders,
+        },
       },
     };
 

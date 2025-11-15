@@ -106,7 +106,13 @@ export interface SendShipsCommand extends GameCommand {
   type: GameCommandType.SEND_SHIPS;
   fromPlanetId: number;
   toPlanetId: number;
-  ships: Record<number, number>; // shipType -> quantity
+  shipIds: {
+    // Specific ship IDs to send (user selected)
+    scouts: number[];
+    destroyers: number[];
+    cruisers: number[];
+    battleships: number[];
+  };
 }
 
 export interface SetWaypointCommand extends GameCommand {
@@ -153,9 +159,9 @@ export interface UpdatePlanetWorkerAssignmentsCommand extends GameCommand {
   type: GameCommandType.UPDATE_PLANET_WORKER_ASSIGNMENTS;
   planetId: number;
   workers: {
-    industry: number;
-    science: number;
-    energy: number;
+    farmerDiff: number;
+    minerDiff: number;
+    builderDiff: number;
   };
 }
 
@@ -202,8 +208,13 @@ export interface FleetLaunchedEvent extends ClientEvent {
   data: {
     fromPlanetId: number;
     toPlanetId: number;
-    fleetId: number;
-    ships: Record<number, number>;
+    shipIds: {
+      // Ship IDs that were moved to the outgoing fleet
+      scouts: number[];
+      destroyers: number[];
+      cruisers: number[];
+      battleships: number[];
+    };
   };
 }
 
@@ -268,9 +279,9 @@ export interface PlanetWorkerAssignmentsUpdatedEvent extends ClientEvent {
   data: {
     planetId: number;
     workers: {
-      industry: number;
-      science: number;
-      energy: number;
+      farmers: number;
+      miners: number;
+      builders: number;
     };
   };
 }

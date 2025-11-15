@@ -235,6 +235,39 @@ export class Fleet {
   }
 
   /**
+   * Creates a new fleet by removing specific ships by ID from the source fleet
+   * Used when players select specific ships to send
+   */
+  public static splitFleetByShipIds(
+    fleet: FleetData,
+    shipIds: {
+      scouts: number[];
+      destroyers: number[];
+      cruisers: number[];
+      battleships: number[];
+    },
+  ): FleetData {
+    const newFleet = this.generateFleet([], fleet.locationHexMidPoint);
+
+    const moveShipsToFleet = (ids: number[], targetType: StarShipType) => {
+      for (const shipId of ids) {
+        const shipIndex = fleet.starships.findIndex((s) => s.id === shipId && s.type === targetType);
+        if (shipIndex !== -1) {
+          const ship = fleet.starships.splice(shipIndex, 1)[0];
+          newFleet.starships.push(ship);
+        }
+      }
+    };
+
+    moveShipsToFleet(shipIds.scouts, StarShipType.Scout);
+    moveShipsToFleet(shipIds.destroyers, StarShipType.Destroyer);
+    moveShipsToFleet(shipIds.cruisers, StarShipType.Cruiser);
+    moveShipsToFleet(shipIds.battleships, StarShipType.Battleship);
+
+    return newFleet;
+  }
+
+  /**
    * Splits this fleet off in a fleet that contains one weak ship
    */
   public static splitOffSmallestPossibleFleet(fleet: FleetData): FleetData | undefined {

@@ -109,30 +109,25 @@
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
-		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, item);
+		// Validate before sending (client-side validation only - server is authoritative)
+		const validation = PlanetProductionItem.canBuild(
+			$selectedPlanet,
+			$clientGameModel.mainPlayer,
+			$clientGameModel.mainPlayerOwnedPlanets,
+			item
+		);
 
-		if (!success) {
+		if (validation.result !== CanBuildResult.CanBuild) {
 			console.warn(
-				'Insufficient resources to build:',
-				GameTools.planetImprovementTypeToFriendlyName(buildingType)
+				'Cannot build:',
+				GameTools.planetImprovementTypeToFriendlyName(buildingType),
+				validation.reason
 			);
-			// Could add user notification here
 			return;
 		}
 
-		try {
-			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
-
-			console.log(
-				'Added building to queue:',
-				GameTools.planetImprovementTypeToFriendlyName(buildingType)
-			);
-		} catch (error) {
-			console.error('Failed to add building to queue:', error);
-			// TODO: Revert optimistic update on error
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
 	}
 
 	function addShipToQueue(shipType: StarShipType, customShipData?: StarshipAdvantageData) {
@@ -140,52 +135,38 @@
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType, customShipData);
 
-		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, item);
+		// Validate before sending (client-side validation only - server is authoritative)
+		const validation = PlanetProductionItem.canBuild(
+			$selectedPlanet,
+			$clientGameModel.mainPlayer,
+			$clientGameModel.mainPlayerOwnedPlanets,
+			item
+		);
 
-		if (!success) {
+		if (validation.result !== CanBuildResult.CanBuild) {
 			console.warn(
-				'Insufficient resources to build:',
-				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData))
+				'Cannot build:',
+				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData)),
+				validation.reason
 			);
-			// Could add user notification here
 			return;
 		}
 
-		try {
-			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
-
-			console.log(
-				'Added ship to queue:',
-				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData))
-			);
-		} catch (error) {
-			console.error('Failed to add ship to queue:', error);
-			// TODO: Revert optimistic update on error
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
 	}
 
 	function removeFromBuildQueue(itemIndex: number) {
 		if (!$selectedPlanet || !$clientGameModel) return;
 
-		// Remove from build queue with engine refund handling
-		const success = gameActions.removeFromPlanetBuildQueueOptimistic($selectedPlanet.id, itemIndex);
-
-		if (!success) {
-			console.warn('Failed to remove item from build queue at index:', itemIndex);
+		// Validate index is valid
+		if (itemIndex < 0 || itemIndex >= $selectedPlanet.buildQueue.length) {
+			console.warn('Invalid build queue index:', itemIndex);
 			return;
 		}
 
-		try {
-			// Send WebSocket message to remove item from build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', undefined, itemIndex);
-
-			console.log('Removed item from build queue at index:', itemIndex);
-		} catch (error) {
-			console.error('Failed to remove item from build queue:', error);
-			// TODO: Revert optimistic update on error
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', undefined, itemIndex);
 	}
 
 	function demolishImprovement(improvementType: PlanetImprovementType) {
@@ -237,24 +218,8 @@
 		// Create demolish item
 		const demolishItem = PlanetProductionItem.constructPlanetImprovementToDestroy(improvementType);
 
-		// Add to build queue optimistically
-		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, demolishItem);
-
-		if (!success) {
-			console.error('Failed to add demolish order to queue');
-			return;
-		}
-
-		try {
-			// Send WebSocket message
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'demolish', demolishItem);
-			console.log(
-				'Added demolish order for:',
-				GameTools.planetImprovementTypeToFriendlyName(improvementType)
-			);
-		} catch (error) {
-			console.error('Failed to send demolish order:', error);
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'demolish', demolishItem);
 	}
 
 	function handleColonyDemolishConfirm() {
