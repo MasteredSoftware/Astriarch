@@ -166,7 +166,6 @@
 						cyclesRemaining: cyclesRemaining
 					}
 				: null;
-		console.log('currentResearchInfo recalculated:', returnVal);
 		return returnVal;
 	});
 

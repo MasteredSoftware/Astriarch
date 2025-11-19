@@ -382,9 +382,23 @@ export class WebSocketServer {
       // Update the game state in the database
       game.gameState = result.gameModel.modelData;
 
+      // TODO: Broadcast time-based events to affected players
+      if (result.events && result.events.length > 0) {
+        logger.info(`Generated ${result.events.length} time-based events during game advancement`);
+        // Will implement event broadcasting in next step
+      }
+
       // Check for destroyed players and game over conditions
       if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
-        await this.handleGameOverConditions(gameId, result, game);
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers: result.destroyedPlayers,
+            gameEndConditions: result.gameEndConditions,
+            events: result.events,
+          },
+          game,
+        );
       }
 
       // Save the updated game state with automatic Mixed field handling

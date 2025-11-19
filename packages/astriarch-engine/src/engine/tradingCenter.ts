@@ -8,11 +8,10 @@ import {
   TradingCenterResource,
   TradingCenterResourceType,
 } from '../model/tradingCenter';
-import { Events } from './events';
+import { ClientEvent, ClientEventType } from './GameCommands';
 import { GameModel, GameModelData } from './gameModel';
 import { Planet } from './planet';
 import { Utils } from '../utils/utils';
-import { EventNotificationType } from '../model/eventNotification';
 
 export interface ExecuteTradeResults {
   executed: boolean;
@@ -226,8 +225,13 @@ export class TradingCenter {
     return executedStatus;
   }
 
-  public static executeCurrentTrades(gameModel: GameModelData, planetById: PlanetById, cyclesElapsed: number) {
+  public static executeCurrentTrades(
+    gameModel: GameModelData,
+    planetById: PlanetById,
+    cyclesElapsed: number,
+  ): ClientEvent[] {
     //go through the current trades and deduct from the stockpile for buy orders and add to the stockpile for sell orders
+    const events: ClientEvent[] = [];
     const tc = gameModel.modelData.tradingCenter;
     const now = Date.now();
 
@@ -256,6 +260,26 @@ export class TradingCenter {
           if (results.executed) {
             //recalculate current prices in trading center for each trade executed
             TradingCenter.recalculatePrices(tc);
+
+            // Generate TRADE_EXECUTED event for successful trade
+            const resourceType =
+              trade.resourceType === TradingCenterResourceType.FOOD
+                ? 1
+                : trade.resourceType === TradingCenterResourceType.ORE
+                  ? 2
+                  : 3;
+            const tradeExecutedEvent: ClientEvent = {
+              type: ClientEventType.TRADE_EXECUTED,
+              affectedPlayerIds: [player.id],
+              data: {
+                tradeId: trade.id,
+                resourceType,
+                amount: results.foodAmount + results.oreAmount + results.iridiumAmount,
+                tradeType: trade.tradeType,
+                energyCost: results.tradeEnergyAmount,
+              },
+            };
+            events.push(tradeExecutedEvent);
           }
           executedTradeResultsByPlayerId[trade.playerId].push({ trade, results });
         } else {
@@ -266,87 +290,11 @@ export class TradingCenter {
       }
     }
 
-    //create summary endOfTurnMessages
-    for (const [playerId, results] of Object.entries(executedTradeResultsByPlayerId)) {
-      const resourcesBought = { food: 0, ore: 0, iridium: 0, energySpent: 0, tradeCount: 0 };
-      const resourcesSold = { food: 0, ore: 0, iridium: 0, energyEarned: 0, tradeCount: 0 };
-      const resourcesNotBought = { food: 0, ore: 0, iridium: 0, energySpent: 0, tradeCount: 0 };
-      const resourcesNotSold = { food: 0, ore: 0, iridium: 0, energyEarned: 0, tradeCount: 0 };
-      for (const r of results) {
-        let rbTarget = resourcesNotBought;
-        let rsTarget = resourcesNotSold;
-        if (r.results.executed) {
-          rbTarget = resourcesBought;
-          rsTarget = resourcesSold;
-        }
-        if (r.trade.tradeType === TradeType.BUY) {
-          rbTarget.food += r.results.foodAmount;
-          rbTarget.ore += r.results.oreAmount;
-          rbTarget.iridium += r.results.iridiumAmount;
-          rbTarget.energySpent += r.results.tradeEnergyAmount;
-          rbTarget.tradeCount++;
-        } else {
-          rsTarget.food += r.results.foodAmount;
-          rsTarget.ore += r.results.oreAmount;
-          rsTarget.iridium += r.results.iridiumAmount;
-          rsTarget.energyEarned += r.results.tradeEnergyAmount;
-          rsTarget.tradeCount++;
-        }
-      }
-      if (resourcesBought.tradeCount || resourcesSold.tradeCount) {
-        const tradeCount = resourcesBought.tradeCount + resourcesSold.tradeCount;
-        let message = tradeCount > 1 ? tradeCount + ' Trades Executed,' : tradeCount + ' Trade Executed,';
-        if (resourcesBought.energySpent) {
-          message +=
-            ' Spent ' +
-            Utils.decimalToFixed(resourcesBought.energySpent, 2) +
-            ' energy buying: ' +
-            (resourcesBought.food ? resourcesBought.food + ' food, ' : '') +
-            (resourcesBought.ore ? resourcesBought.ore + ' ore, ' : '') +
-            (resourcesBought.iridium ? resourcesBought.iridium + ' iridium, ' : '');
-        }
-        if (resourcesSold.energyEarned) {
-          message +=
-            ' Earned ' +
-            Utils.decimalToFixed(resourcesSold.energyEarned, 2) +
-            ' energy selling: ' +
-            (resourcesSold.food ? resourcesSold.food + ' food, ' : '') +
-            (resourcesSold.ore ? resourcesSold.ore + ' ore, ' : '') +
-            (resourcesSold.iridium ? resourcesSold.iridium + ' iridium, ' : '');
-        }
-        message = message.substring(0, message.length - 2);
-
-        Events.enqueueNewEvent(playerId, EventNotificationType.TradesExecuted, message);
-      }
-
-      if (resourcesNotBought.tradeCount || resourcesNotSold.tradeCount) {
-        const tradeCount = resourcesNotBought.tradeCount + resourcesNotSold.tradeCount;
-        let message = tradeCount > 1 ? tradeCount + ' Trades Not Executed,' : tradeCount + ' Trade Not Executed,';
-        if (resourcesNotBought.energySpent) {
-          message +=
-            ' Could not Buy: ' +
-            (resourcesNotBought.food ? resourcesNotBought.food + ' food, ' : '') +
-            (resourcesNotBought.ore ? resourcesNotBought.ore + ' ore, ' : '') +
-            (resourcesNotBought.iridium ? resourcesNotBought.iridium + ' iridium, ' : '');
-        }
-        if (resourcesNotSold.energyEarned) {
-          message +=
-            ' Could not Sell: ' +
-            (resourcesNotSold.food ? resourcesNotSold.food + ' food, ' : '') +
-            (resourcesNotSold.ore ? resourcesNotSold.ore + ' ore, ' : '') +
-            (resourcesNotSold.iridium ? resourcesNotSold.iridium + ' iridium, ' : '');
-        }
-        message = message.substring(0, message.length - 2);
-
-        Events.enqueueNewEvent(playerId, EventNotificationType.TradesNotExecuted, message);
-      }
-    }
-
     // Note: tc.currentTrades now only contains pending trades (not yet executable)
     // We no longer clear all trades here since pending trades should remain
     this.earnInterest(tc, cyclesElapsed);
 
-    return executedTradeResultsByPlayerId;
+    return events;
   }
 
   public static earnInterest(tradingCenter: TradingCenterData, cyclesElapsed: number) {

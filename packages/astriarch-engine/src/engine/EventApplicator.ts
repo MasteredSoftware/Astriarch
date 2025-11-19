@@ -84,6 +84,46 @@ export class EventApplicator {
         this.applyTradeCancelled(clientModel, event as TradeCancelledEvent);
         break;
 
+      case ClientEventType.SHIP_BUILT:
+        this.applyShipBuilt(clientModel, event as import('./GameCommands').ShipBuiltEvent);
+        break;
+
+      case ClientEventType.IMPROVEMENT_BUILT:
+        this.applyImprovementBuilt(clientModel, event as import('./GameCommands').ImprovementBuiltEvent);
+        break;
+
+      case ClientEventType.IMPROVEMENT_DEMOLISHED:
+        this.applyImprovementDemolished(clientModel, event as import('./GameCommands').ImprovementDemolishedEvent);
+        break;
+
+      case ClientEventType.RESEARCH_COMPLETED:
+        this.applyResearchCompleted(clientModel, event as import('./GameCommands').ResearchCompletedEvent);
+        break;
+
+      case ClientEventType.POPULATION_GREW:
+        this.applyPopulationGrew(clientModel, event as import('./GameCommands').PopulationGrewEvent);
+        break;
+
+      case ClientEventType.TRADE_EXECUTED:
+        this.applyTradeExecuted(clientModel, event as import('./GameCommands').TradeExecutedEvent);
+        break;
+
+      case ClientEventType.PLANET_CAPTURED:
+        this.applyPlanetCaptured(clientModel, event as import('./GameCommands').PlanetCapturedEvent);
+        break;
+
+      case ClientEventType.PLANET_LOST:
+        this.applyPlanetLost(clientModel, event as import('./GameCommands').PlanetLostEvent);
+        break;
+
+      case ClientEventType.FLEET_DESTROYED:
+        this.applyFleetDestroyed(clientModel, event as import('./GameCommands').FleetDestroyedEvent);
+        break;
+
+      case ClientEventType.RESOURCES_AUTO_SPENT:
+        this.applyResourcesAutoSpent(clientModel, event as import('./GameCommands').ResourcesAutoSpentEvent);
+        break;
+
       default:
         console.warn(`Unhandled client event type: ${event.type}`);
     }
@@ -376,5 +416,154 @@ export class EventApplicator {
 
     planet.buildLastStarship = buildLastStarship;
     console.log(`Planet ${planetId} options updated: buildLastStarship=${buildLastStarship}`);
+  }
+
+  // TIME-BASED EVENT APPLICATORS
+  // These events are primarily for UI notifications
+  // Server sends full state updates, so these don't need to mutate much
+
+  private static applyShipBuilt(clientModel: ClientModelData, event: import('./GameCommands').ShipBuiltEvent): void {
+    const { planetId, shipType, sentToWaypoint } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full planet state with updated fleet/queue
+    console.log(`Ship type ${shipType} built on planet ${planetId}, sentToWaypoint=${sentToWaypoint}`);
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyImprovementBuilt(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').ImprovementBuiltEvent,
+  ): void {
+    const { planetId, improvementType } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full planet state with updated improvements/queue
+    console.log(`Improvement type ${improvementType} built on planet ${planetId}`);
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyImprovementDemolished(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').ImprovementDemolishedEvent,
+  ): void {
+    const { planetId, improvementType } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full planet state with updated improvements/queue
+    console.log(`Improvement type ${improvementType} demolished on planet ${planetId}`);
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyResearchCompleted(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').ResearchCompletedEvent,
+  ): void {
+    const { researchType, newLevel } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full research state
+    console.log(`Research type ${researchType} completed, now at level ${newLevel}`);
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyPopulationGrew(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').PopulationGrewEvent,
+  ): void {
+    const { planetId, newPopulation } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full planet state with updated population
+    console.log(`Planet ${planetId} population grew to ${newPopulation}`);
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyTradeExecuted(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').TradeExecutedEvent,
+  ): void {
+    const { tradeId, resourceType, amount, tradeType } = event.data;
+
+    // Remove the trade from the client's trading center
+    const index = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
+    if (index >= 0) {
+      clientModel.clientTradingCenter.mainPlayerTrades.splice(index, 1);
+    }
+
+    // Event is primarily for UI notification
+    // Server will send full resource/price state
+    const action = tradeType === 1 ? 'bought' : 'sold';
+    console.log(`Trade ${tradeId} executed: ${action} ${amount} of resource type ${resourceType}`);
+  }
+
+  private static applyPlanetCaptured(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').PlanetCapturedEvent,
+  ): void {
+    const { planetId, newOwnerId, previousOwnerId, resourcesLooted } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full planet ownership state
+    if (newOwnerId === clientModel.mainPlayer.id) {
+      console.log(
+        `Planet ${planetId} captured! Looted ${resourcesLooted.food}F/${resourcesLooted.ore}O/${resourcesLooted.iridium}I`,
+      );
+    } else if (previousOwnerId === clientModel.mainPlayer.id) {
+      console.log(`Planet ${planetId} was captured by player ${newOwnerId}`);
+    }
+  }
+
+  private static applyPlanetLost(clientModel: ClientModelData, event: import('./GameCommands').PlanetLostEvent): void {
+    const { planetId, newOwnerId } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full planet ownership state
+    console.log(`Lost planet ${planetId} to player ${newOwnerId}`);
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyFleetDestroyed(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').FleetDestroyedEvent,
+  ): void {
+    const { planetId, wasAttacking } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full fleet state
+    if (wasAttacking) {
+      console.log(`Attacking fleets from planet ${planetId} were destroyed`);
+    } else {
+      console.log(`Defending fleet on planet ${planetId} was destroyed`);
+    }
+
+    // Unused but kept for linter
+    void clientModel;
+  }
+
+  private static applyResourcesAutoSpent(
+    clientModel: ClientModelData,
+    event: import('./GameCommands').ResourcesAutoSpentEvent,
+  ): void {
+    const { planetId, itemQueued } = event.data;
+
+    // Event is primarily for UI notification
+    // Server will send full resource/queue state
+    console.log(`Resources auto-spent on planet ${planetId} for ${itemQueued}`);
+
+    // Unused but kept for linter
+    void clientModel;
   }
 }

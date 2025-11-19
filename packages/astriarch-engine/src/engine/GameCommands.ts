@@ -42,9 +42,13 @@ export enum ClientEventType {
   // Building/Production events
   PRODUCTION_ITEM_QUEUED = 'PRODUCTION_ITEM_QUEUED',
   PRODUCTION_ITEM_REMOVED = 'PRODUCTION_ITEM_REMOVED',
+  SHIP_BUILT = 'SHIP_BUILT',
+  IMPROVEMENT_BUILT = 'IMPROVEMENT_BUILT',
+  IMPROVEMENT_DEMOLISHED = 'IMPROVEMENT_DEMOLISHED',
 
   // Fleet events (only for discrete actions, not continuous movement)
   FLEET_LAUNCHED = 'FLEET_LAUNCHED',
+  FLEET_DESTROYED = 'FLEET_DESTROYED',
   WAYPOINT_SET = 'WAYPOINT_SET',
   WAYPOINT_CLEARED = 'WAYPOINT_CLEARED',
 
@@ -52,14 +56,22 @@ export enum ClientEventType {
   RESEARCH_QUEUED = 'RESEARCH_QUEUED',
   RESEARCH_CANCELLED = 'RESEARCH_CANCELLED',
   RESEARCH_PERCENT_ADJUSTED = 'RESEARCH_PERCENT_ADJUSTED',
+  RESEARCH_COMPLETED = 'RESEARCH_COMPLETED',
 
   // Trade events
   TRADE_SUBMITTED = 'TRADE_SUBMITTED',
   TRADE_CANCELLED = 'TRADE_CANCELLED',
+  TRADE_EXECUTED = 'TRADE_EXECUTED',
 
   // Planet events
   PLANET_WORKER_ASSIGNMENTS_UPDATED = 'PLANET_WORKER_ASSIGNMENTS_UPDATED',
   PLANET_OPTIONS_UPDATED = 'PLANET_OPTIONS_UPDATED',
+  PLANET_CAPTURED = 'PLANET_CAPTURED',
+  PLANET_LOST = 'PLANET_LOST',
+  POPULATION_GREW = 'POPULATION_GREW',
+
+  // Resource events
+  RESOURCES_AUTO_SPENT = 'RESOURCES_AUTO_SPENT',
 }
 
 // ============================================================================
@@ -298,5 +310,104 @@ export interface PlanetOptionsUpdatedEvent extends ClientEvent {
   data: {
     planetId: number;
     buildLastStarship: boolean;
+  };
+}
+
+// ============================================================================
+// TIME-BASED EVENT PAYLOADS (from game clock advancement)
+// ============================================================================
+
+export interface ShipBuiltEvent extends ClientEvent {
+  type: ClientEventType.SHIP_BUILT;
+  data: {
+    planetId: number;
+    shipType: number; // StarShipType
+    customShipData?: {
+      advantageAgainst: number; // StarShipType
+      disadvantageAgainst: number; // StarShipType
+    };
+    sentToWaypoint: boolean; // Was ship sent to waypoint or added to planetary fleet?
+    nextItemInQueue?: string; // Description of next item in queue
+  };
+}
+
+export interface ImprovementBuiltEvent extends ClientEvent {
+  type: ClientEventType.IMPROVEMENT_BUILT;
+  data: {
+    planetId: number;
+    improvementType: number; // PlanetImprovementType
+    nextItemInQueue?: string; // Description of next item in queue
+  };
+}
+
+export interface ImprovementDemolishedEvent extends ClientEvent {
+  type: ClientEventType.IMPROVEMENT_DEMOLISHED;
+  data: {
+    planetId: number;
+    improvementType: number; // PlanetImprovementType
+    nextItemInQueue?: string; // Description of next item in queue
+  };
+}
+
+export interface ResearchCompletedEvent extends ClientEvent {
+  type: ClientEventType.RESEARCH_COMPLETED;
+  data: {
+    researchType: number; // ResearchType
+    newLevel: number;
+    researchQueueCleared: boolean; // If max level reached
+  };
+}
+
+export interface PopulationGrewEvent extends ClientEvent {
+  type: ClientEventType.POPULATION_GREW;
+  data: {
+    planetId: number;
+    newPopulation: number;
+  };
+}
+
+export interface TradeExecutedEvent extends ClientEvent {
+  type: ClientEventType.TRADE_EXECUTED;
+  data: {
+    tradeId: string;
+    resourceType: number; // TradingCenterResourceType
+    amount: number;
+    tradeType: number; // TradeType (BUY or SELL)
+    energyCost: number;
+  };
+}
+
+export interface PlanetCapturedEvent extends ClientEvent {
+  type: ClientEventType.PLANET_CAPTURED;
+  data: {
+    planetId: number;
+    newOwnerId: string;
+    previousOwnerId?: string;
+    resourcesLooted: PlayerResourcesData;
+  };
+}
+
+export interface PlanetLostEvent extends ClientEvent {
+  type: ClientEventType.PLANET_LOST;
+  data: {
+    planetId: number;
+    planetName: string;
+    newOwnerId: string;
+  };
+}
+
+export interface FleetDestroyedEvent extends ClientEvent {
+  type: ClientEventType.FLEET_DESTROYED;
+  data: {
+    planetId: number; // Planet where battle occurred
+    wasAttacking: boolean; // True if this player was attacking, false if defending
+  };
+}
+
+export interface ResourcesAutoSpentEvent extends ClientEvent {
+  type: ClientEventType.RESOURCES_AUTO_SPENT;
+  data: {
+    planetId: number;
+    itemQueued: string; // Description of item that was auto-queued
   };
 }

@@ -8,6 +8,7 @@ import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../mo
 import { Utils } from '../utils/utils';
 import { Events } from './events';
 import { Fleet } from './fleet';
+import { ClientEvent, ClientEventType } from './GameCommands';
 import { AdvanceGameClockForPlayerData, GameModel } from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
@@ -77,22 +78,34 @@ export class Player {
     p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
   }
 
-  public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): FleetData[] {
+  public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): {
+    fleetsArrivingOnUnownedPlanets: FleetData[];
+    events: ClientEvent[];
+  } {
+    const events: ClientEvent[] = [];
+
     Player.addLastStarShipToQueueOnPlanets(data);
 
     Player.generatePlayerResources(data);
 
-    Research.advanceResearchForPlayer(data);
+    const researchEvents = Research.advanceResearchForPlayer(data);
+    events.push(...researchEvents);
 
     this.eatAndStarve(data);
     this.adjustPlayerPlanetProtestLevels(data); // has randomness can't use client side, probably should change this
-    this.buildPlayerPlanetImprovements(data); // deterministic
-    this.growPlayerPlanetPopulation(data); // deterministic
-    this.repairPlanetaryFleets(data); // deterministic
+
+    const buildEvents = this.buildPlayerPlanetImprovements(data); // deterministic
+    events.push(...buildEvents);
+
+    const populationEvents = this.growPlayerPlanetPopulation(data); // deterministic
+    events.push(...populationEvents);
+
+    const repairEvents = this.repairPlanetaryFleets(data); // deterministic
+    events.push(...repairEvents);
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
     const fleetsArrivingOnUnownedPlanets = this.moveShips(data);
-    return fleetsArrivingOnUnownedPlanets;
+    return { fleetsArrivingOnUnownedPlanets, events };
   }
 
   public static generatePlayerResources(data: AdvanceGameClockForPlayerData) {
@@ -419,14 +432,19 @@ export class Player {
     }
   }
 
-  public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData) {
+  public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData): ClientEvent[] {
     const { clientModel, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    const events: ClientEvent[] = [];
+
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
       const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, mainPlayer);
       const results = Planet.buildImprovements(p, mainPlayer, grid, resourceGeneration);
+
+      // Collect events from building
+      events.push(...results.events);
 
       if (results.buildQueueEmpty) {
         //if the build queue was empty we'll convert planet production to energy
@@ -447,6 +465,8 @@ export class Player {
         });
       }
     }
+
+    return events;
   }
 
   public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData) {
@@ -503,7 +523,8 @@ export class Player {
     }
   }
 
-  public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData) {
+  public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData): ClientEvent[] {
+    const events: ClientEvent[] = [];
     const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //population growth rate is based on available space at the planet and the amount currently there
@@ -515,25 +536,30 @@ export class Player {
         const lastCitizen = p.population[p.population.length - 1];
         lastCitizen.populationChange += growthRate;
         if (lastCitizen.populationChange >= 1.0) {
-          //notify user of growth
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.PopulationGrowth,
-            'Population growth on planet: ' + p.name,
-            p,
-          );
           //grow
           lastCitizen.populationChange = 0;
           p.population.push(Planet.constructCitizen(p.type, mainPlayer.id));
 
           //assign points
           Player.increasePoints(mainPlayer, EarnedPointsType.POPULATION_GROWTH, 1);
+
+          // Generate POPULATION_GREW event
+          const populationGrewEvent: ClientEvent = {
+            type: ClientEventType.POPULATION_GREW,
+            affectedPlayerIds: [mainPlayer.id],
+            data: {
+              planetId: p.id,
+              newPopulation: p.population.length,
+            },
+          };
+          events.push(populationGrewEvent);
         }
       }
     }
+    return events;
   }
 
-  public static repairPlanetaryFleets(data: AdvanceGameClockForPlayerData) {
+  public static repairPlanetaryFleets(data: AdvanceGameClockForPlayerData): ClientEvent[] {
     const { clientModel, cyclesElapsed, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const resourcesAutoSpent = { energy: 0, ore: 0, iridium: 0 };
@@ -571,20 +597,20 @@ export class Player {
       }
     }
 
+    const events: ClientEvent[] = [];
     if (planetTarget) {
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.ResourcesAutoSpent,
-        resourcesAutoSpent.energy +
-          ' Energy, ' +
-          resourcesAutoSpent.ore +
-          ' Ore, ' +
-          resourcesAutoSpent.iridium +
-          ' Iridium spent repairing fleets.',
-        planetTarget,
-      );
+      // Generate RESOURCES_AUTO_SPENT event
+      const resourcesAutoSpentEvent: ClientEvent = {
+        type: ClientEventType.RESOURCES_AUTO_SPENT,
+        affectedPlayerIds: [mainPlayer.id],
+        data: {
+          planetId: planetTarget.id,
+          itemQueued: `${resourcesAutoSpent.energy}E/${resourcesAutoSpent.ore}O/${resourcesAutoSpent.iridium}I spent repairing fleets`,
+        },
+      };
+      events.push(resourcesAutoSpentEvent);
     }
-    return resourcesAutoSpent;
+    return events;
   }
 
   public static moveShips(data: AdvanceGameClockForPlayerData) {
