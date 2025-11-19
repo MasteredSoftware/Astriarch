@@ -1327,28 +1327,10 @@ export class WebSocketServer {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    // Always send a basic PONG response with session information
-    let pongPayload: any = {
+    // Send a lightweight PONG response with just timestamp
+    const pongPayload = {
       timestamp: new Date().toISOString(),
     };
-
-    // If client is in an active game, include their current game state
-    if (client.gameId && client.playerId) {
-      try {
-        const game = await Game.findById(client.gameId);
-        if (game && game.status === "in_progress") {
-          const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
-          pongPayload = {
-            ...pongPayload,
-            clientGameModel,
-            currentCycle: (game.gameState as any).currentCycle || 0,
-          };
-          logger.info(`Sending PONG with updated game state to session ${client.sessionId}`);
-        }
-      } catch (error) {
-        logger.error("Error getting game state for PING response:", error);
-      }
-    }
 
     this.sendToClient(clientId, new Message(MESSAGE_TYPE.PONG, pongPayload));
   }

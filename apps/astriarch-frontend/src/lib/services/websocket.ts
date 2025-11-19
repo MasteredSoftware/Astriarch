@@ -996,35 +996,7 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.PONG:
 				// Server responded to our ping - session is alive
-				console.log('Received pong from server');
-
-				// Check if PONG includes session ID or updated game state
-				if (message.payload && typeof message.payload === 'object') {
-					const payload = message.payload as Record<string, unknown>;
-
-					// Store session ID if provided
-					if (payload.sessionId && typeof payload.sessionId === 'string') {
-						this.gameStore.setSessionId(payload.sessionId);
-						console.log('Session ID stored:', payload.sessionId);
-					}
-
-					if (payload.clientGameModel) {
-						console.log('PONG included updated game state, updating client model');
-
-						// Update the main game store with the fresh data from the server
-						const updatedClientGameModel = payload.clientGameModel as ClientModelData;
-						clientGameModel.set(updatedClientGameModel);
-
-						// Don't automatically set game as running - let explicit game state messages handle that
-						// The PONG is just providing updated data, not changing game state
-
-						// Optionally update current cycle if provided
-						if (payload.currentCycle !== undefined) {
-							// You could add a currentCycle store if needed
-							console.log('Current game cycle:', payload.currentCycle);
-						}
-					}
-				}
+				console.log('Received pong from server', message.payload);
 				break;
 
 			case MESSAGE_TYPE.ADVANCE_GAME_TIME:
