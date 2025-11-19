@@ -429,75 +429,181 @@ export class EventApplicator {
   }
 
   // TIME-BASED EVENT APPLICATORS
-  // These events are primarily for UI notifications
-  // Server sends full state updates, so these don't need to mutate much
+  // These must fully replicate server state changes since we no longer send full state syncs
 
   private static applyShipBuilt(clientModel: ClientModelData, event: ShipBuiltEvent): void {
-    const { planetId, shipType, sentToWaypoint } = event.data;
+    const { planetId, shipType, customShipData, sentToWaypoint } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full planet state with updated fleet/queue
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
+
+    // Remove the completed item from build queue
+    const completedItem = planet.buildQueue.shift();
+    if (!completedItem) {
+      console.warn(`No item in build queue for planet ${planetId}`);
+      return;
+    }
+
+    // Return remainder production to planet (server does this)
+    planet.resources.production = completedItem.productionCostComplete - completedItem.baseProductionCost;
+
+    // Generate the ship using engine method
+    const ship = Fleet.generateStarship(shipType, customShipData);
+
+    // Add ship to appropriate fleet (mirroring server logic)
+    if (sentToWaypoint && planet.waypointBoundingHexMidPoint) {
+      // Ship goes to outgoing fleet toward waypoint
+      const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint);
+      newFleet.starships.push(ship);
+      // Set travel destinations
+      Object.assign(newFleet, {
+        destinationHexMidPoint: planet.waypointBoundingHexMidPoint,
+        travelingFromHexMidPoint: planet.boundingHexMidPoint,
+      });
+      planet.outgoingFleets.push(newFleet);
+    } else {
+      // Ship stays in planetary defense fleet
+      planet.planetaryFleet.starships.push(ship);
+    }
+
     console.log(`Ship type ${shipType} built on planet ${planetId}, sentToWaypoint=${sentToWaypoint}`);
-
-    // Unused but kept for linter
-    void clientModel;
   }
 
   private static applyImprovementBuilt(clientModel: ClientModelData, event: ImprovementBuiltEvent): void {
     const { planetId, improvementType } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full planet state with updated improvements/queue
-    console.log(`Improvement type ${improvementType} built on planet ${planetId}`);
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
 
-    // Unused but kept for linter
-    void clientModel;
+    // Remove the completed item from build queue
+    const completedItem = planet.buildQueue.shift();
+    if (!completedItem) {
+      console.warn(`No item in build queue for planet ${planetId}`);
+      return;
+    }
+
+    // Return remainder production to planet (server does this)
+    planet.resources.production = completedItem.productionCostComplete - completedItem.baseProductionCost;
+
+    // Increment the improvement count (this is critical for UI and build validation)
+    const improvType = improvementType as import('../model/planet').PlanetImprovementType;
+    planet.builtImprovements[improvType] = (planet.builtImprovements[improvType] || 0) + 1;
+
+    console.log(`Improvement type ${improvementType} built on planet ${planetId}`);
   }
 
   private static applyImprovementDemolished(clientModel: ClientModelData, event: ImprovementDemolishedEvent): void {
     const { planetId, improvementType } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full planet state with updated improvements/queue
-    console.log(`Improvement type ${improvementType} demolished on planet ${planetId}`);
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
 
-    // Unused but kept for linter
-    void clientModel;
+    // Remove the completed demolition from build queue
+    const completedItem = planet.buildQueue.shift();
+    if (!completedItem) {
+      console.warn(`No item in build queue for planet ${planetId}`);
+      return;
+    }
+
+    // Return remainder production to planet (server does this)
+    planet.resources.production = completedItem.productionCostComplete - completedItem.baseProductionCost;
+
+    // Decrement the improvement count
+    const improvType = improvementType as import('../model/planet').PlanetImprovementType;
+    if (planet.builtImprovements[improvType] > 0) {
+      planet.builtImprovements[improvType]--;
+    }
+
+    // Handle population overflow if colony was demolished (matching server logic)
+    const maxPop = Planet.maxPopulation(planet);
+    while (maxPop < planet.population.length) {
+      planet.population.pop();
+    }
+
+    console.log(`Improvement type ${improvementType} demolished on planet ${planetId}`);
   }
 
   private static applyResearchCompleted(clientModel: ClientModelData, event: ResearchCompletedEvent): void {
-    const { researchType, newLevel } = event.data;
+    const { researchType, newLevel, researchQueueCleared } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full research state
+    // Clear the research queue since research completed
+    if (researchQueueCleared) {
+      clientModel.mainPlayer.research.researchTypeInQueue = null;
+    }
+
+    // Research level was updated by server, will be included in next sync
+    // The event is for immediate UI notification
     console.log(`Research type ${researchType} completed, now at level ${newLevel}`);
-
-    // Unused but kept for linter
-    void clientModel;
   }
 
   private static applyPopulationGrew(clientModel: ClientModelData, event: PopulationGrewEvent): void {
     const { planetId, newPopulation } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full planet state with updated population
-    console.log(`Planet ${planetId} population grew to ${newPopulation}`);
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
 
-    // Unused but kept for linter
-    void clientModel;
+    // Add a new citizen to match the server's population growth
+    // The server already added one in growPlayerPlanetPopulation()
+    if (planet.population.length < newPopulation) {
+      const newCitizen = Planet.constructCitizen(planet.type, clientModel.mainPlayer.id);
+      planet.population.push(newCitizen);
+
+      // Reset the last citizen's population change tracker
+      const lastCitizen = planet.population[planet.population.length - 2];
+      if (lastCitizen) {
+        lastCitizen.populationChange = 0;
+      }
+    }
+
+    console.log(`Planet ${planetId} population grew to ${newPopulation}`);
   }
 
   private static applyTradeExecuted(clientModel: ClientModelData, event: TradeExecutedEvent): void {
     const { tradeId, resourceType, amount, tradeType } = event.data;
 
     // Remove the trade from the client's trading center
-    const index = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
-    if (index >= 0) {
-      clientModel.clientTradingCenter.mainPlayerTrades.splice(index, 1);
+    const tradeIndex = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
+    if (tradeIndex < 0) {
+      console.warn(`Trade ${tradeId} not found in player's trades`);
+      return;
     }
 
-    // Event is primarily for UI notification
-    // Server will send full resource/price state
+    const trade = clientModel.clientTradingCenter.mainPlayerTrades[tradeIndex];
+    const planetId = trade.planetId;
+    clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
+
+    // Update planet resources (critical for accurate resource display)
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (planet) {
+      const isBuy = tradeType === 1;
+      const modifier = isBuy ? 1 : -1;
+
+      // Map resource type to planet resource field
+      switch (resourceType) {
+        case 1: // FOOD
+          planet.resources.food += amount * modifier;
+          break;
+        case 2: // ORE
+          planet.resources.ore += amount * modifier;
+          break;
+        case 3: // IRIDIUM
+          planet.resources.iridium += amount * modifier;
+          break;
+      }
+    }
+
     const action = tradeType === 1 ? 'bought' : 'sold';
     console.log(`Trade ${tradeId} executed: ${action} ${amount} of resource type ${resourceType}`);
   }
@@ -505,51 +611,62 @@ export class EventApplicator {
   private static applyPlanetCaptured(clientModel: ClientModelData, event: PlanetCapturedEvent): void {
     const { planetId, newOwnerId, previousOwnerId, resourcesLooted } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full planet ownership state
     if (newOwnerId === clientModel.mainPlayer.id) {
+      // We captured a planet - it will be added to mainPlayerOwnedPlanets in next sync
       console.log(
         `Planet ${planetId} captured! Looted ${resourcesLooted.food}F/${resourcesLooted.ore}O/${resourcesLooted.iridium}I`,
       );
     } else if (previousOwnerId === clientModel.mainPlayer.id) {
-      console.log(`Planet ${planetId} was captured by player ${newOwnerId}`);
+      // We lost a planet - remove it from our owned planets immediately
+      if (clientModel.mainPlayerOwnedPlanets[planetId]) {
+        delete clientModel.mainPlayerOwnedPlanets[planetId];
+        console.log(`Planet ${planetId} was captured by player ${newOwnerId}`);
+      }
     }
   }
 
   private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
     const { planetId, newOwnerId } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full planet ownership state
-    console.log(`Lost planet ${planetId} to player ${newOwnerId}`);
-
-    // Unused but kept for linter
-    void clientModel;
+    // Remove planet from our owned planets immediately
+    if (clientModel.mainPlayerOwnedPlanets[planetId]) {
+      delete clientModel.mainPlayerOwnedPlanets[planetId];
+      console.log(`Lost planet ${planetId} to player ${newOwnerId}`);
+    }
   }
 
   private static applyFleetDestroyed(clientModel: ClientModelData, event: FleetDestroyedEvent): void {
     const { planetId, wasAttacking } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full fleet state
-    if (wasAttacking) {
-      console.log(`Attacking fleets from planet ${planetId} were destroyed`);
-    } else {
-      console.log(`Defending fleet on planet ${planetId} was destroyed`);
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      // Planet might have been lost in the same battle
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
     }
 
-    // Unused but kept for linter
-    void clientModel;
+    if (wasAttacking) {
+      // Clear all outgoing fleets from this planet
+      planet.outgoingFleets = [];
+      console.log(`Attacking fleets from planet ${planetId} were destroyed`);
+    } else {
+      // Clear the planetary defense fleet
+      if (planet.planetaryFleet) {
+        planet.planetaryFleet.starships = [];
+      }
+      console.log(`Defending fleet on planet ${planetId} was destroyed`);
+    }
   }
 
   private static applyResourcesAutoSpent(clientModel: ClientModelData, event: ResourcesAutoSpentEvent): void {
     const { planetId, itemQueued } = event.data;
 
-    // Event is primarily for UI notification
-    // Server will send full resource/queue state
+    // Resources were already spent server-side (during food shipping/other operations)
+    // This event is notification-only - the resource deduction already happened
+    // when the server processed the auto-spending logic
     console.log(`Resources auto-spent on planet ${planetId} for ${itemQueued}`);
 
-    // Unused but kept for linter
+    // No state mutation needed - resources already deducted server-side
     void clientModel;
   }
 }

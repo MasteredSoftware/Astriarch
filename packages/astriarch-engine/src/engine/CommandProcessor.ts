@@ -206,12 +206,7 @@ export class CommandProcessor {
 
     // Build client model and enqueue demolish order using engine method
     const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
-      clientModel,
-      grid,
-      planet,
-      productionItem as any, // TODO: Fix type
-    );
+    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
 
     if (!canBuild) {
       return { success: false, error: 'Cannot demolish improvement', events: [] };
@@ -225,7 +220,7 @@ export class CommandProcessor {
       affectedPlayerIds: [command.playerId],
       data: {
         planetId: command.planetId,
-        productionItem: productionItem as any, // TODO: Fix type
+        productionItem: productionItem,
         playerResources: totalResources,
       },
     };
@@ -495,15 +490,6 @@ export class CommandProcessor {
       return {
         success: false,
         error: 'Player not found',
-        events: [],
-      };
-    }
-
-    // Check if player already has research in queue
-    if (player.research.researchTypeInQueue !== null) {
-      return {
-        success: false,
-        error: 'Research already in progress',
         events: [],
       };
     }
