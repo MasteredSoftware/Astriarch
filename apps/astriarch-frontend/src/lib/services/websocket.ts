@@ -1207,44 +1207,28 @@ class WebSocketService {
 			let command: GameCommand;
 
 			if (action === 'add' && productionItem) {
-				// Check if it's a ship or improvement using proper typing
-				const isShip = productionItem.itemType === this.ITEM_TYPE_STARSHIP;
-
 				command = {
-					type: isShip ? GameCommandType.BUILD_SHIP : GameCommandType.BUILD_IMPROVEMENT,
+					type: GameCommandType.QUEUE_PRODUCTION_ITEM,
 					playerId,
 					timestamp: Date.now(),
 					planetId,
-					action: 'add',
 					productionItem
 				} as GameCommand;
 			} else if (action === 'remove' && typeof index === 'number') {
-				// For removing, we need to know if it's a ship or improvement
-				// Check the build queue to determine the type
-				const planet = Object.values(cgm.mainPlayerOwnedPlanets).find((p) => p.id === planetId);
-				if (planet && planet.buildQueue && planet.buildQueue[index]) {
-					const queueItem = planet.buildQueue[index];
-					const isShip = queueItem.itemType === this.ITEM_TYPE_STARSHIP;
-
-					command = {
-						type: isShip ? GameCommandType.BUILD_SHIP : GameCommandType.BUILD_IMPROVEMENT,
-						playerId,
-						timestamp: Date.now(),
-						planetId,
-						action: 'remove',
-						itemIndex: index
-					} as GameCommand;
-				} else {
-					throw new Error('Item not found in build queue');
-				}
-			} else if (action === 'demolish' && typeof index === 'number') {
 				command = {
-					type: GameCommandType.BUILD_IMPROVEMENT,
+					type: GameCommandType.REMOVE_PRODUCTION_ITEM,
 					playerId,
 					timestamp: Date.now(),
 					planetId,
-					action: 'demolish',
-					itemIndex: index
+					index
+				} as GameCommand;
+			} else if (action === 'demolish' && productionItem) {
+				command = {
+					type: GameCommandType.DEMOLISH_IMPROVEMENT,
+					playerId,
+					timestamp: Date.now(),
+					planetId,
+					productionItem
 				} as GameCommand;
 			} else {
 				throw new Error(`Invalid build queue action: ${action}`);

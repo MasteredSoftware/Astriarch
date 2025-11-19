@@ -98,29 +98,8 @@ export class EventApplicator {
       return;
     }
 
-    // Convert ProductionItemData from event to PlanetProductionItemData for build queue
-    const queueItem: PlanetProductionItemData = {
-      itemType: productionItem.starShipType !== undefined ? 2 : 1, // StarShipInProduction : PlanetImprovement
-      energyCost: 0, // Costs already spent, not needed in queue display
-      oreCost: 0,
-      iridiumCost: 0,
-      baseProductionCost: productionItem.turnsRemaining || 1,
-      productionCostComplete: 0,
-      turnsToComplete: productionItem.turnsRemaining || 1,
-      resourcesSpent: true, // Resources are spent when item is enqueued
-      improvementData:
-        productionItem.improvementType !== undefined ? { type: productionItem.improvementType } : undefined,
-      starshipData:
-        productionItem.starShipType !== undefined
-          ? {
-              type: productionItem.starShipType,
-              customShipData: undefined, // TODO: Extract from productionItem if present
-            }
-          : undefined,
-    };
-
     // Add to build queue
-    planet.buildQueue.push(queueItem);
+    planet.buildQueue.push(productionItem);
 
     // Update aggregate player resource display
     // Resources are actually stored on planets, but events include totals for UI

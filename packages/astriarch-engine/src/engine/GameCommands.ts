@@ -12,13 +12,16 @@
  * 4. Using checksums to detect desync
  */
 
+import { PlanetProductionItemData } from '../model';
+
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
 // ============================================================================
 
 export enum GameCommandType {
-  BUILD_SHIP = 'BUILD_SHIP',
-  BUILD_IMPROVEMENT = 'BUILD_IMPROVEMENT',
+  QUEUE_PRODUCTION_ITEM = 'QUEUE_PRODUCTION_ITEM',
+  REMOVE_PRODUCTION_ITEM = 'REMOVE_PRODUCTION_ITEM',
+  DEMOLISH_IMPROVEMENT = 'DEMOLISH_IMPROVEMENT',
   SEND_SHIPS = 'SEND_SHIPS',
   SET_WAYPOINT = 'SET_WAYPOINT',
   CLEAR_WAYPOINT = 'CLEAR_WAYPOINT',
@@ -87,21 +90,22 @@ export interface CommandResult {
 // SPECIFIC COMMAND PAYLOADS
 // ============================================================================
 
-export interface BuildQueueCommand extends GameCommand {
-  type: GameCommandType.BUILD_SHIP | GameCommandType.BUILD_IMPROVEMENT;
+export interface QueueProductionItemCommand extends GameCommand {
+  type: GameCommandType.QUEUE_PRODUCTION_ITEM;
   planetId: number;
-  action: 'add' | 'remove' | 'demolish';
-  productionItem: unknown; // Full production item data (created by client/existing UI logic)
-  index?: number; // For remove action
+  productionItem: PlanetProductionItemData;
 }
 
-// Specific command types for clarity
-export interface BuildShipCommand extends BuildQueueCommand {
-  type: GameCommandType.BUILD_SHIP;
+export interface RemoveProductionItemCommand extends GameCommand {
+  type: GameCommandType.REMOVE_PRODUCTION_ITEM;
+  planetId: number;
+  index: number;
 }
 
-export interface BuildImprovementCommand extends BuildQueueCommand {
-  type: GameCommandType.BUILD_IMPROVEMENT;
+export interface DemolishImprovementCommand extends GameCommand {
+  type: GameCommandType.DEMOLISH_IMPROVEMENT;
+  planetId: number;
+  productionItem: PlanetProductionItemData;
 }
 
 export interface SendShipsCommand extends GameCommand {
@@ -179,13 +183,6 @@ export interface UpdatePlanetOptionsCommand extends GameCommand {
 // SPECIFIC EVENT PAYLOADS
 // ============================================================================
 
-export interface ProductionItemData {
-  starShipType?: number;
-  improvementType?: number;
-  quantity: number;
-  turnsRemaining: number;
-}
-
 export interface PlayerResourcesData {
   energy: number;
   food: number;
@@ -197,7 +194,7 @@ export interface ProductionItemQueuedEvent extends ClientEvent {
   type: ClientEventType.PRODUCTION_ITEM_QUEUED;
   data: {
     planetId: number;
-    productionItem: ProductionItemData;
+    productionItem: PlanetProductionItemData;
     // Include updated resources so client can sync immediately
     playerResources: PlayerResourcesData;
   };
