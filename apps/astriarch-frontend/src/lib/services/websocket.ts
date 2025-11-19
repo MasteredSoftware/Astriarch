@@ -1027,8 +1027,13 @@ class WebSocketService {
 				}
 				break;
 
+			case MESSAGE_TYPE.ADVANCE_GAME_TIME:
+				// Handle server time advancement response (events already received via CLIENT_EVENT)
+				console.log('Game time advanced successfully');
+				break;
+
 			case MESSAGE_TYPE.SYNC_STATE:
-				// Handle server state sync response
+				// Handle server state sync response (full state already received via GAME_STATE_UPDATE)
 				console.log('Received synchronized game state from server');
 				break;
 
@@ -1610,22 +1615,22 @@ class WebSocketService {
 		}
 
 		this.stopGameSyncInterval(); // Clear any existing interval
-		console.log('Starting game sync interval (host player)');
+		console.log('Starting game time advancement interval (host player)');
 
-		// this.gameSyncInterval = window.setInterval(() => {
-		// 	if (
-		// 		this.ws &&
-		// 		this.ws.readyState === WebSocket.OPEN &&
-		// 		this.getCurrentGameId() &&
-		// 		this.isHost()
-		// 	) {
-		// 		console.log('Sending SYNC_STATE to advance game time for AI players');
-		// 		this.send(new Message(MESSAGE_TYPE.SYNC_STATE, {}));
-		// 	} else {
-		// 		// Stop interval if conditions are no longer met
-		// 		this.stopGameSyncInterval();
-		// 	}
-		// }, this.gameSyncIntervalMs);
+		this.gameSyncInterval = window.setInterval(() => {
+			if (
+				this.ws &&
+				this.ws.readyState === WebSocket.OPEN &&
+				this.getCurrentGameId() &&
+				this.isHost()
+			) {
+				console.log('Sending ADVANCE_GAME_TIME to advance game time for AI players');
+				this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {}));
+			} else {
+				// Stop interval if conditions are no longer met
+				this.stopGameSyncInterval();
+			}
+		}, this.gameSyncIntervalMs);
 	}
 
 	private stopGameSyncInterval() {

@@ -24,7 +24,8 @@ export enum MESSAGE_TYPE {
   CHANGE_PLAYER_NAME = 'CHANGE_PLAYER_NAME',
 
   // Game Actions (Legacy - being migrated to GAME_COMMAND)
-  SYNC_STATE = 'SYNC_STATE',
+  SYNC_STATE = 'SYNC_STATE', // Request full state sync (used only for desync recovery)
+  ADVANCE_GAME_TIME = 'ADVANCE_GAME_TIME', // Request time advancement (periodic, host only)
   SEND_SHIPS = 'SEND_SHIPS',
   UPDATE_PLANET_OPTIONS = 'UPDATE_PLANET_OPTIONS',
   UPDATE_PLANET_BUILD_QUEUE = 'UPDATE_PLANET_BUILD_QUEUE',
@@ -478,6 +479,7 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.CHANGE_GAME_OPTIONS]: 15,
     [MESSAGE_TYPE.CHANGE_PLAYER_NAME]: 16,
     [MESSAGE_TYPE.SYNC_STATE]: 20,
+    [MESSAGE_TYPE.ADVANCE_GAME_TIME]: 19,
     [MESSAGE_TYPE.SEND_SHIPS]: 21,
     //[MESSAGE_TYPE.UPDATE_PLANET_START]: 22,
     [MESSAGE_TYPE.UPDATE_PLANET_OPTIONS]: 23,

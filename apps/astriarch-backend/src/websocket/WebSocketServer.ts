@@ -232,7 +232,12 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
-    // If this is a sync request and the client is in an active game, advance game time
+    // If this is a time advance request (periodic, host only), advance game time and broadcast events
+    if (this.isGameTimeAdvanceRequired(message.type) && client.gameId) {
+      await this.advanceGameTimeAndBroadcastEvents(client.gameId);
+    }
+
+    // If this is a full state sync request (desync recovery), advance time and broadcast full state
     if (this.isGameSyncRequired(message.type) && client.gameId) {
       await this.advanceGameTimeForSync(client.gameId);
     }
@@ -295,6 +300,10 @@ export class WebSocketServer {
 
       case MESSAGE_TYPE.CHANGE_PLAYER_NAME:
         await this.handleChangePlayerName(clientId, message as IMessage<IChangePlayerNamePayload>);
+        break;
+
+      case MESSAGE_TYPE.ADVANCE_GAME_TIME:
+        await this.handleAdvanceGameTime(clientId, message);
         break;
 
       case MESSAGE_TYPE.SYNC_STATE:
@@ -362,9 +371,54 @@ export class WebSocketServer {
 
   // Real-time game management methods
   private isGameSyncRequired(messageType: MESSAGE_TYPE): boolean {
-    // Only sync game state when explicitly requested via SYNC_STATE
-    // This allows the client (host) to control when game time advances
+    // Only send full state sync when explicitly requested via SYNC_STATE (desync recovery)
     return messageType === MESSAGE_TYPE.SYNC_STATE;
+  }
+
+  private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
+    // Advance game time (periodic, host only) via ADVANCE_GAME_TIME
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME;
+  }
+
+  private async advanceGameTimeAndBroadcastEvents(gameId: string): Promise<void> {
+    try {
+      const game = await Game.findById(gameId);
+      if (!game || game.status !== "in_progress") {
+        return;
+      }
+
+      // Use the engine's advanceGameModelTime function which handles time properly
+      // This will advance game time and process any AI/computer player actions
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+      const result = advanceGameModelTime(gameModelData);
+
+      // Update the game state in the database
+      game.gameState = result.gameModel.modelData;
+
+      // Broadcast time-based events to affected players (NOT full state)
+      if (result.events && result.events.length > 0) {
+        logger.info(`Generated ${result.events.length} time-based events during game advancement`);
+        await this.broadcastTimeBasedEvents(gameId, result.events, result.gameModel.modelData.currentCycle);
+      }
+
+      // Check for destroyed players and game over conditions
+      if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers: result.destroyedPlayers,
+            gameEndConditions: result.gameEndConditions,
+            events: result.events,
+          },
+          game,
+        );
+      }
+
+      // Save the updated game state with automatic Mixed field handling
+      await persistGame(game);
+    } catch (error) {
+      logger.error("Error advancing game time:", error);
+    }
   }
 
   private async advanceGameTimeForSync(gameId: string): Promise<void> {
@@ -967,12 +1021,35 @@ export class WebSocketServer {
     }
   }
 
+  private async handleAdvanceGameTime(clientId: string, message: IMessage<unknown>): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      // Host periodically sends this to advance game time
+      // We advance time and broadcast events (NOT full state)
+      logger.debug(`ADVANCE_GAME_TIME received from host for game ${client.gameId}`);
+
+      const response = new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {
+        success: true,
+      });
+
+      this.sendToClient(clientId, response);
+    } catch (error) {
+      logger.error("handleAdvanceGameTime error:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Advance game time failed" }));
+    }
+  }
+
   private async handleSyncState(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
     try {
-      // NOTE: this doesn't really even have to do anything since we've already synced state
+      // Full state sync for desync recovery only
+      // This advances time AND broadcasts full state
+      logger.info(`SYNC_STATE received for desync recovery in game ${client.gameId}`);
+
       const response = new Message(MESSAGE_TYPE.SYNC_STATE, {
         success: true,
       });
