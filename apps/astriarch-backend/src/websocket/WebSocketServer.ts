@@ -1298,13 +1298,13 @@ export class WebSocketServer {
 
   private async broadcastTimeBasedEvents(
     gameId: string,
-    events: import('astriarch-engine').ClientEvent[],
+    events: import("astriarch-engine").ClientEvent[],
     currentCycle: number,
   ): Promise<void> {
     try {
       // Group events by affected player
-      const eventsByPlayer = new Map<string, import('astriarch-engine').ClientEvent[]>();
-      
+      const eventsByPlayer = new Map<string, import("astriarch-engine").ClientEvent[]>();
+
       for (const event of events) {
         for (const playerId of event.affectedPlayerIds) {
           if (!eventsByPlayer.has(playerId)) {
@@ -1314,7 +1314,9 @@ export class WebSocketServer {
         }
       }
 
-      logger.info(`Broadcasting ${events.length} time-based events to ${eventsByPlayer.size} players in game ${gameId}`);
+      logger.info(
+        `Broadcasting ${events.length} time-based events to ${eventsByPlayer.size} players in game ${gameId}`,
+      );
 
       // Get game room
       const gameRoom = this.gameRooms.get(gameId);
@@ -1349,7 +1351,7 @@ export class WebSocketServer {
         logger.info(`Sent ${playerEvents.length} time-based events to player ${playerId}`);
       }
     } catch (error) {
-      logger.error('Error broadcasting time-based events:', error);
+      logger.error("Error broadcasting time-based events:", error);
     }
   }
 

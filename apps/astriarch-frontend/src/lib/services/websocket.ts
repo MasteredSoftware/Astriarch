@@ -203,7 +203,16 @@ class WebSocketService {
 	}
 
 	private convertClientEventToNotification(event: ClientEvent): void {
-		let notificationType: 'info' | 'success' | 'warning' | 'error' | 'battle' | 'research' | 'construction' | 'fleet' | 'planet' = 'info';
+		let notificationType:
+			| 'info'
+			| 'success'
+			| 'warning'
+			| 'error'
+			| 'battle'
+			| 'research'
+			| 'construction'
+			| 'fleet'
+			| 'planet' = 'info';
 		let message = '';
 
 		switch (event.type) {
@@ -215,13 +224,21 @@ class WebSocketService {
 			}
 			case ClientEventType.IMPROVEMENT_BUILT: {
 				notificationType = 'construction';
-				const data = event.data as { planetId: string; planetName: string; improvementType: string };
+				const data = event.data as {
+					planetId: string;
+					planetName: string;
+					improvementType: string;
+				};
 				message = `Improvement built: ${data.improvementType} at ${data.planetName}`;
 				break;
 			}
 			case ClientEventType.IMPROVEMENT_DEMOLISHED: {
 				notificationType = 'construction';
-				const data = event.data as { planetId: string; planetName: string; improvementType: string };
+				const data = event.data as {
+					planetId: string;
+					planetName: string;
+					improvementType: string;
+				};
 				message = `Improvement demolished: ${data.improvementType} at ${data.planetName}`;
 				break;
 			}
@@ -239,15 +256,24 @@ class WebSocketService {
 			}
 			case ClientEventType.TRADE_EXECUTED: {
 				notificationType = 'info';
-				const data = event.data as { planetId: string; planetName: string; resourceType: string; amount: number };
+				const data = event.data as {
+					planetId: string;
+					planetName: string;
+					resourceType: string;
+					amount: number;
+				};
 				message = `Trade executed: ${data.amount.toFixed(1)} ${data.resourceType} at ${data.planetName}`;
 				break;
 			}
 			case ClientEventType.PLANET_CAPTURED: {
 				notificationType = 'planet';
-				const data = event.data as { planetId: string; planetName: string; previousOwnerName?: string };
-				message = data.previousOwnerName 
-					? `Planet captured: ${data.planetName} from ${data.previousOwnerName}` 
+				const data = event.data as {
+					planetId: string;
+					planetName: string;
+					previousOwnerName?: string;
+				};
+				message = data.previousOwnerName
+					? `Planet captured: ${data.planetName} from ${data.previousOwnerName}`
 					: `Planet captured: ${data.planetName}`;
 				break;
 			}
@@ -260,8 +286,8 @@ class WebSocketService {
 			case ClientEventType.FLEET_DESTROYED: {
 				notificationType = 'battle';
 				const data = event.data as { planetId: string; planetName: string; defenderName?: string };
-				message = data.defenderName 
-					? `Fleet destroyed attacking ${data.planetName} (${data.defenderName})` 
+				message = data.defenderName
+					? `Fleet destroyed attacking ${data.planetName} (${data.defenderName})`
 					: `Fleet destroyed attacking ${data.planetName}`;
 				break;
 			}
@@ -907,7 +933,7 @@ class WebSocketService {
 				for (const event of payload.events) {
 					console.log(`Applying event: ${event.type}`);
 					EventApplicator.applyEvent(currentModel, event, grid || undefined);
-					
+
 					// Convert event to user notification
 					this.convertClientEventToNotification(event);
 				}

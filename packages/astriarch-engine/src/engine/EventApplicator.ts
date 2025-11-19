@@ -443,10 +443,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyImprovementBuilt(
-    clientModel: ClientModelData,
-    event: ImprovementBuiltEvent,
-  ): void {
+  private static applyImprovementBuilt(clientModel: ClientModelData, event: ImprovementBuiltEvent): void {
     const { planetId, improvementType } = event.data;
 
     // Event is primarily for UI notification
@@ -457,10 +454,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyImprovementDemolished(
-    clientModel: ClientModelData,
-    event: ImprovementDemolishedEvent,
-  ): void {
+  private static applyImprovementDemolished(clientModel: ClientModelData, event: ImprovementDemolishedEvent): void {
     const { planetId, improvementType } = event.data;
 
     // Event is primarily for UI notification
@@ -471,10 +465,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyResearchCompleted(
-    clientModel: ClientModelData,
-    event: ResearchCompletedEvent,
-  ): void {
+  private static applyResearchCompleted(clientModel: ClientModelData, event: ResearchCompletedEvent): void {
     const { researchType, newLevel } = event.data;
 
     // Event is primarily for UI notification
@@ -485,10 +476,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyPopulationGrew(
-    clientModel: ClientModelData,
-    event: PopulationGrewEvent,
-  ): void {
+  private static applyPopulationGrew(clientModel: ClientModelData, event: PopulationGrewEvent): void {
     const { planetId, newPopulation } = event.data;
 
     // Event is primarily for UI notification
@@ -499,10 +487,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyTradeExecuted(
-    clientModel: ClientModelData,
-    event: TradeExecutedEvent,
-  ): void {
+  private static applyTradeExecuted(clientModel: ClientModelData, event: TradeExecutedEvent): void {
     const { tradeId, resourceType, amount, tradeType } = event.data;
 
     // Remove the trade from the client's trading center
@@ -517,10 +502,7 @@ export class EventApplicator {
     console.log(`Trade ${tradeId} executed: ${action} ${amount} of resource type ${resourceType}`);
   }
 
-  private static applyPlanetCaptured(
-    clientModel: ClientModelData,
-    event: PlanetCapturedEvent,
-  ): void {
+  private static applyPlanetCaptured(clientModel: ClientModelData, event: PlanetCapturedEvent): void {
     const { planetId, newOwnerId, previousOwnerId, resourcesLooted } = event.data;
 
     // Event is primarily for UI notification
@@ -545,10 +527,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyFleetDestroyed(
-    clientModel: ClientModelData,
-    event: FleetDestroyedEvent,
-  ): void {
+  private static applyFleetDestroyed(clientModel: ClientModelData, event: FleetDestroyedEvent): void {
     const { planetId, wasAttacking } = event.data;
 
     // Event is primarily for UI notification
@@ -563,10 +542,7 @@ export class EventApplicator {
     void clientModel;
   }
 
-  private static applyResourcesAutoSpent(
-    clientModel: ClientModelData,
-    event: ResourcesAutoSpentEvent,
-  ): void {
+  private static applyResourcesAutoSpent(clientModel: ClientModelData, event: ResourcesAutoSpentEvent): void {
     const { planetId, itemQueued } = event.data;
 
     // Event is primarily for UI notification
