@@ -1319,15 +1319,21 @@ class WebSocketService {
 
 	updatePlanetOptions(planetId: number, options: { buildLastStarship?: boolean }) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				...options
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+			const command: GameCommand = {
+				type: GameCommandType.UPDATE_PLANET_OPTIONS,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				options
+			} as GameCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to update planet options:', error);
 			this.gameStore.addNotification({
@@ -1359,33 +1365,6 @@ class WebSocketService {
 				timestamp: Date.now()
 			});
 		}
-	}
-
-	/**
-	 * Set waypoint using new command architecture
-	 * (Keeping old method for backwards compatibility during migration)
-	 */
-	setWaypointCommand(planetId: number, waypointPlanetId: number, playerId: string) {
-		this.sendCommand({
-			type: GameCommandType.SET_WAYPOINT,
-			playerId,
-			timestamp: Date.now(),
-			planetId,
-			waypointPlanetId
-		} as GameCommand);
-	}
-
-	/**
-	 * Clear waypoint using new command architecture
-	 * (Keeping old method for backwards compatibility during migration)
-	 */
-	clearWaypointCommand(planetId: number, playerId: string) {
-		this.sendCommand({
-			type: GameCommandType.CLEAR_WAYPOINT,
-			playerId,
-			timestamp: Date.now(),
-			planetId
-		} as GameCommand);
 	}
 
 	// ==========================================

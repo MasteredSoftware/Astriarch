@@ -28,6 +28,7 @@ export enum GameCommandType {
   SUBMIT_TRADE = 'SUBMIT_TRADE',
   CANCEL_TRADE = 'CANCEL_TRADE',
   UPDATE_PLANET_WORKER_ASSIGNMENTS = 'UPDATE_PLANET_WORKER_ASSIGNMENTS',
+  UPDATE_PLANET_OPTIONS = 'UPDATE_PLANET_OPTIONS',
 }
 
 // ============================================================================
@@ -55,6 +56,7 @@ export enum ClientEventType {
 
   // Planet events
   PLANET_WORKER_ASSIGNMENTS_UPDATED = 'PLANET_WORKER_ASSIGNMENTS_UPDATED',
+  PLANET_OPTIONS_UPDATED = 'PLANET_OPTIONS_UPDATED',
 }
 
 // ============================================================================
@@ -162,6 +164,14 @@ export interface UpdatePlanetWorkerAssignmentsCommand extends GameCommand {
     farmerDiff: number;
     minerDiff: number;
     builderDiff: number;
+  };
+}
+
+export interface UpdatePlanetOptionsCommand extends GameCommand {
+  type: GameCommandType.UPDATE_PLANET_OPTIONS;
+  planetId: number;
+  options: {
+    buildLastStarship?: boolean;
   };
 }
 
@@ -283,5 +293,13 @@ export interface PlanetWorkerAssignmentsUpdatedEvent extends ClientEvent {
       miners: number;
       builders: number;
     };
+  };
+}
+
+export interface PlanetOptionsUpdatedEvent extends ClientEvent {
+  type: ClientEventType.PLANET_OPTIONS_UPDATED;
+  data: {
+    planetId: number;
+    buildLastStarship: boolean;
   };
 }

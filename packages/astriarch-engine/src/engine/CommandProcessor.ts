@@ -16,6 +16,7 @@ import {
   BuildImprovementCommand,
   SendShipsCommand,
   UpdatePlanetWorkerAssignmentsCommand,
+  UpdatePlanetOptionsCommand,
   SetWaypointCommand,
   ClearWaypointCommand,
   AdjustResearchPercentCommand,
@@ -24,6 +25,7 @@ import {
   SubmitTradeCommand,
   CancelTradeCommand,
   PlanetWorkerAssignmentsUpdatedEvent,
+  PlanetOptionsUpdatedEvent,
   WaypointSetEvent,
   WaypointClearedEvent,
   ResearchPercentAdjustedEvent,
@@ -83,6 +85,9 @@ export class CommandProcessor {
 
       case GameCommandType.CANCEL_TRADE:
         return this.processCancelTrade(gameModel, command as CancelTradeCommand);
+
+      case GameCommandType.UPDATE_PLANET_OPTIONS:
+        return this.processUpdatePlanetOptions(gameModel, command as UpdatePlanetOptionsCommand);
 
       default:
         const unknownCommand = command as { type: string };
@@ -634,5 +639,57 @@ export class CommandProcessor {
 
     // Defer to backend for now - trading logic needs refactoring
     return { success: true, events: [] };
+  }
+
+  private static processUpdatePlanetOptions(
+    gameModel: GameModelData,
+    command: UpdatePlanetOptionsCommand,
+  ): CommandResult {
+    const { modelData } = gameModel;
+    const planet = modelData.planets.find((p) => p.id === command.planetId);
+
+    if (!planet) {
+      return {
+        success: false,
+        error: 'Planet not found',
+        events: [],
+      };
+    }
+
+    const player = modelData.players.find((p) => p.id === command.playerId);
+    if (!player) {
+      return {
+        success: false,
+        error: 'Player not found',
+        events: [],
+      };
+    }
+
+    if (!player.ownedPlanetIds.includes(command.planetId)) {
+      return {
+        success: false,
+        error: 'Player does not own this planet',
+        events: [],
+      };
+    }
+
+    // Update planet options
+    if (command.options.buildLastStarship !== undefined) {
+      planet.buildLastStarship = command.options.buildLastStarship;
+    }
+
+    const event: PlanetOptionsUpdatedEvent = {
+      type: ClientEventType.PLANET_OPTIONS_UPDATED,
+      affectedPlayerIds: [command.playerId],
+      data: {
+        planetId: command.planetId,
+        buildLastStarship: planet.buildLastStarship,
+      },
+    };
+
+    return {
+      success: true,
+      events: [event],
+    };
   }
 }

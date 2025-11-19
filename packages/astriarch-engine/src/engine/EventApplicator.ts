@@ -18,6 +18,7 @@ import {
   ProductionItemRemovedEvent,
   FleetLaunchedEvent,
   PlanetWorkerAssignmentsUpdatedEvent,
+  PlanetOptionsUpdatedEvent,
   WaypointSetEvent,
   WaypointClearedEvent,
   ResearchPercentAdjustedEvent,
@@ -49,6 +50,10 @@ export class EventApplicator {
 
       case ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED:
         this.applyPlanetWorkerAssignmentsUpdated(clientModel, event as PlanetWorkerAssignmentsUpdatedEvent);
+        break;
+
+      case ClientEventType.PLANET_OPTIONS_UPDATED:
+        this.applyPlanetOptionsUpdated(clientModel, event as PlanetOptionsUpdatedEvent);
         break;
 
       case ClientEventType.WAYPOINT_SET:
@@ -379,5 +384,18 @@ export class EventApplicator {
     }
 
     // Resources refunded server-side, will sync on next update
+  }
+
+  private static applyPlanetOptionsUpdated(clientModel: ClientModelData, event: PlanetOptionsUpdatedEvent): void {
+    const { planetId, buildLastStarship } = event.data;
+
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
+
+    planet.buildLastStarship = buildLastStarship;
+    console.log(`Planet ${planetId} options updated: buildLastStarship=${buildLastStarship}`);
   }
 }
