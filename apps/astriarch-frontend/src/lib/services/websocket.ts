@@ -18,6 +18,7 @@ import {
 	isChatMessage,
 	type GameCommand,
 	type ClientEvent,
+	ClientEventType,
 	GameCommandType,
 	EventApplicator,
 	calculateRollingEventChecksum,
@@ -199,6 +200,87 @@ class WebSocketService {
 				timestamp: Date.now()
 			});
 		}
+	}
+
+	private convertClientEventToNotification(event: ClientEvent): void {
+		let notificationType: 'info' | 'success' | 'warning' | 'error' | 'battle' | 'research' | 'construction' | 'fleet' | 'planet' = 'info';
+		let message = '';
+
+		switch (event.type) {
+			case ClientEventType.SHIP_BUILT: {
+				notificationType = 'construction';
+				const data = event.data as { planetId: string; planetName: string; shipType: string };
+				message = `Ship built: ${data.shipType} at ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.IMPROVEMENT_BUILT: {
+				notificationType = 'construction';
+				const data = event.data as { planetId: string; planetName: string; improvementType: string };
+				message = `Improvement built: ${data.improvementType} at ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.IMPROVEMENT_DEMOLISHED: {
+				notificationType = 'construction';
+				const data = event.data as { planetId: string; planetName: string; improvementType: string };
+				message = `Improvement demolished: ${data.improvementType} at ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.RESEARCH_COMPLETED: {
+				notificationType = 'research';
+				const data = event.data as { researchType: string; newLevel: number };
+				message = `Research complete: ${data.researchType} (Level ${data.newLevel})`;
+				break;
+			}
+			case ClientEventType.POPULATION_GREW: {
+				notificationType = 'planet';
+				const data = event.data as { planetId: string; planetName: string; newPopulation: number };
+				message = `Population grew at ${data.planetName} (${data.newPopulation.toFixed(1)})`;
+				break;
+			}
+			case ClientEventType.TRADE_EXECUTED: {
+				notificationType = 'info';
+				const data = event.data as { planetId: string; planetName: string; resourceType: string; amount: number };
+				message = `Trade executed: ${data.amount.toFixed(1)} ${data.resourceType} at ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.PLANET_CAPTURED: {
+				notificationType = 'planet';
+				const data = event.data as { planetId: string; planetName: string; previousOwnerName?: string };
+				message = data.previousOwnerName 
+					? `Planet captured: ${data.planetName} from ${data.previousOwnerName}` 
+					: `Planet captured: ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.PLANET_LOST: {
+				notificationType = 'battle';
+				const data = event.data as { planetId: string; planetName: string; captorName: string };
+				message = `Planet lost: ${data.planetName} to ${data.captorName}`;
+				break;
+			}
+			case ClientEventType.FLEET_DESTROYED: {
+				notificationType = 'battle';
+				const data = event.data as { planetId: string; planetName: string; defenderName?: string };
+				message = data.defenderName 
+					? `Fleet destroyed attacking ${data.planetName} (${data.defenderName})` 
+					: `Fleet destroyed attacking ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.RESOURCES_AUTO_SPENT: {
+				notificationType = 'info';
+				const data = event.data as { amount: number; resourceType: string; reason: string };
+				message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
+				break;
+			}
+			default:
+				console.warn('Unknown ClientEventType:', event.type);
+				return;
+		}
+
+		this.gameStore.addNotification({
+			type: notificationType,
+			message,
+			timestamp: Date.now()
+		});
 	}
 
 	private handleEventNotifications(events: EventNotification[]) {
@@ -806,7 +888,7 @@ class WebSocketService {
 				// Handle new event-driven architecture messages
 				const payload = message.payload as {
 					events: ClientEvent[];
-					stateChecksum: string;
+					stateChecksum?: string;
 					currentCycle: number;
 				};
 				console.log(`Received ${payload.events.length} client events from server`);
@@ -821,44 +903,55 @@ class WebSocketService {
 				// Get the grid for event application (needed for fleet distance calculations)
 				const grid = get(gameGrid);
 
-				// Apply each event to the client model
+				// Apply each event to the client model and generate UI notifications
 				for (const event of payload.events) {
 					console.log(`Applying event: ${event.type}`);
 					EventApplicator.applyEvent(currentModel, event, grid || undefined);
+					
+					// Convert event to user notification
+					this.convertClientEventToNotification(event);
 				}
 
-				// Calculate rolling checksum using our previous checksum
-				const previousChecksum = currentModel.lastEventChecksum || '';
-				calculateRollingEventChecksum(payload.events, previousChecksum)
-					.then((ourChecksum) => {
-						if (ourChecksum !== payload.stateChecksum) {
-							console.error('Event chain broken! Desync detected.');
-							console.error(`Expected: ${payload.stateChecksum}`);
-							console.error(`Got: ${ourChecksum}`);
-							console.error(`Previous checksum: ${previousChecksum}`);
+				// Validate checksum if provided (for player commands)
+				// Time-based events from server may not include checksum
+				if (payload.stateChecksum) {
+					const previousChecksum = currentModel.lastEventChecksum || '';
+					calculateRollingEventChecksum(payload.events, previousChecksum)
+						.then((ourChecksum) => {
+							if (ourChecksum !== payload.stateChecksum) {
+								console.error('Event chain broken! Desync detected.');
+								console.error(`Expected: ${payload.stateChecksum}`);
+								console.error(`Got: ${ourChecksum}`);
+								console.error(`Previous checksum: ${previousChecksum}`);
 
-							// This is serious - the event chain is broken
-							this.gameStore.addNotification({
-								type: 'error',
-								message: 'Game sync error - requesting full resync',
-								timestamp: Date.now()
-							});
+								// This is serious - the event chain is broken
+								this.gameStore.addNotification({
+									type: 'error',
+									message: 'Game sync error - requesting full resync',
+									timestamp: Date.now()
+								});
 
-							// Request full state sync to recover
-							this.requestStateSync();
-						} else {
-							console.debug('Event chain valid ✓', ourChecksum);
+								// Request full state sync to recover
+								this.requestStateSync();
+							} else {
+								console.debug('Event chain valid ✓', ourChecksum);
 
-							// Update the model with the new checksum
-							currentModel.lastEventChecksum = ourChecksum;
-						}
+								// Update the model with the new checksum
+								currentModel.lastEventChecksum = ourChecksum;
+							}
 
-						// Update the store with the mutated model (including new checksum)
-						clientGameModel.set(currentModel);
-					})
-					.catch((error) => {
-						console.error('Error calculating rolling checksum:', error);
-					});
+							// Update the store with the mutated model (including new checksum)
+							clientGameModel.set(currentModel);
+						})
+						.catch((error) => {
+							console.error('Error calculating rolling checksum:', error);
+							// Still update the model even if checksum calculation failed
+							clientGameModel.set(currentModel);
+						});
+				} else {
+					// No checksum provided (time-based events) - just update the model
+					clientGameModel.set(currentModel);
+				}
 
 				break;
 			}

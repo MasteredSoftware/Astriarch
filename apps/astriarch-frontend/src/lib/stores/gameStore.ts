@@ -10,9 +10,6 @@ import {
 	type ClientModelData,
 	type PlanetProductionItemData,
 	ResearchType,
-	subscribeToEvents,
-	EventNotificationType,
-	type EventNotification,
 	GALAXY_WIDTH,
 	GALAXY_HEIGHT
 } from 'astriarch-engine';
@@ -339,40 +336,9 @@ clientGameModel.subscribe((cgm) => {
 	}
 });
 
-// Events that should trigger a server sync when they occur
-const SYNC_TRIGGERING_EVENTS = new Set([
-	EventNotificationType.ShipBuilt,
-	EventNotificationType.ImprovementBuilt,
-	EventNotificationType.ResearchComplete,
-	EventNotificationType.DefendedAgainstAttackingFleet,
-	EventNotificationType.AttackingFleetLost,
-	EventNotificationType.PlanetCaptured,
-	EventNotificationType.PlanetLost,
-	EventNotificationType.PopulationGrowth,
-	EventNotificationType.TradesExecuted
-]);
-
-// Subscribe to engine events when we have a client game model
-let eventSubscriptionActive = false;
-clientGameModel.subscribe((cgm) => {
-	if (cgm && cgm.mainPlayer && !eventSubscriptionActive) {
-		// Subscribe to events for the main player
-		subscribeToEvents(cgm.mainPlayer.id, (playerId: string, events: EventNotification[]) => {
-			// Check if any events require server sync
-			const needsSync = events.some((event) => SYNC_TRIGGERING_EVENTS.has(event.type));
-
-			if (needsSync) {
-				console.log('Events require server sync, requesting state synchronization');
-				webSocketService.requestStateSync();
-			}
-		});
-		eventSubscriptionActive = true;
-		console.log('Subscribed to client-side engine events for player:', cgm.mainPlayer.id);
-	} else if (!cgm && eventSubscriptionActive) {
-		// Reset subscription state when no game model
-		eventSubscriptionActive = false;
-	}
-});
+// NOTE: Old EventNotification sync logic removed - now using new ClientEvent architecture
+// Time-based events are sent from server via CLIENT_EVENT messages
+// No need to subscribe to engine events or trigger full state syncs
 
 // Start the game loop when both client game model and grid are loaded
 clientGameModel.subscribe((cgm) => {

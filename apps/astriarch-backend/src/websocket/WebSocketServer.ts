@@ -382,10 +382,10 @@ export class WebSocketServer {
       // Update the game state in the database
       game.gameState = result.gameModel.modelData;
 
-      // TODO: Broadcast time-based events to affected players
+      // Broadcast time-based events to affected players
       if (result.events && result.events.length > 0) {
         logger.info(`Generated ${result.events.length} time-based events during game advancement`);
-        // Will implement event broadcasting in next step
+        await this.broadcastTimeBasedEvents(gameId, result.events, result.gameModel.modelData.currentCycle);
       }
 
       // Check for destroyed players and game over conditions
@@ -1293,6 +1293,63 @@ export class WebSocketServer {
       }
     } catch (error) {
       logger.error("sendUpdatedGameListToLobbyPlayers error:", error);
+    }
+  }
+
+  private async broadcastTimeBasedEvents(
+    gameId: string,
+    events: import('astriarch-engine').ClientEvent[],
+    currentCycle: number,
+  ): Promise<void> {
+    try {
+      // Group events by affected player
+      const eventsByPlayer = new Map<string, import('astriarch-engine').ClientEvent[]>();
+      
+      for (const event of events) {
+        for (const playerId of event.affectedPlayerIds) {
+          if (!eventsByPlayer.has(playerId)) {
+            eventsByPlayer.set(playerId, []);
+          }
+          eventsByPlayer.get(playerId)!.push(event);
+        }
+      }
+
+      logger.info(`Broadcasting ${events.length} time-based events to ${eventsByPlayer.size} players in game ${gameId}`);
+
+      // Get game room
+      const gameRoom = this.gameRooms.get(gameId);
+      if (!gameRoom) {
+        logger.warn(`No game room found for game ${gameId}`);
+        return;
+      }
+
+      // Send events to each affected player
+      for (const [playerId, playerEvents] of eventsByPlayer.entries()) {
+        // Find the client for this player
+        let targetClient: IConnectedClient | null = null;
+        for (const client of this.clients.values()) {
+          if (client.playerId === playerId && client.gameId === gameId) {
+            targetClient = client;
+            break;
+          }
+        }
+
+        if (!targetClient) {
+          logger.warn(`No connected client found for player ${playerId} to send ${playerEvents.length} events`);
+          continue;
+        }
+
+        // Send CLIENT_EVENT message with the events for this player
+        const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
+          events: playerEvents,
+          currentCycle,
+        });
+
+        this.broadcastToSession(targetClient.sessionId, eventMessage);
+        logger.info(`Sent ${playerEvents.length} time-based events to player ${playerId}`);
+      }
+    } catch (error) {
+      logger.error('Error broadcasting time-based events:', error);
     }
   }
 

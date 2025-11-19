@@ -26,6 +26,16 @@ import {
   ResearchCancelledEvent,
   TradeSubmittedEvent,
   TradeCancelledEvent,
+  ShipBuiltEvent,
+  ImprovementBuiltEvent,
+  ImprovementDemolishedEvent,
+  ResearchCompletedEvent,
+  PopulationGrewEvent,
+  TradeExecutedEvent,
+  PlanetCapturedEvent,
+  PlanetLostEvent,
+  FleetDestroyedEvent,
+  ResourcesAutoSpentEvent,
 } from './GameCommands';
 import { Grid } from './grid';
 
@@ -85,43 +95,43 @@ export class EventApplicator {
         break;
 
       case ClientEventType.SHIP_BUILT:
-        this.applyShipBuilt(clientModel, event as import('./GameCommands').ShipBuiltEvent);
+        this.applyShipBuilt(clientModel, event as ShipBuiltEvent);
         break;
 
       case ClientEventType.IMPROVEMENT_BUILT:
-        this.applyImprovementBuilt(clientModel, event as import('./GameCommands').ImprovementBuiltEvent);
+        this.applyImprovementBuilt(clientModel, event as ImprovementBuiltEvent);
         break;
 
       case ClientEventType.IMPROVEMENT_DEMOLISHED:
-        this.applyImprovementDemolished(clientModel, event as import('./GameCommands').ImprovementDemolishedEvent);
+        this.applyImprovementDemolished(clientModel, event as ImprovementDemolishedEvent);
         break;
 
       case ClientEventType.RESEARCH_COMPLETED:
-        this.applyResearchCompleted(clientModel, event as import('./GameCommands').ResearchCompletedEvent);
+        this.applyResearchCompleted(clientModel, event as ResearchCompletedEvent);
         break;
 
       case ClientEventType.POPULATION_GREW:
-        this.applyPopulationGrew(clientModel, event as import('./GameCommands').PopulationGrewEvent);
+        this.applyPopulationGrew(clientModel, event as PopulationGrewEvent);
         break;
 
       case ClientEventType.TRADE_EXECUTED:
-        this.applyTradeExecuted(clientModel, event as import('./GameCommands').TradeExecutedEvent);
+        this.applyTradeExecuted(clientModel, event as TradeExecutedEvent);
         break;
 
       case ClientEventType.PLANET_CAPTURED:
-        this.applyPlanetCaptured(clientModel, event as import('./GameCommands').PlanetCapturedEvent);
+        this.applyPlanetCaptured(clientModel, event as PlanetCapturedEvent);
         break;
 
       case ClientEventType.PLANET_LOST:
-        this.applyPlanetLost(clientModel, event as import('./GameCommands').PlanetLostEvent);
+        this.applyPlanetLost(clientModel, event as PlanetLostEvent);
         break;
 
       case ClientEventType.FLEET_DESTROYED:
-        this.applyFleetDestroyed(clientModel, event as import('./GameCommands').FleetDestroyedEvent);
+        this.applyFleetDestroyed(clientModel, event as FleetDestroyedEvent);
         break;
 
       case ClientEventType.RESOURCES_AUTO_SPENT:
-        this.applyResourcesAutoSpent(clientModel, event as import('./GameCommands').ResourcesAutoSpentEvent);
+        this.applyResourcesAutoSpent(clientModel, event as ResourcesAutoSpentEvent);
         break;
 
       default:
@@ -422,7 +432,7 @@ export class EventApplicator {
   // These events are primarily for UI notifications
   // Server sends full state updates, so these don't need to mutate much
 
-  private static applyShipBuilt(clientModel: ClientModelData, event: import('./GameCommands').ShipBuiltEvent): void {
+  private static applyShipBuilt(clientModel: ClientModelData, event: ShipBuiltEvent): void {
     const { planetId, shipType, sentToWaypoint } = event.data;
 
     // Event is primarily for UI notification
@@ -435,7 +445,7 @@ export class EventApplicator {
 
   private static applyImprovementBuilt(
     clientModel: ClientModelData,
-    event: import('./GameCommands').ImprovementBuiltEvent,
+    event: ImprovementBuiltEvent,
   ): void {
     const { planetId, improvementType } = event.data;
 
@@ -449,7 +459,7 @@ export class EventApplicator {
 
   private static applyImprovementDemolished(
     clientModel: ClientModelData,
-    event: import('./GameCommands').ImprovementDemolishedEvent,
+    event: ImprovementDemolishedEvent,
   ): void {
     const { planetId, improvementType } = event.data;
 
@@ -463,7 +473,7 @@ export class EventApplicator {
 
   private static applyResearchCompleted(
     clientModel: ClientModelData,
-    event: import('./GameCommands').ResearchCompletedEvent,
+    event: ResearchCompletedEvent,
   ): void {
     const { researchType, newLevel } = event.data;
 
@@ -477,7 +487,7 @@ export class EventApplicator {
 
   private static applyPopulationGrew(
     clientModel: ClientModelData,
-    event: import('./GameCommands').PopulationGrewEvent,
+    event: PopulationGrewEvent,
   ): void {
     const { planetId, newPopulation } = event.data;
 
@@ -491,7 +501,7 @@ export class EventApplicator {
 
   private static applyTradeExecuted(
     clientModel: ClientModelData,
-    event: import('./GameCommands').TradeExecutedEvent,
+    event: TradeExecutedEvent,
   ): void {
     const { tradeId, resourceType, amount, tradeType } = event.data;
 
@@ -509,7 +519,7 @@ export class EventApplicator {
 
   private static applyPlanetCaptured(
     clientModel: ClientModelData,
-    event: import('./GameCommands').PlanetCapturedEvent,
+    event: PlanetCapturedEvent,
   ): void {
     const { planetId, newOwnerId, previousOwnerId, resourcesLooted } = event.data;
 
@@ -524,7 +534,7 @@ export class EventApplicator {
     }
   }
 
-  private static applyPlanetLost(clientModel: ClientModelData, event: import('./GameCommands').PlanetLostEvent): void {
+  private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
     const { planetId, newOwnerId } = event.data;
 
     // Event is primarily for UI notification
@@ -537,7 +547,7 @@ export class EventApplicator {
 
   private static applyFleetDestroyed(
     clientModel: ClientModelData,
-    event: import('./GameCommands').FleetDestroyedEvent,
+    event: FleetDestroyedEvent,
   ): void {
     const { planetId, wasAttacking } = event.data;
 
@@ -555,7 +565,7 @@ export class EventApplicator {
 
   private static applyResourcesAutoSpent(
     clientModel: ClientModelData,
-    event: import('./GameCommands').ResourcesAutoSpentEvent,
+    event: ResourcesAutoSpentEvent,
   ): void {
     const { planetId, itemQueued } = event.data;
 
