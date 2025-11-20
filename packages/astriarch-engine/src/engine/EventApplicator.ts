@@ -43,7 +43,7 @@ import { Grid } from './grid';
  * This mutates the client model in place
  */
 export class EventApplicator {
-  public static applyEvent(clientModel: ClientModelData, event: ClientEvent, grid?: Grid): void {
+  public static applyEvent(clientModel: ClientModelData, event: ClientEvent, grid: Grid): void {
     switch (event.type) {
       case ClientEventType.PRODUCTION_ITEM_QUEUED:
         this.applyProductionItemQueued(clientModel, event as ProductionItemQueuedEvent, grid);
@@ -173,7 +173,7 @@ export class EventApplicator {
   private static applyFleetLaunched(
     clientModel: ClientModelData,
     event: FleetLaunchedEvent,
-    grid?: import('./grid').Grid,
+    grid: Grid,
   ): void {
     const { fromPlanetId, toPlanetId, shipIds } = event.data;
 

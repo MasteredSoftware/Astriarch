@@ -932,7 +932,7 @@ class WebSocketService {
 				// Apply each event to the client model and generate UI notifications
 				for (const event of payload.events) {
 					console.log(`Applying event: ${event.type}`);
-					EventApplicator.applyEvent(currentModel, event, grid || undefined);
+					EventApplicator.applyEvent(currentModel, event, grid!);
 
 					// Convert event to user notification
 					this.convertClientEventToNotification(event);
