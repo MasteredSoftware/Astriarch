@@ -256,14 +256,8 @@ export class CommandProcessor {
       return { success: false, error: 'No ships selected to send', events: [] };
     }
 
-    // Split the fleet by specific ship IDs using the Fleet engine method
-    const newFleet = Fleet.splitFleetByShipIds(sourcePlanet.planetaryFleet, command.shipIds);
-
-    // Set the destination for the new fleet
-    Fleet.setDestination(newFleet, grid, sourcePlanet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
-
-    // Add the fleet to the source planet's outgoing fleets
-    sourcePlanet.outgoingFleets.push(newFleet);
+    // Launch the fleet using the engine method
+    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds);
 
     // Generate event with the ship IDs that were moved
     const event: FleetLaunchedEvent = {

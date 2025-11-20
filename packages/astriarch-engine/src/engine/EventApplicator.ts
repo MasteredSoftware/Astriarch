@@ -138,7 +138,11 @@ export class EventApplicator {
     }
   }
 
-  private static applyProductionItemQueued(clientModel: ClientModelData, event: ProductionItemQueuedEvent, grid: Grid): void {
+  private static applyProductionItemQueued(
+    clientModel: ClientModelData,
+    event: ProductionItemQueuedEvent,
+    grid: Grid,
+  ): void {
     const { planetId, productionItem, playerResources } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
@@ -152,7 +156,7 @@ export class EventApplicator {
       clientModel.mainPlayer,
       clientModel.mainPlayerOwnedPlanets,
       planet,
-      productionItem
+      productionItem,
     );
     console.log(`Production item queued on planet ${planetId}, player resources now:`, playerResources);
   }
@@ -170,11 +174,7 @@ export class EventApplicator {
     Planet.removeBuildQueueItemForRefund(planet, itemIndex);
   }
 
-  private static applyFleetLaunched(
-    clientModel: ClientModelData,
-    event: FleetLaunchedEvent,
-    grid: Grid,
-  ): void {
+  private static applyFleetLaunched(clientModel: ClientModelData, event: FleetLaunchedEvent, grid: Grid): void {
     const { fromPlanetId, toPlanetId, shipIds } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[fromPlanetId];
@@ -189,22 +189,8 @@ export class EventApplicator {
       return;
     }
 
-    // Split the fleet by specific ship IDs using the Fleet engine method
-    const outgoingFleet = Fleet.splitFleetByShipIds(planet.planetaryFleet, shipIds);
-
-    // Set destination points
-    outgoingFleet.travelingFromHexMidPoint = planet.boundingHexMidPoint;
-    outgoingFleet.destinationHexMidPoint = destPlanet.boundingHexMidPoint;
-    outgoingFleet.parsecsToDestination = null;
-    outgoingFleet.totalTravelDistance = null;
-
-    // If grid is available, use Fleet.setDestination to calculate distances properly
-    if (grid && planet.boundingHexMidPoint && destPlanet.boundingHexMidPoint) {
-      Fleet.setDestination(outgoingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
-    }
-
-    // Add the fleet to outgoing fleets
-    planet.outgoingFleets.push(outgoingFleet);
+    // Use engine method to replicate server logic exactly
+    Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds);
 
     const totalShips =
       shipIds.scouts.length + shipIds.destroyers.length + shipIds.cruisers.length + shipIds.battleships.length;

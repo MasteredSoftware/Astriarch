@@ -268,6 +268,33 @@ export class Fleet {
   }
 
   /**
+   * Launches a fleet from a source planet to a destination planet
+   * Splits ships from the planetary fleet, sets destination, and adds to outgoing fleets
+   */
+  public static launchFleetToPlanet(
+    sourcePlanet: import('../model/planet').PlanetData,
+    destPlanet: import('../model/clientModel').ClientPlanet,
+    grid: Grid,
+    shipIds: {
+      scouts: number[];
+      destroyers: number[];
+      cruisers: number[];
+      battleships: number[];
+    },
+  ): FleetData {
+    // Split the fleet by specific ship IDs
+    const newFleet = this.splitFleetByShipIds(sourcePlanet.planetaryFleet, shipIds);
+
+    // Set the destination for the new fleet
+    this.setDestination(newFleet, grid, sourcePlanet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
+
+    // Add the fleet to the source planet's outgoing fleets
+    sourcePlanet.outgoingFleets.push(newFleet);
+
+    return newFleet;
+  }
+
+  /**
    * Splits this fleet off in a fleet that contains one weak ship
    */
   public static splitOffSmallestPossibleFleet(fleet: FleetData): FleetData | undefined {
