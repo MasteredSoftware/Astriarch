@@ -633,6 +633,8 @@ export class EventApplicator {
       delete clientModel.mainPlayerOwnedPlanets[planetId];
       console.log(`Lost planet ${planetId} to player ${newOwnerId}`);
     }
+    // also remove from mainPlayer's ownedPlanetIds
+    clientModel.mainPlayer.ownedPlanetIds = clientModel.mainPlayer.ownedPlanetIds.filter((id) => id !== planetId);
   }
 
   private static applyFleetDestroyed(clientModel: ClientModelData, event: FleetDestroyedEvent): void {
