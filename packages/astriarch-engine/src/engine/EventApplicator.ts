@@ -8,7 +8,6 @@
  */
 
 import { ClientModelData } from '../model/clientModel';
-import { PlanetProductionItemData } from '../model/planet';
 import { Planet } from './planet';
 import { Fleet } from './fleet';
 import {
@@ -47,7 +46,7 @@ export class EventApplicator {
   public static applyEvent(clientModel: ClientModelData, event: ClientEvent, grid?: Grid): void {
     switch (event.type) {
       case ClientEventType.PRODUCTION_ITEM_QUEUED:
-        this.applyProductionItemQueued(clientModel, event as ProductionItemQueuedEvent);
+        this.applyProductionItemQueued(clientModel, event as ProductionItemQueuedEvent, grid);
         break;
 
       case ClientEventType.PRODUCTION_ITEM_REMOVED:
@@ -139,7 +138,7 @@ export class EventApplicator {
     }
   }
 
-  private static applyProductionItemQueued(clientModel: ClientModelData, event: ProductionItemQueuedEvent): void {
+  private static applyProductionItemQueued(clientModel: ClientModelData, event: ProductionItemQueuedEvent, grid: Grid): void {
     const { planetId, productionItem, playerResources } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
@@ -148,11 +147,13 @@ export class EventApplicator {
       return;
     }
 
-    // Add to build queue
-    planet.buildQueue.push(productionItem);
-
-    // Update aggregate player resource display
-    // Resources are actually stored on planets, but events include totals for UI
+    Planet.enqueueProductionItemAndSpendResources(
+      grid,
+      clientModel.mainPlayer,
+      clientModel.mainPlayerOwnedPlanets,
+      planet,
+      productionItem
+    );
     console.log(`Production item queued on planet ${planetId}, player resources now:`, playerResources);
   }
 
