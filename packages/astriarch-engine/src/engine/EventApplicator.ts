@@ -209,119 +209,17 @@ export class EventApplicator {
       return;
     }
 
-    // Apply worker assignments by updating citizen workerType fields
-    // The event contains the final counts that the server calculated
-    const targetFarmers = workers.farmers;
-    const targetMiners = workers.miners;
-    const targetBuilders = workers.builders;
+    // Calculate diffs from current state to target state
+    const current = Planet.countPopulationWorkerTypes(planet);
+    const farmerDiff = workers.farmers - current.farmers;
+    const minerDiff = workers.miners - current.miners;
+    const builderDiff = workers.builders - current.builders;
 
-    // Count current workers
-    let currentFarmers = 0;
-    let currentMiners = 0;
-    let currentBuilders = 0;
-
-    for (const citizen of planet.population) {
-      if (citizen.workerType === 1)
-        currentFarmers++; // CitizenWorkerType.Farmer
-      else if (citizen.workerType === 2)
-        currentMiners++; // CitizenWorkerType.Miner
-      else if (citizen.workerType === 3) currentBuilders++; // CitizenWorkerType.Builder
-    }
-
-    // Calculate diffs
-    const farmerDiff = targetFarmers - currentFarmers;
-    const minerDiff = targetMiners - currentMiners;
-    const builderDiff = targetBuilders - currentBuilders;
-
-    // Apply the diffs by reassigning workers
-    // Priority: Farmers first, then miners, then builders
-    let remainingFarmerDiff = farmerDiff;
-    let remainingMinerDiff = minerDiff;
-    let remainingBuilderDiff = builderDiff;
-
-    // Helper to find a citizen of a specific type
-    const findCitizen = (workerType: number): number => {
-      return planet.population.findIndex((c) => c.workerType === workerType && c.protestLevel === 0);
-    };
-
-    // Apply farmer changes
-    while (remainingFarmerDiff !== 0) {
-      if (remainingFarmerDiff > 0) {
-        // Need more farmers - convert miners or builders
-        if (remainingMinerDiff < 0) {
-          const idx = findCitizen(2); // Miner
-          if (idx >= 0) {
-            planet.population[idx].workerType = 1; // Farmer
-            remainingFarmerDiff--;
-            remainingMinerDiff++;
-            continue;
-          }
-        }
-        if (remainingBuilderDiff < 0) {
-          const idx = findCitizen(3); // Builder
-          if (idx >= 0) {
-            planet.population[idx].workerType = 1; // Farmer
-            remainingFarmerDiff--;
-            remainingBuilderDiff++;
-            continue;
-          }
-        }
-        break; // Can't find anyone to convert
-      } else {
-        // Need fewer farmers - convert to miners or builders
-        if (remainingMinerDiff > 0) {
-          const idx = findCitizen(1); // Farmer
-          if (idx >= 0) {
-            planet.population[idx].workerType = 2; // Miner
-            remainingFarmerDiff++;
-            remainingMinerDiff--;
-            continue;
-          }
-        }
-        if (remainingBuilderDiff > 0) {
-          const idx = findCitizen(1); // Farmer
-          if (idx >= 0) {
-            planet.population[idx].workerType = 3; // Builder
-            remainingFarmerDiff++;
-            remainingBuilderDiff--;
-            continue;
-          }
-        }
-        break; // Can't find anyone to convert
-      }
-    }
-
-    // Apply miner changes
-    while (remainingMinerDiff !== 0) {
-      if (remainingMinerDiff > 0) {
-        // Need more miners - convert builders
-        if (remainingBuilderDiff < 0) {
-          const idx = findCitizen(3); // Builder
-          if (idx >= 0) {
-            planet.population[idx].workerType = 2; // Miner
-            remainingMinerDiff--;
-            remainingBuilderDiff++;
-            continue;
-          }
-        }
-        break;
-      } else {
-        // Need fewer miners - convert to builders
-        if (remainingBuilderDiff > 0) {
-          const idx = findCitizen(2); // Miner
-          if (idx >= 0) {
-            planet.population[idx].workerType = 3; // Builder
-            remainingMinerDiff++;
-            remainingBuilderDiff--;
-            continue;
-          }
-        }
-        break;
-      }
-    }
+    // Use engine method to apply worker reassignments
+    Planet.updatePopulationWorkerTypes(planet, clientModel.mainPlayer, farmerDiff, minerDiff, builderDiff);
 
     console.log(
-      `Worker assignments updated for planet ${planetId}: ${targetFarmers}F/${targetMiners}M/${targetBuilders}B`,
+      `Worker assignments updated for planet ${planetId}: ${workers.farmers}F/${workers.miners}M/${workers.builders}B`,
     );
   }
 
