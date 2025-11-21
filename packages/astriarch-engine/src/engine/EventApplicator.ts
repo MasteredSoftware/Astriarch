@@ -8,6 +8,7 @@
  */
 
 import { ClientModelData } from '../model/clientModel';
+import { TradeData, TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 import { Planet } from './planet';
 import { Fleet } from './fleet';
 import {
@@ -264,28 +265,26 @@ export class EventApplicator {
   private static applyTradeSubmitted(clientModel: ClientModelData, event: TradeSubmittedEvent): void {
     const { tradeId, resourceType, amount, action } = event.data;
 
-    // Map resource type string to enum value
-    const resourceTypeMap: Record<string, number> = {
-      food: 1, // TradingCenterResourceType.FOOD
-      ore: 2, // TradingCenterResourceType.ORE
-      iridium: 3, // TradingCenterResourceType.IRIDIUM
+    // Map resource type string to enum
+    const resourceTypeMap: Record<string, TradingCenterResourceType> = {
+      food: TradingCenterResourceType.FOOD,
+      ore: TradingCenterResourceType.ORE,
+      iridium: TradingCenterResourceType.IRIDIUM,
     };
 
-    // Add the trade to the client's trading center
-    const trade: import('../model/tradingCenter').TradeData = {
+    // Create trade with server-provided ID
+    const trade: TradeData = {
       id: tradeId,
       playerId: clientModel.mainPlayer.id,
-      planetId: -1, // Will be set server-side with actual planet
-      tradeType: action === 'buy' ? 1 : 2, // TradeType.BUY or TradeType.SELL
-      resourceType: resourceTypeMap[resourceType] || 1,
-      amount: amount,
+      planetId: -1, // Server will set the actual planet
+      tradeType: action === 'buy' ? TradeType.BUY : TradeType.SELL,
+      resourceType: resourceTypeMap[resourceType] || TradingCenterResourceType.FOOD,
+      amount,
       submittedAt: Date.now(), // Approximate, server has authoritative timestamp
-      executeAfter: Date.now() + 1000, // Approximate delay
+      executeAfter: Date.now() + 5000, // Approximate 5s delay
     };
 
     clientModel.clientTradingCenter.mainPlayerTrades.push(trade);
-
-    // Resources and prices updated server-side, will sync on next update
   }
 
   private static applyTradeCancelled(clientModel: ClientModelData, event: TradeCancelledEvent): void {

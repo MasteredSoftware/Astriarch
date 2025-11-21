@@ -38,6 +38,8 @@ import {
 import { ClientGameModel } from './clientGameModel';
 import { Player } from './player';
 import { Fleet } from './fleet';
+import { TradingCenter } from './tradingCenter';
+import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 
 /**
  * NOTE: CommandProcessor validates commands and marks them for processing.
@@ -557,23 +559,101 @@ export class CommandProcessor {
   }
 
   private static processSubmitTrade(gameModel: GameModelData, command: SubmitTradeCommand): CommandResult {
-    const player = gameModel.modelData.players.find((p) => p.id === command.playerId);
+    const { modelData } = gameModel;
+    const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player) {
       return { success: false, error: 'Player not found', events: [] };
     }
 
-    // Defer to backend for now - trading logic needs refactoring
-    return { success: true, events: [] };
+    // Validate trade data
+    console.log('Processing trade command:', command);
+    const { resourceType, amount, action } = command.tradeData;
+    if (!resourceType || !amount || !action) {
+      return { success: false, error: 'Invalid trade data', events: [] };
+    }
+
+    // Map resource type string to enum
+    const resourceTypeMap: Record<string, TradingCenterResourceType> = {
+      food: TradingCenterResourceType.FOOD,
+      ore: TradingCenterResourceType.ORE,
+      iridium: TradingCenterResourceType.IRIDIUM,
+    };
+
+    const resourceTypeEnum = resourceTypeMap[resourceType];
+    if (!resourceTypeEnum) {
+      return { success: false, error: 'Invalid resource type', events: [] };
+    }
+
+    const tradeType = action === 'buy' ? TradeType.BUY : TradeType.SELL;
+
+    // Find a planet owned by the player (trades need to be associated with a planet)
+    const playerPlanet = modelData.planets.find((p) => player.ownedPlanetIds.includes(p.id));
+    if (!playerPlanet) {
+      return { success: false, error: 'Player must own at least one planet to trade', events: [] };
+    }
+
+    // Create the trade using the engine method
+    const trade = TradingCenter.constructTrade(
+      player.id,
+      playerPlanet.id,
+      tradeType,
+      resourceTypeEnum,
+      amount,
+      5, // 5 second delay
+    );
+
+    // Add trade to the trading center
+    modelData.tradingCenter.currentTrades.push(trade);
+
+    // Get player resources after trade submission
+    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
+    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+
+    // Generate event
+    const event: import('./GameCommands').TradeSubmittedEvent = {
+      type: ClientEventType.TRADE_SUBMITTED,
+      affectedPlayerIds: [command.playerId],
+      data: {
+        tradeId: trade.id,
+        resourceType,
+        amount,
+        action,
+        playerResources: totalResources,
+      },
+    };
+
+    return { success: true, events: [event] };
   }
 
   private static processCancelTrade(gameModel: GameModelData, command: CancelTradeCommand): CommandResult {
-    const player = gameModel.modelData.players.find((p) => p.id === command.playerId);
+    const { modelData } = gameModel;
+    const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player) {
       return { success: false, error: 'Player not found', events: [] };
     }
 
-    // Defer to backend for now - trading logic needs refactoring
-    return { success: true, events: [] };
+    // Cancel the trade using the engine method
+    const cancelled = TradingCenter.cancelTrade(modelData.tradingCenter, command.tradeId, player.id);
+
+    if (!cancelled) {
+      return { success: false, error: 'Trade not found or cannot be cancelled', events: [] };
+    }
+
+    // Get player resources after trade cancellation
+    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
+    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+
+    // Generate event
+    const event: import('./GameCommands').TradeCancelledEvent = {
+      type: ClientEventType.TRADE_CANCELLED,
+      affectedPlayerIds: [command.playerId],
+      data: {
+        tradeId: command.tradeId,
+        playerResources: totalResources,
+      },
+    };
+
+    return { success: true, events: [event] };
   }
 
   private static processUpdatePlanetOptions(

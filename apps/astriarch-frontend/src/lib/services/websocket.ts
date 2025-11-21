@@ -28,7 +28,22 @@ import {
 // Import the main game stores to update them when receiving multiplayer game state
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
 import { PlayerStorage } from '$lib/utils/playerStorage';
-import type { ClientModelData } from 'astriarch-engine';
+import type {
+	AdjustResearchPercentCommand,
+	CancelResearchItemCommand,
+	CancelTradeCommand,
+	ClearWaypointCommand,
+	ClientModelData,
+	DemolishImprovementCommand,
+	QueueProductionItemCommand,
+	RemoveProductionItemCommand,
+	SendShipsCommand,
+	SetWaypointCommand,
+	SubmitResearchItemCommand,
+	SubmitTradeCommand,
+	UpdatePlanetOptionsCommand,
+	UpdatePlanetWorkerAssignmentsCommand
+} from 'astriarch-engine';
 
 // Import multiplayer store types and functionality from the centralized store
 import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
@@ -1309,7 +1324,7 @@ class WebSocketService {
 					timestamp: Date.now(),
 					planetId,
 					productionItem
-				} as GameCommand;
+				} as QueueProductionItemCommand;
 			} else if (action === 'remove' && typeof index === 'number') {
 				command = {
 					type: GameCommandType.REMOVE_PRODUCTION_ITEM,
@@ -1317,7 +1332,7 @@ class WebSocketService {
 					timestamp: Date.now(),
 					planetId,
 					index
-				} as GameCommand;
+				} as RemoveProductionItemCommand;
 			} else if (action === 'demolish' && productionItem) {
 				command = {
 					type: GameCommandType.DEMOLISH_IMPROVEMENT,
@@ -1325,7 +1340,7 @@ class WebSocketService {
 					timestamp: Date.now(),
 					planetId,
 					productionItem
-				} as GameCommand;
+				} as DemolishImprovementCommand;
 			} else {
 				throw new Error(`Invalid build queue action: ${action}`);
 			}
@@ -1384,7 +1399,7 @@ class WebSocketService {
 					minerDiff,
 					builderDiff
 				}
-			} as GameCommand;
+			} as UpdatePlanetWorkerAssignmentsCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1411,7 +1426,7 @@ class WebSocketService {
 				timestamp: Date.now(),
 				planetId,
 				options
-			} as GameCommand;
+			} as UpdatePlanetOptionsCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1465,7 +1480,7 @@ class WebSocketService {
 				timestamp: Date.now(),
 				planetId,
 				waypointPlanetId
-			} as GameCommand;
+			} as SetWaypointCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1491,7 +1506,7 @@ class WebSocketService {
 				playerId,
 				timestamp: Date.now(),
 				planetId
-			} as GameCommand;
+			} as ClearWaypointCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1534,7 +1549,7 @@ class WebSocketService {
 					cruisers: shipsByType.cruisers,
 					battleships: shipsByType.battleships
 				}
-			} as GameCommand;
+			} as SendShipsCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1627,7 +1642,7 @@ class WebSocketService {
 				playerId,
 				timestamp: Date.now(),
 				researchPercent: Math.max(0, Math.min(1, researchPercent))
-			} as GameCommand;
+			} as AdjustResearchPercentCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1654,7 +1669,7 @@ class WebSocketService {
 				timestamp: Date.now(),
 				researchType,
 				data
-			} as GameCommand;
+			} as SubmitResearchItemCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1679,7 +1694,7 @@ class WebSocketService {
 				type: GameCommandType.CANCEL_RESEARCH_ITEM,
 				playerId,
 				timestamp: Date.now()
-			} as GameCommand;
+			} as CancelResearchItemCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1716,10 +1731,12 @@ class WebSocketService {
 				playerId,
 				timestamp: Date.now(),
 				planetId,
-				resourceType: resourceTypeMap[resourceType] || 'food',
-				amount,
-				action
-			} as GameCommand;
+				tradeData: {
+					resourceType: resourceTypeMap[resourceType] || 'food',
+					amount,
+					action
+				}
+			} as SubmitTradeCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1745,7 +1762,7 @@ class WebSocketService {
 				playerId,
 				timestamp: Date.now(),
 				tradeId
-			} as GameCommand;
+			} as CancelTradeCommand;
 
 			this.sendCommand(command);
 		} catch (error) {
