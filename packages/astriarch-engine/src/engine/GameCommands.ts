@@ -278,10 +278,10 @@ export interface TradeSubmittedEvent extends ClientEvent {
   type: ClientEventType.TRADE_SUBMITTED;
   data: {
     tradeId: string;
+    planetId: number;
     resourceType: string;
     amount: number;
     action: 'buy' | 'sell';
-    playerResources: PlayerResourcesData;
   };
 }
 

@@ -263,7 +263,7 @@ export class EventApplicator {
   }
 
   private static applyTradeSubmitted(clientModel: ClientModelData, event: TradeSubmittedEvent): void {
-    const { tradeId, resourceType, amount, action } = event.data;
+    const { tradeId, planetId, resourceType, amount, action } = event.data;
 
     // Map resource type string to enum
     const resourceTypeMap: Record<string, TradingCenterResourceType> = {
@@ -276,7 +276,7 @@ export class EventApplicator {
     const trade: TradeData = {
       id: tradeId,
       playerId: clientModel.mainPlayer.id,
-      planetId: -1, // Server will set the actual planet
+      planetId,
       tradeType: action === 'buy' ? TradeType.BUY : TradeType.SELL,
       resourceType: resourceTypeMap[resourceType] || TradingCenterResourceType.FOOD,
       amount,

@@ -34,6 +34,8 @@ import {
   ResearchCancelledEvent,
   ProductionItemQueuedEvent,
   FleetLaunchedEvent,
+  TradeSubmittedEvent,
+  TradeCancelledEvent,
 } from './GameCommands';
 import { ClientGameModel } from './clientGameModel';
 import { Player } from './player';
@@ -605,20 +607,16 @@ export class CommandProcessor {
     // Add trade to the trading center
     modelData.tradingCenter.currentTrades.push(trade);
 
-    // Get player resources after trade submission
-    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
-
     // Generate event
-    const event: import('./GameCommands').TradeSubmittedEvent = {
+    const event: TradeSubmittedEvent = {
       type: ClientEventType.TRADE_SUBMITTED,
       affectedPlayerIds: [command.playerId],
       data: {
         tradeId: trade.id,
+        planetId: playerPlanet.id,
         resourceType,
         amount,
         action,
-        playerResources: totalResources,
       },
     };
 
@@ -644,7 +642,7 @@ export class CommandProcessor {
     const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
 
     // Generate event
-    const event: import('./GameCommands').TradeCancelledEvent = {
+    const event: TradeCancelledEvent = {
       type: ClientEventType.TRADE_CANCELLED,
       affectedPlayerIds: [command.playerId],
       data: {
