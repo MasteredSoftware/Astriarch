@@ -600,15 +600,19 @@ export class Player {
     const events: ClientEvent[] = [];
     if (planetTarget) {
       // Generate RESOURCES_AUTO_SPENT event
-      const resourcesAutoSpentEvent: ClientEvent = {
-        type: ClientEventType.RESOURCES_AUTO_SPENT,
-        affectedPlayerIds: [mainPlayer.id],
-        data: {
-          planetId: planetTarget.id,
-          itemQueued: `${resourcesAutoSpent.energy}E/${resourcesAutoSpent.ore}O/${resourcesAutoSpent.iridium}I spent repairing fleets`,
-        },
-      };
-      events.push(resourcesAutoSpentEvent);
+      const totalResourcesSpent = resourcesAutoSpent.energy + resourcesAutoSpent.ore + resourcesAutoSpent.iridium;
+      if (totalResourcesSpent > 0) {
+        const resourcesAutoSpentEvent: ClientEvent = {
+          type: ClientEventType.RESOURCES_AUTO_SPENT,
+          affectedPlayerIds: [mainPlayer.id],
+          data: {
+            amount: totalResourcesSpent,
+            resourceType: 'resources',
+            reason: `Fleet repairs (${resourcesAutoSpent.energy}E/${resourcesAutoSpent.ore}O/${resourcesAutoSpent.iridium}I)`,
+          },
+        };
+        events.push(resourcesAutoSpentEvent);
+      }
     }
     return events;
   }

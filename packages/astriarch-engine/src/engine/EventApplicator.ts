@@ -545,12 +545,12 @@ export class EventApplicator {
   }
 
   private static applyResourcesAutoSpent(clientModel: ClientModelData, event: ResourcesAutoSpentEvent): void {
-    const { planetId, itemQueued } = event.data;
+    const { amount, resourceType, reason } = event.data;
 
     // Resources were already spent server-side (during food shipping/other operations)
     // This event is notification-only - the resource deduction already happened
     // when the server processed the auto-spending logic
-    console.log(`Resources auto-spent on planet ${planetId} for ${itemQueued}`);
+    console.log(`Resources auto-spent: ${amount} ${resourceType} for ${reason}`);
 
     // No state mutation needed - resources already deducted server-side
     void clientModel;

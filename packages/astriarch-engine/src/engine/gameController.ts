@@ -118,7 +118,6 @@ export class GameController {
           type: ClientEventType.RESOURCES_AUTO_SPENT,
           affectedPlayerIds: [p.id],
           data: {
-            playerId: p.id,
             amount: p.lastTurnFoodShipped,
             resourceType: 'energy',
             reason: 'Food shipping',

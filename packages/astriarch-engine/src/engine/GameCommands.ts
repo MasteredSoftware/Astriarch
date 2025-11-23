@@ -407,7 +407,8 @@ export interface FleetDestroyedEvent extends ClientEvent {
 export interface ResourcesAutoSpentEvent extends ClientEvent {
   type: ClientEventType.RESOURCES_AUTO_SPENT;
   data: {
-    planetId: number;
-    itemQueued: string; // Description of item that was auto-queued
+    amount: number;
+    resourceType: string;
+    reason: string;
   };
 }
