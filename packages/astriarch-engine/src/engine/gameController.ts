@@ -10,7 +10,13 @@ import { ClientGameModel } from './clientGameModel';
 import { ComputerPlayer } from './computerPlayer';
 import { Events } from './events';
 import { Fleet } from './fleet';
-import { ClientEvent, ClientEventType } from './GameCommands';
+import {
+  ClientEvent,
+  ClientEventType,
+  ClientNotification,
+  ClientNotificationType,
+  ResourcesAutoSpentNotification,
+} from './GameCommands';
 import { AdvanceGameClockForPlayerData, AdvanceGameClockResult, GameModel, GameModelData } from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
@@ -65,6 +71,7 @@ export class GameController {
     allEvents.push(...tradeEvents);
 
     // NOTE: advanceGameClockForPlayer contains all methods that can run client-side to keep the ui updating w/o trips to the server
+    const allNotifications: ClientNotification[] = [];
     const fleetsArrivingOnUnownedPlanetsByPlayerId: Record<string, FleetData[]> = {};
     for (const p of modelData.players) {
       const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
@@ -77,6 +84,7 @@ export class GameController {
       const result = Player.advanceGameClockForPlayer(data);
       fleetsArrivingOnUnownedPlanetsByPlayerId[p.id] = result.fleetsArrivingOnUnownedPlanets;
       allEvents.push(...result.events);
+      allNotifications.push(...result.notifications);
     }
 
     // TODO: server side operations after advancing game clock for player
@@ -90,8 +98,8 @@ export class GameController {
 
     modelData.lastSnapshotTime = newSnapshotTime;
     if (Math.trunc(currentCycle) > Math.trunc(modelData.currentCycle)) {
-      const cycleEvents = this.handleCycleAdvancement(gameModel);
-      allEvents.push(...cycleEvents);
+      const cycleNotifications = this.handleCycleAdvancement(gameModel);
+      allNotifications.push(...cycleNotifications);
     }
     modelData.currentCycle = currentCycle;
 
@@ -105,29 +113,30 @@ export class GameController {
       destroyedPlayers,
       gameEndConditions,
       events: allEvents,
+      notifications: allNotifications,
     };
   }
 
-  public static handleCycleAdvancement(gameModel: GameModelData): ClientEvent[] {
+  public static handleCycleAdvancement(gameModel: GameModelData): ClientNotification[] {
     // Handle any game logic that needs to occur at the end of a cycle
-    const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
     const { modelData } = gameModel;
     for (const p of modelData.players) {
       if (p.lastTurnFoodShipped > 0) {
-        events.push({
-          type: ClientEventType.RESOURCES_AUTO_SPENT,
+        notifications.push({
+          type: ClientNotificationType.RESOURCES_AUTO_SPENT,
           affectedPlayerIds: [p.id],
           data: {
             amount: p.lastTurnFoodShipped,
             resourceType: 'energy',
             reason: 'Food shipping',
           },
-        });
+        } as ResourcesAutoSpentNotification);
         p.lastTurnFoodShipped = 0;
       }
       p.lastTurnFoodNeededToBeShipped = 0;
     }
-    return events;
+    return notifications;
   }
 
   /**

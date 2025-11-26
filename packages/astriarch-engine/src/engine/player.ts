@@ -5,7 +5,18 @@ import { ModelData } from '../model/model';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Fleet } from './fleet';
-import { ClientEvent, ClientEventType } from './GameCommands';
+import {
+  ClientEvent,
+  ClientNotification,
+  ClientNotificationType,
+  ShipsAutoQueuedNotification,
+  PopulationStarvationNotification,
+  FoodShortageRiotsNotification,
+  PlanetLostDueToStarvationNotification,
+  CitizensProtestingNotification,
+  PopulationGrewNotification,
+  ResourcesAutoSpentNotification,
+} from './GameCommands';
 import { AdvanceGameClockForPlayerData, GameModel } from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
@@ -78,34 +89,37 @@ export class Player {
   public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): {
     fleetsArrivingOnUnownedPlanets: FleetData[];
     events: ClientEvent[];
+    notifications: ClientNotification[];
   } {
     const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
 
-    Player.addLastStarShipToQueueOnPlanets(data);
+    const autoQueueNotifications = Player.addLastStarShipToQueueOnPlanets(data);
+    notifications.push(...autoQueueNotifications);
 
     Player.generatePlayerResources(data);
 
-    const researchEvents = Research.advanceResearchForPlayer(data);
-    events.push(...researchEvents);
+    const researchNotifications = Research.advanceResearchForPlayer(data);
+    notifications.push(...researchNotifications);
 
-    const eatAndStarveEvents = this.eatAndStarve(data);
-    events.push(...eatAndStarveEvents);
+    const eatAndStarveNotifications = this.eatAndStarve(data);
+    notifications.push(...eatAndStarveNotifications);
     
-    const protestEvents = this.adjustPlayerPlanetProtestLevels(data); // deterministic
-    events.push(...protestEvents);
+    const protestNotifications = this.adjustPlayerPlanetProtestLevels(data); // deterministic
+    notifications.push(...protestNotifications);
 
-    const buildEvents = this.buildPlayerPlanetImprovements(data); // deterministic
-    events.push(...buildEvents);
+    const buildNotifications = this.buildPlayerPlanetImprovements(data); // deterministic
+    notifications.push(...buildNotifications);
 
-    const populationEvents = this.growPlayerPlanetPopulation(data); // deterministic
-    events.push(...populationEvents);
+    const populationNotifications = this.growPlayerPlanetPopulation(data); // deterministic
+    notifications.push(...populationNotifications);
 
-    const repairEvents = this.repairPlanetaryFleets(data); // deterministic
-    events.push(...repairEvents);
+    const repairNotifications = this.repairPlanetaryFleets(data); // deterministic
+    notifications.push(...repairNotifications);
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
     const fleetsArrivingOnUnownedPlanets = this.moveShips(data);
-    return { fleetsArrivingOnUnownedPlanets, events };
+    return { fleetsArrivingOnUnownedPlanets, events, notifications };
   }
 
   public static generatePlayerResources(data: AdvanceGameClockForPlayerData) {
@@ -234,8 +248,8 @@ export class Player {
     }
 
     if (autoQueuedCount && focusPlanet) {
-      const event: ClientEvent = {
-        type: ClientEventType.SHIPS_AUTO_QUEUED,
+      const notification: ShipsAutoQueuedNotification = {
+        type: ClientNotificationType.SHIPS_AUTO_QUEUED,
         affectedPlayerIds: [mainPlayer.id],
         data: {
           planetId: focusPlanet.id,
@@ -243,16 +257,16 @@ export class Player {
           shipsQueued: Fleet.toString(autoQueuedFleet),
         },
       };
-      return [event];
+      return [notification];
     }
     return [];
   }
 
-  public static eatAndStarve(data: AdvanceGameClockForPlayerData): ClientEvent[] {
+  public static eatAndStarve(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, cyclesElapsed, currentCycle } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
-    const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
     //for each planet player controls
 
     //if one planet has a shortage and another a surplus, gold will be spent (if possible) for shipping
@@ -351,8 +365,8 @@ export class Player {
               }
               
               planet.planetHappiness = PlanetHappinessType.Riots;
-              const riotEvent: ClientEvent = {
-                type: ClientEventType.FOOD_SHORTAGE_RIOTS,
+              const riotNotification: FoodShortageRiotsNotification = {
+                type: ClientNotificationType.FOOD_SHORTAGE_RIOTS,
                 affectedPlayerIds: [mainPlayer.id],
                 data: {
                   planetId: planet.id,
@@ -360,19 +374,19 @@ export class Player {
                   reason: riotReason,
                 },
               };
-              events.push(riotEvent);
+              notifications.push(riotNotification);
             } else {
               // Gradual starvation
               planet.planetHappiness = PlanetHappinessType.Unrest;
-              const starvationEvent: ClientEvent = {
-                type: ClientEventType.POPULATION_STARVATION,
+              const starvationNotification: PopulationStarvationNotification = {
+                type: ClientNotificationType.POPULATION_STARVATION,
                 affectedPlayerIds: [mainPlayer.id],
                 data: {
                   planetId: planet.id,
                   planetName: planet.name,
                 },
               };
-              events.push(starvationEvent);
+              notifications.push(starvationNotification);
             }
             
             planet.population.pop();
@@ -412,15 +426,15 @@ export class Player {
         //have to check to see if we removed the last pop and loose this planet from owned planets if so
         if (planet.population.length == 0) {
           //notify user of planet loss
-          const planetLostEvent: ClientEvent = {
-            type: ClientEventType.PLANET_LOST_DUE_TO_STARVATION,
+          const planetLostNotification: PlanetLostDueToStarvationNotification = {
+            type: ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION,
             affectedPlayerIds: [mainPlayer.id],
             data: {
               planetId: planet.id,
               planetName: planet.name,
             },
           };
-          events.push(planetLostEvent);
+          notifications.push(planetLostNotification);
 
           GameModel.changePlanetOwner(mainPlayer, undefined, planet, currentCycle);
         } else if (planet.id == mainPlayer.homePlanetId) {
@@ -456,13 +470,13 @@ export class Player {
       mainPlayer.lastTurnFoodShipped += totalFoodShipped;
     }
 
-    return events;
+    return notifications;
   }
 
-  public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData): ClientEvent[] {
+  public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
-    const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
 
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
@@ -470,8 +484,8 @@ export class Player {
       const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, mainPlayer);
       const results = Planet.buildImprovements(p, mainPlayer, grid, resourceGeneration);
 
-      // Collect events from building
-      events.push(...results.events);
+      // Collect notifications from building
+      notifications.push(...results.events);
 
       if (results.buildQueueEmpty) {
         //if the build queue was empty we'll convert planet production to energy
@@ -493,13 +507,13 @@ export class Player {
       }
     }
 
-    return events;
+    return notifications;
   }
 
-  public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData): ClientEvent[] {
+  public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
-    const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
     //if we have a normal PlanetHappiness (meaning we didn't cause unrest from starvation)
     //	we'll slowly reduce the amount of protest on the planet
 
@@ -528,8 +542,8 @@ export class Player {
         const citizenText = protestingCitizenCount > 1 ? ' Citizens' : ' Citizen';
         if (protestingCitizenCount >= p.population.length / 2) {
           p.planetHappiness = PlanetHappinessType.Unrest;
-          const protestEvent: ClientEvent = {
-            type: ClientEventType.CITIZENS_PROTESTING,
+          const protestNotification: CitizensProtestingNotification = {
+            type: ClientNotificationType.CITIZENS_PROTESTING,
             affectedPlayerIds: [mainPlayer.id],
             data: {
               planetId: p.id,
@@ -537,10 +551,10 @@ export class Player {
               reason: `${protestingCitizenCount}${citizenText} protesting (unrest)`,
             },
           };
-          events.push(protestEvent);
+          notifications.push(protestNotification);
         } else if (protestingCitizenCount > 0) {
-          const protestEvent: ClientEvent = {
-            type: ClientEventType.CITIZENS_PROTESTING,
+          const protestNotification: CitizensProtestingNotification = {
+            type: ClientNotificationType.CITIZENS_PROTESTING,
             affectedPlayerIds: [mainPlayer.id],
             data: {
               planetId: p.id,
@@ -548,16 +562,16 @@ export class Player {
               reason: `${protestingCitizenCount}${citizenText} protesting`,
             },
           };
-          events.push(protestEvent);
+          notifications.push(protestNotification);
         }
       }
     }
 
-    return events;
+    return notifications;
   }
 
-  public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData): ClientEvent[] {
-    const events: ClientEvent[] = [];
+  public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData): ClientNotification[] {
+    const notifications: ClientNotification[] = [];
     const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //population growth rate is based on available space at the planet and the amount currently there
@@ -576,23 +590,24 @@ export class Player {
           //assign points
           Player.increasePoints(mainPlayer, EarnedPointsType.POPULATION_GROWTH, 1);
 
-          // Generate POPULATION_GREW event
-          const populationGrewEvent: ClientEvent = {
-            type: ClientEventType.POPULATION_GREW,
+          // Generate POPULATION_GREW notification
+          const populationGrewNotification: PopulationGrewNotification = {
+            type: ClientNotificationType.POPULATION_GREW,
             affectedPlayerIds: [mainPlayer.id],
             data: {
               planetId: p.id,
+              planetName: p.name,
               newPopulation: p.population.length,
             },
           };
-          events.push(populationGrewEvent);
+          notifications.push(populationGrewNotification);
         }
       }
     }
-    return events;
+    return notifications;
   }
 
-  public static repairPlanetaryFleets(data: AdvanceGameClockForPlayerData): ClientEvent[] {
+  public static repairPlanetaryFleets(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, cyclesElapsed, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const resourcesAutoSpent = { energy: 0, ore: 0, iridium: 0 };
@@ -630,13 +645,13 @@ export class Player {
       }
     }
 
-    const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
     if (planetTarget) {
-      // Generate RESOURCES_AUTO_SPENT event
+      // Generate RESOURCES_AUTO_SPENT notification
       const totalResourcesSpent = resourcesAutoSpent.energy + resourcesAutoSpent.ore + resourcesAutoSpent.iridium;
       if (totalResourcesSpent > 0) {
-        const resourcesAutoSpentEvent: ClientEvent = {
-          type: ClientEventType.RESOURCES_AUTO_SPENT,
+        const resourcesAutoSpentNotification: ResourcesAutoSpentNotification = {
+          type: ClientNotificationType.RESOURCES_AUTO_SPENT,
           affectedPlayerIds: [mainPlayer.id],
           data: {
             amount: totalResourcesSpent,
@@ -644,10 +659,10 @@ export class Player {
             reason: `Fleet repairs (${resourcesAutoSpent.energy}E/${resourcesAutoSpent.ore}O/${resourcesAutoSpent.iridium}I)`,
           },
         };
-        events.push(resourcesAutoSpentEvent);
+        notifications.push(resourcesAutoSpentNotification);
       }
     }
-    return events;
+    return notifications;
   }
 
   public static moveShips(data: AdvanceGameClockForPlayerData) {

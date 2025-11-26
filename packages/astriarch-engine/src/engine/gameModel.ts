@@ -39,6 +39,7 @@ export interface AdvanceGameClockResult {
   destroyedPlayers: PlayerData[];
   gameEndConditions: GameEndConditions;
   events: import('./GameCommands').ClientEvent[];
+  notifications: import('./GameCommands').ClientNotification[];
 }
 
 export const playerColors = [

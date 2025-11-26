@@ -8,7 +8,7 @@ import {
   ResearchTypeProgressData,
 } from '../model/research';
 import { GameTools } from '../utils/gameTools';
-import { ClientEvent, ClientEventType } from './GameCommands';
+import { ClientNotification, ClientNotificationType, ResearchCompletedNotification } from './GameCommands';
 import { AdvanceGameClockForPlayerData } from './gameModel';
 
 const MAX_RESEARCH_LEVEL = 9;
@@ -220,8 +220,8 @@ export class Research {
     return researchProgress.currentResearchLevel < researchProgress.maxResearchLevel;
   }
 
-  public static advanceResearchForPlayer(data: AdvanceGameClockForPlayerData): ClientEvent[] {
-    const events: ClientEvent[] = [];
+  public static advanceResearchForPlayer(data: AdvanceGameClockForPlayerData): ClientNotification[] {
+    const notifications: ClientNotification[] = [];
     const { mainPlayer, mainPlayerOwnedPlanets } = data.clientModel;
 
     if (mainPlayer.research.researchTypeInQueue) {
@@ -239,9 +239,9 @@ export class Research {
         //we've gained a level
         const researchQueueCleared = !Research.canResearch(rtpInQueue);
 
-        // Generate RESEARCH_COMPLETED event
-        const researchCompletedEvent: ClientEvent = {
-          type: ClientEventType.RESEARCH_COMPLETED,
+        // Generate RESEARCH_COMPLETED notification
+        const researchCompletedNotification: ResearchCompletedNotification = {
+          type: ClientNotificationType.RESEARCH_COMPLETED,
           affectedPlayerIds: [mainPlayer.id],
           data: {
             researchType: rtpInQueue.type,
@@ -249,7 +249,7 @@ export class Research {
             researchQueueCleared,
           },
         };
-        events.push(researchCompletedEvent);
+        notifications.push(researchCompletedNotification);
 
         if (researchQueueCleared) {
           mainPlayer.research.researchTypeInQueue = null;
@@ -258,7 +258,7 @@ export class Research {
     }
     // else notifiy the player at some point?
 
-    return events;
+    return notifications;
   }
 
   public static researchProgressToString(researchProgress: ResearchTypeProgress, nextLevel?: number) {

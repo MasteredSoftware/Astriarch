@@ -35,51 +35,71 @@ export enum GameCommandType {
 }
 
 // ============================================================================
-// CLIENT EVENT TYPES - Minimal data to tell clients what changed
+// CLIENT EVENT TYPES - State-mutating events that require client model updates
+// These are either:
+// 1. Command responses (player action confirmed by server)
+// 2. Server-only operations (conflicts, trade execution)
 // ============================================================================
 
 export enum ClientEventType {
-  // Building/Production events
+  // Command responses - Building/Production
   PRODUCTION_ITEM_QUEUED = 'PRODUCTION_ITEM_QUEUED',
   PRODUCTION_ITEM_REMOVED = 'PRODUCTION_ITEM_REMOVED',
+
+  // Command responses - Fleet actions
+  FLEET_LAUNCHED = 'FLEET_LAUNCHED',
+  WAYPOINT_SET = 'WAYPOINT_SET',
+  WAYPOINT_CLEARED = 'WAYPOINT_CLEARED',
+
+  // Command responses - Research actions
+  RESEARCH_QUEUED = 'RESEARCH_QUEUED',
+  RESEARCH_CANCELLED = 'RESEARCH_CANCELLED',
+  RESEARCH_PERCENT_ADJUSTED = 'RESEARCH_PERCENT_ADJUSTED',
+
+  // Command responses - Trade actions
+  TRADE_SUBMITTED = 'TRADE_SUBMITTED',
+  TRADE_CANCELLED = 'TRADE_CANCELLED',
+
+  // Command responses - Planet management
+  PLANET_WORKER_ASSIGNMENTS_UPDATED = 'PLANET_WORKER_ASSIGNMENTS_UPDATED',
+  PLANET_OPTIONS_UPDATED = 'PLANET_OPTIONS_UPDATED',
+
+  // Server-only operations - Trade execution
+  TRADE_EXECUTED = 'TRADE_EXECUTED',
+
+  // Server-only operations - Combat/Conflict resolution
+  PLANET_CAPTURED = 'PLANET_CAPTURED',
+  PLANET_LOST = 'PLANET_LOST',
+  FLEET_DESTROYED = 'FLEET_DESTROYED',
+}
+
+// ============================================================================
+// CLIENT NOTIFICATION TYPES - Informational messages about time-based changes
+// These are generated during advanceGameClockForPlayer but don't need to mutate
+// client state because the client already applied the changes locally.
+// They serve as server confirmation and UI notification triggers.
+// ============================================================================
+
+export enum ClientNotificationType {
+  // Building/Production notifications
   SHIP_BUILT = 'SHIP_BUILT',
   IMPROVEMENT_BUILT = 'IMPROVEMENT_BUILT',
   IMPROVEMENT_DEMOLISHED = 'IMPROVEMENT_DEMOLISHED',
 
-  // Fleet events (only for discrete actions, not continuous movement)
-  FLEET_LAUNCHED = 'FLEET_LAUNCHED',
-  FLEET_DESTROYED = 'FLEET_DESTROYED',
-  WAYPOINT_SET = 'WAYPOINT_SET',
-  WAYPOINT_CLEARED = 'WAYPOINT_CLEARED',
-
-  // Research events (discrete actions only)
-  RESEARCH_QUEUED = 'RESEARCH_QUEUED',
-  RESEARCH_CANCELLED = 'RESEARCH_CANCELLED',
-  RESEARCH_PERCENT_ADJUSTED = 'RESEARCH_PERCENT_ADJUSTED',
+  // Research notifications
   RESEARCH_COMPLETED = 'RESEARCH_COMPLETED',
 
-  // Trade events
-  TRADE_SUBMITTED = 'TRADE_SUBMITTED',
-  TRADE_CANCELLED = 'TRADE_CANCELLED',
-  TRADE_EXECUTED = 'TRADE_EXECUTED',
-
-  // Planet events
-  PLANET_WORKER_ASSIGNMENTS_UPDATED = 'PLANET_WORKER_ASSIGNMENTS_UPDATED',
-  PLANET_OPTIONS_UPDATED = 'PLANET_OPTIONS_UPDATED',
-  PLANET_CAPTURED = 'PLANET_CAPTURED',
-  PLANET_LOST = 'PLANET_LOST',
-  PLANET_LOST_DUE_TO_STARVATION = 'PLANET_LOST_DUE_TO_STARVATION',
+  // Population notifications
   POPULATION_GREW = 'POPULATION_GREW',
   POPULATION_STARVATION = 'POPULATION_STARVATION',
+
+  // Food/Happiness notifications
   FOOD_SHORTAGE_RIOTS = 'FOOD_SHORTAGE_RIOTS',
   INSUFFICIENT_FOOD = 'INSUFFICIENT_FOOD',
   CITIZENS_PROTESTING = 'CITIZENS_PROTESTING',
+  PLANET_LOST_DUE_TO_STARVATION = 'PLANET_LOST_DUE_TO_STARVATION',
 
-  // Fleet/Combat events
-  DEFENDED_AGAINST_ATTACKING_FLEET = 'DEFENDED_AGAINST_ATTACKING_FLEET',
-  ATTACKING_FLEET_LOST = 'ATTACKING_FLEET_LOST',
-
-  // Resource events
+  // Resource notifications
   RESOURCES_AUTO_SPENT = 'RESOURCES_AUTO_SPENT',
   SHIPS_AUTO_QUEUED = 'SHIPS_AUTO_QUEUED',
 }
@@ -97,6 +117,12 @@ export interface GameCommand {
 export interface ClientEvent {
   type: ClientEventType;
   affectedPlayerIds: string[]; // Which players should receive this event
+  data: unknown;
+}
+
+export interface ClientNotification {
+  type: ClientNotificationType;
+  affectedPlayerIds: string[]; // Which players should receive this notification
   data: unknown;
 }
 
@@ -324,62 +350,15 @@ export interface PlanetOptionsUpdatedEvent extends ClientEvent {
 }
 
 // ============================================================================
-// TIME-BASED EVENT PAYLOADS (from game clock advancement)
+// SERVER-ONLY EVENT PAYLOADS (from server operations like conflicts, trades)
+// These MUST mutate client state as client never runs this logic
 // ============================================================================
-
-export interface ShipBuiltEvent extends ClientEvent {
-  type: ClientEventType.SHIP_BUILT;
-  data: {
-    planetId: number;
-    shipType: number; // StarShipType
-    customShipData?: {
-      advantageAgainst: number; // StarShipType
-      disadvantageAgainst: number; // StarShipType
-    };
-    sentToWaypoint: boolean; // Was ship sent to waypoint or added to planetary fleet?
-    nextItemInQueue?: string; // Description of next item in queue
-  };
-}
-
-export interface ImprovementBuiltEvent extends ClientEvent {
-  type: ClientEventType.IMPROVEMENT_BUILT;
-  data: {
-    planetId: number;
-    improvementType: number; // PlanetImprovementType
-    nextItemInQueue?: string; // Description of next item in queue
-  };
-}
-
-export interface ImprovementDemolishedEvent extends ClientEvent {
-  type: ClientEventType.IMPROVEMENT_DEMOLISHED;
-  data: {
-    planetId: number;
-    improvementType: number; // PlanetImprovementType
-    nextItemInQueue?: string; // Description of next item in queue
-  };
-}
-
-export interface ResearchCompletedEvent extends ClientEvent {
-  type: ClientEventType.RESEARCH_COMPLETED;
-  data: {
-    researchType: number; // ResearchType
-    newLevel: number;
-    researchQueueCleared: boolean; // If max level reached
-  };
-}
-
-export interface PopulationGrewEvent extends ClientEvent {
-  type: ClientEventType.POPULATION_GREW;
-  data: {
-    planetId: number;
-    newPopulation: number;
-  };
-}
 
 export interface TradeExecutedEvent extends ClientEvent {
   type: ClientEventType.TRADE_EXECUTED;
   data: {
     tradeId: string;
+    planetId: number;
     resourceType: number; // TradingCenterResourceType
     amount: number;
     tradeType: number; // TradeType (BUY or SELL)
@@ -410,38 +389,79 @@ export interface FleetDestroyedEvent extends ClientEvent {
   type: ClientEventType.FLEET_DESTROYED;
   data: {
     planetId: number; // Planet where battle occurred
+    planetName: string;
     wasAttacking: boolean; // True if this player was attacking, false if defending
   };
 }
 
-export interface ResourcesAutoSpentEvent extends ClientEvent {
-  type: ClientEventType.RESOURCES_AUTO_SPENT;
-  data: {
-    amount: number;
-    resourceType: string;
-    reason: string;
-  };
-}
+// ============================================================================
+// TIME-BASED NOTIFICATION PAYLOADS (from game clock advancement)
+// These are informational only - client already applied changes locally
+// ============================================================================
 
-export interface ShipsAutoQueuedEvent extends ClientEvent {
-  type: ClientEventType.SHIPS_AUTO_QUEUED;
+export interface ShipBuiltNotification extends ClientNotification {
+  type: ClientNotificationType.SHIP_BUILT;
   data: {
     planetId: number;
     planetName: string;
-    shipsQueued: string; // Description of ships queued
+    shipType: number; // StarShipType
+    customShipData?: {
+      advantageAgainst: number; // StarShipType
+      disadvantageAgainst: number; // StarShipType
+    };
+    sentToWaypoint: boolean; // Was ship sent to waypoint or added to planetary fleet?
+    nextItemInQueue?: string; // Description of next item in queue
   };
 }
 
-export interface PopulationStarvationEvent extends ClientEvent {
-  type: ClientEventType.POPULATION_STARVATION;
+export interface ImprovementBuiltNotification extends ClientNotification {
+  type: ClientNotificationType.IMPROVEMENT_BUILT;
+  data: {
+    planetId: number;
+    planetName: string;
+    improvementType: number; // PlanetImprovementType
+    nextItemInQueue?: string; // Description of next item in queue
+  };
+}
+
+export interface ImprovementDemolishedNotification extends ClientNotification {
+  type: ClientNotificationType.IMPROVEMENT_DEMOLISHED;
+  data: {
+    planetId: number;
+    planetName: string;
+    improvementType: number; // PlanetImprovementType
+    nextItemInQueue?: string; // Description of next item in queue
+  };
+}
+
+export interface ResearchCompletedNotification extends ClientNotification {
+  type: ClientNotificationType.RESEARCH_COMPLETED;
+  data: {
+    researchType: number; // ResearchType
+    newLevel: number;
+    researchQueueCleared: boolean; // If max level reached
+  };
+}
+
+export interface PopulationGrewNotification extends ClientNotification {
+  type: ClientNotificationType.POPULATION_GREW;
+  data: {
+    planetId: number;
+    planetName: string;
+    newPopulation: number;
+  };
+}
+
+export interface PopulationStarvationNotification extends ClientNotification {
+  type: ClientNotificationType.POPULATION_STARVATION;
   data: {
     planetId: number;
     planetName: string;
   };
 }
 
-export interface FoodShortageRiotsEvent extends ClientEvent {
-  type: ClientEventType.FOOD_SHORTAGE_RIOTS;
+export interface FoodShortageRiotsNotification extends ClientNotification {
+  type: ClientNotificationType.FOOD_SHORTAGE_RIOTS;
   data: {
     planetId: number;
     planetName: string;
@@ -449,8 +469,8 @@ export interface FoodShortageRiotsEvent extends ClientEvent {
   };
 }
 
-export interface InsufficientFoodEvent extends ClientEvent {
-  type: ClientEventType.INSUFFICIENT_FOOD;
+export interface InsufficientFoodNotification extends ClientNotification {
+  type: ClientNotificationType.INSUFFICIENT_FOOD;
   data: {
     planetId: number;
     planetName: string;
@@ -458,8 +478,8 @@ export interface InsufficientFoodEvent extends ClientEvent {
   };
 }
 
-export interface CitizensProtestingEvent extends ClientEvent {
-  type: ClientEventType.CITIZENS_PROTESTING;
+export interface CitizensProtestingNotification extends ClientNotification {
+  type: ClientNotificationType.CITIZENS_PROTESTING;
   data: {
     planetId: number;
     planetName: string;
@@ -467,32 +487,28 @@ export interface CitizensProtestingEvent extends ClientEvent {
   };
 }
 
-export interface PlanetLostDueToStarvationEvent extends ClientEvent {
-  type: ClientEventType.PLANET_LOST_DUE_TO_STARVATION;
+export interface PlanetLostDueToStarvationNotification extends ClientNotification {
+  type: ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION;
   data: {
     planetId: number;
     planetName: string;
   };
 }
 
-export interface DefendedAgainstAttackingFleetEvent extends ClientEvent {
-  type: ClientEventType.DEFENDED_AGAINST_ATTACKING_FLEET;
+export interface ResourcesAutoSpentNotification extends ClientNotification {
+  type: ClientNotificationType.RESOURCES_AUTO_SPENT;
   data: {
-    planetId: number;
-    planetName: string;
-    attackerName: string;
-    defendingFleetLosses: number;
-    attackingFleetSize: number;
+    amount: number;
+    resourceType: string;
+    reason: string;
   };
 }
 
-export interface AttackingFleetLostEvent extends ClientEvent {
-  type: ClientEventType.ATTACKING_FLEET_LOST;
+export interface ShipsAutoQueuedNotification extends ClientNotification {
+  type: ClientNotificationType.SHIPS_AUTO_QUEUED;
   data: {
     planetId: number;
     planetName: string;
-    defenderName: string;
-    attackingFleetSize: number;
-    defendingFleetLosses: number;
+    shipsQueued: string; // Description of ships queued
   };
 }
