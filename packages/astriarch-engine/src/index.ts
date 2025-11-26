@@ -181,6 +181,7 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
     destroyedPlayers: result.destroyedPlayers,
     gameEndConditions: result.gameEndConditions,
     events: result.events,
+    notifications: result.notifications,
   };
 };
 

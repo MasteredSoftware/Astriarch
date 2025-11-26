@@ -35,6 +35,7 @@ export enum MESSAGE_TYPE {
   // New Command/Event Architecture
   GAME_COMMAND = 'GAME_COMMAND', // Client -> Server: Player command
   CLIENT_EVENT = 'CLIENT_EVENT', // Server -> Client: State change event
+  CLIENT_NOTIFICATION = 'CLIENT_NOTIFICATION', // Server -> Client: Informational notification
 
   // Research & Trading
   ADJUST_RESEARCH_PERCENT = 'ADJUST_RESEARCH_PERCENT',
@@ -241,6 +242,11 @@ export interface IClientEventPayload {
   events: ClientEvent[];
   stateChecksum: string; // SHA256 hash for desync detection
   currentCycle: number; // Game cycle when events occurred
+}
+
+export interface IClientNotificationPayload {
+  notifications: import('../engine/GameCommands').ClientNotification[];
+  currentCycle: number; // Game cycle when notifications occurred
 }
 
 // =============================================
@@ -508,6 +514,7 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.PLAYER_ELIMINATED]: 71,
     [MESSAGE_TYPE.GAME_COMMAND]: 80,
     [MESSAGE_TYPE.CLIENT_EVENT]: 81,
+    [MESSAGE_TYPE.CLIENT_NOTIFICATION]: 82,
   };
 
   return typeMap[type] ?? -1;

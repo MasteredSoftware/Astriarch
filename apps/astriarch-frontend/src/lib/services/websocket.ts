@@ -19,6 +19,8 @@ import {
 	type GameCommand,
 	type ClientEvent,
 	ClientEventType,
+	type ClientNotification,
+	ClientNotificationType,
 	GameCommandType,
 	EventApplicator,
 	calculateRollingEventChecksum,
@@ -231,137 +233,190 @@ class WebSocketService {
 		let message = '';
 
 		switch (event.type) {
-			case ClientEventType.SHIP_BUILT: {
-				notificationType = 'construction';
-				const data = event.data as { planetId: string; planetName: string; shipType: string };
-				message = `Ship built: ${data.shipType} at ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.IMPROVEMENT_BUILT: {
-				notificationType = 'construction';
-				const data = event.data as {
-					planetId: string;
-					planetName: string;
-					improvementType: string;
-				};
-				message = `Improvement built: ${data.improvementType} at ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.IMPROVEMENT_DEMOLISHED: {
-				notificationType = 'construction';
-				const data = event.data as {
-					planetId: string;
-					planetName: string;
-					improvementType: string;
-				};
-				message = `Improvement demolished: ${data.improvementType} at ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.RESEARCH_COMPLETED: {
-				notificationType = 'research';
-				const data = event.data as { researchType: string; newLevel: number };
-				message = `Research complete: ${data.researchType} (Level ${data.newLevel})`;
-				break;
-			}
-			case ClientEventType.POPULATION_GREW: {
-				notificationType = 'planet';
-				const data = event.data as { planetId: string; planetName: string; newPopulation: number };
-				message = `Population grew at ${data.planetName} (${data.newPopulation.toFixed(1)})`;
-				break;
-			}
+			// Command response events (typically don't need UI notifications)
+			case ClientEventType.PRODUCTION_ITEM_QUEUED:
+			case ClientEventType.PRODUCTION_ITEM_REMOVED:
+			case ClientEventType.FLEET_LAUNCHED:
+			case ClientEventType.WAYPOINT_SET:
+			case ClientEventType.WAYPOINT_CLEARED:
+			case ClientEventType.RESEARCH_QUEUED:
+			case ClientEventType.RESEARCH_CANCELLED:
+			case ClientEventType.RESEARCH_PERCENT_ADJUSTED:
+			case ClientEventType.TRADE_SUBMITTED:
+			case ClientEventType.TRADE_CANCELLED:
+			case ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED:
+			case ClientEventType.PLANET_OPTIONS_UPDATED:
+				// These are command confirmations - no UI notification needed
+				return;
+
+			// Server-only events that may need UI notifications
 			case ClientEventType.TRADE_EXECUTED: {
-				notificationType = 'info';
+				notificationType = 'success';
 				const data = event.data as {
-					planetId: string;
-					planetName: string;
-					resourceType: string;
+					planetId: number;
+					resourceType: number;
 					amount: number;
+					tradeType: number;
 				};
-				message = `Trade executed: ${data.amount.toFixed(1)} ${data.resourceType} at ${data.planetName}`;
+				const action = data.tradeType === 1 ? 'bought' : 'sold';
+				message = `Trade executed: ${action} ${data.amount} resources`;
 				break;
 			}
 			case ClientEventType.PLANET_CAPTURED: {
-				notificationType = 'planet';
-				const data = event.data as {
-					planetId: string;
-					planetName: string;
-					previousOwnerName?: string;
-				};
-				message = data.previousOwnerName
-					? `Planet captured: ${data.planetName} from ${data.previousOwnerName}`
-					: `Planet captured: ${data.planetName}`;
+				notificationType = 'success';
+				message = `Planet captured!`;
 				break;
 			}
 			case ClientEventType.PLANET_LOST: {
-				notificationType = 'battle';
-				const data = event.data as { planetId: string; planetName: string; captorName: string };
-				message = `Planet lost: ${data.planetName} to ${data.captorName}`;
+				notificationType = 'error';
+				const data = event.data as { planetId: number; planetName: string; newOwnerId: string };
+				message = `Planet lost: ${data.planetName}`;
 				break;
 			}
 			case ClientEventType.FLEET_DESTROYED: {
 				notificationType = 'battle';
-				const data = event.data as { planetId: string; planetName: string; defenderName?: string };
-				message = data.defenderName
-					? `Fleet destroyed attacking ${data.planetName} (${data.defenderName})`
-					: `Fleet destroyed attacking ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.RESOURCES_AUTO_SPENT: {
-				notificationType = 'info';
-				const data = event.data as { amount: number; resourceType: string; reason: string };
-				message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
-				break;
-			}
-			case ClientEventType.SHIPS_AUTO_QUEUED: {
-				notificationType = 'construction';
-				const data = event.data as { planetId: number; planetName: string; shipsQueued: string };
-				message = `Auto-queued ships: ${data.shipsQueued} at ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.POPULATION_STARVATION: {
-				notificationType = 'planet';
-				const data = event.data as { planetId: number; planetName: string };
-				message = `Population lost to starvation at ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.FOOD_SHORTAGE_RIOTS: {
-				notificationType = 'warning';
-				const data = event.data as { planetId: number; planetName: string; reason: string };
-				message = `Food shortage riots at ${data.planetName}${data.reason}`;
-				break;
-			}
-			case ClientEventType.INSUFFICIENT_FOOD: {
-				notificationType = 'warning';
-				const data = event.data as { planetId: number; planetName: string; foodDeficit: number };
-				message = `Food shortage at ${data.planetName} (deficit: ${data.foodDeficit.toFixed(1)})`;
-				break;
-			}
-			case ClientEventType.CITIZENS_PROTESTING: {
-				notificationType = 'warning';
-				const data = event.data as { planetId: number; planetName: string; reason: string };
-				message = `Citizens protesting at ${data.planetName}: ${data.reason}`;
-				break;
-			}
-			case ClientEventType.PLANET_LOST_DUE_TO_STARVATION: {
-				notificationType = 'battle';
-				const data = event.data as { planetId: number; planetName: string };
-				message = `Planet lost due to starvation: ${data.planetName}`;
-				break;
-			}
-			case ClientEventType.DEFENDED_AGAINST_ATTACKING_FLEET: {
-				notificationType = 'battle';
-				const data = event.data as { planetId: number; planetName: string; attackerName: string };
-				message = `Successfully defended ${data.planetName} against ${data.attackerName}`;
-				break;
-			}
-			case ClientEventType.ATTACKING_FLEET_LOST: {
-				notificationType = 'battle';
-				const data = event.data as { planetId: number; planetName: string; defenderName: string };
-				message = `Attacking fleet destroyed at ${data.planetName} (${data.defenderName})`;
+				const data = event.data as {
+					planetId: number;
+					planetName: string;
+					wasAttacking: boolean;
+				};
+				message = data.wasAttacking
+					? `Fleet destroyed attacking ${data.planetName}`
+					: `Defense fleet destroyed at ${data.planetName}`;
 				break;
 			}
 			default:
 				console.warn('Unknown ClientEventType:', event.type);
+				return;
+		}
+
+		this.gameStore.addNotification({
+			type: notificationType,
+			message,
+			timestamp: Date.now()
+		});
+	}
+
+	private convertClientNotificationToUINotification(notification: ClientNotification): void {
+		let notificationType:
+			| 'info'
+			| 'success'
+			| 'warning'
+			| 'error'
+			| 'battle'
+			| 'research'
+			| 'construction'
+			| 'fleet'
+			| 'planet' = 'info';
+		let message = '';
+
+		switch (notification.type) {
+			case ClientNotificationType.SHIP_BUILT: {
+				notificationType = 'construction';
+				const data = notification.data as {
+					planetId: number;
+					planetName: string;
+					shipType: number;
+					nextItemInQueue?: string;
+				};
+				message = `Ship built at ${data.planetName}`;
+				if (data.nextItemInQueue) {
+					message += ` (Next: ${data.nextItemInQueue})`;
+				}
+				break;
+			}
+			case ClientNotificationType.IMPROVEMENT_BUILT: {
+				notificationType = 'construction';
+				const data = notification.data as {
+					planetId: number;
+					planetName: string;
+					improvementType: number;
+					nextItemInQueue?: string;
+				};
+				message = `Improvement built at ${data.planetName}`;
+				if (data.nextItemInQueue) {
+					message += ` (Next: ${data.nextItemInQueue})`;
+				}
+				break;
+			}
+			case ClientNotificationType.IMPROVEMENT_DEMOLISHED: {
+				notificationType = 'construction';
+				const data = notification.data as {
+					planetId: number;
+					planetName: string;
+					improvementType: number;
+					nextItemInQueue?: string;
+				};
+				message = `Improvement demolished at ${data.planetName}`;
+				if (data.nextItemInQueue) {
+					message += ` (Next: ${data.nextItemInQueue})`;
+				}
+				break;
+			}
+			case ClientNotificationType.RESEARCH_COMPLETED: {
+				notificationType = 'research';
+				const data = notification.data as { researchType: number; newLevel: number };
+				message = `Research complete (Level ${data.newLevel})`;
+				break;
+			}
+			case ClientNotificationType.POPULATION_GREW: {
+				notificationType = 'planet';
+				const data = notification.data as { planetId: number; planetName: string; newPopulation: number };
+				message = `Population grew at ${data.planetName} (${data.newPopulation})`;
+				break;
+			}
+			case ClientNotificationType.POPULATION_STARVATION: {
+				notificationType = 'warning';
+				const data = notification.data as { planetId: number; planetName: string };
+				message = `Population lost to starvation at ${data.planetName}`;
+				break;
+			}
+			case ClientNotificationType.FOOD_SHORTAGE_RIOTS: {
+				notificationType = 'warning';
+				const data = notification.data as { planetId: number; planetName: string; reason: string };
+				message = `Food shortage riots at ${data.planetName}: ${data.reason}`;
+				break;
+			}
+			case ClientNotificationType.INSUFFICIENT_FOOD: {
+				notificationType = 'warning';
+				const data = notification.data as {
+					planetId: number;
+					planetName: string;
+					foodDeficit: number;
+				};
+				message = `Food shortage at ${data.planetName} (deficit: ${data.foodDeficit.toFixed(1)})`;
+				break;
+			}
+			case ClientNotificationType.CITIZENS_PROTESTING: {
+				notificationType = 'warning';
+				const data = notification.data as { planetId: number; planetName: string; reason: string };
+				message = `Citizens protesting at ${data.planetName}: ${data.reason}`;
+				break;
+			}
+			case ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION: {
+				notificationType = 'error';
+				const data = notification.data as { planetId: number; planetName: string };
+				message = `Planet lost due to starvation: ${data.planetName}`;
+				break;
+			}
+			case ClientNotificationType.RESOURCES_AUTO_SPENT: {
+				notificationType = 'info';
+				const data = notification.data as { amount: number; resourceType: string; reason: string };
+				message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
+				break;
+			}
+			case ClientNotificationType.SHIPS_AUTO_QUEUED: {
+				notificationType = 'construction';
+				const data = notification.data as {
+					planetId: number;
+					planetName: string;
+					shipsQueued: string;
+				};
+				message = `Auto-queued ships at ${data.planetName}: ${data.shipsQueued}`;
+				break;
+			}
+			default:
+				console.warn('Unknown ClientNotificationType:', notification.type);
 				return;
 		}
 
@@ -1040,6 +1095,26 @@ class WebSocketService {
 				} else {
 					// No checksum provided (time-based events) - just update the model
 					clientGameModel.set(currentModel);
+				}
+
+				break;
+			}
+
+			case MESSAGE_TYPE.CLIENT_NOTIFICATION: {
+				// Handle notification messages (informational only, no state mutation)
+				const payload = message.payload as {
+					notifications: ClientNotification[];
+					currentCycle: number;
+				};
+				console.log(
+					`Received ${payload.notifications.length} client notifications from server`
+				);
+
+				// Convert each notification to UI notification
+				// These are informational only - the client already applied changes locally
+				for (const notification of payload.notifications) {
+					console.log(`Processing notification: ${notification.type}`);
+					this.convertClientNotificationToUINotification(notification);
 				}
 
 				break;

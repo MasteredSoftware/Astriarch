@@ -395,10 +395,20 @@ export class WebSocketServer {
       // Update the game state in the database
       game.gameState = result.gameModel.modelData;
 
-      // Broadcast time-based events to affected players (NOT full state)
-      if (result.events && result.events.length > 0) {
-        logger.info(`Generated ${result.events.length} time-based events during game advancement`);
-        await this.broadcastTimeBasedEvents(gameId, result.events, result.gameModel.modelData.currentCycle);
+      // Broadcast time-based events and notifications to affected players (NOT full state)
+      const hasEvents = result.events && result.events.length > 0;
+      const hasNotifications = result.notifications && result.notifications.length > 0;
+
+      if (hasEvents || hasNotifications) {
+        logger.info(
+          `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
+        );
+        await this.broadcastTimeBasedEvents(
+          gameId,
+          result.events || [],
+          result.notifications || [],
+          result.gameModel.modelData.currentCycle,
+        );
       }
 
       // Check for destroyed players and game over conditions
@@ -409,6 +419,7 @@ export class WebSocketServer {
             destroyedPlayers: result.destroyedPlayers,
             gameEndConditions: result.gameEndConditions,
             events: result.events,
+            notifications: result.notifications,
           },
           game,
         );
@@ -436,10 +447,20 @@ export class WebSocketServer {
       // Update the game state in the database
       game.gameState = result.gameModel.modelData;
 
-      // Broadcast time-based events to affected players
-      if (result.events && result.events.length > 0) {
-        logger.info(`Generated ${result.events.length} time-based events during game advancement`);
-        await this.broadcastTimeBasedEvents(gameId, result.events, result.gameModel.modelData.currentCycle);
+      // Broadcast time-based events and notifications to affected players
+      const hasEvents = result.events && result.events.length > 0;
+      const hasNotifications = result.notifications && result.notifications.length > 0;
+
+      if (hasEvents || hasNotifications) {
+        logger.info(
+          `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
+        );
+        await this.broadcastTimeBasedEvents(
+          gameId,
+          result.events || [],
+          result.notifications || [],
+          result.gameModel.modelData.currentCycle,
+        );
       }
 
       // Check for destroyed players and game over conditions
@@ -450,6 +471,7 @@ export class WebSocketServer {
             destroyedPlayers: result.destroyedPlayers,
             gameEndConditions: result.gameEndConditions,
             events: result.events,
+            notifications: result.notifications,
           },
           game,
         );
@@ -1358,6 +1380,7 @@ export class WebSocketServer {
   private async broadcastTimeBasedEvents(
     gameId: string,
     events: import("astriarch-engine").ClientEvent[],
+    notifications: import("astriarch-engine").ClientNotification[],
     currentCycle: number,
   ): Promise<void> {
     try {
@@ -1370,6 +1393,18 @@ export class WebSocketServer {
             eventsByPlayer.set(playerId, []);
           }
           eventsByPlayer.get(playerId)!.push(event);
+        }
+      }
+
+      // Group notifications by target player
+      const notificationsByPlayer = new Map<string, import("astriarch-engine").ClientNotification[]>();
+
+      for (const notification of notifications) {
+        for (const playerId of notification.affectedPlayerIds) {
+          if (!notificationsByPlayer.has(playerId)) {
+            notificationsByPlayer.set(playerId, []);
+          }
+          notificationsByPlayer.get(playerId)!.push(notification);
         }
       }
 
@@ -1408,6 +1443,38 @@ export class WebSocketServer {
 
         this.broadcastToSession(targetClient.sessionId, eventMessage);
         logger.info(`Sent ${playerEvents.length} time-based events to player ${playerId}`);
+      }
+
+      // Send notifications to each affected player
+      logger.info(
+        `Broadcasting ${notifications.length} notifications to ${notificationsByPlayer.size} players in game ${gameId}`,
+      );
+
+      for (const [playerId, playerNotifications] of notificationsByPlayer.entries()) {
+        // Find the client for this player
+        let targetClient: IConnectedClient | null = null;
+        for (const client of this.clients.values()) {
+          if (client.playerId === playerId && client.gameId === gameId) {
+            targetClient = client;
+            break;
+          }
+        }
+
+        if (!targetClient) {
+          logger.warn(
+            `No connected client found for player ${playerId} to send ${playerNotifications.length} notifications`,
+          );
+          continue;
+        }
+
+        // Send CLIENT_NOTIFICATION message with the notifications for this player
+        const notificationMessage = new Message(MESSAGE_TYPE.CLIENT_NOTIFICATION, {
+          notifications: playerNotifications,
+          currentCycle,
+        });
+
+        this.broadcastToSession(targetClient.sessionId, notificationMessage);
+        logger.info(`Sent ${playerNotifications.length} notifications to player ${playerId}`);
       }
     } catch (error) {
       logger.error("Error broadcasting time-based events:", error);
