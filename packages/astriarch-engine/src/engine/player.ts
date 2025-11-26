@@ -1,12 +1,9 @@
 import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
-import { EventNotificationType } from '../model/eventNotification';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
 import { ModelData } from '../model/model';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
-import { Utils } from '../utils/utils';
-import { Events } from './events';
 import { Fleet } from './fleet';
 import { ClientEvent, ClientEventType } from './GameCommands';
 import { AdvanceGameClockForPlayerData, GameModel } from './gameModel';
@@ -91,8 +88,11 @@ export class Player {
     const researchEvents = Research.advanceResearchForPlayer(data);
     events.push(...researchEvents);
 
-    this.eatAndStarve(data);
-    this.adjustPlayerPlanetProtestLevels(data); // has randomness can't use client side, probably should change this
+    const eatAndStarveEvents = this.eatAndStarve(data);
+    events.push(...eatAndStarveEvents);
+    
+    const protestEvents = this.adjustPlayerPlanetProtestLevels(data); // deterministic
+    events.push(...protestEvents);
 
     const buildEvents = this.buildPlayerPlanetImprovements(data); // deterministic
     events.push(...buildEvents);
@@ -233,21 +233,26 @@ export class Player {
       }
     }
 
-    if (autoQueuedCount) {
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.ResourcesAutoSpent,
-        'Auto-queued: ' + Fleet.toString(autoQueuedFleet),
-        focusPlanet,
-      );
+    if (autoQueuedCount && focusPlanet) {
+      const event: ClientEvent = {
+        type: ClientEventType.SHIPS_AUTO_QUEUED,
+        affectedPlayerIds: [mainPlayer.id],
+        data: {
+          planetId: focusPlanet.id,
+          planetName: focusPlanet.name,
+          shipsQueued: Fleet.toString(autoQueuedFleet),
+        },
+      };
+      return [event];
     }
+    return [];
   }
 
-  public static eatAndStarve(data: AdvanceGameClockForPlayerData) {
+  public static eatAndStarve(data: AdvanceGameClockForPlayerData): ClientEvent[] {
     const { clientModel, cyclesElapsed, currentCycle } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
-    const totalPop = this.getTotalPopulation(mainPlayer, mainPlayerOwnedPlanets);
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
+    const events: ClientEvent[] = [];
     //for each planet player controls
 
     //if one planet has a shortage and another a surplus, gold will be spent (if possible) for shipping
@@ -326,76 +331,96 @@ export class Player {
       }
 
       if (!shippedAllResources) {
-        const foodShortageRatio = (foodShortageTotal / (totalPop * 1.0)) * cyclesElapsed;
-        //starvation
-        //there is a food shortage ratio chance of loosing one population,
-        //if you have 4 pop and 2 food you have a 1 in 2 chance of loosing one
-        //otherwise people just slowly starve
-        const looseOne = Utils.nextRandom(0, 100) < Math.round(foodShortageRatio * 100);
-        if (looseOne) {
-          let riotReason = '.'; //for shortages
-          if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0)
-            riotReason = ', insufficient Energy to ship Food.';
-          //notify user of starvation
-          planet.planetHappiness = PlanetHappinessType.Riots;
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.FoodShortageRiots,
-            'Riots over food shortages killed one population on planet: ' + planet.name + riotReason,
-            planet,
-          );
-          if (planet.population.length > 0) {
-            planet.population.pop();
-          }
-        } //reduce the population a bit
-        else {
-          if (planet.population.length > 0) {
-            planet.planetHappiness = PlanetHappinessType.Unrest;
-
-            const c = planet.population[planet.population.length - 1];
-            c.populationChange -= foodShortageRatio;
-            if (c.populationChange <= -1.0) {
-              //notify user of starvation
-              Events.enqueueNewEvent(
-                mainPlayer.id,
-                EventNotificationType.PopulationStarvation,
-                'You lost one population due to food shortages on planet: ' + planet.name,
-                planet,
-              );
-              planet.population.pop();
+        const foodShortageRatio = (foodShortageTotal / (planet.population.length * cyclesElapsed));
+        
+        // DETERMINISTIC: Accumulate shortage and lose pop when it reaches threshold
+        // Instead of random chance, we track accumulated starvation
+        if (planet.population.length > 0) {
+          const lastCitizen = planet.population[planet.population.length - 1];
+          
+          // Accumulate starvation damage
+          lastCitizen.populationChange -= foodShortageRatio;
+          
+          // Threshold-based population loss instead of random
+          if (lastCitizen.populationChange <= -1.0) {
+            // Severe shortage (>=50%) leads to riots and immediate death
+            if (foodShortageRatio >= 0.5) {
+              let riotReason = '.';
+              if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0) {
+                riotReason = ', insufficient Energy to ship Food.';
+              }
+              
+              planet.planetHappiness = PlanetHappinessType.Riots;
+              const riotEvent: ClientEvent = {
+                type: ClientEventType.FOOD_SHORTAGE_RIOTS,
+                affectedPlayerIds: [mainPlayer.id],
+                data: {
+                  planetId: planet.id,
+                  planetName: planet.name,
+                  reason: riotReason,
+                },
+              };
+              events.push(riotEvent);
             } else {
-              protestingPlanetCount++;
-
-              if (protestingPlanetNames != '') protestingPlanetNames += ', ';
-              protestingPlanetNames += planet.name;
-
-              lastProtestingPlanet = planet;
+              // Gradual starvation
+              planet.planetHappiness = PlanetHappinessType.Unrest;
+              const starvationEvent: ClientEvent = {
+                type: ClientEventType.POPULATION_STARVATION,
+                affectedPlayerIds: [mainPlayer.id],
+                data: {
+                  planetId: planet.id,
+                  planetName: planet.name,
+                },
+              };
+              events.push(starvationEvent);
             }
+            
+            planet.population.pop();
+          } else {
+            // Unrest but no death yet
+            planet.planetHappiness = PlanetHappinessType.Unrest;
+            protestingPlanetCount++;
+            if (protestingPlanetNames != '') protestingPlanetNames += ', ';
+            protestingPlanetNames += planet.name;
+            lastProtestingPlanet = planet;
           }
         }
 
-        //citizens will further protest depending on the amount of food shortages
-        for (const citizen of planet.population) {
-          //citizens on the home planet are more forgiving
-          const protestDenominator = planet.id == mainPlayer.homePlanetId ? 4 : 2;
-          if (Utils.nextRandom(0, protestDenominator) === 0) {
-            //only have 1/2 the population protest so the planet isn't totally screwed
-            citizen.protestLevel += Utils.nextRandomFloat(0, foodShortageRatio);
-            if (citizen.protestLevel > 1) {
-              citizen.protestLevel = 1;
-            }
+        // DETERMINISTIC: Increase protest based on shortage ratio
+        // Citizens directly affected by shortage protest fully, others show solidarity at reduced rate
+        // Calculate how many citizens didn't get food: shortage / (population * food per citizen)
+        const citizensDirectlyAffected = Math.min(
+          Math.ceil(foodShortageTotal / (planet.population.length * cyclesElapsed)),
+          planet.population.length
+        );
+        const protestDenominator = planet.id == mainPlayer.homePlanetId ? 4 : 2;
+
+        for (let i = 0; i < planet.population.length; i++) {
+          const citizen = planet.population[i];
+          const isDirectlyAffected = i >= planet.population.length - citizensDirectlyAffected;
+          
+          // Directly affected citizens protest fully, others at 25% (social awareness/solidarity)
+          const protestMultiplier = isDirectlyAffected ? 1.0 : 0.25;
+          const protestIncrease = (foodShortageRatio / protestDenominator) * protestMultiplier;
+          
+          citizen.protestLevel += protestIncrease;
+          if (citizen.protestLevel > 1) {
+            citizen.protestLevel = 1;
           }
         }
 
         //have to check to see if we removed the last pop and loose this planet from owned planets if so
         if (planet.population.length == 0) {
           //notify user of planet loss
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.PlanetLostDueToStarvation,
-            'You have lost control of ' + planet.name + ' due to starvation',
-            planet,
-          );
+          const planetLostEvent: ClientEvent = {
+            type: ClientEventType.PLANET_LOST_DUE_TO_STARVATION,
+            affectedPlayerIds: [mainPlayer.id],
+            data: {
+              planetId: planet.id,
+              planetName: planet.name,
+            },
+          };
+          events.push(planetLostEvent);
 
           GameModel.changePlanetOwner(mainPlayer, undefined, planet, currentCycle);
         } else if (planet.id == mainPlayer.homePlanetId) {
@@ -430,6 +455,8 @@ export class Player {
     if (totalFoodShipped != 0) {
       mainPlayer.lastTurnFoodShipped += totalFoodShipped;
     }
+
+    return events;
   }
 
   public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData): ClientEvent[] {
@@ -469,9 +496,10 @@ export class Player {
     return events;
   }
 
-  public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData) {
-    const { clientModel } = data;
+  public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData): ClientEvent[] {
+    const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    const events: ClientEvent[] = [];
     //if we have a normal PlanetHappiness (meaning we didn't cause unrest from starvation)
     //	we'll slowly reduce the amount of protest on the planet
 
@@ -482,16 +510,12 @@ export class Player {
         let protestingCitizenCount = 0;
         const contentCitizenRatio = citizens.content.length / p.population.length;
 
+        // DETERMINISTIC: Fixed protest reduction rate based on content population, scaled by time
+        const baseProtestReduction = Math.max(0.25, contentCitizenRatio) * cyclesElapsed;
+        const homeWorldMultiplier = p.id == mainPlayer.homePlanetId ? 2.0 : 1.0;
+        const protestReduction = baseProtestReduction * homeWorldMultiplier;
+
         for (const citizen of citizens.protesting) {
-          //protest reduction algorithm:
-          //	each turn reduce a random amount of protest for each citizen
-          //  the amount of reduction is based on the percentage of the total population protesting (to a limit)
-          //   (the more people protesting the more likely others will keep protesting)
-          let protestReduction = Utils.nextRandomFloat(0, Math.max(0.25, contentCitizenRatio));
-          //citizens are more quickly content on the home planet
-          if (p.id == mainPlayer.homePlanetId) {
-            protestReduction *= 2.0;
-          }
           citizen.protestLevel -= protestReduction;
 
           if (citizen.protestLevel <= 0) {
@@ -499,28 +523,37 @@ export class Player {
             citizen.loyalToPlayerId = mainPlayer.id;
           } else {
             protestingCitizenCount++;
-            //console.log("Planet: ", p.Name, "citizen["+c+"]", citizen);
           }
         }
         const citizenText = protestingCitizenCount > 1 ? ' Citizens' : ' Citizen';
         if (protestingCitizenCount >= p.population.length / 2) {
           p.planetHappiness = PlanetHappinessType.Unrest;
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.CitizensProtesting,
-            'Population unrest on ' + p.name + ' due to ' + protestingCitizenCount + citizenText + ' protesting',
-            p,
-          );
+          const protestEvent: ClientEvent = {
+            type: ClientEventType.CITIZENS_PROTESTING,
+            affectedPlayerIds: [mainPlayer.id],
+            data: {
+              planetId: p.id,
+              planetName: p.name,
+              reason: `${protestingCitizenCount}${citizenText} protesting (unrest)`,
+            },
+          };
+          events.push(protestEvent);
         } else if (protestingCitizenCount > 0) {
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.CitizensProtesting,
-            protestingCitizenCount + citizenText + ' protesting your rule on ' + p.name,
-            p,
-          );
+          const protestEvent: ClientEvent = {
+            type: ClientEventType.CITIZENS_PROTESTING,
+            affectedPlayerIds: [mainPlayer.id],
+            data: {
+              planetId: p.id,
+              planetName: p.name,
+              reason: `${protestingCitizenCount}${citizenText} protesting`,
+            },
+          };
+          events.push(protestEvent);
         }
       }
     }
+
+    return events;
   }
 
   public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData): ClientEvent[] {

@@ -68,10 +68,20 @@ export enum ClientEventType {
   PLANET_OPTIONS_UPDATED = 'PLANET_OPTIONS_UPDATED',
   PLANET_CAPTURED = 'PLANET_CAPTURED',
   PLANET_LOST = 'PLANET_LOST',
+  PLANET_LOST_DUE_TO_STARVATION = 'PLANET_LOST_DUE_TO_STARVATION',
   POPULATION_GREW = 'POPULATION_GREW',
+  POPULATION_STARVATION = 'POPULATION_STARVATION',
+  FOOD_SHORTAGE_RIOTS = 'FOOD_SHORTAGE_RIOTS',
+  INSUFFICIENT_FOOD = 'INSUFFICIENT_FOOD',
+  CITIZENS_PROTESTING = 'CITIZENS_PROTESTING',
+
+  // Fleet/Combat events
+  DEFENDED_AGAINST_ATTACKING_FLEET = 'DEFENDED_AGAINST_ATTACKING_FLEET',
+  ATTACKING_FLEET_LOST = 'ATTACKING_FLEET_LOST',
 
   // Resource events
   RESOURCES_AUTO_SPENT = 'RESOURCES_AUTO_SPENT',
+  SHIPS_AUTO_QUEUED = 'SHIPS_AUTO_QUEUED',
 }
 
 // ============================================================================
@@ -410,5 +420,79 @@ export interface ResourcesAutoSpentEvent extends ClientEvent {
     amount: number;
     resourceType: string;
     reason: string;
+  };
+}
+
+export interface ShipsAutoQueuedEvent extends ClientEvent {
+  type: ClientEventType.SHIPS_AUTO_QUEUED;
+  data: {
+    planetId: number;
+    planetName: string;
+    shipsQueued: string; // Description of ships queued
+  };
+}
+
+export interface PopulationStarvationEvent extends ClientEvent {
+  type: ClientEventType.POPULATION_STARVATION;
+  data: {
+    planetId: number;
+    planetName: string;
+  };
+}
+
+export interface FoodShortageRiotsEvent extends ClientEvent {
+  type: ClientEventType.FOOD_SHORTAGE_RIOTS;
+  data: {
+    planetId: number;
+    planetName: string;
+    reason: string; // e.g., "insufficient Energy to ship Food"
+  };
+}
+
+export interface InsufficientFoodEvent extends ClientEvent {
+  type: ClientEventType.INSUFFICIENT_FOOD;
+  data: {
+    planetId: number;
+    planetName: string;
+    foodDeficit: number;
+  };
+}
+
+export interface CitizensProtestingEvent extends ClientEvent {
+  type: ClientEventType.CITIZENS_PROTESTING;
+  data: {
+    planetId: number;
+    planetName: string;
+    reason: string;
+  };
+}
+
+export interface PlanetLostDueToStarvationEvent extends ClientEvent {
+  type: ClientEventType.PLANET_LOST_DUE_TO_STARVATION;
+  data: {
+    planetId: number;
+    planetName: string;
+  };
+}
+
+export interface DefendedAgainstAttackingFleetEvent extends ClientEvent {
+  type: ClientEventType.DEFENDED_AGAINST_ATTACKING_FLEET;
+  data: {
+    planetId: number;
+    planetName: string;
+    attackerName: string;
+    defendingFleetLosses: number;
+    attackingFleetSize: number;
+  };
+}
+
+export interface AttackingFleetLostEvent extends ClientEvent {
+  type: ClientEventType.ATTACKING_FLEET_LOST;
+  data: {
+    planetId: number;
+    planetName: string;
+    defenderName: string;
+    attackingFleetSize: number;
+    defendingFleetLosses: number;
   };
 }

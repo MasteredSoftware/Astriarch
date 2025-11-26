@@ -8,6 +8,7 @@
  */
 
 import { ClientModelData } from '../model/clientModel';
+import { PlanetHappinessType } from '../model/planet';
 import { TradeData, TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 import { Planet } from './planet';
 import { Fleet } from './fleet';
@@ -36,6 +37,14 @@ import {
   PlanetLostEvent,
   FleetDestroyedEvent,
   ResourcesAutoSpentEvent,
+  ShipsAutoQueuedEvent,
+  PopulationStarvationEvent,
+  FoodShortageRiotsEvent,
+  InsufficientFoodEvent,
+  CitizensProtestingEvent,
+  PlanetLostDueToStarvationEvent,
+  DefendedAgainstAttackingFleetEvent,
+  AttackingFleetLostEvent,
 } from './GameCommands';
 import { Grid } from './grid';
 
@@ -132,6 +141,38 @@ export class EventApplicator {
 
       case ClientEventType.RESOURCES_AUTO_SPENT:
         this.applyResourcesAutoSpent(clientModel, event as ResourcesAutoSpentEvent);
+        break;
+
+      case ClientEventType.SHIPS_AUTO_QUEUED:
+        this.applyShipsAutoQueued(clientModel, event as ShipsAutoQueuedEvent);
+        break;
+
+      case ClientEventType.POPULATION_STARVATION:
+        this.applyPopulationStarvation(clientModel, event as PopulationStarvationEvent);
+        break;
+
+      case ClientEventType.FOOD_SHORTAGE_RIOTS:
+        this.applyFoodShortageRiots(clientModel, event as FoodShortageRiotsEvent);
+        break;
+
+      case ClientEventType.INSUFFICIENT_FOOD:
+        this.applyInsufficientFood(clientModel, event as InsufficientFoodEvent);
+        break;
+
+      case ClientEventType.CITIZENS_PROTESTING:
+        this.applyCitizensProtesting(clientModel, event as CitizensProtestingEvent);
+        break;
+
+      case ClientEventType.PLANET_LOST_DUE_TO_STARVATION:
+        this.applyPlanetLostDueToStarvation(clientModel, event as PlanetLostDueToStarvationEvent);
+        break;
+
+      case ClientEventType.DEFENDED_AGAINST_ATTACKING_FLEET:
+        this.applyDefendedAgainstAttackingFleet(clientModel, event as DefendedAgainstAttackingFleetEvent);
+        break;
+
+      case ClientEventType.ATTACKING_FLEET_LOST:
+        this.applyAttackingFleetLost(clientModel, event as AttackingFleetLostEvent);
         break;
 
       default:
@@ -554,5 +595,122 @@ export class EventApplicator {
 
     // No state mutation needed - resources already deducted server-side
     void clientModel;
+  }
+
+  private static applyShipsAutoQueued(clientModel: ClientModelData, event: ShipsAutoQueuedEvent): void {
+    const { planetId, planetName, shipsQueued } = event.data;
+
+    // Ships were already queued server-side during autoQueueShipBuilds()
+    // This event is notification-only - the production queue was already updated
+    // when Planet.enqueueProductionItemAndSpendResources() was called server-side
+    console.log(`Ships auto-queued on planet ${planetName}: ${shipsQueued}`);
+
+    // State already mutated server-side in autoQueueShipBuilds()
+    void clientModel;
+    void planetId;
+  }
+
+  private static applyPopulationStarvation(clientModel: ClientModelData, event: PopulationStarvationEvent): void {
+    const { planetId, planetName } = event.data;
+
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
+
+    // Remove one citizen due to starvation (matching server logic in eatAndStarve)
+    if (planet.population.length > 0) {
+      planet.population.pop();
+    }
+
+    console.log(`Population starvation on planet ${planetName}, population now: ${planet.population.length}`);
+  }
+
+  private static applyFoodShortageRiots(clientModel: ClientModelData, event: FoodShortageRiotsEvent): void {
+    const { planetId, planetName, reason } = event.data;
+
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
+
+    // Set planet to riots and remove one citizen (matching server logic in eatAndStarve)
+    planet.planetHappiness = PlanetHappinessType.Riots;
+    if (planet.population.length > 0) {
+      planet.population.pop();
+    }
+
+    console.log(`Food shortage riots on planet ${planetName}: ${reason}`);
+  }
+
+  private static applyInsufficientFood(clientModel: ClientModelData, event: InsufficientFoodEvent): void {
+    const { planetId, planetName, foodDeficit } = event.data;
+
+    // This event is primarily informational about food shortages
+    // The actual starvation effects are handled by FOOD_SHORTAGE_RIOTS and POPULATION_STARVATION events
+    console.log(`Insufficient food on planet ${planetName}: deficit of ${foodDeficit}`);
+
+    // No direct state mutation - serves as warning notification
+    void clientModel;
+    void planetId;
+  }
+
+  private static applyCitizensProtesting(clientModel: ClientModelData, event: CitizensProtestingEvent): void {
+    const { planetId, planetName, reason } = event.data;
+
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      return;
+    }
+
+    // Update planet happiness to Unrest if citizens are protesting
+    // (matching server logic in adjustPlayerPlanetProtestLevels)
+    if (reason.includes('unrest')) {
+      planet.planetHappiness = PlanetHappinessType.Unrest;
+    }
+
+    console.log(`Citizens protesting on planet ${planetName}: ${reason}`);
+  }
+
+  private static applyPlanetLostDueToStarvation(clientModel: ClientModelData, event: PlanetLostDueToStarvationEvent): void {
+    const { planetId, planetName } = event.data;
+
+    // Remove planet from ownership (matching server logic in eatAndStarve)
+    if (clientModel.mainPlayerOwnedPlanets[planetId]) {
+      delete clientModel.mainPlayerOwnedPlanets[planetId];
+    }
+    
+    // Remove from mainPlayer's ownedPlanetIds
+    clientModel.mainPlayer.ownedPlanetIds = clientModel.mainPlayer.ownedPlanetIds.filter((id) => id !== planetId);
+
+    console.log(`Planet lost due to starvation: ${planetName}`);
+  }
+
+  private static applyDefendedAgainstAttackingFleet(clientModel: ClientModelData, event: DefendedAgainstAttackingFleetEvent): void {
+    const { planetId, planetName, attackerName, defendingFleetLosses, attackingFleetSize } = event.data;
+
+    // Combat results and fleet losses are complex and already handled server-side
+    // Fleet damage calculation involves strength, research bonuses, and RNG
+    // This event serves as notification - actual fleet state comes from server
+    // TODO: Consider adding detailed fleet loss data to event if we need client-side fleet state sync
+    console.log(`Defended planet ${planetName} against ${attackerName} (${attackingFleetSize} ships). Losses: ${defendingFleetLosses}`);
+
+    void clientModel;
+    void planetId;
+  }
+
+  private static applyAttackingFleetLost(clientModel: ClientModelData, event: AttackingFleetLostEvent): void {
+    const { planetId, planetName, defenderName, attackingFleetSize, defendingFleetLosses } = event.data;
+
+    // Combat results and fleet destruction are complex
+    // The fleet destruction itself is handled by FLEET_DESTROYED event
+    // This event provides additional context about the battle outcome
+    console.log(`Lost attacking fleet at ${planetName} (${defenderName}). Fleet size: ${attackingFleetSize}, enemy losses: ${defendingFleetLosses}`);
+
+    void clientModel;
+    void planetId;
   }
 }

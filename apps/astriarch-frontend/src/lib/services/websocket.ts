@@ -312,6 +312,54 @@ class WebSocketService {
 				message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
 				break;
 			}
+			case ClientEventType.SHIPS_AUTO_QUEUED: {
+				notificationType = 'construction';
+				const data = event.data as { planetId: number; planetName: string; shipsQueued: string };
+				message = `Auto-queued ships: ${data.shipsQueued} at ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.POPULATION_STARVATION: {
+				notificationType = 'planet';
+				const data = event.data as { planetId: number; planetName: string };
+				message = `Population lost to starvation at ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.FOOD_SHORTAGE_RIOTS: {
+				notificationType = 'warning';
+				const data = event.data as { planetId: number; planetName: string; reason: string };
+				message = `Food shortage riots at ${data.planetName}${data.reason}`;
+				break;
+			}
+			case ClientEventType.INSUFFICIENT_FOOD: {
+				notificationType = 'warning';
+				const data = event.data as { planetId: number; planetName: string; foodDeficit: number };
+				message = `Food shortage at ${data.planetName} (deficit: ${data.foodDeficit.toFixed(1)})`;
+				break;
+			}
+			case ClientEventType.CITIZENS_PROTESTING: {
+				notificationType = 'warning';
+				const data = event.data as { planetId: number; planetName: string; reason: string };
+				message = `Citizens protesting at ${data.planetName}: ${data.reason}`;
+				break;
+			}
+			case ClientEventType.PLANET_LOST_DUE_TO_STARVATION: {
+				notificationType = 'battle';
+				const data = event.data as { planetId: number; planetName: string };
+				message = `Planet lost due to starvation: ${data.planetName}`;
+				break;
+			}
+			case ClientEventType.DEFENDED_AGAINST_ATTACKING_FLEET: {
+				notificationType = 'battle';
+				const data = event.data as { planetId: number; planetName: string; attackerName: string };
+				message = `Successfully defended ${data.planetName} against ${data.attackerName}`;
+				break;
+			}
+			case ClientEventType.ATTACKING_FLEET_LOST: {
+				notificationType = 'battle';
+				const data = event.data as { planetId: number; planetName: string; defenderName: string };
+				message = `Attacking fleet destroyed at ${data.planetName} (${data.defenderName})`;
+				break;
+			}
 			default:
 				console.warn('Unknown ClientEventType:', event.type);
 				return;
