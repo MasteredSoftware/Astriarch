@@ -57,9 +57,40 @@ export const resourceData = derived(clientGameModel, ($clientGameModel) => {
 		$clientGameModel.mainPlayerOwnedPlanets
 	);
 
+	// Calculate total population to show net food production (after consumption)
+	const totalPopulation = getPlayerTotalPopulation(
+		$clientGameModel.mainPlayer,
+		$clientGameModel.mainPlayerOwnedPlanets
+	);
+
+	const foodDiffPerTurn = perTurnResources.food - totalPopulation;
+	const totalFoodAmount = totalResources.food;
+
+	// Calculate food color based on old game logic
+	let foodColor = 'green';
+	if (foodDiffPerTurn < 0) {
+		if (foodDiffPerTurn + totalFoodAmount < totalPopulation) {
+			foodColor = 'red'; // We're going to starve
+		} else {
+			foodColor = 'yellow'; // Losing food but won't starve yet
+		}
+	} else if (
+		totalFoodAmount < totalPopulation ||
+		foodDiffPerTurn + totalFoodAmount < totalPopulation
+	) {
+		foodColor = 'orange'; // Gaining food but will still starve
+	}
+
 	return {
 		total: totalResources,
-		perTurn: perTurnResources
+		perTurn: {
+			...perTurnResources,
+			// Subtract population consumption from food production to show net gain/loss
+			food: foodDiffPerTurn
+		},
+		colors: {
+			food: foodColor
+		}
 	};
 });
 

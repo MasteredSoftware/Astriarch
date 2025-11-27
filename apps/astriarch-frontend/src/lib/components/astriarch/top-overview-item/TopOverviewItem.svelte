@@ -8,6 +8,7 @@
 		amount: number;
 		amountPerTurn?: number;
 		type: IconImageType;
+		color?: string;
 		onClick?: () => void;
 		children?: any;
 		class?: string;
@@ -17,6 +18,7 @@
 		amount = 0,
 		amountPerTurn,
 		type,
+		color,
 		onClick,
 		children,
 		class: className,
@@ -28,13 +30,8 @@
 		amountPerTurn ? toShortNumberString(amountPerTurn) : null
 	);
 	const amountPerTurnSign = $derived(amountPerTurn ? (amountPerTurn > 0 ? '+' : '') : '');
-	const amountContent = $derived(
-		amountPerTurn
-			? `${amountFormatted}  ${amountPerTurnSign}${amountPerTurnFormatted}`
-			: amountFormatted.toString()
-	);
 
-	const textStyle = $derived(`
+	const baseTextStyle = $derived(`
     color: #FFF;
     font-size: 18px;
     font-weight: 600;
@@ -43,7 +40,16 @@
     margin-left: 4px;
     display: inline-block;
     vertical-align: bottom;
-    ${['food', 'ore', 'iridium'].includes(type) ? 'min-width: 110px;' : 'min-width: 65px;'}
+  `);
+
+	const perTurnTextStyle = $derived(`
+    color: ${color || '#FFF'};
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 32px;
+    letter-spacing: 0.09px;
+    display: inline-block;
+    vertical-align: bottom;
   `);
 
 	function handleClick() {
@@ -66,9 +72,20 @@
 	{...restProps}
 >
 	<IconImage {type} size={32} />
-	<Text style={textStyle}>
-		{amountContent}
-	</Text>
+	<div
+		style="display: inline-flex; {['food', 'ore', 'iridium'].includes(type)
+			? 'min-width: 110px;'
+			: 'min-width: 65px;'}"
+	>
+		<Text style={baseTextStyle}>
+			{amountFormatted}
+		</Text>
+		{#if amountPerTurnFormatted}
+			<Text style={perTurnTextStyle}>
+				&nbsp;&nbsp;{amountPerTurnSign}{amountPerTurnFormatted}
+			</Text>
+		{/if}
+	</div>
 	{#if children}
 		{@render children()}
 	{/if}
