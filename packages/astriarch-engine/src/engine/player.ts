@@ -104,7 +104,7 @@ export class Player {
 
     const eatAndStarveNotifications = this.eatAndStarve(data);
     notifications.push(...eatAndStarveNotifications);
-    
+
     const protestNotifications = this.adjustPlayerPlanetProtestLevels(data); // deterministic
     notifications.push(...protestNotifications);
 
@@ -345,16 +345,16 @@ export class Player {
       }
 
       if (!shippedAllResources) {
-        const foodShortageRatio = (foodShortageTotal / (planet.population.length * cyclesElapsed));
-        
+        const foodShortageRatio = foodShortageTotal / (planet.population.length * cyclesElapsed);
+
         // DETERMINISTIC: Accumulate shortage and lose pop when it reaches threshold
         // Instead of random chance, we track accumulated starvation
         if (planet.population.length > 0) {
           const lastCitizen = planet.population[planet.population.length - 1];
-          
+
           // Accumulate starvation damage
           lastCitizen.populationChange -= foodShortageRatio;
-          
+
           // Threshold-based population loss instead of random
           if (lastCitizen.populationChange <= -1.0) {
             // Severe shortage (>=50%) leads to riots and immediate death
@@ -363,7 +363,7 @@ export class Player {
               if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0) {
                 riotReason = ', insufficient Energy to ship Food.';
               }
-              
+
               planet.planetHappiness = PlanetHappinessType.Riots;
               const riotNotification: FoodShortageRiotsNotification = {
                 type: ClientNotificationType.FOOD_SHORTAGE_RIOTS,
@@ -388,7 +388,7 @@ export class Player {
               };
               notifications.push(starvationNotification);
             }
-            
+
             planet.population.pop();
           } else {
             // Unrest but no death yet
@@ -405,18 +405,18 @@ export class Player {
         // Calculate how many citizens didn't get food: shortage / (population * food per citizen)
         const citizensDirectlyAffected = Math.min(
           Math.ceil(foodShortageTotal / (planet.population.length * cyclesElapsed)),
-          planet.population.length
+          planet.population.length,
         );
         const protestDenominator = planet.id == mainPlayer.homePlanetId ? 4 : 2;
 
         for (let i = 0; i < planet.population.length; i++) {
           const citizen = planet.population[i];
           const isDirectlyAffected = i >= planet.population.length - citizensDirectlyAffected;
-          
+
           // Directly affected citizens protest fully, others at 25% (social awareness/solidarity)
           const protestMultiplier = isDirectlyAffected ? 1.0 : 0.25;
           const protestIncrease = (foodShortageRatio / protestDenominator) * protestMultiplier;
-          
+
           citizen.protestLevel += protestIncrease;
           if (citizen.protestLevel > 1) {
             citizen.protestLevel = 1;

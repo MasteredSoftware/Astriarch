@@ -71,6 +71,8 @@ export enum ClientEventType {
   PLANET_CAPTURED = 'PLANET_CAPTURED',
   PLANET_LOST = 'PLANET_LOST',
   FLEET_DESTROYED = 'FLEET_DESTROYED',
+  FLEET_DEFENSE_SUCCESS = 'FLEET_DEFENSE_SUCCESS',
+  RESEARCH_STOLEN = 'RESEARCH_STOLEN',
 }
 
 // ============================================================================

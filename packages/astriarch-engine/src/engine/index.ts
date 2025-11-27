@@ -3,7 +3,6 @@ export * from './research';
 export * from './battleSimulator';
 export * from './clientGameModel';
 export * from './computerPlayer';
-export * from './events';
 export * from './fleet';
 export * from './gameController';
 export * from './gameModel';

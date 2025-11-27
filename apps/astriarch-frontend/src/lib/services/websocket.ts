@@ -5,9 +5,6 @@ import {
 	type IMessage,
 	type IGame,
 	type ServerGameOptions,
-	type IEventNotificationsPayload,
-	type EventNotification,
-	EventNotificationType,
 	isCreateGameResponse,
 	isJoinGameResponse,
 	isListGamesResponse,
@@ -28,6 +25,7 @@ import {
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
+import { activityStore } from '$lib/stores/activityStore';
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
 import { PlayerStorage } from '$lib/utils/playerStorage';
 import type {
@@ -49,9 +47,6 @@ import type {
 
 // Import multiplayer store types and functionality from the centralized store
 import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
-
-// Import activity store for enhanced event logging
-import { activityStore } from '$lib/stores/activityStore';
 
 // Import audio service for game music
 import { audioService } from '$lib/services/audioService';
@@ -285,16 +280,58 @@ class WebSocketService {
 					: `Defense fleet destroyed at ${data.planetName}`;
 				break;
 			}
+			case ClientEventType.FLEET_DEFENSE_SUCCESS: {
+				notificationType = 'battle';
+				const data = event.data as {
+					planetId: number;
+					planetName: string;
+					attackerName: string;
+				};
+				message = `Successfully defended ${data.planetName} against ${data.attackerName}`;
+				break;
+			}
+			case ClientEventType.RESEARCH_STOLEN: {
+				notificationType = 'research';
+				const data = event.data as {
+					researchName: string;
+					planetName: string;
+					wasVictim: boolean;
+					thiefPlayerName?: string;
+					victimPlayerName?: string;
+				};
+				message = data.wasVictim
+					? `${data.researchName} was stolen by ${data.thiefPlayerName} at ${data.planetName}`
+					: `You stole ${data.researchName} from ${data.victimPlayerName} at ${data.planetName}`;
+				break;
+			}
 			default:
 				console.warn('Unknown ClientEventType:', event.type);
 				return;
 		}
 
-		this.gameStore.addNotification({
+		const notification = {
 			type: notificationType,
 			message,
 			timestamp: Date.now()
-		});
+		};
+
+		this.gameStore.addNotification(notification);
+
+		// For battle events with conflict data, also add to activity store with full event data
+		const isBattleEvent =
+			event.type === ClientEventType.FLEET_DESTROYED ||
+			event.type === ClientEventType.FLEET_DEFENSE_SUCCESS ||
+			event.type === ClientEventType.PLANET_CAPTURED ||
+			event.type === ClientEventType.PLANET_LOST;
+
+		if (isBattleEvent && event.data && (event.data as any).conflictData) {
+			activityStore.addNotificationWithEventData(
+				notification,
+				event, // Pass the full ClientEvent
+				undefined, // No ClientNotification
+				(event.data as any).conflictData // Pass the PlanetaryConflictData
+			);
+		}
 	}
 
 	private convertClientNotificationToUINotification(notification: ClientNotification): void {
@@ -361,7 +398,11 @@ class WebSocketService {
 			}
 			case ClientNotificationType.POPULATION_GREW: {
 				notificationType = 'planet';
-				const data = notification.data as { planetId: number; planetName: string; newPopulation: number };
+				const data = notification.data as {
+					planetId: number;
+					planetName: string;
+					newPopulation: number;
+				};
 				message = `Population grew at ${data.planetName} (${data.newPopulation})`;
 				break;
 			}
@@ -425,77 +466,6 @@ class WebSocketService {
 			message,
 			timestamp: Date.now()
 		});
-	}
-
-	private handleEventNotifications(events: EventNotification[]) {
-		for (const event of events) {
-			// Convert EventNotificationType to a user-friendly notification type
-			let notificationType:
-				| 'info'
-				| 'success'
-				| 'warning'
-				| 'error'
-				| 'battle'
-				| 'research'
-				| 'construction'
-				| 'fleet'
-				| 'planet'
-				| 'diplomacy' = 'info';
-
-			switch (event.type) {
-				case EventNotificationType.ResearchComplete:
-				case EventNotificationType.ResearchStolen:
-				case EventNotificationType.ResearchQueueEmpty:
-					notificationType = 'research';
-					break;
-				case EventNotificationType.ImprovementBuilt:
-				case EventNotificationType.ShipBuilt:
-				case EventNotificationType.ImprovementDemolished:
-					notificationType = 'construction';
-					break;
-				case EventNotificationType.DefendedAgainstAttackingFleet:
-				case EventNotificationType.AttackingFleetLost:
-				case EventNotificationType.PlanetCaptured:
-				case EventNotificationType.PlanetLost:
-					notificationType = 'battle';
-					break;
-				case EventNotificationType.PopulationGrowth:
-				case EventNotificationType.PopulationStarvation:
-				case EventNotificationType.PlanetLostDueToStarvation:
-					notificationType = 'planet';
-					break;
-				case EventNotificationType.InsufficientFood:
-				case EventNotificationType.FoodShortageRiots:
-				case EventNotificationType.CitizensProtesting:
-					notificationType = 'warning';
-					break;
-				case EventNotificationType.TradesExecuted:
-					notificationType = 'success';
-					break;
-				case EventNotificationType.TradesNotExecuted:
-					notificationType = 'error';
-					break;
-				default:
-					notificationType = 'info';
-			}
-
-			// Add to the transient notification system (for popups)
-			this.gameStore.addNotification({
-				type: notificationType,
-				message: event.message,
-				timestamp: Date.now()
-			});
-
-			// Also add to the persistent activity log with full event data
-			activityStore.addNotificationWithEventData(
-				{
-					type: notificationType,
-					message: event.message,
-					timestamp: Date.now()
-				},
-				event // Pass the original EventNotification for rich interactions
-			);
-		}
 	}
 
 	private handleMessage(message: IMessage<unknown>) {
@@ -748,12 +718,6 @@ class WebSocketService {
 					const chatData = message.payload;
 					this.gameStore.addChatMessage(chatData);
 				}
-				break;
-			}
-
-			case MESSAGE_TYPE.EVENT_NOTIFICATIONS: {
-				const eventData = message.payload as IEventNotificationsPayload;
-				this.handleEventNotifications(eventData.events as EventNotification[]);
 				break;
 			}
 
@@ -1106,9 +1070,7 @@ class WebSocketService {
 					notifications: ClientNotification[];
 					currentCycle: number;
 				};
-				console.log(
-					`Received ${payload.notifications.length} client notifications from server`
-				);
+				console.log(`Received ${payload.notifications.length} client notifications from server`);
 
 				// Convert each notification to UI notification
 				// These are informational only - the client already applied changes locally

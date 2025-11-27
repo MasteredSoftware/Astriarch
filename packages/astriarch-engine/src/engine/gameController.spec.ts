@@ -5,9 +5,8 @@ import { GameController } from './gameController';
 import { Fleet } from './fleet';
 import { Planet } from './planet';
 import { GameModel, GameModelData } from './gameModel';
-import { Events } from './events';
 import { StarShipType } from '../model/fleet';
-import { EventNotificationType, EventNotification, PlanetaryConflictData } from '../model/eventNotification';
+import { PlanetaryConflictData } from '../model/battle';
 import { PlanetType, PlanetData } from '../model/planet';
 import { Utils } from '../utils/utils';
 import { GridHex } from './grid';
@@ -69,7 +68,6 @@ describe('GameController', () => {
     let attackingPlayer: PlayerData;
     let defendingPlayer: PlayerData;
     let targetPlanet: PlanetData;
-    let capturedEvents: EventNotification[];
 
     beforeEach(() => {
       // Set up a basic game with two players
@@ -81,15 +79,6 @@ describe('GameController', () => {
       targetPlanet = gameModel.modelData.planets.find((p: PlanetData) =>
         defendingPlayer.ownedPlanetIds.includes(p.id),
       )!;
-
-      // Set up event capture
-      capturedEvents = [];
-      Events.subscribe(attackingPlayer.id, (_playerId: string, events: EventNotification[]) => {
-        capturedEvents.push(...events);
-      });
-      Events.subscribe(defendingPlayer.id, (_playerId: string, events: EventNotification[]) => {
-        capturedEvents.push(...events);
-      });
     });
 
     it('should handle attacker winning and capturing planet', () => {
@@ -113,7 +102,7 @@ describe('GameController', () => {
       const originalOwnerPlanetCount = defendingPlayer.ownedPlanetIds.length;
 
       // Execute the method
-      GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
+      const events = GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
 
       // Verify planet ownership changed
       expect(defendingPlayer.ownedPlanetIds).not.toContain(targetPlanet.id);
@@ -126,15 +115,14 @@ describe('GameController', () => {
       expect(defendingPlayer.lastKnownPlanetFleetStrength[targetPlanet.id]).toBeDefined();
       expect(defendingPlayer.lastKnownPlanetFleetStrength[targetPlanet.id].lastKnownOwnerId).toBe(attackingPlayer.id);
 
-      // Verify events were generated
-      Events.publish();
-      const planetCapturedEvents = capturedEvents.filter((e) => e.type === EventNotificationType.PlanetCaptured);
-      const planetLostEvents = capturedEvents.filter((e) => e.type === EventNotificationType.PlanetLost);
+      // Verify events were generated - now using ClientEvents
+      const planetCapturedEvents = events.filter((e) => e.type === 'PLANET_CAPTURED');
+      const planetLostEvents = events.filter((e) => e.type === 'PLANET_LOST');
 
       expect(planetCapturedEvents.length).toBe(1);
       expect(planetLostEvents.length).toBe(1);
-      expect(planetCapturedEvents[0].playerId).toBe(attackingPlayer.id);
-      expect(planetLostEvents[0].playerId).toBe(defendingPlayer.id);
+      expect(planetCapturedEvents[0].affectedPlayerIds).toContain(attackingPlayer.id);
+      expect(planetLostEvents[0].affectedPlayerIds).toContain(defendingPlayer.id);
     });
 
     it('should handle attacker losing and defender keeping planet', () => {
@@ -157,7 +145,7 @@ describe('GameController', () => {
       const originalDefenderFleetSize = targetPlanet.planetaryFleet.starships.length;
 
       // Execute the method
-      GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
+      const events = GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
 
       // Verify planet ownership remained the same
       expect(defendingPlayer.ownedPlanetIds).toContain(targetPlanet.id);
@@ -166,19 +154,14 @@ describe('GameController', () => {
       // Verify planet was marked as explored by attacker
       expect(attackingPlayer.knownPlanetIds).toContain(targetPlanet.id);
 
-      // Verify events were generated
-      Events.publish();
-      const attackingFleetLostEvents = capturedEvents.filter(
-        (e) => e.type === EventNotificationType.AttackingFleetLost,
-      );
-      const defendedEvents = capturedEvents.filter(
-        (e) => e.type === EventNotificationType.DefendedAgainstAttackingFleet,
-      );
+      // Verify events were generated - now using ClientEvents
+      const fleetDestroyedEvents = events.filter((e) => e.type === 'FLEET_DESTROYED');
+      const defenseSuccessEvents = events.filter((e) => e.type === 'FLEET_DEFENSE_SUCCESS');
 
-      expect(attackingFleetLostEvents.length).toBe(1);
-      expect(defendedEvents.length).toBe(1);
-      expect(attackingFleetLostEvents[0].playerId).toBe(attackingPlayer.id);
-      expect(defendedEvents[0].playerId).toBe(defendingPlayer.id);
+      expect(fleetDestroyedEvents.length).toBe(1);
+      expect(defenseSuccessEvents.length).toBe(1);
+      expect(fleetDestroyedEvents[0].affectedPlayerIds).toContain(attackingPlayer.id);
+      expect(defenseSuccessEvents[0].affectedPlayerIds).toContain(defendingPlayer.id);
     });
 
     it('should handle attack on unowned planet', () => {
@@ -201,7 +184,7 @@ describe('GameController', () => {
       attackingFleet.destinationHexMidPoint = unownedPlanet.boundingHexMidPoint;
 
       // Execute the method
-      GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
+      const events = GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
 
       // Verify planet was captured by attacker (planet count should increase)
       expect(attackingPlayer.ownedPlanetIds.length).toBe(initialAttackerPlanetCount + 1);
@@ -210,9 +193,8 @@ describe('GameController', () => {
       // Verify attacking fleet was merged to planet
       expect(unownedPlanet.planetaryFleet.starships.length).toBeGreaterThan(0);
 
-      // Verify events were generated
-      Events.publish();
-      const planetCapturedEvents = capturedEvents.filter((e) => e.type === EventNotificationType.PlanetCaptured);
+      // Verify events were generated - now using ClientEvents
+      const planetCapturedEvents = events.filter((e) => e.type === 'PLANET_CAPTURED');
       expect(planetCapturedEvents.length).toBe(1);
     });
 
@@ -243,19 +225,14 @@ describe('GameController', () => {
       );
 
       // Execute the method
-      GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
+      const events = GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet]);
 
-      // Verify events contain resource looting info
-      Events.publish();
-      const planetCapturedEvents = capturedEvents.filter((e) => e.type === EventNotificationType.PlanetCaptured);
+      // Verify events were generated - now using ClientEvents
+      const planetCapturedEvents = events.filter((e) => e.type === 'PLANET_CAPTURED');
       expect(planetCapturedEvents.length).toBe(1);
 
-      const eventData = planetCapturedEvents[0].data as PlanetaryConflictData;
-      if (eventData) {
-        expect(eventData.resourcesLooted).toBeDefined();
-        expect(eventData.resourcesLooted.food).toBe(100);
-        expect(eventData.resourcesLooted.energy).toBe(50);
-      }
+      // Note: Resource looting info is no longer in event data
+      // It's handled internally during planet capture
     });
 
     it('should record correct fleet strength in last known data after conquest', () => {
@@ -310,20 +287,21 @@ describe('GameController', () => {
       );
 
       // Execute the method with multiple fleets
-      GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [attackingFleet1, attackingFleet2]);
+      const events = GameController.resolvePlanetaryConflicts(gameModel, attackingPlayer, [
+        attackingFleet1,
+        attackingFleet2,
+      ]);
 
       // Verify both fleets were processed (planet should be captured or events generated)
-      Events.publish();
-      const totalEvents = capturedEvents.length;
-      expect(totalEvents).toBeGreaterThan(0);
+      expect(events.length).toBeGreaterThan(0);
 
-      // Should have handled both fleet conflicts
-      const conflictEvents = capturedEvents.filter(
+      // Should have handled both fleet conflicts - now using ClientEvent types
+      const conflictEvents = events.filter(
         (e) =>
-          e.type === EventNotificationType.PlanetCaptured ||
-          e.type === EventNotificationType.AttackingFleetLost ||
-          e.type === EventNotificationType.DefendedAgainstAttackingFleet ||
-          e.type === EventNotificationType.PlanetLost,
+          e.type === 'PLANET_CAPTURED' ||
+          e.type === 'FLEET_DESTROYED' ||
+          e.type === 'FLEET_DEFENSE_SUCCESS' ||
+          e.type === 'PLANET_LOST',
       );
       expect(conflictEvents.length).toBeGreaterThanOrEqual(2); // At least one event per fleet
     });

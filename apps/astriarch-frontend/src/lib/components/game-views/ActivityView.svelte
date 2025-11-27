@@ -84,7 +84,7 @@
 	}
 
 	function hasAdditionalInfo(activity: ActivityLogEntry): boolean {
-		return !!(activity.planetName || activity.conflictData || activity.originalEvent);
+		return !!(activity.planetName || activity.conflictData || activity.clientEvent);
 	}
 
 	function sendChatMessage() {
@@ -353,13 +353,13 @@
 
 	function isBattleNotification(activity: ActivityLogEntry): boolean {
 		return !!(
-			activity.originalEvent &&
-			activity.originalEvent.data &&
-			(activity.originalEvent.type === 13 || // DefendedAgainstAttackingFleet
-				activity.originalEvent.type === 14 || // AttackingFleetLost
-				activity.originalEvent.type === 15 || // PlanetCaptured
-				activity.originalEvent.type === 19)
-		); // PlanetLost
+			activity.clientEvent &&
+			activity.conflictData &&
+			(activity.clientEvent.type === 'FLEET_DESTROYED' ||
+				activity.clientEvent.type === 'FLEET_DEFENSE_SUCCESS' ||
+				activity.clientEvent.type === 'PLANET_CAPTURED' ||
+				activity.clientEvent.type === 'PLANET_LOST')
+		);
 	}
 
 	function formatFleetStrength(fleet: any): number {
@@ -512,8 +512,8 @@
 											{/if}
 
 											<!-- Detailed battle information for combat notifications -->
-											{#if activity.originalEvent && activity.originalEvent.data && isBattleNotification(activity)}
-												{@const conflictData = activity.originalEvent.data}
+											{#if activity.conflictData && isBattleNotification(activity)}
+												{@const conflictData = activity.conflictData}
 												<div
 													class="space-y-3 rounded border border-red-500/30 bg-red-900/20 p-3 font-['Orbitron'] text-[12px] text-white/90"
 												>
@@ -595,12 +595,13 @@
 											{/if}
 
 											<!-- Event type details -->
-											{#if activity.originalEvent}
+											{#if activity.clientEvent}
 												<div class="font-['Orbitron'] text-[12px] text-white/60">
 													<strong>Event Type:</strong>
-													{activity.originalEvent.type}
-													{#if activity.originalEvent.playerId}
-														<br /><strong>Player:</strong> {activity.originalEvent.playerId}
+													{activity.clientEvent.type}
+													{#if activity.clientEvent.affectedPlayerIds && activity.clientEvent.affectedPlayerIds.length > 0}
+														<br /><strong>Player:</strong>
+														{activity.clientEvent.affectedPlayerIds[0]}
 													{/if}
 												</div>
 											{/if}

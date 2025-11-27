@@ -1,7 +1,6 @@
 // Export all modules from the model directory
 export * from './clientModel';
 export * from './earnedPoints';
-export * from './eventNotification';
 export * from './fleet';
 export * from './model';
 export * from './planet';

@@ -165,13 +165,11 @@ describe('tradingCenter', () => {
 
       testGameData.gameModel.modelData.tradingCenter.currentTrades =
         testGameData.gameModel.modelData.tradingCenter.currentTrades.concat(newTrades);
-      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
+      const events = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
 
-      const executed = Object.values(executedStatusListByPlayerId).reduce(
-        (accum, curr) => accum.concat(curr.filter((t) => t.results.executed)),
-        [],
-      );
-      expect(executed.length).toEqual(newTrades.length);
+      // Verify trade execution events were generated (now returns ClientEvent[])
+      const tradeEvents = events.filter((e) => e.type === 'TRADE_EXECUTED');
+      expect(tradeEvents.length).toEqual(newTrades.length);
     });
 
     it('should not execute all current trades when some trades are invalid', () => {
@@ -199,13 +197,11 @@ describe('tradingCenter', () => {
 
       testGameData.gameModel.modelData.tradingCenter.currentTrades =
         testGameData.gameModel.modelData.tradingCenter.currentTrades.concat(newTrades);
-      const executedStatusListByPlayerId = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
+      const events = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
 
-      const executed = Object.values(executedStatusListByPlayerId).reduce(
-        (accum, curr) => accum.concat(curr.filter((t) => t.results.executed)),
-        [],
-      );
-      expect(executed.length).toEqual(1);
+      // Verify only one trade was executed (now returns ClientEvent[])
+      const tradeEvents = events.filter((e) => e.type === 'TRADE_EXECUTED');
+      expect(tradeEvents.length).toEqual(1);
     });
   });
 });
