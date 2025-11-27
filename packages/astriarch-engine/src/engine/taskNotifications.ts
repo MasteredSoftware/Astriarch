@@ -8,6 +8,12 @@ export class TaskNotifications {
     };
   }
 
+  public static clearAllTaskNotifications(taskNotifications: TaskNotificationIndex): void {
+    // Clear all task notifications so they can be regenerated fresh
+    taskNotifications[TaskNotificationType.BuildQueueEmpty] = {};
+    taskNotifications[TaskNotificationType.InsufficientFood] = {};
+  }
+
   public static upsertTask(taskNotifications: TaskNotificationIndex, task: TaskNotification) {
     const taskNotification = taskNotifications[task.type];
     if (!(task.planetId in taskNotification)) {

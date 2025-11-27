@@ -94,6 +94,10 @@ export class Player {
     const events: ClientEvent[] = [];
     const notifications: ClientNotification[] = [];
 
+    // Clear task notifications so they can be regenerated fresh this cycle
+    // This ensures resolved issues (like adding items to empty build queues) don't persist
+    TaskNotifications.clearAllTaskNotifications(data.clientModel.taskNotifications);
+
     const autoQueueNotifications = Player.addLastStarShipToQueueOnPlanets(data);
     notifications.push(...autoQueueNotifications);
 
