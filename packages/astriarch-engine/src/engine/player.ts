@@ -1,7 +1,6 @@
 import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
-import { ModelData } from '../model/model';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Fleet } from './fleet';
