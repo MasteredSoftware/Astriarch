@@ -155,12 +155,12 @@ describe('GameController', () => {
       expect(attackingPlayer.knownPlanetIds).toContain(targetPlanet.id);
 
       // Verify events were generated - now using ClientEvents
-      const fleetDestroyedEvents = events.filter((e) => e.type === 'FLEET_DESTROYED');
+      const FleetAttackFailedEvents = events.filter((e) => e.type === 'FLEET_ATTACK_FAILED');
       const defenseSuccessEvents = events.filter((e) => e.type === 'FLEET_DEFENSE_SUCCESS');
 
-      expect(fleetDestroyedEvents.length).toBe(1);
+      expect(FleetAttackFailedEvents.length).toBe(1);
       expect(defenseSuccessEvents.length).toBe(1);
-      expect(fleetDestroyedEvents[0].affectedPlayerIds).toContain(attackingPlayer.id);
+      expect(FleetAttackFailedEvents[0].affectedPlayerIds).toContain(attackingPlayer.id);
       expect(defenseSuccessEvents[0].affectedPlayerIds).toContain(defendingPlayer.id);
     });
 
@@ -299,7 +299,7 @@ describe('GameController', () => {
       const conflictEvents = events.filter(
         (e) =>
           e.type === 'PLANET_CAPTURED' ||
-          e.type === 'FLEET_DESTROYED' ||
+          e.type === 'FLEET_ATTACK_FAILED' ||
           e.type === 'FLEET_DEFENSE_SUCCESS' ||
           e.type === 'PLANET_LOST',
       );

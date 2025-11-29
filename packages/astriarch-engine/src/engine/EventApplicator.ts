@@ -26,12 +26,16 @@ import {
   ResearchCancelledEvent,
   TradeSubmittedEvent,
   TradeCancelledEvent,
-  TradeExecutedEvent,
+  TradesProcessedEvent,
   PlanetCapturedEvent,
   PlanetLostEvent,
-  FleetDestroyedEvent,
+  FleetAttackFailedEvent,
+  FleetDefenseSuccessEvent,
 } from './GameCommands';
 import { Grid } from './grid';
+import { Player } from './player';
+import { GameModel } from './gameModel';
+import { TradingCenter } from './tradingCenter';
 
 /**
  * Apply client events to a client model
@@ -88,8 +92,8 @@ export class EventApplicator {
         this.applyTradeCancelled(clientModel, event as TradeCancelledEvent);
         break;
 
-      case ClientEventType.TRADE_EXECUTED:
-        this.applyTradeExecuted(clientModel, event as TradeExecutedEvent);
+      case ClientEventType.TRADES_PROCESSED:
+        this.applyTradesProcessed(clientModel, event as TradesProcessedEvent, grid);
         break;
 
       case ClientEventType.PLANET_CAPTURED:
@@ -100,8 +104,11 @@ export class EventApplicator {
         this.applyPlanetLost(clientModel, event as PlanetLostEvent);
         break;
 
-      case ClientEventType.FLEET_DESTROYED:
-        this.applyFleetDestroyed(clientModel, event as FleetDestroyedEvent);
+      case ClientEventType.FLEET_ATTACK_FAILED:
+        this.applyFleetAttackFailed(clientModel, event as FleetAttackFailedEvent);
+        break;
+      case ClientEventType.FLEET_DEFENSE_SUCCESS:
+        this.applyFleetDefenseSuccess(clientModel, event as FleetDefenseSuccessEvent);
         break;
 
       default:
@@ -285,59 +292,35 @@ export class EventApplicator {
   // SERVER-ONLY EVENT APPLICATORS
   // These handle state mutations that the client doesn't compute locally
 
-  private static applyTradeExecuted(clientModel: ClientModelData, event: TradeExecutedEvent): void {
-    const { tradeId, resourceType, amount, tradeType } = event.data;
+  private static applyTradesProcessed(clientModel: ClientModelData, event: TradesProcessedEvent, grid: Grid): void {
+    const { tradesProcessed } = event.data;
 
-    // Remove the trade from the client's trading center
-    const tradeIndex = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
-    if (tradeIndex < 0) {
-      console.warn(`Trade ${tradeId} not found in player's trades`);
-      return;
-    }
-
-    const trade = clientModel.clientTradingCenter.mainPlayerTrades[tradeIndex];
-    const planetId = trade.planetId;
-    clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
-
-    // Update planet resources (critical for accurate resource display)
-    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
-    if (planet) {
-      const isBuy = tradeType === 1;
-      const modifier = isBuy ? 1 : -1;
-
-      // Map resource type to planet resource field
-      switch (resourceType) {
-        case 1: // FOOD
-          planet.resources.food += amount * modifier;
-          break;
-        case 2: // ORE
-          planet.resources.ore += amount * modifier;
-          break;
-        case 3: // IRIDIUM
-          planet.resources.iridium += amount * modifier;
-          break;
+    for (const tradeInfo of tradesProcessed) {
+      const { tradeId, planetId, executedStatus } = tradeInfo;
+      // Remove the trade from the client's trading center
+      const tradeIndex = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
+      if (tradeIndex < 0) {
+        console.warn(`Trade ${tradeInfo.tradeId} not found in player's trades`);
+        return;
       }
-    }
 
-    const action = tradeType === 1 ? 'bought' : 'sold';
-    console.log(`Trade ${tradeId} executed: ${action} ${amount} of resource type ${resourceType}`);
+      clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
+
+      TradingCenter.completeTradeExecutionForClientPlayer(clientModel, grid, planetId, executedStatus);
+
+      const action = executedStatus.tradeType === 1 ? 'bought' : 'sold';
+      console.log(
+        `Trade ${tradeId} executed: ${action} ${executedStatus.foodAmount + executedStatus.oreAmount + executedStatus.iridiumAmount} of resource type ${executedStatus.resourceType} for ${executedStatus.tradeEnergyAmount} energy`,
+      );
+    }
   }
 
   private static applyPlanetCaptured(clientModel: ClientModelData, event: PlanetCapturedEvent): void {
-    const { planetId, newOwnerId, previousOwnerId, resourcesLooted } = event.data;
+    const { planetId, planetData } = event.data;
 
-    if (newOwnerId === clientModel.mainPlayer.id) {
-      // We captured a planet - it will be added to mainPlayerOwnedPlanets in next sync
-      console.log(
-        `Planet ${planetId} captured! Looted ${resourcesLooted.food}F/${resourcesLooted.ore}O/${resourcesLooted.iridium}I`,
-      );
-    } else if (previousOwnerId === clientModel.mainPlayer.id) {
-      // We lost a planet - remove it from our owned planets immediately
-      if (clientModel.mainPlayerOwnedPlanets[planetId]) {
-        delete clientModel.mainPlayerOwnedPlanets[planetId];
-        console.log(`Planet ${planetId} was captured by player ${newOwnerId}`);
-      }
-    }
+    // We captured a planet - add it to our owned planets
+    GameModel.setPlanetOwnedByPlayer(clientModel.mainPlayer, planetId);
+    clientModel.mainPlayerOwnedPlanets[planetId] = planetData;
   }
 
   private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
@@ -352,26 +335,29 @@ export class EventApplicator {
     clientModel.mainPlayer.ownedPlanetIds = clientModel.mainPlayer.ownedPlanetIds.filter((id) => id !== planetId);
   }
 
-  private static applyFleetDestroyed(clientModel: ClientModelData, event: FleetDestroyedEvent): void {
-    const { planetId, wasAttacking } = event.data;
+  private static applyFleetAttackFailed(clientModel: ClientModelData, event: FleetAttackFailedEvent): void {
+    const { planetId, conflictData, defenderId } = event.data;
+
+    // No need to modify fleets here, landing fleets were already removed during time advancement
+    // Set planet as explored with last known fleet strength
+    Player.setPlanetExplored(
+      clientModel.mainPlayer,
+      planetId,
+      conflictData.winningFleet!,
+      clientModel.currentCycle,
+      defenderId,
+    );
+  }
+
+  private static applyFleetDefenseSuccess(clientModel: ClientModelData, event: FleetDefenseSuccessEvent): void {
+    const { planetId, conflictData } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
-      // Planet might have been lost in the same battle
       console.warn(`Planet ${planetId} not found in player's owned planets`);
       return;
     }
 
-    if (wasAttacking) {
-      // Clear all outgoing fleets from this planet
-      planet.outgoingFleets = [];
-      console.log(`Attacking fleets from planet ${planetId} were destroyed`);
-    } else {
-      // Clear the planetary defense fleet
-      if (planet.planetaryFleet) {
-        planet.planetaryFleet.starships = [];
-      }
-      console.log(`Defending fleet on planet ${planetId} was destroyed`);
-    }
+    planet.planetaryFleet = conflictData.winningFleet || Fleet.generateFleet([], planet.boundingHexMidPoint);
   }
 }

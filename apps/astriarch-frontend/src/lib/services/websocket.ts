@@ -35,12 +35,17 @@ import type {
 	ClearWaypointCommand,
 	ClientModelData,
 	DemolishImprovementCommand,
+	FleetAttackFailedEvent,
+	FleetDefenseSuccessEvent,
+	PlanetCapturedEvent,
+	PlanetLostEvent,
 	QueueProductionItemCommand,
 	RemoveProductionItemCommand,
 	SendShipsCommand,
 	SetWaypointCommand,
 	SubmitResearchItemCommand,
 	SubmitTradeCommand,
+	TradesProcessedEvent,
 	UpdatePlanetOptionsCommand,
 	UpdatePlanetWorkerAssignmentsCommand
 } from 'astriarch-engine';
@@ -245,48 +250,40 @@ class WebSocketService {
 				return;
 
 			// Server-only events that may need UI notifications
-			case ClientEventType.TRADE_EXECUTED: {
+			case ClientEventType.TRADES_PROCESSED: {
 				notificationType = 'success';
-				const data = event.data as {
-					planetId: number;
-					resourceType: number;
-					amount: number;
-					tradeType: number;
-				};
+				const {data} = event as TradesProcessedEvent;
 				const action = data.tradeType === 1 ? 'bought' : 'sold';
 				message = `Trade executed: ${action} ${data.amount} resources`;
 				break;
 			}
 			case ClientEventType.PLANET_CAPTURED: {
 				notificationType = 'success';
-				message = `Planet captured!`;
+				const {data} = event as PlanetCapturedEvent;
+				message = `Planet ${data.planetName} captured`;
+				if(data.previousOwnerName){
+					message += ` from ${data.previousOwnerName}`;
+				}
 				break;
 			}
 			case ClientEventType.PLANET_LOST: {
 				notificationType = 'error';
-				const data = event.data as { planetId: number; planetName: string; newOwnerId: string };
-				message = `Planet lost: ${data.planetName}`;
+				const {data} = event as PlanetLostEvent;
+				message = `Planet ${data.planetName} lost to ${data.newOwnerName}`;
 				break;
 			}
-			case ClientEventType.FLEET_DESTROYED: {
+			case ClientEventType.FLEET_ATTACK_FAILED: {
 				notificationType = 'battle';
-				const data = event.data as {
-					planetId: number;
-					planetName: string;
-					wasAttacking: boolean;
-				};
-				message = data.wasAttacking
-					? `Fleet destroyed attacking ${data.planetName}`
-					: `Defense fleet destroyed at ${data.planetName}`;
+				const {data} = event as FleetAttackFailedEvent;
+				message = `Fleet destroyed attacking ${data.planetName}`;
+				if (data.defenderName) {
+					message += ` owned by ${data.defenderName}`;
+				}
 				break;
 			}
 			case ClientEventType.FLEET_DEFENSE_SUCCESS: {
 				notificationType = 'battle';
-				const data = event.data as {
-					planetId: number;
-					planetName: string;
-					attackerName: string;
-				};
+				const {data} = event as FleetDefenseSuccessEvent;
 				message = `Successfully defended ${data.planetName} against ${data.attackerName}`;
 				break;
 			}
@@ -309,6 +306,9 @@ class WebSocketService {
 				return;
 		}
 
+		if(!message){
+			return;
+		}
 		const notification = {
 			type: notificationType,
 			message,
@@ -319,7 +319,7 @@ class WebSocketService {
 
 		// For battle events with conflict data, also add to activity store with full event data
 		const isBattleEvent =
-			event.type === ClientEventType.FLEET_DESTROYED ||
+			event.type === ClientEventType.FLEET_ATTACK_FAILED ||
 			event.type === ClientEventType.FLEET_DEFENSE_SUCCESS ||
 			event.type === ClientEventType.PLANET_CAPTURED ||
 			event.type === ClientEventType.PLANET_LOST;

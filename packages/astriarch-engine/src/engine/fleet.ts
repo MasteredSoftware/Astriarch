@@ -21,9 +21,11 @@ export interface StarshipTypeCounts {
 }
 
 export class Fleet {
+  private static NEXT_FLEET_ID = 1;
   private static NEXT_STARSHIP_ID = 1;
   public static generateFleet(starships: StarshipData[], locationHexMidPoint: PointData | null) {
     return {
+      id: Fleet.NEXT_FLEET_ID++,
       starships,
       locationHexMidPoint,
       travelingFromHexMidPoint: null,

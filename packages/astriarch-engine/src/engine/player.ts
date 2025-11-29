@@ -54,24 +54,25 @@ export class Player {
 
   public static setPlanetExplored(
     p: PlayerData,
-    planet: PlanetData,
+    planetId: number,
+    planetaryFleet: FleetData,
     cycle: number,
     lastKnownOwnerId: string | undefined,
   ) {
-    p.knownPlanetIds.push(planet.id);
+    p.knownPlanetIds.push(planetId);
     p.knownPlanetIds = [...new Set(p.knownPlanetIds)];
-    Player.setPlanetLastKnownFleetStrength(p, planet, cycle, lastKnownOwnerId);
+    Player.setPlanetLastKnownFleetStrength(p, planetId, planetaryFleet, cycle, lastKnownOwnerId);
   }
 
   public static setPlanetLastKnownFleetStrength(
     p: PlayerData,
-    planet: PlanetData,
+    planetId: number,
+    planetaryFleet: FleetData,
     cycle: number,
     lastKnownOwnerId: string | undefined,
   ) {
-    const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } = Fleet.countStarshipsByType(
-      planet.planetaryFleet,
-    );
+    const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } =
+      Fleet.countStarshipsByType(planetaryFleet);
     const lastKnownFleet = Fleet.generateFleetWithShipCount(
       defenders,
       scouts,
@@ -79,10 +80,10 @@ export class Player {
       cruisers,
       battleships,
       spaceplatforms,
-      planet.boundingHexMidPoint,
+      planetaryFleet.locationHexMidPoint,
     );
     const lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
-    p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
+    p.lastKnownPlanetFleetStrength[planetId] = lastKnownFleetData;
   }
 
   public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): {

@@ -49,7 +49,7 @@ const GameEventSchema = new Schema<IGameEvent>(
         "planet_attacked",
         "planet_conquered",
         "fleet_arrived",
-        "fleet_destroyed",
+        "FLEET_ATTACK_FAILED", // TODO: fix all of these and use this schema
         "building_completed",
         "research_completed",
         "battle_result",

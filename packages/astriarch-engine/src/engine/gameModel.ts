@@ -194,11 +194,11 @@ export class GameModel {
           playerHomePlanetHex = planetBoundingHex;
           initialPlanetOwner.homePlanetId = p.id;
           initialPlanetOwner.ownedPlanetIds.push(p.id);
-          Player.setPlanetExplored(initialPlanetOwner, p, 0, undefined);
+          Player.setPlanetExplored(initialPlanetOwner, p.id, p.planetaryFleet, 0, undefined);
         }
 
         if (gameOptions.quickStart && assignedPlayerIndexHomeQuadrant) {
-          Player.setPlanetExplored(players[assignedPlayerIndex], p, 0, undefined);
+          Player.setPlanetExplored(players[assignedPlayerIndex], p.id, p.planetaryFleet, 0, undefined);
           if (initialPlanetOwner) {
             p.resources.ore *= 2;
             p.resources.iridium *= 2;
@@ -346,6 +346,13 @@ export class GameModel {
     return undefined;
   }
 
+  public static setPlanetOwnedByPlayer(player: PlayerData, planetId: number) {
+    if (!player.ownedPlanetIds.includes(planetId)) {
+      player.ownedPlanetIds.push(planetId);
+    }
+    player.knownPlanetIds = [...new Set([...player.knownPlanetIds, planetId])];
+  }
+
   public static changePlanetOwner(
     oldOwner: PlayerData | undefined,
     newOwner: PlayerData | undefined,
@@ -353,8 +360,7 @@ export class GameModel {
     currentCycle: number,
   ) {
     if (newOwner) {
-      newOwner.ownedPlanetIds.push(planet.id);
-      newOwner.knownPlanetIds = [...new Set([...newOwner.knownPlanetIds, planet.id])];
+      this.setPlanetOwnedByPlayer(newOwner, planet.id);
     }
 
     if (oldOwner) {
@@ -395,7 +401,7 @@ export class GameModel {
       planet.planetHappiness = PlanetHappinessType.Riots;
 
       //set last known fleet strength
-      Player.setPlanetLastKnownFleetStrength(oldOwner, planet, currentCycle, newOwner?.id);
+      Player.setPlanetLastKnownFleetStrength(oldOwner, planet.id, planet.planetaryFleet, currentCycle, newOwner?.id);
     }
 
     planet.waypointBoundingHexMidPoint = null;

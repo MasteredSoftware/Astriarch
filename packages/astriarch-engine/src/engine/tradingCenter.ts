@@ -1,9 +1,10 @@
-import { PlanetById } from '../model/clientModel';
+import { ClientModelData, PlanetById } from '../model/clientModel';
 import { PlanetData } from '../model/planet';
 import { PlayerData } from '../model/player';
 import {
   TradeData,
   TradeType,
+  TradingCenterBase,
   TradingCenterData,
   TradingCenterResource,
   TradingCenterResourceType,
@@ -12,9 +13,12 @@ import { ClientEvent, ClientEventType } from './GameCommands';
 import { GameModel, GameModelData } from './gameModel';
 import { Planet } from './planet';
 import { Utils } from '../utils/utils';
+import { Grid } from './grid';
 
 export interface ExecuteTradeResults {
   executed: boolean;
+  tradeType: TradeType;
+  resourceType: TradingCenterResourceType;
   foodAmount: number;
   oreAmount: number;
   iridiumAmount: number;
@@ -140,12 +144,79 @@ export class TradingCenter {
     this.adjustCurrentPrice(tradingCenterData.iridiumResource);
   }
 
-  public static getResourceByType(tradingCenterData: TradingCenterData, resourceType: TradingCenterResourceType) {
+  public static getResourceByType(tradingCenter: TradingCenterBase, resourceType: TradingCenterResourceType) {
     return resourceType === TradingCenterResourceType.FOOD
-      ? tradingCenterData.foodResource
+      ? tradingCenter.foodResource
       : resourceType === TradingCenterResourceType.ORE
-        ? tradingCenterData.oreResource
-        : tradingCenterData.iridiumResource;
+        ? tradingCenter.oreResource
+        : tradingCenter.iridiumResource;
+  }
+
+  public static completeTradeExecutionForClientPlayer(
+    clientModel: ClientModelData,
+    grid: Grid,
+    planetId: number,
+    executedStatus: ExecuteTradeResults,
+  ) {
+    if (!executedStatus.executed) {
+      return;
+    }
+    const marketResource = this.getResourceByType(clientModel.clientTradingCenter, executedStatus.resourceType);
+    const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+    if (!planet) {
+      console.warn('Unable to find planet in completeTradeExecutionForClientPlayer:', planetId);
+      return;
+    }
+    this.completeTradeExecution(
+      clientModel.clientTradingCenter,
+      grid,
+      clientModel.mainPlayerOwnedPlanets,
+      clientModel.mainPlayer,
+      planet,
+      marketResource,
+      executedStatus,
+    );
+  }
+
+  private static completeTradeExecution(
+    tradingCenter: TradingCenterBase,
+    grid: Grid,
+    planetById: PlanetById,
+    player: PlayerData,
+    planet: PlanetData,
+    marketResource: TradingCenterResource,
+    executedStatus: ExecuteTradeResults,
+  ) {
+    const tradeAmount = executedStatus.foodAmount + executedStatus.oreAmount + executedStatus.iridiumAmount;
+    if (executedStatus.tradeType == TradeType.SELL) {
+      tradingCenter.energyAmount -= executedStatus.tradeEnergyAmount;
+      planet.resources.energy += executedStatus.tradeEnergyAmount;
+      marketResource.amount += tradeAmount;
+
+      Planet.spendResources(
+        grid,
+        player,
+        planetById,
+        planet,
+        0,
+        executedStatus.foodAmount,
+        executedStatus.oreAmount,
+        executedStatus.iridiumAmount,
+      );
+
+      executedStatus.executed = true;
+    } else {
+      //BUY
+      tradingCenter.energyAmount += executedStatus.tradeEnergyAmount;
+      Planet.spendResources(grid, player, planetById, planet, executedStatus.tradeEnergyAmount, 0, 0, 0);
+
+      marketResource.amount -= tradeAmount;
+      planet.resources.food += executedStatus.foodAmount;
+      planet.resources.ore += executedStatus.oreAmount;
+      planet.resources.iridium += executedStatus.iridiumAmount;
+
+      executedStatus.executed = true;
+    }
   }
 
   public static executeTrade(
@@ -155,7 +226,15 @@ export class TradingCenter {
     planet: PlanetData,
     trade: TradeData,
   ): ExecuteTradeResults {
-    const executedStatus = { executed: false, foodAmount: 0, oreAmount: 0, iridiumAmount: 0, tradeEnergyAmount: 0 };
+    const executedStatus = {
+      executed: false,
+      tradeType: trade.tradeType,
+      resourceType: trade.resourceType,
+      foodAmount: 0,
+      oreAmount: 0,
+      iridiumAmount: 0,
+      tradeEnergyAmount: 0,
+    };
     const { tradingCenter } = gameModel.modelData;
     const playerTotalResources = GameModel.getPlayerTotalResources(player, planetById);
     const marketResource = this.getResourceByType(tradingCenter, trade.resourceType);
@@ -182,22 +261,15 @@ export class TradingCenter {
       executedStatus.tradeEnergyAmount -= executedStatus.tradeEnergyAmount * tradingCenter.transactionFeePercentage;
       if (tradingCenter.energyAmount >= executedStatus.tradeEnergyAmount && playerResourceAmount >= trade.amount) {
         //execute trade
-        tradingCenter.energyAmount -= executedStatus.tradeEnergyAmount;
-        planet.resources.energy += executedStatus.tradeEnergyAmount;
-        marketResource.amount += trade.amount;
-
-        Planet.spendResources(
+        this.completeTradeExecution(
+          tradingCenter,
           gameModel.grid,
-          player,
           planetById,
+          player,
           planet,
-          0,
-          executedStatus.foodAmount,
-          executedStatus.oreAmount,
-          executedStatus.iridiumAmount,
+          marketResource,
+          executedStatus,
         );
-
-        executedStatus.executed = true;
       }
     } else {
       //BUY
@@ -206,19 +278,15 @@ export class TradingCenter {
       executedStatus.tradeEnergyAmount += executedStatus.tradeEnergyAmount * tradingCenter.transactionFeePercentage;
       if (playerTotalResources.energy >= executedStatus.tradeEnergyAmount && marketResource.amount >= trade.amount) {
         //execute trade
-        tradingCenter.energyAmount += executedStatus.tradeEnergyAmount;
-        Planet.spendResources(gameModel.grid, player, planetById, planet, executedStatus.tradeEnergyAmount, 0, 0, 0);
-
-        marketResource.amount -= trade.amount;
-        if (trade.resourceType === TradingCenterResourceType.FOOD) {
-          planet.resources.food += trade.amount;
-        } else if (trade.resourceType == TradingCenterResourceType.ORE) {
-          planet.resources.ore += trade.amount;
-        } else {
-          planet.resources.iridium += trade.amount;
-        }
-
-        executedStatus.executed = true;
+        this.completeTradeExecution(
+          tradingCenter,
+          gameModel.grid,
+          planetById,
+          player,
+          planet,
+          marketResource,
+          executedStatus,
+        );
       }
     }
 
@@ -260,27 +328,8 @@ export class TradingCenter {
           if (results.executed) {
             //recalculate current prices in trading center for each trade executed
             TradingCenter.recalculatePrices(tc);
-
-            // Generate TRADE_EXECUTED event for successful trade
-            const resourceType =
-              trade.resourceType === TradingCenterResourceType.FOOD
-                ? 1
-                : trade.resourceType === TradingCenterResourceType.ORE
-                  ? 2
-                  : 3;
-            const tradeExecutedEvent: ClientEvent = {
-              type: ClientEventType.TRADE_EXECUTED,
-              affectedPlayerIds: [player.id],
-              data: {
-                tradeId: trade.id,
-                resourceType,
-                amount: results.foodAmount + results.oreAmount + results.iridiumAmount,
-                tradeType: trade.tradeType,
-                energyCost: results.tradeEnergyAmount,
-              },
-            };
-            events.push(tradeExecutedEvent);
           }
+
           executedTradeResultsByPlayerId[trade.playerId].push({ trade, results });
         } else {
           console.warn('Unable to find planet in executeCurrentTrades:', trade);
@@ -288,6 +337,23 @@ export class TradingCenter {
       } else {
         console.warn('Unable to find player in executeCurrentTrades:', trade);
       }
+    }
+
+    for (const playerId in executedTradeResultsByPlayerId) {
+      const executedTrades = executedTradeResultsByPlayerId[playerId];
+      // Generate TRADES_PROCESSED event for each player with processed trades
+      const tradesProcessedEvent: ClientEvent = {
+        type: ClientEventType.TRADES_PROCESSED,
+        affectedPlayerIds: [playerId],
+        data: {
+          tradesProcessed: executedTrades.map(({ trade, results }) => ({
+            tradeId: trade.id,
+            planetId: trade.planetId,
+            executedStatus: results,
+          })),
+        },
+      };
+      events.push(tradesProcessedEvent);
     }
 
     // Note: tc.currentTrades now only contains pending trades (not yet executable)

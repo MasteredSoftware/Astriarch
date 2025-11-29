@@ -30,11 +30,14 @@ export interface TradingCenterResource {
   currentPrice: number;
 }
 
-export interface TradingCenterData {
+export interface TradingCenterBase {
   energyAmount: number;
   foodResource: TradingCenterResource;
   oreResource: TradingCenterResource;
   iridiumResource: TradingCenterResource;
+}
+
+export interface TradingCenterData extends TradingCenterBase {
   currentTrades: TradeData[];
   transactionFeePercentage: number;
   interestPercentage: number;

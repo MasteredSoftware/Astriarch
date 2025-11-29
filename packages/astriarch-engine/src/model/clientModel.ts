@@ -3,7 +3,7 @@ import { ModelBase } from './model';
 import { PlanetData, PlanetType } from './planet';
 import { ColorRgbaData, PlayerData, PlayerType } from './player';
 import { ResearchData } from './research';
-import { TradeData, TradingCenterResource } from './tradingCenter';
+import { TradeData, TradingCenterBase, TradingCenterResource } from './tradingCenter';
 
 export type PlanetById = Record<number, PlanetData>;
 
@@ -25,11 +25,7 @@ export interface ClientPlanet {
   type: PlanetType | null; //NOTE: Populated when the main player explores the planet
 }
 
-export interface ClientTradingCenter {
-  energyAmount: number;
-  foodResource: TradingCenterResource;
-  oreResource: TradingCenterResource;
-  iridiumResource: TradingCenterResource;
+export interface ClientTradingCenter extends TradingCenterBase {
   mainPlayerTrades: TradeData[];
 }
 

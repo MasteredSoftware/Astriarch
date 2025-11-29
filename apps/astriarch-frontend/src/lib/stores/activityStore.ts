@@ -181,7 +181,7 @@ export const combatActivities = derived(activityLog, ($log) =>
 		(entry) =>
 			entry.type === 'battle' ||
 			(entry.clientEvent &&
-				(entry.clientEvent.type === 'FLEET_DESTROYED' ||
+				(entry.clientEvent.type === 'FLEET_ATTACK_FAILED' ||
 					entry.clientEvent.type === 'FLEET_DEFENSE_SUCCESS' ||
 					entry.clientEvent.type === 'PLANET_CAPTURED' ||
 					entry.clientEvent.type === 'PLANET_LOST'))

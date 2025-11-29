@@ -355,7 +355,7 @@
 		return !!(
 			activity.clientEvent &&
 			activity.conflictData &&
-			(activity.clientEvent.type === 'FLEET_DESTROYED' ||
+			(activity.clientEvent.type === 'FLEET_ATTACK_FAILED' ||
 				activity.clientEvent.type === 'FLEET_DEFENSE_SUCCESS' ||
 				activity.clientEvent.type === 'PLANET_CAPTURED' ||
 				activity.clientEvent.type === 'PLANET_LOST')

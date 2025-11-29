@@ -168,7 +168,7 @@ describe('tradingCenter', () => {
       const events = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
 
       // Verify trade execution events were generated (now returns ClientEvent[])
-      const tradeEvents = events.filter((e) => e.type === 'TRADE_EXECUTED');
+      const tradeEvents = events.filter((e) => e.type === 'TRADES_PROCESSED');
       expect(tradeEvents.length).toEqual(newTrades.length);
     });
 
@@ -200,7 +200,7 @@ describe('tradingCenter', () => {
       const events = TradingCenter.executeCurrentTrades(testGameData.gameModel, planetById, 1.0);
 
       // Verify only one trade was executed (now returns ClientEvent[])
-      const tradeEvents = events.filter((e) => e.type === 'TRADE_EXECUTED');
+      const tradeEvents = events.filter((e) => e.type === 'TRADES_PROCESSED');
       expect(tradeEvents.length).toEqual(1);
     });
   });

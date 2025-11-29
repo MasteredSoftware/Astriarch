@@ -268,7 +268,13 @@ export class GameController {
       if (!playerWins) {
         //just kill the fleet
         //make sure this planet is now explored
-        Player.setPlanetExplored(player, destinationPlanet, gameModel.modelData.currentCycle, planetOwner?.id);
+        Player.setPlanetExplored(
+          player,
+          destinationPlanet.id,
+          enemyFleet,
+          gameModel.modelData.currentCycle,
+          planetOwner?.id,
+        );
 
         // Defender won - set winning fleet
         conflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
@@ -277,13 +283,13 @@ export class GameController {
         if (player.type == PlayerType.Human) {
           //the attacking player is a human player and lost
           events.push({
-            type: ClientEventType.FLEET_DESTROYED,
+            type: ClientEventType.FLEET_ATTACK_FAILED,
             affectedPlayerIds: [player.id],
             data: {
-              playerId: player.id,
               planetId: destinationPlanet.id,
               planetName: destinationPlanet.name,
               defenderName: planetOwner?.name,
+              defenderId: planetOwner?.id,
               conflictData,
             },
           });
@@ -295,7 +301,6 @@ export class GameController {
             type: ClientEventType.FLEET_DEFENSE_SUCCESS,
             affectedPlayerIds: [planetOwner.id],
             data: {
-              playerId: planetOwner.id,
               planetId: destinationPlanet.id,
               planetName: destinationPlanet.name,
               attackerName: player.name,
@@ -387,7 +392,8 @@ export class GameController {
         if (defendingPlayer) {
           Player.setPlanetLastKnownFleetStrength(
             defendingPlayer,
-            destinationPlanet,
+            destinationPlanet.id,
+            destinationPlanet.planetaryFleet,
             gameModel.modelData.currentCycle,
             player?.id,
           );
@@ -400,12 +406,12 @@ export class GameController {
             type: ClientEventType.PLANET_CAPTURED,
             affectedPlayerIds: [player.id],
             data: {
-              playerId: player.id,
               planetId: destinationPlanet.id,
               planetName: destinationPlanet.name,
               previousOwnerId: defendingPlayer?.id,
               previousOwnerName: defendingPlayer?.name,
               conflictData,
+              planetData: destinationPlanet,
             },
           });
         }
@@ -416,11 +422,10 @@ export class GameController {
             type: ClientEventType.PLANET_LOST,
             affectedPlayerIds: [defendingPlayer.id],
             data: {
-              playerId: defendingPlayer.id,
               planetId: destinationPlanet.id,
               planetName: destinationPlanet.name,
-              captorId: player.id,
-              captorName: player.name,
+              newOwnerId: player.id,
+              newOwnerName: player.name,
               conflictData,
             },
           });

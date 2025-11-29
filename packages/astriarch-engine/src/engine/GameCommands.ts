@@ -12,7 +12,9 @@
  * 4. Using checksums to detect desync
  */
 
-import { PlanetProductionItemData } from '../model';
+import { PlanetData, PlanetProductionItemData, TradeType, TradingCenterResourceType } from '../model';
+import { PlanetaryConflictData } from '../model/battle';
+import { ExecuteTradeResults } from './tradingCenter';
 
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
@@ -65,12 +67,12 @@ export enum ClientEventType {
   PLANET_OPTIONS_UPDATED = 'PLANET_OPTIONS_UPDATED',
 
   // Server-only operations - Trade execution
-  TRADE_EXECUTED = 'TRADE_EXECUTED',
+  TRADES_PROCESSED = 'TRADES_PROCESSED',
 
   // Server-only operations - Combat/Conflict resolution
   PLANET_CAPTURED = 'PLANET_CAPTURED',
   PLANET_LOST = 'PLANET_LOST',
-  FLEET_DESTROYED = 'FLEET_DESTROYED',
+  FLEET_ATTACK_FAILED = 'FLEET_ATTACK_FAILED',
   FLEET_DEFENSE_SUCCESS = 'FLEET_DEFENSE_SUCCESS',
   RESEARCH_STOLEN = 'RESEARCH_STOLEN',
 }
@@ -356,15 +358,16 @@ export interface PlanetOptionsUpdatedEvent extends ClientEvent {
 // These MUST mutate client state as client never runs this logic
 // ============================================================================
 
-export interface TradeExecutedEvent extends ClientEvent {
-  type: ClientEventType.TRADE_EXECUTED;
+export interface TradesProcessedEvent extends ClientEvent {
+  type: ClientEventType.TRADES_PROCESSED;
   data: {
-    tradeId: string;
-    planetId: number;
-    resourceType: number; // TradingCenterResourceType
-    amount: number;
-    tradeType: number; // TradeType (BUY or SELL)
-    energyCost: number;
+    tradesProcessed: [
+      {
+        tradeId: string;
+        planetId: number;
+        executedStatus: ExecuteTradeResults;
+      },
+    ];
   };
 }
 
@@ -372,9 +375,11 @@ export interface PlanetCapturedEvent extends ClientEvent {
   type: ClientEventType.PLANET_CAPTURED;
   data: {
     planetId: number;
-    newOwnerId: string;
+    planetName: string;
     previousOwnerId?: string;
-    resourcesLooted: PlayerResourcesData;
+    previousOwnerName?: string;
+    conflictData: PlanetaryConflictData;
+    planetData: PlanetData;
   };
 }
 
@@ -384,15 +389,30 @@ export interface PlanetLostEvent extends ClientEvent {
     planetId: number;
     planetName: string;
     newOwnerId: string;
+    newOwnerName: string;
+    conflictData: PlanetaryConflictData;
   };
 }
 
-export interface FleetDestroyedEvent extends ClientEvent {
-  type: ClientEventType.FLEET_DESTROYED;
+export interface FleetAttackFailedEvent extends ClientEvent {
+  type: ClientEventType.FLEET_ATTACK_FAILED;
   data: {
     planetId: number; // Planet where battle occurred
     planetName: string;
-    wasAttacking: boolean; // True if this player was attacking, false if defending
+    defenderName?: string;
+    defenderId?: string;
+    conflictData: PlanetaryConflictData;
+  };
+}
+
+export interface FleetDefenseSuccessEvent extends ClientEvent {
+  type: ClientEventType.FLEET_DEFENSE_SUCCESS;
+  data: {
+    planetId: number; // Planet where battle occurred
+    planetName: string;
+    attackerName: string;
+    attackerId: string;
+    conflictData: PlanetaryConflictData;
   };
 }
 
