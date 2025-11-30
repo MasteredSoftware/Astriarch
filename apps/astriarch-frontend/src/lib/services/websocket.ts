@@ -21,7 +21,8 @@ import {
 	GameCommandType,
 	EventApplicator,
 	calculateRollingEventChecksum,
-	type PlanetProductionItemData
+	type PlanetProductionItemData,
+	TradeType
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
@@ -219,6 +220,103 @@ class WebSocketService {
 		}
 	}
 
+	private tradesProcessedEventToNotifications(event: TradesProcessedEvent): void {
+		const { data } = event;
+
+		// Summarize all executed and non-executed trades
+		const resourcesBought = { food: 0, ore: 0, iridium: 0, energySpent: 0, tradeCount: 0 };
+		const resourcesSold = { food: 0, ore: 0, iridium: 0, energyEarned: 0, tradeCount: 0 };
+		const resourcesNotBought = { food: 0, ore: 0, iridium: 0, energySpent: 0, tradeCount: 0 };
+		const resourcesNotSold = { food: 0, ore: 0, iridium: 0, energyEarned: 0, tradeCount: 0 };
+
+		for (const tradeResult of data.tradesProcessed) {
+			const { executedStatus } = tradeResult;
+
+			let rbTarget = resourcesNotBought;
+			let rsTarget = resourcesNotSold;
+			if (executedStatus.executed) {
+				rbTarget = resourcesBought;
+				rsTarget = resourcesSold;
+			}
+
+			if (executedStatus.tradeType === TradeType.BUY) {
+				rbTarget.food += executedStatus.foodAmount;
+				rbTarget.ore += executedStatus.oreAmount;
+				rbTarget.iridium += executedStatus.iridiumAmount;
+				rbTarget.energySpent += executedStatus.tradeEnergyAmount;
+				rbTarget.tradeCount++;
+			} else {
+				// SELL
+				rsTarget.food += executedStatus.foodAmount;
+				rsTarget.ore += executedStatus.oreAmount;
+				rsTarget.iridium += executedStatus.iridiumAmount;
+				rsTarget.energyEarned += executedStatus.tradeEnergyAmount;
+				rsTarget.tradeCount++;
+			}
+		}
+
+		// Create message for executed trades
+		if (resourcesBought.tradeCount || resourcesSold.tradeCount) {
+			const tradeCount = resourcesBought.tradeCount + resourcesSold.tradeCount;
+			let message =
+				tradeCount > 1 ? `${tradeCount} Trades Executed,` : `${tradeCount} Trade Executed,`;
+
+			if (resourcesBought.energySpent) {
+				message += ` Spent ${resourcesBought.energySpent.toFixed(2)} energy buying:`;
+				if (resourcesBought.food) message += ` ${resourcesBought.food} food,`;
+				if (resourcesBought.ore) message += ` ${resourcesBought.ore} ore,`;
+				if (resourcesBought.iridium) message += ` ${resourcesBought.iridium} iridium,`;
+			}
+
+			if (resourcesSold.energyEarned) {
+				message += ` Earned ${resourcesSold.energyEarned.toFixed(2)} energy selling:`;
+				if (resourcesSold.food) message += ` ${resourcesSold.food} food,`;
+				if (resourcesSold.ore) message += ` ${resourcesSold.ore} ore,`;
+				if (resourcesSold.iridium) message += ` ${resourcesSold.iridium} iridium,`;
+			}
+
+			message = message.replace(/,$/, ''); // Remove trailing comma
+
+			this.gameStore.addNotification({
+				type: 'success',
+				message,
+				timestamp: Date.now()
+			});
+		}
+
+		// Create separate notification for non-executed trades if any
+		if (resourcesNotBought.tradeCount || resourcesNotSold.tradeCount) {
+			const failedTradeCount = resourcesNotBought.tradeCount + resourcesNotSold.tradeCount;
+			let failedMessage =
+				failedTradeCount > 1
+					? `${failedTradeCount} Trades Not Executed,`
+					: `${failedTradeCount} Trade Not Executed,`;
+
+			if (resourcesNotBought.tradeCount) {
+				failedMessage += ` Could not Buy:`;
+				if (resourcesNotBought.food) failedMessage += ` ${resourcesNotBought.food} food,`;
+				if (resourcesNotBought.ore) failedMessage += ` ${resourcesNotBought.ore} ore,`;
+				if (resourcesNotBought.iridium) failedMessage += ` ${resourcesNotBought.iridium} iridium,`;
+			}
+
+			if (resourcesNotSold.tradeCount) {
+				failedMessage += ` Could not Sell:`;
+				if (resourcesNotSold.food) failedMessage += ` ${resourcesNotSold.food} food,`;
+				if (resourcesNotSold.ore) failedMessage += ` ${resourcesNotSold.ore} ore,`;
+				if (resourcesNotSold.iridium) failedMessage += ` ${resourcesNotSold.iridium} iridium,`;
+			}
+
+			failedMessage = failedMessage.replace(/,$/, ''); // Remove trailing comma
+
+			// Add failed trades notification separately
+			this.gameStore.addNotification({
+				type: 'warning',
+				message: failedMessage,
+				timestamp: Date.now()
+			});
+		}
+	}
+
 	private convertClientEventToNotification(event: ClientEvent): void {
 		let notificationType:
 			| 'info'
@@ -250,31 +348,27 @@ class WebSocketService {
 				return;
 
 			// Server-only events that may need UI notifications
-			case ClientEventType.TRADES_PROCESSED: {
-				notificationType = 'success';
-				const {data} = event as TradesProcessedEvent;
-				const action = data.tradeType === 1 ? 'bought' : 'sold';
-				message = `Trade executed: ${action} ${data.amount} resources`;
-				break;
-			}
+			case ClientEventType.TRADES_PROCESSED:
+				this.tradesProcessedEventToNotifications(event as TradesProcessedEvent);
+				return;
 			case ClientEventType.PLANET_CAPTURED: {
 				notificationType = 'success';
-				const {data} = event as PlanetCapturedEvent;
+				const { data } = event as PlanetCapturedEvent;
 				message = `Planet ${data.planetName} captured`;
-				if(data.previousOwnerName){
+				if (data.previousOwnerName) {
 					message += ` from ${data.previousOwnerName}`;
 				}
 				break;
 			}
 			case ClientEventType.PLANET_LOST: {
 				notificationType = 'error';
-				const {data} = event as PlanetLostEvent;
+				const { data } = event as PlanetLostEvent;
 				message = `Planet ${data.planetName} lost to ${data.newOwnerName}`;
 				break;
 			}
 			case ClientEventType.FLEET_ATTACK_FAILED: {
 				notificationType = 'battle';
-				const {data} = event as FleetAttackFailedEvent;
+				const { data } = event as FleetAttackFailedEvent;
 				message = `Fleet destroyed attacking ${data.planetName}`;
 				if (data.defenderName) {
 					message += ` owned by ${data.defenderName}`;
@@ -283,7 +377,7 @@ class WebSocketService {
 			}
 			case ClientEventType.FLEET_DEFENSE_SUCCESS: {
 				notificationType = 'battle';
-				const {data} = event as FleetDefenseSuccessEvent;
+				const { data } = event as FleetDefenseSuccessEvent;
 				message = `Successfully defended ${data.planetName} against ${data.attackerName}`;
 				break;
 			}
@@ -306,7 +400,7 @@ class WebSocketService {
 				return;
 		}
 
-		if(!message){
+		if (!message) {
 			return;
 		}
 		const notification = {
