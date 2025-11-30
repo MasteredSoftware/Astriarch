@@ -12,7 +12,7 @@
  * 4. Using checksums to detect desync
  */
 
-import { PlanetData, PlanetProductionItemData, TradeType, TradingCenterResourceType } from '../model';
+import { PlanetData, PlanetProductionItemData } from '../model';
 import { PlanetaryConflictData } from '../model/battle';
 import { ExecuteTradeResults } from './tradingCenter';
 
