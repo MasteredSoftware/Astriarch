@@ -270,6 +270,9 @@ export class Player {
     //determine food surplus and shortages
     //shortages will kill off a percentage of the population due to starvation depending on the amount of shortage
 
+    // Reset food shipping tracking for this turn
+    mainPlayer.lastTurnFoodNeededToBeShipped = 0;
+
     const foodDeficitByPlanet: Record<number, number> = {}; //for calculating starvation later
     const foodSurplusPlanets: PlanetData[] = []; //for costing shipments and starvation later
 
