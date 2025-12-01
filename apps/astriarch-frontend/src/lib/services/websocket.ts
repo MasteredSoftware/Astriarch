@@ -22,7 +22,8 @@ import {
 	EventApplicator,
 	calculateRollingEventChecksum,
 	type PlanetProductionItemData,
-	TradeType
+	TradeType,
+	Player
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
@@ -538,16 +539,6 @@ class WebSocketService {
 				notificationType = 'info';
 				const data = notification.data as { amount: number; resourceType: string; reason: string };
 				message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
-				break;
-			}
-			case ClientNotificationType.SHIPS_AUTO_QUEUED: {
-				notificationType = 'construction';
-				const data = notification.data as {
-					planetId: number;
-					planetName: string;
-					shipsQueued: string;
-				};
-				message = `Auto-queued ships at ${data.planetName}: ${data.shipsQueued}`;
 				break;
 			}
 			default:
@@ -1155,6 +1146,10 @@ class WebSocketService {
 					clientGameModel.set(currentModel);
 				}
 
+				// After applying all events, check if any planets are eligible for auto-queuing
+				// This ensures build queues stay full immediately after they empty
+				this.checkAndAutoQueueShips(currentModel);
+
 				break;
 			}
 
@@ -1615,6 +1610,27 @@ class WebSocketService {
 				message: 'Cannot update planet options - no active game session',
 				timestamp: Date.now()
 			});
+		}
+	}
+
+	/**
+	 * Check if any planets are eligible for auto-queuing ships and send commands to queue them.
+	 * This is called after events are applied to ensure build queues stay full immediately.
+	 */
+	private checkAndAutoQueueShips(currentModel: ClientModelData) {
+		try {
+			const eligiblePlanets = Player.getEligibleBuildLastShipPlanetList(currentModel);
+
+			if (eligiblePlanets.length > 0) {
+				console.log(`Auto-queuing ships on ${eligiblePlanets.length} planet(s)`);
+
+				// Send a queue command for each eligible planet
+				for (const { planetId, productionItem } of eligiblePlanets) {
+					this.updatePlanetBuildQueue(planetId, 'add', productionItem);
+				}
+			}
+		} catch (error) {
+			console.error('Error checking auto-queue eligibility:', error);
 		}
 	}
 

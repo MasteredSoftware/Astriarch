@@ -8,7 +8,6 @@ import {
   ClientEvent,
   ClientNotification,
   ClientNotificationType,
-  ShipsAutoQueuedNotification,
   PopulationStarvationNotification,
   FoodShortageRiotsNotification,
   PlanetLostDueToStarvationNotification,
@@ -97,9 +96,6 @@ export class Player {
     // Clear task notifications so they can be regenerated fresh this cycle
     // This ensures resolved issues (like adding items to empty build queues) don't persist
     TaskNotifications.clearAllTaskNotifications(data.clientModel.taskNotifications);
-
-    const autoQueueNotifications = Player.addLastStarShipToQueueOnPlanets(data);
-    notifications.push(...autoQueueNotifications);
 
     Player.generatePlayerResources(data);
 
@@ -218,52 +214,48 @@ export class Player {
     return PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, item);
   }
 
-  public static addLastStarShipToQueueOnPlanets(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, grid } = data;
+  /**
+   * Returns a list of planets eligible for auto-queuing their last built starship.
+   * This is a read-only method that doesn't modify the model - the client should use this
+   * to determine which planets need ships auto-queued, then send explicit commands to the server.
+   *
+   * @returns Array of {planetId, productionItem} for planets with buildLastStarship enabled,
+   *          empty build queues, and sufficient resources
+   */
+  public static getEligibleBuildLastShipPlanetList(
+    clientModel: ClientModelData,
+  ): { planetId: number; productionItem: PlanetProductionItemData }[] {
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
-    let autoQueuedCount = 0;
-    const autoQueuedFleet = Fleet.generateFleet([], null);
-    let focusPlanet;
+    const eligiblePlanets: { planetId: number; productionItem: PlanetProductionItemData }[] = [];
+
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
-      if (p.buildLastStarship && p.buildQueue.length == 0 && p.starshipTypeLastBuilt != null) {
-        focusPlanet = p;
-        //check resources
+      if (p.buildLastStarship && p.buildQueue.length === 0 && p.starshipTypeLastBuilt != null) {
+        // Check resources
         let customShipData: StarshipAdvantageData | undefined;
         if (p.starshipCustomShipLastBuilt) {
           customShipData = Research.getResearchDataByStarshipHullType(p.starshipTypeLastBuilt, mainPlayer)!;
         }
-        const s = PlanetProductionItem.constructStarShipInProduction(p.starshipTypeLastBuilt, customShipData);
+        const productionItem = PlanetProductionItem.constructStarShipInProduction(
+          p.starshipTypeLastBuilt,
+          customShipData,
+        );
 
         // Use basic resource check but add special logic for food shipping
-        let canBuild = PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, s);
+        let canBuild = PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, productionItem);
 
         // Additional check: ensure we have surplus energy after food shipping needs
-        if (canBuild && totalResources.energy - s.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
+        if (canBuild && totalResources.energy - productionItem.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
           canBuild = false;
         }
 
         if (canBuild) {
-          autoQueuedCount++;
-          autoQueuedFleet.starships.push(Fleet.generateStarship(p.starshipTypeLastBuilt, customShipData));
-          Planet.enqueueProductionItemAndSpendResources(grid, mainPlayer, mainPlayerOwnedPlanets, p, s);
+          eligiblePlanets.push({ planetId: p.id, productionItem });
         }
       }
     }
 
-    if (autoQueuedCount && focusPlanet) {
-      const notification: ShipsAutoQueuedNotification = {
-        type: ClientNotificationType.SHIPS_AUTO_QUEUED,
-        affectedPlayerIds: [mainPlayer.id],
-        data: {
-          planetId: focusPlanet.id,
-          planetName: focusPlanet.name,
-          shipsQueued: Fleet.toString(autoQueuedFleet),
-        },
-      };
-      return [notification];
-    }
-    return [];
+    return eligiblePlanets;
   }
 
   public static eatAndStarve(data: AdvanceGameClockForPlayerData): ClientNotification[] {
@@ -293,6 +285,9 @@ export class Player {
         p.resources.food = 0;
 
         mainPlayer.lastTurnFoodNeededToBeShipped += deficit / cyclesElapsed; //increment our food shipments needed so next turn we can ensure we have surplus gold
+        console.log(
+          `Setting lastTurnFoodNeededToBeShipped to ${mainPlayer.lastTurnFoodNeededToBeShipped}, deficit/cycles: ${deficit} / ${cyclesElapsed} `,
+        );
       } else if (p.resources.food > 0) {
         //signify surplus for this planet for shipments
         foodSurplusPlanets.push(p);

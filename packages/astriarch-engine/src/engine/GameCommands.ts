@@ -105,7 +105,6 @@ export enum ClientNotificationType {
 
   // Resource notifications
   RESOURCES_AUTO_SPENT = 'RESOURCES_AUTO_SPENT',
-  SHIPS_AUTO_QUEUED = 'SHIPS_AUTO_QUEUED',
 }
 
 // ============================================================================
@@ -523,14 +522,5 @@ export interface ResourcesAutoSpentNotification extends ClientNotification {
     amount: number;
     resourceType: string;
     reason: string;
-  };
-}
-
-export interface ShipsAutoQueuedNotification extends ClientNotification {
-  type: ClientNotificationType.SHIPS_AUTO_QUEUED;
-  data: {
-    planetId: number;
-    planetName: string;
-    shipsQueued: string; // Description of ships queued
   };
 }
