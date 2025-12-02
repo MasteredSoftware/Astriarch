@@ -30,29 +30,28 @@ import {
 import { activityStore } from '$lib/stores/activityStore';
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
 import { PlayerStorage } from '$lib/utils/playerStorage';
-import type {
-	AdjustResearchPercentCommand,
-	CancelResearchItemCommand,
-	CancelTradeCommand,
-	ClearWaypointCommand,
-	ClientModelData,
-	DemolishImprovementCommand,
-	FleetAttackFailedEvent,
-	FleetDefenseSuccessEvent,
-	PlanetCapturedEvent,
-	PlanetLostEvent,
-	QueueProductionItemCommand,
-	RemoveProductionItemCommand,
-	SendShipsCommand,
-	SetWaypointCommand,
-	SubmitResearchItemCommand,
-	SubmitTradeCommand,
-	TradesProcessedEvent,
-	UpdatePlanetOptionsCommand,
-	UpdatePlanetWorkerAssignmentsCommand
-} from 'astriarch-engine';
-
-// Import multiplayer store types and functionality from the centralized store
+	import type {
+		AdjustResearchPercentCommand,
+		CancelResearchItemCommand,
+		CancelTradeCommand,
+		ClearWaypointCommand,
+		ClientModelData,
+		DemolishImprovementCommand,
+		FleetAttackFailedEvent,
+		FleetDefenseSuccessEvent,
+		PlanetCapturedEvent,
+		PlanetLostEvent,
+		ProductionItemQueuedEvent,
+		QueueProductionItemCommand,
+		RemoveProductionItemCommand,
+		SendShipsCommand,
+		SetWaypointCommand,
+		SubmitResearchItemCommand,
+		SubmitTradeCommand,
+		TradesProcessedEvent,
+		UpdatePlanetOptionsCommand,
+		UpdatePlanetWorkerAssignmentsCommand
+	} from 'astriarch-engine';// Import multiplayer store types and functionality from the centralized store
 import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 
 // Import audio service for game music
@@ -76,6 +75,8 @@ class WebSocketService {
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
 	private gameSyncInterval: number | null = null;
 	private readonly gameSyncIntervalMs = 10000; // 10 seconds for game state synchronization
+	private autoQueuePending = false; // True when waiting for auto-queue command response
+	private autoQueueRequested = false; // True when auto-queue check is needed
 
 	// PlanetProductionItemType enum values (from astriarch-engine)
 	private readonly ITEM_TYPE_IMPROVEMENT = 1;
@@ -333,7 +334,17 @@ class WebSocketService {
 
 		switch (event.type) {
 			// Command response events (typically don't need UI notifications)
-			case ClientEventType.PRODUCTION_ITEM_QUEUED:
+			case ClientEventType.PRODUCTION_ITEM_QUEUED: {
+				// Check if this was an auto-queued command response
+				const queuedEvent = event as ProductionItemQueuedEvent;
+				if (queuedEvent.data?.metadata?.autoQueued) {
+					// This was our auto-queue command - mark as complete and check again
+					this.autoQueuePending = false;
+					console.log('Auto-queue command completed - checking for next eligible planet');
+					this.processAutoQueue();
+				}
+				return;
+			}
 			case ClientEventType.PRODUCTION_ITEM_REMOVED:
 			case ClientEventType.FLEET_LAUNCHED:
 			case ClientEventType.WAYPOINT_SET:
@@ -1146,10 +1157,6 @@ class WebSocketService {
 					clientGameModel.set(currentModel);
 				}
 
-				// After applying all events, check if any planets are eligible for auto-queuing
-				// This ensures build queues stay full immediately after they empty
-				this.checkAndAutoQueueShips(currentModel);
-
 				break;
 			}
 
@@ -1161,11 +1168,30 @@ class WebSocketService {
 				};
 				console.log(`Received ${payload.notifications.length} client notifications from server`);
 
+				// Track if any build completion notifications occurred (which might empty build queues)
+				let shouldCheckAutoQueue = false;
+
 				// Convert each notification to UI notification
 				// These are informational only - the client already applied changes locally
 				for (const notification of payload.notifications) {
 					console.log(`Processing notification: ${notification.type}`);
 					this.convertClientNotificationToUINotification(notification);
+
+					// Check if this notification indicates a build completion (which empties build queue)
+					if (
+						notification.type === ClientNotificationType.SHIP_BUILT ||
+						notification.type === ClientNotificationType.IMPROVEMENT_BUILT ||
+						notification.type === ClientNotificationType.IMPROVEMENT_DEMOLISHED
+					) {
+						shouldCheckAutoQueue = true;
+					}
+				}
+
+				// Only check for auto-queue if a build completion notification occurred
+				// This prevents unnecessary checks on every notification batch
+				if (shouldCheckAutoQueue) {
+					console.log('Build completion notification received - requesting auto-queue check');
+					this.requestAutoQueueCheck();
 				}
 
 				break;
@@ -1479,7 +1505,8 @@ class WebSocketService {
 		planetId: number,
 		action: 'add' | 'remove' | 'demolish',
 		productionItem?: PlanetProductionItemData,
-		index?: number
+		index?: number,
+		autoQueued = false
 	) {
 		try {
 			const cgm = get(clientGameModel);
@@ -1497,7 +1524,8 @@ class WebSocketService {
 					playerId,
 					timestamp: Date.now(),
 					planetId,
-					productionItem
+					productionItem,
+					metadata: autoQueued ? { autoQueued: true } : undefined
 				} as QueueProductionItemCommand;
 			} else if (action === 'remove' && typeof index === 'number') {
 				command = {
@@ -1614,23 +1642,58 @@ class WebSocketService {
 	}
 
 	/**
-	 * Check if any planets are eligible for auto-queuing ships and send commands to queue them.
-	 * This is called after events are applied to ensure build queues stay full immediately.
+	 * Request an auto-queue check. Sets a flag that will be processed when no auto-queue is pending.
 	 */
-	private checkAndAutoQueueShips(currentModel: ClientModelData) {
+	private requestAutoQueueCheck() {
+		this.autoQueueRequested = true;
+		this.processAutoQueue();
+	}
+
+	/**
+	 * Process the auto-queue by checking eligibility and sending ONE command at a time.
+	 * After each command response, this will be called again to check for the next eligible planet.
+	 * This prevents resource conflicts and ordering issues.
+	 */
+	private processAutoQueue() {
+		// Don't process if we're already waiting for a response
+		if (this.autoQueuePending) {
+			console.log('Auto-queue already pending - waiting for response');
+			return;
+		}
+
+		// Don't process if no check was requested
+		if (!this.autoQueueRequested) {
+			return;
+		}
+
 		try {
+			const currentModel = get(clientGameModel);
+			if (!currentModel) {
+				this.autoQueueRequested = false;
+				return;
+			}
+
 			const eligiblePlanets = Player.getEligibleBuildLastShipPlanetList(currentModel);
 
 			if (eligiblePlanets.length > 0) {
-				console.log(`Auto-queuing ships on ${eligiblePlanets.length} planet(s)`);
+				// Send command for ONLY the first eligible planet
+				const { planetId, productionItem } = eligiblePlanets[0];
+				console.log(`Auto-queuing ship on planet ${planetId} (${eligiblePlanets.length} total eligible)`);
 
-				// Send a queue command for each eligible planet
-				for (const { planetId, productionItem } of eligiblePlanets) {
-					this.updatePlanetBuildQueue(planetId, 'add', productionItem);
-				}
+				// Mark as pending before sending
+				this.autoQueuePending = true;
+
+				// Send ONE command with auto-queue marker
+				this.updatePlanetBuildQueue(planetId, 'add', productionItem, undefined, true);
+			} else {
+				// No more eligible planets - clear the request flag
+				console.log('No more planets eligible for auto-queue');
+				this.autoQueueRequested = false;
 			}
 		} catch (error) {
-			console.error('Error checking auto-queue eligibility:', error);
+			console.error('Error processing auto-queue:', error);
+			this.autoQueuePending = false;
+			this.autoQueueRequested = false;
 		}
 	}
 
@@ -1973,6 +2036,8 @@ class WebSocketService {
 	disconnect() {
 		this.stopPingInterval();
 		this.stopGameSyncInterval();
+		this.autoQueuePending = false;
+		this.autoQueueRequested = false;
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;

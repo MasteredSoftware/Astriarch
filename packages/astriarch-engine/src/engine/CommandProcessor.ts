@@ -145,6 +145,8 @@ export class CommandProcessor {
         planetId: command.planetId,
         productionItem,
         playerResources: totalResources,
+        // Pass through metadata from command (e.g., autoQueued flag)
+        metadata: command.metadata,
       },
     };
 

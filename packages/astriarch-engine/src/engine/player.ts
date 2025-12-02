@@ -288,9 +288,6 @@ export class Player {
         p.resources.food = 0;
 
         mainPlayer.lastTurnFoodNeededToBeShipped += deficit / cyclesElapsed; //increment our food shipments needed so next turn we can ensure we have surplus gold
-        console.log(
-          `Setting lastTurnFoodNeededToBeShipped to ${mainPlayer.lastTurnFoodNeededToBeShipped}, deficit/cycles: ${deficit} / ${cyclesElapsed} `,
-        );
       } else if (p.resources.food > 0) {
         //signify surplus for this planet for shipments
         foodSurplusPlanets.push(p);
