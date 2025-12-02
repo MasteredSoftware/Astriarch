@@ -16,6 +16,11 @@ import {
 import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 import type { PlanetData } from 'astriarch-engine/src/model/planet';
 import { webSocketService } from '$lib/services/websocket';
+import {
+	convertClientNotificationToUINotification,
+	isBuildCompletionNotification
+} from '$lib/utils/notificationUtils';
+import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 
 // Game state stores
 export const clientGameModel = writable<ClientModelData | null>(null);
@@ -337,9 +342,34 @@ function startGameLoop() {
 
 		if (cgm && grid) {
 			// Advance the client game model time continuously
-			const updatedClientModelData = advanceClientGameModelTime(cgm, grid);
-			clientGameModel.set(updatedClientModelData.clientGameModel);
-			if (updatedClientModelData.fleetsArrivingOnUnownedPlanets.length > 0) {
+			const result = advanceClientGameModelTime(cgm, grid);
+			clientGameModel.set(result.clientGameModel);
+
+			// Process notifications from the engine immediately
+			if (result.notifications.length > 0) {
+				let shouldCheckAutoQueue = false;
+
+				for (const notification of result.notifications) {
+					// Convert engine notification to UI notification
+					const uiNotification = convertClientNotificationToUINotification(notification);
+					if (uiNotification) {
+						multiplayerGameStore.addNotification(uiNotification);
+					}
+
+					// Check if this is a build completion notification
+					if (isBuildCompletionNotification(notification)) {
+						shouldCheckAutoQueue = true;
+					}
+				}
+
+				// Trigger auto-queue check if builds completed
+				if (shouldCheckAutoQueue) {
+					console.log('Build completion detected in game loop - requesting auto-queue check');
+					webSocketService.requestAutoQueueCheck();
+				}
+			}
+
+			if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
 				// request data sync with server
 				console.log('Fleets arriving on unowned planets, requesting state synchronization');
 				webSocketService.requestStateSync();

@@ -1345,18 +1345,6 @@ export class WebSocketServer {
         }
       }
 
-      // Group notifications by target player
-      const notificationsByPlayer = new Map<string, ClientNotification[]>();
-
-      for (const notification of notifications) {
-        for (const playerId of notification.affectedPlayerIds) {
-          if (!notificationsByPlayer.has(playerId)) {
-            notificationsByPlayer.set(playerId, []);
-          }
-          notificationsByPlayer.get(playerId)!.push(notification);
-        }
-      }
-
       logger.info(
         `Broadcasting ${events.length} time-based events to ${eventsByPlayer.size} players in game ${gameId}`,
       );
@@ -1392,38 +1380,6 @@ export class WebSocketServer {
 
         this.broadcastToSession(targetClient.sessionId, eventMessage);
         logger.info(`Sent ${playerEvents.length} time-based events to player ${playerId}`);
-      }
-
-      // Send notifications to each affected player
-      logger.info(
-        `Broadcasting ${notifications.length} notifications to ${notificationsByPlayer.size} players in game ${gameId}`,
-      );
-
-      for (const [playerId, playerNotifications] of notificationsByPlayer.entries()) {
-        // Find the client for this player
-        let targetClient: IConnectedClient | null = null;
-        for (const client of this.clients.values()) {
-          if (client.playerId === playerId && client.gameId === gameId) {
-            targetClient = client;
-            break;
-          }
-        }
-
-        if (!targetClient) {
-          logger.warn(
-            `No connected client found for player ${playerId} to send ${playerNotifications.length} notifications`,
-          );
-          continue;
-        }
-
-        // Send CLIENT_NOTIFICATION message with the notifications for this player
-        const notificationMessage = new Message(MESSAGE_TYPE.CLIENT_NOTIFICATION, {
-          notifications: playerNotifications,
-          currentCycle,
-        });
-
-        this.broadcastToSession(targetClient.sessionId, notificationMessage);
-        logger.info(`Sent ${playerNotifications.length} notifications to player ${playerId}`);
       }
     } catch (error) {
       logger.error("Error broadcasting time-based events:", error);

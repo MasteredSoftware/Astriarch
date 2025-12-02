@@ -35,7 +35,8 @@ export enum MESSAGE_TYPE {
   // New Command/Event Architecture
   GAME_COMMAND = 'GAME_COMMAND', // Client -> Server: Player command
   CLIENT_EVENT = 'CLIENT_EVENT', // Server -> Client: State change event
-  CLIENT_NOTIFICATION = 'CLIENT_NOTIFICATION', // Server -> Client: Informational notification
+  // NOTE: CLIENT_NOTIFICATION removed - notifications are now generated client-side
+  // when advanceClientGameModelTime runs, eliminating the 10-second server delay
 
   // Research & Trading
   ADJUST_RESEARCH_PERCENT = 'ADJUST_RESEARCH_PERCENT',
@@ -514,7 +515,6 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.PLAYER_ELIMINATED]: 71,
     [MESSAGE_TYPE.GAME_COMMAND]: 80,
     [MESSAGE_TYPE.CLIENT_EVENT]: 81,
-    [MESSAGE_TYPE.CLIENT_NOTIFICATION]: 82,
   };
 
   return typeMap[type] ?? -1;

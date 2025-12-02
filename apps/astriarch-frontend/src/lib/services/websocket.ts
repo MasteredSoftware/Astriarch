@@ -16,8 +16,6 @@ import {
 	type GameCommand,
 	type ClientEvent,
 	ClientEventType,
-	type ClientNotification,
-	ClientNotificationType,
 	GameCommandType,
 	EventApplicator,
 	calculateRollingEventChecksum,
@@ -30,28 +28,28 @@ import {
 import { activityStore } from '$lib/stores/activityStore';
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
 import { PlayerStorage } from '$lib/utils/playerStorage';
-	import type {
-		AdjustResearchPercentCommand,
-		CancelResearchItemCommand,
-		CancelTradeCommand,
-		ClearWaypointCommand,
-		ClientModelData,
-		DemolishImprovementCommand,
-		FleetAttackFailedEvent,
-		FleetDefenseSuccessEvent,
-		PlanetCapturedEvent,
-		PlanetLostEvent,
-		ProductionItemQueuedEvent,
-		QueueProductionItemCommand,
-		RemoveProductionItemCommand,
-		SendShipsCommand,
-		SetWaypointCommand,
-		SubmitResearchItemCommand,
-		SubmitTradeCommand,
-		TradesProcessedEvent,
-		UpdatePlanetOptionsCommand,
-		UpdatePlanetWorkerAssignmentsCommand
-	} from 'astriarch-engine';// Import multiplayer store types and functionality from the centralized store
+import type {
+	AdjustResearchPercentCommand,
+	CancelResearchItemCommand,
+	CancelTradeCommand,
+	ClearWaypointCommand,
+	ClientModelData,
+	DemolishImprovementCommand,
+	FleetAttackFailedEvent,
+	FleetDefenseSuccessEvent,
+	PlanetCapturedEvent,
+	PlanetLostEvent,
+	ProductionItemQueuedEvent,
+	QueueProductionItemCommand,
+	RemoveProductionItemCommand,
+	SendShipsCommand,
+	SetWaypointCommand,
+	SubmitResearchItemCommand,
+	SubmitTradeCommand,
+	TradesProcessedEvent,
+	UpdatePlanetOptionsCommand,
+	UpdatePlanetWorkerAssignmentsCommand
+} from 'astriarch-engine'; // Import multiplayer store types and functionality from the centralized store
 import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 
 // Import audio service for game music
@@ -438,130 +436,6 @@ class WebSocketService {
 				(event.data as any).conflictData // Pass the PlanetaryConflictData
 			);
 		}
-	}
-
-	private convertClientNotificationToUINotification(notification: ClientNotification): void {
-		let notificationType:
-			| 'info'
-			| 'success'
-			| 'warning'
-			| 'error'
-			| 'battle'
-			| 'research'
-			| 'construction'
-			| 'fleet'
-			| 'planet' = 'info';
-		let message = '';
-
-		switch (notification.type) {
-			case ClientNotificationType.SHIP_BUILT: {
-				notificationType = 'construction';
-				const data = notification.data as {
-					planetId: number;
-					planetName: string;
-					shipType: number;
-					nextItemInQueue?: string;
-				};
-				message = `Ship built at ${data.planetName}`;
-				if (data.nextItemInQueue) {
-					message += ` (Next: ${data.nextItemInQueue})`;
-				}
-				break;
-			}
-			case ClientNotificationType.IMPROVEMENT_BUILT: {
-				notificationType = 'construction';
-				const data = notification.data as {
-					planetId: number;
-					planetName: string;
-					improvementType: number;
-					nextItemInQueue?: string;
-				};
-				message = `Improvement built at ${data.planetName}`;
-				if (data.nextItemInQueue) {
-					message += ` (Next: ${data.nextItemInQueue})`;
-				}
-				break;
-			}
-			case ClientNotificationType.IMPROVEMENT_DEMOLISHED: {
-				notificationType = 'construction';
-				const data = notification.data as {
-					planetId: number;
-					planetName: string;
-					improvementType: number;
-					nextItemInQueue?: string;
-				};
-				message = `Improvement demolished at ${data.planetName}`;
-				if (data.nextItemInQueue) {
-					message += ` (Next: ${data.nextItemInQueue})`;
-				}
-				break;
-			}
-			case ClientNotificationType.RESEARCH_COMPLETED: {
-				notificationType = 'research';
-				const data = notification.data as { researchType: number; newLevel: number };
-				message = `Research complete (Level ${data.newLevel})`;
-				break;
-			}
-			case ClientNotificationType.POPULATION_GREW: {
-				notificationType = 'planet';
-				const data = notification.data as {
-					planetId: number;
-					planetName: string;
-					newPopulation: number;
-				};
-				message = `Population grew at ${data.planetName} (${data.newPopulation})`;
-				break;
-			}
-			case ClientNotificationType.POPULATION_STARVATION: {
-				notificationType = 'warning';
-				const data = notification.data as { planetId: number; planetName: string };
-				message = `Population lost to starvation at ${data.planetName}`;
-				break;
-			}
-			case ClientNotificationType.FOOD_SHORTAGE_RIOTS: {
-				notificationType = 'warning';
-				const data = notification.data as { planetId: number; planetName: string; reason: string };
-				message = `Food shortage riots at ${data.planetName}: ${data.reason}`;
-				break;
-			}
-			case ClientNotificationType.INSUFFICIENT_FOOD: {
-				notificationType = 'warning';
-				const data = notification.data as {
-					planetId: number;
-					planetName: string;
-					foodDeficit: number;
-				};
-				message = `Food shortage at ${data.planetName} (deficit: ${data.foodDeficit.toFixed(1)})`;
-				break;
-			}
-			case ClientNotificationType.CITIZENS_PROTESTING: {
-				notificationType = 'warning';
-				const data = notification.data as { planetId: number; planetName: string; reason: string };
-				message = `Citizens protesting at ${data.planetName}: ${data.reason}`;
-				break;
-			}
-			case ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION: {
-				notificationType = 'error';
-				const data = notification.data as { planetId: number; planetName: string };
-				message = `Planet lost due to starvation: ${data.planetName}`;
-				break;
-			}
-			case ClientNotificationType.RESOURCES_AUTO_SPENT: {
-				notificationType = 'info';
-				const data = notification.data as { amount: number; resourceType: string; reason: string };
-				message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
-				break;
-			}
-			default:
-				console.warn('Unknown ClientNotificationType:', notification.type);
-				return;
-		}
-
-		this.gameStore.addNotification({
-			type: notificationType,
-			message,
-			timestamp: Date.now()
-		});
 	}
 
 	private handleMessage(message: IMessage<unknown>) {
@@ -1160,43 +1034,6 @@ class WebSocketService {
 				break;
 			}
 
-			case MESSAGE_TYPE.CLIENT_NOTIFICATION: {
-				// Handle notification messages (informational only, no state mutation)
-				const payload = message.payload as {
-					notifications: ClientNotification[];
-					currentCycle: number;
-				};
-				console.log(`Received ${payload.notifications.length} client notifications from server`);
-
-				// Track if any build completion notifications occurred (which might empty build queues)
-				let shouldCheckAutoQueue = false;
-
-				// Convert each notification to UI notification
-				// These are informational only - the client already applied changes locally
-				for (const notification of payload.notifications) {
-					console.log(`Processing notification: ${notification.type}`);
-					this.convertClientNotificationToUINotification(notification);
-
-					// Check if this notification indicates a build completion (which empties build queue)
-					if (
-						notification.type === ClientNotificationType.SHIP_BUILT ||
-						notification.type === ClientNotificationType.IMPROVEMENT_BUILT ||
-						notification.type === ClientNotificationType.IMPROVEMENT_DEMOLISHED
-					) {
-						shouldCheckAutoQueue = true;
-					}
-				}
-
-				// Only check for auto-queue if a build completion notification occurred
-				// This prevents unnecessary checks on every notification batch
-				if (shouldCheckAutoQueue) {
-					console.log('Build completion notification received - requesting auto-queue check');
-					this.requestAutoQueueCheck();
-				}
-
-				break;
-			}
-
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
 					this.gameStore.addNotification({
@@ -1644,7 +1481,7 @@ class WebSocketService {
 	/**
 	 * Request an auto-queue check. Sets a flag that will be processed when no auto-queue is pending.
 	 */
-	private requestAutoQueueCheck() {
+	public requestAutoQueueCheck() {
 		this.autoQueueRequested = true;
 		this.processAutoQueue();
 	}
@@ -1678,7 +1515,9 @@ class WebSocketService {
 			if (eligiblePlanets.length > 0) {
 				// Send command for ONLY the first eligible planet
 				const { planetId, productionItem } = eligiblePlanets[0];
-				console.log(`Auto-queuing ship on planet ${planetId} (${eligiblePlanets.length} total eligible)`);
+				console.log(
+					`Auto-queuing ship on planet ${planetId} (${eligiblePlanets.length} total eligible)`
+				);
 
 				// Mark as pending before sending
 				this.autoQueuePending = true;

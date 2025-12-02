@@ -146,7 +146,10 @@ export class GameController {
     modelDataBase.lastSnapshotTime = currentTime;
   }
 
-  public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid): FleetData[] {
+  public static advanceClientGameClock(
+    clientModel: ClientModelData,
+    grid: Grid,
+  ): { fleetsArrivingOnUnownedPlanets: FleetData[]; notifications: ClientNotification[] } {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
     const data: AdvanceGameClockForPlayerData = {
@@ -159,7 +162,10 @@ export class GameController {
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;
-    return result.fleetsArrivingOnUnownedPlanets;
+    return {
+      fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,
+      notifications: result.notifications,
+    };
   }
 
   public static constructPlanetaryConflictData(

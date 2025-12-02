@@ -10,6 +10,7 @@ import {
   GALAXY_WIDTH,
   GALAXY_HEIGHT,
 } from './engine/gameModel';
+import { ClientNotification } from './engine/GameCommands';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
@@ -183,10 +184,18 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
 export const advanceClientGameModelTime = (
   clientGameModel: ClientModelData,
   grid: Grid,
-): { clientGameModel: ClientModelData; fleetsArrivingOnUnownedPlanets: FleetData[] } => {
-  const fleetsArrivingOnUnownedPlanets = GameController.advanceClientGameClock(clientGameModel, grid);
+): {
+  clientGameModel: ClientModelData;
+  fleetsArrivingOnUnownedPlanets: FleetData[];
+  notifications: ClientNotification[];
+} => {
+  const result = GameController.advanceClientGameClock(clientGameModel, grid);
 
-  return { clientGameModel, fleetsArrivingOnUnownedPlanets };
+  return {
+    clientGameModel,
+    fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,
+    notifications: result.notifications,
+  };
 };
 
 export const resetGameSnapshotTime = (gameModel: GameModelData) => {
