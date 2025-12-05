@@ -125,7 +125,7 @@ export class EventApplicator {
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
-      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      console.warn(`Planet ${planetId} not found in player's owned planets in applyProductionItemQueued`);
       return;
     }
 
@@ -144,7 +144,7 @@ export class EventApplicator {
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
-      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      console.warn(`Planet ${planetId} not found in player's owned planets in applyProductionItemRemoved`);
       return;
     }
 
@@ -157,7 +157,7 @@ export class EventApplicator {
 
     const planet = clientModel.mainPlayerOwnedPlanets[fromPlanetId];
     if (!planet) {
-      console.warn(`Planet ${fromPlanetId} not found in player's owned planets`);
+      console.warn(`Planet ${fromPlanetId} not found in player's owned planets in applyFleetLaunched`);
       return;
     }
 
@@ -183,7 +183,7 @@ export class EventApplicator {
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
-      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      console.warn(`Planet ${planetId} not found in player's owned planets in applyPlanetWorkerAssignmentsUpdated`);
       return;
     }
 
@@ -281,7 +281,7 @@ export class EventApplicator {
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
-      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      console.warn(`Planet ${planetId} not found in player's owned planets in applyPlanetOptionsUpdated`);
       return;
     }
 
@@ -354,7 +354,7 @@ export class EventApplicator {
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
-      console.warn(`Planet ${planetId} not found in player's owned planets`);
+      console.warn(`Planet ${planetId} not found in player's owned planets in applyFleetDefenseSuccess`);
       return;
     }
 

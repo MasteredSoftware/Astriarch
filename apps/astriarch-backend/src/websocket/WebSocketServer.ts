@@ -1051,25 +1051,14 @@ export class WebSocketServer {
         return;
       }
 
-      // Broadcast events to all players in the game
-      if (result.events && result.events.length > 0) {
-        const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
-          events: result.events,
-          stateChecksum: result.checksum,
-          currentCycle: result.currentCycle,
-        });
-
-        // Get all clients in this game using gameRooms
-        const gameRoom = this.gameRooms.get(gameId);
-        if (gameRoom) {
-          for (const sessionId of gameRoom) {
-            const playerClientId = this.getClientIdBySessionId(sessionId);
-            if (playerClientId) {
-              this.sendToClient(playerClientId, eventMessage);
-            }
-          }
-        }
-      }
+      // Broadcast events to affected players only (not all players)
+      await this.broadcastToAffectedPlayers(
+        gameId,
+        result.events || [],
+        result.currentCycle,
+        result.checksum,
+        "command events",
+      );
 
       logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
@@ -1326,13 +1315,22 @@ export class WebSocketServer {
     }
   }
 
-  private async broadcastTimeBasedEvents(
+  /**
+   * Broadcasts events to affected players only.
+   * Events are grouped by player based on their affectedPlayerIds array.
+   */
+  private async broadcastToAffectedPlayers(
     gameId: string,
     events: ClientEvent[],
-    notifications: ClientNotification[],
     currentCycle: number,
+    checksum?: string,
+    eventType: string = "events",
   ): Promise<void> {
     try {
+      if (!events || events.length === 0) {
+        return;
+      }
+
       // Group events by affected player
       const eventsByPlayer = new Map<string, ClientEvent[]>();
 
@@ -1346,15 +1344,8 @@ export class WebSocketServer {
       }
 
       logger.info(
-        `Broadcasting ${events.length} time-based events to ${eventsByPlayer.size} players in game ${gameId}`,
+        `Broadcasting ${events.length} ${eventType} to ${eventsByPlayer.size} affected players in game ${gameId}`,
       );
-
-      // Get game room
-      const gameRoom = this.gameRooms.get(gameId);
-      if (!gameRoom) {
-        logger.warn(`No game room found for game ${gameId}`);
-        return;
-      }
 
       // Send events to each affected player
       for (const [playerId, playerEvents] of eventsByPlayer.entries()) {
@@ -1368,7 +1359,7 @@ export class WebSocketServer {
         }
 
         if (!targetClient) {
-          logger.warn(`No connected client found for player ${playerId} to send ${playerEvents.length} events`);
+          logger.warn(`No connected client found for player ${playerId} to send ${playerEvents.length} ${eventType}`);
           continue;
         }
 
@@ -1376,14 +1367,28 @@ export class WebSocketServer {
         const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
           events: playerEvents,
           currentCycle,
+          ...(checksum && { stateChecksum: checksum }),
         });
 
-        this.broadcastToSession(targetClient.sessionId, eventMessage);
-        logger.info(`Sent ${playerEvents.length} time-based events to player ${playerId}`);
+        const clientId = this.getClientIdBySessionId(targetClient.sessionId);
+        if (clientId) {
+          this.sendToClient(clientId, eventMessage);
+          logger.info(`Sent ${playerEvents.length} ${eventType} to player ${playerId}`);
+        }
       }
     } catch (error) {
-      logger.error("Error broadcasting time-based events:", error);
+      logger.error(`Error broadcasting ${eventType}:`, error);
     }
+  }
+
+  private async broadcastTimeBasedEvents(
+    gameId: string,
+    events: ClientEvent[],
+    notifications: ClientNotification[],
+    currentCycle: number,
+  ): Promise<void> {
+    // Clients generate notifications locally, so we only broadcast events
+    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events");
   }
 
   private broadcastToOtherPlayersInGame(game: IGame, sessionId: string, message: Message<any>): void {
