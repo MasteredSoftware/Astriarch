@@ -42,6 +42,7 @@ export interface TaskNotification {
 export enum TaskNotificationType {
   BuildQueueEmpty = 0,
   InsufficientFood = 1,
+  CitizensProtesting = 2,
 }
 
 export type TaskNotificationIndex = Record<TaskNotificationType, TaskNotificationByPlanetId>;

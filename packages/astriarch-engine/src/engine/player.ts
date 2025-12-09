@@ -11,7 +11,6 @@ import {
   PopulationStarvationNotification,
   FoodShortageRiotsNotification,
   PlanetLostDueToStarvationNotification,
-  CitizensProtestingNotification,
   PopulationGrewNotification,
   ResourcesAutoSpentNotification,
 } from './GameCommands';
@@ -541,27 +540,21 @@ export class Player {
         const citizenText = protestingCitizenCount > 1 ? ' Citizens' : ' Citizen';
         if (protestingCitizenCount >= p.population.length / 2) {
           p.planetHappiness = PlanetHappinessType.Unrest;
-          const protestNotification: CitizensProtestingNotification = {
-            type: ClientNotificationType.CITIZENS_PROTESTING,
-            affectedPlayerIds: [mainPlayer.id],
-            data: {
-              planetId: p.id,
-              planetName: p.name,
-              reason: `${protestingCitizenCount}${citizenText} protesting (unrest)`,
-            },
-          };
-          notifications.push(protestNotification);
+          const message = `Population unrest on ${p.name} due to ${protestingCitizenCount}${citizenText} protesting`;
+          TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
+            type: TaskNotificationType.CitizensProtesting,
+            planetId: p.id,
+            planetName: p.name,
+            message: message,
+          });
         } else if (protestingCitizenCount > 0) {
-          const protestNotification: CitizensProtestingNotification = {
-            type: ClientNotificationType.CITIZENS_PROTESTING,
-            affectedPlayerIds: [mainPlayer.id],
-            data: {
-              planetId: p.id,
-              planetName: p.name,
-              reason: `${protestingCitizenCount}${citizenText} protesting`,
-            },
-          };
-          notifications.push(protestNotification);
+          const message = `${protestingCitizenCount}${citizenText} protesting on ${p.name}`;
+          TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
+            type: TaskNotificationType.CitizensProtesting,
+            planetId: p.id,
+            planetName: p.name,
+            message: message,
+          });
         }
       }
     }

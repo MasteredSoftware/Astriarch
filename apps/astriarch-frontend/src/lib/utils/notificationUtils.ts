@@ -110,12 +110,6 @@ export function convertClientNotificationToUINotification(
 			message = `Food shortage at ${data.planetName} (deficit: ${data.foodDeficit.toFixed(1)})`;
 			break;
 		}
-		case ClientNotificationType.CITIZENS_PROTESTING: {
-			notificationType = 'warning';
-			const data = notification.data as { planetId: number; planetName: string; reason: string };
-			message = `Citizens protesting at ${data.planetName}: ${data.reason}`;
-			break;
-		}
 		case ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION: {
 			notificationType = 'error';
 			const data = notification.data as { planetId: number; planetName: string };

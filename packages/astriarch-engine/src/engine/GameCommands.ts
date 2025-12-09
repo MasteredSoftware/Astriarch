@@ -100,7 +100,7 @@ export enum ClientNotificationType {
   // Food/Happiness notifications
   FOOD_SHORTAGE_RIOTS = 'FOOD_SHORTAGE_RIOTS',
   INSUFFICIENT_FOOD = 'INSUFFICIENT_FOOD',
-  CITIZENS_PROTESTING = 'CITIZENS_PROTESTING',
+  // CITIZENS_PROTESTING removed - now a TaskNotification (persistent state condition)
   PLANET_LOST_DUE_TO_STARVATION = 'PLANET_LOST_DUE_TO_STARVATION',
 
   // Resource notifications
@@ -503,15 +503,6 @@ export interface InsufficientFoodNotification extends ClientNotification {
     planetId: number;
     planetName: string;
     foodDeficit: number;
-  };
-}
-
-export interface CitizensProtestingNotification extends ClientNotification {
-  type: ClientNotificationType.CITIZENS_PROTESTING;
-  data: {
-    planetId: number;
-    planetName: string;
-    reason: string;
   };
 }
 
