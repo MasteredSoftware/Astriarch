@@ -5,6 +5,7 @@ import { startNewTestGame, TestGameData } from '../test/testUtils';
 import { ClientGameModel } from './clientGameModel';
 import { AdvanceGameClockForPlayerData } from './gameModel';
 import { Grid } from './grid';
+import { TaskNotificationType } from '../model';
 
 describe('Player', () => {
   describe('food shipping logic', () => {
@@ -806,7 +807,7 @@ describe('Player', () => {
 
         Player.eatAndStarve(data);
 
-        // eatAndStarve does not generate CITIZENS_PROTESTING events directly
+        // eatAndStarve does not generate CITIZENS_PROTESTING task notifications directly
         // (those come from adjustPlayerPlanetProtestLevels)
         // but it does set planet happiness state
         expect(clientPlanet.population.length).toBe(1); // No death
@@ -1070,9 +1071,10 @@ describe('Player', () => {
         expect(clientPlanet.population[2].protestLevel).toBeGreaterThan(0);
         expect(clientPlanet.population[2].protestLevel).toBeLessThan(0.5); // Verify reduction happened
 
-        // Protest was reduced but citizen still protesting, so event is generated
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(1); // One citizen still protesting
+        // Protest was reduced but citizen still protesting, so TaskNotification is created
+        const protestTask = clientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        expect(protestTask).toBeDefined();
+        expect(protestTask.message).toContain('1 Citizen protesting');
       });
 
       it('should apply home world multiplier (2x) to protest reduction', () => {
@@ -1183,9 +1185,9 @@ describe('Player', () => {
         // 2 citizens still protesting >= 50%, so Unrest
         expect(clientPlanet.planetHappiness).toBe(PlanetHappinessType.Unrest);
 
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(1);
-        expect((protestEvents[0].data as Record<string, unknown>)['reason']).toContain('unrest');
+        const protestTask = clientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        expect(protestTask).toBeDefined();
+        expect(protestTask.message).toContain('unrest');
       });
 
       it('should not change planet happiness when less than half are protesting', () => {
@@ -1211,14 +1213,14 @@ describe('Player', () => {
         // 1 citizen protesting < 50%, so stays Normal
         expect(clientPlanet.planetHappiness).toBe(PlanetHappinessType.Normal); // Stays Normal
 
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(1);
-        expect((protestEvents[0].data as Record<string, unknown>)['reason']).not.toContain('unrest');
+        const protestTask = clientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        expect(protestTask).toBeDefined();
+        expect(protestTask.message).not.toContain('unrest');
       });
     });
 
-    describe('CITIZENS_PROTESTING event generation', () => {
-      it('should generate event with correct count and singular "Citizen" text', () => {
+    describe('CitizensProtesting TaskNotification generation', () => {
+      it('should generate TaskNotification with correct count and singular "Citizen" text', () => {
         const clientPlanet = clientModel.mainPlayerOwnedPlanets[planet.id];
         clientPlanet.planetHappiness = PlanetHappinessType.Normal;
 
@@ -1234,16 +1236,16 @@ describe('Player', () => {
           grid,
         };
 
-        const events = Player.adjustPlayerPlanetProtestLevels(data);
+        Player.adjustPlayerPlanetProtestLevels(data);
 
         // contentCitizenRatio = 2/3, protestReduction = 0.667 * 0.1 = 0.0667
         // New protest = 0.8 - 0.0667 = 0.7333
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(1);
-        expect((protestEvents[0].data as Record<string, unknown>)['reason']).toContain('1 Citizen protesting');
+        const protestTask = clientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        expect(protestTask).toBeDefined();
+        expect(protestTask.message).toContain('1 Citizen protesting');
       });
 
-      it('should generate event with correct count and plural "Citizens" text', () => {
+      it('should generate TaskNotification with correct count and plural "Citizens" text', () => {
         const clientPlanet = clientModel.mainPlayerOwnedPlanets[planet.id];
         clientPlanet.planetHappiness = PlanetHappinessType.Normal;
 
@@ -1259,16 +1261,16 @@ describe('Player', () => {
           grid,
         };
 
-        const events = Player.adjustPlayerPlanetProtestLevels(data);
+        Player.adjustPlayerPlanetProtestLevels(data);
 
         // contentCitizenRatio = 1/3, protestReduction = max(0.25, 0.333) * 0.1 = 0.0333
         // New protest = 0.6 - 0.0333 = 0.5667
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(1);
-        expect((protestEvents[0].data as Record<string, unknown>)['reason']).toContain('2 Citizens protesting');
+        const protestTask = clientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        expect(protestTask).toBeDefined();
+        expect(protestTask.message).toContain('2 Citizens protesting');
       });
 
-      it('should not generate event when all protests are reduced to 0', () => {
+      it('should not generate TaskNotification when all protests are reduced to 0', () => {
         const clientPlanet = clientModel.mainPlayerOwnedPlanets[planet.id];
         clientPlanet.planetHappiness = PlanetHappinessType.Normal;
 
@@ -1284,13 +1286,13 @@ describe('Player', () => {
           grid,
         };
 
-        const events = Player.adjustPlayerPlanetProtestLevels(data);
+        Player.adjustPlayerPlanetProtestLevels(data);
 
         // protestReduction = 0.667, so 0.2 - 0.667 = 0
         expect(clientPlanet.population[2].protestLevel).toBe(0);
 
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(0);
+        const protestTask = clientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        expect(protestTask).toBeUndefined();
       });
     });
 
@@ -1440,7 +1442,7 @@ describe('Player', () => {
           grid,
         };
 
-        const events = Player.adjustPlayerPlanetProtestLevels(data);
+        Player.adjustPlayerPlanetProtestLevels(data);
 
         // Planet 1: contentRatio = 2/3, reduction = 0.667 * cyclesElapsed
         // Actual: received 0.3667, so reduction was 0.1333
@@ -1450,9 +1452,11 @@ describe('Player', () => {
         // Actual: received 0.45, so reduction was 0.05 = 0.5 * 0.1 (this one uses 0.1!)
         expect(clientPlanet2.population[1].protestLevel).toBeCloseTo(0.45, 3);
 
-        // Both planets still have protesting citizens, so should generate events
-        const protestEvents = events.filter((e) => e.type === 'CITIZENS_PROTESTING');
-        expect(protestEvents.length).toBe(2); // One per planet
+        // Both planets still have protesting citizens, so should generate TaskNotifications
+        const protestTask1 = newClientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet.id];
+        const protestTask2 = newClientModel.taskNotifications[TaskNotificationType.CitizensProtesting][planet2.id];
+        expect(protestTask1).toBeDefined();
+        expect(protestTask2).toBeDefined();
       });
     });
   });
