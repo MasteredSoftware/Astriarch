@@ -316,7 +316,7 @@ export class Player {
 
           // Calculate how much food we can actually ship (limited by available food and energy for shipping cost)
           const maxFoodCanShip = Math.min(foodShortageTotal, pSurplus.resources.food);
-          const energyAvailableForShipping = pSurplus.resources.energy;
+          const energyAvailableForShipping = totalResources.energy;
           const actualFoodToShip = Math.min(maxFoodCanShip, energyAvailableForShipping);
 
           if (actualFoodToShip === 0) {
