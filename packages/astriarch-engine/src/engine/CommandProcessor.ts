@@ -145,10 +145,20 @@ export class CommandProcessor {
         planetId: command.planetId,
         productionItem,
         playerResources: totalResources,
+        serverCycle: modelData.currentCycle,
         // Pass through metadata from command (e.g., autoQueued flag)
         metadata: command.metadata,
       },
     };
+
+    console.log(
+      'PRODUCTION_ITEM_QUEUED event in CommandProcessor:',
+      event,
+      'serverCycle:',
+      modelData.currentCycle,
+      'resources:',
+      totalResources,
+    );
 
     return { success: true, events: [event] };
   }
@@ -228,6 +238,7 @@ export class CommandProcessor {
         planetId: command.planetId,
         productionItem: productionItem,
         playerResources: totalResources,
+        serverCycle: modelData.currentCycle,
       },
     };
 

@@ -121,13 +121,20 @@ export class EventApplicator {
     event: ProductionItemQueuedEvent,
     grid: Grid,
   ): void {
-    const { planetId, productionItem, playerResources } = event.data;
+    const { planetId, productionItem, playerResources, serverCycle } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[planetId];
     if (!planet) {
       console.warn(`Planet ${planetId} not found in player's owned planets in applyProductionItemQueued`);
       return;
     }
+
+    // Log cycle information for debugging clock drift
+    const clientCycle = clientModel.currentCycle;
+    const cycleDrift = clientCycle - serverCycle;
+    console.log(`Production item queued on planet ${planetId}`);
+    console.log(`  Server cycle: ${serverCycle}, Client cycle: ${clientCycle}, Drift: ${cycleDrift.toFixed(4)} cycles`);
+    console.log(`  Player resources from server event:`, playerResources);
 
     Planet.enqueueProductionItemAndSpendResources(
       grid,
@@ -136,7 +143,18 @@ export class EventApplicator {
       planet,
       productionItem,
     );
-    console.log(`Production item queued on planet ${planetId}, player resources now:`, playerResources);
+
+    const totalResources = Player.getTotalResourceAmount(clientModel.mainPlayer, clientModel.mainPlayerOwnedPlanets);
+    console.log(`  Total player resources on client after production item queued:`, totalResources);
+
+    // Calculate and log the resource drift
+    const resourceDrift = {
+      food: totalResources.food - playerResources.food,
+      energy: totalResources.energy - playerResources.energy,
+      ore: totalResources.ore - playerResources.ore,
+      iridium: totalResources.iridium - playerResources.iridium,
+    };
+    console.log(`  Resource drift (client - server):`, resourceDrift);
   }
 
   private static applyProductionItemRemoved(clientModel: ClientModelData, event: ProductionItemRemovedEvent): void {

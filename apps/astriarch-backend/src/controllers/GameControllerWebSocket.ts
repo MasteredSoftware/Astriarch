@@ -1427,6 +1427,8 @@ export class GameController {
       }
 
       // Get the current game state
+      // NOTE: Game time is advanced at the WebSocket layer (before this handler is called)
+      // via advanceGameTimeAndBroadcastEvents when isGameTimeAdvanceRequired returns true
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
 
       // Process command using CommandProcessor - this validates AND mutates the game state

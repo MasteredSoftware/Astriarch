@@ -251,6 +251,8 @@ export interface ProductionItemQueuedEvent extends ClientEvent {
     productionItem: PlanetProductionItemData;
     // Include updated resources so client can sync immediately
     playerResources: PlayerResourcesData;
+    // Include server's current cycle for debugging clock drift
+    serverCycle: number;
     // Metadata from the command (e.g., autoQueued flag)
     metadata?: {
       autoQueued?: boolean;

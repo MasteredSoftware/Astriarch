@@ -187,7 +187,10 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
-    // If this is a time advance request (periodic, host only), advance game time and broadcast events
+    // IMPORTANT: Advance game time BEFORE processing game commands or periodic updates
+    // This ensures the server's currentCycle is up-to-date and all players see consistent state
+    // - For ADVANCE_GAME_TIME: Periodic updates every 10s to process AI actions
+    // - For GAME_COMMAND: Ensures resources/state are current before command validation
     if (this.isGameTimeAdvanceRequired(message.type) && client.gameId) {
       await this.advanceGameTimeAndBroadcastEvents(client.gameId);
     }
@@ -331,8 +334,9 @@ export class WebSocketServer {
   }
 
   private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
-    // Advance game time (periodic, host only) via ADVANCE_GAME_TIME
-    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME;
+    // Advance game time for periodic updates AND all game commands
+    // This ensures the server's currentCycle is up-to-date before processing any command
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME || messageType === MESSAGE_TYPE.GAME_COMMAND;
   }
 
   private async advanceGameTimeAndBroadcastEvents(gameId: string): Promise<void> {
