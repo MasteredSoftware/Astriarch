@@ -5,7 +5,7 @@
  * This is the core of the new event-driven architecture.
  */
 
-import { GameModelData } from './gameModel';
+import { GameModel, GameModelData } from './gameModel';
 import { Planet } from './planet';
 import {
   GameCommand,
@@ -127,9 +127,50 @@ export class CommandProcessor {
       return { success: false, error: 'Production item not provided', events: [] };
     }
 
+    // Apply drift compensation if client sent their cycle
+    let compensationApplied = false;
+    let compensatedResources = { energy: 0, ore: 0, iridium: 0 };
+
+    if (command.clientCycle !== undefined) {
+      const cycleDrift = command.clientCycle - modelData.currentCycle;
+      const MAX_DRIFT_COMPENSATION = 0.1; // Only compensate up to 0.1 cycles (~3 seconds at normal speed)
+
+      if (cycleDrift > 0 && cycleDrift <= MAX_DRIFT_COMPENSATION) {
+        // Client is slightly ahead - calculate extra resources they've generated
+        const ownedPlanets = ClientGameModel.getOwnedPlanets(player.ownedPlanetIds, modelData.planets);
+        const resourcesPerCycle = GameModel.getPlayerTotalResourceProductionPerTurn(player, ownedPlanets);
+
+        compensatedResources = {
+          energy: resourcesPerCycle.energy * cycleDrift,
+          ore: resourcesPerCycle.ore * cycleDrift,
+          iridium: resourcesPerCycle.iridium * cycleDrift,
+        };
+
+        // Temporarily add these resources to the planet for validation
+        planet.resources.energy += compensatedResources.energy;
+        planet.resources.ore += compensatedResources.ore;
+        planet.resources.iridium += compensatedResources.iridium;
+        compensationApplied = true;
+
+        console.log(
+          `Drift compensation applied: cycleDrift=${cycleDrift.toFixed(6)}, ` +
+            `energy+${compensatedResources.energy.toFixed(2)}, ` +
+            `ore+${compensatedResources.ore.toFixed(2)}, ` +
+            `iridium+${compensatedResources.iridium.toFixed(2)}`,
+        );
+      }
+    }
+
     // Build client model and enqueue using engine method
     const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
     const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
+
+    // Remove temporary compensation after validation
+    if (compensationApplied) {
+      planet.resources.energy -= compensatedResources.energy;
+      planet.resources.ore -= compensatedResources.ore;
+      planet.resources.iridium -= compensatedResources.iridium;
+    }
 
     if (!canBuild) {
       return { success: false, error: 'Not enough resources to build item', events: [] };
@@ -272,7 +313,7 @@ export class CommandProcessor {
     if (totalShipsToSend === 0) {
       return { success: false, error: 'No ships selected to send', events: [] };
     }
-
+    console.log('Sending ships command: totalShipsToSend', totalShipsToSend, command.shipIds);
     // Launch the fleet using the engine method
     Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds);
 

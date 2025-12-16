@@ -190,7 +190,7 @@ export class EventApplicator {
 
     const totalShips =
       shipIds.scouts.length + shipIds.destroyers.length + shipIds.cruisers.length + shipIds.battleships.length;
-    console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`);
+    console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`, shipIds);
   }
 
   private static applyPlanetWorkerAssignmentsUpdated(

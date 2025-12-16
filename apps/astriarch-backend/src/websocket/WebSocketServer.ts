@@ -1059,7 +1059,7 @@ export class WebSocketServer {
       await this.broadcastToAffectedPlayers(
         gameId,
         result.events || [],
-        result.currentCycle,
+        result.currentCycle!,
         result.checksum,
         "command events",
       );

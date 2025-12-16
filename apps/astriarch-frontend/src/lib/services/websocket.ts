@@ -1542,6 +1542,13 @@ class WebSocketService {
 	sendCommand(command: GameCommand) {
 		try {
 			const gameId = this.requireGameId();
+			const cgm = get(clientGameModel);
+
+			// Add client's current cycle for drift compensation
+			if (cgm) {
+				command.clientCycle = cgm.currentCycle;
+			}
+
 			const payload = {
 				gameId,
 				command
