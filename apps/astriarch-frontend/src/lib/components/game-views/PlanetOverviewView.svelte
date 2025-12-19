@@ -612,7 +612,7 @@
 					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
 						Buildings
 					</h4>
-					<div class="grid grid-cols-4 gap-2">
+					<div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 						{#each availableBuildings as building, index}
 							{@const availability = buildingAvailability.find((a) => a.type === building.type)}
 							<AvailablePlanetProductionItem
@@ -631,7 +631,7 @@
 					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
 						Starships
 					</h4>
-					<div class="grid grid-cols-4 gap-2">
+					<div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 						{#each availableShips as ship}
 							{@const availability = shipAvailability.find(
 								(a) => a.type === ship.type && a.isCustom === ship.isCustom
