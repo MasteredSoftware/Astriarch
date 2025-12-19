@@ -47,6 +47,8 @@ export class Player {
       points: 0,
       fleetsInTransit: [],
       destroyed: false,
+      nextFleetId: 1,
+      nextStarshipId: 1,
     };
   }
 

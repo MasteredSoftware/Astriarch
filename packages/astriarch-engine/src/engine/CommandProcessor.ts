@@ -314,8 +314,27 @@ export class CommandProcessor {
       return { success: false, error: 'No ships selected to send', events: [] };
     }
     console.log('Sending ships command: totalShipsToSend', totalShipsToSend, command.shipIds);
+
+    const allRequestedIds = [
+      ...command.shipIds.scouts,
+      ...command.shipIds.destroyers,
+      ...command.shipIds.cruisers,
+      ...command.shipIds.battleships,
+    ];
+
+    const existingShipIds = new Set(sourcePlanet.planetaryFleet.starships.map((s) => s.id));
+    const missingShips = allRequestedIds.filter((id) => !existingShipIds.has(id));
+
+    if (missingShips.length > 0) {
+      console.error('Ships not found in planetary fleet:', missingShips);
+      return {
+        success: false,
+        error: `Ships not found (already sent or destroyed): ${missingShips.slice(0, 5).join(', ')}`,
+        events: [],
+      };
+    }
     // Launch the fleet using the engine method
-    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds);
+    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds, player);
 
     // Generate event with the ship IDs that were moved
     const event: FleetLaunchedEvent = {

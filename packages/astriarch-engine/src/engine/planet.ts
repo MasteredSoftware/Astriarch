@@ -798,7 +798,7 @@ export class Planet {
             throw new Error('No starshipData in PlanetProductionItem');
           }
           const { type, customShipData } = nextItem.starshipData;
-          const ship = Fleet.generateStarship(type, customShipData);
+          const ship = Fleet.generateStarship(type, customShipData, owner);
 
           //don't set last built option for space platforms
           if (type != StarShipType.SpacePlatform) {
@@ -811,7 +811,7 @@ export class Planet {
             planet.waypointBoundingHexMidPoint &&
             ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type)
           ) {
-            const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint);
+            const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint, owner);
             newFleet.starships.push(ship);
             Fleet.setDestination(newFleet, gameGrid, planet.boundingHexMidPoint, planet.waypointBoundingHexMidPoint);
 

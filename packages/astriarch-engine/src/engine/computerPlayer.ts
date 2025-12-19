@@ -861,7 +861,7 @@ export class ComputerPlayer {
 
           //send smallest detachment possible
           const inboundPlanet = planetCandidatesForInboundScouts[i];
-          const newFleet = Fleet.splitOffSmallestPossibleFleet(pFriendly.planetaryFleet);
+          const newFleet = Fleet.splitOffSmallestPossibleFleet(pFriendly.planetaryFleet, player);
           //if we do this right newFleet should never be null
           if (newFleet) {
             Fleet.setDestination(
@@ -969,6 +969,7 @@ export class ComputerPlayer {
             starshipCounts.destroyers,
             starshipCounts.cruisers,
             starshipCounts.battleships,
+            player,
           );
 
           Fleet.setDestination(
@@ -1037,6 +1038,7 @@ export class ComputerPlayer {
             starshipCounts.destroyers,
             starshipCounts.cruisers,
             starshipCounts.battleships,
+            player,
           );
 
           Fleet.setDestination(

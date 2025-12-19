@@ -186,7 +186,7 @@ export class EventApplicator {
     }
 
     // Use engine method to replicate server logic exactly
-    Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds);
+    Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer);
 
     const totalShips =
       shipIds.scouts.length + shipIds.destroyers.length + shipIds.cruisers.length + shipIds.battleships.length;

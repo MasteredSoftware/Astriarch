@@ -341,19 +341,22 @@ export class TradingCenter {
 
     for (const playerId in executedTradeResultsByPlayerId) {
       const executedTrades = executedTradeResultsByPlayerId[playerId];
-      // Generate TRADES_PROCESSED event for each player with processed trades
-      const tradesProcessedEvent: ClientEvent = {
-        type: ClientEventType.TRADES_PROCESSED,
-        affectedPlayerIds: [playerId],
-        data: {
-          tradesProcessed: executedTrades.map(({ trade, results }) => ({
-            tradeId: trade.id,
-            planetId: trade.planetId,
-            executedStatus: results,
-          })),
-        },
-      };
-      events.push(tradesProcessedEvent);
+      // Only generate event if there are trades to report
+      if (executedTrades.length > 0) {
+        // Generate TRADES_PROCESSED event for each player with processed trades
+        const tradesProcessedEvent: ClientEvent = {
+          type: ClientEventType.TRADES_PROCESSED,
+          affectedPlayerIds: [playerId],
+          data: {
+            tradesProcessed: executedTrades.map(({ trade, results }) => ({
+              tradeId: trade.id,
+              planetId: trade.planetId,
+              executedStatus: results,
+            })),
+          },
+        };
+        events.push(tradesProcessedEvent);
+      }
     }
 
     // Note: tc.currentTrades now only contains pending trades (not yet executable)
