@@ -100,6 +100,7 @@ export class Fleet {
     type: StarShipType,
     customShipData?: StarshipAdvantageData,
     player?: PlayerData,
+    preAssignedId?: number,
   ): StarshipData {
     //ship strength is based on ship cost
     //  right now it is double the value of the next lower ship class
@@ -115,7 +116,7 @@ export class Fleet {
     //battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
 
     return {
-      id: player ? player.nextStarshipId++ : Fleet.NEXT_STARSHIP_ID++,
+      id: preAssignedId ?? (player ? player.nextStarshipId++ : Fleet.NEXT_STARSHIP_ID++),
       type,
       customShipData,
       health: this.getStarshipTypeBaseStrength(type), //starships will heal between turns if the planet has the necessary building and the player has the requisite resources

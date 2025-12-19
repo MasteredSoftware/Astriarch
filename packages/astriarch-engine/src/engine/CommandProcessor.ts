@@ -42,6 +42,7 @@ import { Player } from './player';
 import { Fleet } from './fleet';
 import { TradingCenter } from './tradingCenter';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
+import { PlanetProductionItemType } from '../model/planet';
 
 /**
  * NOTE: CommandProcessor validates commands and marks them for processing.
@@ -174,6 +175,11 @@ export class CommandProcessor {
 
     if (!canBuild) {
       return { success: false, error: 'Not enough resources to build item', events: [] };
+    }
+
+    // Pre-assign ship ID if this is a starship production item
+    if (productionItem.itemType === PlanetProductionItemType.StarShipInProduction && productionItem.starshipData) {
+      productionItem.starshipData.assignedShipId = player.nextStarshipId++;
     }
 
     // Get player resources after spending
