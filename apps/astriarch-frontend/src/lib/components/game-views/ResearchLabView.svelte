@@ -12,7 +12,12 @@
 
 	// Get game data from the main game store (for clientGameModel)
 	// and connection state from multiplayer store (for lobby/connection info)
-	import { clientGameModel, researchProgress, currentResearchType, researchPercent } from '$lib/stores/gameStore';
+	import {
+		clientGameModel,
+		researchProgress,
+		currentResearchType,
+		researchPercent
+	} from '$lib/stores/gameStore';
 
 	const gameState = $derived($multiplayerGameStore);
 	const clientModel = $derived($clientGameModel); // Use clientGameModel from gameStore instead
@@ -389,7 +394,7 @@
 						</div>
 						<Text class="astriarch-body-16-semibold">Research</Text>
 						<Text class="astriarch-body-16-semibold" style="margin-left: auto;">
-						{Math.round(currentResearchPercent * 100)}%
+							{Math.round(currentResearchPercent * 100)}%
 						</Text>
 					</div>
 
