@@ -133,6 +133,12 @@ export const currentResearchType = derived(clientGameModel, ($clientGameModel) =
 	return $clientGameModel.mainPlayer.research.researchTypeInQueue;
 });
 
+// Research percent derived from client game model
+export const researchPercent = derived(clientGameModel, ($clientGameModel) => {
+	if (!$clientGameModel) return 0;
+	return $clientGameModel.mainPlayer.research.researchPercent || 0;
+});
+
 // Current game speed derived from client game model
 export const currentGameSpeed = derived(clientGameModel, ($clientGameModel) => {
 	if (!$clientGameModel) return 3; // Default to normal speed

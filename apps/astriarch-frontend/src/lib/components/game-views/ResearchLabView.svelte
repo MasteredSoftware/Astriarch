@@ -12,7 +12,7 @@
 
 	// Get game data from the main game store (for clientGameModel)
 	// and connection state from multiplayer store (for lobby/connection info)
-	import { clientGameModel, researchProgress, currentResearchType } from '$lib/stores/gameStore';
+	import { clientGameModel, researchProgress, currentResearchType, researchPercent } from '$lib/stores/gameStore';
 
 	const gameState = $derived($multiplayerGameStore);
 	const clientModel = $derived($clientGameModel); // Use clientGameModel from gameStore instead
@@ -20,8 +20,8 @@
 
 	// Find the current player's data directly from clientModel (which contains the player data)
 	const player = $derived(clientModel?.mainPlayer); // Use mainPlayer directly from clientModel
-	const researchPercent = $derived(player?.research?.researchPercent || 0);
-	const energyPercent = $derived(1 - researchPercent);
+	const currentResearchPercent = $derived($researchPercent);
+	const energyPercent = $derived(1 - currentResearchPercent);
 	// Use reactive stores for research data instead of accessing directly
 	const progressData = $derived($researchProgress);
 	const currentType = $derived($currentResearchType);
@@ -179,7 +179,7 @@
 	}
 
 	const energyBars = $derived(renderResourceBar(energyPercent, '#e2c631'));
-	const researchBars = $derived(renderResourceBar(researchPercent, '#00ffa3'));
+	const researchBars = $derived(renderResourceBar(currentResearchPercent, '#00ffa3'));
 
 	// Function to get the appropriate icon for a research type
 	function getResearchIcon(researchType: ResearchType): IconImageType {
@@ -389,7 +389,7 @@
 						</div>
 						<Text class="astriarch-body-16-semibold">Research</Text>
 						<Text class="astriarch-body-16-semibold" style="margin-left: auto;">
-							{Math.round(researchPercent * 100)}%
+						{Math.round(currentResearchPercent * 100)}%
 						</Text>
 					</div>
 
