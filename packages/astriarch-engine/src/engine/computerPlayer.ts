@@ -18,8 +18,17 @@ import { TradingCenter } from './tradingCenter';
 export type PlanetResourcesPerTurn = Record<number, PlanetPerTurnResourceGeneration>;
 
 export class ComputerPlayer {
+  // Set to true to enable detailed AI decision-making logs
+  private static DEBUG_AI = false;
+
+  private static debugLog(...args: unknown[]) {
+    if (this.DEBUG_AI) {
+      console.debug(...args);
+    }
+  }
+
   private static onComputerSentFleet(fleet: FleetData) {
-    console.debug('Computer Sent Fleet:', fleet);
+    this.debugLog('Computer Sent Fleet:', fleet);
   }
 
   public static computerTakeTurn(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById) {
@@ -70,7 +79,7 @@ export class ComputerPlayer {
       planetResourcesPerTurn[planet.id] = Planet.getPlanetWorkerResourceGeneration(planet, player);
       allPlanets.push(planet);
 
-      console.debug(
+      this.debugLog(
         player.name,
         'Population Assignment for planet:',
         planet.name,
@@ -157,7 +166,7 @@ export class ComputerPlayer {
     let oreAmountNeeded = Math.round(oreAmountRecommended * mineralOverestimation) - totalResources.ore;
     let iridiumAmountNeeded = Math.round(iridiumAmountRecommended * mineralOverestimation) - totalResources.iridium;
     let foodDiff = 0;
-    console.debug(player.name, 'Mineral Needs:', oreAmountNeeded, iridiumAmountNeeded);
+    this.debugLog(player.name, 'Mineral Needs:', oreAmountNeeded, iridiumAmountNeeded);
     const foodResourcePotentialComparer = new PlanetResourcePotentialComparer(
       planetResourcesPerTurn,
       PlanetResourceType.FOOD,
@@ -167,7 +176,7 @@ export class ComputerPlayer {
       //check to see if we can add farmers to class 1 and class 2 planets
       foodDiff = totalPopulation - (totalFoodProduction + totalFoodAmountOnPlanets);
       //first try to satiate by retasking miners/workers on planets with less food amount than population
-      console.debug(player.name, 'potential food shortage:', foodDiff);
+      this.debugLog(player.name, 'potential food shortage:', foodDiff);
 
       //gather potential planets for adding farmers to
       //TODO: this should order by planets with farms as well as planets who's population demands more food than it produces (more potential for growth)
@@ -223,7 +232,7 @@ export class ComputerPlayer {
     } //we can re-task farmers at class 1 and class 2 planets (and maybe dead planets?)
     else {
       foodDiff = totalFoodProduction + totalFoodAmountOnPlanets - totalPopulation;
-      console.debug(player.name, 'potential food surplus:', foodDiff);
+      this.debugLog(player.name, 'potential food surplus:', foodDiff);
 
       //gather potential planets for removing farmers from
       //TODO: this should order by planets without farms and planets which have more food production than it's population demands (less potential for growth)
@@ -402,7 +411,9 @@ export class ComputerPlayer {
     for (const p of ownedPlanetsSorted) {
       //if this planet doesn't already have a build goal in player.planetBuildGoals
       if (!(p.id in player.planetBuildGoals)) {
-        if (p.buildQueue.length) console.debug(player.name, 'build queue on:', p.name, p.buildQueue[0]);
+        if (p.buildQueue.length) {
+          this.debugLog(player.name, 'build queue on:', p.name, p.buildQueue[0]);
+        }
         if (p.buildQueue.length <= 1) {
           const canBuildSpacePlatform =
             Planet.getSpacePlatformCount(p, true) < Research.getMaxSpacePlatformCount(player.research) &&
@@ -507,7 +518,7 @@ export class ComputerPlayer {
         );
       }
       if (player.planetBuildGoals[p.id]) {
-        console.debug(player.name, 'Planet:', p.name, 'Improvement Build Goal:', player.planetBuildGoals[p.id]);
+        this.debugLog(player.name, 'Planet:', p.name, 'Improvement Build Goal:', player.planetBuildGoals[p.id]);
       }
 
       //after all that we should be ready to set fleet goals
@@ -555,7 +566,7 @@ export class ComputerPlayer {
         }
       } else if (planetCountNeedingExploration != 0) {
         //if there are unexplored planets still, build some scouts
-        console.debug(player.name, planetCountNeedingExploration, 'Planets needing exploration, building scouts');
+        this.debugLog(player.name, planetCountNeedingExploration, 'Planets needing exploration, building scouts');
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Scout);
       } else if (p.builtImprovements[PlanetImprovementType.Factory] > 0 && buildDestroyers) {
         //NOTE: this actually never gets hit because right now we're always building scouts, then spaceplatforms, then above applies
@@ -565,7 +576,7 @@ export class ComputerPlayer {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
       }
       if (player.planetBuildGoals[p.id]) {
-        console.debug(player.name, 'Planet:', p.name, 'StarShip Build Goal:', player.planetBuildGoals[p.id]);
+        this.debugLog(player.name, 'Planet:', p.name, 'StarShip Build Goal:', player.planetBuildGoals[p.id]);
       }
     }
   }
@@ -646,10 +657,10 @@ export class ComputerPlayer {
 
     for (const trade of tradesToExecute) {
       if (trade.amount > 0) {
-        console.debug(player.name, 'Submitted a Trade: ', trade);
+        this.debugLog(player.name, 'Submitted a Trade: ', trade);
         gameModel.modelData.tradingCenter.currentTrades.push(trade);
       } else {
-        console.debug(player.name, 'Trade found with zero amount.', trade);
+        this.debugLog(player.name, 'Trade found with zero amount.', trade);
       }
     }
   }
@@ -824,7 +835,7 @@ export class ComputerPlayer {
       }
     }
 
-    console.debug(
+    this.debugLog(
       player.name,
       'planetCandidatesForSendingShips:',
       planetCandidatesForSendingShips.length,
