@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
 	import type { Size } from '../types.js';
 	import ButtonSvg from './ButtonSvg.svelte';
 
@@ -6,10 +8,12 @@
 		children?: any;
 		label?: string;
 		size?: Size;
-		variant?: 'primary' | 'outline';
+		variant?: 'primary' | 'outline' | 'secondary' | 'warning' | 'danger';
 		onclick?: () => void;
 		disabled?: boolean;
 		class?: string;
+		hotkey?: string; // Single character hotkey (e.g., 'a', 's', 'o')
+		hotkeyContext?: string; // Optional context for the hotkey
 	}
 
 	let {
@@ -20,6 +24,8 @@
 		onclick,
 		disabled = false,
 		class: className,
+		hotkey,
+		hotkeyContext,
 		...restProps
 	}: Props = $props();
 
@@ -53,10 +59,24 @@
     overflow: visible;
   `);
 
-	const textColor = $derived(variant === 'outline' ? '#0FF' : '#1B1F25');
+	const textColor = $derived(() => {
+		switch (variant) {
+			case 'outline':
+				return '#0FF'; // Cyan
+			case 'secondary':
+				return '#FFFFFF'; // White
+			case 'warning':
+				return '#FFFFFF'; // White
+			case 'danger':
+				return '#FFFFFF'; // White
+			case 'primary':
+			default:
+				return '#1B1F25'; // Dark (for cyan background)
+		}
+	});
 
 	const textStyle = $derived(`
-    color: ${textColor};
+    color: ${textColor()};
     font-size: 14px;
     font-weight: 800;
     line-height: 20px;
@@ -67,6 +87,33 @@
     position: relative;
     pointer-events: none;
   `);
+
+	/**
+	 * Underline the first occurrence of the hotkey character in the text
+	 */
+	function getUnderlinedText(text: string, hotkeyChar: string): string {
+		const upperText = text.toUpperCase();
+		const upperHotkey = hotkeyChar.toUpperCase();
+		const index = upperText.indexOf(upperHotkey);
+
+		if (index !== -1) {
+			return (
+				text.substring(0, index) +
+				'<u class="hotkeyChar">' +
+				text.charAt(index) +
+				'</u>' +
+				text.substring(index + 1)
+			);
+		}
+
+		return text;
+	}
+
+	// Computed display text with hotkey underlined
+	let displayText = $derived.by(() => {
+		if (!hotkey || !label) return label;
+		return getUnderlinedText(label, hotkey);
+	});
 
 	function handleClick() {
 		if (!disabled) {
@@ -80,6 +127,29 @@
 			onclick?.();
 		}
 	}
+
+	// Register hotkey on mount
+	onMount(() => {
+		if (hotkey && onclick) {
+			keyboardShortcutService.registerShortcut(
+				hotkey.toLowerCase(),
+				(event: KeyboardEvent) => {
+					event.preventDefault(); // Always prevent default browser behavior
+					if (!disabled) {
+						onclick();
+					}
+				},
+				hotkeyContext
+			);
+		}
+	});
+
+	// Unregister hotkey on destroy
+	onDestroy(() => {
+		if (hotkey) {
+			keyboardShortcutService.unregisterShortcut(hotkey.toLowerCase(), hotkeyContext);
+		}
+	});
 </script>
 
 <button
@@ -93,6 +163,8 @@
 	<span style={textStyle}>
 		{#if children}
 			{@render children()}
+		{:else if hotkey && label}
+			{@html displayText}
 		{:else}
 			{label}
 		{/if}

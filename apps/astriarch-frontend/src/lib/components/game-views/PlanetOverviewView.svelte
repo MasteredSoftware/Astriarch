@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { Text, AvailablePlanetProductionItem, Dialog } from '$lib/components/astriarch';
+	import {
+		Text,
+		AvailablePlanetProductionItem,
+		Dialog,
+		PlanetSelector
+	} from '$lib/components/astriarch';
 	import {
 		clientGameModel,
 		gameActions,
@@ -46,6 +51,7 @@
 		};
 		isCustom: boolean;
 		customShipData?: StarshipAdvantageData;
+		hotkey?: string;
 	}
 
 	// Derived values that depend on store values
@@ -109,30 +115,25 @@
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
-		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, item);
+		// Validate before sending (client-side validation only - server is authoritative)
+		const validation = PlanetProductionItem.canBuild(
+			$selectedPlanet,
+			$clientGameModel.mainPlayer,
+			$clientGameModel.mainPlayerOwnedPlanets,
+			item
+		);
 
-		if (!success) {
+		if (validation.result !== CanBuildResult.CanBuild) {
 			console.warn(
-				'Insufficient resources to build:',
-				GameTools.planetImprovementTypeToFriendlyName(buildingType)
+				'Cannot build:',
+				GameTools.planetImprovementTypeToFriendlyName(buildingType),
+				validation.reason
 			);
-			// Could add user notification here
 			return;
 		}
 
-		try {
-			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
-
-			console.log(
-				'Added building to queue:',
-				GameTools.planetImprovementTypeToFriendlyName(buildingType)
-			);
-		} catch (error) {
-			console.error('Failed to add building to queue:', error);
-			// TODO: Revert optimistic update on error
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
 	}
 
 	function addShipToQueue(shipType: StarShipType, customShipData?: StarshipAdvantageData) {
@@ -140,54 +141,38 @@
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType, customShipData);
 
-		// Use engine validation - only proceeds if sufficient resources
-		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, item);
+		// Validate before sending (client-side validation only - server is authoritative)
+		const validation = PlanetProductionItem.canBuild(
+			$selectedPlanet,
+			$clientGameModel.mainPlayer,
+			$clientGameModel.mainPlayerOwnedPlanets,
+			item
+		);
 
-		if (!success) {
+		if (validation.result !== CanBuildResult.CanBuild) {
 			console.warn(
-				'Insufficient resources to build:',
-				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData))
+				'Cannot build:',
+				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData)),
+				validation.reason
 			);
-			// Could add user notification here
 			return;
 		}
 
-		try {
-			// Send WebSocket message to add item to build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
-
-			console.log(
-				'Added ship to queue:',
-				GameTools.starShipTypeToFriendlyName(shipType, Boolean(customShipData))
-			);
-		} catch (error) {
-			console.error('Failed to add ship to queue:', error);
-			// TODO: Revert optimistic update on error
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'add', item);
 	}
 
 	function removeFromBuildQueue(itemIndex: number) {
 		if (!$selectedPlanet || !$clientGameModel) return;
 
-		// Remove from build queue with engine refund handling
-		const success = gameActions.removeFromPlanetBuildQueueOptimistic($selectedPlanet.id, itemIndex);
-
-		if (!success) {
-			console.warn('Failed to remove item from build queue at index:', itemIndex);
+		// Validate index is valid
+		if (itemIndex < 0 || itemIndex >= $selectedPlanet.buildQueue.length) {
+			console.warn('Invalid build queue index:', itemIndex);
 			return;
 		}
 
-		try {
-			// Send WebSocket message to remove item from build queue
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', {
-				index: itemIndex
-			});
-
-			console.log('Removed item from build queue at index:', itemIndex);
-		} catch (error) {
-			console.error('Failed to remove item from build queue:', error);
-			// TODO: Revert optimistic update on error
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'remove', undefined, itemIndex);
 	}
 
 	function demolishImprovement(improvementType: PlanetImprovementType) {
@@ -239,24 +224,8 @@
 		// Create demolish item
 		const demolishItem = PlanetProductionItem.constructPlanetImprovementToDestroy(improvementType);
 
-		// Add to build queue optimistically
-		const success = gameActions.addToPlanetBuildQueueOptimistic($selectedPlanet.id, demolishItem);
-
-		if (!success) {
-			console.error('Failed to add demolish order to queue');
-			return;
-		}
-
-		try {
-			// Send WebSocket message
-			webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'demolish', demolishItem);
-			console.log(
-				'Added demolish order for:',
-				GameTools.planetImprovementTypeToFriendlyName(improvementType)
-			);
-		} catch (error) {
-			console.error('Failed to send demolish order:', error);
-		}
+		// Send command to server - server will mutate and broadcast events
+		webSocketService.updatePlanetBuildQueue($selectedPlanet.id, 'demolish', demolishItem);
 	}
 
 	function handleColonyDemolishConfirm() {
@@ -301,19 +270,27 @@
 
 	// Available building types with descriptions
 	const buildingTypes = [
-		{ type: PlanetImprovementType.Farm, description: 'Increases food production' },
-		{ type: PlanetImprovementType.Mine, description: 'Increases ore and iridium production' },
-		{ type: PlanetImprovementType.Factory, description: 'Increases production rate' },
-		{ type: PlanetImprovementType.Colony, description: 'Increases population capacity' }
+		{ type: PlanetImprovementType.Farm, description: 'Increases food production', hotkey: 'r' },
+		{
+			type: PlanetImprovementType.Mine,
+			description: 'Increases ore and iridium production',
+			hotkey: 'i'
+		},
+		{ type: PlanetImprovementType.Factory, description: 'Increases production rate', hotkey: 't' },
+		{
+			type: PlanetImprovementType.Colony,
+			description: 'Increases population capacity',
+			hotkey: 'l'
+		}
 	];
 
 	const shipTypes = [
-		{ type: StarShipType.SystemDefense, description: 'Basic planetary defense unit' },
-		{ type: StarShipType.Scout, description: 'Fast exploration vessel' },
-		{ type: StarShipType.Destroyer, description: 'Light combat vessel' },
-		{ type: StarShipType.Cruiser, description: 'Medium combat vessel' },
-		{ type: StarShipType.Battleship, description: 'Heavy combat vessel' },
-		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure' }
+		{ type: StarShipType.SystemDefense, description: 'Basic planetary defense unit', hotkey: 'e' },
+		{ type: StarShipType.Scout, description: 'Fast exploration vessel', hotkey: 'S' },
+		{ type: StarShipType.Destroyer, description: 'Light combat vessel', hotkey: 'D' },
+		{ type: StarShipType.Cruiser, description: 'Medium combat vessel', hotkey: 'C' },
+		{ type: StarShipType.Battleship, description: 'Heavy combat vessel', hotkey: 'a' },
+		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure', hotkey: 'P' }
 	];
 
 	// Custom ship research type mappings
@@ -351,12 +328,13 @@
 
 	// Generate available buildings with proper costs from engine
 	let availableBuildings = $derived(
-		buildingTypes.map(({ type, description }) => {
+		buildingTypes.map(({ type, description, hotkey }) => {
 			const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
 			return {
 				type,
 				name: GameTools.planetImprovementTypeToFriendlyName(type),
 				description,
+				hotkey,
 				cost: {
 					energy: productionItem.energyCost,
 					ore: productionItem.oreCost,
@@ -372,12 +350,13 @@
 			const ships: AvailableShip[] = [];
 
 			// Add standard ships
-			for (const { type, description } of shipTypes) {
+			for (const { type, description, hotkey } of shipTypes) {
 				const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
 				ships.push({
 					type,
 					name: GameTools.starShipTypeToFriendlyName(type, false),
 					description,
+					hotkey,
 					cost: {
 						energy: productionItem.energyCost,
 						ore: productionItem.oreCost,
@@ -425,7 +404,8 @@
 								iridium: productionItem.iridiumCost
 							},
 							isCustom: true,
-							customShipData
+							customShipData,
+							hotkey: undefined // Custom ships don't have hotkeys
 						});
 					}
 				}
@@ -494,18 +474,11 @@
 						{GameTools.planetTypeToFriendlyName($selectedPlanet.type || 1)}
 					</span>
 					{#if planetList.length > 1}
-						<select
-							class="rounded border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-white"
-							onchange={(e) => {
-								const target = e.target as HTMLSelectElement;
-								selectPlanet(planetList.find((p) => p.id === parseInt(target.value)));
-							}}
-							value={$selectedPlanetId}
-						>
-							{#each planetList as planet}
-								<option value={planet.id}>{planet.name}</option>
-							{/each}
-						</select>
+						<PlanetSelector
+							planets={planetList}
+							selectedPlanetId={$selectedPlanetId}
+							onSelectPlanet={(planetId) => selectPlanet(planetList.find((p) => p.id === planetId))}
+						/>
 					{/if}
 					<div class="text-xs text-slate-400">
 						{#if isFullPlanetData($selectedPlanet)}
@@ -649,7 +622,7 @@
 					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
 						Buildings
 					</h4>
-					<div class="grid grid-cols-4 gap-2">
+					<div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 						{#each availableBuildings as building, index}
 							{@const availability = buildingAvailability.find((a) => a.type === building.type)}
 							<AvailablePlanetProductionItem
@@ -658,6 +631,7 @@
 								cost={building.cost}
 								enabled={availability?.enabled ?? false}
 								onClick={() => addBuildingToQueue(building.type)}
+								hotkey={building.hotkey}
 							/>
 						{/each}
 					</div>
@@ -668,7 +642,7 @@
 					<h4 class="text-astriarch-caption-12-semibold text-astriarch-ui-light-grey mb-1">
 						Starships
 					</h4>
-					<div class="grid grid-cols-4 gap-2">
+					<div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
 						{#each availableShips as ship}
 							{@const availability = shipAvailability.find(
 								(a) => a.type === ship.type && a.isCustom === ship.isCustom
@@ -679,6 +653,7 @@
 								cost={ship.cost}
 								enabled={availability?.enabled ?? false}
 								onClick={() => addShipToQueue(ship.type, ship.customShipData)}
+								hotkey={ship.hotkey}
 							/>
 						{/each}
 					</div>

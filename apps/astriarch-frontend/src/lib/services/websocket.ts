@@ -5,9 +5,6 @@ import {
 	type IMessage,
 	type IGame,
 	type ServerGameOptions,
-	type IEventNotificationsPayload,
-	type EventNotification,
-	EventNotificationType,
 	isCreateGameResponse,
 	isJoinGameResponse,
 	isListGamesResponse,
@@ -15,19 +12,45 @@ import {
 	isGameStateUpdate,
 	isErrorMessage,
 	isGameSpeedAdjustment,
-	isChatMessage
+	isChatMessage,
+	type GameCommand,
+	type ClientEvent,
+	ClientEventType,
+	GameCommandType,
+	EventApplicator,
+	calculateRollingEventChecksum,
+	type PlanetProductionItemData,
+	TradeType,
+	Player
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
-import { clientGameModel, isGameRunning, gameActions } from '$lib/stores/gameStore';
-import { PlayerStorage } from '$lib/utils/playerStorage';
-import type { ClientModelData } from 'astriarch-engine';
-
-// Import multiplayer store types and functionality from the centralized store
-import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
-
-// Import activity store for enhanced event logging
 import { activityStore } from '$lib/stores/activityStore';
+import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
+import { PlayerStorage } from '$lib/utils/playerStorage';
+import type {
+	AdjustResearchPercentCommand,
+	CancelResearchItemCommand,
+	CancelTradeCommand,
+	ClearWaypointCommand,
+	ClientModelData,
+	DemolishImprovementCommand,
+	FleetAttackFailedEvent,
+	FleetDefenseSuccessEvent,
+	PlanetCapturedEvent,
+	PlanetLostEvent,
+	ProductionItemQueuedEvent,
+	QueueProductionItemCommand,
+	RemoveProductionItemCommand,
+	SendShipsCommand,
+	SetWaypointCommand,
+	SubmitResearchItemCommand,
+	SubmitTradeCommand,
+	TradesProcessedEvent,
+	UpdatePlanetOptionsCommand,
+	UpdatePlanetWorkerAssignmentsCommand
+} from 'astriarch-engine'; // Import multiplayer store types and functionality from the centralized store
+import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 
 // Import audio service for game music
 import { audioService } from '$lib/services/audioService';
@@ -50,6 +73,13 @@ class WebSocketService {
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
 	private gameSyncInterval: number | null = null;
 	private readonly gameSyncIntervalMs = 10000; // 10 seconds for game state synchronization
+	private autoQueuePending = false; // True when waiting for auto-queue command response
+	private autoQueueRequested = false; // True when auto-queue check is needed
+
+	// PlanetProductionItemType enum values (from astriarch-engine)
+	private readonly ITEM_TYPE_IMPROVEMENT = 1;
+	private readonly ITEM_TYPE_STARSHIP = 2;
+	private readonly ITEM_TYPE_DEMOLISH = 3;
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
@@ -190,73 +220,220 @@ class WebSocketService {
 		}
 	}
 
-	private handleEventNotifications(events: EventNotification[]) {
-		for (const event of events) {
-			// Convert EventNotificationType to a user-friendly notification type
-			let notificationType:
-				| 'info'
-				| 'success'
-				| 'warning'
-				| 'error'
-				| 'battle'
-				| 'research'
-				| 'construction'
-				| 'fleet'
-				| 'planet'
-				| 'diplomacy' = 'info';
+	private tradesProcessedEventToNotifications(event: TradesProcessedEvent): void {
+		const { data } = event;
 
-			switch (event.type) {
-				case EventNotificationType.ResearchComplete:
-				case EventNotificationType.ResearchStolen:
-				case EventNotificationType.ResearchQueueEmpty:
-					notificationType = 'research';
-					break;
-				case EventNotificationType.ImprovementBuilt:
-				case EventNotificationType.ShipBuilt:
-				case EventNotificationType.ImprovementDemolished:
-					notificationType = 'construction';
-					break;
-				case EventNotificationType.DefendedAgainstAttackingFleet:
-				case EventNotificationType.AttackingFleetLost:
-				case EventNotificationType.PlanetCaptured:
-				case EventNotificationType.PlanetLost:
-					notificationType = 'battle';
-					break;
-				case EventNotificationType.PopulationGrowth:
-				case EventNotificationType.PopulationStarvation:
-				case EventNotificationType.PlanetLostDueToStarvation:
-					notificationType = 'planet';
-					break;
-				case EventNotificationType.InsufficientFood:
-				case EventNotificationType.FoodShortageRiots:
-				case EventNotificationType.CitizensProtesting:
-					notificationType = 'warning';
-					break;
-				case EventNotificationType.TradesExecuted:
-					notificationType = 'success';
-					break;
-				case EventNotificationType.TradesNotExecuted:
-					notificationType = 'error';
-					break;
-				default:
-					notificationType = 'info';
+		// Summarize all executed and non-executed trades
+		const resourcesBought = { food: 0, ore: 0, iridium: 0, energySpent: 0, tradeCount: 0 };
+		const resourcesSold = { food: 0, ore: 0, iridium: 0, energyEarned: 0, tradeCount: 0 };
+		const resourcesNotBought = { food: 0, ore: 0, iridium: 0, energySpent: 0, tradeCount: 0 };
+		const resourcesNotSold = { food: 0, ore: 0, iridium: 0, energyEarned: 0, tradeCount: 0 };
+
+		for (const tradeResult of data.tradesProcessed) {
+			const { executedStatus } = tradeResult;
+
+			let rbTarget = resourcesNotBought;
+			let rsTarget = resourcesNotSold;
+			if (executedStatus.executed) {
+				rbTarget = resourcesBought;
+				rsTarget = resourcesSold;
 			}
 
-			// Add to the transient notification system (for popups)
+			if (executedStatus.tradeType === TradeType.BUY) {
+				rbTarget.food += executedStatus.foodAmount;
+				rbTarget.ore += executedStatus.oreAmount;
+				rbTarget.iridium += executedStatus.iridiumAmount;
+				rbTarget.energySpent += executedStatus.tradeEnergyAmount;
+				rbTarget.tradeCount++;
+			} else {
+				// SELL
+				rsTarget.food += executedStatus.foodAmount;
+				rsTarget.ore += executedStatus.oreAmount;
+				rsTarget.iridium += executedStatus.iridiumAmount;
+				rsTarget.energyEarned += executedStatus.tradeEnergyAmount;
+				rsTarget.tradeCount++;
+			}
+		}
+
+		// Create message for executed trades
+		if (resourcesBought.tradeCount || resourcesSold.tradeCount) {
+			const tradeCount = resourcesBought.tradeCount + resourcesSold.tradeCount;
+			let message =
+				tradeCount > 1 ? `${tradeCount} Trades Executed,` : `${tradeCount} Trade Executed,`;
+
+			if (resourcesBought.energySpent) {
+				message += ` Spent ${resourcesBought.energySpent.toFixed(2)} energy buying:`;
+				if (resourcesBought.food) message += ` ${resourcesBought.food} food,`;
+				if (resourcesBought.ore) message += ` ${resourcesBought.ore} ore,`;
+				if (resourcesBought.iridium) message += ` ${resourcesBought.iridium} iridium,`;
+			}
+
+			if (resourcesSold.energyEarned) {
+				message += ` Earned ${resourcesSold.energyEarned.toFixed(2)} energy selling:`;
+				if (resourcesSold.food) message += ` ${resourcesSold.food} food,`;
+				if (resourcesSold.ore) message += ` ${resourcesSold.ore} ore,`;
+				if (resourcesSold.iridium) message += ` ${resourcesSold.iridium} iridium,`;
+			}
+
+			message = message.replace(/,$/, ''); // Remove trailing comma
+
 			this.gameStore.addNotification({
-				type: notificationType,
-				message: event.message,
+				type: 'success',
+				message,
 				timestamp: Date.now()
 			});
+		}
 
-			// Also add to the persistent activity log with full event data
+		// Create separate notification for non-executed trades if any
+		if (resourcesNotBought.tradeCount || resourcesNotSold.tradeCount) {
+			const failedTradeCount = resourcesNotBought.tradeCount + resourcesNotSold.tradeCount;
+			let failedMessage =
+				failedTradeCount > 1
+					? `${failedTradeCount} Trades Not Executed,`
+					: `${failedTradeCount} Trade Not Executed,`;
+
+			if (resourcesNotBought.tradeCount) {
+				failedMessage += ` Could not Buy:`;
+				if (resourcesNotBought.food) failedMessage += ` ${resourcesNotBought.food} food,`;
+				if (resourcesNotBought.ore) failedMessage += ` ${resourcesNotBought.ore} ore,`;
+				if (resourcesNotBought.iridium) failedMessage += ` ${resourcesNotBought.iridium} iridium,`;
+			}
+
+			if (resourcesNotSold.tradeCount) {
+				failedMessage += ` Could not Sell:`;
+				if (resourcesNotSold.food) failedMessage += ` ${resourcesNotSold.food} food,`;
+				if (resourcesNotSold.ore) failedMessage += ` ${resourcesNotSold.ore} ore,`;
+				if (resourcesNotSold.iridium) failedMessage += ` ${resourcesNotSold.iridium} iridium,`;
+			}
+
+			failedMessage = failedMessage.replace(/,$/, ''); // Remove trailing comma
+
+			// Add failed trades notification separately
+			this.gameStore.addNotification({
+				type: 'warning',
+				message: failedMessage,
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	private convertClientEventToNotification(event: ClientEvent): void {
+		let notificationType:
+			| 'info'
+			| 'success'
+			| 'warning'
+			| 'error'
+			| 'battle'
+			| 'research'
+			| 'construction'
+			| 'fleet'
+			| 'planet' = 'info';
+		let message = '';
+
+		switch (event.type) {
+			// Command response events (typically don't need UI notifications)
+			case ClientEventType.PRODUCTION_ITEM_QUEUED: {
+				// Check if this was an auto-queued command response
+				const queuedEvent = event as ProductionItemQueuedEvent;
+				if (queuedEvent.data?.metadata?.autoQueued) {
+					// This was our auto-queue command - mark as complete and check again
+					this.autoQueuePending = false;
+					console.log('Auto-queue command completed - checking for next eligible planet');
+					this.processAutoQueue();
+				}
+				return;
+			}
+			case ClientEventType.PRODUCTION_ITEM_REMOVED:
+			case ClientEventType.FLEET_LAUNCHED:
+			case ClientEventType.WAYPOINT_SET:
+			case ClientEventType.WAYPOINT_CLEARED:
+			case ClientEventType.RESEARCH_QUEUED:
+			case ClientEventType.RESEARCH_CANCELLED:
+			case ClientEventType.RESEARCH_PERCENT_ADJUSTED:
+			case ClientEventType.TRADE_SUBMITTED:
+			case ClientEventType.TRADE_CANCELLED:
+			case ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED:
+			case ClientEventType.PLANET_OPTIONS_UPDATED:
+				// These are command confirmations - no UI notification needed
+				return;
+
+			// Server-only events that may need UI notifications
+			case ClientEventType.TRADES_PROCESSED:
+				this.tradesProcessedEventToNotifications(event as TradesProcessedEvent);
+				return;
+			case ClientEventType.PLANET_CAPTURED: {
+				notificationType = 'battle';
+				const { data } = event as PlanetCapturedEvent;
+				message = `Planet ${data.planetName} captured`;
+				if (data.previousOwnerName) {
+					message += ` from ${data.previousOwnerName}`;
+				}
+				break;
+			}
+			case ClientEventType.PLANET_LOST: {
+				notificationType = 'battle';
+				const { data } = event as PlanetLostEvent;
+				message = `Planet ${data.planetName} lost to ${data.newOwnerName}`;
+				break;
+			}
+			case ClientEventType.FLEET_ATTACK_FAILED: {
+				notificationType = 'battle';
+				const { data } = event as FleetAttackFailedEvent;
+				message = `Fleet destroyed attacking ${data.planetName}`;
+				if (data.defenderName) {
+					message += ` owned by ${data.defenderName}`;
+				}
+				break;
+			}
+			case ClientEventType.FLEET_DEFENSE_SUCCESS: {
+				notificationType = 'battle';
+				const { data } = event as FleetDefenseSuccessEvent;
+				message = `Successfully defended ${data.planetName} against ${data.attackerName}`;
+				break;
+			}
+			case ClientEventType.RESEARCH_STOLEN: {
+				notificationType = 'research';
+				const data = event.data as {
+					researchName: string;
+					planetName: string;
+					wasVictim: boolean;
+					thiefPlayerName?: string;
+					victimPlayerName?: string;
+				};
+				message = data.wasVictim
+					? `${data.researchName} was stolen by ${data.thiefPlayerName} at ${data.planetName}`
+					: `You stole ${data.researchName} from ${data.victimPlayerName} at ${data.planetName}`;
+				break;
+			}
+			default:
+				console.warn('Unknown ClientEventType:', event.type);
+				return;
+		}
+
+		if (!message) {
+			return;
+		}
+		const notification = {
+			type: notificationType,
+			message,
+			timestamp: Date.now()
+		};
+
+		this.gameStore.addNotification(notification);
+
+		// For battle events with conflict data, also add to activity store with full event data
+		const isBattleEvent =
+			event.type === ClientEventType.FLEET_ATTACK_FAILED ||
+			event.type === ClientEventType.FLEET_DEFENSE_SUCCESS ||
+			event.type === ClientEventType.PLANET_CAPTURED ||
+			event.type === ClientEventType.PLANET_LOST;
+
+		if (isBattleEvent && event.data && (event.data as any).conflictData) {
 			activityStore.addNotificationWithEventData(
-				{
-					type: notificationType,
-					message: event.message,
-					timestamp: Date.now()
-				},
-				event // Pass the original EventNotification for rich interactions
+				notification,
+				event, // Pass the full ClientEvent
+				undefined, // No ClientNotification
+				(event.data as any).conflictData // Pass the PlanetaryConflictData
 			);
 		}
 	}
@@ -514,12 +691,6 @@ class WebSocketService {
 				break;
 			}
 
-			case MESSAGE_TYPE.EVENT_NOTIFICATIONS: {
-				const eventData = message.payload as IEventNotificationsPayload;
-				this.handleEventNotifications(eventData.events as EventNotification[]);
-				break;
-			}
-
 			case MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED:
 				this.gameStore.addNotification({
 					type: 'info',
@@ -732,64 +903,77 @@ class WebSocketService {
 				}
 				break;
 
-			case MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
-				// Handle build queue update response
-				if (
-					message.payload &&
-					typeof message.payload === 'object' &&
-					'success' in message.payload
-				) {
-					const payload = message.payload as {
-						success: boolean;
-						error?: string;
-						gameData?: unknown;
-					};
-					if (payload.success) {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Build queue updated successfully',
-							timestamp: Date.now()
-						});
+			case MESSAGE_TYPE.CLIENT_EVENT: {
+				// Handle new event-driven architecture messages
+				const payload = message.payload as {
+					events: ClientEvent[];
+					stateChecksum?: string;
+					currentCycle: number;
+				};
+				console.log(`Received ${payload.events.length} client events from server`);
 
-						// Game state updates are handled via GAME_STATE_UPDATE messages
-					} else {
-						this.gameStore.addNotification({
-							type: 'error',
-							message: payload.error || 'Failed to update build queue',
-							timestamp: Date.now()
-						});
-					}
-				} else {
-					console.warn('Unexpected UPDATE_PLANET_BUILD_QUEUE payload format:', message.payload);
+				// Get current client model
+				const currentModel = get(clientGameModel);
+				if (!currentModel) {
+					console.warn('No client model available to apply events');
+					break;
 				}
-				break;
 
-			case MESSAGE_TYPE.SEND_SHIPS:
-				// Handle send ships response
-				if (message.payload && typeof message.payload === 'object') {
-					if ('error' in message.payload) {
-						const errorPayload = message.payload as { error?: string };
-						this.gameStore.addNotification({
-							type: 'error',
-							message: errorPayload.error || 'Failed to send ships',
-							timestamp: Date.now()
-						});
-					} else {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Ships sent successfully',
-							timestamp: Date.now()
-						});
-					}
-				} else {
-					// Success case - ships sent successfully
-					this.gameStore.addNotification({
-						type: 'success',
-						message: 'Ships sent successfully',
-						timestamp: Date.now()
-					});
+				// Get the grid for event application (needed for fleet distance calculations)
+				const grid = get(gameGrid);
+
+				// Apply each event to the client model and generate UI notifications
+				for (const event of payload.events) {
+					console.log(`Applying event: ${event.type}`);
+					EventApplicator.applyEvent(currentModel, event, grid!);
+
+					// Convert event to user notification
+					this.convertClientEventToNotification(event);
 				}
+
+				// Validate checksum if provided (for player commands)
+				// Time-based events from server may not include checksum
+				if (payload.stateChecksum) {
+					const previousChecksum = currentModel.lastEventChecksum || '';
+					calculateRollingEventChecksum(payload.events, previousChecksum)
+						.then((ourChecksum) => {
+							if (ourChecksum !== payload.stateChecksum) {
+								console.error('Event chain broken! Desync detected.');
+								console.error(`Expected: ${payload.stateChecksum}`);
+								console.error(`Got: ${ourChecksum}`);
+								console.error(`Previous checksum: ${previousChecksum}`);
+
+								// This is serious - the event chain is broken
+								this.gameStore.addNotification({
+									type: 'error',
+									message: 'Game sync error - requesting full resync',
+									timestamp: Date.now()
+								});
+
+								// Request full state sync to recover
+								this.requestStateSync();
+							} else {
+								console.debug('Event chain valid ✓', ourChecksum);
+
+								// Update the model with the new checksum
+								currentModel.lastEventChecksum = ourChecksum;
+							}
+
+							// Update the store with the mutated model (including new checksum)
+							clientGameModel.set(currentModel);
+						})
+						.catch((error) => {
+							console.error('Error calculating rolling checksum:', error);
+							// Still update the model even if checksum calculation failed
+							clientGameModel.set(currentModel);
+						});
+				} else {
+					// No checksum provided (time-based events) - just update the model
+					clientGameModel.set(currentModel);
+				}
+
 				break;
+			}
 
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
@@ -805,145 +989,17 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.PONG:
 				// Server responded to our ping - session is alive
-				console.log('Received pong from server');
+				console.log('Received pong from server', message.payload);
+				break;
 
-				// Check if PONG includes session ID or updated game state
-				if (message.payload && typeof message.payload === 'object') {
-					const payload = message.payload as Record<string, unknown>;
-
-					// Store session ID if provided
-					if (payload.sessionId && typeof payload.sessionId === 'string') {
-						this.gameStore.setSessionId(payload.sessionId);
-						console.log('Session ID stored:', payload.sessionId);
-					}
-
-					if (payload.clientGameModel) {
-						console.log('PONG included updated game state, updating client model');
-
-						// Update the main game store with the fresh data from the server
-						const updatedClientGameModel = payload.clientGameModel as ClientModelData;
-						clientGameModel.set(updatedClientGameModel);
-
-						// Don't automatically set game as running - let explicit game state messages handle that
-						// The PONG is just providing updated data, not changing game state
-
-						// Optionally update current cycle if provided
-						if (payload.currentCycle !== undefined) {
-							// You could add a currentCycle store if needed
-							console.log('Current game cycle:', payload.currentCycle);
-						}
-					}
-				}
+			case MESSAGE_TYPE.ADVANCE_GAME_TIME:
+				// Handle server time advancement response (events already received via CLIENT_EVENT)
+				console.log('Game time advanced successfully');
 				break;
 
 			case MESSAGE_TYPE.SYNC_STATE:
-				// Handle server state sync response
+				// Handle server state sync response (full state already received via GAME_STATE_UPDATE)
 				console.log('Received synchronized game state from server');
-				break;
-
-			case MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT:
-				// Handle research percent adjustment response
-				if (message.payload && typeof message.payload === 'object') {
-					if ('error' in message.payload) {
-						const errorPayload = message.payload as { error?: string };
-						this.gameStore.addNotification({
-							type: 'error',
-							message: errorPayload.error || 'Failed to adjust research percent',
-							timestamp: Date.now()
-						});
-					} else {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Research allocation updated successfully',
-							timestamp: Date.now()
-						});
-						// Game state updates are handled via GAME_STATE_UPDATE messages
-					}
-				}
-				break;
-
-			case MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM:
-				// Handle submit research item response
-				if (message.payload && typeof message.payload === 'object') {
-					if ('error' in message.payload) {
-						const errorPayload = message.payload as { error?: string };
-						this.gameStore.addNotification({
-							type: 'error',
-							message: errorPayload.error || 'Failed to start research',
-							timestamp: Date.now()
-						});
-					} else {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Research started successfully',
-							timestamp: Date.now()
-						});
-						// Game state updates are handled via GAME_STATE_UPDATE messages
-					}
-				}
-				break;
-
-			case MESSAGE_TYPE.CANCEL_RESEARCH_ITEM:
-				// Handle cancel research item response
-				if (message.payload && typeof message.payload === 'object') {
-					if ('error' in message.payload) {
-						const errorPayload = message.payload as { error?: string };
-						this.gameStore.addNotification({
-							type: 'error',
-							message: errorPayload.error || 'Failed to cancel research',
-							timestamp: Date.now()
-						});
-					} else {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Research cancelled successfully',
-							timestamp: Date.now()
-						});
-						// Game state updates are handled via GAME_STATE_UPDATE messages
-					}
-				}
-				break;
-
-			case MESSAGE_TYPE.SUBMIT_TRADE:
-				// Handle submit trade response
-				if (message.payload && typeof message.payload === 'object') {
-					if ('error' in message.payload) {
-						const errorPayload = message.payload as { error?: string };
-						this.gameStore.addNotification({
-							type: 'error',
-							message: errorPayload.error || 'Failed to submit trade',
-							timestamp: Date.now()
-						});
-					} else {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Trade submitted successfully',
-							timestamp: Date.now()
-						});
-						// Game state updates are handled via GAME_STATE_UPDATE messages
-					}
-				}
-				break;
-
-			case MESSAGE_TYPE.CANCEL_TRADE:
-				// Handle cancel trade response
-				if (message.payload && typeof message.payload === 'object') {
-					if ('error' in message.payload) {
-						const errorPayload = message.payload as { error?: string };
-						this.gameStore.addNotification({
-							type: 'error',
-							message: errorPayload.error || 'Failed to cancel trade',
-							timestamp: Date.now()
-						});
-					} else {
-						this.gameStore.addNotification({
-							type: 'success',
-							message: 'Trade cancelled successfully',
-							timestamp: Date.now()
-						});
-						// Game state updates are handled via GAME_STATE_UPDATE messages
-					}
-				}
 				break;
 
 			default:
@@ -1121,21 +1177,50 @@ class WebSocketService {
 	updatePlanetBuildQueue(
 		planetId: number,
 		action: 'add' | 'remove' | 'demolish',
-		productionItem?: unknown,
-		index?: number
+		productionItem?: PlanetProductionItemData,
+		index?: number,
+		autoQueued = false
 	) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				action,
-				productionItem,
-				index
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending UPDATE_PLANET_BUILD_QUEUE with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, payload));
+			// Determine command type based on action
+			let command: GameCommand;
+
+			if (action === 'add' && productionItem) {
+				command = {
+					type: GameCommandType.QUEUE_PRODUCTION_ITEM,
+					playerId,
+					timestamp: Date.now(),
+					planetId,
+					productionItem,
+					metadata: autoQueued ? { autoQueued: true } : undefined
+				} as QueueProductionItemCommand;
+			} else if (action === 'remove' && typeof index === 'number') {
+				command = {
+					type: GameCommandType.REMOVE_PRODUCTION_ITEM,
+					playerId,
+					timestamp: Date.now(),
+					planetId,
+					index
+				} as RemoveProductionItemCommand;
+			} else if (action === 'demolish' && productionItem) {
+				command = {
+					type: GameCommandType.DEMOLISH_IMPROVEMENT,
+					playerId,
+					timestamp: Date.now(),
+					planetId,
+					productionItem
+				} as DemolishImprovementCommand;
+			} else {
+				throw new Error(`Invalid build queue action: ${action}`);
+			}
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to update planet build queue:', error);
 			this.gameStore.addNotification({
@@ -1173,17 +1258,25 @@ class WebSocketService {
 		builderDiff: number
 	) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				farmerDiff,
-				minerDiff,
-				builderDiff
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+			const command: GameCommand = {
+				type: GameCommandType.UPDATE_PLANET_WORKER_ASSIGNMENTS,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				workers: {
+					farmerDiff,
+					minerDiff,
+					builderDiff
+				}
+			} as UpdatePlanetWorkerAssignmentsCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to update planet worker assignments:', error);
 			this.gameStore.addNotification({
@@ -1196,15 +1289,21 @@ class WebSocketService {
 
 	updatePlanetOptions(planetId: number, options: { buildLastStarship?: boolean }) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				...options
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending UPDATE_PLANET_OPTIONS with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, payload));
+			const command: GameCommand = {
+				type: GameCommandType.UPDATE_PLANET_OPTIONS,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				options
+			} as UpdatePlanetOptionsCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to update planet options:', error);
 			this.gameStore.addNotification({
@@ -1215,17 +1314,115 @@ class WebSocketService {
 		}
 	}
 
-	setWaypoint(planetId: number, waypointPlanetId: number) {
+	/**
+	 * Request an auto-queue check. Sets a flag that will be processed when no auto-queue is pending.
+	 */
+	public requestAutoQueueCheck() {
+		this.autoQueueRequested = true;
+		this.processAutoQueue();
+	}
+
+	/**
+	 * Process the auto-queue by checking eligibility and sending ONE command at a time.
+	 * After each command response, this will be called again to check for the next eligible planet.
+	 * This prevents resource conflicts and ordering issues.
+	 */
+	private processAutoQueue() {
+		// Don't process if we're already waiting for a response
+		if (this.autoQueuePending) {
+			console.log('Auto-queue already pending - waiting for response');
+			return;
+		}
+
+		// Don't process if no check was requested
+		if (!this.autoQueueRequested) {
+			return;
+		}
+
+		try {
+			const currentModel = get(clientGameModel);
+			if (!currentModel) {
+				this.autoQueueRequested = false;
+				return;
+			}
+
+			const eligiblePlanets = Player.getEligibleBuildLastShipPlanetList(currentModel);
+
+			if (eligiblePlanets.length > 0) {
+				// Send command for ONLY the first eligible planet
+				const { planetId, productionItem } = eligiblePlanets[0];
+				console.log(
+					`Auto-queuing ship on planet ${planetId} (${eligiblePlanets.length} total eligible)`
+				);
+
+				// Mark as pending before sending
+				this.autoQueuePending = true;
+
+				// Send ONE command with auto-queue marker
+				this.updatePlanetBuildQueue(planetId, 'add', productionItem, undefined, true);
+			} else {
+				// No more eligible planets - clear the request flag
+				console.log('No more planets eligible for auto-queue');
+				this.autoQueueRequested = false;
+			}
+		} catch (error) {
+			console.error('Error processing auto-queue:', error);
+			this.autoQueuePending = false;
+			this.autoQueueRequested = false;
+		}
+	}
+
+	/**
+	 * Send a game command using the new event-driven architecture
+	 */
+	sendCommand(command: GameCommand) {
 		try {
 			const gameId = this.requireGameId();
+			const cgm = get(clientGameModel);
+
+			// Add client's current cycle for drift compensation
+			if (cgm) {
+				command.clientCycle = cgm.currentCycle;
+			}
+
 			const payload = {
 				gameId,
-				planetId,
-				waypointPlanetId
+				command
 			};
 
-			console.log('Sending SET_WAYPOINT with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.SET_WAYPOINT, payload));
+			console.log(`Sending GAME_COMMAND: ${command.type}`, command);
+			this.send(new Message(MESSAGE_TYPE.GAME_COMMAND, payload));
+		} catch (error) {
+			console.error('Failed to send game command:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot send command - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	// ==========================================
+	// Legacy Methods (migrated to commands - keeping for compatibility)
+	// ==========================================
+
+	setWaypoint(planetId: number, waypointPlanetId: number) {
+		try {
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.SET_WAYPOINT,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				waypointPlanetId
+			} as SetWaypointCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to set waypoint:', error);
 			this.gameStore.addNotification({
@@ -1238,14 +1435,20 @@ class WebSocketService {
 
 	clearWaypoint(planetId: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending CLEAR_WAYPOINT with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, payload));
+			const command: GameCommand = {
+				type: GameCommandType.CLEAR_WAYPOINT,
+				playerId,
+				timestamp: Date.now(),
+				planetId
+			} as ClearWaypointCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to clear waypoint:', error);
 			this.gameStore.addNotification({
@@ -1267,16 +1470,28 @@ class WebSocketService {
 		}
 	) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetIdSource,
-				planetIdDest,
-				data: shipsByType
-			};
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
 
-			console.log('Sending SEND_SHIPS with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.SEND_SHIPS, payload));
+			// Send command with ship IDs (user selected specific ships)
+			const command: GameCommand = {
+				type: GameCommandType.SEND_SHIPS,
+				playerId,
+				timestamp: Date.now(),
+				fromPlanetId: planetIdSource,
+				toPlanetId: planetIdDest,
+				shipIds: {
+					scouts: shipsByType.scouts,
+					destroyers: shipsByType.destroyers,
+					cruisers: shipsByType.cruisers,
+					battleships: shipsByType.battleships
+				}
+			} as SendShipsCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to send ships:', error);
 			this.gameStore.addNotification({
@@ -1327,7 +1542,7 @@ class WebSocketService {
 		}
 
 		this.stopGameSyncInterval(); // Clear any existing interval
-		console.log('Starting game sync interval (host player)');
+		console.log('Starting game time advancement interval (host player)');
 
 		this.gameSyncInterval = window.setInterval(() => {
 			if (
@@ -1336,8 +1551,8 @@ class WebSocketService {
 				this.getCurrentGameId() &&
 				this.isHost()
 			) {
-				console.log('Sending SYNC_STATE to advance game time for AI players');
-				this.send(new Message(MESSAGE_TYPE.SYNC_STATE, {}));
+				console.log('Sending ADVANCE_GAME_TIME to advance game time for AI players');
+				this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {}));
 			} else {
 				// Stop interval if conditions are no longer met
 				this.stopGameSyncInterval();
@@ -1356,12 +1571,20 @@ class WebSocketService {
 	// Research methods
 	adjustResearchPercent(researchPercent: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.ADJUST_RESEARCH_PERCENT,
+				playerId,
+				timestamp: Date.now(),
 				researchPercent: Math.max(0, Math.min(1, researchPercent))
-			};
-			this.send(new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, payload));
+			} as AdjustResearchPercentCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to adjust research percent:', error);
 			this.gameStore.addNotification({
@@ -1374,15 +1597,21 @@ class WebSocketService {
 
 	submitResearchItem(researchType: number, data: Record<string, unknown> = {}) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				researchItem: {
-					type: researchType,
-					data: data
-				}
-			};
-			this.send(new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, payload));
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.SUBMIT_RESEARCH_ITEM,
+				playerId,
+				timestamp: Date.now(),
+				researchType,
+				data
+			} as SubmitResearchItemCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to submit research item:', error);
 			this.gameStore.addNotification({
@@ -1395,9 +1624,19 @@ class WebSocketService {
 
 	cancelResearchItem() {
 		try {
-			const gameId = this.requireGameId();
-			const payload = { gameId };
-			this.send(new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, payload));
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.CANCEL_RESEARCH_ITEM,
+				playerId,
+				timestamp: Date.now()
+			} as CancelResearchItemCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to cancel research item:', error);
 			this.gameStore.addNotification({
@@ -1411,16 +1650,35 @@ class WebSocketService {
 	// Trading methods
 	submitTrade(planetId: number, tradeType: number, resourceType: number, amount: number) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
-				planetId,
-				tradeType,
-				resourceType,
-				amount
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			// Map numeric resource type to string
+			const resourceTypeMap: Record<number, string> = {
+				1: 'food',
+				2: 'ore',
+				3: 'iridium'
 			};
-			console.log('Sending SUBMIT_TRADE with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.SUBMIT_TRADE, payload));
+
+			// Map trade type to action
+			const action = tradeType === 1 ? 'buy' : 'sell';
+
+			const command: GameCommand = {
+				type: GameCommandType.SUBMIT_TRADE,
+				playerId,
+				timestamp: Date.now(),
+				planetId,
+				tradeData: {
+					resourceType: resourceTypeMap[resourceType] || 'food',
+					amount,
+					action
+				}
+			} as SubmitTradeCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to submit trade:', error);
 			this.gameStore.addNotification({
@@ -1433,13 +1691,20 @@ class WebSocketService {
 
 	cancelTrade(tradeId: string) {
 		try {
-			const gameId = this.requireGameId();
-			const payload = {
-				gameId,
+			const cgm = get(clientGameModel);
+			if (!cgm) {
+				throw new Error('No game model available');
+			}
+			const playerId = cgm.mainPlayer.id;
+
+			const command: GameCommand = {
+				type: GameCommandType.CANCEL_TRADE,
+				playerId,
+				timestamp: Date.now(),
 				tradeId
-			};
-			console.log('Sending CANCEL_TRADE with payload:', payload);
-			this.send(new Message(MESSAGE_TYPE.CANCEL_TRADE, payload));
+			} as CancelTradeCommand;
+
+			this.sendCommand(command);
 		} catch (error) {
 			console.error('Failed to cancel trade:', error);
 			this.gameStore.addNotification({
@@ -1453,6 +1718,8 @@ class WebSocketService {
 	disconnect() {
 		this.stopPingInterval();
 		this.stopGameSyncInterval();
+		this.autoQueuePending = false;
+		this.autoQueueRequested = false;
 		if (this.ws) {
 			this.ws.close();
 			this.ws = null;

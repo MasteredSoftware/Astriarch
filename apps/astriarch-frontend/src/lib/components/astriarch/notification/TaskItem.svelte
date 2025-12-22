@@ -43,6 +43,8 @@
 				return '#4ADE80'; // green-400
 			case TaskNotificationType.InsufficientFood:
 				return '#F87171'; // red-400
+			case TaskNotificationType.CitizensProtesting:
+				return '#FCD34D'; // yellow-300
 			default:
 				return '#60A5FA'; // blue-400
 		}
@@ -55,6 +57,8 @@
 				return '🏗️'; // construction
 			case TaskNotificationType.InsufficientFood:
 				return '🍽️'; // food
+			case TaskNotificationType.CitizensProtesting:
+				return '✊'; // protest/fist
 			default:
 				return '⚠️'; // warning
 		}
@@ -67,6 +71,8 @@
 				return 'Build Queue Empty';
 			case TaskNotificationType.InsufficientFood:
 				return 'Food Shortage';
+			case TaskNotificationType.CitizensProtesting:
+				return 'Citizens Protesting';
 			default:
 				return 'Task';
 		}

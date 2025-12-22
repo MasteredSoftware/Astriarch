@@ -10,15 +10,17 @@ import {
 	type ClientModelData,
 	type PlanetProductionItemData,
 	ResearchType,
-	subscribeToEvents,
-	EventNotificationType,
-	type EventNotification,
 	GALAXY_WIDTH,
 	GALAXY_HEIGHT
 } from 'astriarch-engine';
 import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 import type { PlanetData } from 'astriarch-engine/src/model/planet';
 import { webSocketService } from '$lib/services/websocket';
+import {
+	convertClientNotificationToUINotification,
+	isBuildCompletionNotification
+} from '$lib/utils/notificationUtils';
+import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 
 // Game state stores
 export const clientGameModel = writable<ClientModelData | null>(null);
@@ -60,9 +62,40 @@ export const resourceData = derived(clientGameModel, ($clientGameModel) => {
 		$clientGameModel.mainPlayerOwnedPlanets
 	);
 
+	// Calculate total population to show net food production (after consumption)
+	const totalPopulation = getPlayerTotalPopulation(
+		$clientGameModel.mainPlayer,
+		$clientGameModel.mainPlayerOwnedPlanets
+	);
+
+	const foodDiffPerTurn = perTurnResources.food - totalPopulation;
+	const totalFoodAmount = totalResources.food;
+
+	// Calculate food color based on old game logic
+	let foodColor = 'green';
+	if (foodDiffPerTurn < 0) {
+		if (foodDiffPerTurn + totalFoodAmount < totalPopulation) {
+			foodColor = 'red'; // We're going to starve
+		} else {
+			foodColor = 'yellow'; // Losing food but won't starve yet
+		}
+	} else if (
+		totalFoodAmount < totalPopulation ||
+		foodDiffPerTurn + totalFoodAmount < totalPopulation
+	) {
+		foodColor = 'orange'; // Gaining food but will still starve
+	}
+
 	return {
 		total: totalResources,
-		perTurn: perTurnResources
+		perTurn: {
+			...perTurnResources,
+			// Subtract population consumption from food production to show net gain/loss
+			food: foodDiffPerTurn
+		},
+		colors: {
+			food: foodColor
+		}
 	};
 });
 
@@ -98,6 +131,12 @@ export const researchProgress = derived(clientGameModel, ($clientGameModel) => {
 export const currentResearchType = derived(clientGameModel, ($clientGameModel) => {
 	if (!$clientGameModel) return null;
 	return $clientGameModel.mainPlayer.research.researchTypeInQueue;
+});
+
+// Research percent derived from client game model
+export const researchPercent = derived(clientGameModel, ($clientGameModel) => {
+	if (!$clientGameModel) return 0;
+	return $clientGameModel.mainPlayer.research.researchPercent || 0;
 });
 
 // Current game speed derived from client game model
@@ -309,9 +348,34 @@ function startGameLoop() {
 
 		if (cgm && grid) {
 			// Advance the client game model time continuously
-			const updatedClientModelData = advanceClientGameModelTime(cgm, grid);
-			clientGameModel.set(updatedClientModelData.clientGameModel);
-			if (updatedClientModelData.fleetsArrivingOnUnownedPlanets.length > 0) {
+			const result = advanceClientGameModelTime(cgm, grid);
+			clientGameModel.set(result.clientGameModel);
+
+			// Process notifications from the engine immediately
+			if (result.notifications.length > 0) {
+				let shouldCheckAutoQueue = false;
+
+				for (const notification of result.notifications) {
+					// Convert engine notification to UI notification
+					const uiNotification = convertClientNotificationToUINotification(notification);
+					if (uiNotification) {
+						multiplayerGameStore.addNotification(uiNotification);
+					}
+
+					// Check if this is a build completion notification
+					if (isBuildCompletionNotification(notification)) {
+						shouldCheckAutoQueue = true;
+					}
+				}
+
+				// Trigger auto-queue check if builds completed
+				if (shouldCheckAutoQueue) {
+					console.log('Build completion detected in game loop - requesting auto-queue check');
+					webSocketService.requestAutoQueueCheck();
+				}
+			}
+
+			if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
 				// request data sync with server
 				console.log('Fleets arriving on unowned planets, requesting state synchronization');
 				webSocketService.requestStateSync();
@@ -339,40 +403,9 @@ clientGameModel.subscribe((cgm) => {
 	}
 });
 
-// Events that should trigger a server sync when they occur
-const SYNC_TRIGGERING_EVENTS = new Set([
-	EventNotificationType.ShipBuilt,
-	EventNotificationType.ImprovementBuilt,
-	EventNotificationType.ResearchComplete,
-	EventNotificationType.DefendedAgainstAttackingFleet,
-	EventNotificationType.AttackingFleetLost,
-	EventNotificationType.PlanetCaptured,
-	EventNotificationType.PlanetLost,
-	EventNotificationType.PopulationGrowth,
-	EventNotificationType.TradesExecuted
-]);
-
-// Subscribe to engine events when we have a client game model
-let eventSubscriptionActive = false;
-clientGameModel.subscribe((cgm) => {
-	if (cgm && cgm.mainPlayer && !eventSubscriptionActive) {
-		// Subscribe to events for the main player
-		subscribeToEvents(cgm.mainPlayer.id, (playerId: string, events: EventNotification[]) => {
-			// Check if any events require server sync
-			const needsSync = events.some((event) => SYNC_TRIGGERING_EVENTS.has(event.type));
-
-			if (needsSync) {
-				console.log('Events require server sync, requesting state synchronization');
-				webSocketService.requestStateSync();
-			}
-		});
-		eventSubscriptionActive = true;
-		console.log('Subscribed to client-side engine events for player:', cgm.mainPlayer.id);
-	} else if (!cgm && eventSubscriptionActive) {
-		// Reset subscription state when no game model
-		eventSubscriptionActive = false;
-	}
-});
+// NOTE: Old EventNotification sync logic removed - now using new ClientEvent architecture
+// Time-based events are sent from server via CLIENT_EVENT messages
+// No need to subscribe to engine events or trigger full state syncs
 
 // Start the game loop when both client game model and grid are loaded
 clientGameModel.subscribe((cgm) => {

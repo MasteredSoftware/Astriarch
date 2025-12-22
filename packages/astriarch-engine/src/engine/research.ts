@@ -1,4 +1,3 @@
-import { EventNotificationType } from '../model/eventNotification';
 import { StarshipAdvantageData, StarShipType } from '../model/fleet';
 import { PlayerData } from '../model/player';
 import {
@@ -9,7 +8,7 @@ import {
   ResearchTypeProgressData,
 } from '../model/research';
 import { GameTools } from '../utils/gameTools';
-import { Events } from './events';
+import { ClientNotification, ClientNotificationType, ResearchCompletedNotification } from './GameCommands';
 import { AdvanceGameClockForPlayerData } from './gameModel';
 
 const MAX_RESEARCH_LEVEL = 9;
@@ -221,8 +220,10 @@ export class Research {
     return researchProgress.currentResearchLevel < researchProgress.maxResearchLevel;
   }
 
-  public static advanceResearchForPlayer(data: AdvanceGameClockForPlayerData) {
+  public static advanceResearchForPlayer(data: AdvanceGameClockForPlayerData): ClientNotification[] {
+    const notifications: ClientNotification[] = [];
     const { mainPlayer, mainPlayerOwnedPlanets } = data.clientModel;
+
     if (mainPlayer.research.researchTypeInQueue) {
       let totalResearch = 0;
       Object.values(mainPlayerOwnedPlanets).forEach((planet) => {
@@ -236,17 +237,28 @@ export class Research {
       );
       if (levelIncrease) {
         //we've gained a level
-        const message =
-          'Our Scientists and Engineers have finished researching and developing: ' +
-          Research.researchProgressToString(rtpInQueue);
-        Events.enqueueNewEvent(mainPlayer.id, EventNotificationType.ResearchComplete, message);
+        const researchQueueCleared = !Research.canResearch(rtpInQueue);
 
-        if (!Research.canResearch(rtpInQueue)) {
+        // Generate RESEARCH_COMPLETED notification
+        const researchCompletedNotification: ResearchCompletedNotification = {
+          type: ClientNotificationType.RESEARCH_COMPLETED,
+          affectedPlayerIds: [mainPlayer.id],
+          data: {
+            researchType: rtpInQueue.type,
+            newLevel: rtpInQueue.currentResearchLevel,
+            researchQueueCleared,
+          },
+        };
+        notifications.push(researchCompletedNotification);
+
+        if (researchQueueCleared) {
           mainPlayer.research.researchTypeInQueue = null;
         }
       }
     }
     // else notifiy the player at some point?
+
+    return notifications;
   }
 
   public static researchProgressToString(researchProgress: ResearchTypeProgress, nextLevel?: number) {

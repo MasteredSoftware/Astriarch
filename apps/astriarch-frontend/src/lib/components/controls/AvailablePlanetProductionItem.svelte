@@ -1,12 +1,26 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
 	import { Card } from '$lib/components/astriarch';
 	import * as Tooltip from '$lib/components/ui/tooltip';
+	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
 
-	export let name: string;
-	export let description: string = '';
-	export let cost: Record<string, number> = {};
-	export let enabled: boolean = true;
-	export let onClick: (() => void) | undefined = undefined;
+	let {
+		name,
+		description = '',
+		cost = {},
+		enabled = true,
+		onClick = undefined,
+		hotkey = undefined,
+		hotkeyContext = 'planet-overview'
+	}: {
+		name: string;
+		description?: string;
+		cost?: Record<string, number>;
+		enabled?: boolean;
+		onClick?: (() => void) | undefined;
+		hotkey?: string | undefined;
+		hotkeyContext?: string;
+	} = $props();
 
 	// Resource color mapping based on our design system (removed food)
 	const resourceColors: Record<string, string> = {
@@ -16,18 +30,59 @@
 	};
 
 	// Filter out zero costs and sort for consistent display order
-	$: displayCosts = Object.entries(cost)
-		.filter(([_, amount]) => amount > 0)
-		.sort(([a], [b]) => {
-			const order = ['energy', 'ore', 'iridium'];
-			return order.indexOf(a) - order.indexOf(b);
-		});
+	let displayCosts = $derived(
+		Object.entries(cost)
+			.filter(([_, amount]) => amount > 0)
+			.sort(([a], [b]) => {
+				const order = ['energy', 'ore', 'iridium'];
+				return order.indexOf(a) - order.indexOf(b);
+			})
+	);
 
 	function handleClick() {
 		if (enabled && onClick) {
 			onClick();
 		}
 	}
+
+	// Generate underlined text for hotkey display
+	function getUnderlinedText(text: string, hotkey: string): string {
+		const index = text.toLowerCase().indexOf(hotkey.toLowerCase());
+		if (index === -1) return text;
+
+		return (
+			text.substring(0, index) +
+			'<u class="underline decoration-2">' +
+			text.substring(index, index + 1) +
+			'</u>' +
+			text.substring(index + 1)
+		);
+	}
+
+	let displayName = $derived(hotkey ? getUnderlinedText(name, hotkey) : name);
+
+	// Register hotkey on mount
+	onMount(() => {
+		if (hotkey && onClick) {
+			keyboardShortcutService.registerShortcut(
+				hotkey.toLowerCase(),
+				(event: KeyboardEvent) => {
+					event.preventDefault();
+					if (enabled) {
+						onClick();
+					}
+				},
+				hotkeyContext
+			);
+		}
+	});
+
+	// Unregister hotkey on destroy
+	onDestroy(() => {
+		if (hotkey) {
+			keyboardShortcutService.unregisterShortcut(hotkey.toLowerCase(), hotkeyContext);
+		}
+	});
 </script>
 
 <!-- Card content that's shared between tooltip and non-tooltip versions -->
@@ -45,7 +100,11 @@
 				class="text-astriarch-body-14-semibold text-astriarch-ui-white mb-1
                   {enabled ? '' : 'text-astriarch-ui-medium-grey'}"
 			>
-				{name}
+				{#if hotkey}
+					{@html displayName}
+				{:else}
+					{name}
+				{/if}
 			</div>
 
 			<!-- Resource costs -->

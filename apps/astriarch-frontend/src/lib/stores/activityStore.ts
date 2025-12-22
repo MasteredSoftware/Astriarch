@@ -1,6 +1,6 @@
 import { writable, derived } from 'svelte/store';
 import { multiplayerGameStore, type GameNotification } from './multiplayerGameStore';
-import type { EventNotification, PlanetaryConflictData, PlanetData } from 'astriarch-engine';
+import type { PlanetaryConflictData, ClientEvent, ClientNotification } from 'astriarch-engine';
 
 export interface ActivityLogEntry {
 	id: string;
@@ -9,13 +9,14 @@ export interface ActivityLogEntry {
 	timestamp: number;
 	category?: string;
 	read?: boolean;
-	// Original event notification data for rich interactions
-	originalEvent?: EventNotification;
 	// Parsed planet information for easy access
 	planetId?: number;
 	planetName?: string;
-	// Additional structured data
+	// Additional structured data for battle events
 	conflictData?: PlanetaryConflictData;
+	// Original event/notification data for rich interactions
+	clientEvent?: ClientEvent;
+	clientNotification?: ClientNotification;
 }
 
 export interface ActivityStore {
@@ -64,10 +65,12 @@ function createActivityStore() {
 		set,
 		update,
 
-		// Add a notification with enhanced EventNotification data
+		// Add a notification with enhanced ClientEvent or ClientNotification data
 		addNotificationWithEventData: (
 			notification: Omit<GameNotification, 'id'>,
-			originalEvent?: EventNotification
+			clientEvent?: ClientEvent,
+			clientNotification?: ClientNotification,
+			conflictData?: PlanetaryConflictData
 		) => {
 			const newEntry: ActivityLogEntry = {
 				id: `activity-${Date.now()}-${Math.random()}`,
@@ -75,12 +78,17 @@ function createActivityStore() {
 				message: notification.message,
 				timestamp: notification.timestamp,
 				read: false,
-				originalEvent,
-				// Extract planet info if available
-				planetId: originalEvent?.planet?.id,
-				planetName: originalEvent?.planet?.name,
-				// Extract conflict data if available
-				conflictData: originalEvent?.data as PlanetaryConflictData
+				clientEvent,
+				clientNotification,
+				// Extract planet info if available from event/notification data
+				planetId:
+					((clientEvent?.data as Record<string, unknown>)?.planetId as number | undefined) ||
+					((clientNotification?.data as Record<string, unknown>)?.planetId as number | undefined),
+				planetName:
+					((clientEvent?.data as Record<string, unknown>)?.planetName as string | undefined) ||
+					((clientNotification?.data as Record<string, unknown>)?.planetName as string | undefined),
+				// Store conflict data if provided (for battle events)
+				conflictData
 			};
 
 			update((store) => ({
@@ -168,18 +176,16 @@ export const importantActivities = derived(activityLog, ($log) =>
 	$log.filter((entry) => ['error', 'warning', 'battle'].includes(entry.type))
 );
 
-export const combatActivities = derived(
-	activityLog,
-	($log) =>
-		$log.filter(
-			(entry) =>
-				entry.type === 'battle' ||
-				(entry.originalEvent &&
-					(entry.originalEvent.type === 13 || // DefendedAgainstAttackingFleet
-						entry.originalEvent.type === 14 || // AttackingFleetLost
-						entry.originalEvent.type === 15 || // PlanetCaptured
-						entry.originalEvent.type === 19))
-		) // PlanetLost
+export const combatActivities = derived(activityLog, ($log) =>
+	$log.filter(
+		(entry) =>
+			entry.type === 'battle' ||
+			(entry.clientEvent &&
+				(entry.clientEvent.type === 'FLEET_ATTACK_FAILED' ||
+					entry.clientEvent.type === 'FLEET_DEFENSE_SUCCESS' ||
+					entry.clientEvent.type === 'PLANET_CAPTURED' ||
+					entry.clientEvent.type === 'PLANET_LOST'))
+	)
 );
 
 export const generalActivities = derived(activityLog, ($log) =>

@@ -1,6 +1,5 @@
 import { ClientPlanet, PlanetById } from '../model/clientModel';
 import { EarnedPointsType } from '../model/earnedPoints';
-import { EventNotificationType } from '../model/eventNotification';
 import { StarShipType } from '../model/fleet';
 import {
   Citizen,
@@ -17,10 +16,15 @@ import {
 import { PlayerData } from '../model/player';
 import { ResearchType } from '../model/research';
 import { PointData } from '../shapes/shapes';
-import { GameTools } from '../utils/gameTools';
 import { Utils } from '../utils/utils';
-import { Events } from './events';
 import { Fleet } from './fleet';
+import {
+  ClientNotification,
+  ClientNotificationType,
+  ShipBuiltNotification,
+  ImprovementBuiltNotification,
+  ImprovementDemolishedNotification,
+} from './GameCommands';
 import { Grid, GridHex } from './grid';
 import { PlanetDistanceComparer } from './planetDistanceComparer';
 import { PlanetProductionItem } from './planetProductionItem';
@@ -748,8 +752,8 @@ export class Planet {
     owner: PlayerData,
     gameGrid: Grid,
     resourceGeneration: PlanetPerTurnResourceGeneration,
-  ): { buildQueueEmpty: boolean } {
-    const returnVal = { buildQueueEmpty: false };
+  ): { buildQueueEmpty: boolean; events: ClientNotification[] } {
+    const returnVal = { buildQueueEmpty: false, events: [] as ClientNotification[] };
 
     if (planet.buildQueue.length > 0) {
       const nextItem = planet.buildQueue[0];
@@ -766,10 +770,8 @@ export class Planet {
         //assign points
         Player.increasePoints(owner, EarnedPointsType.PRODUCTION_UNIT_BUILT, nextItem.baseProductionCost);
 
-        let nextItemInQueueName = 'Nothing';
         if (planet.buildQueue.length > 0) {
           const nextInQueue = planet.buildQueue[0];
-          nextItemInQueueName = PlanetProductionItem.toString(nextInQueue);
 
           //estimate turns left for next item so that we display it correctly on the main screen
           this.estimateTurnsToComplete(planet, nextInQueue, resourceGeneration);
@@ -778,22 +780,25 @@ export class Planet {
         if (nextItem.itemType === PlanetProductionItemType.PlanetImprovement) {
           planet.builtImprovements[nextItem.improvementData!.type] += 1;
 
-          Events.enqueueNewEvent(
-            owner.id,
-            EventNotificationType.ImprovementBuilt,
-            PlanetProductionItem.toString(nextItem) +
-              ' built on planet: ' +
-              planet.name +
-              ', next in queue: ' +
-              nextItemInQueueName,
-            planet,
-          );
+          // Generate IMPROVEMENT_BUILT notification
+          const improvementBuiltNotification: ImprovementBuiltNotification = {
+            type: ClientNotificationType.IMPROVEMENT_BUILT,
+            affectedPlayerIds: [owner.id],
+            data: {
+              planetId: planet.id,
+              planetName: planet.name,
+              improvementType: nextItem.improvementData!.type,
+              nextItemInQueue:
+                planet.buildQueue.length > 0 ? PlanetProductionItem.toString(planet.buildQueue[0]) : undefined,
+            },
+          };
+          returnVal.events.push(improvementBuiltNotification);
         } else if (nextItem.itemType === PlanetProductionItemType.StarShipInProduction) {
           if (!nextItem.starshipData) {
             throw new Error('No starshipData in PlanetProductionItem');
           }
-          const { type, customShipData } = nextItem.starshipData;
-          const ship = Fleet.generateStarship(type, customShipData);
+          const { type, customShipData, assignedShipId } = nextItem.starshipData;
+          const ship = Fleet.generateStarship(type, customShipData, owner, assignedShipId);
 
           //don't set last built option for space platforms
           if (type != StarShipType.SpacePlatform) {
@@ -806,7 +811,7 @@ export class Planet {
             planet.waypointBoundingHexMidPoint &&
             ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type)
           ) {
-            const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint);
+            const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint, owner);
             newFleet.starships.push(ship);
             Fleet.setDestination(newFleet, gameGrid, planet.boundingHexMidPoint, planet.waypointBoundingHexMidPoint);
 
@@ -814,29 +819,42 @@ export class Planet {
           } else {
             planet.planetaryFleet.starships.push(ship);
           }
-          Events.enqueueNewEvent(
-            owner.id,
-            EventNotificationType.ShipBuilt,
-            PlanetProductionItem.toString(nextItem) +
-              ' built on planet: ' +
-              planet.name +
-              ', next in queue: ' +
-              nextItemInQueueName,
-            planet,
-          );
+
+          // Generate SHIP_BUILT notification
+          const shipBuiltNotification: ShipBuiltNotification = {
+            type: ClientNotificationType.SHIP_BUILT,
+            affectedPlayerIds: [owner.id],
+            data: {
+              planetId: planet.id,
+              planetName: planet.name,
+              shipType: type,
+              customShipData: customShipData || undefined,
+              sentToWaypoint: Boolean(
+                planet.waypointBoundingHexMidPoint &&
+                  ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type),
+              ),
+              nextItemInQueue:
+                planet.buildQueue.length > 0 ? PlanetProductionItem.toString(planet.buildQueue[0]) : undefined,
+            },
+          };
+          returnVal.events.push(shipBuiltNotification);
         } else if (nextItem.itemType === PlanetProductionItemType.PlanetImprovementToDestroy) {
           if (planet.builtImprovements[nextItem.improvementData!.type] > 0) {
             planet.builtImprovements[nextItem.improvementData!.type]--;
-            Events.enqueueNewEvent(
-              owner.id,
-              EventNotificationType.ImprovementDemolished,
-              GameTools.planetImprovementTypeToFriendlyName(nextItem.improvementData!.type) +
-                ' demolished on planet: ' +
-                planet.name +
-                ', next in queue: ' +
-                nextItemInQueueName,
-              planet,
-            );
+
+            // Generate IMPROVEMENT_DEMOLISHED notification
+            const improvementDemolishedNotification: ImprovementDemolishedNotification = {
+              type: ClientNotificationType.IMPROVEMENT_DEMOLISHED,
+              affectedPlayerIds: [owner.id],
+              data: {
+                planetId: planet.id,
+                planetName: planet.name,
+                improvementType: nextItem.improvementData!.type,
+                nextItemInQueue:
+                  planet.buildQueue.length > 0 ? PlanetProductionItem.toString(planet.buildQueue[0]) : undefined,
+              },
+            };
+            returnVal.events.push(improvementDemolishedNotification);
 
             //TODO: there is probably a better place to handle this check for population overages
             //TODO: should we also notify the user he/she lost a pop due to overcrowding or do this slower?

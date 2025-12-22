@@ -32,5 +32,8 @@ export { default as NavigationTab } from './navigation-tab/NavigationTab.svelte'
 export { default as TabController } from './tab-controller/TabController.svelte';
 export { default as Tab } from './tab/Tab.svelte';
 
+// Planet Selector component
+export { default as PlanetSelector } from './PlanetSelector.svelte';
+
 // Types
 export type { Size, IconImageType, TabControllerTab } from './types.js';

@@ -44,4 +44,6 @@ export interface PlayerData {
   points: number;
   fleetsInTransit: FleetData[];
   destroyed: boolean;
+  nextFleetId: number; // Player-scoped fleet ID counter
+  nextStarshipId: number; // Player-scoped starship ID counter
 }

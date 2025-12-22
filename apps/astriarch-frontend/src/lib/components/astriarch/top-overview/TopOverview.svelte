@@ -46,6 +46,7 @@
 		type="food"
 		amount={resourceData.total.food}
 		amountPerTurn={resourceData.perTurn.food}
+		color={resourceData.colors?.food}
 	/>
 	<TopOverviewItem
 		type="ore"

@@ -1,16 +1,10 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import {
-		clientGameModel,
-		selectedPlanet,
-		selectedPlanetId,
-		gameActions
-	} from '$lib/stores/gameStore';
+	import { clientGameModel, selectedPlanetId, gameActions } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import { webSocketService } from '$lib/services/websocket';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
-	import { Fleet } from 'astriarch-engine/src/engine/fleet';
+	import { PlanetSelector, Button } from '$lib/components/astriarch';
 	import ShipCard from './ShipCard.svelte';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default
@@ -166,7 +160,6 @@
 			$fleetCommandStore.destinationPlanetId
 		);
 
-		// Set the waypoint using the currently selected destination
 		webSocketService.setWaypoint(currentSelectedPlanet.id, $fleetCommandStore.destinationPlanetId);
 	}
 
@@ -182,7 +175,6 @@
 			currentSelectedPlanet.name
 		);
 
-		// Call WebSocket service to clear the waypoint
 		webSocketService.clearWaypoint(currentSelectedPlanet.id);
 	}
 
@@ -210,13 +202,13 @@
 	class="relative h-full w-full bg-gradient-to-b from-[#1B1F25] to-[#0a0d12] font-['Orbitron'] text-white"
 >
 	<!-- Header -->
-	<div class="flex items-center justify-between p-8">
+	<div class="flex items-center justify-between p-8 pb-0">
 		<div>
 			<h1 class="text-[32px] leading-[40px] font-bold tracking-[0.64px] text-white">
-				Send available ships from Planet {currentSelectedPlanet?.name || 'Unknown'}
+				Send ships from {currentSelectedPlanet?.name || 'Unknown'}
 			</h1>
 			<p class="mt-2 text-[14px] leading-[28px] tracking-[0.14px] text-white/75 opacity-80">
-				Select one or multiple ships from your fleet to explore or attack the planet
+				Select ships from to explore or attack
 			</p>
 		</div>
 
@@ -230,9 +222,7 @@
 							<p class="text-sm text-green-200">
 								Destination: <strong>{destinationPlanet?.name || 'Unknown Planet'}</strong>
 							</p>
-							<p class="mt-1 text-xs text-green-300/80">
-								Select ships and click "Send Ships" to launch your fleet
-							</p>
+							<p class="mt-1 text-xs text-green-300/80">Send Ships to launch selected fleet</p>
 						</div>
 						<button
 							class="rounded bg-gray-600 px-3 py-1 text-sm hover:bg-gray-500"
@@ -258,7 +248,7 @@
 								Select a destination planet on the galaxy map
 							</p>
 							<p class="mt-1 text-xs text-cyan-300/80">
-								Click on any planet in the galaxy view to set your fleet's destination
+								Click on any planet in the galaxy view to set a destination
 							</p>
 						</div>
 						<div class="text-cyan-400">
@@ -277,55 +267,55 @@
 
 		<!-- Action Buttons -->
 		<div class="flex gap-3">
-			<button
-				class="h-12 rounded-[4px] bg-gradient-to-b from-[#00FFFF] to-[#00CCCC] px-8 text-[14px] font-extrabold tracking-[2px] text-[#1B1F25] uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#00DDDD] hover:to-[#00AAAA] disabled:cursor-not-allowed disabled:opacity-50"
+			<!-- Waypoint Buttons - only show when planet and destination are selected -->
+			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
+				<Button
+					label="Clear Waypoint"
+					hotkey="c"
+					hotkeyContext="fleet-command"
+					variant="danger"
+					size="md"
+					onclick={clearWaypoint}
+				/>
+			{/if}
+			{#if currentSelectedPlanet && $fleetCommandStore.destinationPlanetId}
+				<Button
+					label="Set Waypoint"
+					hotkey="w"
+					hotkeyContext="fleet-command"
+					variant="warning"
+					size="md"
+					onclick={setWaypoint}
+				/>
+			{/if}
+			<Button
+				label="Select All"
+				hotkey="a"
+				hotkeyContext="fleet-command"
+				variant="secondary"
+				size="md"
+				onclick={selectAllShips}
+			/>
+			<Button
+				label="Send Ships"
+				hotkey="s"
+				hotkeyContext="fleet-command"
+				size="md"
 				onclick={sendShips}
 				disabled={$fleetCommandStore.selectedShipIds.size === 0 ||
 					!$fleetCommandStore.destinationPlanetId}
-			>
-				Send Ships
-			</button>
-			<button
-				class="h-12 rounded-[4px] bg-gradient-to-b from-[#888888] to-[#666666] px-8 text-[14px] font-extrabold tracking-[2px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#999999] hover:to-[#777777]"
-				onclick={selectAllShips}
-			>
-				Select All
-			</button>
-
-			<!-- Waypoint Buttons - only show when planet and destination are selected -->
-			{#if currentSelectedPlanet && $fleetCommandStore.destinationPlanetId}
-				<button
-					class="h-12 rounded-[4px] bg-gradient-to-b from-[#FF6B35] to-[#E85A2B] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#FF7A45] hover:to-[#F86A3B] disabled:cursor-not-allowed disabled:opacity-50"
-					onclick={setWaypoint}
-					title="Set waypoint to {destinationPlanet?.name || 'selected destination'}"
-				>
-					Set Waypoint
-				</button>
-			{/if}
-			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
-				<button
-					class="h-12 rounded-[4px] bg-gradient-to-b from-[#DC2626] to-[#B91C1C] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#EF4444] hover:to-[#DC2626]"
-					onclick={clearWaypoint}
-					title="Clear waypoint for this planet"
-				>
-					Clear Waypoint
-				</button>
-			{/if}
+			/>
 		</div>
 	</div>
 
 	<!-- Planet Selector -->
 	{#if planetList.length > 1}
 		<div class="mb-4 px-8">
-			<select
-				onchange={handlePlanetChange}
-				value={$selectedPlanetId}
-				class="rounded border border-white/20 bg-[#1B1F25] px-3 py-1 text-sm text-white"
-			>
-				{#each planetList as planet}
-					<option value={planet.id}>{planet.name}</option>
-				{/each}
-			</select>
+			<PlanetSelector
+				planets={planetList}
+				selectedPlanetId={$selectedPlanetId}
+				onSelectPlanet={(planetId) => gameActions.selectPlanet(planetId)}
+			/>
 		</div>
 	{/if}
 

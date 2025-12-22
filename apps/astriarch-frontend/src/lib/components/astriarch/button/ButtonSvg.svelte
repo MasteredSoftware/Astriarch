@@ -9,19 +9,31 @@
 
 	interface Props {
 		size?: Size;
-		variant?: 'primary' | 'outline';
+		variant?: 'primary' | 'outline' | 'secondary' | 'warning' | 'danger';
 	}
 
 	let { size = 'lg', variant = 'primary' }: Props = $props();
 
-	const componentBySizePrimary = {
+	// Map variants to colors
+	const colorByVariant = {
+		primary: '#00FFFF',
+		outline: undefined, // Uses outline/stroke only
+		secondary: '#888888',
+		warning: '#FF6B35',
+		danger: '#DC2626'
+	};
+
+	const fillColor = $derived(colorByVariant[variant]);
+	const isOutline = $derived(variant === 'outline');
+
+	const componentBySizeFilled = {
 		lg: ButtonSvgLargePrimary,
 		md: ButtonSvgMediumPrimary,
 		sm: ButtonSvgSmallPrimary,
 		xs: ButtonSvgSmallPrimary
 	};
 
-	const componentBySizeSecondary = {
+	const componentBySizeOutline = {
 		lg: ButtonSvgLargeSecondary,
 		md: ButtonSvgMediumSecondary,
 		sm: ButtonSvgSmallSecondary,
@@ -29,7 +41,7 @@
 	};
 
 	const Component = $derived(
-		variant === 'primary' ? componentBySizePrimary[size] : componentBySizeSecondary[size]
+		isOutline ? componentBySizeOutline[size] : componentBySizeFilled[size]
 	);
 </script>
 
@@ -37,6 +49,6 @@
 	class="pointer-events-none absolute top-0 left-0 flex h-full w-full items-center justify-center"
 >
 	<div style="position: relative;">
-		<Component />
+		<Component color={fillColor} />
 	</div>
 </div>

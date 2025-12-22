@@ -1,13 +1,19 @@
 import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
-import { EventNotificationType } from '../model/eventNotification';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
-import { ModelData } from '../model/model';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
-import { Utils } from '../utils/utils';
-import { Events } from './events';
 import { Fleet } from './fleet';
+import {
+  ClientEvent,
+  ClientNotification,
+  ClientNotificationType,
+  PopulationStarvationNotification,
+  FoodShortageRiotsNotification,
+  PlanetLostDueToStarvationNotification,
+  PopulationGrewNotification,
+  ResourcesAutoSpentNotification,
+} from './GameCommands';
 import { AdvanceGameClockForPlayerData, GameModel } from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
@@ -41,29 +47,32 @@ export class Player {
       points: 0,
       fleetsInTransit: [],
       destroyed: false,
+      nextFleetId: 1,
+      nextStarshipId: 1,
     };
   }
 
   public static setPlanetExplored(
     p: PlayerData,
-    planet: PlanetData,
+    planetId: number,
+    planetaryFleet: FleetData,
     cycle: number,
     lastKnownOwnerId: string | undefined,
   ) {
-    p.knownPlanetIds.push(planet.id);
+    p.knownPlanetIds.push(planetId);
     p.knownPlanetIds = [...new Set(p.knownPlanetIds)];
-    Player.setPlanetLastKnownFleetStrength(p, planet, cycle, lastKnownOwnerId);
+    Player.setPlanetLastKnownFleetStrength(p, planetId, planetaryFleet, cycle, lastKnownOwnerId);
   }
 
   public static setPlanetLastKnownFleetStrength(
     p: PlayerData,
-    planet: PlanetData,
+    planetId: number,
+    planetaryFleet: FleetData,
     cycle: number,
     lastKnownOwnerId: string | undefined,
   ) {
-    const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } = Fleet.countStarshipsByType(
-      planet.planetaryFleet,
-    );
+    const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } =
+      Fleet.countStarshipsByType(planetaryFleet);
     const lastKnownFleet = Fleet.generateFleetWithShipCount(
       defenders,
       scouts,
@@ -71,28 +80,47 @@ export class Player {
       cruisers,
       battleships,
       spaceplatforms,
-      planet.boundingHexMidPoint,
+      planetaryFleet.locationHexMidPoint,
     );
     const lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
-    p.lastKnownPlanetFleetStrength[planet.id] = lastKnownFleetData;
+    p.lastKnownPlanetFleetStrength[planetId] = lastKnownFleetData;
   }
 
-  public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): FleetData[] {
-    Player.addLastStarShipToQueueOnPlanets(data);
+  public static advanceGameClockForPlayer(data: AdvanceGameClockForPlayerData): {
+    fleetsArrivingOnUnownedPlanets: FleetData[];
+    events: ClientEvent[];
+    notifications: ClientNotification[];
+  } {
+    const events: ClientEvent[] = [];
+    const notifications: ClientNotification[] = [];
+
+    // Clear task notifications so they can be regenerated fresh this cycle
+    // This ensures resolved issues (like adding items to empty build queues) don't persist
+    TaskNotifications.clearAllTaskNotifications(data.clientModel.taskNotifications);
 
     Player.generatePlayerResources(data);
 
-    Research.advanceResearchForPlayer(data);
+    const researchNotifications = Research.advanceResearchForPlayer(data);
+    notifications.push(...researchNotifications);
 
-    this.eatAndStarve(data);
-    this.adjustPlayerPlanetProtestLevels(data); // has randomness can't use client side, probably should change this
-    this.buildPlayerPlanetImprovements(data); // deterministic
-    this.growPlayerPlanetPopulation(data); // deterministic
-    this.repairPlanetaryFleets(data); // deterministic
+    const eatAndStarveNotifications = this.eatAndStarve(data);
+    notifications.push(...eatAndStarveNotifications);
+
+    const protestNotifications = this.adjustPlayerPlanetProtestLevels(data); // deterministic
+    notifications.push(...protestNotifications);
+
+    const buildNotifications = this.buildPlayerPlanetImprovements(data); // deterministic
+    notifications.push(...buildNotifications);
+
+    const populationNotifications = this.growPlayerPlanetPopulation(data); // deterministic
+    notifications.push(...populationNotifications);
+
+    const repairNotifications = this.repairPlanetaryFleets(data); // deterministic
+    notifications.push(...repairNotifications);
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
     const fleetsArrivingOnUnownedPlanets = this.moveShips(data);
-    return fleetsArrivingOnUnownedPlanets;
+    return { fleetsArrivingOnUnownedPlanets, events, notifications };
   }
 
   public static generatePlayerResources(data: AdvanceGameClockForPlayerData) {
@@ -187,60 +215,64 @@ export class Player {
     return PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, item);
   }
 
-  public static addLastStarShipToQueueOnPlanets(data: AdvanceGameClockForPlayerData) {
-    const { clientModel, grid } = data;
+  /**
+   * Returns a list of planets eligible for auto-queuing their last built starship.
+   * This is a read-only method that doesn't modify the model - the client should use this
+   * to determine which planets need ships auto-queued, then send explicit commands to the server.
+   *
+   * @returns Array of {planetId, productionItem} for planets with buildLastStarship enabled,
+   *          empty build queues, and sufficient resources
+   */
+  public static getEligibleBuildLastShipPlanetList(
+    clientModel: ClientModelData,
+  ): { planetId: number; productionItem: PlanetProductionItemData }[] {
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
-    let autoQueuedCount = 0;
-    const autoQueuedFleet = Fleet.generateFleet([], null);
-    let focusPlanet;
+    const eligiblePlanets: { planetId: number; productionItem: PlanetProductionItemData }[] = [];
+
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
-      if (p.buildLastStarship && p.buildQueue.length == 0 && p.starshipTypeLastBuilt != null) {
-        focusPlanet = p;
-        //check resources
+      if (p.buildLastStarship && p.buildQueue.length === 0 && p.starshipTypeLastBuilt != null) {
+        // Check resources
         let customShipData: StarshipAdvantageData | undefined;
         if (p.starshipCustomShipLastBuilt) {
           customShipData = Research.getResearchDataByStarshipHullType(p.starshipTypeLastBuilt, mainPlayer)!;
         }
-        const s = PlanetProductionItem.constructStarShipInProduction(p.starshipTypeLastBuilt, customShipData);
+        const productionItem = PlanetProductionItem.constructStarShipInProduction(
+          p.starshipTypeLastBuilt,
+          customShipData,
+        );
 
         // Use basic resource check but add special logic for food shipping
-        let canBuild = PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, s);
+        let canBuild = PlanetProductionItem.hasSufficientResources(mainPlayer, mainPlayerOwnedPlanets, productionItem);
 
         // Additional check: ensure we have surplus energy after food shipping needs
-        if (canBuild && totalResources.energy - s.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
+        if (canBuild && totalResources.energy - productionItem.energyCost <= mainPlayer.lastTurnFoodNeededToBeShipped) {
           canBuild = false;
         }
 
         if (canBuild) {
-          autoQueuedCount++;
-          autoQueuedFleet.starships.push(Fleet.generateStarship(p.starshipTypeLastBuilt, customShipData));
-          Planet.enqueueProductionItemAndSpendResources(grid, mainPlayer, mainPlayerOwnedPlanets, p, s);
+          eligiblePlanets.push({ planetId: p.id, productionItem });
         }
       }
     }
 
-    if (autoQueuedCount) {
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.ResourcesAutoSpent,
-        'Auto-queued: ' + Fleet.toString(autoQueuedFleet),
-        focusPlanet,
-      );
-    }
+    return eligiblePlanets;
   }
 
-  public static eatAndStarve(data: AdvanceGameClockForPlayerData) {
+  public static eatAndStarve(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, cyclesElapsed, currentCycle } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
-    const totalPop = this.getTotalPopulation(mainPlayer, mainPlayerOwnedPlanets);
     const totalResources = this.getTotalResourceAmount(mainPlayer, mainPlayerOwnedPlanets);
+    const notifications: ClientNotification[] = [];
     //for each planet player controls
 
     //if one planet has a shortage and another a surplus, gold will be spent (if possible) for shipping
 
     //determine food surplus and shortages
     //shortages will kill off a percentage of the population due to starvation depending on the amount of shortage
+
+    // Reset food shipping tracking for this turn
+    mainPlayer.lastTurnFoodNeededToBeShipped = 0;
 
     const foodDeficitByPlanet: Record<number, number> = {}; //for calculating starvation later
     const foodSurplusPlanets: PlanetData[] = []; //for costing shipments and starvation later
@@ -286,7 +318,7 @@ export class Player {
 
           // Calculate how much food we can actually ship (limited by available food and energy for shipping cost)
           const maxFoodCanShip = Math.min(foodShortageTotal, pSurplus.resources.food);
-          const energyAvailableForShipping = pSurplus.resources.energy;
+          const energyAvailableForShipping = totalResources.energy;
           const actualFoodToShip = Math.min(maxFoodCanShip, energyAvailableForShipping);
 
           if (actualFoodToShip === 0) {
@@ -313,76 +345,96 @@ export class Player {
       }
 
       if (!shippedAllResources) {
-        const foodShortageRatio = (foodShortageTotal / (totalPop * 1.0)) * cyclesElapsed;
-        //starvation
-        //there is a food shortage ratio chance of loosing one population,
-        //if you have 4 pop and 2 food you have a 1 in 2 chance of loosing one
-        //otherwise people just slowly starve
-        const looseOne = Utils.nextRandom(0, 100) < Math.round(foodShortageRatio * 100);
-        if (looseOne) {
-          let riotReason = '.'; //for shortages
-          if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0)
-            riotReason = ', insufficient Energy to ship Food.';
-          //notify user of starvation
-          planet.planetHappiness = PlanetHappinessType.Riots;
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.FoodShortageRiots,
-            'Riots over food shortages killed one population on planet: ' + planet.name + riotReason,
-            planet,
-          );
-          if (planet.population.length > 0) {
-            planet.population.pop();
-          }
-        } //reduce the population a bit
-        else {
-          if (planet.population.length > 0) {
-            planet.planetHappiness = PlanetHappinessType.Unrest;
+        const foodShortageRatio = foodShortageTotal / (planet.population.length * cyclesElapsed);
 
-            const c = planet.population[planet.population.length - 1];
-            c.populationChange -= foodShortageRatio;
-            if (c.populationChange <= -1.0) {
-              //notify user of starvation
-              Events.enqueueNewEvent(
-                mainPlayer.id,
-                EventNotificationType.PopulationStarvation,
-                'You lost one population due to food shortages on planet: ' + planet.name,
-                planet,
-              );
-              planet.population.pop();
+        // DETERMINISTIC: Accumulate shortage and lose pop when it reaches threshold
+        // Instead of random chance, we track accumulated starvation
+        if (planet.population.length > 0) {
+          const lastCitizen = planet.population[planet.population.length - 1];
+
+          // Accumulate starvation damage
+          lastCitizen.populationChange -= foodShortageRatio;
+
+          // Threshold-based population loss instead of random
+          if (lastCitizen.populationChange <= -1.0) {
+            // Severe shortage (>=50%) leads to riots and immediate death
+            if (foodShortageRatio >= 0.5) {
+              let riotReason = '.';
+              if (totalResources.energy <= 0 && foodSurplusPlanets.length != 0) {
+                riotReason = ', insufficient Energy to ship Food.';
+              }
+
+              planet.planetHappiness = PlanetHappinessType.Riots;
+              const riotNotification: FoodShortageRiotsNotification = {
+                type: ClientNotificationType.FOOD_SHORTAGE_RIOTS,
+                affectedPlayerIds: [mainPlayer.id],
+                data: {
+                  planetId: planet.id,
+                  planetName: planet.name,
+                  reason: riotReason,
+                },
+              };
+              notifications.push(riotNotification);
             } else {
-              protestingPlanetCount++;
-
-              if (protestingPlanetNames != '') protestingPlanetNames += ', ';
-              protestingPlanetNames += planet.name;
-
-              lastProtestingPlanet = planet;
+              // Gradual starvation
+              planet.planetHappiness = PlanetHappinessType.Unrest;
+              const starvationNotification: PopulationStarvationNotification = {
+                type: ClientNotificationType.POPULATION_STARVATION,
+                affectedPlayerIds: [mainPlayer.id],
+                data: {
+                  planetId: planet.id,
+                  planetName: planet.name,
+                },
+              };
+              notifications.push(starvationNotification);
             }
+
+            planet.population.pop();
+          } else {
+            // Unrest but no death yet
+            planet.planetHappiness = PlanetHappinessType.Unrest;
+            protestingPlanetCount++;
+            if (protestingPlanetNames != '') protestingPlanetNames += ', ';
+            protestingPlanetNames += planet.name;
+            lastProtestingPlanet = planet;
           }
         }
 
-        //citizens will further protest depending on the amount of food shortages
-        for (const citizen of planet.population) {
-          //citizens on the home planet are more forgiving
-          const protestDenominator = planet.id == mainPlayer.homePlanetId ? 4 : 2;
-          if (Utils.nextRandom(0, protestDenominator) === 0) {
-            //only have 1/2 the population protest so the planet isn't totally screwed
-            citizen.protestLevel += Utils.nextRandomFloat(0, foodShortageRatio);
-            if (citizen.protestLevel > 1) {
-              citizen.protestLevel = 1;
-            }
+        // DETERMINISTIC: Increase protest based on shortage ratio
+        // Citizens directly affected by shortage protest fully, others show solidarity at reduced rate
+        // Calculate how many citizens didn't get food: shortage / (population * food per citizen)
+        const citizensDirectlyAffected = Math.min(
+          Math.ceil(foodShortageTotal / (planet.population.length * cyclesElapsed)),
+          planet.population.length,
+        );
+        const protestDenominator = planet.id == mainPlayer.homePlanetId ? 4 : 2;
+
+        for (let i = 0; i < planet.population.length; i++) {
+          const citizen = planet.population[i];
+          const isDirectlyAffected = i >= planet.population.length - citizensDirectlyAffected;
+
+          // Directly affected citizens protest fully, others at 25% (social awareness/solidarity)
+          const protestMultiplier = isDirectlyAffected ? 1.0 : 0.25;
+          const protestIncrease = (foodShortageRatio / protestDenominator) * protestMultiplier;
+
+          citizen.protestLevel += protestIncrease;
+          if (citizen.protestLevel > 1) {
+            citizen.protestLevel = 1;
           }
         }
 
         //have to check to see if we removed the last pop and loose this planet from owned planets if so
         if (planet.population.length == 0) {
           //notify user of planet loss
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.PlanetLostDueToStarvation,
-            'You have lost control of ' + planet.name + ' due to starvation',
-            planet,
-          );
+          const planetLostNotification: PlanetLostDueToStarvationNotification = {
+            type: ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION,
+            affectedPlayerIds: [mainPlayer.id],
+            data: {
+              planetId: planet.id,
+              planetName: planet.name,
+            },
+          };
+          notifications.push(planetLostNotification);
 
           GameModel.changePlanetOwner(mainPlayer, undefined, planet, currentCycle);
         } else if (planet.id == mainPlayer.homePlanetId) {
@@ -417,16 +469,23 @@ export class Player {
     if (totalFoodShipped != 0) {
       mainPlayer.lastTurnFoodShipped += totalFoodShipped;
     }
+
+    return notifications;
   }
 
-  public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData) {
+  public static buildPlayerPlanetImprovements(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    const notifications: ClientNotification[] = [];
+
     //build planet improvements
     const planetNameBuildQueueEmptyList = [];
     for (const p of Object.values(mainPlayerOwnedPlanets)) {
       const resourceGeneration = Planet.getPlanetWorkerResourceGeneration(p, mainPlayer);
       const results = Planet.buildImprovements(p, mainPlayer, grid, resourceGeneration);
+
+      // Collect notifications from building
+      notifications.push(...results.events);
 
       if (results.buildQueueEmpty) {
         //if the build queue was empty we'll convert planet production to energy
@@ -447,11 +506,14 @@ export class Player {
         });
       }
     }
+
+    return notifications;
   }
 
-  public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData) {
-    const { clientModel } = data;
+  public static adjustPlayerPlanetProtestLevels(data: AdvanceGameClockForPlayerData): ClientNotification[] {
+    const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    const notifications: ClientNotification[] = [];
     //if we have a normal PlanetHappiness (meaning we didn't cause unrest from starvation)
     //	we'll slowly reduce the amount of protest on the planet
 
@@ -462,16 +524,12 @@ export class Player {
         let protestingCitizenCount = 0;
         const contentCitizenRatio = citizens.content.length / p.population.length;
 
+        // DETERMINISTIC: Fixed protest reduction rate based on content population, scaled by time
+        const baseProtestReduction = Math.max(0.25, contentCitizenRatio) * cyclesElapsed;
+        const homeWorldMultiplier = p.id == mainPlayer.homePlanetId ? 2.0 : 1.0;
+        const protestReduction = baseProtestReduction * homeWorldMultiplier;
+
         for (const citizen of citizens.protesting) {
-          //protest reduction algorithm:
-          //	each turn reduce a random amount of protest for each citizen
-          //  the amount of reduction is based on the percentage of the total population protesting (to a limit)
-          //   (the more people protesting the more likely others will keep protesting)
-          let protestReduction = Utils.nextRandomFloat(0, Math.max(0.25, contentCitizenRatio));
-          //citizens are more quickly content on the home planet
-          if (p.id == mainPlayer.homePlanetId) {
-            protestReduction *= 2.0;
-          }
           citizen.protestLevel -= protestReduction;
 
           if (citizen.protestLevel <= 0) {
@@ -479,31 +537,35 @@ export class Player {
             citizen.loyalToPlayerId = mainPlayer.id;
           } else {
             protestingCitizenCount++;
-            //console.log("Planet: ", p.Name, "citizen["+c+"]", citizen);
           }
         }
         const citizenText = protestingCitizenCount > 1 ? ' Citizens' : ' Citizen';
         if (protestingCitizenCount >= p.population.length / 2) {
           p.planetHappiness = PlanetHappinessType.Unrest;
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.CitizensProtesting,
-            'Population unrest on ' + p.name + ' due to ' + protestingCitizenCount + citizenText + ' protesting',
-            p,
-          );
+          const message = `Population unrest on ${p.name} due to ${protestingCitizenCount}${citizenText} protesting`;
+          TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
+            type: TaskNotificationType.CitizensProtesting,
+            planetId: p.id,
+            planetName: p.name,
+            message: message,
+          });
         } else if (protestingCitizenCount > 0) {
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.CitizensProtesting,
-            protestingCitizenCount + citizenText + ' protesting your rule on ' + p.name,
-            p,
-          );
+          const message = `${protestingCitizenCount}${citizenText} protesting on ${p.name}`;
+          TaskNotifications.upsertTask(data.clientModel.taskNotifications, {
+            type: TaskNotificationType.CitizensProtesting,
+            planetId: p.id,
+            planetName: p.name,
+            message: message,
+          });
         }
       }
     }
+
+    return notifications;
   }
 
-  public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData) {
+  public static growPlayerPlanetPopulation(data: AdvanceGameClockForPlayerData): ClientNotification[] {
+    const notifications: ClientNotification[] = [];
     const { clientModel, cyclesElapsed } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     //population growth rate is based on available space at the planet and the amount currently there
@@ -515,25 +577,31 @@ export class Player {
         const lastCitizen = p.population[p.population.length - 1];
         lastCitizen.populationChange += growthRate;
         if (lastCitizen.populationChange >= 1.0) {
-          //notify user of growth
-          Events.enqueueNewEvent(
-            mainPlayer.id,
-            EventNotificationType.PopulationGrowth,
-            'Population growth on planet: ' + p.name,
-            p,
-          );
           //grow
           lastCitizen.populationChange = 0;
           p.population.push(Planet.constructCitizen(p.type, mainPlayer.id));
 
           //assign points
           Player.increasePoints(mainPlayer, EarnedPointsType.POPULATION_GROWTH, 1);
+
+          // Generate POPULATION_GREW notification
+          const populationGrewNotification: PopulationGrewNotification = {
+            type: ClientNotificationType.POPULATION_GREW,
+            affectedPlayerIds: [mainPlayer.id],
+            data: {
+              planetId: p.id,
+              planetName: p.name,
+              newPopulation: p.population.length,
+            },
+          };
+          notifications.push(populationGrewNotification);
         }
       }
     }
+    return notifications;
   }
 
-  public static repairPlanetaryFleets(data: AdvanceGameClockForPlayerData) {
+  public static repairPlanetaryFleets(data: AdvanceGameClockForPlayerData): ClientNotification[] {
     const { clientModel, cyclesElapsed, grid } = data;
     const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
     const resourcesAutoSpent = { energy: 0, ore: 0, iridium: 0 };
@@ -571,20 +639,24 @@ export class Player {
       }
     }
 
+    const notifications: ClientNotification[] = [];
     if (planetTarget) {
-      Events.enqueueNewEvent(
-        mainPlayer.id,
-        EventNotificationType.ResourcesAutoSpent,
-        resourcesAutoSpent.energy +
-          ' Energy, ' +
-          resourcesAutoSpent.ore +
-          ' Ore, ' +
-          resourcesAutoSpent.iridium +
-          ' Iridium spent repairing fleets.',
-        planetTarget,
-      );
+      // Generate RESOURCES_AUTO_SPENT notification
+      const totalResourcesSpent = resourcesAutoSpent.energy + resourcesAutoSpent.ore + resourcesAutoSpent.iridium;
+      if (totalResourcesSpent > 0) {
+        const resourcesAutoSpentNotification: ResourcesAutoSpentNotification = {
+          type: ClientNotificationType.RESOURCES_AUTO_SPENT,
+          affectedPlayerIds: [mainPlayer.id],
+          data: {
+            amount: totalResourcesSpent,
+            resourceType: 'resources',
+            reason: `Fleet repairs (${resourcesAutoSpent.energy}E/${resourcesAutoSpent.ore}O/${resourcesAutoSpent.iridium}I)`,
+          },
+        };
+        notifications.push(resourcesAutoSpentNotification);
+      }
     }
-    return resourcesAutoSpent;
+    return notifications;
   }
 
   public static moveShips(data: AdvanceGameClockForPlayerData) {

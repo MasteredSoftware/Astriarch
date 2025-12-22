@@ -4,6 +4,7 @@
  */
 
 import { ServerGameOptions, GameSpeed } from '../model';
+import { GameCommand, ClientEvent } from '../engine/GameCommands';
 
 export enum MESSAGE_TYPE {
   // Connection & System
@@ -22,20 +23,17 @@ export enum MESSAGE_TYPE {
   CHANGE_GAME_OPTIONS = 'CHANGE_GAME_OPTIONS',
   CHANGE_PLAYER_NAME = 'CHANGE_PLAYER_NAME',
 
-  // Game Actions
-  SYNC_STATE = 'SYNC_STATE',
-  SEND_SHIPS = 'SEND_SHIPS',
-  UPDATE_PLANET_OPTIONS = 'UPDATE_PLANET_OPTIONS',
-  UPDATE_PLANET_BUILD_QUEUE = 'UPDATE_PLANET_BUILD_QUEUE',
-  SET_WAYPOINT = 'SET_WAYPOINT',
-  CLEAR_WAYPOINT = 'CLEAR_WAYPOINT',
+  // Game Actions (Legacy - being migrated to GAME_COMMAND)
+  SYNC_STATE = 'SYNC_STATE', // Request full state sync (used only for desync recovery)
+  ADVANCE_GAME_TIME = 'ADVANCE_GAME_TIME', // Request time advancement (periodic, host only)
+
+  // New Command/Event Architecture
+  GAME_COMMAND = 'GAME_COMMAND', // Client -> Server: Player command
+  CLIENT_EVENT = 'CLIENT_EVENT', // Server -> Client: State change event
+  // NOTE: CLIENT_NOTIFICATION removed - notifications are now generated client-side
+  // when advanceClientGameModelTime runs, eliminating the 10-second server delay
 
   // Research & Trading
-  ADJUST_RESEARCH_PERCENT = 'ADJUST_RESEARCH_PERCENT',
-  SUBMIT_RESEARCH_ITEM = 'SUBMIT_RESEARCH_ITEM',
-  CANCEL_RESEARCH_ITEM = 'CANCEL_RESEARCH_ITEM',
-  SUBMIT_TRADE = 'SUBMIT_TRADE',
-  CANCEL_TRADE = 'CANCEL_TRADE',
 
   // Chat & Communication
   CHAT_MESSAGE = 'CHAT_MESSAGE',
@@ -175,6 +173,7 @@ export interface IGameStateUpdatePayload {
   changes?: unknown;
   clientGameModel?: unknown;
   currentCycle?: number;
+  stateChecksum?: string; // SHA256 hash for desync detection (calculated by backend)
 }
 
 export interface IEventNotificationsPayload {
@@ -220,6 +219,25 @@ export interface IPlayerEliminatedPayload {
   playerId: string;
   gameId: string;
   reason: 'resigned' | 'destroyed';
+}
+
+// =============================================
+// COMMAND/EVENT ARCHITECTURE
+// =============================================
+
+export interface IGameCommandPayload {
+  command: GameCommand;
+}
+
+export interface IClientEventPayload {
+  events: ClientEvent[];
+  stateChecksum: string; // SHA256 hash for desync detection
+  currentCycle: number; // Game cycle when events occurred
+}
+
+export interface IClientNotificationPayload {
+  notifications: import('../engine/GameCommands').ClientNotification[];
+  currentCycle: number; // Game cycle when notifications occurred
 }
 
 // =============================================
@@ -458,17 +476,7 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.CHANGE_GAME_OPTIONS]: 15,
     [MESSAGE_TYPE.CHANGE_PLAYER_NAME]: 16,
     [MESSAGE_TYPE.SYNC_STATE]: 20,
-    [MESSAGE_TYPE.SEND_SHIPS]: 21,
-    //[MESSAGE_TYPE.UPDATE_PLANET_START]: 22,
-    [MESSAGE_TYPE.UPDATE_PLANET_OPTIONS]: 23,
-    [MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE]: 24,
-    [MESSAGE_TYPE.SET_WAYPOINT]: 25,
-    [MESSAGE_TYPE.CLEAR_WAYPOINT]: 26,
-    [MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT]: 27,
-    [MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM]: 28,
-    [MESSAGE_TYPE.CANCEL_RESEARCH_ITEM]: 29,
-    [MESSAGE_TYPE.SUBMIT_TRADE]: 30,
-    [MESSAGE_TYPE.CANCEL_TRADE]: 31,
+    [MESSAGE_TYPE.ADVANCE_GAME_TIME]: 19,
     [MESSAGE_TYPE.CHAT_MESSAGE]: 40,
     [MESSAGE_TYPE.EXIT_RESIGN]: 50,
     [MESSAGE_TYPE.LOGOUT]: 51,
@@ -484,6 +492,8 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.PLAYER_RECONNECTED]: 69,
     [MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED]: 70,
     [MESSAGE_TYPE.PLAYER_ELIMINATED]: 71,
+    [MESSAGE_TYPE.GAME_COMMAND]: 80,
+    [MESSAGE_TYPE.CLIENT_EVENT]: 81,
   };
 
   return typeMap[type] ?? -1;
@@ -505,16 +515,6 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     15: MESSAGE_TYPE.CHANGE_GAME_OPTIONS,
     16: MESSAGE_TYPE.CHANGE_PLAYER_NAME,
     20: MESSAGE_TYPE.SYNC_STATE,
-    21: MESSAGE_TYPE.SEND_SHIPS,
-    //22: MESSAGE_TYPE.UPDATE_PLANET_START,
-    23: MESSAGE_TYPE.UPDATE_PLANET_OPTIONS,
-    24: MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE,
-    25: MESSAGE_TYPE.CLEAR_WAYPOINT,
-    26: MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT,
-    27: MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM,
-    28: MESSAGE_TYPE.CANCEL_RESEARCH_ITEM,
-    29: MESSAGE_TYPE.SUBMIT_TRADE,
-    30: MESSAGE_TYPE.CANCEL_TRADE,
     40: MESSAGE_TYPE.CHAT_MESSAGE,
     50: MESSAGE_TYPE.EXIT_RESIGN,
     51: MESSAGE_TYPE.LOGOUT,

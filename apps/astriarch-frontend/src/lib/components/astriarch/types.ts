@@ -49,4 +49,7 @@ export interface PlanetResourceData {
 export interface ResourceData {
 	total: PlanetResourceData;
 	perTurn: PlanetResourceData;
+	colors?: {
+		food?: string;
+	};
 }

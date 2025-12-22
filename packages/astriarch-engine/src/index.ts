@@ -1,5 +1,4 @@
 import { ClientGameModel } from './engine/clientGameModel';
-import { Events, Subscription } from './engine/events';
 import { Fleet } from './engine/fleet';
 import { GameController } from './engine/gameController';
 import {
@@ -11,6 +10,7 @@ import {
   GALAXY_WIDTH,
   GALAXY_HEIGHT,
 } from './engine/gameModel';
+import { ClientNotification } from './engine/GameCommands';
 import { Player } from './engine/player';
 import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
@@ -39,11 +39,17 @@ import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } from './model/tradingCenter';
 import { Grid } from './engine/grid';
-import { EventNotification, EventNotificationType, PlanetaryConflictData } from './model/eventNotification';
+import { PlanetaryConflictData, ResearchBoost } from './model/battle';
 import { GameTools } from './utils/gameTools';
 
 // Export messaging types
 export * from './messaging/MessageTypes';
+
+// Export command/event system
+export * from './engine/GameCommands';
+export { CommandProcessor } from './engine/CommandProcessor';
+export { EventApplicator } from './engine/EventApplicator';
+export { calculateRollingEventChecksum } from './engine/StateChecksum';
 
 // Export engine classes
 export { Player };
@@ -53,7 +59,6 @@ export { Fleet };
 export { GameModel };
 export { ClientGameModel };
 export { GameController };
-export { Events };
 export { Grid };
 export { Research };
 export { TradingCenter };
@@ -70,7 +75,6 @@ export { CitizenWorkerType };
 export { PlanetType };
 export { PlanetImprovementType };
 export { PlanetHappinessType };
-export { EventNotificationType };
 export { CanBuildResult };
 export { playerColors };
 export { GALAXY_WIDTH };
@@ -91,11 +95,9 @@ export type { PlanetById };
 export type { ClientPlayer };
 export type { PlanetProductionItemData };
 export type { CanBuildValidationResult };
-export type { Subscription };
 export type { FleetData };
 export type { StarshipData };
-export type { EventNotification };
-export type { PlanetaryConflictData };
+export type { PlanetaryConflictData, ResearchBoost };
 export type { PlanetData };
 export type { TradeData };
 export type { TradingCenterData };
@@ -174,25 +176,31 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
     gameModel,
     destroyedPlayers: result.destroyedPlayers,
     gameEndConditions: result.gameEndConditions,
+    events: result.events,
+    notifications: result.notifications,
   };
 };
 
 export const advanceClientGameModelTime = (
   clientGameModel: ClientModelData,
   grid: Grid,
-): { clientGameModel: ClientModelData; fleetsArrivingOnUnownedPlanets: FleetData[] } => {
-  const fleetsArrivingOnUnownedPlanets = GameController.advanceClientGameClock(clientGameModel, grid);
+): {
+  clientGameModel: ClientModelData;
+  fleetsArrivingOnUnownedPlanets: FleetData[];
+  notifications: ClientNotification[];
+} => {
+  const result = GameController.advanceClientGameClock(clientGameModel, grid);
 
-  return { clientGameModel, fleetsArrivingOnUnownedPlanets };
+  return {
+    clientGameModel,
+    fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,
+    notifications: result.notifications,
+  };
 };
 
 export const resetGameSnapshotTime = (gameModel: GameModelData) => {
   GameController.resetSnapshotTime(gameModel.modelData);
   return gameModel;
-};
-
-export const subscribeToEvents = (playerId: string, callback: Subscription) => {
-  Events.subscribe(playerId, callback);
 };
 
 export const getPlayerTotalResources = (player: PlayerData, planetById: PlanetById) => {

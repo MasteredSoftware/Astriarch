@@ -16,7 +16,6 @@ import {
   ERROR_TYPE,
   CHAT_MESSAGE_TYPE,
   type IMessage,
-  type IEventNotificationsPayload,
   // Import available type guards
   isCreateGameRequest,
   isJoinGameRequest,
@@ -39,13 +38,13 @@ import {
   GameModel,
   GameSpeed,
   ModelData,
-  Events,
-  type EventNotification,
   type PlayerData,
   Player,
   GameController as EngineGameController,
   AdvanceGameClockResult,
   GameEndConditions,
+  type ClientEvent,
+  type ClientNotification,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -65,7 +64,6 @@ export class WebSocketServer {
   private sessionLookup: Map<string, string> = new Map(); // sessionId -> clientId mapping
   private gameRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds
   private chatRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds (null for lobby)
-  private eventSubscriptions: Set<string> = new Set(); // track active event subscriptions by playerId
   private pingInterval?: NodeJS.Timeout;
 
   constructor(server: Server) {
@@ -77,49 +75,6 @@ export class WebSocketServer {
 
   public static getInstance(): WebSocketServer | null {
     return WebSocketServer.instance || null;
-  }
-
-  // Event subscription management
-  private subscribeToPlayerEvents(playerId: string): void {
-    if (this.eventSubscriptions.has(playerId)) {
-      return; // Already subscribed
-    }
-
-    Events.subscribe(playerId, (subscriptionPlayerId: string, events: EventNotification[]) => {
-      this.handlePlayerEvents(subscriptionPlayerId, events);
-    });
-
-    this.eventSubscriptions.add(playerId);
-    logger.info(`Subscribed to events for player: ${playerId}`);
-  }
-
-  private handlePlayerEvents(playerId: string, events: EventNotification[]): void {
-    if (events.length === 0) {
-      return;
-    }
-
-    logger.info(`Received ${events.length} events for player ${playerId}`);
-
-    // Find the client for this player
-    let targetClient: IConnectedClient | null = null;
-    for (const client of this.clients.values()) {
-      if (client.playerId === playerId) {
-        targetClient = client;
-        break;
-      }
-    }
-
-    if (!targetClient) {
-      logger.warn(`No connected client found for player ${playerId} to send events`);
-      return;
-    }
-
-    // Send events to the client
-    const eventMessage = new Message<IEventNotificationsPayload>(MESSAGE_TYPE.EVENT_NOTIFICATIONS, {
-      events,
-    });
-
-    this.broadcastToSession(targetClient.sessionId, eventMessage);
   }
 
   private setupWebSocketServer(): void {
@@ -232,7 +187,15 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
-    // If this is a sync request and the client is in an active game, advance game time
+    // IMPORTANT: Advance game time BEFORE processing game commands or periodic updates
+    // This ensures the server's currentCycle is up-to-date and all players see consistent state
+    // - For ADVANCE_GAME_TIME: Periodic updates every 10s to process AI actions
+    // - For GAME_COMMAND: Ensures resources/state are current before command validation
+    if (this.isGameTimeAdvanceRequired(message.type) && client.gameId) {
+      await this.advanceGameTimeAndBroadcastEvents(client.gameId);
+    }
+
+    // If this is a full state sync request (desync recovery), advance time and broadcast full state
     if (this.isGameSyncRequired(message.type) && client.gameId) {
       await this.advanceGameTimeForSync(client.gameId);
     }
@@ -297,48 +260,16 @@ export class WebSocketServer {
         await this.handleChangePlayerName(clientId, message as IMessage<IChangePlayerNamePayload>);
         break;
 
+      case MESSAGE_TYPE.ADVANCE_GAME_TIME:
+        await this.handleAdvanceGameTime(clientId, message);
+        break;
+
       case MESSAGE_TYPE.SYNC_STATE:
         await this.handleSyncState(clientId, message);
         break;
 
-      case MESSAGE_TYPE.SEND_SHIPS:
-        await this.handleSendShips(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.UPDATE_PLANET_OPTIONS:
-        await this.handleUpdatePlanetOptions(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE:
-        await this.handleUpdatePlanetBuildQueue(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.SET_WAYPOINT:
-        await this.handleSetWaypoint(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.CLEAR_WAYPOINT:
-        await this.handleClearWaypoint(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT:
-        await this.handleAdjustResearchPercent(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM:
-        await this.handleSubmitResearchItem(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.CANCEL_RESEARCH_ITEM:
-        await this.handleCancelResearchItem(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.SUBMIT_TRADE:
-        await this.handleSubmitTrade(clientId, message);
-        break;
-
-      case MESSAGE_TYPE.CANCEL_TRADE:
-        await this.handleCancelTrade(clientId, message);
+      case MESSAGE_TYPE.GAME_COMMAND:
+        await this.handleGameCommand(clientId, message);
         break;
 
       case MESSAGE_TYPE.CHAT_MESSAGE:
@@ -398,9 +329,66 @@ export class WebSocketServer {
 
   // Real-time game management methods
   private isGameSyncRequired(messageType: MESSAGE_TYPE): boolean {
-    // Only sync game state when explicitly requested via SYNC_STATE
-    // This allows the client (host) to control when game time advances
+    // Only send full state sync when explicitly requested via SYNC_STATE (desync recovery)
     return messageType === MESSAGE_TYPE.SYNC_STATE;
+  }
+
+  private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
+    // Advance game time for periodic updates AND all game commands
+    // This ensures the server's currentCycle is up-to-date before processing any command
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME || messageType === MESSAGE_TYPE.GAME_COMMAND;
+  }
+
+  private async advanceGameTimeAndBroadcastEvents(gameId: string): Promise<void> {
+    try {
+      const game = await Game.findById(gameId);
+      if (!game || game.status !== "in_progress") {
+        return;
+      }
+
+      // Use the engine's advanceGameModelTime function which handles time properly
+      // This will advance game time and process any AI/computer player actions
+      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+      const result = advanceGameModelTime(gameModelData);
+
+      // Update the game state in the database
+      game.gameState = result.gameModel.modelData;
+
+      // Broadcast time-based events and notifications to affected players (NOT full state)
+      const hasEvents = result.events && result.events.length > 0;
+      const hasNotifications = result.notifications && result.notifications.length > 0;
+
+      if (hasEvents || hasNotifications) {
+        logger.info(
+          `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
+        );
+        await this.broadcastTimeBasedEvents(
+          gameId,
+          result.events || [],
+          result.notifications || [],
+          result.gameModel.modelData.currentCycle,
+        );
+      }
+
+      // Check for destroyed players and game over conditions
+      if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers: result.destroyedPlayers,
+            gameEndConditions: result.gameEndConditions,
+            events: result.events,
+            notifications: result.notifications,
+          },
+          game,
+        );
+      }
+
+      // Save the updated game state with automatic Mixed field handling
+      await persistGame(game);
+    } catch (error) {
+      logger.error("Error advancing game time:", error);
+    }
   }
 
   private async advanceGameTimeForSync(gameId: string): Promise<void> {
@@ -418,9 +406,34 @@ export class WebSocketServer {
       // Update the game state in the database
       game.gameState = result.gameModel.modelData;
 
+      // Broadcast time-based events and notifications to affected players
+      const hasEvents = result.events && result.events.length > 0;
+      const hasNotifications = result.notifications && result.notifications.length > 0;
+
+      if (hasEvents || hasNotifications) {
+        logger.info(
+          `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
+        );
+        await this.broadcastTimeBasedEvents(
+          gameId,
+          result.events || [],
+          result.notifications || [],
+          result.gameModel.modelData.currentCycle,
+        );
+      }
+
       // Check for destroyed players and game over conditions
       if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
-        await this.handleGameOverConditions(gameId, result, game);
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers: result.destroyedPlayers,
+            gameEndConditions: result.gameEndConditions,
+            events: result.events,
+            notifications: result.notifications,
+          },
+          game,
+        );
       }
 
       // Save the updated game state with automatic Mixed field handling
@@ -460,6 +473,12 @@ export class WebSocketServer {
 
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
+
+          // Include the current rolling checksum in the synced state
+          const currentChecksum = GameController.getPlayerEventChecksum(client.playerId);
+          if (currentChecksum) {
+            clientGameModel.lastEventChecksum = currentChecksum;
+          }
 
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
@@ -681,9 +700,6 @@ export class WebSocketServer {
                 playerClient.gameId = gameId;
                 playerClient.playerId = getPlayerId(player.position || 0);
 
-                // Subscribe to events for this player
-                this.subscribeToPlayerEvents(playerClient.playerId);
-
                 // Add to game room
                 if (!this.gameRooms.has(gameId)) {
                   this.gameRooms.set(gameId, new Set());
@@ -766,9 +782,6 @@ export class WebSocketServer {
         // Update client info for resumed game
         client.gameId = gameId;
         client.playerId = getPlayerId(result.player.position || 0);
-
-        // Subscribe to events for this player
-        this.subscribeToPlayerEvents(client.playerId);
 
         // Add to game room if not already there
         if (!this.gameRooms.has(gameId)) {
@@ -983,12 +996,35 @@ export class WebSocketServer {
     }
   }
 
+  private async handleAdvanceGameTime(clientId: string, message: IMessage<unknown>): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      // Host periodically sends this to advance game time
+      // We advance time and broadcast events (NOT full state)
+      logger.debug(`ADVANCE_GAME_TIME received from host for game ${client.gameId}`);
+
+      const response = new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {
+        success: true,
+      });
+
+      this.sendToClient(clientId, response);
+    } catch (error) {
+      logger.error("handleAdvanceGameTime error:", error);
+      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Advance game time failed" }));
+    }
+  }
+
   private async handleSyncState(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
     try {
-      // NOTE: this doesn't really even have to do anything since we've already synced state
+      // Full state sync for desync recovery only
+      // This advances time AND broadcasts full state
+      logger.info(`SYNC_STATE received for desync recovery in game ${client.gameId}`);
+
       const response = new Message(MESSAGE_TYPE.SYNC_STATE, {
         success: true,
       });
@@ -1000,335 +1036,41 @@ export class WebSocketServer {
     }
   }
 
-  private async handleSendShips(clientId: string, message: IMessage<unknown>): Promise<void> {
+  /**
+   * Handle new GAME_COMMAND message type (event-driven architecture)
+   */
+  private async handleGameCommand(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
 
     try {
-      const result = await GameController.sendShips(client.sessionId, message.payload);
+      const payload = message.payload as { command: any; gameId: string };
+      const { command, gameId } = payload;
+
+      // Process the command using the new architecture
+      const result = await GameController.handleGameCommand(client.sessionId, gameId, command);
 
       if (!result.success) {
         this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
         return;
       }
 
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.SEND_SHIPS, {
-          success: true,
-          message: "Ships sent successfully",
-        }),
+      // Broadcast events to affected players only (not all players)
+      await this.broadcastToAffectedPlayers(
+        gameId,
+        result.events || [],
+        result.currentCycle!,
+        result.checksum,
+        "command events",
       );
 
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
+      logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
-      logger.error("handleSendShips error:", error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Send ships failed" }));
-    }
-  }
-
-  private async handleUpdatePlanetOptions(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.updatePlanetOptions(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.UPDATE_PLANET_OPTIONS, {
-          success: true,
-          message: "Worker assignments updated successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleUpdatePlanetOptions error:", error);
+      logger.error("handleGameCommand error:", error);
       this.sendToClient(
         clientId,
         new Message(MESSAGE_TYPE.ERROR, {
-          message: error instanceof Error ? error.message : "Unknown error occurred while updating worker assignments",
-        }),
-      );
-    }
-  }
-
-  private async handleUpdatePlanetBuildQueue(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.updatePlanetBuildQueue(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.UPDATE_PLANET_BUILD_QUEUE, {
-          success: true,
-          message: "Production item added to queue",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleUpdatePlanetBuildQueue error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: error instanceof Error ? error.message : "Unknown error occurred while updating build queue",
-        }),
-      );
-    }
-  }
-
-  private async handleSetWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.setWaypoint(client.sessionId, message.payload);
-
-      if (result.success) {
-        logger.info(`Waypoint set for player ${client.sessionId}`);
-        // Broadcast the game state update to all players in the game
-        if (result.game && result.game._id) {
-          await this.broadcastGameStateUpdate(result.game._id.toString());
-        }
-      } else {
-        const response = new Message(MESSAGE_TYPE.SET_WAYPOINT, message.payload);
-        this.sendToClient(clientId, response);
-      }
-    } catch (error) {
-      logger.error("handleSetWaypoint error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: error instanceof Error ? error.message : "Unknown error occurred while setting waypoint",
-        }),
-      );
-    }
-  }
-
-  private async handleClearWaypoint(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.clearWaypoint(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // If game has other players, broadcast the waypoint clearing
-      if (result.game && result.game.players) {
-        const response = new Message(MESSAGE_TYPE.CLEAR_WAYPOINT, message.payload);
-        this.broadcastToOtherPlayersInGame(result.game, client.sessionId, response);
-      }
-    } catch (error) {
-      logger.error("handleClearWaypoint error:", error);
-      this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: "Clear waypoint failed" }));
-    }
-  }
-
-  private async handleAdjustResearchPercent(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.adjustResearchPercent(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ADJUST_RESEARCH_PERCENT, {
-          success: true,
-          message: "Research allocation updated successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleAdjustResearchPercent error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to adjust research percent",
-        }),
-      );
-    }
-  }
-
-  private async handleSubmitResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.submitResearchItem(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.SUBMIT_RESEARCH_ITEM, {
-          success: true,
-          message: "Research started successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleSubmitResearchItem error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to start research",
-        }),
-      );
-    }
-  }
-
-  private async handleCancelResearchItem(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.cancelResearchItem(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.CANCEL_RESEARCH_ITEM, {
-          success: true,
-          message: "Research cancelled successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleCancelResearchItem error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to cancel research",
-        }),
-      );
-    }
-  }
-
-  private async handleSubmitTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.submitTrade(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.SUBMIT_TRADE, {
-          success: true,
-          message: "Trade submitted successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleSubmitTrade error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to submit trade",
-        }),
-      );
-    }
-  }
-
-  private async handleCancelTrade(clientId: string, message: IMessage<unknown>): Promise<void> {
-    const client = this.clients.get(clientId);
-    if (!client) return;
-
-    try {
-      const result = await GameController.cancelTrade(client.sessionId, message.payload);
-
-      if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
-        return;
-      }
-
-      // Send success response to the requesting client
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.CANCEL_TRADE, {
-          success: true,
-          message: "Trade cancelled successfully",
-        }),
-      );
-
-      // Broadcast game state update to all players in the game
-      if (result.game && result.game._id) {
-        await this.broadcastGameStateUpdate(result.game._id.toString());
-      }
-    } catch (error) {
-      logger.error("handleCancelTrade error:", error);
-      this.sendToClient(
-        clientId,
-        new Message(MESSAGE_TYPE.ERROR, {
-          message: "Failed to cancel trade",
+          message: error instanceof Error ? error.message : "Unknown error occurred while processing command",
         }),
       );
     }
@@ -1549,28 +1291,10 @@ export class WebSocketServer {
     const client = this.clients.get(clientId);
     if (!client) return;
 
-    // Always send a basic PONG response with session information
-    let pongPayload: any = {
+    // Send a lightweight PONG response with just timestamp
+    const pongPayload = {
       timestamp: new Date().toISOString(),
     };
-
-    // If client is in an active game, include their current game state
-    if (client.gameId && client.playerId) {
-      try {
-        const game = await Game.findById(client.gameId);
-        if (game && game.status === "in_progress") {
-          const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
-          pongPayload = {
-            ...pongPayload,
-            clientGameModel,
-            currentCycle: (game.gameState as any).currentCycle || 0,
-          };
-          logger.info(`Sending PONG with updated game state to session ${client.sessionId}`);
-        }
-      } catch (error) {
-        logger.error("Error getting game state for PING response:", error);
-      }
-    }
 
     this.sendToClient(clientId, new Message(MESSAGE_TYPE.PONG, pongPayload));
   }
@@ -1593,6 +1317,82 @@ export class WebSocketServer {
     } catch (error) {
       logger.error("sendUpdatedGameListToLobbyPlayers error:", error);
     }
+  }
+
+  /**
+   * Broadcasts events to affected players only.
+   * Events are grouped by player based on their affectedPlayerIds array.
+   */
+  private async broadcastToAffectedPlayers(
+    gameId: string,
+    events: ClientEvent[],
+    currentCycle: number,
+    checksum?: string,
+    eventType: string = "events",
+  ): Promise<void> {
+    try {
+      if (!events || events.length === 0) {
+        return;
+      }
+
+      // Group events by affected player
+      const eventsByPlayer = new Map<string, ClientEvent[]>();
+
+      for (const event of events) {
+        for (const playerId of event.affectedPlayerIds) {
+          if (!eventsByPlayer.has(playerId)) {
+            eventsByPlayer.set(playerId, []);
+          }
+          eventsByPlayer.get(playerId)!.push(event);
+        }
+      }
+
+      logger.info(
+        `Broadcasting ${events.length} ${eventType} to ${eventsByPlayer.size} affected players in game ${gameId}`,
+      );
+
+      // Send events to each affected player
+      for (const [playerId, playerEvents] of eventsByPlayer.entries()) {
+        // Find the client for this player
+        let targetClient: IConnectedClient | null = null;
+        for (const client of this.clients.values()) {
+          if (client.playerId === playerId && client.gameId === gameId) {
+            targetClient = client;
+            break;
+          }
+        }
+
+        if (!targetClient) {
+          logger.warn(`No connected client found for player ${playerId} to send ${playerEvents.length} ${eventType}`);
+          continue;
+        }
+
+        // Send CLIENT_EVENT message with the events for this player
+        const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
+          events: playerEvents,
+          currentCycle,
+          ...(checksum && { stateChecksum: checksum }),
+        });
+
+        const clientId = this.getClientIdBySessionId(targetClient.sessionId);
+        if (clientId) {
+          this.sendToClient(clientId, eventMessage);
+          logger.info(`Sent ${playerEvents.length} ${eventType} to player ${playerId}`);
+        }
+      }
+    } catch (error) {
+      logger.error(`Error broadcasting ${eventType}:`, error);
+    }
+  }
+
+  private async broadcastTimeBasedEvents(
+    gameId: string,
+    events: ClientEvent[],
+    notifications: ClientNotification[],
+    currentCycle: number,
+  ): Promise<void> {
+    // Clients generate notifications locally, so we only broadcast events
+    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events");
   }
 
   private broadcastToOtherPlayersInGame(game: IGame, sessionId: string, message: Message<any>): void {

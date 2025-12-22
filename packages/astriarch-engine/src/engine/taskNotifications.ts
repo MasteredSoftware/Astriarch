@@ -5,7 +5,15 @@ export class TaskNotifications {
     return {
       [TaskNotificationType.BuildQueueEmpty]: {},
       [TaskNotificationType.InsufficientFood]: {},
+      [TaskNotificationType.CitizensProtesting]: {},
     };
+  }
+
+  public static clearAllTaskNotifications(taskNotifications: TaskNotificationIndex): void {
+    // Clear all task notifications so they can be regenerated fresh
+    taskNotifications[TaskNotificationType.BuildQueueEmpty] = {};
+    taskNotifications[TaskNotificationType.InsufficientFood] = {};
+    taskNotifications[TaskNotificationType.CitizensProtesting] = {};
   }
 
   public static upsertTask(taskNotifications: TaskNotificationIndex, task: TaskNotification) {

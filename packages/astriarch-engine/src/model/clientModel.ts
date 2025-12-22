@@ -3,7 +3,7 @@ import { ModelBase } from './model';
 import { PlanetData, PlanetType } from './planet';
 import { ColorRgbaData, PlayerData, PlayerType } from './player';
 import { ResearchData } from './research';
-import { TradeData, TradingCenterResource } from './tradingCenter';
+import { TradeData, TradingCenterBase } from './tradingCenter';
 
 export type PlanetById = Record<number, PlanetData>;
 
@@ -25,11 +25,7 @@ export interface ClientPlanet {
   type: PlanetType | null; //NOTE: Populated when the main player explores the planet
 }
 
-export interface ClientTradingCenter {
-  energyAmount: number;
-  foodResource: TradingCenterResource;
-  oreResource: TradingCenterResource;
-  iridiumResource: TradingCenterResource;
+export interface ClientTradingCenter extends TradingCenterBase {
   mainPlayerTrades: TradeData[];
 }
 
@@ -46,6 +42,7 @@ export interface TaskNotification {
 export enum TaskNotificationType {
   BuildQueueEmpty = 0,
   InsufficientFood = 1,
+  CitizensProtesting = 2,
 }
 
 export type TaskNotificationIndex = Record<TaskNotificationType, TaskNotificationByPlanetId>;
@@ -58,4 +55,12 @@ export interface ClientModelData extends ModelBase {
   clientPlanets: ClientPlanet[];
 
   taskNotifications: TaskNotificationIndex;
+
+  /**
+   * Rolling checksum of all events processed by this client.
+   * Used to detect desync - if client and server checksums diverge,
+   * we know events were missed or applied out of order.
+   * Empty string initially, then updated with each event batch.
+   */
+  lastEventChecksum?: string;
 }

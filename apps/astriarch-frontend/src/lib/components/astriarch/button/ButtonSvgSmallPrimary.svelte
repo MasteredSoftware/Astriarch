@@ -1,14 +1,20 @@
 <script lang="ts">
+	interface Props {
+		color?: string;
+	}
+
+	let { color = '#00FFFF' }: Props = $props();
+
 	const uid = Math.random().toString(36).substr(2, 9);
-	const filterId = `filter0_d_4_17194_${uid}`;
-	const gradientId = `paint0_linear_4_17194_${uid}`;
+	const filterId = `filter0_d_206_13295_${uid}`;
+	const gradientId = `paint0_linear_206_13295_${uid}`;
 </script>
 
 <svg xmlns="http://www.w3.org/2000/svg" width="91" height="52" viewBox="0 0 91 52" fill="none">
 	<g filter="url(#{filterId})" transform="translate(-18,-16)">
 		<path
-			d="M20 19C20 18.4477 20.4477 18 21 18H106C106.552 18 107 18.4477 107 19V45.3883C107 45.622 106.918 45.8484 106.769 46.028L97.6376 57L90.0142 65.6607C89.8244 65.8764 89.5509 66 89.2636 66H21C20.4477 66 20 65.5523 20 65V19Z"
-			fill="#00FFFF"
+			d="M20 19C20 18.4477 20.4477 18 21 18H106C106.552 18 107 18.4477 107 19V45.3883C107 45.622 106.918 45.8484 106.769 46.028L97.638 57L90.014 65.6607C89.824 65.8764 89.551 66 89.264 66H21C20.4477 66 20 65.5523 20 65V19Z"
+			fill={color}
 			shape-rendering="crispEdges"
 		/>
 		<path

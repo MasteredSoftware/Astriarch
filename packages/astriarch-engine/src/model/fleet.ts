@@ -23,6 +23,7 @@ export interface StarshipData {
 }
 
 export interface FleetData {
+  id: number;
   starships: StarshipData[];
   locationHexMidPoint: PointData | null;
   travelingFromHexMidPoint: PointData | null;

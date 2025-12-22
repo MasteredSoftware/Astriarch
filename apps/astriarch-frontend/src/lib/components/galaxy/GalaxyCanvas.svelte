@@ -187,6 +187,7 @@
 		stage.on('wheel', handleZoom);
 		stage.on('dragmove', updatePanPosition);
 		stage.on('mousemove', handleMouseMove);
+		stage.on('mouseout', handleMouseOut);
 
 		console.log('GalaxyCanvas initialization complete');
 	}
@@ -563,6 +564,17 @@
 		}
 	}
 
+	// Handle mouse leaving the canvas - clear hover state
+	function handleMouseOut() {
+		// Clear hover state and hide prospective travel line
+		if (hoveredDestinationPlanetId !== null) {
+			hoveredDestinationPlanetId = null;
+			if (prospectiveTravelLine && prospectiveTravelLine.isVisible()) {
+				prospectiveTravelLine.animateOut(0.2);
+			}
+		}
+	}
+
 	// Update or create the prospective travel line from source to destination
 	function updateProspectiveTravelLine(destinationPlanet: any) {
 		const fleetState = $fleetCommandStore;
@@ -710,6 +722,9 @@
 				return;
 			}
 
+			// Clear hover state immediately to allow confirmed destination line to show
+			hoveredDestinationPlanetId = null;
+
 			// Set the destination planet
 			fleetCommandStore.setDestinationPlanet(planetData.id);
 		} else {
@@ -820,9 +835,6 @@
 		bind:this={canvasContainer}
 		class="galaxy-canvas absolute inset-0 rounded-lg border border-cyan-500/20 bg-black"
 		on:click={handleStageClick}
-		on:keydown
-		role="button"
-		tabindex="0"
 		aria-label="Galaxy map - Click to interact with planets and fleets"
 	></div>
 	<!-- Zoom level indicator -->

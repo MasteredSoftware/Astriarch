@@ -1,5 +1,5 @@
-import { ClientModelData, PlanetById } from '../model/clientModel';
-import { EventNotificationType } from '../model/eventNotification';
+import { PlanetaryConflictData } from '../model/battle';
+import { ClientModelData, ClientPlayer, PlanetById } from '../model/clientModel';
 import { FleetData } from '../model/fleet';
 import { GalaxySizeOption, GameSpeed, ModelBase, ModelData } from '../model/model';
 import { PlayerData, PlayerType } from '../model/player';
@@ -8,11 +8,18 @@ import { Utils } from '../utils/utils';
 import { BattleSimulator } from './battleSimulator';
 import { ClientGameModel } from './clientGameModel';
 import { ComputerPlayer } from './computerPlayer';
-import { Events } from './events';
 import { Fleet } from './fleet';
+import {
+  ClientEvent,
+  ClientEventType,
+  ClientNotification,
+  ClientNotificationType,
+  ResourcesAutoSpentNotification,
+} from './GameCommands';
 import { AdvanceGameClockForPlayerData, AdvanceGameClockResult, GameModel, GameModelData } from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
+import { PlanetResources } from './planetResources';
 import { Player } from './player';
 import { Research } from './research';
 import { TradingCenter } from './tradingCenter';
@@ -58,9 +65,13 @@ export class GameController {
       }
     }
 
-    TradingCenter.executeCurrentTrades(gameModel, planetById, cyclesElapsed);
+    const allEvents: ClientEvent[] = [];
+
+    const tradeEvents = TradingCenter.executeCurrentTrades(gameModel, planetById, cyclesElapsed);
+    allEvents.push(...tradeEvents);
 
     // NOTE: advanceGameClockForPlayer contains all methods that can run client-side to keep the ui updating w/o trips to the server
+    const allNotifications: ClientNotification[] = [];
     const fleetsArrivingOnUnownedPlanetsByPlayerId: Record<string, FleetData[]> = {};
     for (const p of modelData.players) {
       const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
@@ -70,20 +81,25 @@ export class GameController {
         currentCycle,
         grid,
       };
-      fleetsArrivingOnUnownedPlanetsByPlayerId[p.id] = Player.advanceGameClockForPlayer(data);
+      const result = Player.advanceGameClockForPlayer(data);
+      fleetsArrivingOnUnownedPlanetsByPlayerId[p.id] = result.fleetsArrivingOnUnownedPlanets;
+      allEvents.push(...result.events);
+      allNotifications.push(...result.notifications);
     }
 
     // TODO: server side operations after advancing game clock for player
     for (const p of modelData.players) {
       const arrivingFleets = fleetsArrivingOnUnownedPlanetsByPlayerId[p.id];
       if (arrivingFleets.length) {
-        this.resolvePlanetaryConflicts(gameModel, p, arrivingFleets);
+        const conflictEvents = this.resolvePlanetaryConflicts(gameModel, p, arrivingFleets);
+        allEvents.push(...conflictEvents);
       }
     }
 
     modelData.lastSnapshotTime = newSnapshotTime;
     if (Math.trunc(currentCycle) > Math.trunc(modelData.currentCycle)) {
-      this.handleCycleAdvancement(gameModel);
+      const cycleNotifications = this.handleCycleAdvancement(gameModel);
+      allNotifications.push(...cycleNotifications);
     }
     modelData.currentCycle = currentCycle;
 
@@ -91,28 +107,34 @@ export class GameController {
     const destroyedPlayers = GameModel.checkPlayersDestroyed(gameModel);
     const gameEndConditions = GameModel.checkGameEndConditions(gameModel);
 
-    Events.publish();
-
     return {
       destroyedPlayers,
       gameEndConditions,
+      events: allEvents,
+      notifications: allNotifications,
     };
   }
 
-  public static handleCycleAdvancement(gameModel: GameModelData) {
+  public static handleCycleAdvancement(gameModel: GameModelData): ClientNotification[] {
     // Handle any game logic that needs to occur at the end of a cycle
+    const notifications: ClientNotification[] = [];
     const { modelData } = gameModel;
     for (const p of modelData.players) {
       if (p.lastTurnFoodShipped > 0) {
-        Events.enqueueNewEvent(
-          p.id,
-          EventNotificationType.ResourcesAutoSpent,
-          `${p.lastTurnFoodShipped.toFixed(1)} Energy spent shipping Food`,
-        );
+        notifications.push({
+          type: ClientNotificationType.RESOURCES_AUTO_SPENT,
+          affectedPlayerIds: [p.id],
+          data: {
+            amount: p.lastTurnFoodShipped,
+            resourceType: 'energy',
+            reason: 'Food shipping',
+          },
+        } as ResourcesAutoSpentNotification);
         p.lastTurnFoodShipped = 0;
       }
       p.lastTurnFoodNeededToBeShipped = 0;
     }
+    return notifications;
   }
 
   /**
@@ -124,7 +146,10 @@ export class GameController {
     modelDataBase.lastSnapshotTime = currentTime;
   }
 
-  public static advanceClientGameClock(clientModel: ClientModelData, grid: Grid): FleetData[] {
+  public static advanceClientGameClock(
+    clientModel: ClientModelData,
+    grid: Grid,
+  ): { fleetsArrivingOnUnownedPlanets: FleetData[]; notifications: ClientNotification[] } {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(clientModel);
 
     const data: AdvanceGameClockForPlayerData = {
@@ -133,12 +158,33 @@ export class GameController {
       currentCycle,
       grid,
     };
-    const fleetsArrivingOnUnownedPlanets = Player.advanceGameClockForPlayer(data);
+    const result = Player.advanceGameClockForPlayer(data);
 
     clientModel.lastSnapshotTime = newSnapshotTime;
     clientModel.currentCycle = currentCycle;
-    Events.publish();
-    return fleetsArrivingOnUnownedPlanets;
+    return {
+      fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,
+      notifications: result.notifications,
+    };
+  }
+
+  public static constructPlanetaryConflictData(
+    defendingClientPlayer: ClientPlayer | null,
+    defendingFleet: FleetData,
+    attackingClientPlayer: ClientPlayer,
+    attackingFleet: FleetData,
+  ): PlanetaryConflictData {
+    return {
+      defendingClientPlayer,
+      defendingFleet: Fleet.cloneFleet(defendingFleet),
+      defendingFleetResearchBoost: { attack: 0, defense: 0 },
+      attackingClientPlayer,
+      attackingFleet: Fleet.cloneFleet(attackingFleet),
+      attackingFleetResearchBoost: { attack: 0, defense: 0 },
+      attackingFleetChances: null,
+      winningFleet: null,
+      resourcesLooted: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0),
+    };
   }
 
   //TODO: this is problematic right now if multiple players show up to battle at a 3rd players planet
@@ -147,7 +193,8 @@ export class GameController {
     gameModel: GameModelData,
     player: PlayerData,
     fleetsArrivingOnUnownedPlanets: FleetData[],
-  ) {
+  ): ClientEvent[] {
+    const events: ClientEvent[] = [];
     //if any of the player's fleets in transit have reached their destination
     //  if the destination is not an owned planet, we need to resolve the conflict
     //  once conflicts are resolved, merge fleets to the fleets of the owned planet
@@ -166,24 +213,11 @@ export class GameController {
 
       //battle!
       const enemyFleet = destinationPlanet.planetaryFleet;
-
-      const enemyFleetStrength = Fleet.determineFleetStrength(enemyFleet);
-
-      const playerFleetStrength = Fleet.determineFleetStrength(playerFleet);
-
-      //this is for our event message, the PlanetaryConflictData constructor deals with cloning the fleets
-      const attackingClientPlayer = ClientGameModel.constructClientPlayer(player);
-      let defendingClientPlayer = null;
       const planetOwner = GameModel.findPlanetOwner(gameModel, destinationPlanet.id);
-      if (planetOwner) {
-        defendingClientPlayer = ClientGameModel.constructClientPlayer(planetOwner);
-      }
-      const planetaryConflictData = Events.constructPlanetaryConflictData(
-        defendingClientPlayer,
-        destinationPlanet.planetaryFleet,
-        attackingClientPlayer,
-        playerFleet,
-      );
+
+      // Calculate fleet strengths for win chance calculation
+      const enemyFleetStrength = Fleet.determineFleetStrength(enemyFleet);
+      const playerFleetStrength = Fleet.determineFleetStrength(playerFleet);
 
       //determine strength differences
       // ServerController.BATTLE_RANDOMNESS_FACTOR = 4 in this case
@@ -193,25 +227,41 @@ export class GameController {
 
       //if the player's fleet is destroyed the enemy (defender) always wins because you can't land fleets and capture the system without fleets
 
-      //July 21st 2010, changed from pure statistics to BattleSimulator, still have this AttackingFleetChances code to show a percentage (for now as an estimation)
+      //July 21st 2010, changed from pure statistics to BattleSimulator
 
-      planetaryConflictData.attackingFleetResearchBoost.attack = Research.getResearchBoostForStarshipCombatImprovement(
+      // Create conflict data before battle for the activity log
+      const attackingClientPlayer = ClientGameModel.constructClientPlayer(player);
+      const defendingClientPlayer = planetOwner ? ClientGameModel.constructClientPlayer(planetOwner) : null;
+      const conflictData = this.constructPlanetaryConflictData(
+        defendingClientPlayer,
+        enemyFleet,
+        attackingClientPlayer,
+        playerFleet,
+      );
+
+      // Calculate research boosts for both fleets
+      conflictData.attackingFleetResearchBoost.attack = Research.getResearchBoostForStarshipCombatImprovement(
         ResearchType.COMBAT_IMPROVEMENT_ATTACK,
         player,
       );
-      planetaryConflictData.attackingFleetResearchBoost.defense = Research.getResearchBoostForStarshipCombatImprovement(
+      conflictData.attackingFleetResearchBoost.defense = Research.getResearchBoostForStarshipCombatImprovement(
         ResearchType.COMBAT_IMPROVEMENT_DEFENSE,
         player,
       );
 
-      planetaryConflictData.defendingFleetResearchBoost.attack = planetOwner
-        ? Research.getResearchBoostForStarshipCombatImprovement(ResearchType.COMBAT_IMPROVEMENT_ATTACK, planetOwner)
-        : 0;
-      planetaryConflictData.defendingFleetResearchBoost.defense = planetOwner
-        ? Research.getResearchBoostForStarshipCombatImprovement(ResearchType.COMBAT_IMPROVEMENT_DEFENSE, planetOwner)
-        : 0;
+      if (planetOwner) {
+        conflictData.defendingFleetResearchBoost.attack = Research.getResearchBoostForStarshipCombatImprovement(
+          ResearchType.COMBAT_IMPROVEMENT_ATTACK,
+          planetOwner,
+        );
+        conflictData.defendingFleetResearchBoost.defense = Research.getResearchBoostForStarshipCombatImprovement(
+          ResearchType.COMBAT_IMPROVEMENT_DEFENSE,
+          planetOwner,
+        );
+      }
 
-      planetaryConflictData.attackingFleetChances = BattleSimulator.getAttackingFleetChances(
+      // Calculate attacking fleet win chances
+      conflictData.attackingFleetChances = BattleSimulator.getAttackingFleetChances(
         playerFleetStrength,
         enemyFleetStrength,
       );
@@ -224,40 +274,46 @@ export class GameController {
       if (!playerWins) {
         //just kill the fleet
         //make sure this planet is now explored
-        Player.setPlanetExplored(player, destinationPlanet, gameModel.modelData.currentCycle, planetOwner?.id);
+        Player.setPlanetExplored(
+          player,
+          destinationPlanet.id,
+          enemyFleet,
+          gameModel.modelData.currentCycle,
+          planetOwner?.id,
+        );
+
+        // Defender won - set winning fleet
+        conflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
 
         //notify user of fleet loss or defense
         if (player.type == PlayerType.Human) {
           //the attacking player is a human player and lost
-          //PlanetaryConflictData summarizes your attacking fleet, the enemy fleet and what was destroyed in the enemy fleet
-
-          let message = 'You lost a fleet attacking planet: ' + destinationPlanet.name;
-          if (planetOwner) {
-            message = 'You lost a fleet attacking ' + planetOwner.name + ' at planet: ' + destinationPlanet.name;
-          }
-          planetaryConflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
-          Events.enqueueNewEvent(
-            player.id,
-            EventNotificationType.AttackingFleetLost,
-            message,
-            destinationPlanet,
-            planetaryConflictData,
-          );
+          events.push({
+            type: ClientEventType.FLEET_ATTACK_FAILED,
+            affectedPlayerIds: [player.id],
+            data: {
+              planetId: destinationPlanet.id,
+              planetName: destinationPlanet.name,
+              defenderName: planetOwner?.name,
+              defenderId: planetOwner?.id,
+              conflictData,
+            },
+          });
         }
 
         if (planetOwner && planetOwner.type == PlayerType.Human) {
           //the defending player is a human player and won
-          //PlanetaryConflictData summarizes the attacking fleet, your fleet and what was destroyed in your fleet
-          const message =
-            'You successfully defended against ' + player.name + ' attacking planet: ' + destinationPlanet.name;
-          planetaryConflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
-          Events.enqueueNewEvent(
-            planetOwner.id,
-            EventNotificationType.DefendedAgainstAttackingFleet,
-            message,
-            destinationPlanet,
-            planetaryConflictData,
-          );
+          events.push({
+            type: ClientEventType.FLEET_DEFENSE_SUCCESS,
+            affectedPlayerIds: [planetOwner.id],
+            data: {
+              planetId: destinationPlanet.id,
+              planetName: destinationPlanet.name,
+              attackerName: player.name,
+              attackerId: player.id,
+              conflictData,
+            },
+          });
         }
       } else {
         const defendingPlayer = planetOwner;
@@ -281,7 +337,7 @@ export class GameController {
               rp.currentResearchLevel > attackingPlayerResearch.currentResearchLevel &&
               rp.researchPointsCompleted > attackingPlayerResearch.researchPointsCompleted
             ) {
-              planetaryConflictData.resourcesLooted.research = Utils.nextRandom(
+              const researchPointsStolen = Utils.nextRandom(
                 0,
                 Math.floor(
                   Math.min(
@@ -292,31 +348,48 @@ export class GameController {
               );
               const levelIncrease = Research.setResearchPointsCompleted(
                 attackingPlayerResearch,
-                attackingPlayerResearch.researchPointsCompleted + planetaryConflictData.resourcesLooted.research,
+                attackingPlayerResearch.researchPointsCompleted + researchPointsStolen,
               );
               if (levelIncrease) {
-                Events.enqueueNewEvent(
-                  defendingPlayer.id,
-                  EventNotificationType.ResearchStolen,
-                  `${Research.researchProgressToString(attackingPlayerResearch)} was stolen by ${player.name}`,
-                  destinationPlanet,
-                );
-                Events.enqueueNewEvent(
-                  player.id,
-                  EventNotificationType.ResearchStolen,
-                  `You stole ${Research.researchProgressToString(attackingPlayerResearch)} from ${
-                    defendingPlayer.name
-                  }`,
-                  destinationPlanet,
-                );
+                // Notify defender that research was stolen
+                events.push({
+                  type: ClientEventType.RESEARCH_STOLEN,
+                  affectedPlayerIds: [defendingPlayer.id],
+                  data: {
+                    victimPlayerId: defendingPlayer.id,
+                    thiefPlayerId: player.id,
+                    thiefPlayerName: player.name,
+                    researchType: attackingPlayerResearch.type,
+                    researchName: Research.researchProgressToString(attackingPlayerResearch),
+                    planetId: destinationPlanet.id,
+                    planetName: destinationPlanet.name,
+                    wasVictim: true,
+                  },
+                });
+                // Notify attacker that they stole research
+                events.push({
+                  type: ClientEventType.RESEARCH_STOLEN,
+                  affectedPlayerIds: [player.id],
+                  data: {
+                    victimPlayerId: defendingPlayer.id,
+                    victimPlayerName: defendingPlayer.name,
+                    thiefPlayerId: player.id,
+                    researchType: attackingPlayerResearch.type,
+                    researchName: Research.researchProgressToString(attackingPlayerResearch),
+                    planetId: destinationPlanet.id,
+                    planetName: destinationPlanet.name,
+                    wasVictim: false,
+                  },
+                });
               }
               break;
             }
           }
         }
 
-        //add in the other resources looted since the new player is now the owner
-        planetaryConflictData.resourcesLooted = { ...destinationPlanet.resources };
+        // Attacker won - set winning fleet and resources looted
+        conflictData.winningFleet = Fleet.cloneFleet(playerFleet);
+        conflictData.resourcesLooted = { ...destinationPlanet.resources };
 
         //merge/land fleet
         Fleet.landFleet(destinationPlanet.planetaryFleet, playerFleet);
@@ -325,7 +398,8 @@ export class GameController {
         if (defendingPlayer) {
           Player.setPlanetLastKnownFleetStrength(
             defendingPlayer,
-            destinationPlanet,
+            destinationPlanet.id,
+            destinationPlanet.planetaryFleet,
             gameModel.modelData.currentCycle,
             player?.id,
           );
@@ -334,36 +408,37 @@ export class GameController {
         //notify user of planet capture or loss
         if (player.type == PlayerType.Human) {
           //the attacking player is a human player and won
-          //PlanetaryConflictData summarizes your attacking fleet, the enemy fleet and what was destroyed in your fleet
-          let message = 'Your fleet captured planet: ' + destinationPlanet.name;
-          if (defendingPlayer != null) {
-            message = 'Your fleet captured planet: ' + destinationPlanet.name + ', owned by: ' + defendingPlayer.name;
-          }
-          planetaryConflictData.winningFleet = Fleet.cloneFleet(playerFleet);
-          Events.enqueueNewEvent(
-            player.id,
-            EventNotificationType.PlanetCaptured,
-            message,
-            destinationPlanet,
-            planetaryConflictData,
-          );
+          events.push({
+            type: ClientEventType.PLANET_CAPTURED,
+            affectedPlayerIds: [player.id],
+            data: {
+              planetId: destinationPlanet.id,
+              planetName: destinationPlanet.name,
+              previousOwnerId: defendingPlayer?.id,
+              previousOwnerName: defendingPlayer?.name,
+              conflictData,
+              planetData: destinationPlanet,
+            },
+          });
         }
 
         if (defendingPlayer && defendingPlayer.type == PlayerType.Human) {
           //the defending player is a human player and lost
-          //planetaryConflictData summarizes your defending fleet, the enemy fleet and what was destroyed in the enemy fleet
-          const message = player.name + ' captured your planet: ' + destinationPlanet.name;
-          planetaryConflictData.winningFleet = Fleet.cloneFleet(playerFleet);
-          Events.enqueueNewEvent(
-            defendingPlayer.id,
-            EventNotificationType.PlanetLost,
-            message,
-            destinationPlanet,
-            planetaryConflictData,
-          );
+          events.push({
+            type: ClientEventType.PLANET_LOST,
+            affectedPlayerIds: [defendingPlayer.id],
+            data: {
+              planetId: destinationPlanet.id,
+              planetName: destinationPlanet.name,
+              newOwnerId: player.id,
+              newOwnerName: player.name,
+              conflictData,
+            },
+          });
         }
       }
     }
+    return events;
   }
 
   public static calculateEndGamePoints(model: ModelData, player: PlayerData, playerWon: boolean) {
