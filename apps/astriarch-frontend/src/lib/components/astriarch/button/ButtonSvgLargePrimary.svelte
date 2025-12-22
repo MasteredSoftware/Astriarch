@@ -1,4 +1,10 @@
 <script lang="ts">
+	interface Props {
+		color?: string;
+	}
+
+	let { color = '#00FFFF' }: Props = $props();
+
 	// Generate unique IDs to avoid conflicts when multiple buttons are on the same page
 	const uid = Math.random().toString(36).substr(2, 9);
 	const filterId = `filter0_d_206_13299_${uid}`;
@@ -9,7 +15,7 @@
 	<g filter="url(#{filterId})" transform="translate(-18,-16)">
 		<path
 			d="M20 19C20 18.4477 20.4477 18 21 18H226C226.552 18 227 18.4477 227 19V45.3883C227 45.622 226.918 45.8484 226.769 46.028L217.638 57L210.014 65.6607C209.824 65.8764 209.551 66 209.264 66H21C20.4477 66 20 65.5523 20 65V19Z"
-			fill="#00FFFF"
+			fill={color}
 			shape-rendering="crispEdges"
 		/>
 		<path

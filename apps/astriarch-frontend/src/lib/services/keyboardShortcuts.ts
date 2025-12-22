@@ -105,11 +105,7 @@ class KeyboardShortcutService {
 	private handleKeyDown(event: KeyboardEvent): void {
 		// Ignore shortcuts when typing in input fields
 		const target = event.target as HTMLElement;
-		if (
-			target.tagName === 'INPUT' ||
-			target.tagName === 'TEXTAREA' ||
-			target.isContentEditable
-		) {
+		if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
 			return;
 		}
 
@@ -124,7 +120,7 @@ class KeyboardShortcutService {
 		for (const registration of registrations) {
 			try {
 				registration.callback(event);
-				
+
 				// If the event was prevented, stop executing other handlers
 				if (event.defaultPrevented) {
 					break;

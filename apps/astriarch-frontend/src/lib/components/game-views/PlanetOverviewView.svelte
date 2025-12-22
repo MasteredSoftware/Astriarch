@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { Text, AvailablePlanetProductionItem, Dialog, PlanetSelector } from '$lib/components/astriarch';
+	import {
+		Text,
+		AvailablePlanetProductionItem,
+		Dialog,
+		PlanetSelector
+	} from '$lib/components/astriarch';
 	import {
 		clientGameModel,
 		gameActions,

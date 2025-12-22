@@ -8,7 +8,7 @@
 		children?: any;
 		label?: string;
 		size?: Size;
-		variant?: 'primary' | 'outline';
+		variant?: 'primary' | 'outline' | 'secondary' | 'warning' | 'danger';
 		onclick?: () => void;
 		disabled?: boolean;
 		class?: string;
@@ -59,10 +59,24 @@
     overflow: visible;
   `);
 
-	const textColor = $derived(variant === 'outline' ? '#0FF' : '#1B1F25');
+	const textColor = $derived(() => {
+		switch (variant) {
+			case 'outline':
+				return '#0FF'; // Cyan
+			case 'secondary':
+				return '#FFFFFF'; // White
+			case 'warning':
+				return '#FFFFFF'; // White
+			case 'danger':
+				return '#FFFFFF'; // White
+			case 'primary':
+			default:
+				return '#1B1F25'; // Dark (for cyan background)
+		}
+	});
 
 	const textStyle = $derived(`
-    color: ${textColor};
+    color: ${textColor()};
     font-size: 14px;
     font-weight: 800;
     line-height: 20px;
@@ -116,12 +130,12 @@
 
 	// Register hotkey on mount
 	onMount(() => {
-		if (hotkey && onclick && !disabled) {
+		if (hotkey && onclick) {
 			keyboardShortcutService.registerShortcut(
 				hotkey.toLowerCase(),
 				(event: KeyboardEvent) => {
+					event.preventDefault(); // Always prevent default browser behavior
 					if (!disabled) {
-						event.preventDefault();
 						onclick();
 					}
 				},

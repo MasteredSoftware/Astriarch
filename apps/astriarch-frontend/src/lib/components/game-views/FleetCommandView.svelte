@@ -269,28 +269,30 @@
 		<div class="flex gap-3">
 			<!-- Waypoint Buttons - only show when planet and destination are selected -->
 			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
-				<button
-					class="h-12 rounded-[4px] bg-gradient-to-b from-[#DC2626] to-[#B91C1C] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#EF4444] hover:to-[#DC2626]"
+				<Button
+					label="Clear Waypoint"
+					hotkey="c"
+					hotkeyContext="fleet-command"
+					variant="danger"
+					size="md"
 					onclick={clearWaypoint}
-					title="Clear waypoint for this planet"
-				>
-					Clear Waypoint
-				</button>
+				/>
 			{/if}
 			{#if currentSelectedPlanet && $fleetCommandStore.destinationPlanetId}
-				<button
-					class="h-12 rounded-[4px] bg-gradient-to-b from-[#FF6B35] to-[#E85A2B] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#FF7A45] hover:to-[#F86A3B] disabled:cursor-not-allowed disabled:opacity-50"
+				<Button
+					label="Set Waypoint"
+					hotkey="w"
+					hotkeyContext="fleet-command"
+					variant="warning"
+					size="md"
 					onclick={setWaypoint}
-					title="Set waypoint to {destinationPlanet?.name || 'selected destination'}"
-				>
-					Set Waypoint
-				</button>
+				/>
 			{/if}
 			<Button
 				label="Select All"
 				hotkey="a"
 				hotkeyContext="fleet-command"
-				variant="outline"
+				variant="secondary"
 				size="md"
 				onclick={selectAllShips}
 			/>

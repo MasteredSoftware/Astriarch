@@ -835,9 +835,6 @@
 		bind:this={canvasContainer}
 		class="galaxy-canvas absolute inset-0 rounded-lg border border-cyan-500/20 bg-black"
 		on:click={handleStageClick}
-		on:keydown
-		role="button"
-		tabindex="0"
 		aria-label="Galaxy map - Click to interact with planets and fleets"
 	></div>
 	<!-- Zoom level indicator -->

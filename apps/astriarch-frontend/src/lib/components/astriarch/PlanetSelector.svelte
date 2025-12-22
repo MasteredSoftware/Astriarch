@@ -81,11 +81,11 @@
 		disabled={disabled || planets.length === 0}
 	>
 		<Select.Trigger
-			class="min-w-[160px] border-slate-600 bg-slate-700 font-orbitron text-xs text-white hover:bg-slate-600"
+			class="font-orbitron min-w-[160px] border-slate-600 bg-slate-700 text-xs text-white hover:bg-slate-600"
 		>
 			{selectedPlanet?.name || 'Select planet'}
 		</Select.Trigger>
-		<Select.Content class="border-slate-600 bg-slate-800 font-orbitron">
+		<Select.Content class="font-orbitron border-slate-600 bg-slate-800">
 			{#each planets as planet}
 				<Select.Item
 					value={planet.id.toString()}
