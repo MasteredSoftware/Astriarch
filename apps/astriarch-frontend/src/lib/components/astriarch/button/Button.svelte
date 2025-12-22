@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount, onDestroy } from 'svelte';
+	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
 	import type { Size } from '../types.js';
 	import ButtonSvg from './ButtonSvg.svelte';
 
@@ -10,6 +12,8 @@
 		onclick?: () => void;
 		disabled?: boolean;
 		class?: string;
+		hotkey?: string; // Single character hotkey (e.g., 'a', 's', 'o')
+		hotkeyContext?: string; // Optional context for the hotkey
 	}
 
 	let {
@@ -20,6 +24,8 @@
 		onclick,
 		disabled = false,
 		class: className,
+		hotkey,
+		hotkeyContext,
 		...restProps
 	}: Props = $props();
 
@@ -68,6 +74,33 @@
     pointer-events: none;
   `);
 
+	/**
+	 * Underline the first occurrence of the hotkey character in the text
+	 */
+	function getUnderlinedText(text: string, hotkeyChar: string): string {
+		const upperText = text.toUpperCase();
+		const upperHotkey = hotkeyChar.toUpperCase();
+		const index = upperText.indexOf(upperHotkey);
+
+		if (index !== -1) {
+			return (
+				text.substring(0, index) +
+				'<u class="hotkeyChar">' +
+				text.charAt(index) +
+				'</u>' +
+				text.substring(index + 1)
+			);
+		}
+
+		return text;
+	}
+
+	// Computed display text with hotkey underlined
+	let displayText = $derived.by(() => {
+		if (!hotkey || !label) return label;
+		return getUnderlinedText(label, hotkey);
+	});
+
 	function handleClick() {
 		if (!disabled) {
 			onclick?.();
@@ -80,6 +113,29 @@
 			onclick?.();
 		}
 	}
+
+	// Register hotkey on mount
+	onMount(() => {
+		if (hotkey && onclick && !disabled) {
+			keyboardShortcutService.registerShortcut(
+				hotkey.toLowerCase(),
+				(event: KeyboardEvent) => {
+					if (!disabled) {
+						event.preventDefault();
+						onclick();
+					}
+				},
+				hotkeyContext
+			);
+		}
+	});
+
+	// Unregister hotkey on destroy
+	onDestroy(() => {
+		if (hotkey) {
+			keyboardShortcutService.unregisterShortcut(hotkey.toLowerCase(), hotkeyContext);
+		}
+	});
 </script>
 
 <button
@@ -93,6 +149,8 @@
 	<span style={textStyle}>
 		{#if children}
 			{@render children()}
+		{:else if hotkey && label}
+			{@html displayText}
 		{:else}
 			{label}
 		{/if}

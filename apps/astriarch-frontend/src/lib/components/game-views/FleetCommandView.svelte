@@ -4,7 +4,7 @@
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
-	import { PlanetSelector } from '$lib/components/astriarch';
+	import { PlanetSelector, Button } from '$lib/components/astriarch';
 	import ShipCard from './ShipCard.svelte';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default
@@ -286,20 +286,23 @@
 					Set Waypoint
 				</button>
 			{/if}
-			<button
-				class="h-12 rounded-[4px] bg-gradient-to-b from-[#888888] to-[#666666] px-8 text-[14px] font-extrabold tracking-[2px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#999999] hover:to-[#777777]"
+			<Button
+				label="Select All"
+				hotkey="a"
+				hotkeyContext="fleet-command"
+				variant="outline"
+				size="md"
 				onclick={selectAllShips}
-			>
-				Select All
-			</button>
-			<button
-				class="h-12 rounded-[4px] bg-gradient-to-b from-[#00FFFF] to-[#00CCCC] px-8 text-[14px] font-extrabold tracking-[2px] text-[#1B1F25] uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#00DDDD] hover:to-[#00AAAA] disabled:cursor-not-allowed disabled:opacity-50"
+			/>
+			<Button
+				label="Send Ships"
+				hotkey="s"
+				hotkeyContext="fleet-command"
+				size="md"
 				onclick={sendShips}
 				disabled={$fleetCommandStore.selectedShipIds.size === 0 ||
 					!$fleetCommandStore.destinationPlanetId}
-			>
-				Send Ships
-			</button>
+			/>
 		</div>
 	</div>
 
