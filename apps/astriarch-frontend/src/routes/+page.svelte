@@ -497,7 +497,7 @@
 					</div>
 
 					<!-- Right Sidebar with Navigation and View Panel -->
-					<div class="flex w-[450px] flex-shrink-0 flex-col">
+				<div class="flex w-1/2 flex-shrink-0 flex-col">
 						<!-- Navigation Controller (Vertical) -->
 						<div class="flex-shrink-0">
 							<NavigationController items={navigationItems} orientation="vertical" />

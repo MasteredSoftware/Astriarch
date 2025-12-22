@@ -16,18 +16,18 @@
 
 {#if orientation === 'vertical'}
 	<!-- Vertical Mode Tab Layout (Horizontal arrangement with smaller SVGs) -->
-	<div class="pointer-events-none relative" style="z-index: {zIndex}; width: 90px;">
+	<div class="pointer-events-none relative w-[172px]" style="z-index: {zIndex}">
 		<Text
-			class="pointer-events-none absolute top-0 left-0 text-center text-xs leading-[24px] font-extrabold tracking-[1px] uppercase"
-			style="z-index: 100; color: {selected ? '#1B1F25' : '#FFF'}; width: 90px;"
+			class="pointer-events-none absolute top-0 left-0 w-[240px] text-center text-sm leading-12 font-extrabold tracking-[2px] uppercase"
+			style="z-index: 100; color: {selected ? '#1B1F25' : '#FFF'};"
 		>
 			{label}
 		</Text>
 
 		{#if selected}
-			<NavigationTabSelectedSvg {onclick} scale={0.375} />
+			<NavigationTabSelectedSvg {onclick} />
 		{:else}
-			<NavigationTabUnselectedSvg {onclick} scale={0.375} />
+			<NavigationTabUnselectedSvg {onclick} />
 		{/if}
 	</div>
 {:else}
