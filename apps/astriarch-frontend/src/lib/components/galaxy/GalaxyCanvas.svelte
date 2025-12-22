@@ -710,6 +710,9 @@
 				return;
 			}
 
+			// Clear hover state immediately to allow confirmed destination line to show
+			hoveredDestinationPlanetId = null;
+
 			// Set the destination planet
 			fleetCommandStore.setDestinationPlanet(planetData.id);
 		} else {

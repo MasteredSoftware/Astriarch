@@ -1,10 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import {
-		clientGameModel,
-		selectedPlanetId,
-		gameActions
-	} from '$lib/stores/gameStore';
+	import { clientGameModel, selectedPlanetId, gameActions } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
@@ -225,9 +221,7 @@
 							<p class="text-sm text-green-200">
 								Destination: <strong>{destinationPlanet?.name || 'Unknown Planet'}</strong>
 							</p>
-							<p class="mt-1 text-xs text-green-300/80">
-								Send Ships to launch selected fleet
-							</p>
+							<p class="mt-1 text-xs text-green-300/80">Send Ships to launch selected fleet</p>
 						</div>
 						<button
 							class="rounded bg-gray-600 px-3 py-1 text-sm hover:bg-gray-500"
@@ -273,7 +267,7 @@
 		<!-- Action Buttons -->
 		<div class="flex gap-3">
 			<!-- Waypoint Buttons - only show when planet and destination are selected -->
-			 {#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
+			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
 				<button
 					class="h-12 rounded-[4px] bg-gradient-to-b from-[#DC2626] to-[#B91C1C] px-6 text-[12px] font-extrabold tracking-[1.5px] text-white uppercase shadow-[0px_0px_8px_rgba(0,0,0,0.15)] transition-all hover:from-[#EF4444] hover:to-[#DC2626]"
 					onclick={clearWaypoint}
