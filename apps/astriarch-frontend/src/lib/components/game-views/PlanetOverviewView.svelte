@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Text, AvailablePlanetProductionItem, Dialog } from '$lib/components/astriarch';
+	import { Text, AvailablePlanetProductionItem, Dialog, PlanetSelector } from '$lib/components/astriarch';
 	import {
 		clientGameModel,
 		gameActions,
@@ -457,18 +457,11 @@
 						{GameTools.planetTypeToFriendlyName($selectedPlanet.type || 1)}
 					</span>
 					{#if planetList.length > 1}
-						<select
-							class="rounded border border-slate-600 bg-slate-700 px-2 py-1 text-xs text-white"
-							onchange={(e) => {
-								const target = e.target as HTMLSelectElement;
-								selectPlanet(planetList.find((p) => p.id === parseInt(target.value)));
-							}}
-							value={$selectedPlanetId}
-						>
-							{#each planetList as planet}
-								<option value={planet.id}>{planet.name}</option>
-							{/each}
-						</select>
+						<PlanetSelector
+							planets={planetList}
+							selectedPlanetId={$selectedPlanetId}
+							onSelectPlanet={(planetId) => selectPlanet(planetList.find((p) => p.id === planetId))}
+						/>
 					{/if}
 					<div class="text-xs text-slate-400">
 						{#if isFullPlanetData($selectedPlanet)}

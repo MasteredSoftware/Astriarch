@@ -4,6 +4,7 @@
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
+	import { PlanetSelector } from '$lib/components/astriarch';
 	import ShipCard from './ShipCard.svelte';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default
@@ -305,15 +306,11 @@
 	<!-- Planet Selector -->
 	{#if planetList.length > 1}
 		<div class="mb-4 px-8">
-			<select
-				onchange={handlePlanetChange}
-				value={$selectedPlanetId}
-				class="rounded border border-white/20 bg-[#1B1F25] px-3 py-1 text-sm text-white"
-			>
-				{#each planetList as planet}
-					<option value={planet.id}>{planet.name}</option>
-				{/each}
-			</select>
+			<PlanetSelector
+				planets={planetList}
+				selectedPlanetId={$selectedPlanetId}
+				onSelectPlanet={(planetId) => gameActions.selectPlanet(planetId)}
+			/>
 		</div>
 	{/if}
 
