@@ -362,7 +362,7 @@ class WebSocketService {
 				this.tradesProcessedEventToNotifications(event as TradesProcessedEvent);
 				return;
 			case ClientEventType.PLANET_CAPTURED: {
-				notificationType = 'success';
+				notificationType = 'battle';
 				const { data } = event as PlanetCapturedEvent;
 				message = `Planet ${data.planetName} captured`;
 				if (data.previousOwnerName) {
@@ -371,7 +371,7 @@ class WebSocketService {
 				break;
 			}
 			case ClientEventType.PLANET_LOST: {
-				notificationType = 'error';
+				notificationType = 'battle';
 				const { data } = event as PlanetLostEvent;
 				message = `Planet ${data.planetName} lost to ${data.newOwnerName}`;
 				break;
