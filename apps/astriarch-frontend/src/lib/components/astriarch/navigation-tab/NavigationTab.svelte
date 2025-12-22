@@ -18,7 +18,7 @@
 	<!-- Vertical Mode Tab Layout (Horizontal arrangement with smaller SVGs) -->
 	<div class="pointer-events-none relative" style="z-index: {zIndex}; width: 130px;">
 		<Text
-			class="pointer-events-none absolute top-0 left-0 text-center text-xs leading-[18px] font-extrabold tracking-[1px] uppercase"
+			class="pointer-events-none absolute top-0 left-0 text-center text-xs leading-[36px] font-extrabold tracking-[1px] uppercase"
 			style="z-index: 100; color: {selected ? '#1B1F25' : '#FFF'}; width: 181px;"
 		>
 			{label}

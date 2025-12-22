@@ -35,7 +35,7 @@
 	}
 </script>
 
-<div class="relative" {...restProps}>
+<div class="relative" {...restProps} style="z-index: 100;">
 	{#if orientation === 'vertical'}
 		<!-- Vertical Navigation (for landscape sidebar) - Horizontal tab layout -->
 		<div
