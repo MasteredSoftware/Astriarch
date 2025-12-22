@@ -51,6 +51,7 @@
 		};
 		isCustom: boolean;
 		customShipData?: StarshipAdvantageData;
+		hotkey?: string;
 	}
 
 	// Derived values that depend on store values
@@ -269,19 +270,27 @@
 
 	// Available building types with descriptions
 	const buildingTypes = [
-		{ type: PlanetImprovementType.Farm, description: 'Increases food production' },
-		{ type: PlanetImprovementType.Mine, description: 'Increases ore and iridium production' },
-		{ type: PlanetImprovementType.Factory, description: 'Increases production rate' },
-		{ type: PlanetImprovementType.Colony, description: 'Increases population capacity' }
+		{ type: PlanetImprovementType.Farm, description: 'Increases food production', hotkey: 'r' },
+		{
+			type: PlanetImprovementType.Mine,
+			description: 'Increases ore and iridium production',
+			hotkey: 'i'
+		},
+		{ type: PlanetImprovementType.Factory, description: 'Increases production rate', hotkey: 't' },
+		{
+			type: PlanetImprovementType.Colony,
+			description: 'Increases population capacity',
+			hotkey: 'l'
+		}
 	];
 
 	const shipTypes = [
-		{ type: StarShipType.SystemDefense, description: 'Basic planetary defense unit' },
-		{ type: StarShipType.Scout, description: 'Fast exploration vessel' },
-		{ type: StarShipType.Destroyer, description: 'Light combat vessel' },
-		{ type: StarShipType.Cruiser, description: 'Medium combat vessel' },
-		{ type: StarShipType.Battleship, description: 'Heavy combat vessel' },
-		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure' }
+		{ type: StarShipType.SystemDefense, description: 'Basic planetary defense unit', hotkey: 'e' },
+		{ type: StarShipType.Scout, description: 'Fast exploration vessel', hotkey: 'S' },
+		{ type: StarShipType.Destroyer, description: 'Light combat vessel', hotkey: 'D' },
+		{ type: StarShipType.Cruiser, description: 'Medium combat vessel', hotkey: 'C' },
+		{ type: StarShipType.Battleship, description: 'Heavy combat vessel', hotkey: 'a' },
+		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure', hotkey: 'P' }
 	];
 
 	// Custom ship research type mappings
@@ -319,12 +328,13 @@
 
 	// Generate available buildings with proper costs from engine
 	let availableBuildings = $derived(
-		buildingTypes.map(({ type, description }) => {
+		buildingTypes.map(({ type, description, hotkey }) => {
 			const productionItem = PlanetProductionItem.constructPlanetImprovement(type);
 			return {
 				type,
 				name: GameTools.planetImprovementTypeToFriendlyName(type),
 				description,
+				hotkey,
 				cost: {
 					energy: productionItem.energyCost,
 					ore: productionItem.oreCost,
@@ -340,12 +350,13 @@
 			const ships: AvailableShip[] = [];
 
 			// Add standard ships
-			for (const { type, description } of shipTypes) {
+			for (const { type, description, hotkey } of shipTypes) {
 				const productionItem = PlanetProductionItem.constructStarShipInProduction(type);
 				ships.push({
 					type,
 					name: GameTools.starShipTypeToFriendlyName(type, false),
 					description,
+					hotkey,
 					cost: {
 						energy: productionItem.energyCost,
 						ore: productionItem.oreCost,
@@ -393,7 +404,8 @@
 								iridium: productionItem.iridiumCost
 							},
 							isCustom: true,
-							customShipData
+							customShipData,
+							hotkey: undefined // Custom ships don't have hotkeys
 						});
 					}
 				}
@@ -619,6 +631,7 @@
 								cost={building.cost}
 								enabled={availability?.enabled ?? false}
 								onClick={() => addBuildingToQueue(building.type)}
+								hotkey={building.hotkey}
 							/>
 						{/each}
 					</div>
@@ -640,6 +653,7 @@
 								cost={ship.cost}
 								enabled={availability?.enabled ?? false}
 								onClick={() => addShipToQueue(ship.type, ship.customShipData)}
+								hotkey={ship.hotkey}
 							/>
 						{/each}
 					</div>
