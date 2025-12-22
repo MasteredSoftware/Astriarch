@@ -339,7 +339,7 @@
 </script>
 
 <!-- Horizontal layout similar to Planet View -->
-<div class="relative h-80 w-full">
+<div class="relative h-full w-full min-h-0">
 	<!-- Background with glass effect -->
 	<div
 		class="absolute inset-0 rounded bg-gradient-to-b from-white/10 to-gray-800/0 backdrop-blur-md"
@@ -354,7 +354,7 @@
 
 	<div class="absolute inset-0 flex">
 		<!-- Left Section: Allocated Resources -->
-		<div class="h-80 w-[461px] p-8">
+		<div class="h-full w-[461px] p-8">
 			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">Allocated resources</Text>
 

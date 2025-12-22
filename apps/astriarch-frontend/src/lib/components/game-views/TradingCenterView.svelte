@@ -298,7 +298,7 @@
 		</h1>
 	</div>
 
-	<div class="flex h-[calc(100%-120px)] gap-8 px-8 pb-8">
+	<div class="flex h-full min-h-0 flex-1 gap-8 px-8 pb-8">
 		<!-- Left Panel: Resources Overview -->
 		<div class="flex w-[364px] flex-col">
 			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-6 backdrop-blur-sm">
