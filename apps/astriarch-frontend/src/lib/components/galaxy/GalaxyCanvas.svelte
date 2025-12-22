@@ -187,6 +187,7 @@
 		stage.on('wheel', handleZoom);
 		stage.on('dragmove', updatePanPosition);
 		stage.on('mousemove', handleMouseMove);
+		stage.on('mouseout', handleMouseOut);
 
 		console.log('GalaxyCanvas initialization complete');
 	}
@@ -560,6 +561,17 @@
 				prospectiveTravelLine.animateOut(0.2);
 			}
 			hoveredDestinationPlanetId = null;
+		}
+	}
+
+	// Handle mouse leaving the canvas - clear hover state
+	function handleMouseOut() {
+		// Clear hover state and hide prospective travel line
+		if (hoveredDestinationPlanetId !== null) {
+			hoveredDestinationPlanetId = null;
+			if (prospectiveTravelLine && prospectiveTravelLine.isVisible()) {
+				prospectiveTravelLine.animateOut(0.2);
+			}
 		}
 	}
 
