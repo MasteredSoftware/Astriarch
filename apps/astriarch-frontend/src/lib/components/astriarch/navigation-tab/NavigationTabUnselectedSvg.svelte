@@ -1,15 +1,18 @@
 <script lang="ts">
 	interface Props {
 		onclick?: () => void;
+		scale?: number;
 	}
 
-	let { onclick }: Props = $props();
+	let { onclick, scale = 1 }: Props = $props();
+	const width = 239 * scale;
+	const height = 48 * scale;
 </script>
 
 <svg
 	xmlns="http://www.w3.org/2000/svg"
-	width="239"
-	height="48"
+	width={width}
+	height={height}
 	viewBox="0 0 239 48"
 	fill="none"
 	style="pointer-events: none;"

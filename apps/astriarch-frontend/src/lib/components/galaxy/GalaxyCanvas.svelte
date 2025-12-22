@@ -2,6 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { clientGameModel, gameGrid, gameActions, selectedPlanetId } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
+	import { layoutMode, layoutDimensions } from '$lib/stores/layoutStore';
 	import type { ClientModelData, Grid } from 'astriarch-engine';
 	import {
 		PlanetHappinessType,
@@ -43,6 +44,15 @@
 	const MIN_ZOOM = 0.3;
 	const MAX_ZOOM = 3.0;
 	const ZOOM_SPEED = 1.1;
+
+	// Reactive canvas dimensions based on layout mode
+	$: canvasWidth = $layoutDimensions.canvasWidth;
+	$: canvasHeight = $layoutDimensions.canvasHeight;
+
+	// React to layout changes
+	$: if (stage && ($layoutMode || canvasWidth || canvasHeight)) {
+		handleResize();
+	}
 
 	// Prospective travel line for fleet command destination previews
 	let prospectiveTravelLine: DrawnTravelLine | null = null;
@@ -141,8 +151,8 @@
 		// Create Konva stage with proper galaxy dimensions
 		stage = new Konva.Stage({
 			container: canvasContainer,
-			width: window.innerWidth - 300, // Account for UI panels
-			height: window.innerHeight - 200, // Account for top bar and navigation
+			width: canvasWidth,
+			height: canvasHeight,
 			draggable: true, // Enable panning the galaxy view
 			perfectDrawEnabled: false,
 			listening: false // Disable events
@@ -167,13 +177,12 @@
 
 		// Center the view on the galaxy
 		const scale =
-			Math.min((window.innerWidth - 300) / galaxyWidth, (window.innerHeight - 200) / galaxyHeight) *
-			0.8; // Leave some padding
+			Math.min(canvasWidth / galaxyWidth, canvasHeight / galaxyHeight) * 0.8; // Leave some padding
 
 		stage.scale({ x: scale, y: scale });
 		stage.position({
-			x: (window.innerWidth - 300 - galaxyWidth * scale) / 2,
-			y: (window.innerHeight - 200 - galaxyHeight * scale) / 2
+			x: (canvasWidth - galaxyWidth * scale) / 2,
+			y: (canvasHeight - galaxyHeight * scale) / 2
 		});
 
 		// Initialize zoom state
@@ -293,8 +302,8 @@
 		if (stage) {
 			const oldWidth = stage.width();
 			const oldHeight = stage.height();
-			const newWidth = window.innerWidth - 300;
-			const newHeight = window.innerHeight - 200;
+			const newWidth = canvasWidth;
+			const newHeight = canvasHeight;
 
 			stage.width(newWidth);
 			stage.height(newHeight);
