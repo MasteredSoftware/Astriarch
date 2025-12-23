@@ -340,35 +340,23 @@
 </script>
 
 <!-- Horizontal layout similar to Planet View -->
-<div class="relative h-full min-h-0 w-full">
-	<!-- Background with glass effect -->
-	<div
-		class="absolute inset-0 rounded bg-gradient-to-b from-white/10 to-gray-800/0 backdrop-blur-md"
-	></div>
-
-	<!-- Title -->
-	<!-- <div class="absolute left-8 top-8">
-		<Text class="astriarch-headline-32">
-			Research
-		</Text>
-	</div> -->
-
-	<div class="absolute inset-0 flex {$layoutMode === 'landscape' ? 'flex-col gap-3 p-3' : ''}">
+<div class="relative h-full w-full overflow-y-auto bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md">
+	<div class="flex min-h-0 flex-1 gap-8 p-8 {$layoutMode === 'landscape' ? 'flex-col' : ''}">
 		<!-- Left Section: Allocated Resources -->
-		<div class="h-full p-8 {$layoutMode === 'landscape' ? 'w-full' : 'w-[461px]'}">
-			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
-				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">Allocated resources</Text>
+		<div class="flex flex-col {$layoutMode === 'landscape' ? 'w-full' : 'w-[364px]'}">
+			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-4 backdrop-blur-sm">
+				<h2 class="mb-4 font-['Orbitron'] text-xl font-bold tracking-wider text-white">Allocated resources</h2>
 
 				<!-- Energy Bar -->
-				<div class="mb-8">
-					<div class="mb-4 flex items-center">
+				<div class="mb-4">
+					<div class="mb-2 flex items-center">
 						<div class="mr-4 flex h-8 w-8 items-center justify-center">
 							<IconImage type="energy" size={24} />
 						</div>
-						<Text class="astriarch-body-16-semibold">Energy</Text>
-						<Text class="astriarch-body-16-semibold" style="margin-left: auto;">
+						<span class="font-['Orbitron'] text-base font-semibold text-white">Energy</span>
+						<span class="ml-auto font-['Orbitron'] text-base font-semibold text-white">
 							{Math.round(energyPercent * 100)}%
-						</Text>
+						</span>
 					</div>
 
 					<div
@@ -388,15 +376,15 @@
 				</div>
 
 				<!-- Research Bar -->
-				<div class="mb-8">
-					<div class="mb-4 flex items-center">
+				<div class="mb-4">
+					<div class="mb-2 flex items-center">
 						<div class="mr-4 flex h-8 w-8 items-center justify-center">
 							<IconImage type="research" size={24} />
 						</div>
-						<Text class="astriarch-body-16-semibold">Research</Text>
-						<Text class="astriarch-body-16-semibold" style="margin-left: auto;">
+						<span class="font-['Orbitron'] text-base font-semibold text-white">Research</span>
+						<span class="ml-auto font-['Orbitron'] text-base font-semibold text-white">
 							{Math.round(currentResearchPercent * 100)}%
-						</Text>
+						</span>
 					</div>
 
 					<div
@@ -418,18 +406,18 @@
 		</div>
 
 		<!-- Right Section: Research Options -->
-		<div class="h-80 flex-1 p-8 {$layoutMode === 'landscape' ? 'w-full' : 'ml-8'}">
-			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
-				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
-					Custom ships and research improvements
-				</Text>
+		<div class="flex-1 {$layoutMode === 'landscape' ? 'w-full' : ''}">
+			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-4 backdrop-blur-sm">
+				<h2 class="mb-4 font-['Orbitron'] text-xl font-bold tracking-wider text-white">
+					Research improvements
+				</h2>
 
 				<div class="flex h-40">
 					<!-- Create Ships Column -->
 					<div class="mr-16 flex flex-col items-center">
-						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
+						<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">
 							Create Ships
-						</Text>
+						</p>
 
 						<div class="grid grid-cols-2 gap-2">
 							{#each shipTypes as ship}
@@ -466,7 +454,7 @@
 
 					<!-- Ships Column -->
 					<div class="mr-16 flex flex-col items-center">
-						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">Ships</Text>
+						<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Ships</p>
 
 						<div class="grid grid-cols-1 gap-2">
 							{#each improvements as improvement}
@@ -497,7 +485,7 @@
 
 					<!-- Buildings -->
 					<div class="mr-16 flex flex-col items-center">
-						<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">Buildings</Text>
+						<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Buildings</p>
 
 						<div class="grid grid-cols-2 gap-2">
 							{#each infrastructure as infra}
@@ -626,8 +614,7 @@
 									class="astriarch-body-14"
 									style="text-align: center; margin-bottom: 16px; opacity: 0.8;"
 								>
-									No active research project. Click on a research area below to have your scientists
-									and engineers start researching in that area.
+									Click on a research project to start researching.
 								</Text>
 							</div>
 						{/if}
