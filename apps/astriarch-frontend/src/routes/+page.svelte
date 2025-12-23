@@ -497,14 +497,16 @@
 					</div>
 
 					<!-- Right Sidebar with Navigation and View Panel -->
-				<div class="flex w-[600px] flex-shrink-0 flex-col">
+					<div class="flex w-[600px] flex-shrink-0 flex-col">
 						<!-- Navigation Controller (Vertical) -->
 						<div class="flex-shrink-0">
 							<NavigationController items={navigationItems} orientation="vertical" />
 						</div>
 
 						<!-- Current View Panel -->
-						<div class="flex-1 overflow-hidden border-l border-cyan-500/40 bg-black/90 backdrop-blur-sm">
+						<div
+							class="flex-1 overflow-hidden border-l border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+						>
 							{#if $currentView === 'fleet'}
 								<FleetCommandView />
 							{:else if $currentView === 'planets'}

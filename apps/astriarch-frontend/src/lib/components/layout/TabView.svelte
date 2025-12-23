@@ -45,7 +45,7 @@
 				>
 					<!-- Active indicator bar -->
 					{#if activeTabId === tab.id}
-						<div class="absolute left-0 top-0 bottom-0 w-1 bg-cyan-400"></div>
+						<div class="absolute top-0 bottom-0 left-0 w-1 bg-cyan-400"></div>
 					{/if}
 
 					<div class="flex items-center space-x-2">
@@ -65,7 +65,7 @@
 	</div>
 
 	<!-- Tab Content -->
-	<div class="flex-1 overflow-y-auto overflow-x-hidden">
+	<div class="flex-1 overflow-x-hidden overflow-y-auto">
 		{#if activeTab}
 			{@const Component = activeTab.component}
 			<div class="h-full">

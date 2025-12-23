@@ -176,8 +176,7 @@
 		createSpaceBackground(galaxyWidth, galaxyHeight);
 
 		// Center the view on the galaxy
-		const scale =
-			Math.min(canvasWidth / galaxyWidth, canvasHeight / galaxyHeight) * 0.8; // Leave some padding
+		const scale = Math.min(canvasWidth / galaxyWidth, canvasHeight / galaxyHeight) * 0.8; // Leave some padding
 
 		stage.scale({ x: scale, y: scale });
 		stage.position({

@@ -340,7 +340,7 @@
 </script>
 
 <!-- Horizontal layout similar to Planet View -->
-<div class="relative h-full w-full min-h-0">
+<div class="relative h-full min-h-0 w-full">
 	<!-- Background with glass effect -->
 	<div
 		class="absolute inset-0 rounded bg-gradient-to-b from-white/10 to-gray-800/0 backdrop-blur-md"

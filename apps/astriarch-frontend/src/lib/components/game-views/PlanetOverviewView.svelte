@@ -615,10 +615,12 @@
 		<!-- Main Content Layout: Responsive based on layout mode -->
 		<div class="flex min-h-0 flex-1 {$layoutMode === 'landscape' ? 'flex-col gap-3 p-3' : ''}">
 			<!-- Column 1: Available Items to Build -->
-			<div class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape' ? 'rounded border border-cyan-500/20 bg-slate-800/30' : 'border-r border-cyan-500/20'}">
-					<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
-						Build Items
-					</h3>
+			<div
+				class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape'
+					? 'rounded border border-cyan-500/20 bg-slate-800/30'
+					: 'border-r border-cyan-500/20'}"
+			>
+				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">Build Items</h3>
 
 				<!-- Buildings Section -->
 				<div class="mb-4">
@@ -664,7 +666,11 @@
 			</div>
 
 			<!-- Column 2: Resources per Turn & Worker Management -->
-			<div class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape' ? 'rounded border border-cyan-500/20 bg-slate-800/30' : 'border-r border-cyan-500/20'}">
+			<div
+				class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape'
+					? 'rounded border border-cyan-500/20 bg-slate-800/30'
+					: 'border-r border-cyan-500/20'}"
+			>
 				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
 					Workers & Production
 				</h3>
@@ -838,7 +844,11 @@
 			</div>
 
 			<!-- Column 3: Build Queue -->
-			<div class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape' ? 'rounded border border-cyan-500/20 bg-slate-800/30' : ''}">
+			<div
+				class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape'
+					? 'rounded border border-cyan-500/20 bg-slate-800/30'
+					: ''}"
+			>
 				<div class="mb-2 flex items-center justify-between">
 					<h3 class="text-astriarch-body-16-semibold text-astriarch-primary">Build Queue</h3>
 					{#if isFullPlanetData($selectedPlanet)}

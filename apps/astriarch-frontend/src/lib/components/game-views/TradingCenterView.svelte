@@ -64,14 +64,18 @@
 		const resource = getResourceByType(selectedResourceType);
 		if (!resource) return 0;
 
+		let amount;
 		if (selectedTradeType === TradeType.BUY) {
 			// When buying: limited by trading center stockpile and trade max
-			return Math.min(resource.amount, resource.tradeAmountMax);
+			amount = Math.min(resource.amount, resource.tradeAmountMax);
 		} else {
 			// When selling: limited by player resources and trade max
 			const playerAmount = getPlayerResourceAmount(selectedResourceType);
-			return Math.min(playerAmount, resource.tradeAmountMax);
+			amount = Math.min(playerAmount, resource.tradeAmountMax);
 		}
+
+		// Round to 1 decimal place
+		return Math.round(amount * 10) / 10;
 	})();
 
 	// Calculate estimated trade cost
@@ -337,7 +341,7 @@
 					<p class="mb-2 font-['Orbitron'] text-xs text-white/80">
 						Galaxy Trading Center Stockpile
 					</p>
-					<div class="flex gap-4">
+					<div class="flex flex-wrap gap-4">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
 							<span class="font-['Orbitron'] text-base font-semibold text-white">
@@ -354,6 +358,12 @@
 							<IconImage type="iridium" size={24} />
 							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{tradingCenterAmounts.iridium}
+							</span>
+						</div>
+						<div class="flex items-center gap-2">
+							<IconImage type="energy" size={24} />
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
+								{tradingCenterAmounts.energy.toFixed(0)}
 							</span>
 						</div>
 					</div>
@@ -507,28 +517,20 @@
 						</span>
 					</div>
 				</div>
-
-				<!-- Column 3: Galaxy Trading Energy -->
-				<div class="flex-1 text-center">
-					<p class="mb-4 font-['Orbitron'] text-sm text-white/75">Galaxy trading energy amount</p>
-					<span class="font-['Orbitron'] text-3xl font-bold text-white">
-						{tradingCenterAmounts.energy.toFixed(0)}
-					</span>
-				</div>
 			</div>
-		</div>
 
-		<!-- Submit Trade Button -->
-		<div class="absolute right-8 bottom-8">
-			<button
-				class="rounded bg-cyan-400 px-8 py-3 font-['Orbitron']
-					text-sm font-extrabold tracking-widest text-slate-900 uppercase shadow-lg shadow-cyan-400/25 hover:bg-cyan-300
-					disabled:cursor-not-allowed disabled:opacity-50"
-				disabled={tradeAmount <= 0 || !currentPlanet}
-				on:click={submitTrade}
-			>
-				Submit Trade
-			</button>
+			<!-- Submit Trade Button -->
+			<div class="flex justify-end">
+				<button
+					class="rounded bg-cyan-400 px-8 py-3 font-['Orbitron']
+						text-sm font-extrabold tracking-widest text-slate-900 uppercase shadow-lg shadow-cyan-400/25 hover:bg-cyan-300
+						disabled:cursor-not-allowed disabled:opacity-50"
+					disabled={tradeAmount <= 0 || !currentPlanet}
+					on:click={submitTrade}
+				>
+					Submit Trade
+				</button>
+			</div>
 		</div>
 	</div>
 
