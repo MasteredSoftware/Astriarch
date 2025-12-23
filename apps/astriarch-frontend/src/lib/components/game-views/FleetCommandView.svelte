@@ -267,7 +267,7 @@
 		</div>
 
 		<!-- Action Buttons -->
-		<div class="{$layoutMode === 'landscape' ? 'grid grid-cols-2 gap-3' : 'flex gap-3'}">
+		<div class="{$layoutMode === 'landscape' ? 'flex flex-col gap-3' : 'flex gap-3'}">
 			<!-- Waypoint Buttons - only show when planet and destination are selected -->
 			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
 				<Button
