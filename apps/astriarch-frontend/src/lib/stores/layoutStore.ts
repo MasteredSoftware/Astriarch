@@ -107,17 +107,16 @@ export const layoutDimensions = derived(
 	[layoutMode, screenDimensions],
 	([$layoutMode, $dimensions]) => {
 		const HEADER_HEIGHT = 80; // Approximate header height
-		const SIDEBAR_WIDTH_PERCENT = 0.5; // Sidebar takes 50% of screen width in landscape mode
+		const SIDEBAR_WIDTH = 600; // Fixed sidebar width in landscape mode
 		const PANEL_MARGIN = 16; // Margin around panels (mx-4 = 16px)
 		const BOTTOM_NAV_HEIGHT = 48; // Height of bottom navigation bar
 
 		if ($layoutMode === 'landscape') {
-			// Landscape mode: sidebar on right (50%), full height canvas on left (50%)
-			const sidebarWidth = $dimensions.width * SIDEBAR_WIDTH_PERCENT;
+			// Landscape mode: sidebar on right (600px), full height canvas on left (remaining space)
 			return {
-				canvasWidth: $dimensions.width - sidebarWidth - PANEL_MARGIN * 2, // Account for margins
+				canvasWidth: $dimensions.width - SIDEBAR_WIDTH - PANEL_MARGIN * 2, // Account for margins
 				canvasHeight: $dimensions.height - HEADER_HEIGHT - PANEL_MARGIN * 2,
-				sidebarWidth,
+				sidebarWidth: SIDEBAR_WIDTH,
 				sidebarHeight: $dimensions.height - HEADER_HEIGHT - PANEL_MARGIN * 2,
 				hasBottomNav: false,
 				panelPosition: 'right' as const

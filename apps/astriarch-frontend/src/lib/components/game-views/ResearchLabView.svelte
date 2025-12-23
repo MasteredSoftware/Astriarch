@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Text, Button, IconImage, Dropdown } from '$lib/components/astriarch';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import { StarShipType } from 'astriarch-engine/src/model/fleet';
@@ -352,9 +353,9 @@
 		</Text>
 	</div> -->
 
-	<div class="absolute inset-0 flex">
+	<div class="absolute inset-0 flex {$layoutMode === 'landscape' ? 'flex-col gap-3 p-3' : ''}">
 		<!-- Left Section: Allocated Resources -->
-		<div class="h-full w-[461px] p-8">
+		<div class="h-full p-8 {$layoutMode === 'landscape' ? 'w-full' : 'w-[461px]'}">
 			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">Allocated resources</Text>
 
@@ -417,7 +418,7 @@
 		</div>
 
 		<!-- Right Section: Research Options -->
-		<div class="ml-8 h-80 flex-1 p-8">
+		<div class="h-80 flex-1 p-8 {$layoutMode === 'landscape' ? 'w-full' : 'ml-8'}">
 			<div class="h-full rounded bg-gradient-to-b from-white/10 to-gray-800/0 p-8 backdrop-blur-md">
 				<Text class="astriarch-headline-24" style="margin-bottom: 16px;">
 					Custom ships and research improvements

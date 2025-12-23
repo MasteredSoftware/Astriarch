@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { clientGameModel, selectedPlanet } from '$lib/stores/gameStore';
+	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { GameModel } from 'astriarch-engine/src/engine/gameModel';
 	import { TradingCenter } from 'astriarch-engine/src/engine/tradingCenter';
@@ -289,42 +290,42 @@
 </script>
 
 <div
-	class="relative h-full w-full bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md"
+	class="relative h-full w-full overflow-y-auto bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md"
 >
 	<!-- Header -->
 	<div class="p-8">
 		<h1 class="font-['Orbitron'] text-3xl font-bold tracking-wider text-white">
-			Galactic Trade Center, Trading from {currentPlanet?.name || 'Unknown'}
+			Trading from {currentPlanet?.name || 'Unknown'}
 		</h1>
 	</div>
 
-	<div class="flex h-full min-h-0 flex-1 gap-8 px-8 pb-8">
+	<div class="flex min-h-0 flex-1 gap-8 px-8 pb-8 {$layoutMode === 'landscape' ? 'flex-col' : ''}">
 		<!-- Left Panel: Resources Overview -->
-		<div class="flex w-[364px] flex-col">
-			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-6 backdrop-blur-sm">
-				<h2 class="mb-6 font-['Orbitron'] text-2xl font-bold tracking-wider text-white">
+		<div class="flex flex-col {$layoutMode === 'landscape' ? 'w-full' : 'w-[364px]'}">
+			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-4 backdrop-blur-sm">
+				<h2 class="mb-4 font-['Orbitron'] text-xl font-bold tracking-wider text-white">
 					Resources overview
 				</h2>
 
 				<!-- Your Stockpile -->
-				<div class="mb-6">
-					<p class="mb-4 font-['Orbitron'] text-sm text-white/80">Your Stockpile (After trade)</p>
-					<div class="flex gap-6">
+				<div class="mb-4">
+					<p class="mb-2 font-['Orbitron'] text-xs text-white/80">Your Stockpile (After trade)</p>
+					<div class="flex gap-4">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{Math.floor(playerTotalResources.food)}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<IconImage type="ore" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{Math.floor(playerTotalResources.ore)}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<IconImage type="iridium" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{Math.floor(playerTotalResources.iridium)}
 							</span>
 						</div>
@@ -332,26 +333,26 @@
 				</div>
 
 				<!-- Galaxy Trading Center Stockpile -->
-				<div class="mb-6">
-					<p class="mb-4 font-['Orbitron'] text-sm text-white/80">
+				<div class="mb-4">
+					<p class="mb-2 font-['Orbitron'] text-xs text-white/80">
 						Galaxy Trading Center Stockpile
 					</p>
-					<div class="flex gap-6">
+					<div class="flex gap-4">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{tradingCenterAmounts.food}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<IconImage type="ore" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{tradingCenterAmounts.ore}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<IconImage type="iridium" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{tradingCenterAmounts.iridium}
 							</span>
 						</div>
@@ -360,23 +361,23 @@
 
 				<!-- Current Prices -->
 				<div>
-					<p class="mb-4 font-['Orbitron'] text-sm text-white/80">Current Prices</p>
-					<div class="flex gap-6">
+					<p class="mb-2 font-['Orbitron'] text-xs text-white/80">Current Prices</p>
+					<div class="flex gap-4">
 						<div class="flex items-center gap-2">
 							<IconImage type="food" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{resourcePrices.food.toFixed(2)}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<IconImage type="ore" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{resourcePrices.ore.toFixed(2)}
 							</span>
 						</div>
 						<div class="flex items-center gap-2">
 							<IconImage type="iridium" size={24} />
-							<span class="font-['Orbitron'] text-lg font-semibold text-white">
+							<span class="font-['Orbitron'] text-base font-semibold text-white">
 								{resourcePrices.iridium.toFixed(2)}
 							</span>
 						</div>
@@ -410,7 +411,7 @@
 			</div>
 
 			<!-- Three Column Layout -->
-			<div class="mb-6 flex flex-row gap-8">
+			<div class="mb-6 flex gap-8 {$layoutMode === 'landscape' ? 'flex-col' : 'flex-row'}">
 				<!-- Column 1: Resource Selection -->
 				<div class="flex-1">
 					<p class="mb-4 font-['Orbitron'] text-sm text-white">
