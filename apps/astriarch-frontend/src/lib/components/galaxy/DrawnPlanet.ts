@@ -21,7 +21,8 @@ const PLANET_IMAGE_HEIGHT = 32; // Height for planet images (shorter aspect rati
 const SELECTION_COLOR = '#13f3fb'; // Cyan color for selection indicators
 
 // Space platform SVG path data (extracted from space_platform.svg)
-const SPACE_PLATFORM_PATH = 'M 7.6958653,3.2861441 5.0389955,3.2902841 5.044307,4.036119 6.7058765,4.4126148 5.0501514,4.8567873 5.0566117,5.7639415 5.8962508,5.98615 5.0596539,6.1911344 5.0627023,6.6191798 5.3903794,6.983517 4.5827461,7.4685395 3.6776773,6.9989502 4.118251,6.6883587 4.1115511,6.2098655 3.2102136,5.9529947 4.1545105,5.8321729 4.1467178,4.7885653 2.4079264,4.4140722 4.1580059,4.1225342 4.1682022,3.3046399 1.475193,3.2913167 M 1.4853612,3.1581024 C 1.6080175,2.5808663 1.8906406,2.049767 2.3009308,1.6256062 3.1135027,0.78341915 4.3232033,0.45603762 5.4496076,0.77344551 6.576012,1.0908534 7.4368035,2.0016965 7.6901009,3.1442427';
+const SPACE_PLATFORM_PATH =
+	'M 7.6958653,3.2861441 5.0389955,3.2902841 5.044307,4.036119 6.7058765,4.4126148 5.0501514,4.8567873 5.0566117,5.7639415 5.8962508,5.98615 5.0596539,6.1911344 5.0627023,6.6191798 5.3903794,6.983517 4.5827461,7.4685395 3.6776773,6.9989502 4.118251,6.6883587 4.1115511,6.2098655 3.2102136,5.9529947 4.1545105,5.8321729 4.1467178,4.7885653 2.4079264,4.4140722 4.1580059,4.1225342 4.1682022,3.3046399 1.475193,3.2913167 M 1.4853612,3.1581024 C 1.6080175,2.5808663 1.8906406,2.049767 2.3009308,1.6256062 3.1135027,0.78341915 4.3232033,0.45603762 5.4496076,0.77344551 6.576012,1.0908534 7.4368035,2.0016965 7.6901009,3.1442427';
 const SPACE_PLATFORM_SIZE = 10; // Size for space platform icons
 const SPACE_PLATFORM_ORIGINAL_SIZE = 8.467; // Original SVG viewBox size
 
@@ -644,28 +645,30 @@ export class DrawnPlanet {
 			listening: false
 		});
 
-		// Maximum 5 platforms, positioned in an arc from bottom-right to top-right
+		// Maximum 5 platforms, positioned counter-clockwise starting from bottom-right
 		const maxPlatforms = Math.min(platformCount, 5);
 		const arcRadius = 20; // Distance from planet center
-		const startAngle = -45; // Start at bottom-right (degrees)
-		const endAngle = 45; // End at top-right (degrees)
-		const angleStep = maxPlatforms > 1 ? (endAngle - startAngle) / (maxPlatforms - 1) : 0;
 
-		// Create platform icons at each position in the arc
+		// Specific angles for each platform position (counter-clockwise from bottom-right)
+		// Position 1: bottom right, Position 2: bottom middle-right, Position 3: right
+		// Position 4: top middle-right, Position 5: top right
+		const platformAngles = [45, 15, -15, -45, -75]; // In degrees
+
+		// Create platform icons at each position
 		for (let i = 0; i < maxPlatforms; i++) {
-			const angle = startAngle + angleStep * i;
+			const angle = platformAngles[i];
 			const angleRad = (angle * Math.PI) / 180;
 
 			// Calculate position on the arc
 			const x = Math.cos(angleRad) * arcRadius;
 			const y = Math.sin(angleRad) * arcRadius;
 
-			// Create the platform icon using SVG path
+			// Create the platform icon using SVG path (filled with owner color)
 			const platform = new Konva.Path({
 				data: SPACE_PLATFORM_PATH,
 				x: x,
 				y: y,
-				fill: 'transparent',
+				fill: ownerColor, // Filled instead of transparent
 				stroke: ownerColor,
 				strokeWidth: 0.5,
 				scaleX: SPACE_PLATFORM_SIZE / SPACE_PLATFORM_ORIGINAL_SIZE,
