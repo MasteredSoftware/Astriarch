@@ -647,7 +647,7 @@ export class DrawnPlanet {
 
 		// Maximum 5 platforms, positioned counter-clockwise starting from bottom-right
 		const maxPlatforms = Math.min(platformCount, 5);
-		const arcRadius = 20; // Distance from planet center
+		const arcRadius = 22; // Distance from planet center
 
 		// Specific angles for each platform position (counter-clockwise from bottom-right)
 		// Position 1: bottom right, Position 2: bottom middle-right, Position 3: right
@@ -697,7 +697,7 @@ export class DrawnPlanet {
 
 		// Create group for the defender indicator - positioned to the right of the planet
 		this.defenderStrengthIndicator = new Konva.Group({
-			x: PLANET_SIZE / 2 + 14, // Position to the right of space platforms
+			x: PLANET_SIZE / 2 + 20, // Position to the right of space platforms
 			y: 0, // Centered vertically on the planet
 			perfectDrawEnabled: false,
 			listening: false
