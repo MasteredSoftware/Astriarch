@@ -340,12 +340,16 @@
 </script>
 
 <!-- Horizontal layout similar to Planet View -->
-<div class="relative h-full w-full overflow-y-auto bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md">
+<div
+	class="relative h-full w-full overflow-y-auto bg-gradient-to-b from-slate-900/90 to-slate-800/90 backdrop-blur-md"
+>
 	<div class="flex min-h-0 flex-1 gap-8 p-8 {$layoutMode === 'landscape' ? 'flex-col' : ''}">
 		<!-- Left Section: Allocated Resources -->
 		<div class="flex flex-col {$layoutMode === 'landscape' ? 'w-full' : 'w-[364px]'}">
 			<div class="rounded bg-gradient-to-b from-white/10 to-transparent p-4 backdrop-blur-sm">
-				<h2 class="mb-4 font-['Orbitron'] text-xl font-bold tracking-wider text-white">Allocated resources</h2>
+				<h2 class="mb-4 font-['Orbitron'] text-xl font-bold tracking-wider text-white">
+					Allocated resources
+				</h2>
 
 				<!-- Energy Bar -->
 				<div class="mb-4">
@@ -411,213 +415,213 @@
 				<h2 class="mb-4 font-['Orbitron'] text-xl font-bold tracking-wider text-white">
 					Research improvements
 				</h2>
+				<div class="flex {$layoutMode === 'landscape' ? 'flex-col' : ''}">
+					<div class="flex h-55">
+						<!-- Create Ships Column -->
+						<div class="mr-16 flex flex-col items-center">
+							<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Create Ships</p>
 
-				<div class="flex h-40">
-					<!-- Create Ships Column -->
-					<div class="mr-16 flex flex-col items-center">
-						<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">
-							Create Ships
-						</p>
-
-						<div class="grid grid-cols-2 gap-2">
-							{#each shipTypes as ship}
-								<div
-									class="relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType ===
-										ship.researchType || currentType === ship.researchType
-										? 'border-2 border-cyan-500 bg-gray-700'
-										: 'border-transparent bg-gray-700/50'}"
-									on:click={() => selectCustomShipResearch(ship.researchType)}
-									role="button"
-									tabindex="0"
-								>
-									<IconImage
-										type={ship.icon}
-										size={32}
-										class="text-cyan-400"
-										style="filter: drop-shadow(0px 0px 18px rgba(125,251,255,0.25));"
-									/>
-
-									<!-- Level Indicator -->
-									{#if getResearchLevel(ship.researchType) > 0}
-										<div class="absolute right-0 bottom-0">
-											<span
-												class="inline-block min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
-											>
-												{getResearchLevel(ship.researchType)}
-											</span>
-										</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Ships Column -->
-					<div class="mr-16 flex flex-col items-center">
-						<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Ships</p>
-
-						<div class="grid grid-cols-1 gap-2">
-							{#each improvements as improvement}
-								<div
-									class="relative h-12 w-12 rounded-lg {currentType === improvement.researchType
-										? 'border-2 border-cyan-500 bg-gray-700'
-										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
-									on:click={() => submitResearchItem(improvement.researchType)}
-									role="button"
-									tabindex="0"
-								>
-									<IconImage type={improvement.icon} size={32} />
-
-									<!-- Level Indicator -->
-									{#if getResearchLevel(improvement.researchType) > 0}
-										<div class="absolute right-0 bottom-0">
-											<span
-												class="inline-block min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
-											>
-												{getResearchLevel(improvement.researchType)}
-											</span>
-										</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Buildings -->
-					<div class="mr-16 flex flex-col items-center">
-						<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Buildings</p>
-
-						<div class="grid grid-cols-2 gap-2">
-							{#each infrastructure as infra}
-								<div
-									class="relative h-12 w-12 rounded-lg {currentType === infra.researchType
-										? 'border-2 border-cyan-500 bg-gray-700'
-										: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
-									on:click={() => submitResearchItem(infra.researchType)}
-									role="button"
-									tabindex="0"
-								>
-									<IconImage type={infra.icon} size={32} />
-
-									<!-- Level Indicator -->
-									{#if getResearchLevel(infra.researchType) > 0}
-										<div class="absolute right-0 bottom-0">
-											<span
-												class="min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
-											>
-												{getResearchLevel(infra.researchType)}
-											</span>
-										</div>
-									{/if}
-								</div>
-							{/each}
-						</div>
-					</div>
-
-					<!-- Conditional Right Section -->
-					<div class="flex flex-1 flex-col">
-						{#if selectedCustomShipType && !isCustomShipResearch}
-							<!-- Custom Ship: Advantage/Disadvantage Section (for new ship selection) -->
-							<div class="mb-4 flex flex-col">
-								<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
-									Configuring {shipTypes.find((s) => s.researchType === selectedCustomShipType)
-										?.name} Research
-								</Text>
-
-								<div class="flex">
-									<div class="mr-4 flex-1">
-										<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
-											Advantage against
-										</Text>
-
-										<Dropdown
-											options={shipTypeOptions}
-											value={advantageAgainst}
-											placeholder="Select ship type"
-											variant="secondary"
-											onSelect={handleAdvantageSelection}
+							<div class="grid grid-cols-2 gap-2">
+								{#each shipTypes as ship}
+									<div
+										class="relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType ===
+											ship.researchType || currentType === ship.researchType
+											? 'border-2 border-cyan-500 bg-gray-700'
+											: 'border-transparent bg-gray-700/50'}"
+										on:click={() => selectCustomShipResearch(ship.researchType)}
+										role="button"
+										tabindex="0"
+									>
+										<IconImage
+											type={ship.icon}
+											size={32}
+											class="text-cyan-400"
+											style="filter: drop-shadow(0px 0px 18px rgba(125,251,255,0.25));"
 										/>
-									</div>
 
-									<div class="flex-1">
-										<Text
-											style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
-										>
-											Disadvantage against
-										</Text>
-
-										<Dropdown
-											options={shipTypeOptions}
-											value={disadvantageAgainst}
-											placeholder="Select ship type"
-											variant="secondary"
-											onSelect={handleDisadvantageSelection}
-										/>
-									</div>
-								</div>
-							</div>
-
-							<div class="mt-auto flex">
-								<Button onclick={submitSelectedCustomShipResearch} label="RESEARCH SHIP" />
-							</div>
-						{:else if currentResearchInfo}
-							<!-- Currently Researching Section (for both standard and custom ship research) -->
-							<div class="flex flex-col">
-								<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
-									Currently researching
-								</Text>
-
-								<div class="mb-6 flex items-start">
-									<div class="mr-4 flex h-8 w-8 items-center justify-center">
-										<IconImage type={getResearchIcon(currentResearchInfo.type)} size={32} />
-									</div>
-
-									<div class="flex flex-col">
-										<Text class="astriarch-body-14" style="margin-bottom: 4px;">
-											{currentResearchInfo.name}.
-										</Text>
-										<Text class="astriarch-body-14">
-											Estimated turns remaining: {currentResearchInfo.cyclesRemaining < 999
-												? currentResearchInfo.cyclesRemaining
-												: 'Infinity'}
-										</Text>
-										{#if currentResearchInfo.levelData}
-											<Text class="astriarch-body-12" style="margin-top: 4px; opacity: 0.7;">
-												Progress: {(currentResearchInfo.levelData.percentComplete * 100).toFixed(
-													1
-												)}% complete
-											</Text>
-											<!-- Progress bar -->
-											<div class="mt-2 flex gap-1">
-												{#each Array(20) as _, i}
-													<div
-														class="h-2 w-2 rounded-sm"
-														style="background-color: {i <
-														Math.round(currentResearchInfo.levelData.percentComplete * 20)
-															? '#00ffff'
-															: '#333'}"
-													></div>
-												{/each}
+										<!-- Level Indicator -->
+										{#if getResearchLevel(ship.researchType) > 0}
+											<div class="absolute right-0 bottom-0">
+												<span
+													class="inline-block min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
+												>
+													{getResearchLevel(ship.researchType)}
+												</span>
 											</div>
 										{/if}
 									</div>
+								{/each}
+							</div>
+						</div>
+
+						<!-- Ships Column -->
+						<div class="mr-16 flex flex-col items-center">
+							<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Ships</p>
+
+							<div class="grid grid-cols-1 gap-2">
+								{#each improvements as improvement}
+									<div
+										class="relative h-12 w-12 rounded-lg {currentType === improvement.researchType
+											? 'border-2 border-cyan-500 bg-gray-700'
+											: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
+										on:click={() => submitResearchItem(improvement.researchType)}
+										role="button"
+										tabindex="0"
+									>
+										<IconImage type={improvement.icon} size={32} />
+
+										<!-- Level Indicator -->
+										{#if getResearchLevel(improvement.researchType) > 0}
+											<div class="absolute right-0 bottom-0">
+												<span
+													class="inline-block min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
+												>
+													{getResearchLevel(improvement.researchType)}
+												</span>
+											</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+
+						<!-- Buildings -->
+						<div class="mr-16 flex flex-col items-center">
+							<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Buildings</p>
+
+							<div class="grid grid-cols-2 gap-2">
+								{#each infrastructure as infra}
+									<div
+										class="relative h-12 w-12 rounded-lg {currentType === infra.researchType
+											? 'border-2 border-cyan-500 bg-gray-700'
+											: 'bg-gray-700/50'} flex cursor-pointer items-center justify-center transition-colors hover:bg-gray-600/50"
+										on:click={() => submitResearchItem(infra.researchType)}
+										role="button"
+										tabindex="0"
+									>
+										<IconImage type={infra.icon} size={32} />
+
+										<!-- Level Indicator -->
+										{#if getResearchLevel(infra.researchType) > 0}
+											<div class="absolute right-0 bottom-0">
+												<span
+													class="min-w-[14px] px-1 py-0.5 text-center text-[10px] leading-none font-bold text-[#23BDFF]"
+												>
+													{getResearchLevel(infra.researchType)}
+												</span>
+											</div>
+										{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+					</div>
+					<div class="flex h-40">
+						<!-- Conditional Right Section -->
+						<div class="flex flex-1 flex-col">
+							{#if selectedCustomShipType && !isCustomShipResearch}
+								<!-- Custom Ship: Advantage/Disadvantage Section (for new ship selection) -->
+								<div class="mb-4 flex flex-col">
+									<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
+										Configuring {shipTypes.find((s) => s.researchType === selectedCustomShipType)
+											?.name} Research
+									</Text>
+
+									<div class="flex">
+										<div class="mr-4 flex-1">
+											<Text class="astriarch-body-14-semibold" style="margin-bottom: 16px;">
+												Advantage against
+											</Text>
+
+											<Dropdown
+												options={shipTypeOptions}
+												value={advantageAgainst}
+												placeholder="Select ship type"
+												variant="secondary"
+												onSelect={handleAdvantageSelection}
+											/>
+										</div>
+
+										<div class="flex-1">
+											<Text
+												style="font-family: 'Orbitron', sans-serif; font-weight: 600; font-size: 14px; color: #FFFFFF; line-height: 24px; letter-spacing: 0.07px; margin-bottom: 16px;"
+											>
+												Disadvantage against
+											</Text>
+
+											<Dropdown
+												options={shipTypeOptions}
+												value={disadvantageAgainst}
+												placeholder="Select ship type"
+												variant="secondary"
+												onSelect={handleDisadvantageSelection}
+											/>
+										</div>
+									</div>
 								</div>
 
-								<div class="mt-auto flex gap-4">
-									<Button onclick={cancelResearchItem}>CANCEL RESEARCH</Button>
+								<div class="mt-auto flex">
+									<Button onclick={submitSelectedCustomShipResearch} label="RESEARCH SHIP" />
 								</div>
-							</div>
-						{:else}
-							<!-- Default: No research selected -->
-							<div class="flex h-full flex-col items-center justify-center">
-								<Text
-									class="astriarch-body-14"
-									style="text-align: center; margin-bottom: 16px; opacity: 0.8;"
-								>
-									Click on a research project to start researching.
-								</Text>
-							</div>
-						{/if}
+							{:else if currentResearchInfo}
+								<!-- Currently Researching Section (for both standard and custom ship research) -->
+								<div class="flex flex-col">
+									<Text class="astriarch-body-16-semibold" style="margin-bottom: 16px;">
+										Currently researching
+									</Text>
+
+									<div class="mb-6 flex items-start">
+										<div class="mr-4 flex h-8 w-8 items-center justify-center">
+											<IconImage type={getResearchIcon(currentResearchInfo.type)} size={32} />
+										</div>
+
+										<div class="flex flex-col">
+											<Text class="astriarch-body-14" style="margin-bottom: 4px;">
+												{currentResearchInfo.name}.
+											</Text>
+											<Text class="astriarch-body-14">
+												Estimated turns remaining: {currentResearchInfo.cyclesRemaining < 999
+													? currentResearchInfo.cyclesRemaining
+													: 'Infinity'}
+											</Text>
+											{#if currentResearchInfo.levelData}
+												<Text class="astriarch-body-12" style="margin-top: 4px; opacity: 0.7;">
+													Progress: {(currentResearchInfo.levelData.percentComplete * 100).toFixed(
+														1
+													)}% complete
+												</Text>
+												<!-- Progress bar -->
+												<div class="mt-2 flex gap-1">
+													{#each Array(20) as _, i}
+														<div
+															class="h-2 w-2 rounded-sm"
+															style="background-color: {i <
+															Math.round(currentResearchInfo.levelData.percentComplete * 20)
+																? '#00ffff'
+																: '#333'}"
+														></div>
+													{/each}
+												</div>
+											{/if}
+										</div>
+									</div>
+
+									<div class="mt-auto flex gap-4">
+										<Button onclick={cancelResearchItem}>CANCEL RESEARCH</Button>
+									</div>
+								</div>
+							{:else}
+								<!-- Default: No research selected -->
+								<div class="flex h-full flex-col items-center justify-center">
+									<Text
+										class="astriarch-body-14"
+										style="text-align: center; margin-bottom: 16px; opacity: 0.8;"
+									>
+										Click on a research project to start researching.
+									</Text>
+								</div>
+							{/if}
+						</div>
 					</div>
 				</div>
 			</div>

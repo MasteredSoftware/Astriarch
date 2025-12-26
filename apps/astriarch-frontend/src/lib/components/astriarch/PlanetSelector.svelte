@@ -81,7 +81,7 @@
 		disabled={disabled || planets.length === 0}
 	>
 		<Select.Trigger
-			class="font-orbitron min-w-[160px] border-slate-600 bg-slate-700 text-xs text-white hover:bg-slate-600"
+			class="font-orbitron min-w-[40px] border-slate-600 bg-slate-700 text-xs text-white hover:bg-slate-600"
 		>
 			{selectedPlanet?.name || 'Select planet'}
 		</Select.Trigger>

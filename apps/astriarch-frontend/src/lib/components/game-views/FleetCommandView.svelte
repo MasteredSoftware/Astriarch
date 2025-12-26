@@ -209,7 +209,7 @@
 				Send ships from {currentSelectedPlanet?.name || 'Unknown'}
 			</h1>
 			<p class="mt-2 text-[14px] leading-[28px] tracking-[0.14px] text-white/75 opacity-80">
-				Select ships from to explore or attack
+				Select ships to explore or attack
 			</p>
 		</div>
 
@@ -267,7 +267,7 @@
 		</div>
 
 		<!-- Action Buttons -->
-		<div class="{$layoutMode === 'landscape' ? 'flex flex-col gap-3' : 'flex gap-3'}">
+		<div class={$layoutMode === 'landscape' ? 'flex flex-col gap-3' : 'flex gap-3'}>
 			<!-- Waypoint Buttons - only show when planet and destination are selected -->
 			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
 				<Button
@@ -361,8 +361,8 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="{$layoutMode === 'landscape' ? 'pb-6' : 'overflow-x-auto pb-6'}">
-				<div class="{$layoutMode === 'landscape' ? 'flex flex-wrap gap-4' : 'flex min-w-max gap-4'}">
+			<div class={$layoutMode === 'landscape' ? 'pb-6' : 'overflow-x-auto pb-6'}>
+				<div class={$layoutMode === 'landscape' ? 'flex flex-wrap gap-4' : 'flex min-w-max gap-4'}>
 					{#each ships as ship, index}
 						<ShipCard
 							{ship}
