@@ -465,8 +465,13 @@
 	{#if $selectedPlanet && isOwnedPlanet}
 		<!-- Planet Header Summary -->
 		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-3">
-			<div id="selected-planet-header" class="flex items-center justify-between gap-6">
-				<!-- Left: Planet Name & Info -->
+			<div
+				id="selected-planet-header"
+				class="flex {$layoutMode === 'landscape'
+					? 'flex-col gap-2'
+					: 'items-center justify-between gap-6'}"
+			>
+				<!-- Row 1: Planet Name & Info -->
 				<div class="flex items-center space-x-4">
 					<h2 class="text-astriarch-headline-24 text-astriarch-primary">
 						{$selectedPlanet.name}
@@ -491,7 +496,7 @@
 					</div>
 				</div>
 
-				<!-- Middle: Resources -->
+				<!-- Row 2: Resources -->
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Resources:</span>
 					{#if isFullPlanetData($selectedPlanet)}
@@ -532,7 +537,7 @@
 					{/if}
 				</div>
 
-				<!-- Right: Improvements -->
+				<!-- Row 3: Improvements -->
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Improvements:</span>
 					{#if isFullPlanetData($selectedPlanet)}
