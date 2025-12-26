@@ -647,7 +647,7 @@ export class DrawnPlanet {
 
 		// Maximum 5 platforms, positioned counter-clockwise starting from bottom-right
 		const maxPlatforms = Math.min(platformCount, 5);
-		const arcRadius = 22; // Distance from planet center
+		const arcRadius = 28; // Distance from planet center (beyond defenders)
 
 		// Specific angles for each platform position (counter-clockwise from bottom-right)
 		// Position 1: bottom right, Position 2: bottom middle-right, Position 3: right
@@ -695,9 +695,9 @@ export class DrawnPlanet {
 		// Get owner color for the dots
 		const ownerColor = this.owner ? this.getOwnerColor() : '#FFFFFF';
 
-		// Create group for the defender indicator - positioned to the right of the planet
+		// Create group for the defender indicator - positioned hugging the right side of the planet
 		this.defenderStrengthIndicator = new Konva.Group({
-			x: PLANET_SIZE / 2 + 20, // Position to the right of space platforms
+			x: PLANET_SIZE / 2 + 8, // Position close to planet edge
 			y: 0, // Centered vertically on the planet
 			perfectDrawEnabled: false,
 			listening: false
@@ -706,22 +706,20 @@ export class DrawnPlanet {
 		// Use same dot sizing as mobile fleet indicator
 		const dotSize = 4;
 		const dotSpacing = 2;
-		const maxDotsPerColumn = 5;
-		const columnSpacing = 6;
+		const maxDots = 5; // Single column only, max 5 dots
 
-		// Create dots in vertical columns, starting from bottom
-		for (let i = 0; i < relativeStrength; i++) {
-			const columnIndex = Math.floor(i / maxDotsPerColumn);
-			const dotInColumn = i % maxDotsPerColumn;
+		// Limit to single column (max 5 dots)
+		const dotsToShow = Math.min(relativeStrength, maxDots);
 
+		// Create dots in a single vertical column
+		for (let i = 0; i < dotsToShow; i++) {
 			// Position dots vertically from bottom up
-			const x = columnIndex * columnSpacing;
 			const y =
-				(maxDotsPerColumn - 1 - dotInColumn) * (dotSize + dotSpacing) -
-				((maxDotsPerColumn - 1) * (dotSize + dotSpacing)) / 2;
+				(maxDots - 1 - i) * (dotSize + dotSpacing) -
+				((maxDots - 1) * (dotSize + dotSpacing)) / 2;
 
 			const dot = new Konva.Circle({
-				x: x,
+				x: 0, // Single column at x=0
 				y: y,
 				radius: dotSize / 2,
 				fill: ownerColor,
