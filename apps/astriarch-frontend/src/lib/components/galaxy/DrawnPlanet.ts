@@ -566,11 +566,7 @@ export class DrawnPlanet {
 		let platformCount = 0;
 
 		// For owned planets with planetary fleet data
-		if (
-			this.owner &&
-			this.owner.id === this.gameModel.mainPlayer.id &&
-			this.planetData.planetaryFleet?.starships?.length
-		) {
+		if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
 			// Count space platforms
 			platformCount = this.planetData.planetaryFleet.starships.filter(
 				(ship) => ship.type === StarShipType.SpacePlatform
@@ -715,8 +711,7 @@ export class DrawnPlanet {
 		for (let i = 0; i < dotsToShow; i++) {
 			// Position dots vertically from bottom up
 			const y =
-				(maxDots - 1 - i) * (dotSize + dotSpacing) -
-				((maxDots - 1) * (dotSize + dotSpacing)) / 2;
+				(maxDots - 1 - i) * (dotSize + dotSpacing) - ((maxDots - 1) * (dotSize + dotSpacing)) / 2;
 
 			const dot = new Konva.Circle({
 				x: 0, // Single column at x=0
