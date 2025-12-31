@@ -480,6 +480,12 @@ export class WebSocketServer {
             clientGameModel.lastEventChecksum = currentChecksum;
           }
 
+          // Include the current state checksum in the synced state
+          const currentStateChecksum = GameController.getPlayerStateChecksum(client.playerId);
+          if (currentStateChecksum) {
+            clientGameModel.clientModelChecksum = currentStateChecksum;
+          }
+
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
           if (firstPlanetId) {
@@ -1368,10 +1374,12 @@ export class WebSocketServer {
         }
 
         // Send CLIENT_EVENT message with the events for this player
+        const playerStateChecksum = GameController.getPlayerStateChecksum(playerId);
         const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
           events: playerEvents,
           currentCycle,
           ...(checksum && { stateChecksum: checksum }),
+          ...(playerStateChecksum && { clientModelChecksum: playerStateChecksum }),
         });
 
         const clientId = this.getClientIdBySessionId(targetClient.sessionId);

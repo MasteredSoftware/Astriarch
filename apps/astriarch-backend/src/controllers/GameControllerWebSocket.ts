@@ -20,6 +20,8 @@ import {
   ClientEventType,
   CommandProcessor,
   calculateRollingEventChecksum,
+  calculateClientModelChecksum,
+  constructClientGameModel,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -92,6 +94,9 @@ export interface GameResult {
 export class GameController {
   // Track rolling event checksums per player for desync detection
   private static playerEventChecksums = new Map<string, string>();
+
+  // Track client model state checksums per player for state desync detection
+  private static playerStateChecksums = new Map<string, string>();
 
   // ==========================================
   // Game Management Methods (like old app.js)
@@ -681,6 +686,11 @@ export class GameController {
       // Store the new checksum for next time
       this.playerEventChecksums.set(playerId, newChecksum);
 
+      // Calculate client model state checksum
+      const clientModel = constructClientGameModel(gameModelData.modelData, playerId);
+      const stateChecksum = await calculateClientModelChecksum(clientModel);
+      this.playerStateChecksums.set(playerId, stateChecksum);
+
       logger.info(`Processed ${command.type} command for player ${player.name} in game ${gameId}`);
 
       return {
@@ -689,7 +699,13 @@ export class GameController {
         gameData: gameModelData.modelData,
         events,
         checksum: newChecksum,
+        clientModelChecksum: stateChecksum,
         currentCycle: gameModelData.modelData.currentCycle || 0,
+      } as GameResult & {
+        checksum?: string;
+        clientModelChecksum?: string;
+        events?: ClientEvent[];
+        currentCycle?: number;
       };
     } catch (error) {
       logger.error(`handleGameCommand error for ${command.type}:`, error);
@@ -712,10 +728,18 @@ export class GameController {
   }
 
   /**
+   * Get the current client model state checksum for a player
+   */
+  static getPlayerStateChecksum(playerId: string): string | undefined {
+    return this.playerStateChecksums.get(playerId);
+  }
+
+  /**
    * Reset event checksum for a player (useful when they rejoin)
    */
   static resetPlayerEventChecksum(playerId: string): void {
     this.playerEventChecksums.delete(playerId);
+    this.playerStateChecksums.delete(playerId);
   }
 
   // ==========================================

@@ -174,6 +174,7 @@ export interface IGameStateUpdatePayload {
   clientGameModel?: unknown;
   currentCycle?: number;
   stateChecksum?: string; // SHA256 hash for desync detection (calculated by backend)
+  clientModelChecksum?: string; // SHA256 hash of critical client model state
 }
 
 export interface IEventNotificationsPayload {
@@ -231,7 +232,8 @@ export interface IGameCommandPayload {
 
 export interface IClientEventPayload {
   events: ClientEvent[];
-  stateChecksum: string; // SHA256 hash for desync detection
+  stateChecksum: string; // SHA256 hash for desync detection (event sequence)
+  clientModelChecksum?: string; // SHA256 hash of critical client model state
   currentCycle: number; // Game cycle when events occurred
 }
 

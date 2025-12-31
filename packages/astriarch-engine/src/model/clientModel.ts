@@ -63,4 +63,12 @@ export interface ClientModelData extends ModelBase {
    * Empty string initially, then updated with each event batch.
    */
   lastEventChecksum?: string;
+
+  /**
+   * Checksum of critical client model state (planets, fleets, resources).
+   * Used to detect state desync - if client and server state checksums diverge,
+   * we know the actual game state is out of sync (different from event sequence issues).
+   * Updated after every state change.
+   */
+  clientModelChecksum?: string;
 }

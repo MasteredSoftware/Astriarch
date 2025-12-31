@@ -50,6 +50,7 @@ export * from './engine/GameCommands';
 export { CommandProcessor } from './engine/CommandProcessor';
 export { EventApplicator } from './engine/EventApplicator';
 export { calculateRollingEventChecksum } from './engine/StateChecksum';
+export { calculateClientModelChecksum, calculateClientModelChecksumComponents } from './utils/stateChecksum';
 
 // Export engine classes
 export { Player };
