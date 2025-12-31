@@ -20,6 +20,7 @@
 
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
 	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
+	import { layoutMode } from '$lib/stores/layoutStore';
 
 	import {
 		TopOverview,
@@ -471,67 +472,119 @@
 			</div>
 		{:else if gameStarted}
 			<!-- Game View -->
-			<div class="flex h-[calc(100vh-80px)] flex-col">
-				<!-- Central Game Content Area with Galaxy Canvas as background -->
-				<div class="relative mx-4 flex-1 overflow-hidden rounded-lg">
-					<!-- Galaxy Canvas - Always visible as background (client-side only) -->
-					<div class="absolute inset-0">
-						{#if GalaxyCanvas}
-							<GalaxyCanvas />
+			{#if $layoutMode === 'landscape'}
+				<!-- Landscape Layout: Right sidebar with navigation -->
+				<div class="flex h-[calc(100vh-80px)] flex-row">
+					<!-- Galaxy Canvas - Full width left side -->
+					<div class="relative flex-1 overflow-hidden rounded-l-lg">
+						<div class="absolute inset-0">
+							{#if GalaxyCanvas}
+								<GalaxyCanvas />
+							{/if}
+						</div>
+
+						<!-- Info Panel - Top Left -->
+						<div
+							class="absolute top-4 left-4 z-20 max-h-80 max-w-48 overflow-y-auto rounded-lg border border-cyan-500/30 bg-black/80 backdrop-blur-sm"
+						>
+							<PlanetInfoPanel />
+						</div>
+
+						<!-- Task Notifications Panel - Top Right of canvas (not overlapping sidebar) -->
+						<div class="absolute top-4 right-4 z-20">
+							<TaskNotificationPanel />
+						</div>
+					</div>
+
+					<!-- Right Sidebar with Navigation and View Panel -->
+					<div class="flex w-[600px] flex-shrink-0 flex-col">
+						<!-- Navigation Controller (Vertical) -->
+						<div class="flex-shrink-0">
+							<NavigationController items={navigationItems} orientation="vertical" />
+						</div>
+
+						<!-- Current View Panel -->
+						<div
+							class="flex-1 overflow-hidden border-l border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+						>
+							{#if $currentView === 'fleet'}
+								<FleetCommandView />
+							{:else if $currentView === 'planets'}
+								<PlanetOverviewView />
+							{:else if $currentView === 'research'}
+								<ResearchLabView />
+							{:else if $currentView === 'trading'}
+								<TradingCenterView />
+							{:else if $currentView === 'activity'}
+								<ActivityView />
+							{/if}
+						</div>
+					</div>
+				</div>
+			{:else}
+				<!-- Portrait Layout: Bottom panels with navigation -->
+				<div class="flex h-[calc(100vh-80px)] flex-col">
+					<!-- Central Game Content Area with Galaxy Canvas as background -->
+					<div class="relative mx-4 flex-1 overflow-hidden rounded-lg">
+						<!-- Galaxy Canvas - Always visible as background (client-side only) -->
+						<div class="absolute inset-0">
+							{#if GalaxyCanvas}
+								<GalaxyCanvas />
+							{/if}
+						</div>
+
+						<!-- Info Panel - Top Left -->
+						<div
+							class="absolute top-4 left-4 z-20 max-h-80 max-w-48 overflow-y-auto rounded-lg border border-cyan-500/30 bg-black/80 backdrop-blur-sm"
+						>
+							<PlanetInfoPanel />
+						</div>
+
+						<!-- Task Notifications Panel - Top Right -->
+						<div class="absolute top-4 right-4 z-20">
+							<TaskNotificationPanel />
+						</div>
+
+						<!-- Overlay Panels for different views -->
+						{#if $currentView === 'fleet'}
+							<div
+								class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+							>
+								<FleetCommandView />
+							</div>
+						{:else if $currentView === 'planets'}
+							<div
+								class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+							>
+								<PlanetOverviewView />
+							</div>
+						{:else if $currentView === 'research'}
+							<div
+								class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+							>
+								<ResearchLabView />
+							</div>
+						{:else if $currentView === 'trading'}
+							<div
+								class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+							>
+								<TradingCenterView />
+							</div>
+						{:else if $currentView === 'activity'}
+							<div
+								class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
+							>
+								<ActivityView />
+							</div>
 						{/if}
 					</div>
 
-					<!-- Info Panel - Top Left -->
-					<div
-						class="absolute top-4 left-4 z-20 max-h-80 max-w-48 overflow-y-auto rounded-lg border border-cyan-500/30 bg-black/80 backdrop-blur-sm"
-					>
-						<PlanetInfoPanel />
+					<!-- Bottom Navigation -->
+					<div class="mt-1">
+						<NavigationController items={navigationItems} />
 					</div>
-
-					<!-- Task Notifications Panel - Top Right -->
-					<div class="absolute top-4 right-4 z-20">
-						<TaskNotificationPanel />
-					</div>
-
-					<!-- Overlay Panels for different views -->
-					{#if $currentView === 'fleet'}
-						<div
-							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
-						>
-							<FleetCommandView />
-						</div>
-					{:else if $currentView === 'planets'}
-						<div
-							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
-						>
-							<PlanetOverviewView />
-						</div>
-					{:else if $currentView === 'research'}
-						<div
-							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
-						>
-							<ResearchLabView />
-						</div>
-					{:else if $currentView === 'trading'}
-						<div
-							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
-						>
-							<TradingCenterView />
-						</div>
-					{:else if $currentView === 'activity'}
-						<div
-							class="absolute right-4 bottom-4 left-4 h-1/2 overflow-hidden rounded-lg border border-cyan-500/40 bg-black/90 backdrop-blur-sm"
-						>
-							<ActivityView />
-						</div>
-					{/if}
 				</div>
-
-				<!-- Bottom Navigation -->
-				<div class="mt-1">
-					<NavigationController items={navigationItems} />
-				</div>
-			</div>
+			{/if}
 		{:else}
 			<!-- Welcome Screen -->
 			<div class="flex h-[calc(100vh-200px)] items-center justify-center">

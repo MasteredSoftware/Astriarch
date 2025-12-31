@@ -11,6 +11,7 @@
 		selectedPlanet,
 		selectedPlanetId
 	} from '$lib/stores/gameStore';
+	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import {
@@ -464,8 +465,13 @@
 	{#if $selectedPlanet && isOwnedPlanet}
 		<!-- Planet Header Summary -->
 		<div class="flex-shrink-0 border-b border-cyan-500/20 bg-slate-800/50 p-3">
-			<div id="selected-planet-header" class="flex items-center justify-between gap-6">
-				<!-- Left: Planet Name & Info -->
+			<div
+				id="selected-planet-header"
+				class="flex {$layoutMode === 'landscape'
+					? 'flex-col gap-2'
+					: 'items-center justify-between gap-6'}"
+			>
+				<!-- Row 1: Planet Name & Info -->
 				<div class="flex items-center space-x-4">
 					<h2 class="text-astriarch-headline-24 text-astriarch-primary">
 						{$selectedPlanet.name}
@@ -490,7 +496,7 @@
 					</div>
 				</div>
 
-				<!-- Middle: Resources -->
+				<!-- Row 2: Resources -->
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Resources:</span>
 					{#if isFullPlanetData($selectedPlanet)}
@@ -531,7 +537,7 @@
 					{/if}
 				</div>
 
-				<!-- Right: Improvements -->
+				<!-- Row 3: Improvements -->
 				<div class="flex items-center space-x-3">
 					<span class="text-xs text-slate-400">Improvements:</span>
 					{#if isFullPlanetData($selectedPlanet)}
@@ -611,10 +617,14 @@
 			</div>
 		</div>
 
-		<!-- Three Column Layout -->
-		<div class="flex min-h-0 flex-1">
+		<!-- Main Content Layout: Responsive based on layout mode -->
+		<div class="flex min-h-0 flex-1 {$layoutMode === 'landscape' ? 'flex-col gap-3 p-3' : ''}">
 			<!-- Column 1: Available Items to Build -->
-			<div class="flex-1 overflow-y-auto border-r border-cyan-500/20 p-3">
+			<div
+				class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape'
+					? 'rounded border border-cyan-500/20 bg-slate-800/30'
+					: 'border-r border-cyan-500/20'}"
+			>
 				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">Build Items</h3>
 
 				<!-- Buildings Section -->
@@ -661,7 +671,11 @@
 			</div>
 
 			<!-- Column 2: Resources per Turn & Worker Management -->
-			<div class="flex-1 overflow-y-auto border-r border-cyan-500/20 p-3">
+			<div
+				class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape'
+					? 'rounded border border-cyan-500/20 bg-slate-800/30'
+					: 'border-r border-cyan-500/20'}"
+			>
 				<h3 class="text-astriarch-body-16-semibold text-astriarch-primary mb-2">
 					Workers & Production
 				</h3>
@@ -835,7 +849,11 @@
 			</div>
 
 			<!-- Column 3: Build Queue -->
-			<div class="flex-1 overflow-y-auto p-3">
+			<div
+				class="flex-1 overflow-y-auto p-3 {$layoutMode === 'landscape'
+					? 'rounded border border-cyan-500/20 bg-slate-800/30'
+					: ''}"
+			>
 				<div class="mb-2 flex items-center justify-between">
 					<h3 class="text-astriarch-body-16-semibold text-astriarch-primary">Build Queue</h3>
 					{#if isFullPlanetData($selectedPlanet)}

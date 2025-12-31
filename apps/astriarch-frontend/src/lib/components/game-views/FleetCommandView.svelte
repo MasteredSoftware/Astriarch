@@ -2,6 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { clientGameModel, selectedPlanetId, gameActions } from '$lib/stores/gameStore';
 	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
+	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
 	import { PlanetSelector, Button } from '$lib/components/astriarch';
@@ -208,7 +209,7 @@
 				Send ships from {currentSelectedPlanet?.name || 'Unknown'}
 			</h1>
 			<p class="mt-2 text-[14px] leading-[28px] tracking-[0.14px] text-white/75 opacity-80">
-				Select ships from to explore or attack
+				Select ships to explore or attack
 			</p>
 		</div>
 
@@ -266,7 +267,7 @@
 		</div>
 
 		<!-- Action Buttons -->
-		<div class="flex gap-3">
+		<div class={$layoutMode === 'landscape' ? 'flex flex-col gap-3' : 'flex gap-3'}>
 			<!-- Waypoint Buttons - only show when planet and destination are selected -->
 			{#if currentSelectedPlanet?.waypointBoundingHexMidPoint}
 				<Button
@@ -349,7 +350,7 @@
 	</div>
 
 	<!-- Ships Grid -->
-	<div class="px-8 pb-8">
+	<div class="px-8 pb-8 {$layoutMode === 'landscape' ? 'max-h-[60vh] overflow-y-auto' : ''}">
 		{#if ships.length === 0}
 			<div class="flex h-32 items-center justify-center text-white/60">
 				{#if selectedShipType === 'all'}
@@ -360,8 +361,8 @@
 				{/if}
 			</div>
 		{:else}
-			<div class="overflow-x-auto pb-6">
-				<div class="flex min-w-max gap-4">
+			<div class={$layoutMode === 'landscape' ? 'pb-6' : 'overflow-x-auto pb-6'}>
+				<div class={$layoutMode === 'landscape' ? 'flex flex-wrap gap-4' : 'flex min-w-max gap-4'}>
 					{#each ships as ship, index}
 						<ShipCard
 							{ship}

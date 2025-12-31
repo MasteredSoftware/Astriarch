@@ -6,6 +6,7 @@ import type {
 	ClientPlayer,
 	StarshipData
 } from 'astriarch-engine';
+import { StarShipType, Fleet } from 'astriarch-engine';
 import Konva from 'konva';
 
 // Import planet images
@@ -18,6 +19,12 @@ const PLANET_SIZE = 20; // Base planet size matching original
 const PLANET_IMAGE_WIDTH = 36; // Width for planet images (wider aspect ratio)
 const PLANET_IMAGE_HEIGHT = 32; // Height for planet images (shorter aspect ratio)
 const SELECTION_COLOR = '#13f3fb'; // Cyan color for selection indicators
+
+// Space platform SVG path data (extracted from space_platform.svg)
+const SPACE_PLATFORM_PATH =
+	'M 7.6958653,3.2861441 5.0389955,3.2902841 5.044307,4.036119 6.7058765,4.4126148 5.0501514,4.8567873 5.0566117,5.7639415 5.8962508,5.98615 5.0596539,6.1911344 5.0627023,6.6191798 5.3903794,6.983517 4.5827461,7.4685395 3.6776773,6.9989502 4.118251,6.6883587 4.1115511,6.2098655 3.2102136,5.9529947 4.1545105,5.8321729 4.1467178,4.7885653 2.4079264,4.4140722 4.1580059,4.1225342 4.1682022,3.3046399 1.475193,3.2913167 M 1.4853612,3.1581024 C 1.6080175,2.5808663 1.8906406,2.049767 2.3009308,1.6256062 3.1135027,0.78341915 4.3232033,0.45603762 5.4496076,0.77344551 6.576012,1.0908534 7.4368035,2.0016965 7.6901009,3.1442427';
+const SPACE_PLATFORM_SIZE = 10; // Size for space platform icons
+const SPACE_PLATFORM_ORIGINAL_SIZE = 8.467; // Original SVG viewBox size
 
 export function createDrawnPlanet(planetData: PlanetData, gameModel: ClientModelData) {
 	return new DrawnPlanet(planetData, gameModel);
@@ -39,8 +46,9 @@ export class DrawnPlanet {
 	private planetRing: Konva.Circle | null = null; // Persistent ring for all planets
 	private nameText!: Konva.Text;
 	private strengthText!: Konva.Text;
-	private fleetStrengthIndicator: Konva.Group | null = null; // New visual fleet strength indicator
-	private platformIcon: Konva.Rect | null = null;
+	private fleetStrengthIndicator: Konva.Group | null = null; // Mobile ship strength indicator (left side)
+	private spacePlatformIndicators: Konva.Group | null = null; // Space platform icons (right side)
+	private defenderStrengthIndicator: Konva.Group | null = null; // Defender strength indicator (far right)
 	private statusIndicator: Konva.Circle | null = null;
 	private waypointLine: Konva.Line | null = null;
 
@@ -486,8 +494,8 @@ export class DrawnPlanet {
 		// Could be used for future planet appearance customizations
 	}
 
-	private calculateFleetStrength(): number {
-		let fleetStrength = 0;
+	private calculateMobileStrength(): number {
+		let mobileStrength = 0;
 
 		// For owned planets with planetary fleet data
 		if (
@@ -495,53 +503,215 @@ export class DrawnPlanet {
 			this.owner.id === this.gameModel.mainPlayer.id &&
 			this.planetData.planetaryFleet?.starships?.length
 		) {
-			// Calculate total fleet strength (sum of all ship health/strength)
-			fleetStrength = this.planetData.planetaryFleet.starships.reduce(
-				(total: number, ship: StarshipData) => total + ship.health,
-				0
-			);
+			// Calculate mobile fleet strength (only mobile ships)
+			mobileStrength = this.planetData.planetaryFleet.starships
+				.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
+				.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
 		}
 		// For non-owned or other players' planets, check last known fleet data
 		else {
 			const lastKnownData =
 				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
 			if (lastKnownData?.fleetData?.starships?.length) {
-				// Calculate last known fleet strength
-				fleetStrength = lastKnownData.fleetData.starships.reduce(
-					(total: number, ship: StarshipData) => total + ship.health,
-					0
-				);
-			}
-			// Also check current planetary fleet for visible data
-			else if (this.planetData.planetaryFleet?.starships?.length) {
-				// We can see there are ships, use a default strength value
-				fleetStrength = this.planetData.planetaryFleet.starships.reduce(
-					(total: number, ship: StarshipData) => total + ship.health,
-					0
-				);
+				mobileStrength = lastKnownData.fleetData.starships
+					.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
+					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
 			}
 		}
 
-		return fleetStrength;
+		return mobileStrength;
+	}
+
+	private calculateDefenderStrength(): number {
+		let defenderStrength = 0;
+
+		// For owned planets with planetary fleet data
+		if (
+			this.owner &&
+			this.owner.id === this.gameModel.mainPlayer.id &&
+			this.planetData.planetaryFleet?.starships?.length
+		) {
+			// Calculate defender strength (SystemDefense ships only)
+			defenderStrength = this.planetData.planetaryFleet.starships
+				.filter((ship) => ship.type === StarShipType.SystemDefense)
+				.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
+		}
+		// For non-owned or other players' planets, check last known fleet data
+		else {
+			const lastKnownData =
+				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
+			if (lastKnownData?.fleetData?.starships?.length) {
+				defenderStrength = lastKnownData.fleetData.starships
+					.filter((ship) => ship.type === StarShipType.SystemDefense)
+					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
+			}
+		}
+
+		return defenderStrength;
+	}
+
+	private getPlatformCount(): number {
+		let platformCount = 0;
+
+		// For owned planets with planetary fleet data
+		if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
+			// Count space platforms
+			platformCount = this.planetData.planetaryFleet.starships.filter(
+				(ship) => ship.type === StarShipType.SpacePlatform
+			).length;
+		}
+		// For non-owned or other players' planets, check last known fleet data
+		else {
+			const lastKnownData =
+				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
+			if (lastKnownData?.fleetData?.starships?.length) {
+				platformCount = lastKnownData.fleetData.starships.filter(
+					(ship) => ship.type === StarShipType.SpacePlatform
+				).length;
+			}
+		}
+
+		return platformCount;
 	}
 
 	private updateFleetStrengthIndicator(): void {
-		const fleetStrength = this.calculateFleetStrength();
+		const mobileStrength = this.calculateMobileStrength();
+		const defenderStrength = this.calculateDefenderStrength();
+		const platformCount = this.getPlatformCount();
 
-		// Remove existing indicator
+		// Remove existing indicators
 		if (this.fleetStrengthIndicator) {
 			this.fleetStrengthIndicator.destroy();
 			this.fleetStrengthIndicator = null;
 		}
+		if (this.spacePlatformIndicators) {
+			this.spacePlatformIndicators.destroy();
+			this.spacePlatformIndicators = null;
+		}
+		if (this.defenderStrengthIndicator) {
+			this.defenderStrengthIndicator.destroy();
+			this.defenderStrengthIndicator = null;
+		}
 
-		// Only show indicator if there's a fleet
-		if (fleetStrength > 0) {
-			this.createFleetStrengthIndicator(fleetStrength);
+		// Show mobile ship strength indicator (left side)
+		if (mobileStrength > 0) {
+			this.createFleetStrengthIndicator(mobileStrength);
+		}
+
+		// Show space platform indicators (right side)
+		if (platformCount > 0) {
+			this.createSpacePlatformIndicators(platformCount);
+		}
+
+		// Show defender strength indicator (far right)
+		if (defenderStrength > 0) {
+			this.createDefenderStrengthIndicator(defenderStrength);
 		}
 
 		// Clear the old text-based strength display
 		this.strengthText.text('');
 		this.textBlockStrengthText = '';
+	}
+
+	private createSpacePlatformIndicators(platformCount: number): void {
+		// Get owner color for the platforms
+		const ownerColor = this.owner ? this.getOwnerColor() : '#90a9ba';
+
+		// Create group for the platform indicators
+		this.spacePlatformIndicators = new Konva.Group({
+			perfectDrawEnabled: false,
+			listening: false
+		});
+
+		// Maximum 5 platforms, positioned counter-clockwise starting from bottom-right
+		const maxPlatforms = Math.min(platformCount, 5);
+		const arcRadius = 28; // Distance from planet center (beyond defenders)
+
+		// Specific angles for each platform position (counter-clockwise from bottom-right)
+		// Position 1: bottom right, Position 2: bottom middle-right, Position 3: right
+		// Position 4: top middle-right, Position 5: top right
+		const platformAngles = [45, 15, -15, -45, -75]; // In degrees
+
+		// Create platform icons at each position
+		for (let i = 0; i < maxPlatforms; i++) {
+			const angle = platformAngles[i];
+			const angleRad = (angle * Math.PI) / 180;
+
+			// Calculate position on the arc
+			const x = Math.cos(angleRad) * arcRadius;
+			const y = Math.sin(angleRad) * arcRadius;
+
+			// Create the platform icon using SVG path (filled with owner color)
+			const platform = new Konva.Path({
+				data: SPACE_PLATFORM_PATH,
+				x: x,
+				y: y,
+				fill: ownerColor, // Filled instead of transparent
+				stroke: ownerColor,
+				strokeWidth: 0.5,
+				scaleX: SPACE_PLATFORM_SIZE / SPACE_PLATFORM_ORIGINAL_SIZE,
+				scaleY: SPACE_PLATFORM_SIZE / SPACE_PLATFORM_ORIGINAL_SIZE,
+				offsetX: SPACE_PLATFORM_ORIGINAL_SIZE / 2,
+				offsetY: SPACE_PLATFORM_ORIGINAL_SIZE / 2,
+				opacity: 0.9,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false,
+				listening: false
+			});
+
+			this.spacePlatformIndicators.add(platform);
+		}
+
+		// Add the indicators to the main group
+		this.group.add(this.spacePlatformIndicators);
+	}
+
+	private createDefenderStrengthIndicator(defenderStrength: number): void {
+		// Calculate relative strength based on all known fleet strengths
+		const relativeStrength = this.calculateRelativeStrength(defenderStrength);
+
+		// Get owner color for the dots
+		const ownerColor = this.owner ? this.getOwnerColor() : '#FFFFFF';
+
+		// Create group for the defender indicator - positioned hugging the right side of the planet
+		this.defenderStrengthIndicator = new Konva.Group({
+			x: PLANET_SIZE / 2 + 8, // Position close to planet edge
+			y: 0, // Centered vertically on the planet
+			perfectDrawEnabled: false,
+			listening: false
+		});
+
+		// Use same dot sizing as mobile fleet indicator
+		const dotSize = 4;
+		const dotSpacing = 2;
+		const maxDots = 5; // Single column only, max 5 dots
+
+		// Limit to single column (max 5 dots)
+		const dotsToShow = Math.min(relativeStrength, maxDots);
+
+		// Create dots in a single vertical column
+		for (let i = 0; i < dotsToShow; i++) {
+			// Position dots vertically from bottom up
+			const y =
+				(maxDots - 1 - i) * (dotSize + dotSpacing) - ((maxDots - 1) * (dotSize + dotSpacing)) / 2;
+
+			const dot = new Konva.Circle({
+				x: 0, // Single column at x=0
+				y: y,
+				radius: dotSize / 2,
+				fill: ownerColor,
+				stroke: 'black',
+				strokeWidth: 0.5,
+				opacity: 0.9,
+				perfectDrawEnabled: false,
+				shadowForStrokeEnabled: false,
+				listening: false
+			});
+			this.defenderStrengthIndicator.add(dot);
+		}
+
+		// Add the indicator to the main group
+		this.group.add(this.defenderStrengthIndicator);
 	}
 
 	private createFleetStrengthIndicator(fleetStrength: number): void {
@@ -880,6 +1050,14 @@ export class DrawnPlanet {
 		if (this.fleetStrengthIndicator) {
 			this.fleetStrengthIndicator.destroy();
 			this.fleetStrengthIndicator = null;
+		}
+		if (this.spacePlatformIndicators) {
+			this.spacePlatformIndicators.destroy();
+			this.spacePlatformIndicators = null;
+		}
+		if (this.defenderStrengthIndicator) {
+			this.defenderStrengthIndicator.destroy();
+			this.defenderStrengthIndicator = null;
 		}
 		if (this.selectionRingOuter) {
 			this.selectionRingOuter.destroy();

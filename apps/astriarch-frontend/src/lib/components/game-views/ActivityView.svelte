@@ -2,6 +2,7 @@
 	import { Text, Button } from '$lib/components/astriarch';
 	import TabController from '$lib/components/astriarch/tab-controller/TabController.svelte';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+	import { layoutMode } from '$lib/stores/layoutStore';
 	import {
 		activityLog,
 		importantActivities,
@@ -415,7 +416,7 @@
 	<div class="absolute inset-0 bg-gradient-to-b from-white/10 to-slate-800/0 opacity-20"></div>
 
 	<!-- Main content container -->
-	<div class="relative z-10 flex h-full">
+	<div class="relative z-10 flex h-full {$layoutMode === 'landscape' ? 'flex-col' : ''}">
 		<!-- Left Panel - Activity Feed -->
 		<div class="flex flex-1 flex-col">
 			<!-- Header -->
@@ -624,7 +625,7 @@
 		</div>
 
 		<!-- Right Panel - Chat -->
-		<div class="relative h-full w-[554px]">
+		<div class="relative h-full {$layoutMode === 'landscape' ? 'w-full' : 'w-[554px]'}">
 			<!-- Chat background -->
 			<div
 				class="absolute inset-0 bg-gradient-to-b from-white/10 to-slate-800/0 opacity-50 backdrop-blur-[6px]"
