@@ -517,12 +517,6 @@ export class DrawnPlanet {
 					.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
 					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
 			}
-			// Also check current planetary fleet for visible data
-			else if (this.planetData.planetaryFleet?.starships?.length) {
-				mobileStrength = this.planetData.planetaryFleet.starships
-					.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
-					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
-			}
 		}
 
 		return mobileStrength;
@@ -551,12 +545,6 @@ export class DrawnPlanet {
 					.filter((ship) => ship.type === StarShipType.SystemDefense)
 					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
 			}
-			// Also check current planetary fleet for visible data
-			else if (this.planetData.planetaryFleet?.starships?.length) {
-				defenderStrength = this.planetData.planetaryFleet.starships
-					.filter((ship) => ship.type === StarShipType.SystemDefense)
-					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
-			}
 		}
 
 		return defenderStrength;
@@ -578,12 +566,6 @@ export class DrawnPlanet {
 				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
 			if (lastKnownData?.fleetData?.starships?.length) {
 				platformCount = lastKnownData.fleetData.starships.filter(
-					(ship) => ship.type === StarShipType.SpacePlatform
-				).length;
-			}
-			// Also check current planetary fleet for visible data
-			else if (this.planetData.planetaryFleet?.starships?.length) {
-				platformCount = this.planetData.planetaryFleet.starships.filter(
 					(ship) => ship.type === StarShipType.SpacePlatform
 				).length;
 			}
