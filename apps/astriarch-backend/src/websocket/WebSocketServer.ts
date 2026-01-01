@@ -1369,13 +1369,14 @@ export class WebSocketServer {
           continue;
         }
 
-        // Get checksums from the game state model (calculated during time advancement)
+        // Calculate checksums here, only when broadcasting (not in game loop)
         const game = await Game.findById(gameId);
         let playerStateChecksum: string | undefined;
         let playerChecksumComponents: { planets: string; fleets: string } | undefined;
 
         if (game && game.gameState) {
           const clientModel = constructClientGameModel(game.gameState as ModelData, playerId);
+          Player.calculateAndStoreChecksums(clientModel);
           playerStateChecksum = clientModel.clientModelChecksum;
           playerChecksumComponents = clientModel.checksumComponents;
         }

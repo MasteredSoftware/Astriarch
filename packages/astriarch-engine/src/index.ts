@@ -196,16 +196,13 @@ export const advanceClientGameModelTime = (
 } => {
   const result = GameController.advanceClientGameClock(clientGameModel, grid);
 
-  // NOTE: Checksums are NOT calculated in the client's high-frequency game loop
-  // to avoid async timing issues that would break the 60fps timing.
-  // Instead:
-  // - SERVER: Checksums are calculated synchronously in Player.advanceGameClockForPlayer
-  //   using sync functions (Node.js only) and stored in the model
-  // - CLIENT: The client validates checksums by calculating its own checksum using
-  //   async functions when it receives GAME_STATE_UPDATE or CLIENT_EVENT messages
-  //   from the server (see websocket.ts)
+  // NOTE: Checksums are NOT calculated in the game loop (neither client nor server)
+  // for performance reasons. Instead:
+  // - SERVER: Checksums are calculated only when broadcasting to clients
+  //   (see WebSocketServer.broadcastToAffectedPlayers and handleGameCommand)
+  // - CLIENT: Checksums are calculated only when validating received messages
+  //   (see websocket.ts GAME_STATE_UPDATE and CLIENT_EVENT handlers)
 
-  // Return checksums from the model (will be empty strings on client during game loop)
   return {
     clientGameModel,
     fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,

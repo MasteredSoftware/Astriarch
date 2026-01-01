@@ -122,14 +122,18 @@ export class Player {
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
     const fleetsArrivingOnUnownedPlanets = this.moveShips(data);
 
-    // Calculate and store checksums in the model after all state changes
-    // This ensures both client and server calculate at the exact same logical point
-    this.calculateAndStoreChecksums(data.clientModel);
+    // NOTE: Checksums are NOT calculated here in the game loop for performance reasons.
+    // They are calculated only when broadcasting to clients (see WebSocketServer.broadcastToAffectedPlayers)
 
     return { fleetsArrivingOnUnownedPlanets, events, notifications };
   }
 
-  private static calculateAndStoreChecksums(clientModel: ClientModelData): void {
+  /**
+   * Calculate and store checksums in the client model.
+   * This should be called ONLY when broadcasting state to clients, not in the game loop.
+   * Public so backend can call it when needed.
+   */
+  public static calculateAndStoreChecksums(clientModel: ClientModelData): void {
     // Calculate synchronously using the sync versions of the checksum functions (Node.js only)
     // In browser environments, these functions are undefined, so checksums will be calculated
     // in advanceClientGameModelTime using async versions

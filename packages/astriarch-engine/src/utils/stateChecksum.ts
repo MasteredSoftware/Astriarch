@@ -206,20 +206,20 @@ function extractComponentStateData(clientModel: ClientModelData) {
     fleet: extractFleetChecksum(clientModel.mainPlayerOwnedPlanets[planetId].planetaryFleet),
   }));
 
-  // Debug logging
-  console.log('🔍 Fleet checksum details:');
-  console.log(`  Fleets in transit: ${fleetsInTransit.length}`);
-  fleetsInTransit.forEach((f) => {
-    console.log(
-      `    Transit fleet: ID=${f.id}, ships=${f.starshipCount}, shipIDs=[${f.starships.map((s) => s.id).join(',')}]`,
-    );
-  });
-  console.log(`  Planetary fleets: ${planetaryFleets.length}`);
-  planetaryFleets.forEach((pf) => {
-    console.log(
-      `    Planet ${pf.planetId}: fleet ID=${pf.fleet.id}, ships=${pf.fleet.starshipCount}, shipIDs=[${pf.fleet.starships.map((s) => s.id).join(',')}]`,
-    );
-  });
+  // Debug logging - commented out to avoid performance impact on server game loop
+  // console.log('🔍 Fleet checksum details:');
+  // console.log(`  Fleets in transit: ${fleetsInTransit.length}`);
+  // fleetsInTransit.forEach((f) => {
+  //   console.log(
+  //     `    Transit fleet: ID=${f.id}, ships=${f.starshipCount}, shipIDs=[${f.starships.map((s) => s.id).join(',')}]`,
+  //   );
+  // });
+  // console.log(`  Planetary fleets: ${planetaryFleets.length}`);
+  // planetaryFleets.forEach((pf) => {
+  //   console.log(
+  //     `    Planet ${pf.planetId}: fleet ID=${pf.fleet.id}, ships=${pf.fleet.starshipCount}, shipIDs=[${pf.fleet.starships.map((s) => s.id).join(',')}]`,
+  //   );
+  // });
 
   const fleetsData = {
     fleetsInTransit,
