@@ -71,4 +71,13 @@ export interface ClientModelData extends ModelBase {
    * Updated after every state change.
    */
   clientModelChecksum?: string;
+
+  /**
+   * Component checksums for granular desync debugging.
+   * Allows pinpointing exactly which part of the state diverged.
+   */
+  checksumComponents?: {
+    planets: string; // Owned planet IDs
+    fleets: string; // All fleets (in transit + planetary)
+  };
 }

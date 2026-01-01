@@ -19,8 +19,6 @@ import {
 	GameCommandType,
 	EventApplicator,
 	calculateRollingEventChecksum,
-	calculateClientModelChecksum,
-	calculateClientModelChecksumComponents,
 	type PlanetProductionItemData,
 	TradeType,
 	Player
@@ -474,36 +472,36 @@ class WebSocketService {
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 
 						// Validate state checksum if provided
-						const payload = message.payload as { clientModelChecksum?: string };
-						if (payload.clientModelChecksum) {
-							calculateClientModelChecksum(updatedClientGameModel)
-								.then((ourStateChecksum) => {
-									if (ourStateChecksum !== payload.clientModelChecksum) {
-										console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
-										console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-										console.error(`Client state checksum: ${ourStateChecksum}`);
+						// Checksums are now stored in the model itself after time advancement
+						const payload = message.payload as {
+							clientModelChecksum?: string;
+							checksumComponents?: { planets: string; fleets: string };
+						};
+						if (payload.clientModelChecksum && updatedClientGameModel.clientModelChecksum) {
+							const ourStateChecksum = updatedClientGameModel.clientModelChecksum;
+							if (ourStateChecksum !== payload.clientModelChecksum) {
+								console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
+								console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+								console.error(`Client state checksum: ${ourStateChecksum}`);
 
-										// Calculate component checksums to identify which part diverged
-										calculateClientModelChecksumComponents(updatedClientGameModel)
-											.then((components) => {
-												console.error('State checksum breakdown:', components);
-												console.error('- Planets hash:', components.planets);
-												console.error('- Fleets hash:', components.fleets);
-											})
-											.catch((err) => console.error('Error calculating checksum components:', err));
+								// Show component checksums to identify which part diverged
+								if (updatedClientGameModel.checksumComponents) {
+									console.error('State checksum breakdown:');
+									console.error(
+										'- Planets hash:',
+										updatedClientGameModel.checksumComponents.planets
+									);
+									console.error('- Fleets hash:', updatedClientGameModel.checksumComponents.fleets);
+								}
 
-										this.gameStore.addNotification({
-											type: 'error',
-											message: 'State checksum mismatch in sync - data may be corrupted',
-											timestamp: Date.now()
-										});
-									} else {
-										console.debug('State sync checksum valid ✓', ourStateChecksum);
-									}
-								})
-								.catch((error) => {
-									console.error('Error validating state checksum in GAME_STATE_UPDATE:', error);
+								this.gameStore.addNotification({
+									type: 'error',
+									message: 'State checksum mismatch in sync - data may be corrupted',
+									timestamp: Date.now()
 								});
+							} else {
+								console.debug('State sync checksum valid ✓', ourStateChecksum);
+							}
 						}
 
 						clientGameModel.set(updatedClientGameModel);
@@ -1010,43 +1008,50 @@ class WebSocketService {
 				}
 
 				// Validate state checksum if provided
-				if (payload.clientModelChecksum) {
-					calculateClientModelChecksum(currentModel)
-						.then((ourStateChecksum) => {
-							if (ourStateChecksum !== payload.clientModelChecksum) {
-								console.error('🚨 STATE DESYNC DETECTED! 🚨');
-								console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-								console.error(`Client state checksum: ${ourStateChecksum}`);
+				// Checksums are now stored in the model itself after time advancement
+				if (payload.clientModelChecksum && currentModel.clientModelChecksum) {
+					const ourStateChecksum = currentModel.clientModelChecksum;
+					if (ourStateChecksum !== payload.clientModelChecksum) {
+						console.error('🚨 STATE DESYNC DETECTED! 🚨');
+						console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+						console.error(`Client state checksum: ${ourStateChecksum}`);
 
-								// Calculate component checksums to identify which part diverged
-								calculateClientModelChecksumComponents(currentModel)
-									.then((components) => {
-										console.error('State checksum breakdown:', components);
-										console.error('- Planets hash:', components.planets);
-										console.error('- Fleets hash:', components.fleets);
-									})
-									.catch((err) => console.error('Error calculating checksum components:', err));
+						// Show component checksums to identify which part diverged
+						if (currentModel.checksumComponents && payload.checksumComponents) {
+							console.error('State checksum breakdown:');
+							console.error('CLIENT:');
+							console.error('  - Planets hash:', currentModel.checksumComponents.planets);
+							console.error('  - Fleets hash:', currentModel.checksumComponents.fleets);
+							console.error('SERVER:');
+							console.error('  - Planets hash:', payload.checksumComponents.planets);
+							console.error('  - Fleets hash:', payload.checksumComponents.fleets);
+							console.error('DIFFERENCES:');
+							console.error(
+								'  - Planets match:',
+								currentModel.checksumComponents.planets === payload.checksumComponents.planets
+									? '✓'
+									: '✗'
+							);
+							console.error(
+								'  - Fleets match:',
+								currentModel.checksumComponents.fleets === payload.checksumComponents.fleets
+									? '✓'
+									: '✗'
+							);
+						}
 
-								// Show notification to user
-								this.gameStore.addNotification({
-									type: 'error',
-									message: 'Game state desync detected - requesting full resync',
-									timestamp: Date.now()
-								});
-
-								// Request full state sync to recover
-								this.requestStateSync();
-							} else {
-								console.debug('State checksum valid ✓', ourStateChecksum);
-
-								// Update the model with the new state checksum
-								currentModel.clientModelChecksum = ourStateChecksum;
-								clientGameModel.set(currentModel);
-							}
-						})
-						.catch((error) => {
-							console.error('Error calculating client model checksum:', error);
+						// Show notification to user
+						this.gameStore.addNotification({
+							type: 'error',
+							message: 'Game state desync detected - requesting full resync',
+							timestamp: Date.now()
 						});
+
+						// Request full state sync to recover
+						this.requestStateSync();
+					} else {
+						console.debug('State checksum valid ✓', ourStateChecksum);
+					}
 				}
 
 				break;

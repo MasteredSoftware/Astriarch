@@ -467,8 +467,31 @@ export class Fleet {
     landingFleet.destinationHexMidPoint = null;
     landingFleet.parsecsToDestination = 0;
 
+    console.log(
+      `🚢 Fleet landing: Merging ${landingFleet.starships.length} ships (fleet ID ${landingFleet.id}) into planetary fleet (${planetaryFleet.starships.length} ships)`,
+    );
+    console.log(
+      `  Landing fleet ship IDs: ${landingFleet.starships
+        .map((s) => s.id)
+        .sort((a, b) => a - b)
+        .join(', ')}`,
+    );
+    console.log(
+      `  Planetary fleet ship IDs before merge: ${planetaryFleet.starships
+        .map((s) => s.id)
+        .sort((a, b) => a - b)
+        .join(', ')}`,
+    );
+
     // merge fleet
     planetaryFleet.starships = planetaryFleet.starships.concat(landingFleet.starships);
+
+    console.log(
+      `  Planetary fleet ship IDs after merge: ${planetaryFleet.starships
+        .map((s) => s.id)
+        .sort((a, b) => a - b)
+        .join(', ')}`,
+    );
   };
 
   /**
@@ -500,7 +523,7 @@ export class Fleet {
    */
   public static cloneFleet(fleet: FleetData, player?: PlayerData): FleetData {
     const f = this.generateFleet([], fleet.locationHexMidPoint, player);
-
+    f.id = fleet.id; // Preserve original ID for clones
     for (const s of fleet.starships) {
       f.starships.push(this.cloneStarship(s, player));
     }

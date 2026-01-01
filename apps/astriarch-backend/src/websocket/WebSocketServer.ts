@@ -480,12 +480,6 @@ export class WebSocketServer {
             clientGameModel.lastEventChecksum = currentChecksum;
           }
 
-          // Include the current state checksum in the synced state
-          const currentStateChecksum = GameController.getPlayerStateChecksum(client.playerId);
-          if (currentStateChecksum) {
-            clientGameModel.clientModelChecksum = currentStateChecksum;
-          }
-
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
           if (firstPlanetId) {
@@ -1007,8 +1001,9 @@ export class WebSocketServer {
     if (!client) return;
 
     try {
-      // Host periodically sends this to advance game time
-      // We advance time and broadcast events (NOT full state)
+      // NOTE: Game time has already been advanced by advanceGameTimeAndBroadcastEvents()
+      // which is called before this handler (see processMessage method)
+      // This handler just sends a success response back to the host
       logger.debug(`ADVANCE_GAME_TIME received from host for game ${client.gameId}`);
 
       const response = new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {
@@ -1062,6 +1057,7 @@ export class WebSocketServer {
       }
 
       // Broadcast events to affected players only (not all players)
+      // NOTE: Checksums are retrieved from stored values (calculated during time advancement)
       await this.broadcastToAffectedPlayers(
         gameId,
         result.events || [],
@@ -1373,13 +1369,24 @@ export class WebSocketServer {
           continue;
         }
 
+        // Get checksums from the game state model (calculated during time advancement)
+        const game = await Game.findById(gameId);
+        let playerStateChecksum: string | undefined;
+        let playerChecksumComponents: { planets: string; fleets: string } | undefined;
+
+        if (game && game.gameState) {
+          const clientModel = constructClientGameModel(game.gameState as ModelData, playerId);
+          playerStateChecksum = clientModel.clientModelChecksum;
+          playerChecksumComponents = clientModel.checksumComponents;
+        }
+
         // Send CLIENT_EVENT message with the events for this player
-        const playerStateChecksum = GameController.getPlayerStateChecksum(playerId);
         const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
           events: playerEvents,
           currentCycle,
           ...(checksum && { stateChecksum: checksum }),
           ...(playerStateChecksum && { clientModelChecksum: playerStateChecksum }),
+          ...(playerChecksumComponents && { checksumComponents: playerChecksumComponents }),
         });
 
         const clientId = this.getClientIdBySessionId(targetClient.sessionId);
@@ -1400,6 +1407,7 @@ export class WebSocketServer {
     currentCycle: number,
   ): Promise<void> {
     // Clients generate notifications locally, so we only broadcast events
+    // Checksums are retrieved from stored values (calculated during time advancement)
     await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events");
   }
 

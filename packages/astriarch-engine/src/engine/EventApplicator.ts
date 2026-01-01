@@ -334,9 +334,18 @@ export class EventApplicator {
   }
 
   private static applyPlanetCaptured(clientModel: ClientModelData, event: PlanetCapturedEvent): void {
-    const { planetId, planetData } = event.data;
+    const { planetId, planetData, conflictData } = event.data;
+
+    // Remove the attacking fleet from fleetsInTransit if still present
+    // (may have already been removed by client's local time advancement)
+    const attackingFleetId = conflictData.attackingFleet.id;
+    const fleetIndex = clientModel.mainPlayer.fleetsInTransit.findIndex((f) => f.id === attackingFleetId);
+    if (fleetIndex >= 0) {
+      clientModel.mainPlayer.fleetsInTransit.splice(fleetIndex, 1);
+    }
 
     // We captured a planet - add it to our owned planets
+    // The planetData already has the merged fleet from the server
     GameModel.setPlanetOwnedByPlayer(clientModel.mainPlayer, planetId);
     clientModel.mainPlayerOwnedPlanets[planetId] = planetData;
   }
@@ -356,7 +365,14 @@ export class EventApplicator {
   private static applyFleetAttackFailed(clientModel: ClientModelData, event: FleetAttackFailedEvent): void {
     const { planetId, conflictData, defenderId } = event.data;
 
-    // No need to modify fleets here, landing fleets were already removed during time advancement
+    // Remove the attacking fleet from fleetsInTransit if still present
+    // (may have already been removed by client's local time advancement)
+    const attackingFleetId = conflictData.attackingFleet.id;
+    const fleetIndex = clientModel.mainPlayer.fleetsInTransit.findIndex((f) => f.id === attackingFleetId);
+    if (fleetIndex >= 0) {
+      clientModel.mainPlayer.fleetsInTransit.splice(fleetIndex, 1);
+    }
+
     // Set planet as explored with last known fleet strength
     Player.setPlanetExplored(
       clientModel.mainPlayer,

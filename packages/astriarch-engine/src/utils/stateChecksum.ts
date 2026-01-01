@@ -12,6 +12,17 @@ import type { ClientModelData } from '../model/clientModel';
 import type { FleetData } from '../model/fleet';
 
 /**
+ * Calculate SHA256 hash using Node.js crypto (server-side) - SYNC version
+ * Only available in Node.js environments (not browser)
+ */
+function calculateHashNodeSync(data: string): string {
+  // Use dynamic require to avoid bundler issues in client builds
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const crypto = require('crypto');
+  return crypto.createHash('sha256').update(data).digest('hex');
+}
+
+/**
  * Calculate SHA256 hash using Node.js crypto (server-side)
  */
 async function calculateHashNode(data: string): Promise<string> {
@@ -35,11 +46,19 @@ async function calculateHashBrowser(data: string): Promise<string> {
  * Excludes floating-point position data that may have minor precision differences.
  */
 function extractFleetChecksum(fleet: FleetData) {
+  // Sort starships by ID to ensure deterministic order regardless of merge order
+  const sortedStarships = fleet.starships
+    .slice()
+    .sort((a, b) => a.id - b.id)
+    .map((s) => ({
+      id: s.id,
+      type: s.type,
+      health: Math.floor(s.health), // Floor to avoid float precision issues
+    }));
+
   return {
     id: fleet.id,
-    starshipIds: fleet.starships.map((s) => s.id).sort((a, b) => a - b),
-    starshipTypes: fleet.starships.map((s) => s.type).sort((a, b) => a - b),
-    starshipHealths: fleet.starships.map((s) => Math.floor(s.health)).sort((a, b) => a - b), // Floor to avoid float precision issues
+    starships: sortedStarships,
     starshipCount: fleet.starships.length,
     // Use null checks for location - we only care if destination exists, not exact parsecs
     hasDestination: fleet.destinationHexMidPoint !== null,
@@ -60,25 +79,11 @@ function extractPlanetChecksum(planetId: number, ownerId: string) {
 }
 
 /**
- * Calculate a checksum of critical client model state.
- *
- * This creates a hash of the key game state elements that should be identical
- * between client and server:
- * - Owned planet IDs
- * - Fleet positions and compositions (in transit and on planets)
- * - Player resources
- * - Game time
- * - Research progress
- *
- * Excludes timing-sensitive data like lastUpdateTime that would cause
- * false positive desyncs.
- *
- * @param clientModel The client model to checksum
- * @returns A short hex string representing the game state
+ * Extract the deterministic state data object from client model.
+ * This is the common logic used by both sync and async checksum calculations.
  */
-export async function calculateClientModelChecksum(clientModel: ClientModelData): Promise<string> {
-  // Build deterministic state object
-  const stateData = {
+function extractStateData(clientModel: ClientModelData) {
+  return {
     // Main player identification
     mainPlayerId: clientModel.mainPlayer.id,
 
@@ -130,7 +135,27 @@ export async function calculateClientModelChecksum(clientModel: ClientModelData)
     // as they change frequently with client clock ticks and can cause
     // false positive desyncs
   };
+}
 
+/**
+ * Calculate a checksum of critical client model state.
+ *
+ * This creates a hash of the key game state elements that should be identical
+ * between client and server:
+ * - Owned planet IDs
+ * - Fleet positions and compositions (in transit and on planets)
+ * - Player resources
+ * - Game time
+ * - Research progress
+ *
+ * Excludes timing-sensitive data like lastUpdateTime that would cause
+ * false positive desyncs.
+ *
+ * @param clientModel The client model to checksum
+ * @returns A short hex string representing the game state
+ */
+export async function calculateClientModelChecksum(clientModel: ClientModelData): Promise<string> {
+  const stateData = extractStateData(clientModel);
   const dataString = JSON.stringify(stateData);
 
   // Detect environment and use appropriate hashing method
@@ -148,6 +173,63 @@ export async function calculateClientModelChecksum(clientModel: ClientModelData)
 }
 
 /**
+ * Synchronous version of calculateClientModelChecksum for use in game loops.
+ * Only works in Node.js environment (server-side).
+ * Browser must use the async version.
+ * This export is conditional to avoid bundling Node.js crypto in browser builds.
+ */
+export const calculateClientModelChecksumSync: ((clientModel: ClientModelData) => string) | undefined =
+  typeof window === 'undefined'
+    ? function (clientModel: ClientModelData): string {
+        const stateData = extractStateData(clientModel);
+        const dataString = JSON.stringify(stateData);
+        const hash = calculateHashNodeSync(dataString);
+        return hash.substring(0, 16);
+      }
+    : undefined;
+
+/**
+ * Extract component state data for debugging.
+ * Returns the data structures for planets and fleets separately.
+ */
+function extractComponentStateData(clientModel: ClientModelData) {
+  const ownedPlanetIds = Object.keys(clientModel.mainPlayerOwnedPlanets).map(Number).sort();
+
+  const planetsData = {
+    ownedPlanets: ownedPlanetIds,
+  };
+
+  const fleetsInTransit = clientModel.mainPlayer.fleetsInTransit.map(extractFleetChecksum).sort((a, b) => a.id - b.id);
+
+  const planetaryFleets = ownedPlanetIds.map((planetId) => ({
+    planetId,
+    fleet: extractFleetChecksum(clientModel.mainPlayerOwnedPlanets[planetId].planetaryFleet),
+  }));
+
+  // Debug logging
+  console.log('🔍 Fleet checksum details:');
+  console.log(`  Fleets in transit: ${fleetsInTransit.length}`);
+  fleetsInTransit.forEach((f) => {
+    console.log(
+      `    Transit fleet: ID=${f.id}, ships=${f.starshipCount}, shipIDs=[${f.starships.map((s) => s.id).join(',')}]`,
+    );
+  });
+  console.log(`  Planetary fleets: ${planetaryFleets.length}`);
+  planetaryFleets.forEach((pf) => {
+    console.log(
+      `    Planet ${pf.planetId}: fleet ID=${pf.fleet.id}, ships=${pf.fleet.starshipCount}, shipIDs=[${pf.fleet.starships.map((s) => s.id).join(',')}]`,
+    );
+  });
+
+  const fleetsData = {
+    fleetsInTransit,
+    planetaryFleets,
+  };
+
+  return { planetsData, fleetsData };
+}
+
+/**
  * Calculate component checksums for debugging.
  * Returns individual hashes for different state categories to help
  * identify which specific part of the state diverged.
@@ -160,20 +242,33 @@ export async function calculateClientModelChecksumComponents(clientModel: Client
   // Full checksum
   const full = await calculateClientModelChecksum(clientModel);
 
-  // Individual component checksums
-  const planetsData = JSON.stringify({
-    ownedPlanets: clientModel.mainPlayer.ownedPlanetIds.slice().sort((a, b) => a - b),
-  });
-
-  const fleetsData = JSON.stringify({
-    fleetsInTransit: clientModel.mainPlayer.fleetsInTransit.map(extractFleetChecksum).sort((a, b) => a.id - b.id),
-  });
+  // Extract component data
+  const { planetsData, fleetsData } = extractComponentStateData(clientModel);
 
   const hashFn = typeof window === 'undefined' ? calculateHashNode : calculateHashBrowser;
 
   return {
     full,
-    planets: (await hashFn(planetsData)).substring(0, 16),
-    fleets: (await hashFn(fleetsData)).substring(0, 16),
+    planets: (await hashFn(JSON.stringify(planetsData))).substring(0, 16),
+    fleets: (await hashFn(JSON.stringify(fleetsData))).substring(0, 16),
   };
 }
+
+/**
+ * Synchronous version of calculateClientModelChecksumComponents for use in game loops.
+ * Only works in Node.js environment (server-side).
+ * This export is conditional to avoid bundling Node.js crypto in browser builds.
+ */
+export const calculateClientModelChecksumComponentsSync:
+  | ((clientModel: ClientModelData) => { planets: string; fleets: string })
+  | undefined =
+  typeof window === 'undefined'
+    ? function (clientModel: ClientModelData): { planets: string; fleets: string } {
+        const { planetsData, fleetsData } = extractComponentStateData(clientModel);
+
+        return {
+          planets: calculateHashNodeSync(JSON.stringify(planetsData)).substring(0, 16),
+          fleets: calculateHashNodeSync(JSON.stringify(fleetsData)).substring(0, 16),
+        };
+      }
+    : undefined;

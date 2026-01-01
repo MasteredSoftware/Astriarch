@@ -175,6 +175,7 @@ export interface IGameStateUpdatePayload {
   currentCycle?: number;
   stateChecksum?: string; // SHA256 hash for desync detection (calculated by backend)
   clientModelChecksum?: string; // SHA256 hash of critical client model state
+  checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
 }
 
 export interface IEventNotificationsPayload {
@@ -234,6 +235,7 @@ export interface IClientEventPayload {
   events: ClientEvent[];
   stateChecksum: string; // SHA256 hash for desync detection (event sequence)
   clientModelChecksum?: string; // SHA256 hash of critical client model state
+  checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
   currentCycle: number; // Game cycle when events occurred
 }
 

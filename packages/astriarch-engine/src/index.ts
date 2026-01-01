@@ -41,6 +41,7 @@ import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } fr
 import { Grid } from './engine/grid';
 import { PlanetaryConflictData, ResearchBoost } from './model/battle';
 import { GameTools } from './utils/gameTools';
+import { calculateClientModelChecksum, calculateClientModelChecksumComponents } from './utils/stateChecksum';
 
 // Export messaging types
 export * from './messaging/MessageTypes';
@@ -50,7 +51,8 @@ export * from './engine/GameCommands';
 export { CommandProcessor } from './engine/CommandProcessor';
 export { EventApplicator } from './engine/EventApplicator';
 export { calculateRollingEventChecksum } from './engine/StateChecksum';
-export { calculateClientModelChecksum, calculateClientModelChecksumComponents } from './utils/stateChecksum';
+// NOTE: calculateClientModelChecksum and calculateClientModelChecksumComponents are no longer exported
+// Checksums are calculated automatically in Player.advanceGameClockForPlayer and stored in ClientModelData
 
 // Export engine classes
 export { Player };
@@ -182,20 +184,32 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
   };
 };
 
-export const advanceClientGameModelTime = (
+export const advanceClientGameModelTime = async (
   clientGameModel: ClientModelData,
   grid: Grid,
-): {
+): Promise<{
   clientGameModel: ClientModelData;
   fleetsArrivingOnUnownedPlanets: FleetData[];
   notifications: ClientNotification[];
-} => {
+  clientModelChecksum: string;
+  checksumComponents: { planets: string; fleets: string };
+}> => {
   const result = GameController.advanceClientGameClock(clientGameModel, grid);
 
+  // In browser environment, checksums won't be calculated by Player.advanceGameClockForPlayer
+  // because the sync functions are undefined. Calculate them here using async versions.
+  if (typeof window !== 'undefined' && !clientGameModel.clientModelChecksum) {
+    clientGameModel.clientModelChecksum = await calculateClientModelChecksum(clientGameModel);
+    clientGameModel.checksumComponents = await calculateClientModelChecksumComponents(clientGameModel);
+  }
+
+  // Return checksums from the model
   return {
     clientGameModel,
     fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,
     notifications: result.notifications,
+    clientModelChecksum: clientGameModel.clientModelChecksum || '',
+    checksumComponents: clientGameModel.checksumComponents || { planets: '', fleets: '' },
   };
 };
 

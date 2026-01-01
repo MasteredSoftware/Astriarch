@@ -4,6 +4,7 @@ import { FleetData, StarshipAdvantageData } from '../model/fleet';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Fleet } from './fleet';
+import { calculateClientModelChecksumSync, calculateClientModelChecksumComponentsSync } from '../utils/stateChecksum';
 import {
   ClientEvent,
   ClientNotification,
@@ -120,7 +121,26 @@ export class Player {
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
     const fleetsArrivingOnUnownedPlanets = this.moveShips(data);
+
+    // Calculate and store checksums in the model after all state changes
+    // This ensures both client and server calculate at the exact same logical point
+    this.calculateAndStoreChecksums(data.clientModel);
+
     return { fleetsArrivingOnUnownedPlanets, events, notifications };
+  }
+
+  private static calculateAndStoreChecksums(clientModel: ClientModelData): void {
+    // Calculate synchronously using the sync versions of the checksum functions (Node.js only)
+    // In browser environments, these functions are undefined, so checksums will be calculated
+    // in advanceClientGameModelTime using async versions
+    if (calculateClientModelChecksumSync && calculateClientModelChecksumComponentsSync) {
+      const stateChecksum = calculateClientModelChecksumSync(clientModel);
+      const checksumComponents = calculateClientModelChecksumComponentsSync(clientModel);
+
+      // Store in the model
+      clientModel.clientModelChecksum = stateChecksum;
+      clientModel.checksumComponents = checksumComponents;
+    }
   }
 
   public static generatePlayerResources(data: AdvanceGameClockForPlayerData) {
