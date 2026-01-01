@@ -23,6 +23,10 @@ import {
 	TradeType,
 	Player
 } from 'astriarch-engine';
+import {
+	calculateClientModelChecksum,
+	calculateClientModelChecksumComponents
+} from 'astriarch-engine/src/utils/stateChecksum';
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { activityStore } from '$lib/stores/activityStore';
@@ -472,36 +476,44 @@ class WebSocketService {
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 
 						// Validate state checksum if provided
-						// Checksums are now stored in the model itself after time advancement
 						const payload = message.payload as {
 							clientModelChecksum?: string;
 							checksumComponents?: { planets: string; fleets: string };
 						};
-						if (payload.clientModelChecksum && updatedClientGameModel.clientModelChecksum) {
-							const ourStateChecksum = updatedClientGameModel.clientModelChecksum;
-							if (ourStateChecksum !== payload.clientModelChecksum) {
-								console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
-								console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-								console.error(`Client state checksum: ${ourStateChecksum}`);
+						if (payload.clientModelChecksum) {
+							// Calculate our own checksum of the received state to compare with server
+							calculateClientModelChecksum(updatedClientGameModel)
+								.then(async (ourStateChecksum) => {
+									if (ourStateChecksum !== payload.clientModelChecksum) {
+										console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
+										console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+										console.error(`Client state checksum: ${ourStateChecksum}`);
 
-								// Show component checksums to identify which part diverged
-								if (updatedClientGameModel.checksumComponents) {
-									console.error('State checksum breakdown:');
-									console.error(
-										'- Planets hash:',
-										updatedClientGameModel.checksumComponents.planets
-									);
-									console.error('- Fleets hash:', updatedClientGameModel.checksumComponents.fleets);
-								}
+										// Calculate component checksums to identify which part diverged
+										const ourComponents =
+											await calculateClientModelChecksumComponents(updatedClientGameModel);
+										console.error('State checksum breakdown:');
+										console.error('CLIENT:');
+										console.error('- Planets hash:', ourComponents.planets);
+										console.error('- Fleets hash:', ourComponents.fleets);
+										if (payload.checksumComponents) {
+											console.error('SERVER:');
+											console.error('- Planets hash:', payload.checksumComponents.planets);
+											console.error('- Fleets hash:', payload.checksumComponents.fleets);
+										}
 
-								this.gameStore.addNotification({
-									type: 'error',
-									message: 'State checksum mismatch in sync - data may be corrupted',
-									timestamp: Date.now()
+										this.gameStore.addNotification({
+											type: 'error',
+											message: 'State checksum mismatch in sync - data may be corrupted',
+											timestamp: Date.now()
+										});
+									} else {
+										console.debug('State sync checksum valid ✓', ourStateChecksum);
+									}
+								})
+								.catch((error) => {
+									console.error('Error calculating state checksum:', error);
 								});
-							} else {
-								console.debug('State sync checksum valid ✓', ourStateChecksum);
-							}
 						}
 
 						clientGameModel.set(updatedClientGameModel);
@@ -1008,50 +1020,46 @@ class WebSocketService {
 				}
 
 				// Validate state checksum if provided
-				// Checksums are now stored in the model itself after time advancement
-				if (payload.clientModelChecksum && currentModel.clientModelChecksum) {
-					const ourStateChecksum = currentModel.clientModelChecksum;
-					if (ourStateChecksum !== payload.clientModelChecksum) {
-						console.error('🚨 STATE DESYNC DETECTED! 🚨');
-						console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-						console.error(`Client state checksum: ${ourStateChecksum}`);
+				if (payload.clientModelChecksum) {
+					// Calculate our own checksum of the current state to compare with server
+					calculateClientModelChecksum(currentModel)
+						.then(async (ourStateChecksum) => {
+							if (ourStateChecksum !== payload.clientModelChecksum) {
+								console.error('🚨 STATE DESYNC DETECTED! 🚨');
+								console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+								console.error(`Client state checksum: ${ourStateChecksum}`);
 
-						// Show component checksums to identify which part diverged
-						if (currentModel.checksumComponents && payload.checksumComponents) {
-							console.error('State checksum breakdown:');
-							console.error('CLIENT:');
-							console.error('  - Planets hash:', currentModel.checksumComponents.planets);
-							console.error('  - Fleets hash:', currentModel.checksumComponents.fleets);
-							console.error('SERVER:');
-							console.error('  - Planets hash:', payload.checksumComponents.planets);
-							console.error('  - Fleets hash:', payload.checksumComponents.fleets);
-							console.error('DIFFERENCES:');
-							console.error(
-								'  - Planets match:',
-								currentModel.checksumComponents.planets === payload.checksumComponents.planets
-									? '✓'
-									: '✗'
-							);
-							console.error(
-								'  - Fleets match:',
-								currentModel.checksumComponents.fleets === payload.checksumComponents.fleets
-									? '✓'
-									: '✗'
-							);
-						}
+								// Calculate component checksums to identify which part diverged
+								const ourComponents = await calculateClientModelChecksumComponents(currentModel);
+								const payload_typed = payload as {
+									checksumComponents?: { planets: string; fleets: string };
+								};
+								console.error('State checksum breakdown:');
+								console.error('CLIENT:');
+								console.error('- Planets hash:', ourComponents.planets);
+								console.error('- Fleets hash:', ourComponents.fleets);
+								if (payload_typed.checksumComponents) {
+									console.error('SERVER:');
+									console.error('- Planets hash:', payload_typed.checksumComponents.planets);
+									console.error('- Fleets hash:', payload_typed.checksumComponents.fleets);
+								}
 
-						// Show notification to user
-						this.gameStore.addNotification({
-							type: 'error',
-							message: 'Game state desync detected - requesting full resync',
-							timestamp: Date.now()
+								// Show notification to user
+								this.gameStore.addNotification({
+									type: 'error',
+									message: 'Game state desync detected - requesting full resync',
+									timestamp: Date.now()
+								});
+
+								// Request full state sync to recover
+								this.requestStateSync();
+							} else {
+								console.debug('State checksum valid ✓', ourStateChecksum);
+							}
+						})
+						.catch((error) => {
+							console.error('Error calculating state checksum:', error);
 						});
-
-						// Request full state sync to recover
-						this.requestStateSync();
-					} else {
-						console.debug('State checksum valid ✓', ourStateChecksum);
-					}
 				}
 
 				break;

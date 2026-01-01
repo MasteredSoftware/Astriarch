@@ -184,26 +184,28 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
   };
 };
 
-export const advanceClientGameModelTime = async (
+export const advanceClientGameModelTime = (
   clientGameModel: ClientModelData,
   grid: Grid,
-): Promise<{
+): {
   clientGameModel: ClientModelData;
   fleetsArrivingOnUnownedPlanets: FleetData[];
   notifications: ClientNotification[];
   clientModelChecksum: string;
   checksumComponents: { planets: string; fleets: string };
-}> => {
+} => {
   const result = GameController.advanceClientGameClock(clientGameModel, grid);
 
-  // In browser environment, checksums won't be calculated by Player.advanceGameClockForPlayer
-  // because the sync functions are undefined. Calculate them here using async versions.
-  if (typeof window !== 'undefined' && !clientGameModel.clientModelChecksum) {
-    clientGameModel.clientModelChecksum = await calculateClientModelChecksum(clientGameModel);
-    clientGameModel.checksumComponents = await calculateClientModelChecksumComponents(clientGameModel);
-  }
+  // NOTE: Checksums are NOT calculated in the client's high-frequency game loop
+  // to avoid async timing issues that would break the 60fps timing.
+  // Instead:
+  // - SERVER: Checksums are calculated synchronously in Player.advanceGameClockForPlayer
+  //   using sync functions (Node.js only) and stored in the model
+  // - CLIENT: The client validates checksums by calculating its own checksum using
+  //   async functions when it receives GAME_STATE_UPDATE or CLIENT_EVENT messages
+  //   from the server (see websocket.ts)
 
-  // Return checksums from the model
+  // Return checksums from the model (will be empty strings on client during game loop)
   return {
     clientGameModel,
     fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,

@@ -337,7 +337,7 @@ function startGameLoop() {
 		cancelAnimationFrame(animationFrameId);
 	}
 
-	async function gameLoop() {
+	function gameLoop() {
 		if (!get(isGameRunning)) {
 			animationFrameId = null;
 			return;
@@ -348,7 +348,7 @@ function startGameLoop() {
 
 		if (cgm && grid) {
 			// Advance the client game model time continuously
-			const result = await advanceClientGameModelTime(cgm, grid);
+			const result = advanceClientGameModelTime(cgm, grid);
 			clientGameModel.set(result.clientGameModel);
 
 			// Process notifications from the engine immediately
