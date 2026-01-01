@@ -79,9 +79,6 @@ function extractPlanetChecksum(planetId: number, ownerId: string) {
 export async function calculateClientModelChecksum(clientModel: ClientModelData): Promise<string> {
   // Build deterministic state object
   const stateData = {
-    // Current game cycle (critical timing state)
-    currentCycle: clientModel.currentCycle,
-
     // Main player identification
     mainPlayerId: clientModel.mainPlayer.id,
 
@@ -129,37 +126,9 @@ export async function calculateClientModelChecksum(clientModel: ClientModelData)
         return fleets;
       }),
 
-    // Player total resources (from owned planets)
-    playerResources: Object.values(clientModel.mainPlayerOwnedPlanets).reduce(
-      (total, planet) => ({
-        food: total.food + Math.floor(planet.resources.food),
-        energy: total.energy + Math.floor(planet.resources.energy),
-        ore: total.ore + Math.floor(planet.resources.ore),
-        iridium: total.iridium + Math.floor(planet.resources.iridium),
-        production: total.production + Math.floor(planet.resources.production),
-        research: total.research + Math.floor(planet.resources.research),
-      }),
-      { food: 0, energy: 0, ore: 0, iridium: 0, production: 0, research: 0 },
-    ),
-
-    // Research progress (critical game state)
-    research: {
-      researchTypeInQueue: clientModel.mainPlayer.research.researchTypeInQueue,
-      researchPercent: Math.floor(clientModel.mainPlayer.research.researchPercent * 100) / 100, // Round to 2 decimals
-      // Track completed research levels for each type
-      researchLevels: Object.entries(clientModel.mainPlayer.research.researchProgressByType)
-        .map(([type, progress]) => ({
-          type: Number(type),
-          level: progress.currentResearchLevel,
-        }))
-        .sort((a, b) => a.type - b.type),
-    },
-
-    // Player points and destroyed status
-    playerStatus: {
-      points: clientModel.mainPlayer.points,
-      destroyed: clientModel.mainPlayer.destroyed,
-    },
+    // Note: Resources, research progress, and player points are excluded
+    // as they change frequently with client clock ticks and can cause
+    // false positive desyncs
   };
 
   const dataString = JSON.stringify(stateData);
@@ -187,8 +156,6 @@ export async function calculateClientModelChecksumComponents(clientModel: Client
   full: string;
   planets: string;
   fleets: string;
-  resources: string;
-  research: string;
 }> {
   // Full checksum
   const full = await calculateClientModelChecksum(clientModel);
@@ -202,30 +169,11 @@ export async function calculateClientModelChecksumComponents(clientModel: Client
     fleetsInTransit: clientModel.mainPlayer.fleetsInTransit.map(extractFleetChecksum).sort((a, b) => a.id - b.id),
   });
 
-  const resourcesData = JSON.stringify({
-    playerResources: Object.values(clientModel.mainPlayerOwnedPlanets).reduce(
-      (total, planet) => ({
-        food: total.food + Math.floor(planet.resources.food),
-        energy: total.energy + Math.floor(planet.resources.energy),
-        ore: total.ore + Math.floor(planet.resources.ore),
-        iridium: total.iridium + Math.floor(planet.resources.iridium),
-      }),
-      { food: 0, energy: 0, ore: 0, iridium: 0 },
-    ),
-  });
-
-  const researchData = JSON.stringify({
-    researchTypeInQueue: clientModel.mainPlayer.research.researchTypeInQueue,
-    researchPercent: Math.floor(clientModel.mainPlayer.research.researchPercent * 100) / 100,
-  });
-
   const hashFn = typeof window === 'undefined' ? calculateHashNode : calculateHashBrowser;
 
   return {
     full,
     planets: (await hashFn(planetsData)).substring(0, 16),
     fleets: (await hashFn(fleetsData)).substring(0, 16),
-    resources: (await hashFn(resourcesData)).substring(0, 16),
-    research: (await hashFn(researchData)).substring(0, 16),
   };
 }

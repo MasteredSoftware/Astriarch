@@ -489,8 +489,6 @@ class WebSocketService {
 												console.error('State checksum breakdown:', components);
 												console.error('- Planets hash:', components.planets);
 												console.error('- Fleets hash:', components.fleets);
-												console.error('- Resources hash:', components.resources);
-												console.error('- Research hash:', components.research);
 											})
 											.catch((err) => console.error('Error calculating checksum components:', err));
 
@@ -1026,8 +1024,6 @@ class WebSocketService {
 										console.error('State checksum breakdown:', components);
 										console.error('- Planets hash:', components.planets);
 										console.error('- Fleets hash:', components.fleets);
-										console.error('- Resources hash:', components.resources);
-										console.error('- Research hash:', components.research);
 									})
 									.catch((err) => console.error('Error calculating checksum components:', err));
 
