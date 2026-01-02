@@ -43,7 +43,7 @@ async function calculateHashBrowser(data: string): Promise<string> {
 
 /**
  * Extracts deterministic fleet data for checksumming.
- * Excludes floating-point position data that may have minor precision differences.
+ * Excludes ship health (regenerates continuously on client) and floating-point position data.
  */
 function extractFleetChecksum(fleet: FleetData) {
   // Sort starships by ID to ensure deterministic order regardless of merge order
@@ -53,13 +53,14 @@ function extractFleetChecksum(fleet: FleetData) {
     .map((s) => ({
       id: s.id,
       type: s.type,
-      health: Math.floor(s.health), // Floor to avoid float precision issues
+      // Health excluded: regenerates deterministically on client between server ticks
     }));
 
   return {
     id: fleet.id,
     starships: sortedStarships,
     starshipCount: fleet.starships.length,
+    eventChainHash: fleet.eventChainHash, // Include fleet event chain hash for composition tracking
     // Use null checks for location - we only care if destination exists, not exact parsecs
     hasDestination: fleet.destinationHexMidPoint !== null,
     destinationX: fleet.destinationHexMidPoint ? Math.round(fleet.destinationHexMidPoint.x) : null,

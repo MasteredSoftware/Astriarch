@@ -714,12 +714,15 @@ export class Player {
         }
 
         if (destinationPlanet.id in mainPlayerOwnedPlanets) {
-          //merge/land fleet
+          //merge/land fleet on owned planet and remove from transit
           Fleet.landFleet(mainPlayerOwnedPlanets[destinationPlanet.id].planetaryFleet, playerFleet);
+          mainPlayer.fleetsInTransit.splice(i, 1);
         } else {
+          // Fleet arriving at unowned planet - track it but DON'T remove from transit
+          // The server will send authoritative event (PLANET_CAPTURED/FLEET_ATTACK_FAILED)
+          // which will handle removal from transit
           fleetsArrivingOnUnownedPlanets.push(playerFleet);
         }
-        mainPlayer.fleetsInTransit.splice(i, 1);
       }
     }
     return fleetsArrivingOnUnownedPlanets;

@@ -6,6 +6,7 @@ import { PlayerData } from '../model/player';
 import { ResearchType } from '../model/research';
 import { PointData } from '../shapes/shapes';
 import { GameTools } from '../utils/gameTools';
+import { initializeFleetHash, recalculateFleetHash, updateFleetHash } from '../utils/fleetHash';
 import { Grid } from './grid';
 import { Player } from './player';
 import { Research } from './research';
@@ -25,6 +26,7 @@ export class Fleet {
   private static NEXT_FLEET_ID = 1;
   private static NEXT_STARSHIP_ID = 1;
   public static generateFleet(starships: StarshipData[], locationHexMidPoint: PointData | null, player?: PlayerData) {
+    const shipIds = starships.map((s) => s.id);
     return {
       id: player ? player.nextFleetId++ : Fleet.NEXT_FLEET_ID++,
       starships,
@@ -33,6 +35,7 @@ export class Fleet {
       destinationHexMidPoint: null,
       parsecsToDestination: null,
       totalTravelDistance: null,
+      eventChainHash: initializeFleetHash(shipIds),
     };
   }
 
@@ -241,6 +244,12 @@ export class Fleet {
       ...starshipsByType[StarShipType.SpacePlatform],
     ];
 
+    // Recalculate hashes for both fleets after the split
+    const newFleetShipIds = newFleet.starships.map((s) => s.id);
+    const sourceFleetShipIds = fleet.starships.map((s) => s.id);
+    newFleet.eventChainHash = recalculateFleetHash(newFleetShipIds);
+    fleet.eventChainHash = recalculateFleetHash(sourceFleetShipIds);
+
     return newFleet;
   }
 
@@ -276,6 +285,12 @@ export class Fleet {
     moveShipsToFleet(shipIds.destroyers, StarShipType.Destroyer);
     moveShipsToFleet(shipIds.cruisers, StarShipType.Cruiser);
     moveShipsToFleet(shipIds.battleships, StarShipType.Battleship);
+
+    // Recalculate hashes for both fleets after the split
+    const newFleetShipIds = newFleet.starships.map((s) => s.id);
+    const sourceFleetShipIds = fleet.starships.map((s) => s.id);
+    newFleet.eventChainHash = recalculateFleetHash(newFleetShipIds);
+    fleet.eventChainHash = recalculateFleetHash(sourceFleetShipIds);
 
     return newFleet;
   }
@@ -527,6 +542,10 @@ export class Fleet {
     for (const s of fleet.starships) {
       f.starships.push(this.cloneStarship(s, player));
     }
+
+    // Recalculate hash based on the cloned ships
+    const shipIds = f.starships.map((s) => s.id);
+    f.eventChainHash = recalculateFleetHash(shipIds);
 
     return f;
   }

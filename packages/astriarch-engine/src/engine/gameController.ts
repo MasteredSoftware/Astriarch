@@ -1,6 +1,6 @@
-import { PlanetaryConflictData } from '../model/battle';
+import { PlanetaryConflictData, CombatResultDiff } from '../model/battle';
 import { ClientModelData, ClientPlayer, PlanetById } from '../model/clientModel';
-import { FleetData } from '../model/fleet';
+import { FleetData, StarshipData } from '../model/fleet';
 import { GalaxySizeOption, GameSpeed, ModelBase, ModelData } from '../model/model';
 import { PlayerData, PlayerType } from '../model/player';
 import { ResearchType } from '../model/research';
@@ -183,7 +183,60 @@ export class GameController {
       attackingFleetResearchBoost: { attack: 0, defense: 0 },
       attackingFleetChances: null,
       winningFleet: null,
+      combatResultDiff: null,
       resourcesLooted: PlanetResources.constructPlanetResources(0, 0, 0, 0, 0, 0),
+    };
+  }
+
+  /**
+   * Build a combat result diff by comparing fleet state before and after battle
+   * @param fleetBefore Fleet state before combat (cloned snapshot)
+   * @param fleetAfter Fleet state after combat (modified in place by battle simulator)
+   * @returns CombatResultDiff with ships destroyed, damaged, and experience gained
+   */
+  public static buildCombatResultDiff(fleetBefore: FleetData, fleetAfter: FleetData): CombatResultDiff {
+    const shipsDestroyed: number[] = [];
+    const shipsDamaged: { id: number; damage: number }[] = [];
+    const shipsExperienceGained: { id: number; experience: number }[] = [];
+
+    // Build a map of ships after battle for quick lookup
+    const shipsAfterMap = new Map<number, StarshipData>();
+    for (const ship of fleetAfter.starships) {
+      shipsAfterMap.set(ship.id, ship);
+    }
+
+    // Compare each ship from before battle
+    for (const shipBefore of fleetBefore.starships) {
+      const shipAfter = shipsAfterMap.get(shipBefore.id);
+
+      if (!shipAfter) {
+        // Ship was destroyed
+        shipsDestroyed.push(shipBefore.id);
+      } else {
+        // Ship survived - check for damage
+        const damageTaken = shipBefore.health - shipAfter.health;
+        if (damageTaken > 0) {
+          shipsDamaged.push({
+            id: shipAfter.id,
+            damage: damageTaken,
+          });
+        }
+
+        // Check for experience gained (future feature support)
+        const experienceGained = shipAfter.experienceAmount - shipBefore.experienceAmount;
+        if (experienceGained > 0) {
+          shipsExperienceGained.push({
+            id: shipAfter.id,
+            experience: experienceGained,
+          });
+        }
+      }
+    }
+
+    return {
+      shipsDestroyed,
+      shipsDamaged,
+      shipsExperienceGained,
     };
   }
 
@@ -199,6 +252,13 @@ export class GameController {
     //  if the destination is not an owned planet, we need to resolve the conflict
     //  once conflicts are resolved, merge fleets to the fleets of the owned planet
     for (const playerFleet of fleetsArrivingOnUnownedPlanets) {
+      // Remove the fleet from fleetsInTransit immediately since it has arrived
+      // (will either be destroyed or merged with the planet)
+      const attackFleetIndex = player.fleetsInTransit.findIndex((f) => f.id === playerFleet.id);
+      if (attackFleetIndex >= 0) {
+        player.fleetsInTransit.splice(attackFleetIndex, 1);
+      }
+
       const destinationPlanet = Planet.getPlanetAtMidPoint(
         gameModel.modelData.planets,
         playerFleet.destinationHexMidPoint!,
@@ -266,6 +326,11 @@ export class GameController {
         enemyFleetStrength,
       );
 
+      // Clone fleets BEFORE battle to calculate combat diffs
+      // The battle simulator modifies fleets in place
+      const enemyFleetBeforeBattle = Fleet.cloneFleet(enemyFleet);
+      const playerFleetBeforeBattle = Fleet.cloneFleet(playerFleet);
+
       //now actually simulate the battle
       let playerWins = BattleSimulator.simulateFleetBattle(playerFleet, player, enemyFleet, planetOwner);
       //if at this point playerWins doesn't have a value it means that both fleets were destroyed, in that case the enemy should win because they are the defender of the planet
@@ -282,7 +347,9 @@ export class GameController {
           planetOwner?.id,
         );
 
-        // Defender won - set winning fleet
+        // Defender won - build combat diff for the defending fleet
+        conflictData.combatResultDiff = this.buildCombatResultDiff(enemyFleetBeforeBattle, enemyFleet);
+        // Keep winningFleet for backwards compatibility (deprecated)
         conflictData.winningFleet = Fleet.cloneFleet(enemyFleet);
 
         //notify user of fleet loss or defense
@@ -387,7 +454,9 @@ export class GameController {
           }
         }
 
-        // Attacker won - set winning fleet and resources looted
+        // Attacker won - build combat diff for the attacking fleet
+        conflictData.combatResultDiff = this.buildCombatResultDiff(playerFleetBeforeBattle, playerFleet);
+        // Keep winningFleet for backwards compatibility (deprecated)
         conflictData.winningFleet = Fleet.cloneFleet(playerFleet);
         conflictData.resourcesLooted = { ...destinationPlanet.resources };
 

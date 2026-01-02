@@ -39,7 +39,7 @@ import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } from './model/tradingCenter';
 import { Grid } from './engine/grid';
-import { PlanetaryConflictData, ResearchBoost } from './model/battle';
+import { PlanetaryConflictData, ResearchBoost, CombatResultDiff } from './model/battle';
 import { GameTools } from './utils/gameTools';
 import { calculateClientModelChecksum, calculateClientModelChecksumComponents } from './utils/stateChecksum';
 
@@ -100,7 +100,7 @@ export type { PlanetProductionItemData };
 export type { CanBuildValidationResult };
 export type { FleetData };
 export type { StarshipData };
-export type { PlanetaryConflictData, ResearchBoost };
+export type { PlanetaryConflictData, ResearchBoost, CombatResultDiff };
 export type { PlanetData };
 export type { TradeData };
 export type { TradingCenterData };

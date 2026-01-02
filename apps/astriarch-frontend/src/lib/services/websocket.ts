@@ -960,10 +960,17 @@ class WebSocketService {
 				};
 				console.log(`Received ${payload.events.length} client events from server`);
 
+				// CRITICAL: Pause game loop to prevent race conditions during event application
+				// The client game loop can modify the model (health regeneration, etc.) which would
+				// cause checksum mismatches if it runs between event application and validation
+				console.log('⏸️ Pausing game loop for event processing');
+				gameActions.pauseGame();
+
 				// Get current client model
 				const currentModel = get(clientGameModel);
 				if (!currentModel) {
 					console.warn('No client model available to apply events');
+					gameActions.resumeGame(); // Resume game loop before exiting
 					break;
 				}
 
@@ -971,9 +978,22 @@ class WebSocketService {
 				const grid = get(gameGrid);
 
 				// Apply each event to the client model and generate UI notifications
+				console.log(`\n📦 Processing ${payload.events.length} event(s):`);
+				payload.events.forEach((e, i) => console.log(`  ${i + 1}. ${e.type}`));
+
 				for (const event of payload.events) {
-					console.log(`Applying event: ${event.type}`);
+					const ownedPlanetsBefore = Object.keys(currentModel.mainPlayerOwnedPlanets)
+						.map(Number)
+						.sort();
+					console.log(`\n⚙️ Applying event: ${event.type}`);
+					console.log(`   Owned planets BEFORE: [${ownedPlanetsBefore.join(', ')}]`);
+
 					EventApplicator.applyEvent(currentModel, event, grid!);
+
+					const ownedPlanetsAfter = Object.keys(currentModel.mainPlayerOwnedPlanets)
+						.map(Number)
+						.sort();
+					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
 
 					// Convert event to user notification
 					this.convertClientEventToNotification(event);
@@ -983,7 +1003,10 @@ class WebSocketService {
 				if (payload.stateChecksum) {
 					const previousChecksum = currentModel.lastEventChecksum || '';
 					try {
-						const ourChecksum = await calculateRollingEventChecksum(payload.events, previousChecksum);
+						const ourChecksum = await calculateRollingEventChecksum(
+							payload.events,
+							previousChecksum
+						);
 						if (ourChecksum !== payload.stateChecksum) {
 							console.error('Event chain broken! Desync detected.');
 							console.error(`Expected: ${payload.stateChecksum}`);
@@ -1023,6 +1046,115 @@ class WebSocketService {
 								console.error('SERVER:');
 								console.error('- Planets hash:', payload.checksumComponents.planets);
 								console.error('- Fleets hash:', payload.checksumComponents.fleets);
+
+								// If fleet hash differs, show the stored FLEET_DEFENSE_SUCCESS data
+								if (ourComponents.fleets !== payload.checksumComponents.fleets) {
+									console.error('\n🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:');
+
+									// Show all planetary fleets with their event chain hashes
+									console.error('\nALL PLANETARY FLEETS:');
+									Object.keys(currentModel.mainPlayerOwnedPlanets)
+										.map(Number)
+										.sort((a, b) => a - b)
+										.forEach((planetId) => {
+											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+											if (planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
+												console.error(`  Planet ${planetId} (${planet.name}):`);
+												console.error(
+													`    Event Chain Hash: ${planet.planetaryFleet.eventChainHash}`
+												);
+												console.error(
+													`    Ships:`,
+													JSON.stringify(
+														planet.planetaryFleet.starships.map((s) => ({
+															id: s.id,
+															type: s.type,
+															health: s.health,
+															healthFloor: Math.floor(s.health)
+														}))
+													)
+												);
+											}
+										});
+
+									// Show fleets in transit with their event chain hashes
+									console.error('\nFLEETS IN TRANSIT:');
+									currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
+										console.error(`  Fleet ${fleet.id}:`);
+										console.error(`    Event Chain Hash: ${fleet.eventChainHash}`);
+										console.error(
+											`    Ships:`,
+											JSON.stringify(
+												fleet.starships.map((s) => ({
+													id: s.id,
+													type: s.type,
+													health: s.health,
+													healthFloor: Math.floor(s.health)
+												}))
+											)
+										);
+									});
+
+									// Show outgoing fleets from all planets
+									console.error('\nOUTGOING FLEETS FROM PLANETS:');
+									Object.keys(currentModel.mainPlayerOwnedPlanets)
+										.map(Number)
+										.sort((a, b) => a - b)
+										.forEach((planetId) => {
+											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+											if (planet.outgoingFleets && planet.outgoingFleets.length > 0) {
+												planet.outgoingFleets.forEach((fleet) => {
+													console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
+													console.error(`    Event Chain Hash: ${fleet.eventChainHash}`);
+													console.error(
+														`    Ships:`,
+														JSON.stringify(
+															fleet.starships.map((s) => ({
+																id: s.id,
+																type: s.type
+															}))
+														)
+													);
+												});
+											}
+										});
+
+									// Show all FLEET_DEFENSE_SUCCESS events if available
+									const allFDS = (globalThis as any).__allFleetDefenseSuccess;
+									if (allFDS && allFDS.length > 0) {
+										console.error(`\n⚔️ ALL ${allFDS.length} FLEET_DEFENSE_SUCCESS EVENTS:`);
+										allFDS.forEach((fds: any, index: number) => {
+											console.error(`\n  Event ${index + 1}:`);
+											console.error('    Planet ID:', fds.planetId);
+											console.error('    Attacking Fleet ID:', fds.attackingFleetId);
+											console.error(
+												'    Planet fleet BEFORE:',
+												JSON.stringify(fds.planetFleetBefore)
+											);
+											console.error('    Planet fleet hash BEFORE:', fds.planetFleetHashBefore);
+											console.error(
+												'    Winning fleet FROM SERVER:',
+												JSON.stringify(fds.winningFleetFromServer)
+											);
+											console.error('    Winning fleet hash:', fds.winningFleetHash);
+											console.error(
+												'    Planet fleet AFTER:',
+												JSON.stringify(fds.planetFleetAfter)
+											);
+											console.error('    Planet fleet hash AFTER:', fds.planetFleetHashAfter);
+											console.error(
+												'    Fleets in transit BEFORE:',
+												JSON.stringify(fds.fleetsInTransitBefore)
+											);
+											console.error(
+												'    Fleets in transit AFTER:',
+												JSON.stringify(fds.fleetsInTransitAfter)
+											);
+										});
+										// Clear the array for next batch of events
+										(globalThis as any).__allFleetDefenseSuccess = [];
+									}
+								}
 							}
 
 							// Show notification to user
@@ -1044,6 +1176,10 @@ class WebSocketService {
 
 				// Update the store after all validation is complete
 				clientGameModel.set(currentModel);
+
+				// Resume game loop now that events are applied and store is updated
+				console.log('▶️ Resuming game loop after event processing');
+				gameActions.resumeGame();
 
 				break;
 			}
