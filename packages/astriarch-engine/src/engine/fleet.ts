@@ -543,11 +543,26 @@ export class Fleet {
       f.starships.push(this.cloneStarship(s, player));
     }
 
-    // Recalculate hash based on the cloned ships
-    const shipIds = f.starships.map((s) => s.id);
-    f.eventChainHash = recalculateFleetHash(shipIds);
+    // Preserve the original fleet's hash - critical for combat diff system
+    // The hash represents the fleet composition, which is the same in the clone
+    // If the original fleet doesn't have a hash yet, calculate it
+    if (fleet.eventChainHash) {
+      f.eventChainHash = fleet.eventChainHash;
+    } else {
+      const shipIds = f.starships.map((s) => s.id);
+      f.eventChainHash = recalculateFleetHash(shipIds);
+    }
 
     return f;
+  }
+
+  /**
+   * Recalculates the eventChainHash for a fleet based on current ship composition
+   * Call this after any operation that modifies the fleet's starships array
+   */
+  public static recalculateFleetEventChainHash(fleet: FleetData): void {
+    const shipIds = fleet.starships.map((s) => s.id);
+    fleet.eventChainHash = recalculateFleetHash(shipIds);
   }
 
   /**

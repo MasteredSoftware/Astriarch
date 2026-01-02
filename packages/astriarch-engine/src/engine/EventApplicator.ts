@@ -463,5 +463,10 @@ export class EventApplicator {
     // Recalculate fleet hash after applying changes
     const shipIds = fleet.starships.map((s) => s.id);
     fleet.eventChainHash = recalculateFleetHash(shipIds);
+
+    // DEBUG: Log fleet state after applying diff
+    const shipIdsAfter = fleet.starships.map((s) => s.id).sort((a, b) => a - b);
+    console.log(`      Fleet ships AFTER: [${shipIdsAfter.join(', ')}] (${shipIdsAfter.length})`);
+    console.log(`      Fleet hash AFTER: ${fleet.eventChainHash}`);
   }
 }

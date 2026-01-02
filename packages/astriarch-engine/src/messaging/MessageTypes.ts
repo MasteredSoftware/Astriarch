@@ -237,6 +237,19 @@ export interface IClientEventPayload {
   clientModelChecksum?: string; // SHA256 hash of critical client model state
   checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
   currentCycle: number; // Game cycle when events occurred
+  debugServerState?: {
+    // Temporary debug field: Server's view of fleets for comparison with client
+    planetaryFleets: Array<{
+      planetId: number;
+      eventChainHash: string;
+      shipIds: number[];
+    }>;
+    fleetsInTransit: Array<{
+      fleetId: number;
+      eventChainHash: string;
+      shipIds: number[];
+    }>;
+  };
 }
 
 export interface IClientNotificationPayload {

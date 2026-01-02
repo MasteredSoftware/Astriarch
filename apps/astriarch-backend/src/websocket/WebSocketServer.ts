@@ -367,6 +367,7 @@ export class WebSocketServer {
           result.events || [],
           result.notifications || [],
           result.gameModel.modelData.currentCycle,
+          result.gameModel.modelData,
         );
       }
 
@@ -419,6 +420,7 @@ export class WebSocketServer {
           result.events || [],
           result.notifications || [],
           result.gameModel.modelData.currentCycle,
+          result.gameModel.modelData,
         );
       }
 
@@ -1331,6 +1333,7 @@ export class WebSocketServer {
     currentCycle: number,
     checksum?: string,
     eventType: string = "events",
+    modelData?: ModelData,
   ): Promise<void> {
     try {
       if (!events || events.length === 0) {
@@ -1370,15 +1373,40 @@ export class WebSocketServer {
         }
 
         // Calculate checksums here, only when broadcasting (not in game loop)
-        const game = await Game.findById(gameId);
+        // Use provided modelData if available (for time-based events), otherwise query DB
+        const gameState = modelData || (await Game.findById(gameId))?.gameState;
         let playerStateChecksum: string | undefined;
         let playerChecksumComponents: { planets: string; fleets: string } | undefined;
+        let debugServerState: any;
 
-        if (game && game.gameState) {
-          const clientModel = constructClientGameModel(game.gameState as ModelData, playerId);
+        if (gameState) {
+          const clientModel = constructClientGameModel(gameState as ModelData, playerId);
           Player.calculateAndStoreChecksums(clientModel);
           playerStateChecksum = clientModel.clientModelChecksum;
           playerChecksumComponents = clientModel.checksumComponents;
+
+          // TEMPORARY DEBUG: Capture server's view of fleet state
+          debugServerState = {
+            planetaryFleets: Object.keys(clientModel.mainPlayerOwnedPlanets)
+              .map(Number)
+              .sort((a, b) => a - b)
+              .map((planetId) => {
+                const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+                return {
+                  planetId,
+                  eventChainHash: planet.planetaryFleet.eventChainHash || 'none',
+                  shipIds: planet.planetaryFleet.starships.map((s) => s.id).sort((a, b) => a - b),
+                };
+              }),
+            fleetsInTransit: clientModel.mainPlayer.fleetsInTransit
+              .slice()
+              .sort((a, b) => a.id - b.id)
+              .map((fleet) => ({
+                fleetId: fleet.id,
+                eventChainHash: fleet.eventChainHash || 'none',
+                shipIds: fleet.starships.map((s) => s.id).sort((a, b) => a - b),
+              })),
+          };
         }
 
         // Send CLIENT_EVENT message with the events for this player
@@ -1388,6 +1416,7 @@ export class WebSocketServer {
           ...(checksum && { stateChecksum: checksum }),
           ...(playerStateChecksum && { clientModelChecksum: playerStateChecksum }),
           ...(playerChecksumComponents && { checksumComponents: playerChecksumComponents }),
+          ...(debugServerState && { debugServerState }),
         });
 
         const clientId = this.getClientIdBySessionId(targetClient.sessionId);
@@ -1406,10 +1435,11 @@ export class WebSocketServer {
     events: ClientEvent[],
     notifications: ClientNotification[],
     currentCycle: number,
+    modelData?: ModelData,
   ): Promise<void> {
     // Clients generate notifications locally, so we only broadcast events
     // Checksums are retrieved from stored values (calculated during time advancement)
-    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events");
+    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events", modelData);
   }
 
   private broadcastToOtherPlayersInGame(game: IGame, sessionId: string, message: Message<any>): void {
