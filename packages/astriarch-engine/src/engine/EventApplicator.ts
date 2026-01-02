@@ -445,10 +445,6 @@ export class EventApplicator {
         const damage = damageMap.get(ship.id);
         if (damage !== undefined) {
           ship.health = Math.max(0, ship.health - damage);
-          // Update health floor if current health is lower
-          if (ship.health < (ship as any).healthFloor) {
-            (ship as any).healthFloor = ship.health;
-          }
         }
       }
     }

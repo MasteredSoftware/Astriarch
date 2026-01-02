@@ -1069,8 +1069,6 @@ class WebSocketService {
 														planet.planetaryFleet.starships.map((s) => ({
 															id: s.id,
 															type: s.type,
-															health: s.health,
-															healthFloor: Math.floor(s.health)
 														}))
 													)
 												);
@@ -1088,8 +1086,6 @@ class WebSocketService {
 												fleet.starships.map((s) => ({
 													id: s.id,
 													type: s.type,
-													health: s.health,
-													healthFloor: Math.floor(s.health)
 												}))
 											)
 										);

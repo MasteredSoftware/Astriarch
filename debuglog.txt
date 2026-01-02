@@ -1,196 +1,148 @@
-📦 Processing 1 event(s):
-websocket.ts:982   1. FLEET_ATTACK_FAILED
-websocket.ts:986 
-⚙️ Applying event: FLEET_ATTACK_FAILED
-websocket.ts:987    Owned planets BEFORE: [17, 18, 19, 20, 24, 30]
-EventApplicator.ts:386 🗑️ FLEET_ATTACK_FAILED: Removing attacking fleet 26
-EventApplicator.ts:387    Fleets in transit before: [26]
-EventApplicator.ts:392    ✓ Removed fleet at index 0
-EventApplicator.ts:396    Fleets in transit after: []
-websocket.ts:992    Owned planets AFTER:  [17, 18, 19, 20, 24, 30]
-+page.svelte:146 Notifications updated: [{…}]
-websocket.ts:1028 🚨 STATE DESYNC DETECTED! 🚨
-handleMessage @ websocket.ts:1028
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1029 Server state checksum: 9fce69723fd9e59a
-handleMessage @ websocket.ts:1029
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1030 Client state checksum: e9672388cf70c3c1
-handleMessage @ websocket.ts:1030
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1034 State checksum breakdown:
-handleMessage @ websocket.ts:1034
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1035 CLIENT:
-handleMessage @ websocket.ts:1035
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1036 - Planets hash: 97daf62df5617321
-handleMessage @ websocket.ts:1036
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1037 - Fleets hash: 0582a9af458002b6
-handleMessage @ websocket.ts:1037
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1039 SERVER:
-handleMessage @ websocket.ts:1039
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1040 - Planets hash: 97daf62df5617321
-handleMessage @ websocket.ts:1040
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1041 - Fleets hash: 0edcbcbfb7d3a7c1
-handleMessage @ websocket.ts:1041
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1045 
-🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:
-handleMessage @ websocket.ts:1045
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1048 
-ALL PLANETARY FLEETS:
-handleMessage @ websocket.ts:1048
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1055   Planet 17 (B2):
-(anonymous) @ websocket.ts:1055
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1056     Event Chain Hash: 0ec4f78c
-(anonymous) @ websocket.ts:1056
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1057     Ships: [{"id":95,"type":1,"health":3,"healthFloor":3},{"id":98,"type":1,"health":3,"healthFloor":3},{"id":99,"type":1,"health":3,"healthFloor":3},{"id":100,"type":1,"health":2,"healthFloor":2},{"id":101,"type":1,"health":2,"healthFloor":2},{"id":102,"type":1,"health":2,"healthFloor":2},{"id":103,"type":1,"health":2,"healthFloor":2},{"id":104,"type":1,"health":2,"healthFloor":2},{"id":161,"type":2,"health":4,"healthFloor":4}]
-(anonymous) @ websocket.ts:1057
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1055   Planet 18 (B4):
-(anonymous) @ websocket.ts:1055
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1056     Event Chain Hash: ec6d158e
-(anonymous) @ websocket.ts:1056
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1057     Ships: [{"id":101,"type":1,"health":3,"healthFloor":3},{"id":109,"type":1,"health":3,"healthFloor":3},{"id":116,"type":1,"health":2,"healthFloor":2},{"id":121,"type":1,"health":2,"healthFloor":2},{"id":127,"type":1,"health":2,"healthFloor":2},{"id":133,"type":1,"health":2,"healthFloor":2},{"id":139,"type":1,"health":2,"healthFloor":2},{"id":145,"type":1,"health":2.4140666666667254,"healthFloor":2},{"id":152,"type":1,"health":2,"healthFloor":2},{"id":157,"type":1,"health":2,"healthFloor":2},{"id":163,"type":1,"health":2,"healthFloor":2}]
-(anonymous) @ websocket.ts:1057
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1055   Planet 19 (C3):
-(anonymous) @ websocket.ts:1055
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1056     Event Chain Hash: 9cc06bcc
-(anonymous) @ websocket.ts:1056
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1057     Ships: [{"id":27,"type":1,"health":2,"healthFloor":2},{"id":30,"type":1,"health":2,"healthFloor":2},{"id":33,"type":1,"health":2,"healthFloor":2},{"id":37,"type":1,"health":2,"healthFloor":2},{"id":41,"type":1,"health":2,"healthFloor":2},{"id":46,"type":1,"health":2,"healthFloor":2},{"id":50,"type":1,"health":2,"healthFloor":2},{"id":53,"type":1,"health":2,"healthFloor":2},{"id":56,"type":1,"health":2,"healthFloor":2},{"id":60,"type":1,"health":2,"healthFloor":2},{"id":64,"type":1,"health":2,"healthFloor":2},{"id":69,"type":1,"health":2,"healthFloor":2},{"id":75,"type":1,"health":2,"healthFloor":2},{"id":81,"type":1,"health":2,"healthFloor":2},{"id":87,"type":1,"health":2,"healthFloor":2},{"id":93,"type":1,"health":2,"healthFloor":2},{"id":99,"type":1,"health":2,"healthFloor":2},{"id":103,"type":1,"health":2,"healthFloor":2},{"id":108,"type":1,"health":2,"healthFloor":2},{"id":114,"type":1,"health":2,"healthFloor":2},{"id":119,"type":1,"health":2,"healthFloor":2},{"id":125,"type":1,"health":2,"healthFloor":2},{"id":130,"type":1,"health":2,"healthFloor":2},{"id":136,"type":1,"health":2,"healthFloor":2},{"id":142,"type":1,"health":2,"healthFloor":2},{"id":148,"type":1,"health":2,"healthFloor":2},{"id":154,"type":1,"health":2,"healthFloor":2},{"id":160,"type":1,"health":2,"healthFloor":2}]
-(anonymous) @ websocket.ts:1057
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1055   Planet 20 (D2):
-(anonymous) @ websocket.ts:1055
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1056     Event Chain Hash: 79ed907e
-(anonymous) @ websocket.ts:1056
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1057     Ships: [{"id":29,"type":1,"health":2,"healthFloor":2},{"id":31,"type":1,"health":3,"healthFloor":3},{"id":32,"type":1,"health":3,"healthFloor":3},{"id":34,"type":1,"health":3,"healthFloor":3},{"id":35,"type":1,"health":3,"healthFloor":3},{"id":38,"type":1,"health":2,"healthFloor":2},{"id":40,"type":1,"health":2,"healthFloor":2},{"id":42,"type":1,"health":3,"healthFloor":3},{"id":45,"type":1,"health":2,"healthFloor":2},{"id":47,"type":1,"health":2,"healthFloor":2},{"id":49,"type":1,"health":3,"healthFloor":3},{"id":52,"type":1,"health":2,"healthFloor":2},{"id":54,"type":1,"health":3,"healthFloor":3},{"id":55,"type":1,"health":2,"healthFloor":2},{"id":57,"type":1,"health":2,"healthFloor":2},{"id":59,"type":1,"health":3,"healthFloor":3},{"id":61,"type":1,"health":2,"healthFloor":2},{"id":63,"type":1,"health":2,"healthFloor":2},{"id":65,"type":1,"health":2,"healthFloor":2},{"id":67,"type":1,"health":2,"healthFloor":2},{"id":70,"type":1,"health":2,"healthFloor":2},{"id":73,"type":1,"health":2,"healthFloor":2},{"id":76,"type":1,"health":2,"healthFloor":2},{"id":79,"type":1,"health":2,"healthFloor":2},{"id":82,"type":1,"health":2,"healthFloor":2},{"id":85,"type":1,"health":2,"healthFloor":2},{"id":88,"type":1,"health":2,"healthFloor":2},{"id":91,"type":1,"health":2,"healthFloor":2},{"id":94,"type":1,"health":2,"healthFloor":2},{"id":97,"type":1,"health":2,"healthFloor":2},{"id":100,"type":1,"health":2,"healthFloor":2},{"id":105,"type":1,"health":2,"healthFloor":2},{"id":107,"type":1,"health":2,"healthFloor":2},{"id":111,"type":1,"health":2,"healthFloor":2},{"id":113,"type":1,"health":2,"healthFloor":2},{"id":117,"type":1,"health":2,"healthFloor":2},{"id":120,"type":1,"health":2,"healthFloor":2},{"id":123,"type":1,"health":2,"healthFloor":2},{"id":126,"type":1,"health":2,"healthFloor":2},{"id":129,"type":1,"health":2,"healthFloor":2},{"id":132,"type":1,"health":2,"healthFloor":2},{"id":135,"type":1,"health":2,"healthFloor":2},{"id":138,"type":1,"health":2,"healthFloor":2},{"id":141,"type":1,"health":2,"healthFloor":2},{"id":144,"type":1,"health":2,"healthFloor":2},{"id":147,"type":1,"health":2,"healthFloor":2},{"id":150,"type":1,"health":2,"healthFloor":2},{"id":153,"type":1,"health":2,"healthFloor":2},{"id":156,"type":1,"health":2,"healthFloor":2},{"id":159,"type":1,"health":2,"healthFloor":2},{"id":162,"type":1,"health":2,"healthFloor":2},{"id":164,"type":1,"health":2,"healthFloor":2}]
-(anonymous) @ websocket.ts:1057
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1055   Planet 24 (C5):
-(anonymous) @ websocket.ts:1055
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1056     Event Chain Hash: 596fe903
-(anonymous) @ websocket.ts:1056
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1057     Ships: [{"id":122,"type":2,"health":4,"healthFloor":4},{"id":124,"type":2,"health":4,"healthFloor":4},{"id":128,"type":2,"health":4,"healthFloor":4},{"id":131,"type":2,"health":4,"healthFloor":4},{"id":72,"type":2,"health":5,"healthFloor":5},{"id":74,"type":2,"health":5,"healthFloor":5},{"id":84,"type":2,"health":5,"healthFloor":5},{"id":134,"type":2,"health":4,"healthFloor":4},{"id":137,"type":2,"health":4,"healthFloor":4},{"id":140,"type":2,"health":4,"healthFloor":4},{"id":143,"type":2,"health":4,"healthFloor":4},{"id":146,"type":2,"health":4,"healthFloor":4},{"id":149,"type":2,"health":4,"healthFloor":4},{"id":151,"type":2,"health":4,"healthFloor":4},{"id":155,"type":2,"health":4,"healthFloor":4}]
-(anonymous) @ websocket.ts:1057
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1055   Planet 30 (H2):
-(anonymous) @ websocket.ts:1055
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1056     Event Chain Hash: 596fe903
-(anonymous) @ websocket.ts:1056
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1057     Ships: [{"id":92,"type":2,"health":4,"healthFloor":4},{"id":96,"type":2,"health":5,"healthFloor":5},{"id":98,"type":2,"health":4,"healthFloor":4},{"id":102,"type":2,"health":4,"healthFloor":4},{"id":106,"type":2,"health":4,"healthFloor":4},{"id":110,"type":2,"health":4,"healthFloor":4},{"id":112,"type":2,"health":4,"healthFloor":4},{"id":115,"type":2,"health":4,"healthFloor":4},{"id":118,"type":2,"health":4,"healthFloor":4}]
-(anonymous) @ websocket.ts:1057
-handleMessage @ websocket.ts:1052
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1068 
-FLEETS IN TRANSIT:
-handleMessage @ websocket.ts:1068
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-websocket.ts:1082 
-OUTGOING FLEETS FROM PLANETS:
-handleMessage @ websocket.ts:1082
-await in handleMessage
-ws.onmessage @ websocket.ts:173Understand this error
-+page.svelte:146 Notifications updated: (2) [{…}, {…}]
-websocket.ts:1681 Requesting server state synchronization for game: 6957393e8b7804adaba1dfc6
-websocket.ts:1145 ▶️ Resuming game loop after event processing
-websocket.ts:446 Received message: {type: 'GAME_STATE_UPDATE', payload: {…}, timestamp: '2026-01-02T04:37:26.451Z'}
-websocket.ts:521 Received real-time game state update from server
-websocket.ts:446 Received message: {type: 'SYNC_STATE', payload: {…}, timestamp: '2026-01-02T04:37:26.451Z'}
-websocket.ts:1175 Received synchronized game state from server
-websocket.ts:446 Received message: {type: 'CLIENT_EVENT', payload: {…}, timestamp: '2026-01-02T04:37:26.454Z'}
+Received message: {type: 'CLIENT_EVENT', payload: {…}, timestamp: '2026-01-02T05:48:25.416Z'}
 websocket.ts:961 Received 1 client events from server
 websocket.ts:966 ⏸️ Pausing game loop for event processing
 websocket.ts:981 
 📦 Processing 1 event(s):
-websocket.ts:982   1. FLEET_ATTACK_FAILED
-websocket.ts:986 
-⚙️ Applying event: FLEET_ATTACK_FAILED
-websocket.ts:987    Owned planets BEFORE: [17, 18, 19, 20, 24, 30]
-EventApplicator.ts:386 🗑️ FLEET_ATTACK_FAILED: Removing attacking fleet 26
-EventApplicator.ts:387    Fleets in transit before: []
-EventApplicator.ts:394    ⚠️ Fleet 26 not found in transit (may have already been removed)
-EventApplicator.ts:396    Fleets in transit after: []
-websocket.ts:992    Owned planets AFTER:  [17, 18, 19, 20, 24, 30]
-+page.svelte:146 Notifications updated: (3) [{…}, {…}, {…}]
-websocket.ts:1134 State checksum valid ✓ e9672388cf70c3c1
-websocket.ts:1145 ▶️ Resuming game loop after event processing
-websocket.ts:446 Received message: {type: 'GAME_STATE_UPDATE', payload: {…}, timestamp: '2026-01-02T04:37:26.471Z'}
-websocket.ts:521 Received real-time game state update from server
-websocket.ts:446 Received message: {type: 'SYNC_STATE', payload: {…}, timestamp: '2026-01-02T04:37:26.471Z'}
-websocket.ts:1175 Received synchronized game state from server
-websocket.ts:446 Received message: {type: 'GAME_STATE_UPDATE', payload: {…}, timestamp: '2026-01-02T04:37:26.476Z'}
-websocket.ts:521 Received real-time game state update from server
-websocket.ts:446 Received message: {type: 'SYNC_STATE', payload: {…}, timestamp: '2026-01-02T04:37:26.476Z'}
-websocket.ts:1175 Received synchronized game state from server
-+page.svelte:146 Notifications updated: (2) [{…}, {…}]
+websocket.ts:982   1. FLEET_DEFENSE_SUCCESS
+websocket.ts:988 
+⚙️ Applying event: FLEET_DEFENSE_SUCCESS
+websocket.ts:989    Owned planets BEFORE: [17, 18, 19, 20]
+EventApplicator.ts:421 ⚔️ FLEET_DEFENSE_SUCCESS: Planet 17 defended, combat diff applied (destroyed: 2, damaged: 1)
+websocket.ts:996    Owned planets AFTER:  [17, 18, 19, 20]
 +page.svelte:146 Notifications updated: [{…}]
-+page.svelte:146 Notifications updated: []
+websocket.ts:1035 🚨 STATE DESYNC DETECTED! 🚨
+handleMessage @ websocket.ts:1035
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1036 Server state checksum: 88601c35b7cd610e
+handleMessage @ websocket.ts:1036
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1037 Client state checksum: 811aaa4aa2779591
+handleMessage @ websocket.ts:1037
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1041 State checksum breakdown:
+handleMessage @ websocket.ts:1041
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1042 CLIENT:
+handleMessage @ websocket.ts:1042
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1043 - Planets hash: ee834d215f0ddd93
+handleMessage @ websocket.ts:1043
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1044 - Fleets hash: f208fd0dc2d23481
+handleMessage @ websocket.ts:1044
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1046 SERVER:
+handleMessage @ websocket.ts:1046
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1047 - Planets hash: ee834d215f0ddd93
+handleMessage @ websocket.ts:1047
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1048 - Fleets hash: cd98b944ab59c509
+handleMessage @ websocket.ts:1048
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1052 
+🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:
+handleMessage @ websocket.ts:1052
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1055 
+ALL PLANETARY FLEETS:
+handleMessage @ websocket.ts:1055
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1062   Planet 17 (B2):
+(anonymous) @ websocket.ts:1062
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1063     Event Chain Hash: 409e3f68
+(anonymous) @ websocket.ts:1063
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1066     Ships: [{"id":104,"type":1},{"id":406,"type":6}]
+(anonymous) @ websocket.ts:1066
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1062   Planet 18 (B4):
+(anonymous) @ websocket.ts:1062
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1063     Event Chain Hash: 85f8e908
+(anonymous) @ websocket.ts:1063
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1066     Ships: [{"id":101,"type":1},{"id":109,"type":1},{"id":145,"type":1},{"id":152,"type":1},{"id":163,"type":1},{"id":172,"type":1},{"id":176,"type":1},{"id":182,"type":1},{"id":183,"type":1},{"id":184,"type":1},{"id":185,"type":1},{"id":187,"type":1},{"id":188,"type":1},{"id":189,"type":1},{"id":190,"type":1},{"id":191,"type":1},{"id":193,"type":1},{"id":194,"type":1},{"id":196,"type":1},{"id":197,"type":1},{"id":198,"type":1},{"id":199,"type":1},{"id":200,"type":1},{"id":202,"type":1},{"id":204,"type":1},{"id":206,"type":1},{"id":208,"type":1},{"id":210,"type":1},{"id":212,"type":1},{"id":215,"type":1},{"id":217,"type":1},{"id":220,"type":1},{"id":222,"type":1},{"id":224,"type":1},{"id":227,"type":1},{"id":229,"type":1},{"id":231,"type":1},{"id":233,"type":1},{"id":236,"type":1},{"id":238,"type":1},{"id":241,"type":1},{"id":244,"type":1},{"id":246,"type":1},{"id":248,"type":1},{"id":250,"type":1},{"id":254,"type":1},{"id":257,"type":1},{"id":259,"type":1},{"id":261,"type":1},{"id":264,"type":1},{"id":266,"type":1},{"id":269,"type":1},{"id":272,"type":1},{"id":274,"type":1},{"id":276,"type":1},{"id":279,"type":1},{"id":283,"type":1},{"id":287,"type":1},{"id":289,"type":1},{"id":292,"type":1},{"id":294,"type":1},{"id":297,"type":1},{"id":299,"type":1},{"id":302,"type":1},{"id":304,"type":1},{"id":307,"type":1},{"id":310,"type":1},{"id":312,"type":1},{"id":316,"type":1},{"id":318,"type":1},{"id":320,"type":1},{"id":323,"type":1},{"id":326,"type":1},{"id":329,"type":1},{"id":331,"type":1},{"id":333,"type":1},{"id":336,"type":1},{"id":339,"type":1},{"id":341,"type":1},{"id":344,"type":1},{"id":346,"type":1},{"id":348,"type":1},{"id":351,"type":1},{"id":354,"type":1},{"id":357,"type":1},{"id":362,"type":1},{"id":364,"type":1},{"id":367,"type":1},{"id":369,"type":1},{"id":371,"type":1},{"id":374,"type":1},{"id":377,"type":1},{"id":379,"type":1},{"id":382,"type":1},{"id":384,"type":1},{"id":387,"type":1},{"id":391,"type":1},{"id":393,"type":1},{"id":396,"type":1},{"id":398,"type":1},{"id":400,"type":1},{"id":403,"type":1},{"id":405,"type":1}]
+(anonymous) @ websocket.ts:1066
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1062   Planet 19 (C3):
+(anonymous) @ websocket.ts:1062
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1063     Event Chain Hash: 85e7777f
+(anonymous) @ websocket.ts:1063
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1066     Ships: [{"id":41,"type":1},{"id":46,"type":1},{"id":53,"type":1},{"id":69,"type":1},{"id":81,"type":1},{"id":87,"type":1},{"id":93,"type":1},{"id":99,"type":1},{"id":103,"type":1},{"id":108,"type":1},{"id":114,"type":1},{"id":119,"type":1},{"id":125,"type":1},{"id":130,"type":1},{"id":136,"type":1},{"id":142,"type":1},{"id":148,"type":1},{"id":154,"type":1},{"id":160,"type":1},{"id":235,"type":1},{"id":242,"type":1},{"id":249,"type":1},{"id":256,"type":1},{"id":263,"type":1},{"id":271,"type":1},{"id":278,"type":1},{"id":285,"type":1},{"id":291,"type":1},{"id":300,"type":1},{"id":306,"type":1},{"id":314,"type":1},{"id":321,"type":1},{"id":328,"type":1},{"id":335,"type":1},{"id":342,"type":1},{"id":349,"type":1},{"id":356,"type":1},{"id":358,"type":1},{"id":365,"type":1},{"id":372,"type":1},{"id":380,"type":1},{"id":386,"type":1},{"id":394,"type":1},{"id":401,"type":1},{"id":404,"type":1}]
+(anonymous) @ websocket.ts:1066
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1062   Planet 20 (D2):
+(anonymous) @ websocket.ts:1062
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1063     Event Chain Hash: 8dd5a92a
+(anonymous) @ websocket.ts:1063
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1066     Ships: [{"id":31,"type":1},{"id":32,"type":1},{"id":34,"type":1},{"id":35,"type":1},{"id":42,"type":1},{"id":49,"type":1},{"id":54,"type":1},{"id":55,"type":1},{"id":57,"type":1},{"id":59,"type":1},{"id":61,"type":1},{"id":63,"type":1},{"id":65,"type":1},{"id":67,"type":1},{"id":70,"type":1},{"id":73,"type":1},{"id":76,"type":1},{"id":79,"type":1},{"id":82,"type":1},{"id":85,"type":1},{"id":88,"type":1},{"id":91,"type":1},{"id":94,"type":1},{"id":97,"type":1},{"id":100,"type":1},{"id":105,"type":1},{"id":107,"type":1},{"id":111,"type":1},{"id":113,"type":1},{"id":117,"type":1},{"id":120,"type":1},{"id":123,"type":1},{"id":126,"type":1},{"id":129,"type":1},{"id":132,"type":1},{"id":135,"type":1},{"id":138,"type":1},{"id":141,"type":1},{"id":144,"type":1},{"id":147,"type":1},{"id":150,"type":1},{"id":153,"type":1},{"id":156,"type":1},{"id":159,"type":1},{"id":162,"type":1},{"id":164,"type":1},{"id":203,"type":1},{"id":205,"type":1},{"id":207,"type":1},{"id":209,"type":1},{"id":211,"type":1},{"id":214,"type":1},{"id":216,"type":1},{"id":218,"type":1},{"id":219,"type":1},{"id":221,"type":1},{"id":223,"type":1},{"id":226,"type":1},{"id":228,"type":1},{"id":230,"type":1},{"id":232,"type":1},{"id":234,"type":1},{"id":237,"type":1},{"id":240,"type":1},{"id":243,"type":1},{"id":245,"type":1},{"id":247,"type":1},{"id":251,"type":1},{"id":253,"type":1},{"id":255,"type":1},{"id":258,"type":1},{"id":260,"type":1},{"id":262,"type":1},{"id":265,"type":1},{"id":268,"type":1},{"id":270,"type":1},{"id":273,"type":1},{"id":275,"type":1},{"id":277,"type":1},{"id":280,"type":1},{"id":282,"type":1},{"id":284,"type":1},{"id":286,"type":1},{"id":288,"type":1},{"id":290,"type":1},{"id":293,"type":1},{"id":296,"type":1},{"id":298,"type":1},{"id":301,"type":1},{"id":303,"type":1},{"id":305,"type":1},{"id":308,"type":1},{"id":311,"type":1},{"id":313,"type":1},{"id":315,"type":1},{"id":317,"type":1},{"id":319,"type":1},{"id":322,"type":1},{"id":325,"type":1},{"id":327,"type":1},{"id":330,"type":1},{"id":332,"type":1},{"id":334,"type":1},{"id":337,"type":1},{"id":340,"type":1},{"id":343,"type":1},{"id":345,"type":1},{"id":347,"type":1},{"id":350,"type":1},{"id":353,"type":1},{"id":355,"type":1},{"id":359,"type":1},{"id":361,"type":1},{"id":363,"type":1},{"id":366,"type":1},{"id":368,"type":1},{"id":370,"type":1},{"id":373,"type":1},{"id":376,"type":1},{"id":378,"type":1},{"id":381,"type":1},{"id":383,"type":1},{"id":385,"type":1},{"id":388,"type":1},{"id":390,"type":1},{"id":392,"type":1},{"id":395,"type":1},{"id":397,"type":1},{"id":399,"type":1}]
+(anonymous) @ websocket.ts:1066
+handleMessage @ websocket.ts:1059
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1079 
+FLEETS IN TRANSIT:
+handleMessage @ websocket.ts:1079
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1081   Fleet 29:
+(anonymous) @ websocket.ts:1081
+handleMessage @ websocket.ts:1080
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1082     Event Chain Hash: 49da19d9
+(anonymous) @ websocket.ts:1082
+handleMessage @ websocket.ts:1080
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1083     Ships: [{"id":168,"type":2},{"id":171,"type":2},{"id":179,"type":2},{"id":186,"type":2},{"id":192,"type":2},{"id":195,"type":2},{"id":96,"type":2},{"id":201,"type":2},{"id":213,"type":2},{"id":225,"type":2},{"id":239,"type":2},{"id":252,"type":2},{"id":267,"type":2},{"id":281,"type":2},{"id":295,"type":2},{"id":309,"type":2},{"id":324,"type":2},{"id":338,"type":2},{"id":352,"type":2},{"id":360,"type":2},{"id":375,"type":2},{"id":389,"type":2},{"id":402,"type":2}]
+(anonymous) @ websocket.ts:1083
+handleMessage @ websocket.ts:1080
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
+websocket.ts:1095 
+OUTGOING FLEETS FROM PLANETS:
+handleMessage @ websocket.ts:1095
+await in handleMessage
+ws.onmessage @ websocket.ts:173Understand this error
++page.svelte:146 Notifications updated: (2) [{…}, {…}]
