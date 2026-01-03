@@ -804,7 +804,7 @@ export class Planet {
             throw new Error('No starshipData in PlanetProductionItem');
           }
           const { type, customShipData, assignedShipId } = nextItem.starshipData;
-          const ship = Fleet.generateStarship(type, customShipData, planet, owner, assignedShipId);
+          const ship = Fleet.generateStarship(type, customShipData, planet, assignedShipId);
 
           //don't set last built option for space platforms
           if (type != StarShipType.SpacePlatform) {

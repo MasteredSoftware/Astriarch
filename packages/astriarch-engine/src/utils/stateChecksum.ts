@@ -49,7 +49,7 @@ function extractFleetChecksum(fleet: FleetData) {
   // Sort starships by ID to ensure deterministic order regardless of merge order
   const sortedStarships = fleet.starships
     .slice()
-    .sort((a, b) => a.id - b.id)
+    .sort((a, b) => a.id.localeCompare(b.id))
     .map((s) => ({
       id: s.id,
       type: s.type,

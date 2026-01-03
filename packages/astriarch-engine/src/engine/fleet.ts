@@ -52,12 +52,12 @@ export class Fleet {
     player?: PlayerData,
   ): FleetData {
     const starships = [
-      ...Fleet.generateStarships(StarShipType.SystemDefense, defenders, planet, player),
-      ...Fleet.generateStarships(StarShipType.Scout, scouts, planet, player),
-      ...Fleet.generateStarships(StarShipType.Destroyer, destroyers, planet, player),
-      ...Fleet.generateStarships(StarShipType.Cruiser, cruisers, planet, player),
-      ...Fleet.generateStarships(StarShipType.Battleship, battleships, planet, player),
-      ...Fleet.generateStarships(StarShipType.SpacePlatform, spaceplatforms, planet, player),
+      ...Fleet.generateStarships(StarShipType.SystemDefense, defenders, planet),
+      ...Fleet.generateStarships(StarShipType.Scout, scouts, planet),
+      ...Fleet.generateStarships(StarShipType.Destroyer, destroyers, planet),
+      ...Fleet.generateStarships(StarShipType.Cruiser, cruisers, planet),
+      ...Fleet.generateStarships(StarShipType.Battleship, battleships, planet),
+      ...Fleet.generateStarships(StarShipType.SpacePlatform, spaceplatforms, planet),
     ];
 
     return this.generateFleet(starships, locationHexMidPoint, player);
@@ -71,11 +71,10 @@ export class Fleet {
     type: StarShipType,
     count: number,
     planet?: PlanetData,
-    player?: PlayerData,
   ): StarshipData[] {
     const ships = [];
     for (let i = 0; i < count; i++) {
-      ships.push(Fleet.generateStarship(type, undefined, planet, player));
+      ships.push(Fleet.generateStarship(type, undefined, planet));
     }
     return ships;
   }
@@ -110,7 +109,6 @@ export class Fleet {
     type: StarShipType,
     customShipData?: StarshipAdvantageData,
     planet?: PlanetData,
-    _player?: PlayerData, // Kept for backward compatibility, prefix with _ to suppress unused warning
     preAssignedId?: string,
   ): StarshipData {
     //ship strength is based on ship cost
@@ -556,7 +554,7 @@ export class Fleet {
     const f = this.generateFleet([], fleet.locationHexMidPoint, player);
     f.id = fleet.id; // Preserve original ID for clones
     for (const s of fleet.starships) {
-      f.starships.push(this.cloneStarship(s, player));
+      f.starships.push(this.cloneStarship(s));
     }
 
     // Preserve the original fleet's hash - critical for combat diff system
@@ -622,8 +620,8 @@ export class Fleet {
   /**
    * Copies the properties of this starship
    */
-  public static cloneStarship(starship: StarshipData, player?: PlayerData): StarshipData {
-    const s = this.generateStarship(starship.type, undefined, undefined, player);
+  public static cloneStarship(starship: StarshipData): StarshipData {
+    const s = this.generateStarship(starship.type);
     s.id = starship.id; // Preserve original ID for clones
     s.health = starship.health;
     s.experienceAmount = starship.experienceAmount;
