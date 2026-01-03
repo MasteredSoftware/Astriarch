@@ -63,15 +63,15 @@ export class Fleet {
     return this.generateFleet(starships, locationHexMidPoint, player);
   }
 
-  public static generateInitialFleet(defenders: number, locationHexMidPoint: PointData, planet?: PlanetData): FleetData {
+  public static generateInitialFleet(
+    defenders: number,
+    locationHexMidPoint: PointData,
+    planet?: PlanetData,
+  ): FleetData {
     return Fleet.generateFleetWithShipCount(defenders, 0, 0, 0, 0, 0, locationHexMidPoint, planet);
   }
 
-  public static generateStarships(
-    type: StarShipType,
-    count: number,
-    planet?: PlanetData,
-  ): StarshipData[] {
+  public static generateStarships(type: StarShipType, count: number, planet?: PlanetData): StarshipData[] {
     const ships = [];
     for (let i = 0; i < count; i++) {
       ships.push(Fleet.generateStarship(type, undefined, planet));
@@ -621,14 +621,15 @@ export class Fleet {
    * Copies the properties of this starship
    */
   public static cloneStarship(starship: StarshipData): StarshipData {
-    const s = this.generateStarship(starship.type);
-    s.id = starship.id; // Preserve original ID for clones
-    s.health = starship.health;
-    s.experienceAmount = starship.experienceAmount;
-    if (starship.customShipData) {
-      s.customShipData = { ...starship.customShipData };
-    }
-    return s;
+    // Don't use generateStarship to avoid creating fallback IDs
+    // Just clone the object directly
+    return {
+      id: starship.id,
+      type: starship.type,
+      customShipData: starship.customShipData ? { ...starship.customShipData } : undefined,
+      health: starship.health,
+      experienceAmount: starship.experienceAmount,
+    };
   }
 
   public static constructLastKnownFleet(

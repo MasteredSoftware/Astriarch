@@ -126,7 +126,7 @@ export class Planet {
       buildLastStarship: true,
       waypointBoundingHexMidPoint: null,
     };
-    
+
     // Now generate the fleet with planet-scoped IDs
     planetData.planetaryFleet = Fleet.generateInitialFleet(initialDefenders, boundingHex.midPoint, planetData);
 
