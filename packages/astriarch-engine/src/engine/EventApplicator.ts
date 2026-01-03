@@ -465,7 +465,7 @@ export class EventApplicator {
     fleet.compositionHash = calculateFleetCompositionHash(shipIds);
 
     // DEBUG: Log fleet state after applying diff
-    const shipIdsAfter = fleet.starships.map((s) => s.id).sort((a, b) => a - b);
+    const shipIdsAfter = fleet.starships.map((s) => s.id).sort();
     console.log(`      Fleet ships AFTER: [${shipIdsAfter.join(', ')}] (${shipIdsAfter.length})`);
     console.log(`      Fleet hash AFTER: ${fleet.compositionHash}`);
   }

@@ -15,7 +15,7 @@ export interface StarshipAdvantageData {
 }
 
 export interface StarshipData {
-  id: number;
+  id: string; // Planet-scoped ID in format: ${planetId}_${counter}
   type: StarShipType;
   customShipData?: StarshipAdvantageData;
   health: number;

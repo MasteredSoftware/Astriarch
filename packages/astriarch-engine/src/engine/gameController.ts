@@ -195,13 +195,13 @@ export class GameController {
    * @returns CombatResultDiff with ships destroyed, damaged, and experience gained
    */
   public static buildCombatResultDiff(fleetBefore: FleetData, fleetAfter: FleetData): CombatResultDiff {
-    const shipsDestroyed: number[] = [];
-    const shipsDamaged: { id: number; damage: number }[] = [];
-    const shipsExperienceGained: { id: number; experience: number }[] = [];
+    const shipsDestroyed: string[] = [];
+    const shipsDamaged: { id: string; damage: number }[] = [];
+    const shipsExperienceGained: { id: string; experience: number }[] = [];
 
     // DEBUG: Log ship IDs before and after battle
-    const shipIdsBefore = fleetBefore.starships.map((s) => s.id).sort((a, b) => a - b);
-    const shipIdsAfter = fleetAfter.starships.map((s) => s.id).sort((a, b) => a - b);
+    const shipIdsBefore = fleetBefore.starships.map((s) => s.id).sort();
+    const shipIdsAfter = fleetAfter.starships.map((s) => s.id).sort();
     console.log('🔧 buildCombatResultDiff:');
     console.log(`   Ships BEFORE battle: [${shipIdsBefore.join(', ')}] (${shipIdsBefore.length})`);
     console.log(`   Ships AFTER battle:  [${shipIdsAfter.join(', ')}] (${shipIdsAfter.length})`);
@@ -209,7 +209,7 @@ export class GameController {
     console.log(`   Fleet AFTER hash: ${fleetAfter.compositionHash}`);
 
     // Build a map of ships after battle for quick lookup
-    const shipsAfterMap = new Map<number, StarshipData>();
+    const shipsAfterMap = new Map<string, StarshipData>();
     for (const ship of fleetAfter.starships) {
       shipsAfterMap.set(ship.id, ship);
     }
@@ -354,7 +354,7 @@ export class GameController {
       console.log(`   Defender (planet ${destinationPlanet.id}): ${enemyFleet.starships.length} ships`);
       console.log(`   Defender fleet hash BEFORE clone: ${enemyFleet.compositionHash}`);
       console.log(`   Defender fleet hash AFTER clone: ${enemyFleetBeforeBattle.compositionHash}`);
-      const defenderShipIds = enemyFleet.starships.map((s) => s.id).sort((a, b) => a - b);
+      const defenderShipIds = enemyFleet.starships.map((s) => s.id).sort();
       console.log(`   Defender ship IDs: [${defenderShipIds.join(', ')}]`);
 
       //now actually simulate the battle
@@ -371,7 +371,7 @@ export class GameController {
       console.log(`   Battle result: ${playerWins ? 'ATTACKER WINS' : 'DEFENDER WINS'}`);
       console.log(`   Attacker ships remaining: ${playerFleet.starships.length}`);
       console.log(`   Defender ships remaining: ${enemyFleet.starships.length}`);
-      const defenderShipIdsAfter = enemyFleet.starships.map((s) => s.id).sort((a, b) => a - b);
+      const defenderShipIdsAfter = enemyFleet.starships.map((s) => s.id).sort();
       console.log(`   Defender ship IDs after: [${defenderShipIdsAfter.join(', ')}]`);
       console.log(`   Defender fleet hash after: ${enemyFleet.compositionHash}`);
 

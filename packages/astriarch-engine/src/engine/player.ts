@@ -49,7 +49,6 @@ export class Player {
       fleetsInTransit: [],
       destroyed: false,
       nextFleetId: 1,
-      nextStarshipId: 1,
     };
   }
 
@@ -74,6 +73,9 @@ export class Player {
   ) {
     const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } =
       Fleet.countStarshipsByType(planetaryFleet);
+    // Note: We create a synthetic planet object just for ID generation
+    // This is for display purposes only (last known fleet strength)
+    const syntheticPlanet = { id: planetId, nextShipId: 1 } as PlanetData;
     const lastKnownFleet = Fleet.generateFleetWithShipCount(
       defenders,
       scouts,
@@ -82,6 +84,7 @@ export class Player {
       battleships,
       spaceplatforms,
       planetaryFleet.locationHexMidPoint,
+      syntheticPlanet,
     );
     const lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
     p.lastKnownPlanetFleetStrength[planetId] = lastKnownFleetData;

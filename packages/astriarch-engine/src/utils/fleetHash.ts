@@ -27,12 +27,12 @@ export function simpleHash(str: string): string {
  * The hash is deterministic based only on which ships are present,
  * not on the order they were added or any event history.
  *
- * @param shipIds - Array of ship IDs in the fleet
+ * @param shipIds - Array of ship IDs in the fleet (planet-scoped strings)
  * @returns Hash representing the fleet composition
  */
-export function calculateFleetCompositionHash(shipIds: number[]): string {
+export function calculateFleetCompositionHash(shipIds: string[]): string {
   // Sort ship IDs to ensure deterministic hash regardless of input order
-  const sortedIds = [...shipIds].sort((a, b) => a - b);
+  const sortedIds = [...shipIds].sort();
   const data = `FLEET:${sortedIds.join(',')}`;
   return simpleHash(data);
 }

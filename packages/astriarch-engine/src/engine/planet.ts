@@ -1,6 +1,6 @@
 import { ClientPlanet, PlanetById } from '../model/clientModel';
 import { EarnedPointsType } from '../model/earnedPoints';
-import { StarShipType } from '../model/fleet';
+import { FleetData, StarShipType } from '../model/fleet';
 import {
   Citizen,
   CitizenWorkerType,
@@ -83,32 +83,34 @@ export class Planet {
     }
 
     let maxImprovements = 0;
-    let planetaryFleet;
+    let initialDefenders = 0;
 
-    //set our max slots for improvements and build an initial defense fleet
+    //set our max slots for improvements and initial defender count
     switch (type) {
       case PlanetType.AsteroidBelt:
         maxImprovements = 3;
-        planetaryFleet = Fleet.generateInitialFleet(0, boundingHex.midPoint);
+        initialDefenders = 0;
         break;
       case PlanetType.DeadPlanet:
         maxImprovements = 5;
-        planetaryFleet = Fleet.generateInitialFleet(Utils.nextRandom(3, 5), boundingHex.midPoint);
+        initialDefenders = Utils.nextRandom(3, 5);
         break;
       case PlanetType.PlanetClass1:
         maxImprovements = 6;
-        planetaryFleet = Fleet.generateInitialFleet(Utils.nextRandom(4, 6), boundingHex.midPoint);
+        initialDefenders = Utils.nextRandom(4, 6);
         break;
       case PlanetType.PlanetClass2:
         maxImprovements = 9;
-        planetaryFleet = Fleet.generateInitialFleet(Utils.nextRandom(10, 15), boundingHex.midPoint);
+        initialDefenders = Utils.nextRandom(10, 15);
         break;
     }
 
-    const planetData = {
+    // Create planet object first (without fleet) so we can pass it to fleet generation
+    const planetData: PlanetData = {
       id: Planet.NEXT_PLANET_ID++,
       name,
       type,
+      nextShipId: 1, // Initialize planet-scoped ship ID counter
       population,
       buildQueue: [],
       builtImprovements,
@@ -116,7 +118,7 @@ export class Planet {
       resources,
       originPoint,
       boundingHexMidPoint: boundingHex.midPoint,
-      planetaryFleet: planetaryFleet!,
+      planetaryFleet: {} as FleetData, // Temporary, will be replaced immediately
       outgoingFleets: [],
       planetHappiness: PlanetHappinessType.Normal,
       starshipTypeLastBuilt: null,
@@ -124,6 +126,9 @@ export class Planet {
       buildLastStarship: true,
       waypointBoundingHexMidPoint: null,
     };
+    
+    // Now generate the fleet with planet-scoped IDs
+    planetData.planetaryFleet = Fleet.generateInitialFleet(initialDefenders, boundingHex.midPoint, planetData);
 
     Planet.generateResources(planetData, 1.0, initialOwner);
 
@@ -799,7 +804,7 @@ export class Planet {
             throw new Error('No starshipData in PlanetProductionItem');
           }
           const { type, customShipData, assignedShipId } = nextItem.starshipData;
-          const ship = Fleet.generateStarship(type, customShipData, owner, assignedShipId);
+          const ship = Fleet.generateStarship(type, customShipData, planet, owner, assignedShipId);
 
           //don't set last built option for space platforms
           if (type != StarShipType.SpacePlatform) {

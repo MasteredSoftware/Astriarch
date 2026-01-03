@@ -179,7 +179,8 @@ export class CommandProcessor {
 
     // Pre-assign ship ID if this is a starship production item
     if (productionItem.itemType === PlanetProductionItemType.StarShipInProduction && productionItem.starshipData) {
-      productionItem.starshipData.assignedShipId = player.nextStarshipId++;
+      // Generate planet-scoped ID for deterministic ship identification
+      productionItem.starshipData.assignedShipId = `${planet.id}_${planet.nextShipId++}`;
     }
 
     // Get player resources after spending
@@ -328,7 +329,7 @@ export class CommandProcessor {
       ...command.shipIds.battleships,
     ];
 
-    const existingShipIds = new Set(sourcePlanet.planetaryFleet.starships.map((s) => s.id));
+    const existingShipIds = new Set<string>(sourcePlanet.planetaryFleet.starships.map((s) => s.id));
     const missingShips = allRequestedIds.filter((id) => !existingShipIds.has(id));
 
     if (missingShips.length > 0) {

@@ -206,7 +206,7 @@ export class GameModel {
             p.builtImprovements[PlanetImprovementType.Colony] = 1;
             p.builtImprovements[PlanetImprovementType.Factory] = 1;
             p.planetaryFleet.starships.push(
-              Fleet.generateStarship(StarShipType.Scout, undefined, players[assignedPlayerIndex]),
+              Fleet.generateStarship(StarShipType.Scout, undefined, p, players[assignedPlayerIndex]),
             );
           }
         }

@@ -1395,7 +1395,7 @@ export class WebSocketServer {
                 return {
                   planetId,
                   compositionHash: planet.planetaryFleet.compositionHash || "none",
-                  shipIds: planet.planetaryFleet.starships.map((s) => s.id).sort((a, b) => a - b),
+                  shipIds: planet.planetaryFleet.starships.map((s) => s.id).sort(),
                 };
               }),
             fleetsInTransit: clientModel.mainPlayer.fleetsInTransit
@@ -1404,7 +1404,7 @@ export class WebSocketServer {
               .map((fleet) => ({
                 fleetId: fleet.id,
                 compositionHash: fleet.compositionHash || "none",
-                shipIds: fleet.starships.map((s) => s.id).sort((a, b) => a - b),
+                shipIds: fleet.starships.map((s) => s.id).sort(),
               })),
           };
         }

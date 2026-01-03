@@ -12,15 +12,15 @@ export interface ResearchBoost {
  * Allows client to apply changes without overwriting concurrent production/repairs
  */
 export interface CombatResultDiff {
-  shipsDestroyed: number[]; // IDs of ships killed in battle
+  shipsDestroyed: string[]; // IDs of ships killed in battle (planet-scoped strings)
   shipsDamaged: {
     // Damage to apply to surviving ships
-    id: number;
+    id: string;
     damage: number; // Amount of damage dealt (subtract from current health)
   }[];
   shipsExperienceGained: {
     // Experience gained by surviving ships
-    id: number;
+    id: string;
     experience: number;
   }[];
 }

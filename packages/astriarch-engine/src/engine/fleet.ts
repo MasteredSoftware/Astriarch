@@ -48,28 +48,34 @@ export class Fleet {
     battleships: number,
     spaceplatforms: number,
     locationHexMidPoint: PointData | null,
+    planet?: PlanetData,
     player?: PlayerData,
   ): FleetData {
     const starships = [
-      ...Fleet.generateStarships(StarShipType.SystemDefense, defenders, player),
-      ...Fleet.generateStarships(StarShipType.Scout, scouts, player),
-      ...Fleet.generateStarships(StarShipType.Destroyer, destroyers, player),
-      ...Fleet.generateStarships(StarShipType.Cruiser, cruisers, player),
-      ...Fleet.generateStarships(StarShipType.Battleship, battleships, player),
-      ...Fleet.generateStarships(StarShipType.SpacePlatform, spaceplatforms, player),
+      ...Fleet.generateStarships(StarShipType.SystemDefense, defenders, planet, player),
+      ...Fleet.generateStarships(StarShipType.Scout, scouts, planet, player),
+      ...Fleet.generateStarships(StarShipType.Destroyer, destroyers, planet, player),
+      ...Fleet.generateStarships(StarShipType.Cruiser, cruisers, planet, player),
+      ...Fleet.generateStarships(StarShipType.Battleship, battleships, planet, player),
+      ...Fleet.generateStarships(StarShipType.SpacePlatform, spaceplatforms, planet, player),
     ];
 
     return this.generateFleet(starships, locationHexMidPoint, player);
   }
 
-  public static generateInitialFleet(defenders: number, locationHexMidPoint: PointData): FleetData {
-    return Fleet.generateFleetWithShipCount(defenders, 0, 0, 0, 0, 0, locationHexMidPoint);
+  public static generateInitialFleet(defenders: number, locationHexMidPoint: PointData, planet?: PlanetData): FleetData {
+    return Fleet.generateFleetWithShipCount(defenders, 0, 0, 0, 0, 0, locationHexMidPoint, planet);
   }
 
-  public static generateStarships(type: StarShipType, count: number, player?: PlayerData): StarshipData[] {
+  public static generateStarships(
+    type: StarShipType,
+    count: number,
+    planet?: PlanetData,
+    player?: PlayerData,
+  ): StarshipData[] {
     const ships = [];
     for (let i = 0; i < count; i++) {
-      ships.push(Fleet.generateStarship(type, undefined, player));
+      ships.push(Fleet.generateStarship(type, undefined, planet, player));
     }
     return ships;
   }
@@ -103,8 +109,9 @@ export class Fleet {
   public static generateStarship(
     type: StarShipType,
     customShipData?: StarshipAdvantageData,
-    player?: PlayerData,
-    preAssignedId?: number,
+    planet?: PlanetData,
+    _player?: PlayerData, // Kept for backward compatibility, prefix with _ to suppress unused warning
+    preAssignedId?: string,
   ): StarshipData {
     //ship strength is based on ship cost
     //  right now it is double the value of the next lower ship class
@@ -119,8 +126,16 @@ export class Fleet {
     //space platforms -> all
     //battleships -> cruisers -> destroyers -> scouts -> defenders (-> battleships)
 
+    // Generate planet-scoped ship ID: ${planetId}_${counter}
+    // This ensures deterministic IDs regardless of production timing between client/server
+    const id = preAssignedId
+      ? preAssignedId
+      : planet
+        ? `${planet.id}_${planet.nextShipId++}`
+        : `fallback_${Fleet.NEXT_STARSHIP_ID++}`;
+
     return {
-      id: preAssignedId ?? (player ? player.nextStarshipId++ : Fleet.NEXT_STARSHIP_ID++),
+      id,
       type,
       customShipData,
       health: this.getStarshipTypeBaseStrength(type), //starships will heal between turns if the planet has the necessary building and the player has the requisite resources
@@ -261,16 +276,16 @@ export class Fleet {
   public static splitFleetByShipIds(
     fleet: FleetData,
     shipIds: {
-      scouts: number[];
-      destroyers: number[];
-      cruisers: number[];
-      battleships: number[];
+      scouts: string[];
+      destroyers: string[];
+      cruisers: string[];
+      battleships: string[];
     },
     player?: PlayerData,
   ): FleetData {
     const newFleet = this.generateFleet([], fleet.locationHexMidPoint, player);
 
-    const moveShipsToFleet = (ids: number[], targetType: StarShipType) => {
+    const moveShipsToFleet = (ids: string[], targetType: StarShipType) => {
       for (const shipId of ids) {
         const shipIndex = fleet.starships.findIndex((s) => s.id === shipId && s.type === targetType);
         if (shipIndex !== -1) {
@@ -305,10 +320,10 @@ export class Fleet {
     destPlanet: ClientPlanet,
     grid: Grid,
     shipIds: {
-      scouts: number[];
-      destroyers: number[];
-      cruisers: number[];
-      battleships: number[];
+      scouts: string[];
+      destroyers: string[];
+      cruisers: string[];
+      battleships: string[];
     },
     player?: PlayerData,
   ): FleetData {
@@ -489,13 +504,13 @@ export class Fleet {
     console.log(
       `  Landing fleet ship IDs: ${landingFleet.starships
         .map((s) => s.id)
-        .sort((a, b) => a - b)
+        .sort()
         .join(', ')}`,
     );
     console.log(
       `  Planetary fleet ship IDs before merge: ${planetaryFleet.starships
         .map((s) => s.id)
-        .sort((a, b) => a - b)
+        .sort()
         .join(', ')}`,
     );
 
@@ -505,7 +520,7 @@ export class Fleet {
     console.log(
       `  Planetary fleet ship IDs after merge: ${planetaryFleet.starships
         .map((s) => s.id)
-        .sort((a, b) => a - b)
+        .sort()
         .join(', ')}`,
     );
   };
@@ -608,7 +623,7 @@ export class Fleet {
    * Copies the properties of this starship
    */
   public static cloneStarship(starship: StarshipData, player?: PlayerData): StarshipData {
-    const s = this.generateStarship(starship.type, undefined, player);
+    const s = this.generateStarship(starship.type, undefined, undefined, player);
     s.id = starship.id; // Preserve original ID for clones
     s.health = starship.health;
     s.experienceAmount = starship.experienceAmount;

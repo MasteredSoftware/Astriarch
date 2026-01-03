@@ -68,7 +68,7 @@ export interface ProductionItemResources {
 export interface PlanetProductionItemData extends ProductionItemResources {
   itemType: PlanetProductionItemType;
   improvementData?: { type: PlanetImprovementType };
-  starshipData?: { type: StarShipType; customShipData?: StarshipAdvantageData; assignedShipId?: number };
+  starshipData?: { type: StarShipType; customShipData?: StarshipAdvantageData; assignedShipId?: string };
   turnsToComplete: number; //once this is built turns to complete will be 0 and will go into the built improvements for the planet
   productionCostComplete: number; //this is how much of the BaseProductionCost we've completed
   baseProductionCost: number; //this will translate into Turns to Complete based on population, factories, etc...
@@ -77,6 +77,7 @@ export interface PlanetProductionItemData extends ProductionItemResources {
 
 export interface PlanetData extends ClientPlanet {
   type: PlanetType;
+  nextShipId: number; // Counter for planet-scoped ship ID generation
   population: Citizen[];
   buildQueue: PlanetProductionItemData[];
   builtImprovements: Record<PlanetImprovementType, number>;
