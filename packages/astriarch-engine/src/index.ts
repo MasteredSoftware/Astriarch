@@ -41,7 +41,6 @@ import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } fr
 import { Grid } from './engine/grid';
 import { PlanetaryConflictData, ResearchBoost, CombatResultDiff } from './model/battle';
 import { GameTools } from './utils/gameTools';
-import { calculateClientModelChecksum, calculateClientModelChecksumComponents } from './utils/stateChecksum';
 
 // Export messaging types
 export * from './messaging/MessageTypes';

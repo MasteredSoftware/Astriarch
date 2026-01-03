@@ -239,16 +239,16 @@ export interface IClientEventPayload {
   currentCycle: number; // Game cycle when events occurred
   debugServerState?: {
     // Temporary debug field: Server's view of fleets for comparison with client
-    planetaryFleets: Array<{
+    planetaryFleets: {
       planetId: number;
       compositionHash: string;
       shipIds: number[];
-    }>;
-    fleetsInTransit: Array<{
+    }[];
+    fleetsInTransit: {
       fleetId: number;
       compositionHash: string;
       shipIds: number[];
-    }>;
+    }[];
   };
 }
 
