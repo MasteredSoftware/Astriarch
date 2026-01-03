@@ -9,7 +9,7 @@
 
 import { ClientModelData } from '../model/clientModel';
 import { TradeData, TradeType, TradingCenterResourceType } from '../model/tradingCenter';
-import { recalculateFleetHash } from '../utils/fleetHash';
+import { calculateFleetCompositionHash } from '../utils/fleetHash';
 import { CombatResultDiff } from '../model/battle';
 import { FleetData } from '../model/fleet';
 import { Planet } from './planet';
@@ -462,11 +462,11 @@ export class EventApplicator {
 
     // Recalculate fleet hash after applying changes
     const shipIds = fleet.starships.map((s) => s.id);
-    fleet.eventChainHash = recalculateFleetHash(shipIds);
+    fleet.compositionHash = calculateFleetCompositionHash(shipIds);
 
     // DEBUG: Log fleet state after applying diff
     const shipIdsAfter = fleet.starships.map((s) => s.id).sort((a, b) => a - b);
     console.log(`      Fleet ships AFTER: [${shipIdsAfter.join(', ')}] (${shipIdsAfter.length})`);
-    console.log(`      Fleet hash AFTER: ${fleet.eventChainHash}`);
+    console.log(`      Fleet hash AFTER: ${fleet.compositionHash}`);
   }
 }

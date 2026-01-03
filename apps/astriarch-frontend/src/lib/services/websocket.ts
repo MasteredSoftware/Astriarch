@@ -1061,14 +1061,14 @@ class WebSocketService {
 											if (planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
 												console.error(`  Planet ${planetId} (${planet.name}):`);
 												console.error(
-													`    Event Chain Hash: ${planet.planetaryFleet.eventChainHash}`
+													`    Composition Hash: ${planet.planetaryFleet.compositionHash}`
 												);
 												console.error(
 													`    Ships:`,
 													JSON.stringify(
 														planet.planetaryFleet.starships.map((s) => ({
 															id: s.id,
-															type: s.type,
+															type: s.type
 														}))
 													)
 												);
@@ -1080,11 +1080,8 @@ class WebSocketService {
 										console.error('\n🖥️  SERVER PLANETARY FLEETS:');
 										payload.debugServerState.planetaryFleets.forEach((pf) => {
 											console.error(`  Planet ${pf.planetId}:`);
-											console.error(`    Event Chain Hash: ${pf.eventChainHash}`);
-											console.error(
-												`    Ships:`,
-												JSON.stringify(pf.shipIds.map((id) => ({ id })))
-											);
+											console.error(`    Composition Hash: ${pf.compositionHash}`);
+											console.error(`    Ships:`, JSON.stringify(pf.shipIds.map((id) => ({ id }))));
 										});
 
 										console.error('\n⚡ PLANETARY FLEET DIFFERENCES:');
@@ -1105,8 +1102,8 @@ class WebSocketService {
 											if (!serverFleet) {
 												console.error(`  ❌ Planet ${planetId}: Exists on CLIENT but not SERVER`);
 											} else {
-												const clientHash = planet.planetaryFleet.eventChainHash;
-												const serverHash = serverFleet.eventChainHash;
+												const clientHash = planet.planetaryFleet.compositionHash;
+												const serverHash = serverFleet.compositionHash;
 												const clientShipIds = planet.planetaryFleet.starships
 													.map((s) => s.id)
 													.sort((a, b) => a - b);
@@ -1151,13 +1148,13 @@ class WebSocketService {
 									console.error('\n📱 CLIENT FLEETS IN TRANSIT:');
 									currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
 										console.error(`  Fleet ${fleet.id}:`);
-										console.error(`    Event Chain Hash: ${fleet.eventChainHash}`);
+										console.error(`    Composition Hash: ${fleet.compositionHash}`);
 										console.error(
 											`    Ships:`,
 											JSON.stringify(
 												fleet.starships.map((s) => ({
 													id: s.id,
-													type: s.type,
+													type: s.type
 												}))
 											)
 										);
@@ -1168,7 +1165,7 @@ class WebSocketService {
 										console.error('\n🖥️  SERVER FLEETS IN TRANSIT:');
 										payload.debugServerState.fleetsInTransit.forEach((tf) => {
 											console.error(`  Fleet ${tf.fleetId}:`);
-											console.error(`    Event Chain Hash: ${tf.eventChainHash}`);
+											console.error(`    Composition Hash: ${tf.compositionHash}`);
 											console.error(`    Ships:`, JSON.stringify(tf.shipIds.map((id) => ({ id }))));
 										});
 
@@ -1189,8 +1186,8 @@ class WebSocketService {
 											if (!serverFleet) {
 												console.error(`  ❌ Fleet ${fleet.id}: Exists on CLIENT but not SERVER`);
 											} else {
-												const clientHash = fleet.eventChainHash;
-												const serverHash = serverFleet.eventChainHash;
+												const clientHash = fleet.compositionHash;
+												const serverHash = serverFleet.compositionHash;
 												const clientShipIds = fleet.starships
 													.map((s) => s.id)
 													.sort((a, b) => a - b);
@@ -1241,7 +1238,7 @@ class WebSocketService {
 											if (planet.outgoingFleets && planet.outgoingFleets.length > 0) {
 												planet.outgoingFleets.forEach((fleet) => {
 													console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
-													console.error(`    Event Chain Hash: ${fleet.eventChainHash}`);
+													console.error(`    Composition Hash: ${fleet.compositionHash}`);
 													console.error(
 														`    Ships:`,
 														JSON.stringify(

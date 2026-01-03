@@ -17,7 +17,7 @@ import { PlayerData } from '../model/player';
 import { ResearchType } from '../model/research';
 import { PointData } from '../shapes/shapes';
 import { Utils } from '../utils/utils';
-import { updateFleetHash } from '../utils/fleetHash';
+
 import { Fleet } from './fleet';
 import {
   ClientNotification,
@@ -815,16 +815,14 @@ export class Planet {
             const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint, owner);
             newFleet.starships.push(ship);
             // Update hash for the newly created fleet with the added ship
-            newFleet.eventChainHash = updateFleetHash(newFleet.eventChainHash!, 'ADD', [ship.id]);
+            Fleet.recalculateFleetCompositionHash(newFleet);
             Fleet.setDestination(newFleet, gameGrid, planet.boundingHexMidPoint, planet.waypointBoundingHexMidPoint);
 
             planet.outgoingFleets.push(newFleet);
           } else {
             planet.planetaryFleet.starships.push(ship);
             // Update hash for the planetary fleet with the added ship
-            planet.planetaryFleet.eventChainHash = updateFleetHash(planet.planetaryFleet.eventChainHash!, 'ADD', [
-              ship.id,
-            ]);
+            Fleet.recalculateFleetCompositionHash(planet.planetaryFleet);
           }
 
           // Generate SHIP_BUILT notification

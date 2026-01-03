@@ -1394,7 +1394,7 @@ export class WebSocketServer {
                 const planet = clientModel.mainPlayerOwnedPlanets[planetId];
                 return {
                   planetId,
-                  eventChainHash: planet.planetaryFleet.eventChainHash || 'none',
+                  compositionHash: planet.planetaryFleet.compositionHash || "none",
                   shipIds: planet.planetaryFleet.starships.map((s) => s.id).sort((a, b) => a - b),
                 };
               }),
@@ -1403,7 +1403,7 @@ export class WebSocketServer {
               .sort((a, b) => a.id - b.id)
               .map((fleet) => ({
                 fleetId: fleet.id,
-                eventChainHash: fleet.eventChainHash || 'none',
+                compositionHash: fleet.compositionHash || "none",
                 shipIds: fleet.starships.map((s) => s.id).sort((a, b) => a - b),
               })),
           };

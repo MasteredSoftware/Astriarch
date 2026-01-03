@@ -241,12 +241,12 @@ export interface IClientEventPayload {
     // Temporary debug field: Server's view of fleets for comparison with client
     planetaryFleets: Array<{
       planetId: number;
-      eventChainHash: string;
+      compositionHash: string;
       shipIds: number[];
     }>;
     fleetsInTransit: Array<{
       fleetId: number;
-      eventChainHash: string;
+      compositionHash: string;
       shipIds: number[];
     }>;
   };

@@ -1,7 +1,10 @@
 /**
- * Simple FNV-1a hash implementation for fleet event chain tracking.
+ * Simple FNV-1a hash implementation for fleet composition tracking.
  * This is synchronous and works in both browser and Node.js environments.
  * Not cryptographically secure, but sufficient for detecting desyncs.
+ *
+ * The hash is based solely on ship IDs present in the fleet (sorted order),
+ * not on the sequence of events that created the fleet composition.
  */
 
 const FNV_OFFSET_BASIS = 2166136261;
@@ -20,31 +23,16 @@ export function simpleHash(str: string): string {
 }
 
 /**
- * Update fleet event chain hash when fleet composition changes.
- * @param currentHash - Current fleet hash (or empty string for new fleet)
- * @param operation - Type of operation (ADD, REMOVE, MERGE, REPLACE)
- * @param shipIds - Array of ship IDs involved in the operation
- * @returns New hash incorporating the operation
+ * Calculate fleet composition hash based on ship IDs.
+ * The hash is deterministic based only on which ships are present,
+ * not on the order they were added or any event history.
+ *
+ * @param shipIds - Array of ship IDs in the fleet
+ * @returns Hash representing the fleet composition
  */
-export function updateFleetHash(currentHash: string, operation: string, shipIds: number[]): string {
-  // Sort ship IDs to ensure deterministic hash regardless of order
+export function calculateFleetCompositionHash(shipIds: number[]): string {
+  // Sort ship IDs to ensure deterministic hash regardless of input order
   const sortedIds = [...shipIds].sort((a, b) => a - b);
-  const data = `${currentHash}:${operation}:${sortedIds.join(',')}`;
+  const data = `FLEET:${sortedIds.join(',')}`;
   return simpleHash(data);
-}
-
-/**
- * Initialize a fleet hash based on current ship composition.
- * Used when creating a new fleet or when hash doesn't exist.
- */
-export function initializeFleetHash(shipIds: number[]): string {
-  return updateFleetHash('', 'INIT', shipIds);
-}
-
-/**
- * Recalculate fleet hash from scratch based on current ships.
- * Used for validation or when migrating existing fleets.
- */
-export function recalculateFleetHash(shipIds: number[]): string {
-  return initializeFleetHash(shipIds);
 }

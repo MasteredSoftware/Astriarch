@@ -60,7 +60,7 @@ function extractFleetChecksum(fleet: FleetData) {
     id: fleet.id,
     starships: sortedStarships,
     starshipCount: fleet.starships.length,
-    eventChainHash: fleet.eventChainHash, // Include fleet event chain hash for composition tracking
+    compositionHash: fleet.compositionHash, // Include fleet composition hash for desync detection
     // Use null checks for location - we only care if destination exists, not exact parsecs
     hasDestination: fleet.destinationHexMidPoint !== null,
     destinationX: fleet.destinationHexMidPoint ? Math.round(fleet.destinationHexMidPoint.x) : null,

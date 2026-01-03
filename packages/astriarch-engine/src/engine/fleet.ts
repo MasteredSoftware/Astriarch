@@ -6,7 +6,7 @@ import { PlayerData } from '../model/player';
 import { ResearchType } from '../model/research';
 import { PointData } from '../shapes/shapes';
 import { GameTools } from '../utils/gameTools';
-import { initializeFleetHash, recalculateFleetHash, updateFleetHash } from '../utils/fleetHash';
+import { calculateFleetCompositionHash } from '../utils/fleetHash';
 import { Grid } from './grid';
 import { Player } from './player';
 import { Research } from './research';
@@ -27,6 +27,7 @@ export class Fleet {
   private static NEXT_STARSHIP_ID = 1;
   public static generateFleet(starships: StarshipData[], locationHexMidPoint: PointData | null, player?: PlayerData) {
     const shipIds = starships.map((s) => s.id);
+    const hash = calculateFleetCompositionHash(shipIds);
     return {
       id: player ? player.nextFleetId++ : Fleet.NEXT_FLEET_ID++,
       starships,
@@ -35,7 +36,7 @@ export class Fleet {
       destinationHexMidPoint: null,
       parsecsToDestination: null,
       totalTravelDistance: null,
-      eventChainHash: initializeFleetHash(shipIds),
+      compositionHash: hash,
     };
   }
 
@@ -247,8 +248,8 @@ export class Fleet {
     // Recalculate hashes for both fleets after the split
     const newFleetShipIds = newFleet.starships.map((s) => s.id);
     const sourceFleetShipIds = fleet.starships.map((s) => s.id);
-    newFleet.eventChainHash = recalculateFleetHash(newFleetShipIds);
-    fleet.eventChainHash = recalculateFleetHash(sourceFleetShipIds);
+    newFleet.compositionHash = calculateFleetCompositionHash(newFleetShipIds);
+    fleet.compositionHash = calculateFleetCompositionHash(sourceFleetShipIds);
 
     return newFleet;
   }
@@ -289,8 +290,8 @@ export class Fleet {
     // Recalculate hashes for both fleets after the split
     const newFleetShipIds = newFleet.starships.map((s) => s.id);
     const sourceFleetShipIds = fleet.starships.map((s) => s.id);
-    newFleet.eventChainHash = recalculateFleetHash(newFleetShipIds);
-    fleet.eventChainHash = recalculateFleetHash(sourceFleetShipIds);
+    newFleet.compositionHash = calculateFleetCompositionHash(newFleetShipIds);
+    fleet.compositionHash = calculateFleetCompositionHash(sourceFleetShipIds);
 
     return newFleet;
   }
@@ -546,23 +547,25 @@ export class Fleet {
     // Preserve the original fleet's hash - critical for combat diff system
     // The hash represents the fleet composition, which is the same in the clone
     // If the original fleet doesn't have a hash yet, calculate it
-    if (fleet.eventChainHash) {
-      f.eventChainHash = fleet.eventChainHash;
+    if (fleet.compositionHash) {
+      f.compositionHash = fleet.compositionHash;
     } else {
       const shipIds = f.starships.map((s) => s.id);
-      f.eventChainHash = recalculateFleetHash(shipIds);
+      f.compositionHash = calculateFleetCompositionHash(shipIds);
     }
 
     return f;
   }
 
   /**
-   * Recalculates the eventChainHash for a fleet based on current ship composition
-   * Call this after any operation that modifies the fleet's starships array
+   * Recalculates the fleet composition hash based on current ship IDs.
+   * This hash is deterministic and based only on which ships are present (sorted),
+   * not on the sequence of events that created the fleet.
+   * Call this after any operation that modifies the fleet's starships array.
    */
-  public static recalculateFleetEventChainHash(fleet: FleetData): void {
+  public static recalculateFleetCompositionHash(fleet: FleetData): void {
     const shipIds = fleet.starships.map((s) => s.id);
-    fleet.eventChainHash = recalculateFleetHash(shipIds);
+    fleet.compositionHash = calculateFleetCompositionHash(shipIds);
   }
 
   /**

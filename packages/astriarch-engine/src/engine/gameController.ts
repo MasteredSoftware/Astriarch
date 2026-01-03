@@ -205,8 +205,8 @@ export class GameController {
     console.log('🔧 buildCombatResultDiff:');
     console.log(`   Ships BEFORE battle: [${shipIdsBefore.join(', ')}] (${shipIdsBefore.length})`);
     console.log(`   Ships AFTER battle:  [${shipIdsAfter.join(', ')}] (${shipIdsAfter.length})`);
-    console.log(`   Fleet BEFORE hash: ${fleetBefore.eventChainHash}`);
-    console.log(`   Fleet AFTER hash: ${fleetAfter.eventChainHash}`);
+    console.log(`   Fleet BEFORE hash: ${fleetBefore.compositionHash}`);
+    console.log(`   Fleet AFTER hash: ${fleetAfter.compositionHash}`);
 
     // Build a map of ships after battle for quick lookup
     const shipsAfterMap = new Map<number, StarshipData>();
@@ -352,8 +352,8 @@ export class GameController {
       console.log(`\n⚔️ BATTLE on Planet ${destinationPlanet.id}:`);
       console.log(`   Attacker (player ${player.id}): ${playerFleet.starships.length} ships`);
       console.log(`   Defender (planet ${destinationPlanet.id}): ${enemyFleet.starships.length} ships`);
-      console.log(`   Defender fleet hash BEFORE clone: ${enemyFleet.eventChainHash}`);
-      console.log(`   Defender fleet hash AFTER clone: ${enemyFleetBeforeBattle.eventChainHash}`);
+      console.log(`   Defender fleet hash BEFORE clone: ${enemyFleet.compositionHash}`);
+      console.log(`   Defender fleet hash AFTER clone: ${enemyFleetBeforeBattle.compositionHash}`);
       const defenderShipIds = enemyFleet.starships.map((s) => s.id).sort((a, b) => a - b);
       console.log(`   Defender ship IDs: [${defenderShipIds.join(', ')}]`);
 
@@ -364,8 +364,8 @@ export class GameController {
 
       // CRITICAL: Recalculate fleet hashes after battle since ships were destroyed
       // The battle simulator modifies fleets in place, but doesn't update hashes
-      Fleet.recalculateFleetEventChainHash(playerFleet);
-      Fleet.recalculateFleetEventChainHash(enemyFleet);
+      Fleet.recalculateFleetCompositionHash(playerFleet);
+      Fleet.recalculateFleetCompositionHash(enemyFleet);
 
       // DEBUG: Log battle results
       console.log(`   Battle result: ${playerWins ? 'ATTACKER WINS' : 'DEFENDER WINS'}`);
@@ -373,7 +373,7 @@ export class GameController {
       console.log(`   Defender ships remaining: ${enemyFleet.starships.length}`);
       const defenderShipIdsAfter = enemyFleet.starships.map((s) => s.id).sort((a, b) => a - b);
       console.log(`   Defender ship IDs after: [${defenderShipIdsAfter.join(', ')}]`);
-      console.log(`   Defender fleet hash after: ${enemyFleet.eventChainHash}`);
+      console.log(`   Defender fleet hash after: ${enemyFleet.compositionHash}`);
 
       if (!playerWins) {
         //just kill the fleet

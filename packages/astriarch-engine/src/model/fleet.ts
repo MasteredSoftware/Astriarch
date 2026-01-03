@@ -30,7 +30,7 @@ export interface FleetData {
   destinationHexMidPoint: PointData | null;
   parsecsToDestination: number | null;
   totalTravelDistance: number | null;
-  eventChainHash?: string; // Tracks fleet composition changes for desync detection
+  compositionHash?: string; // Hash of sorted ship IDs for desync detection
 }
 
 export interface LastKnownFleetData {
