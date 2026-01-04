@@ -482,44 +482,36 @@ class WebSocketService {
 						};
 						if (payload.clientModelChecksum) {
 							// Calculate our own checksum of the received state to compare with server
-							calculateClientModelChecksum(updatedClientGameModel)
-								.then(async (ourStateChecksum) => {
-									if (ourStateChecksum !== payload.clientModelChecksum) {
-										console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
-										console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-										console.error(`Client state checksum: ${ourStateChecksum}`);
+							const ourStateChecksum = calculateClientModelChecksum(updatedClientGameModel);
+							if (ourStateChecksum !== payload.clientModelChecksum) {
+								console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
+								console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+								console.error(`Client state checksum: ${ourStateChecksum}`);
 
-										// Calculate component checksums to identify which part diverged
-										const ourComponents =
-											await calculateClientModelChecksumComponents(updatedClientGameModel);
-										console.error('State checksum breakdown:');
-										console.error('CLIENT:');
-										console.error('- Planets hash:', ourComponents.planets);
-										console.error('- Fleets hash:', ourComponents.fleets);
-										if (payload.checksumComponents) {
-											console.error('SERVER:');
-											console.error('- Planets hash:', payload.checksumComponents.planets);
-											console.error('- Fleets hash:', payload.checksumComponents.fleets);
-										}
+								// Calculate component checksums to identify which part diverged
+								const ourComponents =
+									calculateClientModelChecksumComponents(updatedClientGameModel);
+								console.error('State checksum breakdown:');
+								console.error('CLIENT:');
+								console.error('- Planets hash:', ourComponents.planets);
+								console.error('- Fleets hash:', ourComponents.fleets);
+								if (payload.checksumComponents) {
+									console.error('SERVER:');
+									console.error('- Planets hash:', payload.checksumComponents.planets);
+									console.error('- Fleets hash:', payload.checksumComponents.fleets);
+								}
 
-										this.gameStore.addNotification({
-											type: 'error',
-											message: 'State checksum mismatch in sync - data may be corrupted',
-											timestamp: Date.now()
-										});
-									} else {
-										console.debug('State sync checksum valid ✓', ourStateChecksum);
-									}
-								})
-								.catch((error) => {
-									console.error('Error calculating state checksum:', error);
+								this.gameStore.addNotification({
+									type: 'error',
+									message: 'State checksum mismatch in sync - data may be corrupted',
+									timestamp: Date.now()
 								});
+							} else {
+								console.debug('State sync checksum valid ✓', ourStateChecksum);
+							}
 						}
 
 						clientGameModel.set(updatedClientGameModel);
-
-						console.log('Received real-time game state update from server');
-					} else if (message.payload.changes) {
 						// TODO: Apply incremental changes if needed
 						console.log('Received incremental changes (not implemented):', message.payload.changes);
 					}
@@ -1030,14 +1022,14 @@ class WebSocketService {
 				// so the game loop doesn't advance the state while we're validating
 				if (payload.clientModelChecksum) {
 					try {
-						const ourStateChecksum = await calculateClientModelChecksum(currentModel);
+						const ourStateChecksum = calculateClientModelChecksum(currentModel);
 						if (ourStateChecksum !== payload.clientModelChecksum) {
 							console.error('🚨 STATE DESYNC DETECTED! 🚨');
 							console.error(`Server state checksum: ${payload.clientModelChecksum}`);
 							console.error(`Client state checksum: ${ourStateChecksum}`);
 
 							// Calculate component checksums to identify which part diverged
-							const ourComponents = await calculateClientModelChecksumComponents(currentModel);
+							const ourComponents = calculateClientModelChecksumComponents(currentModel);
 							console.error('State checksum breakdown:');
 							console.error('CLIENT:');
 							console.error('- Planets hash:', ourComponents.planets);

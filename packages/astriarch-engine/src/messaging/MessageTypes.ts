@@ -173,8 +173,8 @@ export interface IGameStateUpdatePayload {
   changes?: unknown;
   clientGameModel?: unknown;
   currentCycle?: number;
-  stateChecksum?: string; // SHA256 hash for desync detection (calculated by backend)
-  clientModelChecksum?: string; // SHA256 hash of critical client model state
+  stateChecksum?: string; // hash for desync detection (calculated by backend)
+  clientModelChecksum?: string; // hash of critical client model state
   checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
 }
 

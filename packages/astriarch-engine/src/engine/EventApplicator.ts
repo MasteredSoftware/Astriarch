@@ -9,7 +9,7 @@
 
 import { ClientModelData } from '../model/clientModel';
 import { TradeData, TradeType, TradingCenterResourceType } from '../model/tradingCenter';
-import { calculateFleetCompositionHash } from '../utils/fleetHash';
+import { calculateFleetCompositionHash } from '../utils/stateChecksum';
 import { CombatResultDiff } from '../model/battle';
 import { FleetData } from '../model/fleet';
 import { Planet } from './planet';

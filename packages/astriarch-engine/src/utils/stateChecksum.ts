@@ -5,40 +5,26 @@
  * have the same actual game state (beyond just event sequence matching).
  * This detects issues where events were processed but resulted in different
  * outcomes (e.g., race conditions, floating point drift, etc.)
- * Works in both Node.js and browser environments.
+ * Uses FNV-1a hashing for fast, deterministic, cross-platform checksums.
  */
 
 import type { ClientModelData } from '../model/clientModel';
 import type { FleetData } from '../model/fleet';
+import { simpleHash } from './simpleHash';
 
 /**
- * Calculate SHA256 hash using Node.js crypto (server-side) - SYNC version
- * Only available in Node.js environments (not browser)
+ * Calculate fleet composition hash based on ship IDs.
+ * The hash is deterministic based only on which ships are present,
+ * not on the order they were added or any event history.
+ *
+ * @param shipIds - Array of ship IDs in the fleet (planet-scoped strings)
+ * @returns 8-character hex hash representing the fleet composition
  */
-function calculateHashNodeSync(data: string): string {
-  // Use dynamic require to avoid bundler issues in client builds
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const crypto = require('crypto');
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-/**
- * Calculate SHA256 hash using Node.js crypto (server-side)
- */
-async function calculateHashNode(data: string): Promise<string> {
-  const crypto = await import('crypto');
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-/**
- * Calculate SHA256 hash using Web Crypto API (browser-side)
- */
-async function calculateHashBrowser(data: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+export function calculateFleetCompositionHash(shipIds: string[]): string {
+  // Sort ship IDs to ensure deterministic hash regardless of input order
+  const sortedIds = [...shipIds].sort();
+  const data = `FLEET:${sortedIds.join(',')}`;
+  return simpleHash(data);
 }
 
 /**
@@ -145,49 +131,18 @@ function extractStateData(clientModel: ClientModelData) {
  * between client and server:
  * - Owned planet IDs
  * - Fleet positions and compositions (in transit and on planets)
- * - Player resources
- * - Game time
- * - Research progress
  *
- * Excludes timing-sensitive data like lastUpdateTime that would cause
- * false positive desyncs.
+ * Excludes timing-sensitive data like resources and research that change
+ * frequently with client clock ticks and would cause false positive desyncs.
  *
  * @param clientModel The client model to checksum
- * @returns A short hex string representing the game state
+ * @returns An 8-character hex string representing the game state
  */
-export async function calculateClientModelChecksum(clientModel: ClientModelData): Promise<string> {
+export function calculateClientModelChecksum(clientModel: ClientModelData): string {
   const stateData = extractStateData(clientModel);
   const dataString = JSON.stringify(stateData);
-
-  // Detect environment and use appropriate hashing method
-  let hash: string;
-  if (typeof window === 'undefined') {
-    // Node.js environment (server)
-    hash = await calculateHashNode(dataString);
-  } else {
-    // Browser environment (client)
-    hash = await calculateHashBrowser(dataString);
-  }
-
-  // Take first 16 characters for brevity (same as event checksum)
-  return hash.substring(0, 16);
+  return simpleHash(dataString);
 }
-
-/**
- * Synchronous version of calculateClientModelChecksum for use in game loops.
- * Only works in Node.js environment (server-side).
- * Browser must use the async version.
- * This export is conditional to avoid bundling Node.js crypto in browser builds.
- */
-export const calculateClientModelChecksumSync: ((clientModel: ClientModelData) => string) | undefined =
-  typeof window === 'undefined'
-    ? function (clientModel: ClientModelData): string {
-        const stateData = extractStateData(clientModel);
-        const dataString = JSON.stringify(stateData);
-        const hash = calculateHashNodeSync(dataString);
-        return hash.substring(0, 16);
-      }
-    : undefined;
 
 /**
  * Extract component state data for debugging.
@@ -235,41 +190,14 @@ function extractComponentStateData(clientModel: ClientModelData) {
  * Returns individual hashes for different state categories to help
  * identify which specific part of the state diverged.
  */
-export async function calculateClientModelChecksumComponents(clientModel: ClientModelData): Promise<{
-  full: string;
+export function calculateClientModelChecksumComponents(clientModel: ClientModelData): {
   planets: string;
   fleets: string;
-}> {
-  // Full checksum
-  const full = await calculateClientModelChecksum(clientModel);
-
-  // Extract component data
+} {
   const { planetsData, fleetsData } = extractComponentStateData(clientModel);
 
-  const hashFn = typeof window === 'undefined' ? calculateHashNode : calculateHashBrowser;
-
   return {
-    full,
-    planets: (await hashFn(JSON.stringify(planetsData))).substring(0, 16),
-    fleets: (await hashFn(JSON.stringify(fleetsData))).substring(0, 16),
+    planets: simpleHash(JSON.stringify(planetsData)),
+    fleets: simpleHash(JSON.stringify(fleetsData)),
   };
 }
-
-/**
- * Synchronous version of calculateClientModelChecksumComponents for use in game loops.
- * Only works in Node.js environment (server-side).
- * This export is conditional to avoid bundling Node.js crypto in browser builds.
- */
-export const calculateClientModelChecksumComponentsSync:
-  | ((clientModel: ClientModelData) => { planets: string; fleets: string })
-  | undefined =
-  typeof window === 'undefined'
-    ? function (clientModel: ClientModelData): { planets: string; fleets: string } {
-        const { planetsData, fleetsData } = extractComponentStateData(clientModel);
-
-        return {
-          planets: calculateHashNodeSync(JSON.stringify(planetsData)).substring(0, 16),
-          fleets: calculateHashNodeSync(JSON.stringify(fleetsData)).substring(0, 16),
-        };
-      }
-    : undefined;

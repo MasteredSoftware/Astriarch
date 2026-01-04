@@ -6,7 +6,7 @@ import { PlayerData } from '../model/player';
 import { ResearchType } from '../model/research';
 import { PointData } from '../shapes/shapes';
 import { GameTools } from '../utils/gameTools';
-import { calculateFleetCompositionHash } from '../utils/fleetHash';
+import { calculateFleetCompositionHash } from '../utils/stateChecksum';
 import { Grid } from './grid';
 import { Player } from './player';
 import { Research } from './research';
