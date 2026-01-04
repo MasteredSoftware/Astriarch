@@ -45,4 +45,12 @@ export interface PlayerData {
   fleetsInTransit: FleetData[];
   destroyed: boolean;
   nextFleetId: number; // Player-scoped fleet ID counter
+
+  /**
+   * Rolling checksum of all events processed by this client.
+   * Used to detect desync - if client and server checksums diverge,
+   * we know events were missed or applied out of order.
+   * Empty string initially, then updated with each event batch.
+   */
+  lastEventChecksum: string;
 }

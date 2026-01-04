@@ -8,25 +8,7 @@
  */
 
 import type { ClientEvent } from './GameCommands';
-
-/**
- * Calculate SHA256 hash using Node.js crypto (server-side)
- */
-async function calculateHashNode(data: string): Promise<string> {
-  const crypto = await import('crypto');
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-/**
- * Calculate SHA256 hash using Web Crypto API (browser-side)
- */
-async function calculateHashBrowser(data: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const dataBuffer = encoder.encode(data);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-}
+import { simpleHash } from '../utils/simpleHash';
 
 /**
  * Calculate a rolling checksum that chains with the previous checksum.
@@ -40,7 +22,7 @@ async function calculateHashBrowser(data: string): Promise<string> {
  * @param previousChecksum The checksum from the previous batch (empty string for first batch)
  * @returns A short hex string representing the chained event sequence
  */
-export async function calculateRollingEventChecksum(events: ClientEvent[], previousChecksum = ''): Promise<string> {
+export function calculateRollingEventChecksum(events: ClientEvent[], previousChecksum = ''): string {
   // Include previous checksum to chain the history
   const data = {
     previousChecksum,
@@ -52,17 +34,5 @@ export async function calculateRollingEventChecksum(events: ClientEvent[], previ
   };
 
   const dataString = JSON.stringify(data);
-
-  // Detect environment and use appropriate hashing method
-  let hash: string;
-  if (typeof window === 'undefined') {
-    // Node.js environment (server)
-    hash = await calculateHashNode(dataString);
-  } else {
-    // Browser environment (client)
-    hash = await calculateHashBrowser(dataString);
-  }
-
-  // Take first 16 characters for brevity
-  return hash.substring(0, 16);
+  return simpleHash(dataString);
 }

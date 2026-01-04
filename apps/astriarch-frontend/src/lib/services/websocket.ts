@@ -995,10 +995,7 @@ class WebSocketService {
 				if (payload.stateChecksum) {
 					const previousChecksum = currentModel.lastEventChecksum || '';
 					try {
-						const ourChecksum = await calculateRollingEventChecksum(
-							payload.events,
-							previousChecksum
-						);
+						const ourChecksum = calculateRollingEventChecksum(payload.events, previousChecksum);
 						if (ourChecksum !== payload.stateChecksum) {
 							console.error('Event chain broken! Desync detected.');
 							console.error(`Expected: ${payload.stateChecksum}`);

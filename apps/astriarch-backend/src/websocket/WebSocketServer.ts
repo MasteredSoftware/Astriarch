@@ -476,12 +476,6 @@ export class WebSocketServer {
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
 
-          // Include the current rolling checksum in the synced state
-          const currentChecksum = GameController.getPlayerEventChecksum(client.playerId);
-          if (currentChecksum) {
-            clientGameModel.lastEventChecksum = currentChecksum;
-          }
-
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
           if (firstPlanetId) {
@@ -982,7 +976,7 @@ export class WebSocketServer {
       // Broadcast the new speed to all players in the game (including the requester)
       const speedUpdateMessage = new Message(MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT, {
         newSpeed,
-        playerId: result.gameData?.playerId,
+        playerId: client.playerId,
       });
 
       // Send to the requester
@@ -1059,13 +1053,13 @@ export class WebSocketServer {
       }
 
       // Broadcast events to affected players only (not all players)
-      // NOTE: Checksums are retrieved from stored values (calculated during time advancement)
+      // NOTE: Checksums are calculated and stored in PlayerData during command processing
       await this.broadcastToAffectedPlayers(
         gameId,
         result.events || [],
         result.currentCycle!,
-        result.checksum,
         "command events",
+        result.gameData!,
       );
 
       logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
@@ -1331,9 +1325,8 @@ export class WebSocketServer {
     gameId: string,
     events: ClientEvent[],
     currentCycle: number,
-    checksum?: string,
     eventType: string = "events",
-    modelData?: ModelData,
+    modelData: ModelData,
   ): Promise<void> {
     try {
       if (!events || events.length === 0) {
@@ -1373,14 +1366,14 @@ export class WebSocketServer {
         }
 
         // Calculate checksums here, only when broadcasting (not in game loop)
-        // Use provided modelData if available (for time-based events), otherwise query DB
-        const gameState = modelData || (await Game.findById(gameId))?.gameState;
+        let checksum = "";
         let playerStateChecksum: string | undefined;
         let playerChecksumComponents: { planets: string; fleets: string } | undefined;
         let debugServerState: any;
 
-        if (gameState) {
-          const clientModel = constructClientGameModel(gameState as ModelData, playerId);
+        if (modelData) {
+          const clientModel = constructClientGameModel(modelData, playerId);
+          checksum = clientModel.mainPlayer.lastEventChecksum;
           Player.calculateAndStoreChecksums(clientModel);
           playerStateChecksum = clientModel.clientModelChecksum;
           playerChecksumComponents = clientModel.checksumComponents;
@@ -1435,11 +1428,11 @@ export class WebSocketServer {
     events: ClientEvent[],
     notifications: ClientNotification[],
     currentCycle: number,
-    modelData?: ModelData,
+    modelData: ModelData,
   ): Promise<void> {
     // Clients generate notifications locally, so we only broadcast events
     // Checksums are retrieved from stored values (calculated during time advancement)
-    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events", modelData);
+    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, "time-based events", modelData);
   }
 
   private broadcastToOtherPlayersInGame(game: IGame, sessionId: string, message: Message<any>): void {

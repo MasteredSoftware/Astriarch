@@ -57,14 +57,6 @@ export interface ClientModelData extends ModelBase {
   taskNotifications: TaskNotificationIndex;
 
   /**
-   * Rolling checksum of all events processed by this client.
-   * Used to detect desync - if client and server checksums diverge,
-   * we know events were missed or applied out of order.
-   * Empty string initially, then updated with each event batch.
-   */
-  lastEventChecksum?: string;
-
-  /**
    * Checksum of critical client model state (planets, fleets, resources).
    * Used to detect state desync - if client and server state checksums diverge,
    * we know the actual game state is out of sync (different from event sequence issues).

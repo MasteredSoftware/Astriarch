@@ -78,12 +78,12 @@ export interface GameResult {
   game?: IGame;
   playerPosition?: number;
   playerId?: string;
-  gameData?: any;
+  gameData?: engine.ModelData;
   player?: IPlayer;
   // End turn specific properties
   allPlayersFinished?: boolean;
-  endOfTurnMessages?: any[];
-  destroyedClientPlayers?: any[];
+  endOfTurnMessages?: any[]; //TODO: type this properly
+  destroyedClientPlayers?: any[]; //TODO: type this properly
 }
 
 /**
@@ -91,9 +91,6 @@ export interface GameResult {
  * This provides WebSocket-compatible methods for game management
  */
 export class GameController {
-  // Track rolling event checksums per player for desync detection
-  private static playerEventChecksums = new Map<string, string>();
-
   // ==========================================
   // Game Management Methods (like old app.js)
   // ==========================================
@@ -371,7 +368,7 @@ export class GameController {
 
       return {
         success: true,
-        gameData: game.gameState,
+        gameData: game.gameState as engine.ModelData,
         player,
       };
     } catch (error) {
@@ -540,7 +537,7 @@ export class GameController {
       return {
         success: true,
         game,
-        gameData: { newSpeed, playerId: player.Id },
+        gameData: game.gameState as engine.ModelData,
       };
     } catch (error) {
       logger.error("Error adjusting game speed:", error);
@@ -638,7 +635,7 @@ export class GameController {
     sessionId: string,
     gameId: string,
     command: GameCommand,
-  ): Promise<GameResult & { checksum?: string; events?: ClientEvent[]; currentCycle?: number }> {
+  ): Promise<GameResult & { events?: ClientEvent[]; currentCycle?: number }> {
     try {
       // Find the game
       const game = await ServerGameModel.findById(gameId);
@@ -667,20 +664,20 @@ export class GameController {
         };
       }
 
+      const events = commandResult.events;
+
+      // Calculate rolling event checksum for desync detection
+      const gamePlayer = gameModelData.modelData.players.find((p) => p.id === command.playerId);
+      if (gamePlayer) {
+        const previousChecksum = gamePlayer.lastEventChecksum;
+        const newChecksum = calculateRollingEventChecksum(events, previousChecksum);
+        gamePlayer.lastEventChecksum = newChecksum;
+      }
+
       // CommandProcessor has already mutated the game state, just save it
       game.gameState = gameModelData.modelData;
       game.lastActivity = new Date();
       await persistGame(game);
-
-      const events = commandResult.events;
-
-      // Calculate rolling event checksum for desync detection
-      const playerId = command.playerId;
-      const previousChecksum = this.playerEventChecksums.get(playerId) || "";
-      const newChecksum = await calculateRollingEventChecksum(events, previousChecksum);
-
-      // Store the new checksum for next time
-      this.playerEventChecksums.set(playerId, newChecksum);
 
       logger.info(`Processed ${command.type} command for player ${player.name} in game ${gameId}`);
 
@@ -689,10 +686,8 @@ export class GameController {
         game,
         gameData: gameModelData.modelData,
         events,
-        checksum: newChecksum,
         currentCycle: gameModelData.modelData.currentCycle || 0,
       } as GameResult & {
-        checksum?: string;
         events?: ClientEvent[];
         currentCycle?: number;
       };
@@ -703,24 +698,6 @@ export class GameController {
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
-  }
-
-  // ==========================================
-  // Event Checksum Management
-  // ==========================================
-
-  /**
-   * Get the current rolling event checksum for a player
-   */
-  static getPlayerEventChecksum(playerId: string): string | undefined {
-    return this.playerEventChecksums.get(playerId);
-  }
-
-  /**
-   * Reset event checksum for a player (useful when they rejoin)
-   */
-  static resetPlayerEventChecksum(playerId: string): void {
-    this.playerEventChecksums.delete(playerId);
   }
 
   // ==========================================

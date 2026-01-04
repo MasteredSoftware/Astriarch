@@ -49,6 +49,7 @@ export class Player {
       fleetsInTransit: [],
       destroyed: false,
       nextFleetId: 1,
+      lastEventChecksum: '',
     };
   }
 
