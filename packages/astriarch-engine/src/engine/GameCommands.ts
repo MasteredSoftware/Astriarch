@@ -168,11 +168,11 @@ export interface SendShipsCommand extends GameCommand {
   fromPlanetId: number;
   toPlanetId: number;
   shipIds: {
-    // Specific ship IDs to send (user selected)
-    scouts: number[];
-    destroyers: number[];
-    cruisers: number[];
-    battleships: number[];
+    // Specific ship IDs to send (user selected) - planet-scoped strings
+    scouts: string[];
+    destroyers: string[];
+    cruisers: string[];
+    battleships: string[];
   };
 }
 
@@ -277,11 +277,11 @@ export interface FleetLaunchedEvent extends ClientEvent {
     fromPlanetId: number;
     toPlanetId: number;
     shipIds: {
-      // Ship IDs that were moved to the outgoing fleet
-      scouts: number[];
-      destroyers: number[];
-      cruisers: number[];
-      battleships: number[];
+      // Ship IDs that were moved to the outgoing fleet (planet-scoped strings)
+      scouts: string[];
+      destroyers: string[];
+      cruisers: string[];
+      battleships: string[];
     };
   };
 }

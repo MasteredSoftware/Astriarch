@@ -20,6 +20,7 @@ import {
   ClientEventType,
   CommandProcessor,
   calculateRollingEventChecksum,
+  constructClientGameModel,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -690,6 +691,10 @@ export class GameController {
         events,
         checksum: newChecksum,
         currentCycle: gameModelData.modelData.currentCycle || 0,
+      } as GameResult & {
+        checksum?: string;
+        events?: ClientEvent[];
+        currentCycle?: number;
       };
     } catch (error) {
       logger.error(`handleGameCommand error for ${command.type}:`, error);

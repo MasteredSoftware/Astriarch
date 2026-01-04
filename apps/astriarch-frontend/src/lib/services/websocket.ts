@@ -23,6 +23,10 @@ import {
 	TradeType,
 	Player
 } from 'astriarch-engine';
+import {
+	calculateClientModelChecksum,
+	calculateClientModelChecksumComponents
+} from 'astriarch-engine/src/utils/stateChecksum';
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { activityStore } from '$lib/stores/activityStore';
@@ -438,7 +442,7 @@ class WebSocketService {
 		}
 	}
 
-	private handleMessage(message: IMessage<unknown>) {
+	private async handleMessage(message: IMessage<unknown>) {
 		console.log('Received message:', message);
 
 		switch (message.type) {
@@ -470,6 +474,48 @@ class WebSocketService {
 					if (message.payload.clientGameModel) {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
+
+						// Validate state checksum if provided
+						const payload = message.payload as {
+							clientModelChecksum?: string;
+							checksumComponents?: { planets: string; fleets: string };
+						};
+						if (payload.clientModelChecksum) {
+							// Calculate our own checksum of the received state to compare with server
+							calculateClientModelChecksum(updatedClientGameModel)
+								.then(async (ourStateChecksum) => {
+									if (ourStateChecksum !== payload.clientModelChecksum) {
+										console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
+										console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+										console.error(`Client state checksum: ${ourStateChecksum}`);
+
+										// Calculate component checksums to identify which part diverged
+										const ourComponents =
+											await calculateClientModelChecksumComponents(updatedClientGameModel);
+										console.error('State checksum breakdown:');
+										console.error('CLIENT:');
+										console.error('- Planets hash:', ourComponents.planets);
+										console.error('- Fleets hash:', ourComponents.fleets);
+										if (payload.checksumComponents) {
+											console.error('SERVER:');
+											console.error('- Planets hash:', payload.checksumComponents.planets);
+											console.error('- Fleets hash:', payload.checksumComponents.fleets);
+										}
+
+										this.gameStore.addNotification({
+											type: 'error',
+											message: 'State checksum mismatch in sync - data may be corrupted',
+											timestamp: Date.now()
+										});
+									} else {
+										console.debug('State sync checksum valid ✓', ourStateChecksum);
+									}
+								})
+								.catch((error) => {
+									console.error('Error calculating state checksum:', error);
+								});
+						}
+
 						clientGameModel.set(updatedClientGameModel);
 
 						console.log('Received real-time game state update from server');
@@ -908,14 +954,23 @@ class WebSocketService {
 				const payload = message.payload as {
 					events: ClientEvent[];
 					stateChecksum?: string;
+					clientModelChecksum?: string;
+					checksumComponents?: { planets: string; fleets: string };
 					currentCycle: number;
 				};
 				console.log(`Received ${payload.events.length} client events from server`);
+
+				// CRITICAL: Pause game loop to prevent race conditions during event application
+				// The client game loop can modify the model (health regeneration, etc.) which would
+				// cause checksum mismatches if it runs between event application and validation
+				console.log('⏸️ Pausing game loop for event processing');
+				gameActions.pauseGame();
 
 				// Get current client model
 				const currentModel = get(clientGameModel);
 				if (!currentModel) {
 					console.warn('No client model available to apply events');
+					gameActions.resumeGame(); // Resume game loop before exiting
 					break;
 				}
 
@@ -923,54 +978,341 @@ class WebSocketService {
 				const grid = get(gameGrid);
 
 				// Apply each event to the client model and generate UI notifications
+				console.log(`\n📦 Processing ${payload.events.length} event(s):`);
+				payload.events.forEach((e, i) => console.log(`  ${i + 1}. ${e.type}`));
+
 				for (const event of payload.events) {
-					console.log(`Applying event: ${event.type}`);
+					const ownedPlanetsBefore = Object.keys(currentModel.mainPlayerOwnedPlanets)
+						.map(Number)
+						.sort();
+					console.log(`\n⚙️ Applying event: ${event.type}`);
+					console.log(`   Owned planets BEFORE: [${ownedPlanetsBefore.join(', ')}]`);
+
 					EventApplicator.applyEvent(currentModel, event, grid!);
+
+					const ownedPlanetsAfter = Object.keys(currentModel.mainPlayerOwnedPlanets)
+						.map(Number)
+						.sort();
+					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
 
 					// Convert event to user notification
 					this.convertClientEventToNotification(event);
 				}
 
-				// Validate checksum if provided (for player commands)
-				// Time-based events from server may not include checksum
+				// Validate event checksum if provided (for player commands)
 				if (payload.stateChecksum) {
 					const previousChecksum = currentModel.lastEventChecksum || '';
-					calculateRollingEventChecksum(payload.events, previousChecksum)
-						.then((ourChecksum) => {
-							if (ourChecksum !== payload.stateChecksum) {
-								console.error('Event chain broken! Desync detected.');
-								console.error(`Expected: ${payload.stateChecksum}`);
-								console.error(`Got: ${ourChecksum}`);
-								console.error(`Previous checksum: ${previousChecksum}`);
+					try {
+						const ourChecksum = await calculateRollingEventChecksum(
+							payload.events,
+							previousChecksum
+						);
+						if (ourChecksum !== payload.stateChecksum) {
+							console.error('Event chain broken! Desync detected.');
+							console.error(`Expected: ${payload.stateChecksum}`);
+							console.error(`Got: ${ourChecksum}`);
+							this.gameStore.addNotification({
+								type: 'error',
+								message: 'Game sync error - requesting full resync',
+								timestamp: Date.now()
+							});
+							this.requestStateSync();
+						} else {
+							console.debug('Event chain valid ✓', ourChecksum);
+							currentModel.lastEventChecksum = ourChecksum;
+						}
+					} catch (error) {
+						console.error('Error calculating rolling checksum:', error);
+					}
+				}
 
-								// This is serious - the event chain is broken
-								this.gameStore.addNotification({
-									type: 'error',
-									message: 'Game sync error - requesting full resync',
-									timestamp: Date.now()
-								});
+				// Validate state checksum if provided - do this BEFORE updating the store
+				// so the game loop doesn't advance the state while we're validating
+				if (payload.clientModelChecksum) {
+					try {
+						const ourStateChecksum = await calculateClientModelChecksum(currentModel);
+						if (ourStateChecksum !== payload.clientModelChecksum) {
+							console.error('🚨 STATE DESYNC DETECTED! 🚨');
+							console.error(`Server state checksum: ${payload.clientModelChecksum}`);
+							console.error(`Client state checksum: ${ourStateChecksum}`);
 
-								// Request full state sync to recover
-								this.requestStateSync();
-							} else {
-								console.debug('Event chain valid ✓', ourChecksum);
+							// Calculate component checksums to identify which part diverged
+							const ourComponents = await calculateClientModelChecksumComponents(currentModel);
+							console.error('State checksum breakdown:');
+							console.error('CLIENT:');
+							console.error('- Planets hash:', ourComponents.planets);
+							console.error('- Fleets hash:', ourComponents.fleets);
+							if (payload.checksumComponents) {
+								console.error('SERVER:');
+								console.error('- Planets hash:', payload.checksumComponents.planets);
+								console.error('- Fleets hash:', payload.checksumComponents.fleets);
 
-								// Update the model with the new checksum
-								currentModel.lastEventChecksum = ourChecksum;
+								// If fleet hash differs, show the stored FLEET_DEFENSE_SUCCESS data
+								if (ourComponents.fleets !== payload.checksumComponents.fleets) {
+									console.error('\n🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:');
+
+									// Show client planetary fleets
+									console.error('\n📱 CLIENT PLANETARY FLEETS:');
+									Object.keys(currentModel.mainPlayerOwnedPlanets)
+										.map(Number)
+										.sort((a, b) => a - b)
+										.forEach((planetId) => {
+											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+											if (planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
+												console.error(`  Planet ${planetId} (${planet.name}):`);
+												console.error(
+													`    Composition Hash: ${planet.planetaryFleet.compositionHash}`
+												);
+												console.error(
+													`    Ships:`,
+													JSON.stringify(
+														planet.planetaryFleet.starships.map((s) => ({
+															id: s.id,
+															type: s.type
+														}))
+													)
+												);
+											}
+										});
+
+									// Show server planetary fleets (if available)
+									if (payload.debugServerState) {
+										console.error('\n🖥️  SERVER PLANETARY FLEETS:');
+										payload.debugServerState.planetaryFleets.forEach((pf) => {
+											console.error(`  Planet ${pf.planetId}:`);
+											console.error(`    Composition Hash: ${pf.compositionHash}`);
+											console.error(`    Ships:`, JSON.stringify(pf.shipIds.map((id) => ({ id }))));
+										});
+
+										console.error('\n⚡ PLANETARY FLEET DIFFERENCES:');
+										const clientPlanetIds = Object.keys(currentModel.mainPlayerOwnedPlanets)
+											.map(Number)
+											.sort((a, b) => a - b);
+										const serverPlanetIds = payload.debugServerState.planetaryFleets.map(
+											(pf) => pf.planetId
+										);
+
+										// Check for mismatches
+										clientPlanetIds.forEach((planetId) => {
+											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+											const serverFleet = payload.debugServerState!.planetaryFleets.find(
+												(pf) => pf.planetId === planetId
+											);
+
+											if (!serverFleet) {
+												console.error(`  ❌ Planet ${planetId}: Exists on CLIENT but not SERVER`);
+											} else {
+												const clientHash = planet.planetaryFleet.compositionHash;
+												const serverHash = serverFleet.compositionHash;
+												const clientShipIds = planet.planetaryFleet.starships
+													.map((s) => s.id)
+													.sort((a, b) => a - b);
+												const serverShipIds = serverFleet.shipIds;
+
+												if (clientHash !== serverHash) {
+													console.error(
+														`  ⚠️  Planet ${planetId}: Hash mismatch (client: ${clientHash}, server: ${serverHash})`
+													);
+													console.error(
+														`      Client ships: [${clientShipIds.join(', ')}] (${clientShipIds.length})`
+													);
+													console.error(
+														`      Server ships: [${serverShipIds.join(', ')}] (${serverShipIds.length})`
+													);
+
+													// Show which ships differ
+													const clientOnly = clientShipIds.filter(
+														(id) => !serverShipIds.includes(id)
+													);
+													const serverOnly = serverShipIds.filter(
+														(id) => !clientShipIds.includes(id)
+													);
+													if (clientOnly.length > 0) {
+														console.error(`      Ships only on CLIENT: [${clientOnly.join(', ')}]`);
+													}
+													if (serverOnly.length > 0) {
+														console.error(`      Ships only on SERVER: [${serverOnly.join(', ')}]`);
+													}
+												}
+											}
+										});
+
+										serverPlanetIds.forEach((planetId) => {
+											if (!clientPlanetIds.includes(planetId)) {
+												console.error(`  ❌ Planet ${planetId}: Exists on SERVER but not CLIENT`);
+											}
+										});
+									}
+
+									// Show client fleets in transit
+									console.error('\n📱 CLIENT FLEETS IN TRANSIT:');
+									currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
+										console.error(`  Fleet ${fleet.id}:`);
+										console.error(`    Composition Hash: ${fleet.compositionHash}`);
+										console.error(
+											`    Ships:`,
+											JSON.stringify(
+												fleet.starships.map((s) => ({
+													id: s.id,
+													type: s.type
+												}))
+											)
+										);
+									});
+
+									// Show server fleets in transit (if available)
+									if (payload.debugServerState) {
+										console.error('\n🖥️  SERVER FLEETS IN TRANSIT:');
+										payload.debugServerState.fleetsInTransit.forEach((tf) => {
+											console.error(`  Fleet ${tf.fleetId}:`);
+											console.error(`    Composition Hash: ${tf.compositionHash}`);
+											console.error(`    Ships:`, JSON.stringify(tf.shipIds.map((id) => ({ id }))));
+										});
+
+										console.error('\n⚡ TRANSIT FLEET DIFFERENCES:');
+										const clientTransitIds = currentModel.mainPlayer.fleetsInTransit
+											.map((f) => f.id)
+											.sort((a, b) => a - b);
+										const serverTransitIds = payload.debugServerState.fleetsInTransit
+											.map((f) => f.fleetId)
+											.sort((a, b) => a - b);
+
+										// Check for mismatches
+										currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
+											const serverFleet = payload.debugServerState!.fleetsInTransit.find(
+												(f) => f.fleetId === fleet.id
+											);
+
+											if (!serverFleet) {
+												console.error(`  ❌ Fleet ${fleet.id}: Exists on CLIENT but not SERVER`);
+											} else {
+												const clientHash = fleet.compositionHash;
+												const serverHash = serverFleet.compositionHash;
+												const clientShipIds = fleet.starships
+													.map((s) => s.id)
+													.sort((a, b) => a - b);
+												const serverShipIds = serverFleet.shipIds;
+
+												if (clientHash !== serverHash) {
+													console.error(
+														`  ⚠️  Fleet ${fleet.id}: Hash mismatch (client: ${clientHash}, server: ${serverHash})`
+													);
+													console.error(
+														`      Client ships: [${clientShipIds.join(', ')}] (${clientShipIds.length})`
+													);
+													console.error(
+														`      Server ships: [${serverShipIds.join(', ')}] (${serverShipIds.length})`
+													);
+
+													// Show which ships differ
+													const clientOnly = clientShipIds.filter(
+														(id) => !serverShipIds.includes(id)
+													);
+													const serverOnly = serverShipIds.filter(
+														(id) => !clientShipIds.includes(id)
+													);
+													if (clientOnly.length > 0) {
+														console.error(`      Ships only on CLIENT: [${clientOnly.join(', ')}]`);
+													}
+													if (serverOnly.length > 0) {
+														console.error(`      Ships only on SERVER: [${serverOnly.join(', ')}]`);
+													}
+												}
+											}
+										});
+
+										serverTransitIds.forEach((fleetId) => {
+											if (!clientTransitIds.includes(fleetId)) {
+												console.error(`  ❌ Fleet ${fleetId}: Exists on SERVER but not CLIENT`);
+											}
+										});
+									}
+
+									// Show outgoing fleets from all planets
+									console.error('\n📱 CLIENT OUTGOING FLEETS FROM PLANETS:');
+									Object.keys(currentModel.mainPlayerOwnedPlanets)
+										.map(Number)
+										.sort((a, b) => a - b)
+										.forEach((planetId) => {
+											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+											if (planet.outgoingFleets && planet.outgoingFleets.length > 0) {
+												planet.outgoingFleets.forEach((fleet) => {
+													console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
+													console.error(`    Composition Hash: ${fleet.compositionHash}`);
+													console.error(
+														`    Ships:`,
+														JSON.stringify(
+															fleet.starships.map((s) => ({
+																id: s.id,
+																type: s.type
+															}))
+														)
+													);
+												});
+											}
+										});
+
+									// Show all FLEET_DEFENSE_SUCCESS events if available
+									const allFDS = (globalThis as any).__allFleetDefenseSuccess;
+									if (allFDS && allFDS.length > 0) {
+										console.error(`\n⚔️ ALL ${allFDS.length} FLEET_DEFENSE_SUCCESS EVENTS:`);
+										allFDS.forEach((fds: any, index: number) => {
+											console.error(`\n  Event ${index + 1}:`);
+											console.error('    Planet ID:', fds.planetId);
+											console.error('    Attacking Fleet ID:', fds.attackingFleetId);
+											console.error(
+												'    Planet fleet BEFORE:',
+												JSON.stringify(fds.planetFleetBefore)
+											);
+											console.error('    Planet fleet hash BEFORE:', fds.planetFleetHashBefore);
+											console.error(
+												'    Winning fleet FROM SERVER:',
+												JSON.stringify(fds.winningFleetFromServer)
+											);
+											console.error('    Winning fleet hash:', fds.winningFleetHash);
+											console.error(
+												'    Planet fleet AFTER:',
+												JSON.stringify(fds.planetFleetAfter)
+											);
+											console.error('    Planet fleet hash AFTER:', fds.planetFleetHashAfter);
+											console.error(
+												'    Fleets in transit BEFORE:',
+												JSON.stringify(fds.fleetsInTransitBefore)
+											);
+											console.error(
+												'    Fleets in transit AFTER:',
+												JSON.stringify(fds.fleetsInTransitAfter)
+											);
+										});
+										// Clear the array for next batch of events
+										(globalThis as any).__allFleetDefenseSuccess = [];
+									}
+								}
 							}
 
-							// Update the store with the mutated model (including new checksum)
-							clientGameModel.set(currentModel);
-						})
-						.catch((error) => {
-							console.error('Error calculating rolling checksum:', error);
-							// Still update the model even if checksum calculation failed
-							clientGameModel.set(currentModel);
-						});
-				} else {
-					// No checksum provided (time-based events) - just update the model
-					clientGameModel.set(currentModel);
+							// Show notification to user
+							this.gameStore.addNotification({
+								type: 'error',
+								message: 'Game state desync detected - requesting full resync',
+								timestamp: Date.now()
+							});
+
+							// Request full state sync to recover
+							this.requestStateSync();
+						} else {
+							console.debug('State checksum valid ✓', ourStateChecksum);
+						}
+					} catch (error) {
+						console.error('Error calculating state checksum:', error);
+					}
 				}
+
+				// Update the store after all validation is complete
+				clientGameModel.set(currentModel);
+
+				// Resume game loop now that events are applied and store is updated
+				console.log('▶️ Resuming game loop after event processing');
+				gameActions.resumeGame();
 
 				break;
 			}

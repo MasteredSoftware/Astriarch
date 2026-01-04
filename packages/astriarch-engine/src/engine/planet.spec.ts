@@ -299,6 +299,7 @@ describe('Planet', function () {
         id: 999,
         name: 'Remote Planet',
         type: PlanetType.PlanetClass1,
+        nextShipId: 1,
         population: [],
         buildQueue: [],
         builtImprovements: homePlanet.builtImprovements,
