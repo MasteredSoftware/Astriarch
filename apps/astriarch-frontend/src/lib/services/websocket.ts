@@ -993,7 +993,7 @@ class WebSocketService {
 
 				// Validate event checksum if provided (for player commands)
 				if (payload.stateChecksum) {
-					const previousChecksum = currentModel.lastEventChecksum || '';
+					const previousChecksum = currentModel.mainPlayer.lastEventChecksum || '';
 					try {
 						const ourChecksum = calculateRollingEventChecksum(payload.events, previousChecksum);
 						if (ourChecksum !== payload.stateChecksum) {
@@ -1008,7 +1008,7 @@ class WebSocketService {
 							this.requestStateSync();
 						} else {
 							console.debug('Event chain valid ✓', ourChecksum);
-							currentModel.lastEventChecksum = ourChecksum;
+							currentModel.mainPlayer.lastEventChecksum = ourChecksum;
 						}
 					} catch (error) {
 						console.error('Error calculating rolling checksum:', error);
