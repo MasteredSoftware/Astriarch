@@ -60,7 +60,7 @@ import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 import { audioService } from '$lib/services/audioService';
 
 // Import environment configuration
-import { getBackendHttpUrl, getBackendWsUrl, getHealthCheckUrl } from '$lib/config/environment';
+import { getBackendWsUrl, getHealthCheckUrl, config } from '$lib/config/environment';
 
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
@@ -1017,7 +1017,8 @@ class WebSocketService {
 
 				// Validate state checksum if provided - do this BEFORE updating the store
 				// so the game loop doesn't advance the state while we're validating
-				if (payload.clientModelChecksum) {
+				// NOTE: This can be disabled via PUBLIC_ENABLE_CHECKSUM_VALIDATION env var (default: disabled)
+				if (payload.clientModelChecksum && config.enableClientModelChecksumValidation) {
 					try {
 						const ourStateChecksum = calculateClientModelChecksum(currentModel);
 						if (ourStateChecksum !== payload.clientModelChecksum) {
