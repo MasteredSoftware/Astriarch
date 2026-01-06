@@ -5,6 +5,7 @@ import * as signature from "cookie-signature";
 import config from "config";
 import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
+import { ServerGameModel } from "../models/Game";
 import { ChatMessageModel, IChatMessage } from "../models/ChatMessage";
 import { GameController } from "../controllers/GameControllerWebSocket";
 import { persistGame } from "../database/DocumentPersistence";
@@ -45,6 +46,7 @@ import {
   GameEndConditions,
   type ClientEvent,
   type ClientNotification,
+  calculateRollingEventChecksum,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -65,6 +67,7 @@ export class WebSocketServer {
   private gameRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds
   private chatRooms: Map<string, Set<string>> = new Map(); // gameId -> sessionIds (null for lobby)
   private pingInterval?: NodeJS.Timeout;
+  private syncInProgress: Map<string, boolean> = new Map(); // gameId -> isProcessing flag
 
   constructor(server: Server) {
     this.wss = new WebSocket.Server({ server });
@@ -196,8 +199,23 @@ export class WebSocketServer {
     }
 
     // If this is a full state sync request (desync recovery), advance time and broadcast full state
+    // Debounce: Skip if a sync is already in progress for this game
     if (this.isGameSyncRequired(message.type) && client.gameId) {
-      await this.advanceGameTimeForSync(client.gameId);
+      if (this.syncInProgress.get(client.gameId)) {
+        logger.info(`SYNC_STATE already in progress for game ${client.gameId}, ignoring duplicate request`);
+        // Still send a success response so client doesn't timeout
+        this.sendToClient(clientId, new Message(MESSAGE_TYPE.SYNC_STATE, { success: true }));
+        return;
+      }
+
+      // Mark sync as in progress
+      this.syncInProgress.set(client.gameId, true);
+      try {
+        await this.advanceGameTimeForSync(client.gameId);
+      } finally {
+        // Always clear the flag, even if there's an error
+        this.syncInProgress.delete(client.gameId);
+      }
     }
 
     switch (message.type) {
@@ -1337,7 +1355,10 @@ export class WebSocketServer {
       const eventsByPlayer = new Map<string, ClientEvent[]>();
 
       for (const event of events) {
-        for (const playerId of event.affectedPlayerIds) {
+        // Use Set to deduplicate player IDs in case an event lists the same player multiple times
+        const uniquePlayerIds = new Set(event.affectedPlayerIds);
+
+        for (const playerId of uniquePlayerIds) {
           if (!eventsByPlayer.has(playerId)) {
             eventsByPlayer.set(playerId, []);
           }
@@ -1348,6 +1369,9 @@ export class WebSocketServer {
       logger.info(
         `Broadcasting ${events.length} ${eventType} to ${eventsByPlayer.size} affected players in game ${gameId}`,
       );
+
+      // Flag to track if we need to save the game state after updating checksums
+      let modelDataUpdated = false;
 
       // Send events to each affected player
       for (const [playerId, playerEvents] of eventsByPlayer.entries()) {
@@ -1373,7 +1397,21 @@ export class WebSocketServer {
 
         if (modelData) {
           const clientModel = constructClientGameModel(modelData, playerId);
-          checksum = clientModel.mainPlayer.lastEventChecksum;
+
+          // Calculate the rolling checksum from the events being sent
+          // This allows the client to verify it calculates the same checksum
+          const previousChecksum = clientModel.mainPlayer.lastEventChecksum || "";
+          // Calculate what the checksum SHOULD BE after applying these events
+          const expectedChecksum = calculateRollingEventChecksum(playerEvents, previousChecksum);
+          checksum = expectedChecksum;
+
+          // Update the player's stored checksum in the model data
+          const gamePlayer = modelData.players.find((p) => p.id === playerId);
+          if (gamePlayer) {
+            gamePlayer.lastEventChecksum = expectedChecksum;
+            modelDataUpdated = true;
+          }
+
           Player.calculateAndStoreChecksums(clientModel);
           playerStateChecksum = clientModel.clientModelChecksum;
           playerChecksumComponents = clientModel.checksumComponents;
@@ -1416,6 +1454,17 @@ export class WebSocketServer {
         if (clientId) {
           this.sendToClient(clientId, eventMessage);
           logger.info(`Sent ${playerEvents.length} ${eventType} to player ${playerId}`);
+        }
+      }
+
+      // Save updated checksums to database if any were modified
+      if (modelDataUpdated) {
+        const game = await ServerGameModel.findById(gameId);
+        if (game) {
+          game.gameState = modelData;
+          game.lastActivity = new Date();
+          await persistGame(game);
+          logger.info(`Saved updated event checksums for ${eventsByPlayer.size} players in game ${gameId}`);
         }
       }
     } catch (error) {

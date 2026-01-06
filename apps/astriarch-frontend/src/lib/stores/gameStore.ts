@@ -378,7 +378,8 @@ function startGameLoop() {
 			if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
 				// request data sync with server
 				console.log('Fleets arriving on unowned planets, requesting state synchronization');
-				webSocketService.requestStateSync();
+				//webSocketService.requestStateSync();
+				webSocketService.requestGameTimeAdvancement();
 			}
 		}
 

@@ -997,9 +997,37 @@ class WebSocketService {
 					try {
 						const ourChecksum = calculateRollingEventChecksum(payload.events, previousChecksum);
 						if (ourChecksum !== payload.stateChecksum) {
-							console.error('Event chain broken! Desync detected.');
-							console.error(`Expected: ${payload.stateChecksum}`);
-							console.error(`Got: ${ourChecksum}`);
+							console.error('🚨 EVENT CHAIN DESYNC DETECTED! 🚨');
+							console.error(`Server event checksum: ${payload.stateChecksum}`);
+							console.error(`Client event checksum: ${ourChecksum}`);
+							console.error(`Previous checksum: ${previousChecksum}`);
+							console.error(`Number of events: ${payload.events.length}`);
+
+							// Log each event and calculate individual checksums to identify where chain breaks
+							console.error('\n📋 EVENT CHAIN BREAKDOWN:');
+							let rollingChecksum = previousChecksum;
+							payload.events.forEach((event, index) => {
+								// Calculate checksum for this single event
+								const eventChecksum = calculateRollingEventChecksum([event], rollingChecksum);
+								const eventJson = JSON.stringify(event);
+								const eventSize = eventJson.length;
+
+								console.error(`\n  Event ${index + 1}/${payload.events.length}:`);
+								console.error(`    Type: ${event.type}`);
+								console.error(`    Timestamp: ${event.timestamp}`);
+								console.error(`    Input checksum: ${rollingChecksum}`);
+								console.error(`    Output checksum: ${eventChecksum}`);
+								console.error(`    Event size: ${eventSize} bytes`);
+								console.error(`    Event data:`, JSON.stringify(event.data, null, 2));
+
+								// Update rolling checksum for next event
+								rollingChecksum = eventChecksum;
+							});
+
+							console.error(`\n  Final client checksum: ${rollingChecksum}`);
+							console.error(`  Expected server checksum: ${payload.stateChecksum}`);
+							console.error(`  Match: ${rollingChecksum === payload.stateChecksum ? '✓' : '✗'}`);
+
 							this.gameStore.addNotification({
 								type: 'error',
 								message: 'Game sync error - requesting full resync',
@@ -1829,6 +1857,22 @@ class WebSocketService {
 			this.gameStore.addNotification({
 				type: 'error',
 				message: 'Cannot send ships - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	requestGameTimeAdvancement() {
+		try {
+			const gameId = this.requireGameId();
+			console.log('Requesting game time advancement for game:', gameId);
+			const payload = { gameId };
+			this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, payload));
+		} catch (error) {
+			console.error('Failed to request game time advancement:', error);
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot advance game time - no active game session',
 				timestamp: Date.now()
 			});
 		}

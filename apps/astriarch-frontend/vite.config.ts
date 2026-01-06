@@ -8,7 +8,7 @@ export default defineConfig({
 		tailwindcss(),
 		sveltekit(),
 		checker({
-			typescript: true,
+			typescript: true
 		})
 	],
 	test: {

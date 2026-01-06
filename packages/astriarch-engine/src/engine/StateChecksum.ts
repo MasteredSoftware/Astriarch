@@ -9,6 +9,7 @@
 
 import type { ClientEvent } from './GameCommands';
 import { simpleHash } from '../utils/simpleHash';
+import { deterministicStringify } from '../utils/deterministicStringify';
 
 /**
  * Calculate a rolling checksum that chains with the previous checksum.
@@ -33,6 +34,8 @@ export function calculateRollingEventChecksum(events: ClientEvent[], previousChe
     })),
   };
 
-  const dataString = JSON.stringify(data);
+  // Use deterministic stringify to ensure property order is consistent
+  // between server and client (critical for nested objects in event.data)
+  const dataString = deterministicStringify(data);
   return simpleHash(dataString);
 }

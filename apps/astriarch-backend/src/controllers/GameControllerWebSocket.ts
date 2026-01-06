@@ -666,13 +666,8 @@ export class GameController {
 
       const events = commandResult.events;
 
-      // Calculate rolling event checksum for desync detection
-      const gamePlayer = gameModelData.modelData.players.find((p) => p.id === command.playerId);
-      if (gamePlayer) {
-        const previousChecksum = gamePlayer.lastEventChecksum;
-        const newChecksum = calculateRollingEventChecksum(events, previousChecksum);
-        gamePlayer.lastEventChecksum = newChecksum;
-      }
+      // NOTE: Rolling event checksums are calculated per-player in broadcastToAffectedPlayers
+      // for both command events and time-based events, ensuring all affected players get updated
 
       // CommandProcessor has already mutated the game state, just save it
       game.gameState = gameModelData.modelData;
