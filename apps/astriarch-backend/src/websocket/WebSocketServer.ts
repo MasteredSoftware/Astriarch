@@ -345,57 +345,63 @@ export class WebSocketServer {
 
   private async advanceGameTimeAndBroadcastEvents(gameId: string): Promise<void> {
     try {
-      await saveGameWithConcurrencyProtection(
-        ServerGameModel,
-        gameId,
-        async (game) => {
-          if (game.status !== "in_progress") {
-            return {}; // No changes if game not in progress
-          }
+      // Variables to store data for side effects after save succeeds
+      let eventsToSend: ClientEvent[] = [];
+      let notificationsToSend: ClientNotification[] = [];
+      let destroyedPlayers: PlayerData[] = [];
+      let gameEndConditions: GameEndConditions | null = null;
+      let currentCycle: number = 0;
+      let modelData: ModelData | null = null;
+      let gameStatus: string = "";
 
-          // Use the engine's advanceGameModelTime function which handles time properly
-          // This will advance game time and process any AI/computer player actions
-          const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-          const result = advanceGameModelTime(gameModelData);
+      // Save game with concurrency protection - transform function ONLY does in-memory operations
+      const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
+        gameStatus = game.status;
+        if (game.status !== "in_progress") {
+          return {}; // No changes if game not in progress
+        }
 
-          // Broadcast time-based events and notifications to affected players (NOT full state)
-          const hasEvents = result.events && result.events.length > 0;
-          const hasNotifications = result.notifications && result.notifications.length > 0;
+        // Use the engine's advanceGameModelTime function which handles time properly
+        // This will advance game time and process any AI/computer player actions
+        const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+        const result = advanceGameModelTime(gameModelData);
 
-          if (hasEvents || hasNotifications) {
-            logger.info(
-              `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
-            );
-            await this.broadcastTimeBasedEvents(
-              gameId,
-              result.events || [],
-              result.notifications || [],
-              result.gameModel.modelData.currentCycle,
-              result.gameModel.modelData,
-            );
-          }
+        // Store data for side effects AFTER save succeeds
+        eventsToSend = result.events || [];
+        notificationsToSend = result.notifications || [];
+        destroyedPlayers = result.destroyedPlayers;
+        gameEndConditions = result.gameEndConditions;
+        currentCycle = result.gameModel.modelData.currentCycle;
+        modelData = result.gameModel.modelData;
 
-          // Check for destroyed players and game over conditions
-          if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
-            await this.handleGameOverConditions(
-              gameId,
-              {
-                destroyedPlayers: result.destroyedPlayers,
-                gameEndConditions: result.gameEndConditions,
-                events: result.events,
-                notifications: result.notifications,
-              },
-              game,
-            );
-          }
+        // Return ONLY the data to update in the database
+        return {
+          gameState: result.gameModel.modelData,
+          lastActivity: new Date(),
+        };
+      });
 
-          // Return the updated game state
-          return {
-            gameState: result.gameModel.modelData,
-            lastActivity: new Date(),
-          };
-        },
-      );
+      // Side effects happen ONLY AFTER successful save
+      if (gameStatus === "in_progress" && (eventsToSend.length > 0 || notificationsToSend.length > 0)) {
+        logger.info(
+          `Generated ${eventsToSend.length} events and ${notificationsToSend.length} notifications during game advancement`,
+        );
+        await this.broadcastTimeBasedEvents(gameId, eventsToSend, notificationsToSend, currentCycle, modelData!);
+      }
+
+      // Handle game over conditions AFTER successful save
+      if (gameStatus === "in_progress" && (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded)) {
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers,
+            gameEndConditions: gameEndConditions!,
+            events: eventsToSend,
+            notifications: notificationsToSend,
+          },
+          updatedGame,
+        );
+      }
     } catch (error) {
       logger.error("Error advancing game time:", error);
     }
@@ -403,60 +409,68 @@ export class WebSocketServer {
 
   private async advanceGameTimeForSync(gameId: string): Promise<void> {
     try {
-      await saveGameWithConcurrencyProtection(
-        ServerGameModel,
-        gameId,
-        async (game) => {
-          if (game.status !== "in_progress") {
-            return {}; // No changes if game not in progress
-          }
+      // Variables to store data for side effects after save succeeds
+      let eventsToSend: ClientEvent[] = [];
+      let notificationsToSend: ClientNotification[] = [];
+      let destroyedPlayers: PlayerData[] = [];
+      let gameEndConditions: GameEndConditions | null = null;
+      let currentCycle: number = 0;
+      let modelData: ModelData | null = null;
+      let gameStatus: string = "";
 
-          // Use the engine's advanceGameModelTime function which handles time properly
-          // This will advance game time and process any AI/computer player actions
-          const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-          const result = advanceGameModelTime(gameModelData);
+      // Save game with concurrency protection - transform function ONLY does in-memory operations
+      const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
+        gameStatus = game.status;
+        if (game.status !== "in_progress") {
+          return {}; // No changes if game not in progress
+        }
 
-          // Broadcast time-based events and notifications to affected players
-          const hasEvents = result.events && result.events.length > 0;
-          const hasNotifications = result.notifications && result.notifications.length > 0;
+        // Use the engine's advanceGameModelTime function which handles time properly
+        // This will advance game time and process any AI/computer player actions
+        const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
+        const result = advanceGameModelTime(gameModelData);
 
-          if (hasEvents || hasNotifications) {
-            logger.info(
-              `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
-            );
-            await this.broadcastTimeBasedEvents(
-              gameId,
-              result.events || [],
-              result.notifications || [],
-              result.gameModel.modelData.currentCycle,
-              result.gameModel.modelData,
-            );
-          }
+        // Store data for side effects AFTER save succeeds
+        eventsToSend = result.events || [];
+        notificationsToSend = result.notifications || [];
+        destroyedPlayers = result.destroyedPlayers;
+        gameEndConditions = result.gameEndConditions;
+        currentCycle = result.gameModel.modelData.currentCycle;
+        modelData = result.gameModel.modelData;
 
-          // Check for destroyed players and game over conditions
-          if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
-            await this.handleGameOverConditions(
-              gameId,
-              {
-                destroyedPlayers: result.destroyedPlayers,
-                gameEndConditions: result.gameEndConditions,
-                events: result.events,
-                notifications: result.notifications,
-              },
-              game,
-            );
-          }
+        // Return ONLY the data to update in the database
+        return {
+          gameState: result.gameModel.modelData,
+          lastActivity: new Date(),
+        };
+      });
 
-          // Return the updated game state
-          return {
-            gameState: result.gameModel.modelData,
-            lastActivity: new Date(),
-          };
-        },
-      );
+      // Side effects happen ONLY AFTER successful save
+      if (gameStatus === "in_progress" && (eventsToSend.length > 0 || notificationsToSend.length > 0)) {
+        logger.info(
+          `Generated ${eventsToSend.length} events and ${notificationsToSend.length} notifications during game advancement`,
+        );
+        await this.broadcastTimeBasedEvents(gameId, eventsToSend, notificationsToSend, currentCycle, modelData!);
+      }
 
-      // Broadcast the updated game state to all connected players
-      await this.broadcastGameStateUpdate(gameId);
+      // Handle game over conditions AFTER successful save
+      if (gameStatus === "in_progress" && (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded)) {
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers,
+            gameEndConditions: gameEndConditions!,
+            events: eventsToSend,
+            notifications: notificationsToSend,
+          },
+          updatedGame,
+        );
+      }
+
+      // Broadcast the updated game state to all connected players AFTER successful save
+      if (gameStatus === "in_progress") {
+        await this.broadcastGameStateUpdate(gameId);
+      }
     } catch (error) {
       logger.error("Error advancing game time:", error);
     }

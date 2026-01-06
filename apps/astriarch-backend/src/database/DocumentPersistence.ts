@@ -136,7 +136,7 @@ export class DocumentPersistence {
    * Save game with concurrency protection using nonce field.
    * This method uses the nonce field to protect against concurrent edits on the game document.
    * Pattern from: http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/
-   * 
+   *
    * @param gameId The game document ID
    * @param transformFunction Function that receives the game doc and returns the data to update
    * @param maxRetries Maximum number of retry attempts (default: 10)
@@ -187,9 +187,7 @@ export class DocumentPersistence {
         // Update failed - nonce mismatch means someone else modified the document
         if (retries < maxRetries) {
           retries++;
-          logger.warn(
-            `Concurrent edit detected for game ${gameId}. Retry attempt ${retries}/${maxRetries}`,
-          );
+          logger.warn(`Concurrent edit detected for game ${gameId}. Retry attempt ${retries}/${maxRetries}`);
 
           // Exponential backoff: 20ms, 40ms, 80ms, 160ms, etc.
           const delay = 20 * Math.pow(2, retries - 1);
@@ -198,9 +196,7 @@ export class DocumentPersistence {
           // Retry the save
           return attemptSave();
         } else {
-          throw new Error(
-            `Failed to save game ${gameId} after ${maxRetries} retries due to concurrent modifications`,
-          );
+          throw new Error(`Failed to save game ${gameId} after ${maxRetries} retries due to concurrent modifications`);
         }
       }
 
