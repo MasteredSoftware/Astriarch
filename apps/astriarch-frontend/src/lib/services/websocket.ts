@@ -260,6 +260,149 @@ class WebSocketService {
 		console.error(`  Match: ${finalChecksum === expectedChecksum ? '✓' : '✗'}`);
 	}
 
+	private validateStateChecksum(
+		currentModel: ClientModelData,
+		serverChecksum?: string,
+		serverChecksumComponents?: { planets: string; fleets: string }
+	): void {
+		// Only validate if checksum is provided and validation is enabled
+		if (!serverChecksum || !config.enableClientModelChecksumValidation) {
+			return;
+		}
+
+		try {
+			const ourStateChecksum = calculateClientModelChecksum(currentModel);
+			if (ourStateChecksum !== serverChecksum) {
+				console.error('🚨 STATE DESYNC DETECTED! 🚨');
+				console.error(`Server state checksum: ${serverChecksum}`);
+				console.error(`Client state checksum: ${ourStateChecksum}`);
+
+				// Calculate component checksums to identify which part diverged
+				const ourComponents = calculateClientModelChecksumComponents(currentModel);
+				console.error('State checksum breakdown:');
+				console.error('CLIENT:');
+				console.error('- Planets hash:', ourComponents.planets);
+				console.error('- Fleets hash:', ourComponents.fleets);
+				if (serverChecksumComponents) {
+					console.error('SERVER:');
+					console.error('- Planets hash:', serverChecksumComponents.planets);
+					console.error('- Fleets hash:', serverChecksumComponents.fleets);
+
+					// If fleet hash differs, show the stored FLEET_DEFENSE_SUCCESS data
+					if (ourComponents.fleets !== serverChecksumComponents.fleets) {
+						console.error('\n🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:');
+
+						// Show client planetary fleets
+						console.error('\n📱 CLIENT PLANETARY FLEETS:');
+						Object.keys(currentModel.mainPlayerOwnedPlanets)
+							.map(Number)
+							.sort((a, b) => a - b)
+							.forEach((planetId) => {
+								const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+								if (planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
+									console.error(`  Planet ${planetId} (${planet.name}):`);
+									console.error(`    Composition Hash: ${planet.planetaryFleet.compositionHash}`);
+									console.error(
+										`    Ships:`,
+										JSON.stringify(
+											planet.planetaryFleet.starships.map((s) => ({
+												id: s.id,
+												type: s.type
+											}))
+										)
+									);
+								}
+							});
+
+						// Show client fleets in transit
+						console.error('\n📱 CLIENT FLEETS IN TRANSIT:');
+						currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
+							console.error(`  Fleet ${fleet.id}:`);
+							console.error(`    Composition Hash: ${fleet.compositionHash}`);
+							console.error(
+								`    Ships:`,
+								JSON.stringify(
+									fleet.starships.map((s) => ({
+										id: s.id,
+										type: s.type
+									}))
+								)
+							);
+						});
+
+						// Show outgoing fleets from all planets
+						console.error('\n📱 CLIENT OUTGOING FLEETS FROM PLANETS:');
+						Object.keys(currentModel.mainPlayerOwnedPlanets)
+							.map(Number)
+							.sort((a, b) => a - b)
+							.forEach((planetId) => {
+								const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+								if (planet.outgoingFleets && planet.outgoingFleets.length > 0) {
+									planet.outgoingFleets.forEach((fleet) => {
+										console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
+										console.error(`    Composition Hash: ${fleet.compositionHash}`);
+										console.error(
+											`    Ships:`,
+											JSON.stringify(
+												fleet.starships.map((s) => ({
+													id: s.id,
+													type: s.type
+												}))
+											)
+										);
+									});
+								}
+							});
+
+						// Show all FLEET_DEFENSE_SUCCESS events if available
+						const allFDS = (globalThis as any).__allFleetDefenseSuccess;
+						if (allFDS && allFDS.length > 0) {
+							console.error(`\n⚔️ ALL ${allFDS.length} FLEET_DEFENSE_SUCCESS EVENTS:`);
+							allFDS.forEach((fds: any, index: number) => {
+								console.error(`\n  Event ${index + 1}:`);
+								console.error('    Planet ID:', fds.planetId);
+								console.error('    Attacking Fleet ID:', fds.attackingFleetId);
+								console.error('    Planet fleet BEFORE:', JSON.stringify(fds.planetFleetBefore));
+								console.error('    Planet fleet hash BEFORE:', fds.planetFleetHashBefore);
+								console.error(
+									'    Winning fleet FROM SERVER:',
+									JSON.stringify(fds.winningFleetFromServer)
+								);
+								console.error('    Winning fleet hash:', fds.winningFleetHash);
+								console.error('    Planet fleet AFTER:', JSON.stringify(fds.planetFleetAfter));
+								console.error('    Planet fleet hash AFTER:', fds.planetFleetHashAfter);
+								console.error(
+									'    Fleets in transit BEFORE:',
+									JSON.stringify(fds.fleetsInTransitBefore)
+								);
+								console.error(
+									'    Fleets in transit AFTER:',
+									JSON.stringify(fds.fleetsInTransitAfter)
+								);
+							});
+							// Clear the array for next batch of events
+							(globalThis as any).__allFleetDefenseSuccess = [];
+						}
+					}
+				}
+
+				// Show notification to user
+				this.gameStore.addNotification({
+					type: 'error',
+					message: 'Game state desync detected - requesting full resync',
+					timestamp: Date.now()
+				});
+
+				// Request full state sync to recover
+				this.requestStateSync();
+			} else {
+				console.debug('State checksum valid ✓', ourStateChecksum);
+			}
+		} catch (error) {
+			console.error('Error calculating state checksum:', error);
+		}
+	}
+
 	private tradesProcessedEventToNotifications(event: TradesProcessedEvent): void {
 		const { data } = event;
 
@@ -1018,147 +1161,11 @@ class WebSocketService {
 				// Validate state checksum if provided - do this BEFORE updating the store
 				// so the game loop doesn't advance the state while we're validating
 				// NOTE: This can be disabled via PUBLIC_ENABLE_CHECKSUM_VALIDATION env var (default: disabled)
-				if (payload.clientModelChecksum && config.enableClientModelChecksumValidation) {
-					try {
-						const ourStateChecksum = calculateClientModelChecksum(currentModel);
-						if (ourStateChecksum !== payload.clientModelChecksum) {
-							console.error('🚨 STATE DESYNC DETECTED! 🚨');
-							console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-							console.error(`Client state checksum: ${ourStateChecksum}`);
-
-							// Calculate component checksums to identify which part diverged
-							const ourComponents = calculateClientModelChecksumComponents(currentModel);
-							console.error('State checksum breakdown:');
-							console.error('CLIENT:');
-							console.error('- Planets hash:', ourComponents.planets);
-							console.error('- Fleets hash:', ourComponents.fleets);
-							if (payload.checksumComponents) {
-								console.error('SERVER:');
-								console.error('- Planets hash:', payload.checksumComponents.planets);
-								console.error('- Fleets hash:', payload.checksumComponents.fleets);
-
-								// If fleet hash differs, show the stored FLEET_DEFENSE_SUCCESS data
-								if (ourComponents.fleets !== payload.checksumComponents.fleets) {
-									console.error('\n🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:');
-
-									// Show client planetary fleets
-									console.error('\n📱 CLIENT PLANETARY FLEETS:');
-									Object.keys(currentModel.mainPlayerOwnedPlanets)
-										.map(Number)
-										.sort((a, b) => a - b)
-										.forEach((planetId) => {
-											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
-											if (planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
-												console.error(`  Planet ${planetId} (${planet.name}):`);
-												console.error(
-													`    Composition Hash: ${planet.planetaryFleet.compositionHash}`
-												);
-												console.error(
-													`    Ships:`,
-													JSON.stringify(
-														planet.planetaryFleet.starships.map((s) => ({
-															id: s.id,
-															type: s.type
-														}))
-													)
-												);
-											}
-										});
-
-									// Show client fleets in transit
-									console.error('\n📱 CLIENT FLEETS IN TRANSIT:');
-									currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
-										console.error(`  Fleet ${fleet.id}:`);
-										console.error(`    Composition Hash: ${fleet.compositionHash}`);
-										console.error(
-											`    Ships:`,
-											JSON.stringify(
-												fleet.starships.map((s) => ({
-													id: s.id,
-													type: s.type
-												}))
-											)
-										);
-									});
-
-									// Show outgoing fleets from all planets
-									console.error('\n📱 CLIENT OUTGOING FLEETS FROM PLANETS:');
-									Object.keys(currentModel.mainPlayerOwnedPlanets)
-										.map(Number)
-										.sort((a, b) => a - b)
-										.forEach((planetId) => {
-											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
-											if (planet.outgoingFleets && planet.outgoingFleets.length > 0) {
-												planet.outgoingFleets.forEach((fleet) => {
-													console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
-													console.error(`    Composition Hash: ${fleet.compositionHash}`);
-													console.error(
-														`    Ships:`,
-														JSON.stringify(
-															fleet.starships.map((s) => ({
-																id: s.id,
-																type: s.type
-															}))
-														)
-													);
-												});
-											}
-										});
-
-									// Show all FLEET_DEFENSE_SUCCESS events if available
-									const allFDS = (globalThis as any).__allFleetDefenseSuccess;
-									if (allFDS && allFDS.length > 0) {
-										console.error(`\n⚔️ ALL ${allFDS.length} FLEET_DEFENSE_SUCCESS EVENTS:`);
-										allFDS.forEach((fds: any, index: number) => {
-											console.error(`\n  Event ${index + 1}:`);
-											console.error('    Planet ID:', fds.planetId);
-											console.error('    Attacking Fleet ID:', fds.attackingFleetId);
-											console.error(
-												'    Planet fleet BEFORE:',
-												JSON.stringify(fds.planetFleetBefore)
-											);
-											console.error('    Planet fleet hash BEFORE:', fds.planetFleetHashBefore);
-											console.error(
-												'    Winning fleet FROM SERVER:',
-												JSON.stringify(fds.winningFleetFromServer)
-											);
-											console.error('    Winning fleet hash:', fds.winningFleetHash);
-											console.error(
-												'    Planet fleet AFTER:',
-												JSON.stringify(fds.planetFleetAfter)
-											);
-											console.error('    Planet fleet hash AFTER:', fds.planetFleetHashAfter);
-											console.error(
-												'    Fleets in transit BEFORE:',
-												JSON.stringify(fds.fleetsInTransitBefore)
-											);
-											console.error(
-												'    Fleets in transit AFTER:',
-												JSON.stringify(fds.fleetsInTransitAfter)
-											);
-										});
-										// Clear the array for next batch of events
-										(globalThis as any).__allFleetDefenseSuccess = [];
-									}
-								}
-							}
-
-							// Show notification to user
-							this.gameStore.addNotification({
-								type: 'error',
-								message: 'Game state desync detected - requesting full resync',
-								timestamp: Date.now()
-							});
-
-							// Request full state sync to recover
-							this.requestStateSync();
-						} else {
-							console.debug('State checksum valid ✓', ourStateChecksum);
-						}
-					} catch (error) {
-						console.error('Error calculating state checksum:', error);
-					}
-				}
+				this.validateStateChecksum(
+					currentModel,
+					payload.clientModelChecksum,
+					payload.checksumComponents
+				);
 
 				// Update the store after all validation is complete
 				clientGameModel.set(currentModel);
