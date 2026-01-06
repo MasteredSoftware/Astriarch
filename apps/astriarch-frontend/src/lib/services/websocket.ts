@@ -514,6 +514,9 @@ class WebSocketService {
 						clientGameModel.set(updatedClientGameModel);
 						// TODO: Apply incremental changes if needed
 						console.log('Received incremental changes (not implemented):', message.payload.changes);
+
+						// Clear the flag to allow future time advancement requests
+						gameActions.clearServerTimeAdvancementFlag();
 					}
 				} else {
 					console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
@@ -1332,6 +1335,9 @@ class WebSocketService {
 				console.log('▶️ Resuming game loop after event processing');
 				gameActions.resumeGame();
 
+				// Clear the flag to allow future time advancement requests
+				gameActions.clearServerTimeAdvancementFlag();
+
 				break;
 			}
 
@@ -1864,12 +1870,24 @@ class WebSocketService {
 
 	requestGameTimeAdvancement() {
 		try {
+			// Debounce: Only send request if we're not already waiting for a response
+			if (gameActions.isAwaitingServerTimeAdvancement()) {
+				console.log('Already waiting for server time advancement response - ignoring request');
+				return;
+			}
+
 			const gameId = this.requireGameId();
 			console.log('Requesting game time advancement for game:', gameId);
+			
+			// Set flag to prevent duplicate requests
+			gameActions.setServerTimeAdvancementFlag(true);
+			
 			const payload = { gameId };
 			this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, payload));
 		} catch (error) {
 			console.error('Failed to request game time advancement:', error);
+			// Clear flag on error so we can retry
+			gameActions.clearServerTimeAdvancementFlag();
 			this.gameStore.addNotification({
 				type: 'error',
 				message: 'Cannot advance game time - no active game session',
@@ -1928,7 +1946,7 @@ class WebSocketService {
 				this.isHost()
 			) {
 				console.log('Sending ADVANCE_GAME_TIME to advance game time for AI players');
-				this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {}));
+				this.requestGameTimeAdvancement();
 			} else {
 				// Stop interval if conditions are no longer met
 				this.stopGameSyncInterval();
