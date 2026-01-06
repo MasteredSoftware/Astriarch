@@ -224,6 +224,11 @@ class WebSocketService {
 		previousChecksum: string,
 		expectedChecksum: string
 	): void {
+		// Only log detailed breakdown if explicitly enabled (can be noisy in production)
+		if (!config.logEventChainDesyncErrors) {
+			return;
+		}
+
 		console.error('🚨 EVENT CHAIN DESYNC DETECTED! 🚨');
 		console.error(`Server event checksum: ${expectedChecksum}`);
 		console.error(`Previous checksum: ${previousChecksum}`);

@@ -10,6 +10,7 @@ export interface EnvironmentConfig {
 	isDev: boolean;
 	isProd: boolean;
 	enableClientModelChecksumValidation: boolean;
+	logEventChainDesyncErrors: boolean;
 }
 
 // Default configuration values
@@ -32,6 +33,9 @@ function createEnvironmentConfig(): EnvironmentConfig {
 	// Enable client model checksum validation (disabled by default, can be enabled for debugging)
 	const enableClientModelChecksumValidation = env['PUBLIC_ENABLE_CHECKSUM_VALIDATION'] === 'true';
 
+	// Enable event chain desync error logging (disabled by default, useful for development)
+	const logEventChainDesyncErrors = env['PUBLIC_LOG_EVENT_CHAIN_DESYNCS'] === 'true';
+
 	return {
 		backend: {
 			httpUrl: backendHttpUrl,
@@ -39,7 +43,8 @@ function createEnvironmentConfig(): EnvironmentConfig {
 		},
 		isDev,
 		isProd,
-		enableClientModelChecksumValidation
+		enableClientModelChecksumValidation,
+		logEventChainDesyncErrors
 	};
 }
 

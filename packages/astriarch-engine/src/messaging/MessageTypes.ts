@@ -4,7 +4,7 @@
  */
 
 import { ServerGameOptions, GameSpeed } from '../model';
-import { GameCommand, ClientEvent } from '../engine/GameCommands';
+import { GameCommand, ClientEvent, ClientNotification } from '../engine/GameCommands';
 
 export enum MESSAGE_TYPE {
   // Connection & System
@@ -240,7 +240,7 @@ export interface IClientEventPayload {
 }
 
 export interface IClientNotificationPayload {
-  notifications: import('../engine/GameCommands').ClientNotification[];
+  notifications: ClientNotification[];
   currentCycle: number; // Game cycle when notifications occurred
 }
 
