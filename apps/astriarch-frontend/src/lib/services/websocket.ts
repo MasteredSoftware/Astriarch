@@ -80,11 +80,6 @@ class WebSocketService {
 	private autoQueuePending = false; // True when waiting for auto-queue command response
 	private autoQueueRequested = false; // True when auto-queue check is needed
 
-	// PlanetProductionItemType enum values (from astriarch-engine)
-	private readonly ITEM_TYPE_IMPROVEMENT = 1;
-	private readonly ITEM_TYPE_STARSHIP = 2;
-	private readonly ITEM_TYPE_DEMOLISH = 3;
-
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
 	// Helper method to get current gameId from store
@@ -222,6 +217,42 @@ class WebSocketService {
 				timestamp: Date.now()
 			});
 		}
+	}
+
+	private logEventChainBreakdown(
+		events: ClientEvent[],
+		previousChecksum: string,
+		expectedChecksum: string
+	): void {
+		console.error('🚨 EVENT CHAIN DESYNC DETECTED! 🚨');
+		console.error(`Server event checksum: ${expectedChecksum}`);
+		console.error(`Previous checksum: ${previousChecksum}`);
+		console.error(`Number of events: ${events.length}`);
+
+		// Log each event and calculate individual checksums to identify where chain breaks
+		console.error('\n📋 EVENT CHAIN BREAKDOWN:');
+		let rollingChecksum = previousChecksum;
+		events.forEach((event, index) => {
+			// Calculate checksum for this single event
+			const eventChecksum = calculateRollingEventChecksum([event], rollingChecksum);
+			const eventJson = JSON.stringify(event);
+			const eventSize = eventJson.length;
+
+			console.error(`\n  Event ${index + 1}/${events.length}:`);
+			console.error(`    Type: ${event.type}`);
+			console.error(`    Input checksum: ${rollingChecksum}`);
+			console.error(`    Output checksum: ${eventChecksum}`);
+			console.error(`    Event size: ${eventSize} bytes`);
+			console.error(`    Event data:`, JSON.stringify(event.data, null, 2));
+
+			// Update rolling checksum for next event
+			rollingChecksum = eventChecksum;
+		});
+
+		const finalChecksum = calculateRollingEventChecksum(events, previousChecksum);
+		console.error(`\n  Final client checksum: ${finalChecksum}`);
+		console.error(`  Expected server checksum: ${expectedChecksum}`);
+		console.error(`  Match: ${finalChecksum === expectedChecksum ? '✓' : '✗'}`);
 	}
 
 	private tradesProcessedEventToNotifications(event: TradesProcessedEvent): void {
@@ -475,45 +506,7 @@ class WebSocketService {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 
-						// Validate state checksum if provided
-						const payload = message.payload as {
-							clientModelChecksum?: string;
-							checksumComponents?: { planets: string; fleets: string };
-						};
-						if (payload.clientModelChecksum) {
-							// Calculate our own checksum of the received state to compare with server
-							const ourStateChecksum = calculateClientModelChecksum(updatedClientGameModel);
-							if (ourStateChecksum !== payload.clientModelChecksum) {
-								console.error('🚨 STATE DESYNC IN GAME_STATE_UPDATE! 🚨');
-								console.error(`Server state checksum: ${payload.clientModelChecksum}`);
-								console.error(`Client state checksum: ${ourStateChecksum}`);
-
-								// Calculate component checksums to identify which part diverged
-								const ourComponents =
-									calculateClientModelChecksumComponents(updatedClientGameModel);
-								console.error('State checksum breakdown:');
-								console.error('CLIENT:');
-								console.error('- Planets hash:', ourComponents.planets);
-								console.error('- Fleets hash:', ourComponents.fleets);
-								if (payload.checksumComponents) {
-									console.error('SERVER:');
-									console.error('- Planets hash:', payload.checksumComponents.planets);
-									console.error('- Fleets hash:', payload.checksumComponents.fleets);
-								}
-
-								this.gameStore.addNotification({
-									type: 'error',
-									message: 'State checksum mismatch in sync - data may be corrupted',
-									timestamp: Date.now()
-								});
-							} else {
-								console.debug('State sync checksum valid ✓', ourStateChecksum);
-							}
-						}
-
 						clientGameModel.set(updatedClientGameModel);
-						// TODO: Apply incremental changes if needed
-						console.log('Received incremental changes (not implemented):', message.payload.changes);
 
 						// Clear the flag to allow future time advancement requests
 						gameActions.clearServerTimeAdvancementFlag();
@@ -1000,36 +993,7 @@ class WebSocketService {
 					try {
 						const ourChecksum = calculateRollingEventChecksum(payload.events, previousChecksum);
 						if (ourChecksum !== payload.stateChecksum) {
-							console.error('🚨 EVENT CHAIN DESYNC DETECTED! 🚨');
-							console.error(`Server event checksum: ${payload.stateChecksum}`);
-							console.error(`Client event checksum: ${ourChecksum}`);
-							console.error(`Previous checksum: ${previousChecksum}`);
-							console.error(`Number of events: ${payload.events.length}`);
-
-							// Log each event and calculate individual checksums to identify where chain breaks
-							console.error('\n📋 EVENT CHAIN BREAKDOWN:');
-							let rollingChecksum = previousChecksum;
-							payload.events.forEach((event, index) => {
-								// Calculate checksum for this single event
-								const eventChecksum = calculateRollingEventChecksum([event], rollingChecksum);
-								const eventJson = JSON.stringify(event);
-								const eventSize = eventJson.length;
-
-								console.error(`\n  Event ${index + 1}/${payload.events.length}:`);
-								console.error(`    Type: ${event.type}`);
-								console.error(`    Timestamp: ${event.timestamp}`);
-								console.error(`    Input checksum: ${rollingChecksum}`);
-								console.error(`    Output checksum: ${eventChecksum}`);
-								console.error(`    Event size: ${eventSize} bytes`);
-								console.error(`    Event data:`, JSON.stringify(event.data, null, 2));
-
-								// Update rolling checksum for next event
-								rollingChecksum = eventChecksum;
-							});
-
-							console.error(`\n  Final client checksum: ${rollingChecksum}`);
-							console.error(`  Expected server checksum: ${payload.stateChecksum}`);
-							console.error(`  Match: ${rollingChecksum === payload.stateChecksum ? '✓' : '✗'}`);
+							this.logEventChainBreakdown(payload.events, previousChecksum, payload.stateChecksum);
 
 							this.gameStore.addNotification({
 								type: 'error',

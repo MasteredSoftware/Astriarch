@@ -1,4 +1,4 @@
-import { deterministicStringify } from '../deterministicStringify';
+import { deterministicStringify } from './deterministicStringify';
 
 describe('deterministicStringify', () => {
   test('sorts object keys alphabetically', () => {
