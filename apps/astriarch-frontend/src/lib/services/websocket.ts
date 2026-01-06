@@ -1361,6 +1361,8 @@ class WebSocketService {
 			case MESSAGE_TYPE.ADVANCE_GAME_TIME:
 				// Handle server time advancement response (events already received via CLIENT_EVENT)
 				console.log('Game time advanced successfully');
+				// Clear the flag to allow future time advancement requests
+				gameActions.clearServerTimeAdvancementFlag();
 				break;
 
 			case MESSAGE_TYPE.SYNC_STATE:
