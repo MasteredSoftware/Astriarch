@@ -59,7 +59,7 @@
 
 	// Ship type tabs configuration (excluding defenders)
 	const shipTypeTabs = [
-		{ type: 'all' as const, label: 'ALL SHIPS' },
+		{ type: 'all' as const, label: 'ALL' },
 		{ type: StarShipType.Scout, label: 'SCOUT' },
 		{ type: StarShipType.Destroyer, label: 'DESTROYER' },
 		{ type: StarShipType.Cruiser, label: 'CRUISER' },

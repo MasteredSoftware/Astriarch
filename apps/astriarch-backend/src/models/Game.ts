@@ -36,6 +36,10 @@ const PlayerSchema = new Schema<IPlayer>({
 });
 
 const GameSchema = new Schema<IGame>({
+  nonce: {
+    type: Schema.Types.ObjectId,
+    required: false, // Will be generated on first save for backward compatibility
+  },
   name: {
     type: String,
   },
