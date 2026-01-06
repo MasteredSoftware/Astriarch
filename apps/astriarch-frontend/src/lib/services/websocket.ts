@@ -1060,75 +1060,6 @@ class WebSocketService {
 											}
 										});
 
-									// Show server planetary fleets (if available)
-									if (payload.debugServerState) {
-										console.error('\n🖥️  SERVER PLANETARY FLEETS:');
-										payload.debugServerState.planetaryFleets.forEach((pf) => {
-											console.error(`  Planet ${pf.planetId}:`);
-											console.error(`    Composition Hash: ${pf.compositionHash}`);
-											console.error(`    Ships:`, JSON.stringify(pf.shipIds.map((id) => ({ id }))));
-										});
-
-										console.error('\n⚡ PLANETARY FLEET DIFFERENCES:');
-										const clientPlanetIds = Object.keys(currentModel.mainPlayerOwnedPlanets)
-											.map(Number)
-											.sort((a, b) => a - b);
-										const serverPlanetIds = payload.debugServerState.planetaryFleets.map(
-											(pf) => pf.planetId
-										);
-
-										// Check for mismatches
-										clientPlanetIds.forEach((planetId) => {
-											const planet = currentModel.mainPlayerOwnedPlanets[planetId];
-											const serverFleet = payload.debugServerState!.planetaryFleets.find(
-												(pf) => pf.planetId === planetId
-											);
-
-											if (!serverFleet) {
-												console.error(`  ❌ Planet ${planetId}: Exists on CLIENT but not SERVER`);
-											} else {
-												const clientHash = planet.planetaryFleet.compositionHash;
-												const serverHash = serverFleet.compositionHash;
-												const clientShipIds = planet.planetaryFleet.starships
-													.map((s) => s.id)
-													.sort((a, b) => a - b);
-												const serverShipIds = serverFleet.shipIds;
-
-												if (clientHash !== serverHash) {
-													console.error(
-														`  ⚠️  Planet ${planetId}: Hash mismatch (client: ${clientHash}, server: ${serverHash})`
-													);
-													console.error(
-														`      Client ships: [${clientShipIds.join(', ')}] (${clientShipIds.length})`
-													);
-													console.error(
-														`      Server ships: [${serverShipIds.join(', ')}] (${serverShipIds.length})`
-													);
-
-													// Show which ships differ
-													const clientOnly = clientShipIds.filter(
-														(id) => !serverShipIds.includes(id)
-													);
-													const serverOnly = serverShipIds.filter(
-														(id) => !clientShipIds.includes(id)
-													);
-													if (clientOnly.length > 0) {
-														console.error(`      Ships only on CLIENT: [${clientOnly.join(', ')}]`);
-													}
-													if (serverOnly.length > 0) {
-														console.error(`      Ships only on SERVER: [${serverOnly.join(', ')}]`);
-													}
-												}
-											}
-										});
-
-										serverPlanetIds.forEach((planetId) => {
-											if (!clientPlanetIds.includes(planetId)) {
-												console.error(`  ❌ Planet ${planetId}: Exists on SERVER but not CLIENT`);
-											}
-										});
-									}
-
 									// Show client fleets in transit
 									console.error('\n📱 CLIENT FLEETS IN TRANSIT:');
 									currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
@@ -1144,74 +1075,6 @@ class WebSocketService {
 											)
 										);
 									});
-
-									// Show server fleets in transit (if available)
-									if (payload.debugServerState) {
-										console.error('\n🖥️  SERVER FLEETS IN TRANSIT:');
-										payload.debugServerState.fleetsInTransit.forEach((tf) => {
-											console.error(`  Fleet ${tf.fleetId}:`);
-											console.error(`    Composition Hash: ${tf.compositionHash}`);
-											console.error(`    Ships:`, JSON.stringify(tf.shipIds.map((id) => ({ id }))));
-										});
-
-										console.error('\n⚡ TRANSIT FLEET DIFFERENCES:');
-										const clientTransitIds = currentModel.mainPlayer.fleetsInTransit
-											.map((f) => f.id)
-											.sort((a, b) => a - b);
-										const serverTransitIds = payload.debugServerState.fleetsInTransit
-											.map((f) => f.fleetId)
-											.sort((a, b) => a - b);
-
-										// Check for mismatches
-										currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
-											const serverFleet = payload.debugServerState!.fleetsInTransit.find(
-												(f) => f.fleetId === fleet.id
-											);
-
-											if (!serverFleet) {
-												console.error(`  ❌ Fleet ${fleet.id}: Exists on CLIENT but not SERVER`);
-											} else {
-												const clientHash = fleet.compositionHash;
-												const serverHash = serverFleet.compositionHash;
-												const clientShipIds = fleet.starships
-													.map((s) => s.id)
-													.sort((a, b) => a - b);
-												const serverShipIds = serverFleet.shipIds;
-
-												if (clientHash !== serverHash) {
-													console.error(
-														`  ⚠️  Fleet ${fleet.id}: Hash mismatch (client: ${clientHash}, server: ${serverHash})`
-													);
-													console.error(
-														`      Client ships: [${clientShipIds.join(', ')}] (${clientShipIds.length})`
-													);
-													console.error(
-														`      Server ships: [${serverShipIds.join(', ')}] (${serverShipIds.length})`
-													);
-
-													// Show which ships differ
-													const clientOnly = clientShipIds.filter(
-														(id) => !serverShipIds.includes(id)
-													);
-													const serverOnly = serverShipIds.filter(
-														(id) => !clientShipIds.includes(id)
-													);
-													if (clientOnly.length > 0) {
-														console.error(`      Ships only on CLIENT: [${clientOnly.join(', ')}]`);
-													}
-													if (serverOnly.length > 0) {
-														console.error(`      Ships only on SERVER: [${serverOnly.join(', ')}]`);
-													}
-												}
-											}
-										});
-
-										serverTransitIds.forEach((fleetId) => {
-											if (!clientTransitIds.includes(fleetId)) {
-												console.error(`  ❌ Fleet ${fleetId}: Exists on SERVER but not CLIENT`);
-											}
-										});
-									}
 
 									// Show outgoing fleets from all planets
 									console.error('\n📱 CLIENT OUTGOING FLEETS FROM PLANETS:');
@@ -1844,10 +1707,10 @@ class WebSocketService {
 
 			const gameId = this.requireGameId();
 			console.log('Requesting game time advancement for game:', gameId);
-			
+
 			// Set flag to prevent duplicate requests
 			gameActions.setServerTimeAdvancementFlag(true);
-			
+
 			const payload = { gameId };
 			this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, payload));
 		} catch (error) {

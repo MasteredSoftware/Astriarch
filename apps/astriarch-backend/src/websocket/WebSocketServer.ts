@@ -1403,7 +1403,6 @@ export class WebSocketServer {
         let checksum = "";
         let playerStateChecksum: string | undefined;
         let playerChecksumComponents: { planets: string; fleets: string } | undefined;
-        let debugServerState: any;
 
         if (modelData) {
           const clientModel = constructClientGameModel(modelData, playerId);
@@ -1425,29 +1424,6 @@ export class WebSocketServer {
           Player.calculateAndStoreChecksums(clientModel);
           playerStateChecksum = clientModel.clientModelChecksum;
           playerChecksumComponents = clientModel.checksumComponents;
-
-          // TEMPORARY DEBUG: Capture server's view of fleet state
-          debugServerState = {
-            planetaryFleets: Object.keys(clientModel.mainPlayerOwnedPlanets)
-              .map(Number)
-              .sort((a, b) => a - b)
-              .map((planetId) => {
-                const planet = clientModel.mainPlayerOwnedPlanets[planetId];
-                return {
-                  planetId,
-                  compositionHash: planet.planetaryFleet.compositionHash || "none",
-                  shipIds: planet.planetaryFleet.starships.map((s) => s.id).sort(),
-                };
-              }),
-            fleetsInTransit: clientModel.mainPlayer.fleetsInTransit
-              .slice()
-              .sort((a, b) => a.id - b.id)
-              .map((fleet) => ({
-                fleetId: fleet.id,
-                compositionHash: fleet.compositionHash || "none",
-                shipIds: fleet.starships.map((s) => s.id).sort(),
-              })),
-          };
         }
 
         // Send CLIENT_EVENT message with the events for this player
@@ -1457,7 +1433,6 @@ export class WebSocketServer {
           ...(checksum && { stateChecksum: checksum }),
           ...(playerStateChecksum && { clientModelChecksum: playerStateChecksum }),
           ...(playerChecksumComponents && { checksumComponents: playerChecksumComponents }),
-          ...(debugServerState && { debugServerState }),
         });
 
         const clientId = this.getClientIdBySessionId(targetClient.sessionId);
