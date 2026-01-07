@@ -1,6 +1,6 @@
-import { PointData } from '../shapes/shapes';
-import { ClientPlanet } from './clientModel';
-import { StarshipAdvantageData, FleetData, StarShipType } from './fleet';
+import type { PointData } from '../shapes/shapes';
+import type { ClientPlanet } from './clientModel';
+import type { StarshipAdvantageData, FleetData, StarShipType } from './fleet';
 
 export interface Citizen {
   populationChange: number; //between -1 and 1, when this gets >= -1 then we loose one pop, > 1 we gain one pop

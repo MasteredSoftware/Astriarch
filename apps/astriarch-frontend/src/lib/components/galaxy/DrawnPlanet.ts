@@ -129,9 +129,10 @@ export class DrawnPlanet {
 		this.gameModel = gameModel;
 
 		// Update planet data reference with fresh data from the game model
-		if (gameModel.mainPlayerOwnedPlanets[this.planetData.id]) {
+		const ownedPlanet = gameModel.mainPlayerOwnedPlanets[this.planetData.id];
+		if (ownedPlanet) {
 			// Update with owned planet data (full PlanetData)
-			this.planetData = gameModel.mainPlayerOwnedPlanets[this.planetData.id];
+			this.planetData = ownedPlanet;
 		} else {
 			// Check if this is a known client planet and update accordingly
 			const clientPlanet = gameModel.clientPlanets.find((cp) => cp.id === this.planetData.id);
@@ -479,7 +480,7 @@ export class DrawnPlanet {
 	private rgbToHex(rgb: string): string {
 		// Simple rgb() to hex conversion
 		const match = rgb.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-		if (match) {
+		if (match && match[1] && match[2] && match[3]) {
 			const r = parseInt(match[1]).toString(16).padStart(2, '0');
 			const g = parseInt(match[2]).toString(16).padStart(2, '0');
 			const b = parseInt(match[3]).toString(16).padStart(2, '0');
@@ -635,6 +636,7 @@ export class DrawnPlanet {
 		// Create platform icons at each position
 		for (let i = 0; i < maxPlatforms; i++) {
 			const angle = platformAngles[i];
+			if (angle === undefined) continue;
 			const angleRad = (angle * Math.PI) / 180;
 
 			// Calculate position on the arc
@@ -944,22 +946,6 @@ export class DrawnPlanet {
 			// Restore normal text color
 			this.nameText.fill(this.textBlockForeground);
 		}
-	}
-
-	private lightenColor(color: string, factor: number): string {
-		// Simple color lightening - in a real implementation you'd want a proper color utility
-		if (color.startsWith('#')) {
-			const hex = color.slice(1);
-			const num = parseInt(hex, 16);
-			const r = Math.min(255, Math.floor((num >> 16) + (255 - (num >> 16)) * factor));
-			const g = Math.min(
-				255,
-				Math.floor(((num >> 8) & 0x00ff) + (255 - ((num >> 8) & 0x00ff)) * factor)
-			);
-			const b = Math.min(255, Math.floor((num & 0x0000ff) + (255 - (num & 0x0000ff)) * factor));
-			return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
-		}
-		return color;
 	}
 
 	// Public methods

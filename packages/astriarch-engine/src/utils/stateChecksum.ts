@@ -92,6 +92,7 @@ function extractStateData(clientModel: ClientModelData) {
       .sort((a, b) => a - b)
       .flatMap((planetId) => {
         const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+        if (!planet) return [];
         const fleets: (ReturnType<typeof extractFleetChecksum> & { location: string; planetId: number })[] = [];
 
         // Planetary stationed fleet
@@ -157,10 +158,15 @@ function extractComponentStateData(clientModel: ClientModelData) {
 
   const fleetsInTransit = clientModel.mainPlayer.fleetsInTransit.map(extractFleetChecksum).sort((a, b) => a.id - b.id);
 
-  const planetaryFleets = ownedPlanetIds.map((planetId) => ({
-    planetId,
-    fleet: extractFleetChecksum(clientModel.mainPlayerOwnedPlanets[planetId].planetaryFleet),
-  }));
+  const planetaryFleets = ownedPlanetIds
+    .map((planetId) => {
+      const planet = clientModel.mainPlayerOwnedPlanets[planetId];
+      return planet ? {
+        planetId,
+        fleet: extractFleetChecksum(planet.planetaryFleet),
+      } : null;
+    })
+    .filter((item): item is { planetId: number; fleet: ReturnType<typeof extractFleetChecksum> } => item !== null);
 
   // Debug logging - commented out to avoid performance impact on server game loop
   // console.log('🔍 Fleet checksum details:');

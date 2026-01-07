@@ -20,6 +20,7 @@ import {
 	EventApplicator,
 	calculateRollingEventChecksum,
 	type PlanetProductionItemData,
+	type PlanetaryConflictData,
 	TradeType,
 	Player
 } from 'astriarch-engine';
@@ -343,7 +344,7 @@ class WebSocketService {
 							.sort((a, b) => a - b)
 							.forEach((planetId) => {
 								const planet = currentModel.mainPlayerOwnedPlanets[planetId];
-								if (planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
+								if (planet && planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
 									console.error(`  Planet ${planetId} (${planet.name}):`);
 									console.error(`    Composition Hash: ${planet.planetaryFleet.compositionHash}`);
 									console.error(
@@ -381,7 +382,7 @@ class WebSocketService {
 							.sort((a, b) => a - b)
 							.forEach((planetId) => {
 								const planet = currentModel.mainPlayerOwnedPlanets[planetId];
-								if (planet.outgoingFleets && planet.outgoingFleets.length > 0) {
+								if (planet && planet.outgoingFleets && planet.outgoingFleets.length > 0) {
 									planet.outgoingFleets.forEach((fleet) => {
 										console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
 										console.error(`    Composition Hash: ${fleet.compositionHash}`);
@@ -399,33 +400,34 @@ class WebSocketService {
 							});
 
 						// Show all FLEET_DEFENSE_SUCCESS events if available
-						const allFDS = (globalThis as any).__allFleetDefenseSuccess;
-						if (allFDS && allFDS.length > 0) {
+						const allFDS = (globalThis as Record<string, unknown>)['__allFleetDefenseSuccess'];
+						if (allFDS && Array.isArray(allFDS) && allFDS.length > 0) {
 							console.error(`\n⚔️ ALL ${allFDS.length} FLEET_DEFENSE_SUCCESS EVENTS:`);
-							allFDS.forEach((fds: any, index: number) => {
+							allFDS.forEach((fds: unknown, index: number) => {
+								const fdsData = fds as Record<string, unknown>;
 								console.error(`\n  Event ${index + 1}:`);
-								console.error('    Planet ID:', fds.planetId);
-								console.error('    Attacking Fleet ID:', fds.attackingFleetId);
-								console.error('    Planet fleet BEFORE:', JSON.stringify(fds.planetFleetBefore));
-								console.error('    Planet fleet hash BEFORE:', fds.planetFleetHashBefore);
+								console.error('    Planet ID:', fdsData['planetId']);
+								console.error('    Attacking Fleet ID:', fdsData['attackingFleetId']);
+								console.error('    Planet fleet BEFORE:', JSON.stringify(fdsData['planetFleetBefore']));
+								console.error('    Planet fleet hash BEFORE:', fdsData['planetFleetHashBefore']);
 								console.error(
 									'    Winning fleet FROM SERVER:',
-									JSON.stringify(fds.winningFleetFromServer)
+									JSON.stringify(fdsData['winningFleetFromServer'])
 								);
-								console.error('    Winning fleet hash:', fds.winningFleetHash);
-								console.error('    Planet fleet AFTER:', JSON.stringify(fds.planetFleetAfter));
-								console.error('    Planet fleet hash AFTER:', fds.planetFleetHashAfter);
+								console.error('    Winning fleet hash:', fdsData['winningFleetHash']);
+								console.error('    Planet fleet AFTER:', JSON.stringify(fdsData['planetFleetAfter']));
+								console.error('    Planet fleet hash AFTER:', fdsData['planetFleetHashAfter']);
 								console.error(
 									'    Fleets in transit BEFORE:',
-									JSON.stringify(fds.fleetsInTransitBefore)
+									JSON.stringify(fdsData['fleetsInTransitBefore'])
 								);
 								console.error(
 									'    Fleets in transit AFTER:',
-									JSON.stringify(fds.fleetsInTransitAfter)
+									JSON.stringify(fdsData['fleetsInTransitAfter'])
 								);
 							});
 							// Clear the array for next batch of events
-							(globalThis as any).__allFleetDefenseSuccess = [];
+							(globalThis as Record<string, unknown>)['__allFleetDefenseSuccess'] = [];
 						}
 					}
 				}
@@ -566,7 +568,7 @@ class WebSocketService {
 					// This was our auto-queue command - mark as complete and check again
 					this.autoQueuePending = false;
 					console.log('Auto-queue command completed - checking for next eligible planet');
-					//NOTE: not sure why setTimeout is needed here, but avoids desync issues if quickly building defenders
+					//NOTE: throttle auto-queue messages to give server time to process and avoid desync issues if quickly building defenders
 					setTimeout(() => this.processAutoQueue(), 100);
 				}
 				return;
@@ -656,12 +658,13 @@ class WebSocketService {
 			event.type === ClientEventType.PLANET_CAPTURED ||
 			event.type === ClientEventType.PLANET_LOST;
 
-		if (isBattleEvent && event.data && (event.data as any).conflictData) {
+		if (isBattleEvent && event.data && typeof event.data === 'object' && 'conflictData' in event.data) {
+			const eventData = event.data as Record<string, unknown>;
 			activityStore.addNotificationWithEventData(
 				notification,
 				event, // Pass the full ClientEvent
 				undefined, // No ClientNotification
-				(event.data as any).conflictData // Pass the PlanetaryConflictData
+				eventData['conflictData'] as unknown as PlanetaryConflictData // Pass the PlanetaryConflictData
 			);
 		}
 	}
@@ -821,8 +824,8 @@ class WebSocketService {
 
 					// Store session ID if provided
 					const payload = message.payload as unknown as Record<string, unknown>;
-					if (payload.sessionId && typeof payload.sessionId === 'string') {
-						this.gameStore.setSessionId(payload.sessionId);
+					if (payload['sessionId'] && typeof payload['sessionId'] === 'string') {
+						this.gameStore.setSessionId(payload['sessionId']);
 					}
 
 					this.gameStore.addNotification({
@@ -855,14 +858,14 @@ class WebSocketService {
 
 						// Store player position if provided (following old game pattern)
 						const payload = message.payload as unknown as Record<string, unknown>;
-						if (typeof payload.playerPosition === 'number') {
-							this.gameStore.setPlayerPosition(payload.playerPosition);
-							console.log('Joined game at player position:', payload.playerPosition);
+						if (typeof payload['playerPosition'] === 'number') {
+							this.gameStore.setPlayerPosition(payload['playerPosition']);
+							console.log('Joined game at player position:', payload['playerPosition']);
 						}
 
 						// Store session ID if provided
-						if (payload.sessionId && typeof payload.sessionId === 'string') {
-							this.gameStore.setSessionId(payload.sessionId);
+						if (payload['sessionId'] && typeof payload['sessionId'] === 'string') {
+							this.gameStore.setSessionId(payload['sessionId']);
 						}
 
 						this.gameStore.addNotification({
@@ -1646,9 +1649,10 @@ class WebSocketService {
 
 			const eligiblePlanets = Player.getEligibleBuildLastShipPlanetList(currentModel);
 
-			if (eligiblePlanets.length > 0) {
+			const firstEligiblePlanet = eligiblePlanets[0];
+			if (firstEligiblePlanet) {
 				// Send command for ONLY the first eligible planet
-				const { planetId, productionItem } = eligiblePlanets[0];
+				const { planetId, productionItem } = firstEligiblePlanet;
 				console.log(
 					`Auto-queuing ship on planet ${planetId} (${eligiblePlanets.length} total eligible)`
 				);
@@ -1761,10 +1765,10 @@ class WebSocketService {
 		planetIdSource: number,
 		planetIdDest: number,
 		shipsByType: {
-			scouts: number[];
-			destroyers: number[];
-			cruisers: number[];
-			battleships: number[];
+			scouts: string[];
+			destroyers: string[];
+			cruisers: string[];
+			battleships: string[];
 		}
 	) {
 		try {
@@ -1775,7 +1779,7 @@ class WebSocketService {
 			const playerId = cgm.mainPlayer.id;
 
 			// Send command with ship IDs (user selected specific ships)
-			const command: GameCommand = {
+			const command: SendShipsCommand = {
 				type: GameCommandType.SEND_SHIPS,
 				playerId,
 				timestamp: Date.now(),
@@ -1787,7 +1791,7 @@ class WebSocketService {
 					cruisers: shipsByType.cruisers,
 					battleships: shipsByType.battleships
 				}
-			} as SendShipsCommand;
+			};
 
 			this.sendCommand(command);
 		} catch (error) {

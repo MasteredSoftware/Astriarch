@@ -1,7 +1,7 @@
 import { EarnedPointsType } from './earnedPoints';
-import { FleetData, LastKnownFleetData } from './fleet';
-import { PlanetProductionItemData } from './planet';
-import { ResearchData } from './research';
+import type { FleetData, LastKnownFleetData } from './fleet';
+import type { PlanetProductionItemData } from './planet';
+import type { ResearchData } from './research';
 
 export interface PlayerGameOptions {
   showPlanetaryConflictPopups: boolean;
