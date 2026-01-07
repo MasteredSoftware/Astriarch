@@ -169,10 +169,10 @@ export class DocumentPersistence {
 
       // Mark Mixed fields as modified
       if ((updateData as any).gameState !== undefined) {
-        (updateData as any).gameState = updateData.gameState;
+        (updateData as any).gameState = (updateData as any).gameState;
       }
       if ((updateData as any).gameOptions !== undefined) {
-        (updateData as any).gameOptions = updateData.gameOptions;
+        (updateData as any).gameOptions = (updateData as any).gameOptions;
       }
 
       // Conditional update: only update if nonce matches

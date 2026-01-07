@@ -349,7 +349,7 @@ export class WebSocketServer {
       let eventsToSend: ClientEvent[] = [];
       let notificationsToSend: ClientNotification[] = [];
       let destroyedPlayers: PlayerData[] = [];
-      let gameEndConditions: GameEndConditions | null = null;
+      let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
       let currentCycle: number = 0;
       let modelData: ModelData | null = null;
       let gameStatus: string = "";
@@ -413,7 +413,7 @@ export class WebSocketServer {
       let eventsToSend: ClientEvent[] = [];
       let notificationsToSend: ClientNotification[] = [];
       let destroyedPlayers: PlayerData[] = [];
-      let gameEndConditions: GameEndConditions | null = null;
+      let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
       let currentCycle: number = 0;
       let modelData: ModelData | null = null;
       let gameStatus: string = "";
