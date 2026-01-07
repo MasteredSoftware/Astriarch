@@ -71,7 +71,10 @@ class WebSocketService {
 	private reconnectAttempts = 0;
 	private maxReconnectAttempts = 5;
 	private reconnectDelay = 1000;
-	private messageQueue: IMessage<unknown>[] = [];
+	private messageQueue: IMessage<unknown>[] = []; // Queue for outgoing messages
+	private incomingMessageQueue: IMessage<unknown>[] = []; // Queue for incoming messages
+	private isProcessingMessage = false; // Flag to prevent concurrent incoming message processing
+	private isSendingMessage = false; // Flag to prevent concurrent outgoing message sending
 	private isConnecting = false;
 	private pingInterval: number | null = null;
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
@@ -151,12 +154,9 @@ class WebSocketService {
 						const storedPlayerName = PlayerStorage.getPlayerNameWithFallback('Player');
 						this.gameStore.setPlayerName(storedPlayerName);
 
-						// Send queued messages
-						while (this.messageQueue.length > 0) {
-							const message = this.messageQueue.shift();
-							if (message) {
-								this.send(message);
-							}
+						// Process queued messages using the queue system
+						if (this.messageQueue.length > 0) {
+							this.processNextOutgoingMessage();
 						}
 
 						resolve();
@@ -165,7 +165,8 @@ class WebSocketService {
 					this.ws.onmessage = (event) => {
 						try {
 							const message: IMessage<unknown> = JSON.parse(event.data);
-							this.handleMessage(message);
+							// Queue incoming message for sequential processing
+							this.enqueueIncomingMessage(message);
 						} catch (error) {
 							console.error('Failed to parse WebSocket message:', error);
 						}
@@ -216,6 +217,49 @@ class WebSocketService {
 				message: 'Failed to reconnect to server after multiple attempts',
 				timestamp: Date.now()
 			});
+		}
+	}
+
+	/**
+	 * Enqueue an incoming message and process it sequentially.
+	 * This prevents race conditions when multiple messages arrive simultaneously.
+	 */
+	private enqueueIncomingMessage(message: IMessage<unknown>) {
+		this.incomingMessageQueue.push(message);
+		this.processNextIncomingMessage();
+	}
+
+	/**
+	 * Process the next message in the queue if not already processing.
+	 * This ensures messages are handled one at a time, in order.
+	 */
+	private async processNextIncomingMessage() {
+		// If already processing a message, wait for it to complete
+		if (this.isProcessingMessage) {
+			return;
+		}
+
+		// Get next message from queue
+		const message = this.incomingMessageQueue.shift();
+		if (!message) {
+			return;
+		}
+
+		// Mark as processing to prevent concurrent execution
+		this.isProcessingMessage = true;
+
+		try {
+			await this.handleMessage(message);
+		} catch (error) {
+			console.error('Error processing message:', error);
+		} finally {
+			// Mark as done and process next message
+			this.isProcessingMessage = false;
+
+			// Process next message if any are queued
+			if (this.incomingMessageQueue.length > 0) {
+				this.processNextIncomingMessage();
+			}
 		}
 	}
 
@@ -522,7 +566,8 @@ class WebSocketService {
 					// This was our auto-queue command - mark as complete and check again
 					this.autoQueuePending = false;
 					console.log('Auto-queue command completed - checking for next eligible planet');
-					this.processAutoQueue();
+					//NOTE: not sure why setTimeout is needed here, but avoids desync issues if quickly building defenders
+					setTimeout(() => this.processAutoQueue(), 100);
 				}
 				return;
 			}
@@ -1151,8 +1196,12 @@ class WebSocketService {
 							this.requestStateSync();
 						} else {
 							console.debug('Event chain valid ✓', ourChecksum);
-							currentModel.mainPlayer.lastEventChecksum = ourChecksum;
 						}
+
+						// CRITICAL: Always update to server's checksum to prevent cascade of false positives
+						// If there was a desync, future events should chain from server's authoritative state
+						// This prevents the next message from using the same stale checksum
+						currentModel.mainPlayer.lastEventChecksum = payload.stateChecksum;
 					} catch (error) {
 						console.error('Error calculating rolling checksum:', error);
 					}
@@ -1215,12 +1264,11 @@ class WebSocketService {
 	}
 
 	send(message: IMessage<unknown>) {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(JSON.stringify(message));
-		} else {
-			// Queue message for when connection is established
-			this.messageQueue.push(message);
+		// Always queue outgoing messages to ensure they're sent in order
+		this.messageQueue.push(message);
 
+		// If not connected, attempt to connect
+		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
 			if (!this.isConnecting) {
 				this.connect().catch((error) => {
 					console.error('Failed to connect for sending message:', error);
@@ -1230,6 +1278,49 @@ class WebSocketService {
 						timestamp: Date.now()
 					});
 				});
+			}
+		} else {
+			// Process the queue if connected and not already sending
+			this.processNextOutgoingMessage();
+		}
+	}
+
+	/**
+	 * Process the next outgoing message in the queue.
+	 * This ensures messages are sent one at a time, in order.
+	 */
+	private processNextOutgoingMessage() {
+		// If already sending a message, wait for it to complete
+		if (this.isSendingMessage) {
+			return;
+		}
+
+		// Check if we're still connected
+		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+			return;
+		}
+
+		// Get next message from queue
+		const message = this.messageQueue.shift();
+		if (!message) {
+			return;
+		}
+
+		// Mark as sending to prevent concurrent sends
+		this.isSendingMessage = true;
+
+		try {
+			this.ws.send(JSON.stringify(message));
+		} catch (error) {
+			console.error('Error sending message:', error);
+		} finally {
+			// Mark as done and process next message
+			this.isSendingMessage = false;
+
+			// Process next message if any are queued
+			if (this.messageQueue.length > 0) {
+				// Use setTimeout to avoid deep call stacks and allow other operations
+				setTimeout(() => this.processNextOutgoingMessage(), 0);
 			}
 		}
 	}
