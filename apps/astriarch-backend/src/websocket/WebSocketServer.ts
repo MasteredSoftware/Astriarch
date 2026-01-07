@@ -380,9 +380,11 @@ export class WebSocketServer {
         modelData = result.gameModel.modelData;
 
         // Return ONLY the data to update in the database
+        // Include status update if game has ended to ensure atomic persistence
         return {
           gameState: result.gameModel.modelData,
           lastActivity: new Date(),
+          ...(result.gameEndConditions.gameEnded && { status: 'completed' as const }),
         };
       });
 
@@ -1559,11 +1561,8 @@ export class WebSocketServer {
     try {
       logger.info(`Handling game over conditions for game ${gameId}`);
 
-      // Mark game as completed if it has ended
-      if (result.gameEndConditions.gameEnded) {
-        game.status = "completed";
-        logger.info(`Game ${gameId} has ended`);
-      }
+      // Note: Game status is now updated atomically in advanceGameTime transaction
+      // The 'game' object passed here already has status='completed' if game ended
 
       // Handle destroyed players
       for (const destroyedPlayer of result.destroyedPlayers) {
