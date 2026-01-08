@@ -20,9 +20,14 @@ import {
 	EventApplicator,
 	calculateRollingEventChecksum,
 	type PlanetProductionItemData,
+	type PlanetaryConflictData,
 	TradeType,
 	Player
 } from 'astriarch-engine';
+import {
+	calculateClientModelChecksum,
+	calculateClientModelChecksumComponents
+} from 'astriarch-engine/src/utils/stateChecksum';
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { activityStore } from '$lib/stores/activityStore';
@@ -56,7 +61,7 @@ import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 import { audioService } from '$lib/services/audioService';
 
 // Import environment configuration
-import { getBackendHttpUrl, getBackendWsUrl, getHealthCheckUrl } from '$lib/config/environment';
+import { getBackendWsUrl, getHealthCheckUrl, config } from '$lib/config/environment';
 
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
@@ -67,7 +72,10 @@ class WebSocketService {
 	private reconnectAttempts = 0;
 	private maxReconnectAttempts = 5;
 	private reconnectDelay = 1000;
-	private messageQueue: IMessage<unknown>[] = [];
+	private messageQueue: IMessage<unknown>[] = []; // Queue for outgoing messages
+	private incomingMessageQueue: IMessage<unknown>[] = []; // Queue for incoming messages
+	private isProcessingMessage = false; // Flag to prevent concurrent incoming message processing
+	private isSendingMessage = false; // Flag to prevent concurrent outgoing message sending
 	private isConnecting = false;
 	private pingInterval: number | null = null;
 	private readonly pingIntervalMs = 20000; // 20 seconds (less than backend's 30s timeout)
@@ -75,11 +83,6 @@ class WebSocketService {
 	private readonly gameSyncIntervalMs = 10000; // 10 seconds for game state synchronization
 	private autoQueuePending = false; // True when waiting for auto-queue command response
 	private autoQueueRequested = false; // True when auto-queue check is needed
-
-	// PlanetProductionItemType enum values (from astriarch-engine)
-	private readonly ITEM_TYPE_IMPROVEMENT = 1;
-	private readonly ITEM_TYPE_STARSHIP = 2;
-	private readonly ITEM_TYPE_DEMOLISH = 3;
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
@@ -152,12 +155,9 @@ class WebSocketService {
 						const storedPlayerName = PlayerStorage.getPlayerNameWithFallback('Player');
 						this.gameStore.setPlayerName(storedPlayerName);
 
-						// Send queued messages
-						while (this.messageQueue.length > 0) {
-							const message = this.messageQueue.shift();
-							if (message) {
-								this.send(message);
-							}
+						// Process queued messages using the queue system
+						if (this.messageQueue.length > 0) {
+							this.processNextOutgoingMessage();
 						}
 
 						resolve();
@@ -166,7 +166,8 @@ class WebSocketService {
 					this.ws.onmessage = (event) => {
 						try {
 							const message: IMessage<unknown> = JSON.parse(event.data);
-							this.handleMessage(message);
+							// Queue incoming message for sequential processing
+							this.enqueueIncomingMessage(message);
 						} catch (error) {
 							console.error('Failed to parse WebSocket message:', error);
 						}
@@ -217,6 +218,240 @@ class WebSocketService {
 				message: 'Failed to reconnect to server after multiple attempts',
 				timestamp: Date.now()
 			});
+		}
+	}
+
+	/**
+	 * Enqueue an incoming message and process it sequentially.
+	 * This prevents race conditions when multiple messages arrive simultaneously.
+	 */
+	private enqueueIncomingMessage(message: IMessage<unknown>) {
+		this.incomingMessageQueue.push(message);
+		this.processNextIncomingMessage();
+	}
+
+	/**
+	 * Process the next message in the queue if not already processing.
+	 * This ensures messages are handled one at a time, in order.
+	 */
+	private async processNextIncomingMessage() {
+		// If already processing a message, wait for it to complete
+		if (this.isProcessingMessage) {
+			return;
+		}
+
+		// Get next message from queue
+		const message = this.incomingMessageQueue.shift();
+		if (!message) {
+			return;
+		}
+
+		// Mark as processing to prevent concurrent execution
+		this.isProcessingMessage = true;
+
+		try {
+			await this.handleMessage(message);
+		} catch (error) {
+			console.error('Error processing message:', error);
+		} finally {
+			// Mark as done and process next message
+			this.isProcessingMessage = false;
+
+			// Process next message if any are queued
+			if (this.incomingMessageQueue.length > 0) {
+				this.processNextIncomingMessage();
+			}
+		}
+	}
+
+	private logEventChainBreakdown(
+		events: ClientEvent[],
+		previousChecksum: string,
+		expectedChecksum: string
+	): void {
+		// Only log detailed breakdown if explicitly enabled (can be noisy in production)
+		if (!config.logEventChainDesyncErrors) {
+			return;
+		}
+
+		console.error('🚨 EVENT CHAIN DESYNC DETECTED! 🚨');
+		console.error(`Server event checksum: ${expectedChecksum}`);
+		console.error(`Previous checksum: ${previousChecksum}`);
+		console.error(`Number of events: ${events.length}`);
+
+		// Log each event and calculate individual checksums to identify where chain breaks
+		console.error('\n📋 EVENT CHAIN BREAKDOWN:');
+		let rollingChecksum = previousChecksum;
+		events.forEach((event, index) => {
+			// Calculate checksum for this single event
+			const eventChecksum = calculateRollingEventChecksum([event], rollingChecksum);
+			const eventJson = JSON.stringify(event);
+			const eventSize = eventJson.length;
+
+			console.error(`\n  Event ${index + 1}/${events.length}:`);
+			console.error(`    Type: ${event.type}`);
+			console.error(`    Input checksum: ${rollingChecksum}`);
+			console.error(`    Output checksum: ${eventChecksum}`);
+			console.error(`    Event size: ${eventSize} bytes`);
+			console.error(`    Event data:`, JSON.stringify(event.data, null, 2));
+
+			// Update rolling checksum for next event
+			rollingChecksum = eventChecksum;
+		});
+
+		const finalChecksum = calculateRollingEventChecksum(events, previousChecksum);
+		console.error(`\n  Final client checksum: ${finalChecksum}`);
+		console.error(`  Expected server checksum: ${expectedChecksum}`);
+		console.error(`  Match: ${finalChecksum === expectedChecksum ? '✓' : '✗'}`);
+	}
+
+	private validateStateChecksum(
+		currentModel: ClientModelData,
+		serverChecksum?: string,
+		serverChecksumComponents?: { planets: string; fleets: string }
+	): void {
+		// Only validate if checksum is provided and validation is enabled
+		if (!serverChecksum || !config.enableClientModelChecksumValidation) {
+			return;
+		}
+
+		try {
+			const ourStateChecksum = calculateClientModelChecksum(currentModel);
+			if (ourStateChecksum !== serverChecksum) {
+				console.error('🚨 STATE DESYNC DETECTED! 🚨');
+				console.error(`Server state checksum: ${serverChecksum}`);
+				console.error(`Client state checksum: ${ourStateChecksum}`);
+
+				// Calculate component checksums to identify which part diverged
+				const ourComponents = calculateClientModelChecksumComponents(currentModel);
+				console.error('State checksum breakdown:');
+				console.error('CLIENT:');
+				console.error('- Planets hash:', ourComponents.planets);
+				console.error('- Fleets hash:', ourComponents.fleets);
+				if (serverChecksumComponents) {
+					console.error('SERVER:');
+					console.error('- Planets hash:', serverChecksumComponents.planets);
+					console.error('- Fleets hash:', serverChecksumComponents.fleets);
+
+					// If fleet hash differs, show the stored FLEET_DEFENSE_SUCCESS data
+					if (ourComponents.fleets !== serverChecksumComponents.fleets) {
+						console.error('\n🔍 FLEET HASH MISMATCH - FULL STATE COMPARISON:');
+
+						// Show client planetary fleets
+						console.error('\n📱 CLIENT PLANETARY FLEETS:');
+						Object.keys(currentModel.mainPlayerOwnedPlanets)
+							.map(Number)
+							.sort((a, b) => a - b)
+							.forEach((planetId) => {
+								const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+								if (planet && planet.planetaryFleet && planet.planetaryFleet.starships.length > 0) {
+									console.error(`  Planet ${planetId} (${planet.name}):`);
+									console.error(`    Composition Hash: ${planet.planetaryFleet.compositionHash}`);
+									console.error(
+										`    Ships:`,
+										JSON.stringify(
+											planet.planetaryFleet.starships.map((s) => ({
+												id: s.id,
+												type: s.type
+											}))
+										)
+									);
+								}
+							});
+
+						// Show client fleets in transit
+						console.error('\n📱 CLIENT FLEETS IN TRANSIT:');
+						currentModel.mainPlayer.fleetsInTransit.forEach((fleet) => {
+							console.error(`  Fleet ${fleet.id}:`);
+							console.error(`    Composition Hash: ${fleet.compositionHash}`);
+							console.error(
+								`    Ships:`,
+								JSON.stringify(
+									fleet.starships.map((s) => ({
+										id: s.id,
+										type: s.type
+									}))
+								)
+							);
+						});
+
+						// Show outgoing fleets from all planets
+						console.error('\n📱 CLIENT OUTGOING FLEETS FROM PLANETS:');
+						Object.keys(currentModel.mainPlayerOwnedPlanets)
+							.map(Number)
+							.sort((a, b) => a - b)
+							.forEach((planetId) => {
+								const planet = currentModel.mainPlayerOwnedPlanets[planetId];
+								if (planet && planet.outgoingFleets && planet.outgoingFleets.length > 0) {
+									planet.outgoingFleets.forEach((fleet) => {
+										console.error(`  Planet ${planetId} → Fleet ${fleet.id}:`);
+										console.error(`    Composition Hash: ${fleet.compositionHash}`);
+										console.error(
+											`    Ships:`,
+											JSON.stringify(
+												fleet.starships.map((s) => ({
+													id: s.id,
+													type: s.type
+												}))
+											)
+										);
+									});
+								}
+							});
+
+						// Show all FLEET_DEFENSE_SUCCESS events if available
+						const allFDS = (globalThis as Record<string, unknown>)['__allFleetDefenseSuccess'];
+						if (allFDS && Array.isArray(allFDS) && allFDS.length > 0) {
+							console.error(`\n⚔️ ALL ${allFDS.length} FLEET_DEFENSE_SUCCESS EVENTS:`);
+							allFDS.forEach((fds: unknown, index: number) => {
+								const fdsData = fds as Record<string, unknown>;
+								console.error(`\n  Event ${index + 1}:`);
+								console.error('    Planet ID:', fdsData['planetId']);
+								console.error('    Attacking Fleet ID:', fdsData['attackingFleetId']);
+								console.error(
+									'    Planet fleet BEFORE:',
+									JSON.stringify(fdsData['planetFleetBefore'])
+								);
+								console.error('    Planet fleet hash BEFORE:', fdsData['planetFleetHashBefore']);
+								console.error(
+									'    Winning fleet FROM SERVER:',
+									JSON.stringify(fdsData['winningFleetFromServer'])
+								);
+								console.error('    Winning fleet hash:', fdsData['winningFleetHash']);
+								console.error(
+									'    Planet fleet AFTER:',
+									JSON.stringify(fdsData['planetFleetAfter'])
+								);
+								console.error('    Planet fleet hash AFTER:', fdsData['planetFleetHashAfter']);
+								console.error(
+									'    Fleets in transit BEFORE:',
+									JSON.stringify(fdsData['fleetsInTransitBefore'])
+								);
+								console.error(
+									'    Fleets in transit AFTER:',
+									JSON.stringify(fdsData['fleetsInTransitAfter'])
+								);
+							});
+							// Clear the array for next batch of events
+							(globalThis as Record<string, unknown>)['__allFleetDefenseSuccess'] = [];
+						}
+					}
+				}
+
+				// Show notification to user
+				this.gameStore.addNotification({
+					type: 'error',
+					message: 'Game state desync detected - requesting full resync',
+					timestamp: Date.now()
+				});
+
+				// Request full state sync to recover
+				this.requestStateSync();
+			} else {
+				console.debug('State checksum valid ✓', ourStateChecksum);
+			}
+		} catch (error) {
+			console.error('Error calculating state checksum:', error);
 		}
 	}
 
@@ -339,7 +574,8 @@ class WebSocketService {
 					// This was our auto-queue command - mark as complete and check again
 					this.autoQueuePending = false;
 					console.log('Auto-queue command completed - checking for next eligible planet');
-					this.processAutoQueue();
+					//NOTE: throttle auto-queue messages to give server time to process and avoid desync issues if quickly building defenders
+					setTimeout(() => this.processAutoQueue(), 100);
 				}
 				return;
 			}
@@ -428,17 +664,23 @@ class WebSocketService {
 			event.type === ClientEventType.PLANET_CAPTURED ||
 			event.type === ClientEventType.PLANET_LOST;
 
-		if (isBattleEvent && event.data && (event.data as any).conflictData) {
+		if (
+			isBattleEvent &&
+			event.data &&
+			typeof event.data === 'object' &&
+			'conflictData' in event.data
+		) {
+			const eventData = event.data as Record<string, unknown>;
 			activityStore.addNotificationWithEventData(
 				notification,
 				event, // Pass the full ClientEvent
 				undefined, // No ClientNotification
-				(event.data as any).conflictData // Pass the PlanetaryConflictData
+				eventData['conflictData'] as unknown as PlanetaryConflictData // Pass the PlanetaryConflictData
 			);
 		}
 	}
 
-	private handleMessage(message: IMessage<unknown>) {
+	private async handleMessage(message: IMessage<unknown>) {
 		console.log('Received message:', message);
 
 		switch (message.type) {
@@ -470,12 +712,11 @@ class WebSocketService {
 					if (message.payload.clientGameModel) {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
+
 						clientGameModel.set(updatedClientGameModel);
 
-						console.log('Received real-time game state update from server');
-					} else if (message.payload.changes) {
-						// TODO: Apply incremental changes if needed
-						console.log('Received incremental changes (not implemented):', message.payload.changes);
+						// Clear the flag to allow future time advancement requests
+						gameActions.clearServerTimeAdvancementFlag();
 					}
 				} else {
 					console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
@@ -594,8 +835,8 @@ class WebSocketService {
 
 					// Store session ID if provided
 					const payload = message.payload as unknown as Record<string, unknown>;
-					if (payload.sessionId && typeof payload.sessionId === 'string') {
-						this.gameStore.setSessionId(payload.sessionId);
+					if (payload['sessionId'] && typeof payload['sessionId'] === 'string') {
+						this.gameStore.setSessionId(payload['sessionId']);
 					}
 
 					this.gameStore.addNotification({
@@ -628,14 +869,14 @@ class WebSocketService {
 
 						// Store player position if provided (following old game pattern)
 						const payload = message.payload as unknown as Record<string, unknown>;
-						if (typeof payload.playerPosition === 'number') {
-							this.gameStore.setPlayerPosition(payload.playerPosition);
-							console.log('Joined game at player position:', payload.playerPosition);
+						if (typeof payload['playerPosition'] === 'number') {
+							this.gameStore.setPlayerPosition(payload['playerPosition']);
+							console.log('Joined game at player position:', payload['playerPosition']);
 						}
 
 						// Store session ID if provided
-						if (payload.sessionId && typeof payload.sessionId === 'string') {
-							this.gameStore.setSessionId(payload.sessionId);
+						if (payload['sessionId'] && typeof payload['sessionId'] === 'string') {
+							this.gameStore.setSessionId(payload['sessionId']);
 						}
 
 						this.gameStore.addNotification({
@@ -908,14 +1149,23 @@ class WebSocketService {
 				const payload = message.payload as {
 					events: ClientEvent[];
 					stateChecksum?: string;
+					clientModelChecksum?: string;
+					checksumComponents?: { planets: string; fleets: string };
 					currentCycle: number;
 				};
 				console.log(`Received ${payload.events.length} client events from server`);
+
+				// CRITICAL: Pause game loop to prevent race conditions during event application
+				// The client game loop can modify the model (health regeneration, etc.) which would
+				// cause checksum mismatches if it runs between event application and validation
+				console.log('⏸️ Pausing game loop for event processing');
+				gameActions.pauseGame();
 
 				// Get current client model
 				const currentModel = get(clientGameModel);
 				if (!currentModel) {
 					console.warn('No client model available to apply events');
+					gameActions.resumeGame(); // Resume game loop before exiting
 					break;
 				}
 
@@ -923,54 +1173,72 @@ class WebSocketService {
 				const grid = get(gameGrid);
 
 				// Apply each event to the client model and generate UI notifications
+				console.log(`\n📦 Processing ${payload.events.length} event(s):`);
+				payload.events.forEach((e, i) => console.log(`  ${i + 1}. ${e.type}`));
+
 				for (const event of payload.events) {
-					console.log(`Applying event: ${event.type}`);
+					const ownedPlanetsBefore = Object.keys(currentModel.mainPlayerOwnedPlanets)
+						.map(Number)
+						.sort();
+					console.log(`\n⚙️ Applying event: ${event.type}`);
+					console.log(`   Owned planets BEFORE: [${ownedPlanetsBefore.join(', ')}]`);
+
 					EventApplicator.applyEvent(currentModel, event, grid!);
+
+					const ownedPlanetsAfter = Object.keys(currentModel.mainPlayerOwnedPlanets)
+						.map(Number)
+						.sort();
+					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
 
 					// Convert event to user notification
 					this.convertClientEventToNotification(event);
 				}
 
-				// Validate checksum if provided (for player commands)
-				// Time-based events from server may not include checksum
+				// Validate event checksum if provided (for player commands)
 				if (payload.stateChecksum) {
-					const previousChecksum = currentModel.lastEventChecksum || '';
-					calculateRollingEventChecksum(payload.events, previousChecksum)
-						.then((ourChecksum) => {
-							if (ourChecksum !== payload.stateChecksum) {
-								console.error('Event chain broken! Desync detected.');
-								console.error(`Expected: ${payload.stateChecksum}`);
-								console.error(`Got: ${ourChecksum}`);
-								console.error(`Previous checksum: ${previousChecksum}`);
+					const previousChecksum = currentModel.mainPlayer.lastEventChecksum || '';
+					try {
+						const ourChecksum = calculateRollingEventChecksum(payload.events, previousChecksum);
+						if (ourChecksum !== payload.stateChecksum) {
+							this.logEventChainBreakdown(payload.events, previousChecksum, payload.stateChecksum);
 
-								// This is serious - the event chain is broken
-								this.gameStore.addNotification({
-									type: 'error',
-									message: 'Game sync error - requesting full resync',
-									timestamp: Date.now()
-								});
+							this.gameStore.addNotification({
+								type: 'error',
+								message: 'Game sync error - requesting full resync',
+								timestamp: Date.now()
+							});
+							this.requestStateSync();
+						} else {
+							console.debug('Event chain valid ✓', ourChecksum);
+						}
 
-								// Request full state sync to recover
-								this.requestStateSync();
-							} else {
-								console.debug('Event chain valid ✓', ourChecksum);
-
-								// Update the model with the new checksum
-								currentModel.lastEventChecksum = ourChecksum;
-							}
-
-							// Update the store with the mutated model (including new checksum)
-							clientGameModel.set(currentModel);
-						})
-						.catch((error) => {
-							console.error('Error calculating rolling checksum:', error);
-							// Still update the model even if checksum calculation failed
-							clientGameModel.set(currentModel);
-						});
-				} else {
-					// No checksum provided (time-based events) - just update the model
-					clientGameModel.set(currentModel);
+						// CRITICAL: Always update to server's checksum to prevent cascade of false positives
+						// If there was a desync, future events should chain from server's authoritative state
+						// This prevents the next message from using the same stale checksum
+						currentModel.mainPlayer.lastEventChecksum = payload.stateChecksum;
+					} catch (error) {
+						console.error('Error calculating rolling checksum:', error);
+					}
 				}
+
+				// Validate state checksum if provided - do this BEFORE updating the store
+				// so the game loop doesn't advance the state while we're validating
+				// NOTE: This can be disabled via PUBLIC_ENABLE_CHECKSUM_VALIDATION env var (default: disabled)
+				this.validateStateChecksum(
+					currentModel,
+					payload.clientModelChecksum,
+					payload.checksumComponents
+				);
+
+				// Update the store after all validation is complete
+				clientGameModel.set(currentModel);
+
+				// Resume game loop now that events are applied and store is updated
+				console.log('▶️ Resuming game loop after event processing');
+				gameActions.resumeGame();
+
+				// Clear the flag to allow future time advancement requests
+				gameActions.clearServerTimeAdvancementFlag();
 
 				break;
 			}
@@ -995,6 +1263,8 @@ class WebSocketService {
 			case MESSAGE_TYPE.ADVANCE_GAME_TIME:
 				// Handle server time advancement response (events already received via CLIENT_EVENT)
 				console.log('Game time advanced successfully');
+				// Clear the flag to allow future time advancement requests
+				gameActions.clearServerTimeAdvancementFlag();
 				break;
 
 			case MESSAGE_TYPE.SYNC_STATE:
@@ -1008,12 +1278,11 @@ class WebSocketService {
 	}
 
 	send(message: IMessage<unknown>) {
-		if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-			this.ws.send(JSON.stringify(message));
-		} else {
-			// Queue message for when connection is established
-			this.messageQueue.push(message);
+		// Always queue outgoing messages to ensure they're sent in order
+		this.messageQueue.push(message);
 
+		// If not connected, attempt to connect
+		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
 			if (!this.isConnecting) {
 				this.connect().catch((error) => {
 					console.error('Failed to connect for sending message:', error);
@@ -1023,6 +1292,49 @@ class WebSocketService {
 						timestamp: Date.now()
 					});
 				});
+			}
+		} else {
+			// Process the queue if connected and not already sending
+			this.processNextOutgoingMessage();
+		}
+	}
+
+	/**
+	 * Process the next outgoing message in the queue.
+	 * This ensures messages are sent one at a time, in order.
+	 */
+	private processNextOutgoingMessage() {
+		// If already sending a message, wait for it to complete
+		if (this.isSendingMessage) {
+			return;
+		}
+
+		// Check if we're still connected
+		if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+			return;
+		}
+
+		// Get next message from queue
+		const message = this.messageQueue.shift();
+		if (!message) {
+			return;
+		}
+
+		// Mark as sending to prevent concurrent sends
+		this.isSendingMessage = true;
+
+		try {
+			this.ws.send(JSON.stringify(message));
+		} catch (error) {
+			console.error('Error sending message:', error);
+		} finally {
+			// Mark as done and process next message
+			this.isSendingMessage = false;
+
+			// Process next message if any are queued
+			if (this.messageQueue.length > 0) {
+				// Use setTimeout to avoid deep call stacks and allow other operations
+				setTimeout(() => this.processNextOutgoingMessage(), 0);
 			}
 		}
 	}
@@ -1348,9 +1660,10 @@ class WebSocketService {
 
 			const eligiblePlanets = Player.getEligibleBuildLastShipPlanetList(currentModel);
 
-			if (eligiblePlanets.length > 0) {
+			const firstEligiblePlanet = eligiblePlanets[0];
+			if (firstEligiblePlanet) {
 				// Send command for ONLY the first eligible planet
-				const { planetId, productionItem } = eligiblePlanets[0];
+				const { planetId, productionItem } = firstEligiblePlanet;
 				console.log(
 					`Auto-queuing ship on planet ${planetId} (${eligiblePlanets.length} total eligible)`
 				);
@@ -1463,10 +1776,10 @@ class WebSocketService {
 		planetIdSource: number,
 		planetIdDest: number,
 		shipsByType: {
-			scouts: number[];
-			destroyers: number[];
-			cruisers: number[];
-			battleships: number[];
+			scouts: string[];
+			destroyers: string[];
+			cruisers: string[];
+			battleships: string[];
 		}
 	) {
 		try {
@@ -1477,7 +1790,7 @@ class WebSocketService {
 			const playerId = cgm.mainPlayer.id;
 
 			// Send command with ship IDs (user selected specific ships)
-			const command: GameCommand = {
+			const command: SendShipsCommand = {
 				type: GameCommandType.SEND_SHIPS,
 				playerId,
 				timestamp: Date.now(),
@@ -1489,7 +1802,7 @@ class WebSocketService {
 					cruisers: shipsByType.cruisers,
 					battleships: shipsByType.battleships
 				}
-			} as SendShipsCommand;
+			};
 
 			this.sendCommand(command);
 		} catch (error) {
@@ -1497,6 +1810,34 @@ class WebSocketService {
 			this.gameStore.addNotification({
 				type: 'error',
 				message: 'Cannot send ships - no active game session',
+				timestamp: Date.now()
+			});
+		}
+	}
+
+	requestGameTimeAdvancement() {
+		try {
+			// Debounce: Only send request if we're not already waiting for a response
+			if (gameActions.isAwaitingServerTimeAdvancement()) {
+				console.log('Already waiting for server time advancement response - ignoring request');
+				return;
+			}
+
+			const gameId = this.requireGameId();
+			console.log('Requesting game time advancement for game:', gameId);
+
+			// Set flag to prevent duplicate requests
+			gameActions.setServerTimeAdvancementFlag(true);
+
+			const payload = { gameId };
+			this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, payload));
+		} catch (error) {
+			console.error('Failed to request game time advancement:', error);
+			// Clear flag on error so we can retry
+			gameActions.clearServerTimeAdvancementFlag();
+			this.gameStore.addNotification({
+				type: 'error',
+				message: 'Cannot advance game time - no active game session',
 				timestamp: Date.now()
 			});
 		}
@@ -1552,7 +1893,7 @@ class WebSocketService {
 				this.isHost()
 			) {
 				console.log('Sending ADVANCE_GAME_TIME to advance game time for AI players');
-				this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {}));
+				this.requestGameTimeAdvancement();
 			} else {
 				// Stop interval if conditions are no longer met
 				this.stopGameSyncInterval();

@@ -213,6 +213,21 @@ export const gameActions = {
 		notifications.set([]);
 	},
 
+	// Check if we're waiting for server time advancement response
+	isAwaitingServerTimeAdvancement(): boolean {
+		return awaitingServerTimeAdvancement;
+	},
+
+	// Set the server time advancement waiting flag
+	setServerTimeAdvancementFlag(value: boolean) {
+		awaitingServerTimeAdvancement = value;
+	},
+
+	// Clear the server time advancement waiting flag (called when server responds)
+	clearServerTimeAdvancementFlag() {
+		awaitingServerTimeAdvancement = false;
+	},
+
 	// Planet selection actions
 	selectPlanet(planetId: number | null) {
 		console.log('gameActions.selectPlanet called with ID:', planetId);
@@ -331,6 +346,7 @@ function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T
 
 // Animation frame loop for continuous game time advancement
 let animationFrameId: number | null = null;
+let awaitingServerTimeAdvancement = false;
 
 function startGameLoop() {
 	if (animationFrameId !== null) {
@@ -376,9 +392,9 @@ function startGameLoop() {
 			}
 
 			if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
-				// request data sync with server
+				// Request time advancement from server (debouncing handled in the method)
 				console.log('Fleets arriving on unowned planets, requesting state synchronization');
-				webSocketService.requestStateSync();
+				webSocketService.requestGameTimeAdvancement();
 			}
 		}
 

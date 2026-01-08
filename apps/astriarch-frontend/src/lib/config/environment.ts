@@ -9,6 +9,8 @@ export interface EnvironmentConfig {
 	};
 	isDev: boolean;
 	isProd: boolean;
+	enableClientModelChecksumValidation: boolean;
+	logEventChainDesyncErrors: boolean;
 }
 
 // Default configuration values
@@ -21,12 +23,18 @@ const DEFAULT_BACKEND_WS_URL = 'ws://localhost:8001';
  */
 function createEnvironmentConfig(): EnvironmentConfig {
 	// Get backend URLs from environment variables
-	const backendHttpUrl = env.PUBLIC_BACKEND_HTTP_URL || DEFAULT_BACKEND_HTTP_URL;
-	const backendWsUrl = env.PUBLIC_BACKEND_WS_URL || DEFAULT_BACKEND_WS_URL;
+	const backendHttpUrl = env['PUBLIC_BACKEND_HTTP_URL'] || DEFAULT_BACKEND_HTTP_URL;
+	const backendWsUrl = env['PUBLIC_BACKEND_WS_URL'] || DEFAULT_BACKEND_WS_URL;
 
 	// Determine environment
-	const isDev = env.PUBLIC_NODE_ENV === 'development' || (!env.PUBLIC_NODE_ENV && browser);
-	const isProd = env.PUBLIC_NODE_ENV === 'production';
+	const isDev = env['PUBLIC_NODE_ENV'] === 'development' || (!env['PUBLIC_NODE_ENV'] && browser);
+	const isProd = env['PUBLIC_NODE_ENV'] === 'production';
+
+	// Enable client model checksum validation (disabled by default, can be enabled for debugging)
+	const enableClientModelChecksumValidation = env['PUBLIC_ENABLE_CHECKSUM_VALIDATION'] === 'true';
+
+	// Enable event chain desync error logging (disabled by default, useful for development)
+	const logEventChainDesyncErrors = env['PUBLIC_LOG_EVENT_CHAIN_DESYNCS'] === 'true';
 
 	return {
 		backend: {
@@ -34,7 +42,9 @@ function createEnvironmentConfig(): EnvironmentConfig {
 			wsUrl: backendWsUrl
 		},
 		isDev,
-		isProd
+		isProd,
+		enableClientModelChecksumValidation,
+		logEventChainDesyncErrors
 	};
 }
 

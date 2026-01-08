@@ -4,7 +4,7 @@
  */
 
 import { ServerGameOptions, GameSpeed } from '../model';
-import { GameCommand, ClientEvent } from '../engine/GameCommands';
+import { GameCommand, ClientEvent, ClientNotification } from '../engine/GameCommands';
 
 export enum MESSAGE_TYPE {
   // Connection & System
@@ -173,17 +173,9 @@ export interface IGameStateUpdatePayload {
   changes?: unknown;
   clientGameModel?: unknown;
   currentCycle?: number;
-  stateChecksum?: string; // SHA256 hash for desync detection (calculated by backend)
-}
-
-export interface IEventNotificationsPayload {
-  events: {
-    playerId: string;
-    type: number; // EventNotificationType
-    message: string;
-    planet?: unknown; // PlanetData
-    data?: unknown; // PlanetaryConflictData
-  }[];
+  stateChecksum?: string; // hash for desync detection (calculated by backend)
+  clientModelChecksum?: string; // hash of critical client model state
+  checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
 }
 
 export interface IGameOverPayload {
@@ -194,13 +186,6 @@ export interface IGameOverPayload {
   } | null;
   playerWon: boolean;
   score: number;
-  endOfTurnMessages?: {
-    playerId: string;
-    type: number; // EventNotificationType
-    message: string;
-    planet?: unknown; // PlanetData
-    data?: unknown; // PlanetaryConflictData
-  }[];
   gameData?: unknown; // ClientModelData for final game state
   allHumansDestroyed?: boolean;
 }
@@ -231,12 +216,14 @@ export interface IGameCommandPayload {
 
 export interface IClientEventPayload {
   events: ClientEvent[];
-  stateChecksum: string; // SHA256 hash for desync detection
+  stateChecksum: string; // SHA256 hash for desync detection (event sequence)
+  clientModelChecksum?: string; // SHA256 hash of critical client model state
+  checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
   currentCycle: number; // Game cycle when events occurred
 }
 
 export interface IClientNotificationPayload {
-  notifications: import('../engine/GameCommands').ClientNotification[];
+  notifications: ClientNotification[];
   currentCycle: number; // Game cycle when notifications occurred
 }
 

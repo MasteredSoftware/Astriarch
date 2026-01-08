@@ -1,7 +1,7 @@
 import { EarnedPointsType } from './earnedPoints';
-import { FleetData, LastKnownFleetData } from './fleet';
-import { PlanetProductionItemData } from './planet';
-import { ResearchData } from './research';
+import type { FleetData, LastKnownFleetData } from './fleet';
+import type { PlanetProductionItemData } from './planet';
+import type { ResearchData } from './research';
 
 export interface PlayerGameOptions {
   showPlanetaryConflictPopups: boolean;
@@ -45,5 +45,12 @@ export interface PlayerData {
   fleetsInTransit: FleetData[];
   destroyed: boolean;
   nextFleetId: number; // Player-scoped fleet ID counter
-  nextStarshipId: number; // Player-scoped starship ID counter
+
+  /**
+   * Rolling checksum of all events processed by this client.
+   * Used to detect desync - if client and server checksums diverge,
+   * we know events were missed or applied out of order.
+   * Empty string initially, then updated with each event batch.
+   */
+  lastEventChecksum: string;
 }

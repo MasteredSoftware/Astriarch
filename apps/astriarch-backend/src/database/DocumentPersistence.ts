@@ -1,4 +1,4 @@
-import { Document, Model } from "mongoose";
+import mongoose, { Document, Model } from "mongoose";
 import { logger } from "../utils/logger";
 
 /**
@@ -131,6 +131,82 @@ export class DocumentPersistence {
       throw error;
     }
   }
+
+  /**
+   * Save game with concurrency protection using nonce field.
+   * This method uses the nonce field to protect against concurrent edits on the game document.
+   * Pattern from: http://docs.mongodb.org/ecosystem/use-cases/metadata-and-asset-management/
+   *
+   * @param gameId The game document ID
+   * @param transformFunction Function that receives the game doc and returns the data to update
+   * @param maxRetries Maximum number of retry attempts (default: 10)
+   * @returns The updated game document
+   */
+  static async saveGameWithConcurrencyProtection<T extends Document>(
+    model: Model<T>,
+    gameId: string,
+    transformFunction: (doc: T) => Promise<Partial<T>>,
+    maxRetries: number = 10,
+  ): Promise<T> {
+    let retries = 0;
+
+    const attemptSave = async (): Promise<T> => {
+      // Find the current game document
+      const doc = await model.findById(gameId);
+      if (!doc) {
+        throw new Error(`Game not found: ${gameId}`);
+      }
+
+      // Get the current nonce value (for conditional update)
+      const currentNonce = (doc as any).nonce;
+
+      // Execute the transform function to get update data
+      const updateData = await transformFunction(doc);
+
+      // Generate a new nonce for this update
+      const newNonce = new mongoose.Types.ObjectId();
+      (updateData as any).nonce = newNonce;
+
+      // Conditional update: only update if nonce matches
+      const filter: any = { _id: gameId };
+      if (currentNonce) {
+        filter.nonce = currentNonce; // Only update if nonce hasn't changed
+      }
+
+      const result = await model.updateOne(filter, updateData).exec();
+
+      if (result.matchedCount === 0) {
+        // Update failed - nonce mismatch means someone else modified the document
+        if (retries < maxRetries) {
+          retries++;
+          logger.warn(`Concurrent edit detected for game ${gameId}. Retry attempt ${retries}/${maxRetries}`);
+
+          // Exponential backoff: 20ms, 40ms, 80ms, 160ms, etc.
+          const delay = 20 * Math.pow(2, retries - 1);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+
+          // Retry the save
+          return attemptSave();
+        } else {
+          throw new Error(`Failed to save game ${gameId} after ${maxRetries} retries due to concurrent modifications`);
+        }
+      }
+
+      // Success - fetch and return the updated document
+      const updatedDoc = await model.findById(gameId);
+      if (!updatedDoc) {
+        throw new Error(`Game not found after save: ${gameId}`);
+      }
+
+      if (retries > 0) {
+        logger.info(`Successfully saved game ${gameId} after ${retries} retries`);
+      }
+
+      return updatedDoc;
+    };
+
+    return attemptSave();
+  }
 }
 
 /**
@@ -141,3 +217,4 @@ export const persistGame = DocumentPersistence.saveGame;
 export const persistPlayerAction = DocumentPersistence.savePlayerAction;
 export const persistGameEvent = DocumentPersistence.saveGameEvent;
 export const persistGameState = DocumentPersistence.saveGameState;
+export const saveGameWithConcurrencyProtection = DocumentPersistence.saveGameWithConcurrencyProtection;

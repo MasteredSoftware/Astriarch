@@ -1,4 +1,4 @@
-import { PointData } from '../shapes/shapes';
+import type { PointData } from '../shapes/shapes';
 
 export enum StarShipType {
   SystemDefense = 1, //System defense ships are not equiped with hyperdrive and cannot leave the system they are in
@@ -15,7 +15,7 @@ export interface StarshipAdvantageData {
 }
 
 export interface StarshipData {
-  id: number;
+  id: string; // Planet-scoped ID in format: ${planetId}_${counter}
   type: StarShipType;
   customShipData?: StarshipAdvantageData;
   health: number;
@@ -30,6 +30,7 @@ export interface FleetData {
   destinationHexMidPoint: PointData | null;
   parsecsToDestination: number | null;
   totalTravelDistance: number | null;
+  compositionHash?: string; // Hash of sorted ship IDs for desync detection
 }
 
 export interface LastKnownFleetData {

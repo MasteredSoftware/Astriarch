@@ -39,7 +39,7 @@ import { PlayerData, PlayerType } from './model/player';
 import { ResearchType } from './model/research';
 import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } from './model/tradingCenter';
 import { Grid } from './engine/grid';
-import { PlanetaryConflictData, ResearchBoost } from './model/battle';
+import { PlanetaryConflictData, ResearchBoost, CombatResultDiff } from './model/battle';
 import { GameTools } from './utils/gameTools';
 
 // Export messaging types
@@ -50,6 +50,8 @@ export * from './engine/GameCommands';
 export { CommandProcessor } from './engine/CommandProcessor';
 export { EventApplicator } from './engine/EventApplicator';
 export { calculateRollingEventChecksum } from './engine/StateChecksum';
+// NOTE: calculateClientModelChecksum and calculateClientModelChecksumComponents are no longer exported
+// Checksums are calculated automatically in Player.advanceGameClockForPlayer and stored in ClientModelData
 
 // Export engine classes
 export { Player };
@@ -97,7 +99,7 @@ export type { PlanetProductionItemData };
 export type { CanBuildValidationResult };
 export type { FleetData };
 export type { StarshipData };
-export type { PlanetaryConflictData, ResearchBoost };
+export type { PlanetaryConflictData, ResearchBoost, CombatResultDiff };
 export type { PlanetData };
 export type { TradeData };
 export type { TradingCenterData };
@@ -188,13 +190,24 @@ export const advanceClientGameModelTime = (
   clientGameModel: ClientModelData;
   fleetsArrivingOnUnownedPlanets: FleetData[];
   notifications: ClientNotification[];
+  clientModelChecksum: string;
+  checksumComponents: { planets: string; fleets: string };
 } => {
   const result = GameController.advanceClientGameClock(clientGameModel, grid);
+
+  // NOTE: Checksums are NOT calculated in the game loop (neither client nor server)
+  // for performance reasons. Instead:
+  // - SERVER: Checksums are calculated only when broadcasting to clients
+  //   (see WebSocketServer.broadcastToAffectedPlayers and handleGameCommand)
+  // - CLIENT: Checksums are calculated only when validating received messages
+  //   (see websocket.ts GAME_STATE_UPDATE and CLIENT_EVENT handlers)
 
   return {
     clientGameModel,
     fleetsArrivingOnUnownedPlanets: result.fleetsArrivingOnUnownedPlanets,
     notifications: result.notifications,
+    clientModelChecksum: clientGameModel.clientModelChecksum || '',
+    checksumComponents: clientGameModel.checksumComponents || { planets: '', fleets: '' },
   };
 };
 

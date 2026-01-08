@@ -120,7 +120,8 @@ export class AudioService {
 				return this.tracks.get('game-over');
 			case 'InGame': {
 				const trackNames = ['in-game1', 'in-game2', 'in-game3', 'in-game4'];
-				return this.tracks.get(trackNames[this.currentInGameTrack]);
+				const trackName = trackNames[this.currentInGameTrack];
+				return trackName ? this.tracks.get(trackName) : undefined;
 			}
 			default:
 				return undefined;

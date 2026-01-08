@@ -9,6 +9,9 @@
 
 import { ClientModelData } from '../model/clientModel';
 import { TradeData, TradeType, TradingCenterResourceType } from '../model/tradingCenter';
+import { calculateFleetCompositionHash } from '../utils/stateChecksum';
+import { CombatResultDiff } from '../model/battle';
+import { FleetData } from '../model/fleet';
 import { Planet } from './planet';
 import { Fleet } from './fleet';
 import {
@@ -109,6 +112,11 @@ export class EventApplicator {
         break;
       case ClientEventType.FLEET_DEFENSE_SUCCESS:
         this.applyFleetDefenseSuccess(clientModel, event as FleetDefenseSuccessEvent);
+        break;
+
+      case ClientEventType.RESEARCH_STOLEN:
+        // Notification-only event - the research level change already happened on the server
+        // No client state changes needed
         break;
 
       default:
@@ -337,12 +345,13 @@ export class EventApplicator {
     const { planetId, planetData } = event.data;
 
     // We captured a planet - add it to our owned planets
+    // The planetData already has the merged fleet from the server
     GameModel.setPlanetOwnedByPlayer(clientModel.mainPlayer, planetId);
     clientModel.mainPlayerOwnedPlanets[planetId] = planetData;
   }
 
   private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
-    const { planetId, newOwnerId } = event.data;
+    const { planetId, newOwnerId, conflictData } = event.data;
 
     // Remove planet from our owned planets immediately
     if (clientModel.mainPlayerOwnedPlanets[planetId]) {
@@ -351,6 +360,16 @@ export class EventApplicator {
     }
     // also remove from mainPlayer's ownedPlanetIds
     clientModel.mainPlayer.ownedPlanetIds = clientModel.mainPlayer.ownedPlanetIds.filter((id) => id !== planetId);
+
+    // Set planet as explored with the winning fleet's information so we know who captured it
+    // and what fleet strength they had at the time of capture
+    Player.setPlanetExplored(
+      clientModel.mainPlayer,
+      planetId,
+      conflictData.winningFleet!,
+      clientModel.currentCycle,
+      newOwnerId,
+    );
   }
 
   private static applyFleetAttackFailed(clientModel: ClientModelData, event: FleetAttackFailedEvent): void {
@@ -376,6 +395,51 @@ export class EventApplicator {
       return;
     }
 
-    planet.planetaryFleet = conflictData.winningFleet || Fleet.generateFleet([], planet.boundingHexMidPoint);
+    // Apply combat diff to the planetary fleet instead of replacing it
+    // This preserves any ships produced between combat resolution and event delivery
+    if (conflictData.combatResultDiff) {
+      this.applyCombatDiff(planet.planetaryFleet, conflictData.combatResultDiff);
+    } else {
+      console.warn(`No combat result diff provided in FLEET_DEFENSE_SUCCESS event for planet ${planetId}`);
+    }
+  }
+
+  /**
+   * Apply a combat result diff to a fleet, modifying it in place
+   * @param fleet The fleet to modify
+   * @param diff The combat result diff to apply
+   */
+  private static applyCombatDiff(fleet: FleetData, diff: CombatResultDiff): void {
+    // Remove destroyed ships
+    if (diff.shipsDestroyed.length > 0) {
+      const destroyedSet = new Set(diff.shipsDestroyed);
+      fleet.starships = fleet.starships.filter((ship) => !destroyedSet.has(ship.id));
+    }
+
+    // Apply damage to surviving ships
+    if (diff.shipsDamaged.length > 0) {
+      const damageMap = new Map(diff.shipsDamaged.map((d) => [d.id, d.damage]));
+      for (const ship of fleet.starships) {
+        const damage = damageMap.get(ship.id);
+        if (damage !== undefined) {
+          ship.health = Math.max(0, ship.health - damage);
+        }
+      }
+    }
+
+    // Apply experience gains (future feature)
+    if (diff.shipsExperienceGained.length > 0) {
+      const experienceMap = new Map(diff.shipsExperienceGained.map((e) => [e.id, e.experience]));
+      for (const ship of fleet.starships) {
+        const experience = experienceMap.get(ship.id);
+        if (experience !== undefined) {
+          ship.experienceAmount += experience;
+        }
+      }
+    }
+
+    // Recalculate fleet hash after applying changes
+    const shipIds = fleet.starships.map((s) => s.id);
+    fleet.compositionHash = calculateFleetCompositionHash(shipIds);
   }
 }

@@ -1,9 +1,9 @@
-import { PointData } from '../shapes/shapes';
-import { ModelBase } from './model';
-import { PlanetData, PlanetType } from './planet';
-import { ColorRgbaData, PlayerData, PlayerType } from './player';
-import { ResearchData } from './research';
-import { TradeData, TradingCenterBase } from './tradingCenter';
+import type { PointData } from '../shapes/shapes';
+import type { ModelBase } from './model';
+import type { PlanetData, PlanetType } from './planet';
+import type { ColorRgbaData, PlayerData, PlayerType } from './player';
+import type { ResearchData } from './research';
+import type { TradeData, TradingCenterBase } from './tradingCenter';
 
 export type PlanetById = Record<number, PlanetData>;
 
@@ -57,10 +57,19 @@ export interface ClientModelData extends ModelBase {
   taskNotifications: TaskNotificationIndex;
 
   /**
-   * Rolling checksum of all events processed by this client.
-   * Used to detect desync - if client and server checksums diverge,
-   * we know events were missed or applied out of order.
-   * Empty string initially, then updated with each event batch.
+   * Checksum of critical client model state (planets, fleets, resources).
+   * Used to detect state desync - if client and server state checksums diverge,
+   * we know the actual game state is out of sync (different from event sequence issues).
+   * Updated after every state change.
    */
-  lastEventChecksum?: string;
+  clientModelChecksum?: string;
+
+  /**
+   * Component checksums for granular desync debugging.
+   * Allows pinpointing exactly which part of the state diverged.
+   */
+  checksumComponents?: {
+    planets: string; // Owned planet IDs
+    fleets: string; // All fleets (in transit + planetary)
+  };
 }

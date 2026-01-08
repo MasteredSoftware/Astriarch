@@ -23,6 +23,7 @@ export interface IGame extends Document {
   gameOptions: ServerGameOptions; // Game configuration options
   createdAt: Date;
   lastActivity: Date;
+  nonce?: mongoose.Types.ObjectId; // For optimistic locking
 }
 
 const PlayerSchema = new Schema<IPlayer>({
@@ -36,6 +37,10 @@ const PlayerSchema = new Schema<IPlayer>({
 });
 
 const GameSchema = new Schema<IGame>({
+  nonce: {
+    type: Schema.Types.ObjectId,
+    required: false, // Will be generated on first save for backward compatibility
+  },
   name: {
     type: String,
   },

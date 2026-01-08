@@ -24,7 +24,6 @@ export function createDrawnFleet(fleetData: FleetData, gameModel: ClientModelDat
 export class DrawnFleet {
 	public group: Konva.Group;
 	private fleetData: FleetData;
-	private gameModel: ClientModelData;
 	private owner: PlayerData | null = null;
 
 	// Visual elements
@@ -38,7 +37,6 @@ export class DrawnFleet {
 	constructor(fleetData: FleetData, gameModel: ClientModelData) {
 		this.group = new Konva.Group();
 		this.fleetData = fleetData;
-		this.gameModel = gameModel;
 
 		this.createVisualElements();
 		this.update(gameModel);
@@ -136,8 +134,6 @@ export class DrawnFleet {
 		// Travel line will be created when needed in updateTravelLine
 	}
 	public update(clientGameModel: ClientModelData) {
-		this.gameModel = clientGameModel;
-
 		// Find the owner of this fleet by looking through fleetsInTransit
 		this.owner = null;
 
@@ -329,14 +325,6 @@ export class DrawnFleet {
 		} else {
 			this.hideAllElements();
 		}
-	}
-
-	private showAllElements() {
-		if (this.travelLine) {
-			this.travelLine.show();
-		}
-		this.fleetIcon.visible(true);
-		this.etaText.visible(true);
 	}
 
 	private hideAllElements() {

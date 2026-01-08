@@ -5,9 +5,10 @@ import * as signature from "cookie-signature";
 import config from "config";
 import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
+import { ServerGameModel } from "../models/Game";
 import { ChatMessageModel, IChatMessage } from "../models/ChatMessage";
 import { GameController } from "../controllers/GameControllerWebSocket";
-import { persistGame } from "../database/DocumentPersistence";
+import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { v4 as uuidv4 } from "uuid";
 import {
   MESSAGE_TYPE,
@@ -45,6 +46,7 @@ import {
   GameEndConditions,
   type ClientEvent,
   type ClientNotification,
+  calculateRollingEventChecksum,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -187,15 +189,16 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
-    // IMPORTANT: Advance game time BEFORE processing game commands or periodic updates
-    // This ensures the server's currentCycle is up-to-date and all players see consistent state
+    // IMPORTANT: Advance game time for periodic updates
     // - For ADVANCE_GAME_TIME: Periodic updates every 10s to process AI actions
-    // - For GAME_COMMAND: Ensures resources/state are current before command validation
+    // - For GAME_COMMAND: Time advancement happens inside the command handler atomically
+    // Concurrency protection is now handled at the database level via optimistic locking
     if (this.isGameTimeAdvanceRequired(message.type) && client.gameId) {
       await this.advanceGameTimeAndBroadcastEvents(client.gameId);
     }
 
     // If this is a full state sync request (desync recovery), advance time and broadcast full state
+    // Concurrency protection is now handled at the database level via optimistic locking
     if (this.isGameSyncRequired(message.type) && client.gameId) {
       await this.advanceGameTimeForSync(client.gameId);
     }
@@ -334,116 +337,81 @@ export class WebSocketServer {
   }
 
   private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
-    // Advance game time for periodic updates AND all game commands
-    // This ensures the server's currentCycle is up-to-date before processing any command
-    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME || messageType === MESSAGE_TYPE.GAME_COMMAND;
+    // Advance game time for periodic updates only
+    // Game commands handle their own time advancement internally
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME;
+  }
+
+  /**
+   * Handles the result of a game state update by broadcasting events and handling game over conditions.
+   * This is shared logic used by both time advancement and command processing.
+   */
+  private async handleGameStateUpdateResult(
+    gameId: string,
+    result: Awaited<ReturnType<typeof GameController.advanceGameStateWithOptionalCommand>>,
+    broadcastFullState: boolean = false,
+  ): Promise<void> {
+    if (!result.success) {
+      logger.error(`Failed to update game state for ${gameId}: ${result.error}`);
+      return;
+    }
+
+    const eventsToSend = result.events || [];
+    const destroyedPlayers = result.destroyedPlayers || [];
+    const gameEndConditions = result.gameEndConditions;
+    const currentCycle = result.currentCycle || 0;
+    const modelData = result.gameData;
+
+    // Side effects happen ONLY AFTER successful save
+    if (eventsToSend.length > 0) {
+      logger.info(`Broadcasting ${eventsToSend.length} events for game ${gameId}`);
+      await this.broadcastToAffectedPlayers(gameId, eventsToSend, currentCycle, "events", modelData!);
+    }
+
+    // Handle game over conditions AFTER successful save
+    if (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded) {
+      await this.handleGameOverConditions(
+        gameId,
+        {
+          destroyedPlayers,
+          gameEndConditions: gameEndConditions!,
+          events: eventsToSend,
+          notifications: [],
+        },
+        result.game!,
+      );
+    }
+
+    // Broadcast full game state for desync recovery (SYNC_STATE messages)
+    if (broadcastFullState) {
+      await this.broadcastGameStateUpdate(gameId);
+    }
+  }
+
+  /**
+   * Advances game time and optionally broadcasts full game state for desync recovery.
+   * This is now a thin wrapper around the shared game state update logic.
+   * @param gameId - The game to advance
+   * @param broadcastFullState - If true, sends complete game state to all players (for SYNC_STATE)
+   */
+  private async advanceGameTime(gameId: string, broadcastFullState: boolean = false): Promise<void> {
+    try {
+      // Use the shared method to advance game time without processing a command
+      const result = await GameController.advanceGameStateWithOptionalCommand(gameId);
+
+      // Handle broadcasting and game over conditions
+      await this.handleGameStateUpdateResult(gameId, result, broadcastFullState);
+    } catch (error) {
+      logger.error("Error advancing game time:", error);
+    }
   }
 
   private async advanceGameTimeAndBroadcastEvents(gameId: string): Promise<void> {
-    try {
-      const game = await Game.findById(gameId);
-      if (!game || game.status !== "in_progress") {
-        return;
-      }
-
-      // Use the engine's advanceGameModelTime function which handles time properly
-      // This will advance game time and process any AI/computer player actions
-      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-      const result = advanceGameModelTime(gameModelData);
-
-      // Update the game state in the database
-      game.gameState = result.gameModel.modelData;
-
-      // Broadcast time-based events and notifications to affected players (NOT full state)
-      const hasEvents = result.events && result.events.length > 0;
-      const hasNotifications = result.notifications && result.notifications.length > 0;
-
-      if (hasEvents || hasNotifications) {
-        logger.info(
-          `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
-        );
-        await this.broadcastTimeBasedEvents(
-          gameId,
-          result.events || [],
-          result.notifications || [],
-          result.gameModel.modelData.currentCycle,
-        );
-      }
-
-      // Check for destroyed players and game over conditions
-      if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
-        await this.handleGameOverConditions(
-          gameId,
-          {
-            destroyedPlayers: result.destroyedPlayers,
-            gameEndConditions: result.gameEndConditions,
-            events: result.events,
-            notifications: result.notifications,
-          },
-          game,
-        );
-      }
-
-      // Save the updated game state with automatic Mixed field handling
-      await persistGame(game);
-    } catch (error) {
-      logger.error("Error advancing game time:", error);
-    }
+    await this.advanceGameTime(gameId, false);
   }
 
   private async advanceGameTimeForSync(gameId: string): Promise<void> {
-    try {
-      const game = await Game.findById(gameId);
-      if (!game || game.status !== "in_progress") {
-        return;
-      }
-
-      // Use the engine's advanceGameModelTime function which handles time properly
-      // This will advance game time and process any AI/computer player actions
-      const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-      const result = advanceGameModelTime(gameModelData);
-
-      // Update the game state in the database
-      game.gameState = result.gameModel.modelData;
-
-      // Broadcast time-based events and notifications to affected players
-      const hasEvents = result.events && result.events.length > 0;
-      const hasNotifications = result.notifications && result.notifications.length > 0;
-
-      if (hasEvents || hasNotifications) {
-        logger.info(
-          `Generated ${result.events?.length || 0} events and ${result.notifications?.length || 0} notifications during game advancement`,
-        );
-        await this.broadcastTimeBasedEvents(
-          gameId,
-          result.events || [],
-          result.notifications || [],
-          result.gameModel.modelData.currentCycle,
-        );
-      }
-
-      // Check for destroyed players and game over conditions
-      if (result.destroyedPlayers.length > 0 || result.gameEndConditions.gameEnded) {
-        await this.handleGameOverConditions(
-          gameId,
-          {
-            destroyedPlayers: result.destroyedPlayers,
-            gameEndConditions: result.gameEndConditions,
-            events: result.events,
-            notifications: result.notifications,
-          },
-          game,
-        );
-      }
-
-      // Save the updated game state with automatic Mixed field handling
-      await persistGame(game);
-
-      // Broadcast the updated game state to all connected players
-      await this.broadcastGameStateUpdate(gameId);
-    } catch (error) {
-      logger.error("Error advancing game time:", error);
-    }
+    await this.advanceGameTime(gameId, true);
   }
 
   private async broadcastGameStateUpdate(gameId: string): Promise<void> {
@@ -473,12 +441,6 @@ export class WebSocketServer {
 
         if (client?.playerId && clientId) {
           const clientGameModel = constructClientGameModel(game.gameState as any, client.playerId);
-
-          // Include the current rolling checksum in the synced state
-          const currentChecksum = GameController.getPlayerEventChecksum(client.playerId);
-          if (currentChecksum) {
-            clientGameModel.lastEventChecksum = currentChecksum;
-          }
 
           // Debug: Log build queue data for the first planet
           const firstPlanetId = Object.keys(clientGameModel.mainPlayerOwnedPlanets)[0];
@@ -980,7 +942,7 @@ export class WebSocketServer {
       // Broadcast the new speed to all players in the game (including the requester)
       const speedUpdateMessage = new Message(MESSAGE_TYPE.GAME_SPEED_ADJUSTMENT, {
         newSpeed,
-        playerId: result.gameData?.playerId,
+        playerId: client.playerId,
       });
 
       // Send to the requester
@@ -1001,8 +963,9 @@ export class WebSocketServer {
     if (!client) return;
 
     try {
-      // Host periodically sends this to advance game time
-      // We advance time and broadcast events (NOT full state)
+      // NOTE: Game time has already been advanced by advanceGameTimeAndBroadcastEvents()
+      // which is called before this handler (see processMessage method)
+      // This handler just sends a success response back to the host
       logger.debug(`ADVANCE_GAME_TIME received from host for game ${client.gameId}`);
 
       const response = new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, {
@@ -1048,6 +1011,7 @@ export class WebSocketServer {
       const { command, gameId } = payload;
 
       // Process the command using the new architecture
+      // This now handles time advancement, command processing, and checksum calculation atomically
       const result = await GameController.handleGameCommand(client.sessionId, gameId, command);
 
       if (!result.success) {
@@ -1055,14 +1019,8 @@ export class WebSocketServer {
         return;
       }
 
-      // Broadcast events to affected players only (not all players)
-      await this.broadcastToAffectedPlayers(
-        gameId,
-        result.events || [],
-        result.currentCycle!,
-        result.checksum,
-        "command events",
-      );
+      // Handle broadcasting and game over conditions
+      await this.handleGameStateUpdateResult(gameId, result);
 
       logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
@@ -1218,7 +1176,7 @@ export class WebSocketServer {
 
       // Use engine to resign player - this marks them as destroyed and clears their owned planets/fleets
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-      const player = gameModelData.modelData.players.find((p) => p.id === client.playerId);
+      const player = gameModelData.modelData.players.find((p: PlayerData) => p.id === client.playerId);
       if (!player) {
         return;
       }
@@ -1238,7 +1196,6 @@ export class WebSocketServer {
         winningSerializablePlayer: null,
         playerWon: false,
         score,
-        endOfTurnMessages: [],
         gameData: null, // No game data needed for destroyed players
       };
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.GAME_OVER, payload));
@@ -1322,13 +1279,14 @@ export class WebSocketServer {
   /**
    * Broadcasts events to affected players only.
    * Events are grouped by player based on their affectedPlayerIds array.
+   * NOTE: Checksums must already be calculated and saved in the transaction before calling this method.
    */
   private async broadcastToAffectedPlayers(
     gameId: string,
     events: ClientEvent[],
     currentCycle: number,
-    checksum?: string,
     eventType: string = "events",
+    modelData: ModelData,
   ): Promise<void> {
     try {
       if (!events || events.length === 0) {
@@ -1339,7 +1297,10 @@ export class WebSocketServer {
       const eventsByPlayer = new Map<string, ClientEvent[]>();
 
       for (const event of events) {
-        for (const playerId of event.affectedPlayerIds) {
+        // Use Set to deduplicate player IDs in case an event lists the same player multiple times
+        const uniquePlayerIds = new Set(event.affectedPlayerIds);
+
+        for (const playerId of uniquePlayerIds) {
           if (!eventsByPlayer.has(playerId)) {
             eventsByPlayer.set(playerId, []);
           }
@@ -1367,11 +1328,29 @@ export class WebSocketServer {
           continue;
         }
 
+        // Retrieve pre-calculated checksums from modelData (already persisted in transaction)
+        let checksum = "";
+        let playerStateChecksum: string | undefined;
+        let playerChecksumComponents: { planets: string; fleets: string } | undefined;
+
+        if (modelData) {
+          const clientModel = constructClientGameModel(modelData, playerId);
+
+          // Get the stored rolling checksum (already calculated and saved in transaction)
+          checksum = clientModel.mainPlayer.lastEventChecksum || "";
+
+          Player.calculateAndStoreChecksums(clientModel);
+          playerStateChecksum = clientModel.clientModelChecksum;
+          playerChecksumComponents = clientModel.checksumComponents;
+        }
+
         // Send CLIENT_EVENT message with the events for this player
         const eventMessage = new Message(MESSAGE_TYPE.CLIENT_EVENT, {
           events: playerEvents,
           currentCycle,
           ...(checksum && { stateChecksum: checksum }),
+          ...(playerStateChecksum && { clientModelChecksum: playerStateChecksum }),
+          ...(playerChecksumComponents && { checksumComponents: playerChecksumComponents }),
         });
 
         const clientId = this.getClientIdBySessionId(targetClient.sessionId);
@@ -1380,6 +1359,9 @@ export class WebSocketServer {
           logger.info(`Sent ${playerEvents.length} ${eventType} to player ${playerId}`);
         }
       }
+
+      // NOTE: Checksums are now calculated and saved atomically within the command transaction
+      // No separate save needed here - checksums are already persisted with the game state
     } catch (error) {
       logger.error(`Error broadcasting ${eventType}:`, error);
     }
@@ -1390,9 +1372,11 @@ export class WebSocketServer {
     events: ClientEvent[],
     notifications: ClientNotification[],
     currentCycle: number,
+    modelData: ModelData,
   ): Promise<void> {
     // Clients generate notifications locally, so we only broadcast events
-    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, undefined, "time-based events");
+    // Checksums are retrieved from stored values (calculated during time advancement)
+    await this.broadcastToAffectedPlayers(gameId, events, currentCycle, "time-based events", modelData);
   }
 
   private broadcastToOtherPlayersInGame(game: IGame, sessionId: string, message: Message<any>): void {
@@ -1536,11 +1520,8 @@ export class WebSocketServer {
     try {
       logger.info(`Handling game over conditions for game ${gameId}`);
 
-      // Mark game as completed if it has ended
-      if (result.gameEndConditions.gameEnded) {
-        game.status = "completed";
-        logger.info(`Game ${gameId} has ended`);
-      }
+      // Note: Game status is now updated atomically in advanceGameTime transaction
+      // The 'game' object passed here already has status='completed' if game ended
 
       // Handle destroyed players
       for (const destroyedPlayer of result.destroyedPlayers) {
@@ -1654,7 +1635,7 @@ export class WebSocketServer {
 
         // Calculate final score
         const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-        const player = gameModelData.modelData.players.find((p) => p.id === client.playerId);
+        const player = gameModelData.modelData.players.find((p: PlayerData) => p.id === client.playerId);
         if (!player) {
           continue;
         }

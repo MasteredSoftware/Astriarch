@@ -82,11 +82,15 @@ function createActivityStore() {
 				clientNotification,
 				// Extract planet info if available from event/notification data
 				planetId:
-					((clientEvent?.data as Record<string, unknown>)?.planetId as number | undefined) ||
-					((clientNotification?.data as Record<string, unknown>)?.planetId as number | undefined),
+					((clientEvent?.data as Record<string, unknown>)?.['planetId'] as number | undefined) ||
+					((clientNotification?.data as Record<string, unknown>)?.['planetId'] as
+						| number
+						| undefined),
 				planetName:
-					((clientEvent?.data as Record<string, unknown>)?.planetName as string | undefined) ||
-					((clientNotification?.data as Record<string, unknown>)?.planetName as string | undefined),
+					((clientEvent?.data as Record<string, unknown>)?.['planetName'] as string | undefined) ||
+					((clientNotification?.data as Record<string, unknown>)?.['planetName'] as
+						| string
+						| undefined),
 				// Store conflict data if provided (for battle events)
 				conflictData
 			};

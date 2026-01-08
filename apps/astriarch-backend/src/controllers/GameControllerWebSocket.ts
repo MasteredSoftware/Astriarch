@@ -2,7 +2,7 @@ import config from "config";
 import { ServerGameModel, IGame, IPlayer } from "../models/Game";
 import { SessionModel } from "../models/Session";
 import { logger } from "../utils/logger";
-import { persistGame } from "../database/DocumentPersistence";
+import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 import {
@@ -20,6 +20,10 @@ import {
   ClientEventType,
   CommandProcessor,
   calculateRollingEventChecksum,
+  constructClientGameModel,
+  advanceGameModelTime,
+  type PlayerData,
+  type GameEndConditions,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -70,6 +74,13 @@ export interface ResumeGameData {
   gameId: string;
 }
 
+export interface DestroyedPlayer {
+  id: string;
+  type: engine.PlayerType;
+  name: string;
+  destroyed: boolean;
+}
+
 export interface GameResult {
   success: boolean;
   error?: string;
@@ -77,12 +88,11 @@ export interface GameResult {
   game?: IGame;
   playerPosition?: number;
   playerId?: string;
-  gameData?: any;
+  gameData?: engine.ModelData;
   player?: IPlayer;
   // End turn specific properties
   allPlayersFinished?: boolean;
-  endOfTurnMessages?: any[];
-  destroyedClientPlayers?: any[];
+  destroyedClientPlayers?: DestroyedPlayer[];
 }
 
 /**
@@ -90,9 +100,6 @@ export interface GameResult {
  * This provides WebSocket-compatible methods for game management
  */
 export class GameController {
-  // Track rolling event checksums per player for desync detection
-  private static playerEventChecksums = new Map<string, string>();
-
   // ==========================================
   // Game Management Methods (like old app.js)
   // ==========================================
@@ -370,7 +377,7 @@ export class GameController {
 
       return {
         success: true,
-        gameData: game.gameState,
+        gameData: game.gameState as engine.ModelData,
         player,
       };
     } catch (error) {
@@ -539,7 +546,7 @@ export class GameController {
       return {
         success: true,
         game,
-        gameData: { newSpeed, playerId: player.Id },
+        gameData: game.gameState as engine.ModelData,
       };
     } catch (error) {
       logger.error("Error adjusting game speed:", error);
@@ -626,6 +633,143 @@ export class GameController {
   // ==========================================
 
   /**
+   * Core game state update logic that advances time and optionally processes a command.
+   * This method is used by both time advancement and command processing paths to avoid duplication.
+   *
+   * @param gameId - ID of the game
+   * @param options - Optional parameters for command processing
+   * @returns GameResult with events, destroyed players, and game end conditions
+   */
+  static async advanceGameStateWithOptionalCommand(
+    gameId: string,
+    options?: {
+      sessionId?: string;
+      command?: GameCommand;
+    },
+  ): Promise<
+    GameResult & {
+      events?: ClientEvent[];
+      currentCycle?: number;
+      destroyedPlayers?: engine.PlayerData[];
+      gameEndConditions?: engine.GameEndConditions;
+    }
+  > {
+    try {
+      // Variables to store results from the transform function
+      let allEvents: ClientEvent[] = [];
+      let modelData: engine.ModelData | null = null;
+      let playerName: string = "";
+      let commandError: string | null = null;
+      let destroyedPlayers: PlayerData[] = [];
+      let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
+
+      // Use concurrency protection to safely update game state
+      const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
+        // If a command is being processed, validate the player
+        if (options?.command && options?.sessionId) {
+          const player = game.players?.find((p) => p.sessionId === options.sessionId);
+          if (!player) {
+            commandError = "Player not found in game";
+            return {}; // No changes
+          }
+          playerName = player.name;
+        }
+
+        if (game.status !== "in_progress") {
+          commandError = "Game is not in progress";
+          return {}; // No changes
+        }
+
+        // STEP 1: Advance game time (always happens)
+        const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+        const timeAdvanceResult = advanceGameModelTime(gameModelData);
+
+        // Store time-based events
+        const timeBasedEvents = timeAdvanceResult.events || [];
+        destroyedPlayers = timeAdvanceResult.destroyedPlayers;
+        gameEndConditions = timeAdvanceResult.gameEndConditions;
+
+        // Start with time-based events
+        allEvents = [...timeBasedEvents];
+
+        // STEP 2: Process command if provided
+        if (options?.command) {
+          const commandResult = CommandProcessor.processCommand(gameModelData, options.command);
+
+          if (!commandResult.success) {
+            commandError = commandResult.error || "Command processing failed";
+            return {}; // No changes
+          }
+
+          // Add command events to the list
+          const commandEvents = commandResult.events || [];
+          allEvents = [...allEvents, ...commandEvents];
+        }
+
+        // STEP 3: Calculate and store rolling event checksums for all affected players
+        const affectedPlayerIds = new Set<string>();
+        for (const event of allEvents) {
+          for (const playerId of event.affectedPlayerIds) {
+            affectedPlayerIds.add(playerId as string);
+          }
+        }
+
+        for (const playerId of affectedPlayerIds) {
+          const playerEvents = allEvents.filter((e) => e.affectedPlayerIds.includes(playerId));
+          const gamePlayer = gameModelData.modelData.players.find((p: PlayerData) => p.id === playerId);
+          if (gamePlayer && playerEvents.length > 0) {
+            const previousChecksum = gamePlayer.lastEventChecksum || "";
+            gamePlayer.lastEventChecksum = calculateRollingEventChecksum(playerEvents, previousChecksum);
+          }
+        }
+
+        modelData = gameModelData.modelData;
+
+        // Return ONLY the data to update in the database (single atomic save)
+        return {
+          gameState: gameModelData.modelData,
+          lastActivity: new Date(),
+          ...(timeAdvanceResult.gameEndConditions.gameEnded && { status: "completed" as const }),
+        };
+      });
+
+      // Check if there was an error during command processing
+      if (commandError) {
+        return {
+          success: false,
+          error: commandError,
+        };
+      }
+
+      // Log appropriate message
+      if (options?.command) {
+        logger.info(
+          `Processed ${options.command.type} command for player ${playerName} in game ${gameId} (${allEvents.length} total events)`,
+        );
+      } else {
+        logger.info(`Advanced game time for game ${gameId} (${allEvents.length} events generated)`);
+      }
+
+      return {
+        success: true,
+        game: updatedGame,
+        gameData: modelData!,
+        events: allEvents,
+        currentCycle: modelData!.currentCycle || 0,
+        destroyedPlayers,
+        gameEndConditions,
+      };
+    } catch (error) {
+      const errorContext = options?.command ? `command ${options.command.type}` : "time advancement";
+      logger.error(`advanceGameStateWithOptionalCommand error for ${errorContext}:`, error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    }
+  }
+
+  /**
    * Handle a game command using the new event-driven architecture
    *
    * @param sessionId - Session ID of the player issuing the command
@@ -637,85 +781,15 @@ export class GameController {
     sessionId: string,
     gameId: string,
     command: GameCommand,
-  ): Promise<GameResult & { checksum?: string; events?: ClientEvent[]; currentCycle?: number }> {
-    try {
-      // Find the game
-      const game = await ServerGameModel.findById(gameId);
-      if (!game) {
-        return { success: false, error: "Game not found" };
-      }
-
-      // Find player by sessionId
-      const player = game.players?.find((p) => p.sessionId === sessionId);
-      if (!player) {
-        return { success: false, error: "Player not found in game" };
-      }
-
-      // Get the current game state
-      // NOTE: Game time is advanced at the WebSocket layer (before this handler is called)
-      // via advanceGameTimeAndBroadcastEvents when isGameTimeAdvanceRequired returns true
-      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
-
-      // Process command using CommandProcessor - this validates AND mutates the game state
-      const commandResult = CommandProcessor.processCommand(gameModelData, command);
-
-      if (!commandResult.success) {
-        return {
-          success: false,
-          error: commandResult.error || "Command processing failed",
-        };
-      }
-
-      // CommandProcessor has already mutated the game state, just save it
-      game.gameState = gameModelData.modelData;
-      game.lastActivity = new Date();
-      await persistGame(game);
-
-      const events = commandResult.events;
-
-      // Calculate rolling event checksum for desync detection
-      const playerId = command.playerId;
-      const previousChecksum = this.playerEventChecksums.get(playerId) || "";
-      const newChecksum = await calculateRollingEventChecksum(events, previousChecksum);
-
-      // Store the new checksum for next time
-      this.playerEventChecksums.set(playerId, newChecksum);
-
-      logger.info(`Processed ${command.type} command for player ${player.name} in game ${gameId}`);
-
-      return {
-        success: true,
-        game,
-        gameData: gameModelData.modelData,
-        events,
-        checksum: newChecksum,
-        currentCycle: gameModelData.modelData.currentCycle || 0,
-      };
-    } catch (error) {
-      logger.error(`handleGameCommand error for ${command.type}:`, error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      };
+  ): Promise<
+    GameResult & {
+      events?: ClientEvent[];
+      currentCycle?: number;
+      destroyedPlayers?: engine.PlayerData[];
+      gameEndConditions?: engine.GameEndConditions;
     }
-  }
-
-  // ==========================================
-  // Event Checksum Management
-  // ==========================================
-
-  /**
-   * Get the current rolling event checksum for a player
-   */
-  static getPlayerEventChecksum(playerId: string): string | undefined {
-    return this.playerEventChecksums.get(playerId);
-  }
-
-  /**
-   * Reset event checksum for a player (useful when they rejoin)
-   */
-  static resetPlayerEventChecksum(playerId: string): void {
-    this.playerEventChecksums.delete(playerId);
+  > {
+    return this.advanceGameStateWithOptionalCommand(gameId, { sessionId, command });
   }
 
   // ==========================================

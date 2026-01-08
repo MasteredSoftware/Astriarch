@@ -1,6 +1,6 @@
-import { PlanetData } from './planet';
-import { PlayerData } from './player';
-import { TradingCenterData } from './tradingCenter';
+import type { PlanetData } from './planet';
+import type { PlayerData } from './player';
+import type { TradingCenterData } from './tradingCenter';
 
 export enum GameSpeed {
   SLOWEST = 1,

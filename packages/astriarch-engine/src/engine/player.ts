@@ -4,6 +4,7 @@ import { FleetData, StarshipAdvantageData } from '../model/fleet';
 import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Fleet } from './fleet';
+import { calculateClientModelChecksum, calculateClientModelChecksumComponents } from '../utils/stateChecksum';
 import {
   ClientEvent,
   ClientNotification,
@@ -48,7 +49,7 @@ export class Player {
       fleetsInTransit: [],
       destroyed: false,
       nextFleetId: 1,
-      nextStarshipId: 1,
+      lastEventChecksum: '',
     };
   }
 
@@ -73,6 +74,9 @@ export class Player {
   ) {
     const { defenders, scouts, destroyers, cruisers, battleships, spaceplatforms } =
       Fleet.countStarshipsByType(planetaryFleet);
+    // Note: We create a synthetic planet object just for ID generation
+    // This is for display purposes only (last known fleet strength)
+    const syntheticPlanet = { id: planetId, nextShipId: 1 } as PlanetData;
     const lastKnownFleet = Fleet.generateFleetWithShipCount(
       defenders,
       scouts,
@@ -81,6 +85,7 @@ export class Player {
       battleships,
       spaceplatforms,
       planetaryFleet.locationHexMidPoint,
+      syntheticPlanet,
     );
     const lastKnownFleetData = Fleet.constructLastKnownFleet(cycle, lastKnownFleet, lastKnownOwnerId);
     p.lastKnownPlanetFleetStrength[planetId] = lastKnownFleetData;
@@ -120,7 +125,25 @@ export class Player {
 
     // moveShips (client must notify the server when it thinks fleets should land on unowned planets)
     const fleetsArrivingOnUnownedPlanets = this.moveShips(data);
+
+    // NOTE: Checksums are NOT calculated here in the game loop for performance reasons.
+    // They are calculated only when broadcasting to clients (see WebSocketServer.broadcastToAffectedPlayers)
+
     return { fleetsArrivingOnUnownedPlanets, events, notifications };
+  }
+
+  /**
+   * Calculate and store checksums in the client model.
+   * This should be called ONLY when broadcasting state to clients, not in the game loop.
+   * Public so backend can call it when needed.
+   */
+  public static calculateAndStoreChecksums(clientModel: ClientModelData): void {
+    const stateChecksum = calculateClientModelChecksum(clientModel);
+    const checksumComponents = calculateClientModelChecksumComponents(clientModel);
+
+    // Store in the model
+    clientModel.clientModelChecksum = stateChecksum;
+    clientModel.checksumComponents = checksumComponents;
   }
 
   public static generatePlayerResources(data: AdvanceGameClockForPlayerData) {

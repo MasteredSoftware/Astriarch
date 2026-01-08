@@ -634,7 +634,14 @@
 
 	<!-- Notifications Panel -->
 	{#if $notifications.length > 0}
-		<div class="fixed right-4 bottom-4 z-20 max-w-sm space-y-2">
+		<div
+			class="fixed z-20 max-w-sm space-y-2"
+			class:right-4={$layoutMode === 'portrait' || multiplayerState?.currentView !== 'game'}
+			class:bottom-4={true}
+			style={$layoutMode === 'landscape' && multiplayerState?.currentView === 'game'
+				? `right: calc(600px + 1rem); bottom: 1rem;`
+				: undefined}
+		>
 			{#each $notifications.slice(-5) as notification, i (notification.id)}
 				<NotificationItem
 					{notification}
@@ -644,7 +651,14 @@
 		</div>
 	{:else}
 		<!-- Debug: Show when no notifications -->
-		<div class="fixed right-4 bottom-4 z-20 text-xs text-gray-400">
+		<div
+			class="fixed z-20 text-xs text-gray-400"
+			class:right-4={$layoutMode === 'portrait' || multiplayerState?.currentView !== 'game'}
+			class:bottom-4={true}
+			style={$layoutMode === 'landscape' && multiplayerState?.currentView === 'game'
+				? `right: calc(600px + 1rem); bottom: 1rem;`
+				: undefined}
+		>
 			No notifications ({$notifications.length})
 		</div>
 	{/if}
