@@ -496,31 +496,8 @@ export class Fleet {
     landingFleet.destinationHexMidPoint = null;
     landingFleet.parsecsToDestination = 0;
 
-    console.log(
-      `🚢 Fleet landing: Merging ${landingFleet.starships.length} ships (fleet ID ${landingFleet.id}) into planetary fleet (${planetaryFleet.starships.length} ships)`,
-    );
-    console.log(
-      `  Landing fleet ship IDs: ${landingFleet.starships
-        .map((s) => s.id)
-        .sort()
-        .join(', ')}`,
-    );
-    console.log(
-      `  Planetary fleet ship IDs before merge: ${planetaryFleet.starships
-        .map((s) => s.id)
-        .sort()
-        .join(', ')}`,
-    );
-
     // merge fleet
     planetaryFleet.starships = planetaryFleet.starships.concat(landingFleet.starships);
-
-    console.log(
-      `  Planetary fleet ship IDs after merge: ${planetaryFleet.starships
-        .map((s) => s.id)
-        .sort()
-        .join(', ')}`,
-    );
   };
 
   /**
