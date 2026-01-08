@@ -1215,7 +1215,6 @@ export class WebSocketServer {
         winningSerializablePlayer: null,
         playerWon: false,
         score,
-        endOfTurnMessages: [],
         gameData: null, // No game data needed for destroyed players
       };
       this.sendToClient(clientId, new Message(MESSAGE_TYPE.GAME_OVER, payload));

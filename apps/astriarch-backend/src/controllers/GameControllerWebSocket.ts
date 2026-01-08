@@ -2,7 +2,7 @@ import config from "config";
 import { ServerGameModel, IGame, IPlayer } from "../models/Game";
 import { SessionModel } from "../models/Session";
 import { logger } from "../utils/logger";
-import { persistGame } from "../database/DocumentPersistence";
+import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 import {
@@ -71,6 +71,13 @@ export interface ResumeGameData {
   gameId: string;
 }
 
+export interface DestroyedPlayer {
+  id: string;
+  type: engine.PlayerType;
+  name: string;
+  destroyed: boolean;
+}
+
 export interface GameResult {
   success: boolean;
   error?: string;
@@ -82,8 +89,7 @@ export interface GameResult {
   player?: IPlayer;
   // End turn specific properties
   allPlayersFinished?: boolean;
-  endOfTurnMessages?: any[]; //TODO: type this properly
-  destroyedClientPlayers?: any[]; //TODO: type this properly
+  destroyedClientPlayers?: DestroyedPlayer[];
 }
 
 /**
@@ -637,51 +643,66 @@ export class GameController {
     command: GameCommand,
   ): Promise<GameResult & { events?: ClientEvent[]; currentCycle?: number }> {
     try {
-      // Find the game
-      const game = await ServerGameModel.findById(gameId);
-      if (!game) {
-        return { success: false, error: "Game not found" };
-      }
+      // Variables to store results from the transform function
+      let events: ClientEvent[] = [];
+      let modelData: engine.ModelData | null = null;
+      let playerName: string = "";
+      let commandError: string | null = null;
 
-      // Find player by sessionId
-      const player = game.players?.find((p) => p.sessionId === sessionId);
-      if (!player) {
-        return { success: false, error: "Player not found in game" };
-      }
+      // Use concurrency protection to safely update game state
+      const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
+        // Find player by sessionId
+        const player = game.players?.find((p) => p.sessionId === sessionId);
+        if (!player) {
+          commandError = "Player not found in game";
+          return {}; // No changes
+        }
 
-      // Get the current game state
-      // NOTE: Game time is advanced at the WebSocket layer (before this handler is called)
-      // via advanceGameTimeAndBroadcastEvents when isGameTimeAdvanceRequired returns true
-      const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+        playerName = player.name;
 
-      // Process command using CommandProcessor - this validates AND mutates the game state
-      const commandResult = CommandProcessor.processCommand(gameModelData, command);
+        // Get the current game state
+        // NOTE: Game time is advanced at the WebSocket layer (before this handler is called)
+        // via advanceGameTimeAndBroadcastEvents when isGameTimeAdvanceRequired returns true
+        const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
 
-      if (!commandResult.success) {
+        // Process command using CommandProcessor - this validates AND mutates the game state
+        const commandResult = CommandProcessor.processCommand(gameModelData, command);
+
+        if (!commandResult.success) {
+          commandError = commandResult.error || "Command processing failed";
+          return {}; // No changes
+        }
+
+        // Store events and model data for response
+        events = commandResult.events || [];
+        modelData = gameModelData.modelData;
+
+        // Return ONLY the data to update in the database
+        return {
+          gameState: gameModelData.modelData,
+          lastActivity: new Date(),
+        };
+      });
+
+      // Check if there was an error during command processing
+      if (commandError) {
         return {
           success: false,
-          error: commandResult.error || "Command processing failed",
+          error: commandError,
         };
       }
-
-      const events = commandResult.events;
 
       // NOTE: Rolling event checksums are calculated per-player in broadcastToAffectedPlayers
       // for both command events and time-based events, ensuring all affected players get updated
 
-      // CommandProcessor has already mutated the game state, just save it
-      game.gameState = gameModelData.modelData;
-      game.lastActivity = new Date();
-      await persistGame(game);
-
-      logger.info(`Processed ${command.type} command for player ${player.name} in game ${gameId}`);
+      logger.info(`Processed ${command.type} command for player ${playerName} in game ${gameId}`);
 
       return {
         success: true,
-        game,
-        gameData: gameModelData.modelData,
+        game: updatedGame,
+        gameData: modelData!,
         events,
-        currentCycle: gameModelData.modelData.currentCycle || 0,
+        currentCycle: modelData!.currentCycle || 0,
       } as GameResult & {
         events?: ClientEvent[];
         currentCycle?: number;

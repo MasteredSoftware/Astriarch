@@ -178,16 +178,6 @@ export interface IGameStateUpdatePayload {
   checksumComponents?: { planets: string; fleets: string }; // Component checksums for debugging
 }
 
-export interface IEventNotificationsPayload {
-  events: {
-    playerId: string;
-    type: number; // EventNotificationType
-    message: string;
-    planet?: unknown; // PlanetData
-    data?: unknown; // PlanetaryConflictData
-  }[];
-}
-
 export interface IGameOverPayload {
   winningPlayer?: {
     id: string;
@@ -196,13 +186,6 @@ export interface IGameOverPayload {
   } | null;
   playerWon: boolean;
   score: number;
-  endOfTurnMessages?: {
-    playerId: string;
-    type: number; // EventNotificationType
-    message: string;
-    planet?: unknown; // PlanetData
-    data?: unknown; // PlanetaryConflictData
-  }[];
   gameData?: unknown; // ClientModelData for final game state
   allHumansDestroyed?: boolean;
 }
