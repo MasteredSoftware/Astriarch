@@ -342,22 +342,7 @@ export class EventApplicator {
   }
 
   private static applyPlanetCaptured(clientModel: ClientModelData, event: PlanetCapturedEvent): void {
-    const { planetId, planetData, conflictData } = event.data;
-
-    // Remove the attacking fleet from fleetsInTransit if still present
-    // (may have already been removed by client's local time advancement)
-    const attackingFleetId = conflictData.attackingFleet.id;
-    console.log(`🏴 PLANET_CAPTURED: Removing attacking fleet ${attackingFleetId} (merged with planet)`);
-    console.log(`   Fleets in transit before: [${clientModel.mainPlayer.fleetsInTransit.map((f) => f.id).join(', ')}]`);
-
-    const fleetIndex = clientModel.mainPlayer.fleetsInTransit.findIndex((f) => f.id === attackingFleetId);
-    if (fleetIndex >= 0) {
-      clientModel.mainPlayer.fleetsInTransit.splice(fleetIndex, 1);
-      console.log(`   ✓ Removed fleet at index ${fleetIndex}`);
-    } else {
-      console.log(`   ⚠️ Fleet ${attackingFleetId} not found in transit (may have already been removed)`);
-    }
-    console.log(`   Fleets in transit after: [${clientModel.mainPlayer.fleetsInTransit.map((f) => f.id).join(', ')}]`);
+    const { planetId, planetData } = event.data;
 
     // We captured a planet - add it to our owned planets
     // The planetData already has the merged fleet from the server
@@ -390,21 +375,7 @@ export class EventApplicator {
   private static applyFleetAttackFailed(clientModel: ClientModelData, event: FleetAttackFailedEvent): void {
     const { planetId, conflictData, defenderId } = event.data;
 
-    // Remove the attacking fleet from fleetsInTransit if still present
-    // (may have already been removed by client's local time advancement)
-    const attackingFleetId = conflictData.attackingFleet.id;
-    console.log(`🗑️ FLEET_ATTACK_FAILED: Removing attacking fleet ${attackingFleetId}`);
-    console.log(`   Fleets in transit before: [${clientModel.mainPlayer.fleetsInTransit.map((f) => f.id).join(', ')}]`);
-
-    const fleetIndex = clientModel.mainPlayer.fleetsInTransit.findIndex((f) => f.id === attackingFleetId);
-    if (fleetIndex >= 0) {
-      clientModel.mainPlayer.fleetsInTransit.splice(fleetIndex, 1);
-      console.log(`   ✓ Removed fleet at index ${fleetIndex}`);
-    } else {
-      console.log(`   ⚠️ Fleet ${attackingFleetId} not found in transit (may have already been removed)`);
-    }
-    console.log(`   Fleets in transit after: [${clientModel.mainPlayer.fleetsInTransit.map((f) => f.id).join(', ')}]`);
-
+    // No need to modify fleets here, landing fleets were already removed during time advancement
     // Set planet as explored with last known fleet strength
     Player.setPlanetExplored(
       clientModel.mainPlayer,
@@ -428,9 +399,6 @@ export class EventApplicator {
     // This preserves any ships produced between combat resolution and event delivery
     if (conflictData.combatResultDiff) {
       this.applyCombatDiff(planet.planetaryFleet, conflictData.combatResultDiff);
-      console.log(
-        `⚔️ FLEET_DEFENSE_SUCCESS: Planet ${planetId} defended, combat diff applied (destroyed: ${conflictData.combatResultDiff.shipsDestroyed.length}, damaged: ${conflictData.combatResultDiff.shipsDamaged.length})`,
-      );
     } else {
       console.warn(`No combat result diff provided in FLEET_DEFENSE_SUCCESS event for planet ${planetId}`);
     }
@@ -473,10 +441,5 @@ export class EventApplicator {
     // Recalculate fleet hash after applying changes
     const shipIds = fleet.starships.map((s) => s.id);
     fleet.compositionHash = calculateFleetCompositionHash(shipIds);
-
-    // DEBUG: Log fleet state after applying diff
-    const shipIdsAfter = fleet.starships.map((s) => s.id).sort();
-    console.log(`      Fleet ships AFTER: [${shipIdsAfter.join(', ')}] (${shipIdsAfter.length})`);
-    console.log(`      Fleet hash AFTER: ${fleet.compositionHash}`);
   }
 }
