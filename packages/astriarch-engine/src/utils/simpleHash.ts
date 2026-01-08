@@ -5,6 +5,7 @@
  */
 
 const FNV_OFFSET_BASIS = 2166136261;
+const FNV_PRIME = 16777619;
 
 /**
  * Generate a simple hash from a string using FNV-1a algorithm.
@@ -16,8 +17,7 @@ const FNV_OFFSET_BASIS = 2166136261;
 export function simpleHash(str: string): string {
   let hash = FNV_OFFSET_BASIS;
   for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    hash = Math.imul(hash ^ str.charCodeAt(i), FNV_PRIME);
   }
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
