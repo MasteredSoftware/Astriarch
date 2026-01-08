@@ -366,7 +366,7 @@ export class EventApplicator {
   }
 
   private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
-    const { planetId, newOwnerId } = event.data;
+    const { planetId, newOwnerId, conflictData } = event.data;
 
     // Remove planet from our owned planets immediately
     if (clientModel.mainPlayerOwnedPlanets[planetId]) {
@@ -375,6 +375,16 @@ export class EventApplicator {
     }
     // also remove from mainPlayer's ownedPlanetIds
     clientModel.mainPlayer.ownedPlanetIds = clientModel.mainPlayer.ownedPlanetIds.filter((id) => id !== planetId);
+
+    // Set planet as explored with the winning fleet's information so we know who captured it
+    // and what fleet strength they had at the time of capture
+    Player.setPlanetExplored(
+      clientModel.mainPlayer,
+      planetId,
+      conflictData.winningFleet!,
+      clientModel.currentCycle,
+      newOwnerId,
+    );
   }
 
   private static applyFleetAttackFailed(clientModel: ClientModelData, event: FleetAttackFailedEvent): void {
