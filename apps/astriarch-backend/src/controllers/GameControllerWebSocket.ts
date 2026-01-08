@@ -633,17 +633,19 @@ export class GameController {
   // ==========================================
 
   /**
-   * Handle a game command using the new event-driven architecture
+   * Core game state update logic that advances time and optionally processes a command.
+   * This method is used by both time advancement and command processing paths to avoid duplication.
    *
-   * @param sessionId - Session ID of the player issuing the command
    * @param gameId - ID of the game
-   * @param command - The game command to process
-   * @returns GameResult with events to broadcast and checksum
+   * @param options - Optional parameters for command processing
+   * @returns GameResult with events, destroyed players, and game end conditions
    */
-  static async handleGameCommand(
-    sessionId: string,
+  static async advanceGameStateWithOptionalCommand(
     gameId: string,
-    command: GameCommand,
+    options?: {
+      sessionId?: string;
+      command?: GameCommand;
+    },
   ): Promise<
     GameResult & {
       events?: ClientEvent[];
@@ -654,7 +656,7 @@ export class GameController {
   > {
     try {
       // Variables to store results from the transform function
-      let allEvents: ClientEvent[] = []; // Combined time-based + command events
+      let allEvents: ClientEvent[] = [];
       let modelData: engine.ModelData | null = null;
       let playerName: string = "";
       let commandError: string | null = null;
@@ -663,21 +665,22 @@ export class GameController {
 
       // Use concurrency protection to safely update game state
       const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
-        // Find player by sessionId
-        const player = game.players?.find((p) => p.sessionId === sessionId);
-        if (!player) {
-          commandError = "Player not found in game";
-          return {}; // No changes
+        // If a command is being processed, validate the player
+        if (options?.command && options?.sessionId) {
+          const player = game.players?.find((p) => p.sessionId === options.sessionId);
+          if (!player) {
+            commandError = "Player not found in game";
+            return {}; // No changes
+          }
+          playerName = player.name;
         }
-
-        playerName = player.name;
 
         if (game.status !== "in_progress") {
           commandError = "Game is not in progress";
           return {}; // No changes
         }
 
-        // STEP 1: Advance game time to ensure resources/state are current
+        // STEP 1: Advance game time (always happens)
         const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
         const timeAdvanceResult = advanceGameModelTime(gameModelData);
 
@@ -686,21 +689,24 @@ export class GameController {
         destroyedPlayers = timeAdvanceResult.destroyedPlayers;
         gameEndConditions = timeAdvanceResult.gameEndConditions;
 
-        // STEP 2: Process the player command using the time-advanced state
-        const commandResult = CommandProcessor.processCommand(gameModelData, command);
+        // Start with time-based events
+        allEvents = [...timeBasedEvents];
 
-        if (!commandResult.success) {
-          commandError = commandResult.error || "Command processing failed";
-          return {}; // No changes
+        // STEP 2: Process command if provided
+        if (options?.command) {
+          const commandResult = CommandProcessor.processCommand(gameModelData, options.command);
+
+          if (!commandResult.success) {
+            commandError = commandResult.error || "Command processing failed";
+            return {}; // No changes
+          }
+
+          // Add command events to the list
+          const commandEvents = commandResult.events || [];
+          allEvents = [...allEvents, ...commandEvents];
         }
 
-        // Store command events
-        const commandEvents = commandResult.events || [];
-
-        // STEP 3: Combine time-based events and command events
-        allEvents = [...timeBasedEvents, ...commandEvents];
-
-        // STEP 4: Calculate and store rolling event checksums for all affected players
+        // STEP 3: Calculate and store rolling event checksums for all affected players
         const affectedPlayerIds = new Set<string>();
         for (const event of allEvents) {
           for (const playerId of event.affectedPlayerIds) {
@@ -735,29 +741,55 @@ export class GameController {
         };
       }
 
-      // NOTE: Time-based events, command events, and checksums are all calculated and saved atomically
-      // in a single database transaction above. No additional saves needed.
-
-      logger.info(
-        `Processed ${command.type} command for player ${playerName} in game ${gameId} (${allEvents.length} total events)`,
-      );
+      // Log appropriate message
+      if (options?.command) {
+        logger.info(
+          `Processed ${options.command.type} command for player ${playerName} in game ${gameId} (${allEvents.length} total events)`,
+        );
+      } else {
+        logger.info(`Advanced game time for game ${gameId} (${allEvents.length} events generated)`);
+      }
 
       return {
         success: true,
         game: updatedGame,
         gameData: modelData!,
-        events: allEvents, // Combined time-based + command events
+        events: allEvents,
         currentCycle: modelData!.currentCycle || 0,
         destroyedPlayers,
         gameEndConditions,
       };
     } catch (error) {
-      logger.error(`handleGameCommand error for ${command.type}:`, error);
+      const errorContext = options?.command ? `command ${options.command.type}` : "time advancement";
+      logger.error(`advanceGameStateWithOptionalCommand error for ${errorContext}:`, error);
       return {
         success: false,
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }
+  }
+
+  /**
+   * Handle a game command using the new event-driven architecture
+   *
+   * @param sessionId - Session ID of the player issuing the command
+   * @param gameId - ID of the game
+   * @param command - The game command to process
+   * @returns GameResult with events to broadcast and checksum
+   */
+  static async handleGameCommand(
+    sessionId: string,
+    gameId: string,
+    command: GameCommand,
+  ): Promise<
+    GameResult & {
+      events?: ClientEvent[];
+      currentCycle?: number;
+      destroyedPlayers?: engine.PlayerData[];
+      gameEndConditions?: engine.GameEndConditions;
+    }
+  > {
+    return this.advanceGameStateWithOptionalCommand(gameId, { sessionId, command });
   }
 
   // ==========================================

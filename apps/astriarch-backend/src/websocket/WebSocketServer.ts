@@ -343,93 +343,64 @@ export class WebSocketServer {
   }
 
   /**
+   * Handles the result of a game state update by broadcasting events and handling game over conditions.
+   * This is shared logic used by both time advancement and command processing.
+   */
+  private async handleGameStateUpdateResult(
+    gameId: string,
+    result: Awaited<ReturnType<typeof GameController.advanceGameStateWithOptionalCommand>>,
+    broadcastFullState: boolean = false,
+  ): Promise<void> {
+    if (!result.success) {
+      logger.error(`Failed to update game state for ${gameId}: ${result.error}`);
+      return;
+    }
+
+    const eventsToSend = result.events || [];
+    const destroyedPlayers = result.destroyedPlayers || [];
+    const gameEndConditions = result.gameEndConditions;
+    const currentCycle = result.currentCycle || 0;
+    const modelData = result.gameData;
+
+    // Side effects happen ONLY AFTER successful save
+    if (eventsToSend.length > 0) {
+      logger.info(`Broadcasting ${eventsToSend.length} events for game ${gameId}`);
+      await this.broadcastToAffectedPlayers(gameId, eventsToSend, currentCycle, "events", modelData!);
+    }
+
+    // Handle game over conditions AFTER successful save
+    if (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded) {
+      await this.handleGameOverConditions(
+        gameId,
+        {
+          destroyedPlayers,
+          gameEndConditions: gameEndConditions!,
+          events: eventsToSend,
+          notifications: [],
+        },
+        result.game!,
+      );
+    }
+
+    // Broadcast full game state for desync recovery (SYNC_STATE messages)
+    if (broadcastFullState) {
+      await this.broadcastGameStateUpdate(gameId);
+    }
+  }
+
+  /**
    * Advances game time and optionally broadcasts full game state for desync recovery.
+   * This is now a thin wrapper around the shared game state update logic.
    * @param gameId - The game to advance
    * @param broadcastFullState - If true, sends complete game state to all players (for SYNC_STATE)
    */
   private async advanceGameTime(gameId: string, broadcastFullState: boolean = false): Promise<void> {
     try {
-      // Variables to store data for side effects after save succeeds
-      let eventsToSend: ClientEvent[] = [];
-      let notificationsToSend: ClientNotification[] = [];
-      let destroyedPlayers: PlayerData[] = [];
-      let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
-      let currentCycle: number = 0;
-      let modelData: ModelData | null = null;
-      let gameStatus: string = "";
+      // Use the shared method to advance game time without processing a command
+      const result = await GameController.advanceGameStateWithOptionalCommand(gameId);
 
-      // Save game with concurrency protection - transform function ONLY does in-memory operations
-      const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
-        gameStatus = game.status;
-        if (game.status !== "in_progress") {
-          return {}; // No changes if game not in progress
-        }
-
-        // Use the engine's advanceGameModelTime function which handles time properly
-        // This will advance game time and process any AI/computer player actions
-        const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-        const result = advanceGameModelTime(gameModelData);
-
-        // Store data for side effects AFTER save succeeds
-        eventsToSend = result.events || [];
-        notificationsToSend = result.notifications || [];
-        destroyedPlayers = result.destroyedPlayers;
-        gameEndConditions = result.gameEndConditions;
-        currentCycle = result.gameModel.modelData.currentCycle;
-        modelData = result.gameModel.modelData;
-
-        // Calculate and store rolling event checksums for all affected players
-        const affectedPlayerIds = new Set<string>();
-        for (const event of eventsToSend) {
-          for (const playerId of event.affectedPlayerIds) {
-            affectedPlayerIds.add(playerId as string);
-          }
-        }
-
-        for (const playerId of affectedPlayerIds) {
-          const playerEvents = eventsToSend.filter((e) => e.affectedPlayerIds.includes(playerId));
-          const gamePlayer = gameModelData.modelData.players.find((p: PlayerData) => p.id === playerId);
-          if (gamePlayer && playerEvents.length > 0) {
-            const previousChecksum = gamePlayer.lastEventChecksum || "";
-            gamePlayer.lastEventChecksum = calculateRollingEventChecksum(playerEvents, previousChecksum);
-          }
-        }
-
-        // Return ONLY the data to update in the database
-        // Include status update if game has ended to ensure atomic persistence
-        return {
-          gameState: gameModelData.modelData,
-          lastActivity: new Date(),
-          ...(result.gameEndConditions.gameEnded && { status: "completed" as const }),
-        };
-      });
-
-      // Side effects happen ONLY AFTER successful save
-      if (gameStatus === "in_progress" && (eventsToSend.length > 0 || notificationsToSend.length > 0)) {
-        logger.info(
-          `Generated ${eventsToSend.length} events and ${notificationsToSend.length} notifications during game advancement`,
-        );
-        await this.broadcastTimeBasedEvents(gameId, eventsToSend, notificationsToSend, currentCycle, modelData!);
-      }
-
-      // Handle game over conditions AFTER successful save
-      if (gameStatus === "in_progress" && (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded)) {
-        await this.handleGameOverConditions(
-          gameId,
-          {
-            destroyedPlayers,
-            gameEndConditions: gameEndConditions!,
-            events: eventsToSend,
-            notifications: notificationsToSend,
-          },
-          updatedGame,
-        );
-      }
-
-      // Broadcast full game state for desync recovery (SYNC_STATE messages)
-      if (broadcastFullState && gameStatus === "in_progress") {
-        await this.broadcastGameStateUpdate(gameId);
-      }
+      // Handle broadcasting and game over conditions
+      await this.handleGameStateUpdateResult(gameId, result, broadcastFullState);
     } catch (error) {
       logger.error("Error advancing game time:", error);
     }
@@ -1048,32 +1019,8 @@ export class WebSocketServer {
         return;
       }
 
-      // Broadcast events to affected players only (not all players)
-      // NOTE: Checksums were calculated and saved atomically in the command transaction
-      await this.broadcastToAffectedPlayers(
-        gameId,
-        result.events || [],
-        result.currentCycle!,
-        "combined events", // time-based + command events
-        result.gameData!,
-      );
-
-      // Handle game over conditions if any players were destroyed or game ended
-      const destroyedPlayers = result.destroyedPlayers || [];
-      const gameEndConditions = result.gameEndConditions;
-
-      if (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded) {
-        await this.handleGameOverConditions(
-          gameId,
-          {
-            destroyedPlayers,
-            gameEndConditions: gameEndConditions!,
-            events: result.events || [],
-            notifications: [], // Clients generate notifications locally
-          },
-          result.game!,
-        );
-      }
+      // Handle broadcasting and game over conditions
+      await this.handleGameStateUpdateResult(gameId, result);
 
       logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
