@@ -161,10 +161,12 @@ function extractComponentStateData(clientModel: ClientModelData) {
   const planetaryFleets = ownedPlanetIds
     .map((planetId) => {
       const planet = clientModel.mainPlayerOwnedPlanets[planetId];
-      return planet ? {
-        planetId,
-        fleet: extractFleetChecksum(planet.planetaryFleet),
-      } : null;
+      return planet
+        ? {
+            planetId,
+            fleet: extractFleetChecksum(planet.planetaryFleet),
+          }
+        : null;
     })
     .filter((item): item is { planetId: number; fleet: ReturnType<typeof extractFleetChecksum> } => item !== null);
 

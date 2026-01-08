@@ -21,6 +21,9 @@ import {
   CommandProcessor,
   calculateRollingEventChecksum,
   constructClientGameModel,
+  advanceGameModelTime,
+  type PlayerData,
+  type GameEndConditions,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -641,13 +644,22 @@ export class GameController {
     sessionId: string,
     gameId: string,
     command: GameCommand,
-  ): Promise<GameResult & { events?: ClientEvent[]; currentCycle?: number }> {
+  ): Promise<
+    GameResult & {
+      events?: ClientEvent[];
+      currentCycle?: number;
+      destroyedPlayers?: engine.PlayerData[];
+      gameEndConditions?: engine.GameEndConditions;
+    }
+  > {
     try {
       // Variables to store results from the transform function
-      let events: ClientEvent[] = [];
+      let allEvents: ClientEvent[] = []; // Combined time-based + command events
       let modelData: engine.ModelData | null = null;
       let playerName: string = "";
       let commandError: string | null = null;
+      let destroyedPlayers: PlayerData[] = [];
+      let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
 
       // Use concurrency protection to safely update game state
       const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
@@ -660,12 +672,21 @@ export class GameController {
 
         playerName = player.name;
 
-        // Get the current game state
-        // NOTE: Game time is advanced at the WebSocket layer (before this handler is called)
-        // via advanceGameTimeAndBroadcastEvents when isGameTimeAdvanceRequired returns true
-        const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+        if (game.status !== "in_progress") {
+          commandError = "Game is not in progress";
+          return {}; // No changes
+        }
 
-        // Process command using CommandProcessor - this validates AND mutates the game state
+        // STEP 1: Advance game time to ensure resources/state are current
+        const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
+        const timeAdvanceResult = advanceGameModelTime(gameModelData);
+
+        // Store time-based events
+        const timeBasedEvents = timeAdvanceResult.events || [];
+        destroyedPlayers = timeAdvanceResult.destroyedPlayers;
+        gameEndConditions = timeAdvanceResult.gameEndConditions;
+
+        // STEP 2: Process the player command using the time-advanced state
         const commandResult = CommandProcessor.processCommand(gameModelData, command);
 
         if (!commandResult.success) {
@@ -673,14 +694,36 @@ export class GameController {
           return {}; // No changes
         }
 
-        // Store events and model data for response
-        events = commandResult.events || [];
+        // Store command events
+        const commandEvents = commandResult.events || [];
+
+        // STEP 3: Combine time-based events and command events
+        allEvents = [...timeBasedEvents, ...commandEvents];
+
+        // STEP 4: Calculate and store rolling event checksums for all affected players
+        const affectedPlayerIds = new Set<string>();
+        for (const event of allEvents) {
+          for (const playerId of event.affectedPlayerIds) {
+            affectedPlayerIds.add(playerId as string);
+          }
+        }
+
+        for (const playerId of affectedPlayerIds) {
+          const playerEvents = allEvents.filter((e) => e.affectedPlayerIds.includes(playerId));
+          const gamePlayer = gameModelData.modelData.players.find((p: PlayerData) => p.id === playerId);
+          if (gamePlayer && playerEvents.length > 0) {
+            const previousChecksum = gamePlayer.lastEventChecksum || "";
+            gamePlayer.lastEventChecksum = calculateRollingEventChecksum(playerEvents, previousChecksum);
+          }
+        }
+
         modelData = gameModelData.modelData;
 
-        // Return ONLY the data to update in the database
+        // Return ONLY the data to update in the database (single atomic save)
         return {
           gameState: gameModelData.modelData,
           lastActivity: new Date(),
+          ...(timeAdvanceResult.gameEndConditions.gameEnded && { status: "completed" as const }),
         };
       });
 
@@ -692,20 +735,21 @@ export class GameController {
         };
       }
 
-      // NOTE: Rolling event checksums are calculated per-player in broadcastToAffectedPlayers
-      // for both command events and time-based events, ensuring all affected players get updated
+      // NOTE: Time-based events, command events, and checksums are all calculated and saved atomically
+      // in a single database transaction above. No additional saves needed.
 
-      logger.info(`Processed ${command.type} command for player ${playerName} in game ${gameId}`);
+      logger.info(
+        `Processed ${command.type} command for player ${playerName} in game ${gameId} (${allEvents.length} total events)`,
+      );
 
       return {
         success: true,
         game: updatedGame,
         gameData: modelData!,
-        events,
+        events: allEvents, // Combined time-based + command events
         currentCycle: modelData!.currentCycle || 0,
-      } as GameResult & {
-        events?: ClientEvent[];
-        currentCycle?: number;
+        destroyedPlayers,
+        gameEndConditions,
       };
     } catch (error) {
       logger.error(`handleGameCommand error for ${command.type}:`, error);

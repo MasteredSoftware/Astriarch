@@ -408,14 +408,20 @@ class WebSocketService {
 								console.error(`\n  Event ${index + 1}:`);
 								console.error('    Planet ID:', fdsData['planetId']);
 								console.error('    Attacking Fleet ID:', fdsData['attackingFleetId']);
-								console.error('    Planet fleet BEFORE:', JSON.stringify(fdsData['planetFleetBefore']));
+								console.error(
+									'    Planet fleet BEFORE:',
+									JSON.stringify(fdsData['planetFleetBefore'])
+								);
 								console.error('    Planet fleet hash BEFORE:', fdsData['planetFleetHashBefore']);
 								console.error(
 									'    Winning fleet FROM SERVER:',
 									JSON.stringify(fdsData['winningFleetFromServer'])
 								);
 								console.error('    Winning fleet hash:', fdsData['winningFleetHash']);
-								console.error('    Planet fleet AFTER:', JSON.stringify(fdsData['planetFleetAfter']));
+								console.error(
+									'    Planet fleet AFTER:',
+									JSON.stringify(fdsData['planetFleetAfter'])
+								);
 								console.error('    Planet fleet hash AFTER:', fdsData['planetFleetHashAfter']);
 								console.error(
 									'    Fleets in transit BEFORE:',
@@ -658,7 +664,12 @@ class WebSocketService {
 			event.type === ClientEventType.PLANET_CAPTURED ||
 			event.type === ClientEventType.PLANET_LOST;
 
-		if (isBattleEvent && event.data && typeof event.data === 'object' && 'conflictData' in event.data) {
+		if (
+			isBattleEvent &&
+			event.data &&
+			typeof event.data === 'object' &&
+			'conflictData' in event.data
+		) {
 			const eventData = event.data as Record<string, unknown>;
 			activityStore.addNotificationWithEventData(
 				notification,

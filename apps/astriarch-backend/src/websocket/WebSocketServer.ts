@@ -189,10 +189,9 @@ export class WebSocketServer {
     const clientId = this.getClientIdBySessionId(client.sessionId);
     if (!clientId) return;
 
-    // IMPORTANT: Advance game time BEFORE processing game commands or periodic updates
-    // This ensures the server's currentCycle is up-to-date and all players see consistent state
+    // IMPORTANT: Advance game time for periodic updates
     // - For ADVANCE_GAME_TIME: Periodic updates every 10s to process AI actions
-    // - For GAME_COMMAND: Ensures resources/state are current before command validation
+    // - For GAME_COMMAND: Time advancement happens inside the command handler atomically
     // Concurrency protection is now handled at the database level via optimistic locking
     if (this.isGameTimeAdvanceRequired(message.type) && client.gameId) {
       await this.advanceGameTimeAndBroadcastEvents(client.gameId);
@@ -338,9 +337,9 @@ export class WebSocketServer {
   }
 
   private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
-    // Advance game time for periodic updates AND all game commands
-    // This ensures the server's currentCycle is up-to-date before processing any command
-    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME || messageType === MESSAGE_TYPE.GAME_COMMAND;
+    // Advance game time for periodic updates only
+    // Game commands handle their own time advancement internally
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME;
   }
 
   /**
@@ -379,12 +378,29 @@ export class WebSocketServer {
         currentCycle = result.gameModel.modelData.currentCycle;
         modelData = result.gameModel.modelData;
 
+        // Calculate and store rolling event checksums for all affected players
+        const affectedPlayerIds = new Set<string>();
+        for (const event of eventsToSend) {
+          for (const playerId of event.affectedPlayerIds) {
+            affectedPlayerIds.add(playerId as string);
+          }
+        }
+
+        for (const playerId of affectedPlayerIds) {
+          const playerEvents = eventsToSend.filter((e) => e.affectedPlayerIds.includes(playerId));
+          const gamePlayer = gameModelData.modelData.players.find((p: PlayerData) => p.id === playerId);
+          if (gamePlayer && playerEvents.length > 0) {
+            const previousChecksum = gamePlayer.lastEventChecksum || "";
+            gamePlayer.lastEventChecksum = calculateRollingEventChecksum(playerEvents, previousChecksum);
+          }
+        }
+
         // Return ONLY the data to update in the database
         // Include status update if game has ended to ensure atomic persistence
         return {
-          gameState: result.gameModel.modelData,
+          gameState: gameModelData.modelData,
           lastActivity: new Date(),
-          ...(result.gameEndConditions.gameEnded && { status: 'completed' as const }),
+          ...(result.gameEndConditions.gameEnded && { status: "completed" as const }),
         };
       });
 
@@ -1024,6 +1040,7 @@ export class WebSocketServer {
       const { command, gameId } = payload;
 
       // Process the command using the new architecture
+      // This now handles time advancement, command processing, and checksum calculation atomically
       const result = await GameController.handleGameCommand(client.sessionId, gameId, command);
 
       if (!result.success) {
@@ -1032,14 +1049,31 @@ export class WebSocketServer {
       }
 
       // Broadcast events to affected players only (not all players)
-      // NOTE: Checksums are calculated and stored in PlayerData during command processing
+      // NOTE: Checksums were calculated and saved atomically in the command transaction
       await this.broadcastToAffectedPlayers(
         gameId,
         result.events || [],
         result.currentCycle!,
-        "command events",
+        "combined events", // time-based + command events
         result.gameData!,
       );
+
+      // Handle game over conditions if any players were destroyed or game ended
+      const destroyedPlayers = result.destroyedPlayers || [];
+      const gameEndConditions = result.gameEndConditions;
+
+      if (destroyedPlayers.length > 0 || gameEndConditions?.gameEnded) {
+        await this.handleGameOverConditions(
+          gameId,
+          {
+            destroyedPlayers,
+            gameEndConditions: gameEndConditions!,
+            events: result.events || [],
+            notifications: [], // Clients generate notifications locally
+          },
+          result.game!,
+        );
+      }
 
       logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
@@ -1195,7 +1229,7 @@ export class WebSocketServer {
 
       // Use engine to resign player - this marks them as destroyed and clears their owned planets/fleets
       const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-      const player = gameModelData.modelData.players.find((p) => p.id === client.playerId);
+      const player = gameModelData.modelData.players.find((p: PlayerData) => p.id === client.playerId);
       if (!player) {
         return;
       }
@@ -1298,6 +1332,7 @@ export class WebSocketServer {
   /**
    * Broadcasts events to affected players only.
    * Events are grouped by player based on their affectedPlayerIds array.
+   * NOTE: Checksums must already be calculated and saved in the transaction before calling this method.
    */
   private async broadcastToAffectedPlayers(
     gameId: string,
@@ -1330,9 +1365,6 @@ export class WebSocketServer {
         `Broadcasting ${events.length} ${eventType} to ${eventsByPlayer.size} affected players in game ${gameId}`,
       );
 
-      // Flag to track if we need to save the game state after updating checksums
-      let modelDataUpdated = false;
-
       // Send events to each affected player
       for (const [playerId, playerEvents] of eventsByPlayer.entries()) {
         // Find the client for this player
@@ -1349,7 +1381,7 @@ export class WebSocketServer {
           continue;
         }
 
-        // Calculate checksums here, only when broadcasting (not in game loop)
+        // Retrieve pre-calculated checksums from modelData (already persisted in transaction)
         let checksum = "";
         let playerStateChecksum: string | undefined;
         let playerChecksumComponents: { planets: string; fleets: string } | undefined;
@@ -1357,19 +1389,8 @@ export class WebSocketServer {
         if (modelData) {
           const clientModel = constructClientGameModel(modelData, playerId);
 
-          // Calculate the rolling checksum from the events being sent
-          // This allows the client to verify it calculates the same checksum
-          const previousChecksum = clientModel.mainPlayer.lastEventChecksum || "";
-          // Calculate what the checksum SHOULD BE after applying these events
-          const expectedChecksum = calculateRollingEventChecksum(playerEvents, previousChecksum);
-          checksum = expectedChecksum;
-
-          // Update the player's stored checksum in the model data
-          const gamePlayer = modelData.players.find((p) => p.id === playerId);
-          if (gamePlayer) {
-            gamePlayer.lastEventChecksum = expectedChecksum;
-            modelDataUpdated = true;
-          }
+          // Get the stored rolling checksum (already calculated and saved in transaction)
+          checksum = clientModel.mainPlayer.lastEventChecksum || "";
 
           Player.calculateAndStoreChecksums(clientModel);
           playerStateChecksum = clientModel.clientModelChecksum;
@@ -1392,16 +1413,8 @@ export class WebSocketServer {
         }
       }
 
-      // Save updated checksums to database if any were modified
-      if (modelDataUpdated) {
-        const game = await ServerGameModel.findById(gameId);
-        if (game) {
-          game.gameState = modelData;
-          game.lastActivity = new Date();
-          await persistGame(game);
-          logger.info(`Saved updated event checksums for ${eventsByPlayer.size} players in game ${gameId}`);
-        }
-      }
+      // NOTE: Checksums are now calculated and saved atomically within the command transaction
+      // No separate save needed here - checksums are already persisted with the game state
     } catch (error) {
       logger.error(`Error broadcasting ${eventType}:`, error);
     }
@@ -1675,7 +1688,7 @@ export class WebSocketServer {
 
         // Calculate final score
         const gameModelData = GameModel.constructGridWithModelData(game.gameState as ModelData);
-        const player = gameModelData.modelData.players.find((p) => p.id === client.playerId);
+        const player = gameModelData.modelData.players.find((p: PlayerData) => p.id === client.playerId);
         if (!player) {
           continue;
         }
