@@ -15,8 +15,7 @@
 import { PlanetData, PlanetProductionItemData } from '../model';
 import { PlanetaryConflictData } from '../model/battle';
 import { ExecuteTradeResults } from './tradingCenter';
-import type { FleetData, StarShipType } from '../model/fleet';
-import type { PlanetImprovementType, PlanetType } from '../model/planet';
+import type { PlanetType } from '../model/planet';
 
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
