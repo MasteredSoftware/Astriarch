@@ -333,7 +333,6 @@ export class GameController {
       const enemyFleetBeforeBattle = Fleet.cloneFleet(enemyFleet);
       const playerFleetBeforeBattle = Fleet.cloneFleet(playerFleet);
 
-
       //now actually simulate the battle
       let playerWins = BattleSimulator.simulateFleetBattle(playerFleet, player, enemyFleet, planetOwner);
       //if at this point playerWins doesn't have a value it means that both fleets were destroyed, in that case the enemy should win because they are the defender of the planet
@@ -369,6 +368,7 @@ export class GameController {
             data: {
               planetId: destinationPlanet.id,
               planetName: destinationPlanet.name,
+              planetType: destinationPlanet.type,
               defenderName: planetOwner?.name,
               defenderId: planetOwner?.id,
               conflictData,
@@ -507,6 +507,7 @@ export class GameController {
             data: {
               planetId: destinationPlanet.id,
               planetName: destinationPlanet.name,
+              planetType: destinationPlanet.type,
               newOwnerId: player.id,
               newOwnerName: player.name,
               conflictData,

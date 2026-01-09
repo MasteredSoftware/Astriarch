@@ -15,6 +15,8 @@
 import { PlanetData, PlanetProductionItemData } from '../model';
 import { PlanetaryConflictData } from '../model/battle';
 import { ExecuteTradeResults } from './tradingCenter';
+import type { FleetData, StarShipType } from '../model/fleet';
+import type { PlanetImprovementType, PlanetType } from '../model/planet';
 
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
@@ -397,6 +399,7 @@ export interface PlanetLostEvent extends ClientEvent {
   data: {
     planetId: number;
     planetName: string;
+    planetType: PlanetType;
     newOwnerId: string;
     newOwnerName: string;
     conflictData: PlanetaryConflictData;
@@ -408,6 +411,7 @@ export interface FleetAttackFailedEvent extends ClientEvent {
   data: {
     planetId: number; // Planet where battle occurred
     planetName: string;
+    planetType: PlanetType;
     defenderName?: string;
     defenderId?: string;
     conflictData: PlanetaryConflictData;
