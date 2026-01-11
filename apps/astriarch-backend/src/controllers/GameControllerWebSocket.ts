@@ -24,6 +24,7 @@ import {
   advanceGameModelTime,
   type PlayerData,
   type GameEndConditions,
+  type CommandResultError,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -84,6 +85,8 @@ export interface DestroyedPlayer {
 export interface GameResult {
   success: boolean;
   error?: string;
+  errorCode?: string;
+  possibleDesync?: boolean;
   errorType?: string;
   game?: IGame;
   playerPosition?: number;
@@ -659,7 +662,7 @@ export class GameController {
       let allEvents: ClientEvent[] = [];
       let modelData: engine.ModelData | null = null;
       let playerName: string = "";
-      let commandError: string | null = null;
+      let commandError: CommandResultError | null = null;
       let destroyedPlayers: PlayerData[] = [];
       let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
 
@@ -669,14 +672,22 @@ export class GameController {
         if (options?.command && options?.sessionId) {
           const player = game.players?.find((p) => p.sessionId === options.sessionId);
           if (!player) {
-            commandError = "Player not found in game";
+            commandError = {
+              message: "Player not found in game",
+              code: "INVALID_PLAYER" as any,
+              possibleDesync: false,
+            };
             return {}; // No changes
           }
           playerName = player.name;
         }
 
         if (game.status !== "in_progress") {
-          commandError = "Game is not in progress";
+          commandError = {
+            message: "Game is not in progress",
+            code: "INVALID_OPERATION" as any,
+            possibleDesync: false,
+          };
           return {}; // No changes
         }
 
@@ -697,7 +708,11 @@ export class GameController {
           const commandResult = CommandProcessor.processCommand(gameModelData, options.command);
 
           if (!commandResult.success) {
-            commandError = commandResult.error || "Command processing failed";
+            commandError = commandResult.error || {
+              message: "Command processing failed",
+              code: "PROCESSING_FAILED" as any,
+              possibleDesync: false,
+            };
             return {}; // No changes
           }
 
@@ -735,9 +750,12 @@ export class GameController {
 
       // Check if there was an error during command processing
       if (commandError) {
+        const { message, code, possibleDesync } = commandError;
         return {
           success: false,
-          error: commandError,
+          error: message,
+          errorCode: code,
+          possibleDesync,
         };
       }
 

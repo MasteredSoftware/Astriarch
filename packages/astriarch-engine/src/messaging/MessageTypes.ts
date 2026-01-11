@@ -110,6 +110,8 @@ export interface IErrorPayload {
   error: string;
   message?: string;
   errorType?: ERROR_TYPE;
+  errorCode?: string;
+  possibleDesync?: boolean;
 }
 
 // Game Management Payloads
