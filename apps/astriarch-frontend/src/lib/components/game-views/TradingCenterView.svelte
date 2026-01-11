@@ -520,45 +520,45 @@
 			</div>
 
 			<!-- Submit Trade Button -->
-			<div class="flex justify-end">
-				<button
-					class="rounded bg-cyan-400 px-8 py-3 font-['Orbitron']
-						text-sm font-extrabold tracking-widest text-slate-900 uppercase shadow-lg shadow-cyan-400/25 hover:bg-cyan-300
-						disabled:cursor-not-allowed disabled:opacity-50"
-					disabled={tradeAmount <= 0 || !currentPlanet}
-					on:click={submitTrade}
-				>
-					Submit Trade
-				</button>
+			<div class="flex flex-row justify-end gap-4">
+				<div class="flex-1">
+					<!-- Submitted Trades List (if any) -->
+					{#if tradingCenter?.mainPlayerTrades && tradingCenter.mainPlayerTrades.length > 0}
+						<div class="min-w-36 rounded-lg bg-slate-800/90 p-4 backdrop-blur-sm">
+							<h3 class="mb-3 font-['Orbitron'] text-sm font-bold text-white">Submitted Trades</h3>
+							<div class="max-h-32 space-y-2 overflow-y-auto">
+								{#each tradingCenter.mainPlayerTrades as trade, index}
+									<div class="flex items-center justify-between rounded bg-slate-700/50 px-3 py-2">
+										<span class="font-['Orbitron'] text-xs text-white">
+											{trade.tradeType === TradeType.BUY ? 'Buy' : 'Sell'}
+											{trade.amount}
+											{getResourceName(trade.resourceType)}
+										</span>
+										<button
+											class="ml-2 text-xs text-red-400 hover:text-red-300"
+											on:click={() => retractTrade(trade)}
+											title="Retract Trade"
+										>
+											✕
+										</button>
+									</div>
+								{/each}
+							</div>
+						</div>
+					{/if}
+				</div>
+				<div>
+					<button
+						class="rounded bg-cyan-400 px-8 py-3 font-['Orbitron']
+							text-sm font-extrabold tracking-widest text-slate-900 uppercase shadow-lg shadow-cyan-400/25 hover:bg-cyan-300
+							disabled:cursor-not-allowed disabled:opacity-50"
+						disabled={tradeAmount <= 0 || !currentPlanet}
+						on:click={submitTrade}
+					>
+						Submit Trade
+					</button>
+				</div>
 			</div>
 		</div>
 	</div>
-
-	<!-- Submitted Trades List (if any) -->
-	{#if tradingCenter?.mainPlayerTrades && tradingCenter.mainPlayerTrades.length > 0}
-		<div class="absolute bottom-8 left-8 min-w-72 rounded-lg bg-slate-800/90 p-4 backdrop-blur-sm">
-			<h3 class="mb-3 font-['Orbitron'] text-sm font-bold text-white">Submitted Trades</h3>
-			<div class="max-h-32 space-y-2 overflow-y-auto">
-				{#each tradingCenter.mainPlayerTrades as trade, index}
-					<div class="flex items-center justify-between rounded bg-slate-700/50 px-3 py-2">
-						<span class="font-['Orbitron'] text-xs text-white">
-							{trade.tradeType === TradeType.BUY ? 'Buy' : 'Sell'}
-							{trade.amount}
-							{getResourceName(trade.resourceType)}
-							for {(
-								getResourceByType(trade.resourceType)?.currentPrice || 0 * trade.amount
-							).toFixed(1)} energy
-						</span>
-						<button
-							class="ml-2 text-xs text-red-400 hover:text-red-300"
-							on:click={() => retractTrade(trade)}
-							title="Retract Trade"
-						>
-							✕
-						</button>
-					</div>
-				{/each}
-			</div>
-		</div>
-	{/if}
 </div>

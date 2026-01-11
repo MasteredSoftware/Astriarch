@@ -1245,11 +1245,32 @@ class WebSocketService {
 
 			case MESSAGE_TYPE.ERROR:
 				if (isErrorMessage(message)) {
-					this.gameStore.addNotification({
-						type: 'error',
-						message: message.payload.error || 'An error occurred',
-						timestamp: Date.now()
-					});
+					const errorMessage =
+						message.payload.message || message.payload.error || 'An error occurred';
+
+					// Check if this error indicates a possible desync
+					if (message.payload.possibleDesync) {
+						console.error('⚠️ POSSIBLE DESYNC DETECTED - Requesting full state sync');
+						console.error('Error code:', message.payload.errorCode);
+						console.error('Error message:', errorMessage);
+
+						// Request full state sync from server
+						this.requestStateSync();
+
+						// Show notification to user
+						this.gameStore.addNotification({
+							type: 'warning',
+							message: `${errorMessage} - Syncing with server...`,
+							timestamp: Date.now()
+						});
+					} else {
+						// Normal error - just show notification
+						this.gameStore.addNotification({
+							type: 'error',
+							message: errorMessage,
+							timestamp: Date.now()
+						});
+					}
 				} else {
 					console.warn('Unexpected ERROR payload format:', message.payload);
 				}

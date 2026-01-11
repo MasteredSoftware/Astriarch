@@ -10,6 +10,8 @@ import { Planet } from './planet';
 import {
   GameCommand,
   CommandResult,
+  CommandResultError,
+  CommandResultErrorCode,
   GameCommandType,
   ClientEventType,
   QueueProductionItemCommand,
@@ -54,6 +56,17 @@ import { PlanetProductionItemType } from '../model/planet';
  */
 
 export class CommandProcessor {
+  /**
+   * Helper method to create a structured error response
+   */
+  private static createError(
+    message: string,
+    code: CommandResultErrorCode,
+    possibleDesync = false,
+  ): CommandResultError {
+    return { message, code, possibleDesync };
+  }
+
   /**
    * Process a player command and return events to broadcast
    */
@@ -102,7 +115,10 @@ export class CommandProcessor {
         const unknownCommand = command as { type: string };
         return {
           success: false,
-          error: `Unknown command type: ${unknownCommand.type}`,
+          error: this.createError(
+            `Unknown command type: ${unknownCommand.type}`,
+            CommandResultErrorCode.UNKNOWN_COMMAND,
+          ),
           events: [],
         };
     }
@@ -115,17 +131,29 @@ export class CommandProcessor {
     const { modelData, grid } = gameModel;
     const planet = modelData.planets.find((p) => p.id === command.planetId);
     if (!planet) {
-      return { success: false, error: 'Planet not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        events: [],
+      };
     }
 
     const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player || !player.ownedPlanetIds.includes(command.planetId)) {
-      return { success: false, error: 'Player does not own this planet', events: [] };
+      return {
+        success: false,
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        events: [],
+      };
     }
 
     const productionItem = command.productionItem;
     if (!productionItem) {
-      return { success: false, error: 'Production item not provided', events: [] };
+      return {
+        success: false,
+        error: this.createError('Production item not provided', CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
     }
 
     // Apply drift compensation if client sent their cycle
@@ -174,7 +202,11 @@ export class CommandProcessor {
     }
 
     if (!canBuild) {
-      return { success: false, error: 'Not enough resources to build item', events: [] };
+      return {
+        success: false,
+        error: this.createError('Not enough resources to build item', CommandResultErrorCode.INSUFFICIENT_RESOURCES),
+        events: [],
+      };
     }
 
     // Pre-assign ship ID if this is a starship production item
@@ -218,22 +250,42 @@ export class CommandProcessor {
     const { modelData } = gameModel;
     const planet = modelData.planets.find((p) => p.id === command.planetId);
     if (!planet) {
-      return { success: false, error: 'Planet not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        events: [],
+      };
     }
 
     const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player || !player.ownedPlanetIds.includes(command.planetId)) {
-      return { success: false, error: 'Player does not own this planet', events: [] };
+      return {
+        success: false,
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        events: [],
+      };
     }
 
     if (command.index < 0) {
-      return { success: false, error: 'Invalid item index', events: [] };
+      return {
+        success: false,
+        error: this.createError('Invalid item index', CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
     }
 
     // Use engine method to remove item and handle refund
     const success = Planet.removeBuildQueueItemForRefund(planet, command.index);
     if (!success) {
-      return { success: false, error: 'Failed to remove item from build queue', events: [] };
+      return {
+        success: false,
+        error: this.createError(
+          'Failed to remove item from build queue',
+          CommandResultErrorCode.PRODUCTION_ITEM_NOT_FOUND,
+          true, // Possible desync - client thinks item exists but server disagrees
+        ),
+        events: [],
+      };
     }
 
     const event = {
@@ -255,17 +307,29 @@ export class CommandProcessor {
     const { modelData, grid } = gameModel;
     const planet = modelData.planets.find((p) => p.id === command.planetId);
     if (!planet) {
-      return { success: false, error: 'Planet not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        events: [],
+      };
     }
 
     const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player || !player.ownedPlanetIds.includes(command.planetId)) {
-      return { success: false, error: 'Player does not own this planet', events: [] };
+      return {
+        success: false,
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        events: [],
+      };
     }
 
     const productionItem = command.productionItem;
     if (!productionItem) {
-      return { success: false, error: 'Production item not provided for demolish', events: [] };
+      return {
+        success: false,
+        error: this.createError('Production item not provided for demolish', CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
     }
 
     // Build client model and enqueue demolish order using engine method
@@ -273,7 +337,11 @@ export class CommandProcessor {
     const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
 
     if (!canBuild) {
-      return { success: false, error: 'Cannot demolish improvement', events: [] };
+      return {
+        success: false,
+        error: this.createError('Cannot demolish improvement', CommandResultErrorCode.INVALID_OPERATION),
+        events: [],
+      };
     }
 
     // Get player resources after spending (no actual cost for demolish, but might get refund)
@@ -297,17 +365,29 @@ export class CommandProcessor {
     const { modelData, grid } = gameModel;
     const sourcePlanet = modelData.planets.find((p) => p.id === command.fromPlanetId);
     if (!sourcePlanet) {
-      return { success: false, error: 'Source planet not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Source planet not found', CommandResultErrorCode.INVALID_PLANET),
+        events: [],
+      };
     }
 
     const destPlanet = modelData.planets.find((p) => p.id === command.toPlanetId);
     if (!destPlanet) {
-      return { success: false, error: 'Destination planet not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Destination planet not found', CommandResultErrorCode.INVALID_PLANET),
+        events: [],
+      };
     }
 
     const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player || !player.ownedPlanetIds.includes(command.fromPlanetId)) {
-      return { success: false, error: 'Player does not own source planet', events: [] };
+      return {
+        success: false,
+        error: this.createError('Player does not own source planet', CommandResultErrorCode.PERMISSION_DENIED),
+        events: [],
+      };
     }
 
     // Validate that we have ships to send
@@ -318,7 +398,11 @@ export class CommandProcessor {
       command.shipIds.battleships.length;
 
     if (totalShipsToSend === 0) {
-      return { success: false, error: 'No ships selected to send', events: [] };
+      return {
+        success: false,
+        error: this.createError('No ships selected to send', CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
     }
     console.log('Sending ships command: totalShipsToSend', totalShipsToSend, command.shipIds);
 
@@ -336,7 +420,11 @@ export class CommandProcessor {
       console.error('Ships not found in planetary fleet:', missingShips);
       return {
         success: false,
-        error: `Ships not found (already sent or destroyed): ${missingShips.slice(0, 5).join(', ')}`,
+        error: this.createError(
+          `Ships not found (already sent or destroyed): ${missingShips.slice(0, 5).join(', ')}`,
+          CommandResultErrorCode.SHIPS_NOT_FOUND,
+          true, // Possible desync - client thinks ships exist but server disagrees
+        ),
         events: [],
       };
     }
@@ -367,7 +455,7 @@ export class CommandProcessor {
     if (!planet) {
       return {
         success: false,
-        error: 'Planet not found',
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
@@ -376,7 +464,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -384,7 +472,7 @@ export class CommandProcessor {
     if (!player.ownedPlanetIds.includes(command.planetId)) {
       return {
         success: false,
-        error: 'Player does not own this planet',
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -421,7 +509,7 @@ export class CommandProcessor {
     if (!planet) {
       return {
         success: false,
-        error: 'Planet not found',
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
@@ -430,7 +518,7 @@ export class CommandProcessor {
     if (!waypointPlanet) {
       return {
         success: false,
-        error: 'Waypoint planet not found',
+        error: this.createError('Waypoint planet not found', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
@@ -439,7 +527,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -447,7 +535,7 @@ export class CommandProcessor {
     if (!player.ownedPlanetIds.includes(command.planetId)) {
       return {
         success: false,
-        error: 'Player does not own this planet',
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -477,7 +565,7 @@ export class CommandProcessor {
     if (!planet) {
       return {
         success: false,
-        error: 'Planet not found',
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
@@ -486,7 +574,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -494,7 +582,7 @@ export class CommandProcessor {
     if (!player.ownedPlanetIds.includes(command.planetId)) {
       return {
         success: false,
-        error: 'Player does not own this planet',
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -526,7 +614,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -535,7 +623,7 @@ export class CommandProcessor {
     if (command.researchPercent < 0 || command.researchPercent > 1) {
       return {
         success: false,
-        error: 'Research percent must be between 0 and 1',
+        error: this.createError('Research percent must be between 0 and 1', CommandResultErrorCode.INVALID_PARAMETER),
         events: [],
       };
     }
@@ -567,7 +655,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -609,7 +697,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -618,7 +706,11 @@ export class CommandProcessor {
     if (player.research.researchTypeInQueue !== command.researchType) {
       return {
         success: false,
-        error: 'Research not in queue',
+        error: this.createError(
+          'Research not in queue',
+          CommandResultErrorCode.RESEARCH_NOT_IN_QUEUE,
+          true, // Possible desync - client thinks research is queued but server disagrees
+        ),
         events: [],
       };
     }
@@ -644,14 +736,22 @@ export class CommandProcessor {
     const { modelData } = gameModel;
     const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player) {
-      return { success: false, error: 'Player not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
+        events: [],
+      };
     }
 
     // Validate trade data
     console.log('Processing trade command:', command);
     const { resourceType, amount, action } = command.tradeData;
     if (!resourceType || !amount || !action) {
-      return { success: false, error: 'Invalid trade data', events: [] };
+      return {
+        success: false,
+        error: this.createError('Invalid trade data', CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
     }
 
     // Map resource type string to enum
@@ -663,7 +763,11 @@ export class CommandProcessor {
 
     const resourceTypeEnum = resourceTypeMap[resourceType];
     if (!resourceTypeEnum) {
-      return { success: false, error: 'Invalid resource type', events: [] };
+      return {
+        success: false,
+        error: this.createError('Invalid resource type', CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
     }
 
     const tradeType = action === 'buy' ? TradeType.BUY : TradeType.SELL;
@@ -671,7 +775,14 @@ export class CommandProcessor {
     // Find a planet owned by the player (trades need to be associated with a planet)
     const playerPlanet = modelData.planets.find((p) => player.ownedPlanetIds.includes(p.id));
     if (!playerPlanet) {
-      return { success: false, error: 'Player must own at least one planet to trade', events: [] };
+      return {
+        success: false,
+        error: this.createError(
+          'Player must own at least one planet to trade',
+          CommandResultErrorCode.INVALID_OPERATION,
+        ),
+        events: [],
+      };
     }
 
     // Create the trade using the engine method
@@ -707,14 +818,26 @@ export class CommandProcessor {
     const { modelData } = gameModel;
     const player = modelData.players.find((p) => p.id === command.playerId);
     if (!player) {
-      return { success: false, error: 'Player not found', events: [] };
+      return {
+        success: false,
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
+        events: [],
+      };
     }
 
     // Cancel the trade using the engine method
     const cancelled = TradingCenter.cancelTrade(modelData.tradingCenter, command.tradeId, player.id);
 
     if (!cancelled) {
-      return { success: false, error: 'Trade not found or cannot be cancelled', events: [] };
+      return {
+        success: false,
+        error: this.createError(
+          'Trade not found or cannot be cancelled',
+          CommandResultErrorCode.TRADE_NOT_FOUND,
+          true, // Possible desync - client thinks trade exists but server disagrees
+        ),
+        events: [],
+      };
     }
 
     // Get player resources after trade cancellation
@@ -744,7 +867,7 @@ export class CommandProcessor {
     if (!planet) {
       return {
         success: false,
-        error: 'Planet not found',
+        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
@@ -753,7 +876,7 @@ export class CommandProcessor {
     if (!player) {
       return {
         success: false,
-        error: 'Player not found',
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -761,7 +884,7 @@ export class CommandProcessor {
     if (!player.ownedPlanetIds.includes(command.planetId)) {
       return {
         success: false,
-        error: 'Player does not own this planet',
+        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }

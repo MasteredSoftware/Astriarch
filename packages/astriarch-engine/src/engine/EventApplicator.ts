@@ -363,12 +363,14 @@ export class EventApplicator {
 
     // Set planet as explored with the winning fleet's information so we know who captured it
     // and what fleet strength they had at the time of capture
-    Player.setPlanetExplored(
+    Player.setPlanetExploredForClientModel(
       clientModel.mainPlayer,
       planetId,
       conflictData.winningFleet!,
       clientModel.currentCycle,
       newOwnerId,
+      clientModel,
+      event.data.planetType,
     );
   }
 
@@ -377,12 +379,14 @@ export class EventApplicator {
 
     // No need to modify fleets here, landing fleets were already removed during time advancement
     // Set planet as explored with last known fleet strength
-    Player.setPlanetExplored(
+    Player.setPlanetExploredForClientModel(
       clientModel.mainPlayer,
       planetId,
       conflictData.winningFleet!,
       clientModel.currentCycle,
       defenderId,
+      clientModel,
+      event.data.planetType,
     );
   }
 

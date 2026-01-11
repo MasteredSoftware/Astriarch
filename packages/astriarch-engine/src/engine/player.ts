@@ -1,7 +1,13 @@
 import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
-import { PlanetData, PlanetHappinessType, PlanetImprovementType, PlanetProductionItemData } from '../model/planet';
+import {
+  PlanetData,
+  PlanetHappinessType,
+  PlanetImprovementType,
+  PlanetProductionItemData,
+  PlanetType,
+} from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
 import { Fleet } from './fleet';
 import { calculateClientModelChecksum, calculateClientModelChecksumComponents } from '../utils/stateChecksum';
@@ -51,6 +57,26 @@ export class Player {
       nextFleetId: 1,
       lastEventChecksum: '',
     };
+  }
+
+  public static setPlanetExploredForClientModel(
+    p: PlayerData,
+    planetId: number,
+    planetaryFleet: FleetData,
+    cycle: number,
+    lastKnownOwnerId: string | undefined,
+    clientModel: ClientModelData,
+    planetType: PlanetType,
+  ) {
+    this.setPlanetExplored(p, planetId, planetaryFleet, cycle, lastKnownOwnerId);
+
+    // Update the ClientPlanet's type if we have the client model and planet type
+    if (clientModel && planetType !== undefined) {
+      const clientPlanet = clientModel.clientPlanets.find((cp) => cp.id === planetId);
+      if (clientPlanet) {
+        clientPlanet.type = planetType;
+      }
+    }
   }
 
   public static setPlanetExplored(

@@ -15,6 +15,7 @@
 import { PlanetData, PlanetProductionItemData } from '../model';
 import { PlanetaryConflictData } from '../model/battle';
 import { ExecuteTradeResults } from './tradingCenter';
+import type { PlanetType } from '../model/planet';
 
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
@@ -133,9 +134,35 @@ export interface ClientNotification {
   data: unknown;
 }
 
+export enum CommandResultErrorCode {
+  // Resource/validation errors - no desync
+  INSUFFICIENT_RESOURCES = 'INSUFFICIENT_RESOURCES',
+  INVALID_PLANET = 'INVALID_PLANET',
+  INVALID_PLAYER = 'INVALID_PLAYER',
+  INVALID_PARAMETER = 'INVALID_PARAMETER',
+  PERMISSION_DENIED = 'PERMISSION_DENIED',
+  INVALID_OPERATION = 'INVALID_OPERATION',
+
+  // State mismatch errors - likely desync
+  SHIPS_NOT_FOUND = 'SHIPS_NOT_FOUND',
+  PRODUCTION_ITEM_NOT_FOUND = 'PRODUCTION_ITEM_NOT_FOUND',
+  RESEARCH_NOT_IN_QUEUE = 'RESEARCH_NOT_IN_QUEUE',
+  TRADE_NOT_FOUND = 'TRADE_NOT_FOUND',
+
+  // Generic errors
+  UNKNOWN_COMMAND = 'UNKNOWN_COMMAND',
+  PROCESSING_FAILED = 'PROCESSING_FAILED',
+}
+
+export interface CommandResultError {
+  message: string;
+  code: CommandResultErrorCode;
+  possibleDesync: boolean;
+}
+
 export interface CommandResult {
   success: boolean;
-  error?: string;
+  error?: CommandResultError;
   events: ClientEvent[]; // Events to send to clients
   // Note: stateChecksum will be calculated by the backend after processing,
   // using the player's ClientModelData
@@ -397,6 +424,7 @@ export interface PlanetLostEvent extends ClientEvent {
   data: {
     planetId: number;
     planetName: string;
+    planetType: PlanetType;
     newOwnerId: string;
     newOwnerName: string;
     conflictData: PlanetaryConflictData;
@@ -408,6 +436,7 @@ export interface FleetAttackFailedEvent extends ClientEvent {
   data: {
     planetId: number; // Planet where battle occurred
     planetName: string;
+    planetType: PlanetType;
     defenderName?: string;
     defenderId?: string;
     conflictData: PlanetaryConflictData;

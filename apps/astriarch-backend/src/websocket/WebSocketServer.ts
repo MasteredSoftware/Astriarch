@@ -1015,7 +1015,14 @@ export class WebSocketServer {
       const result = await GameController.handleGameCommand(client.sessionId, gameId, command);
 
       if (!result.success) {
-        this.sendToClient(clientId, new Message(MESSAGE_TYPE.ERROR, { message: result.error }));
+        this.sendToClient(
+          clientId,
+          new Message(MESSAGE_TYPE.ERROR, {
+            error: result.error || "Command failed",
+            errorCode: result.errorCode,
+            possibleDesync: result.possibleDesync,
+          }),
+        );
         return;
       }
 
