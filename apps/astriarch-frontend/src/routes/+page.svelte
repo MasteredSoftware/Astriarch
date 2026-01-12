@@ -397,62 +397,6 @@
 					>
 						{$isGameRunning ? '● RUNNING' : '⏸ PAUSED'}
 					</Text>
-				{:else}
-					<!-- Debug: Test notification button -->
-					<Button
-						label="Add Activity"
-						size="sm"
-						variant="outline"
-						onclick={() => {
-							const notificationTypes = [
-								'info',
-								'success',
-								'warning',
-								'error',
-								'battle',
-								'research',
-								'construction',
-								'fleet',
-								'planet',
-								'chat'
-							] as const;
-							const randomType =
-								notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
-							const randomMessage = [
-								'Fleet has arrived at destination',
-								'Research completed successfully',
-								'Planet under attack!',
-								'Construction finished',
-								'Diplomatic message received',
-								'Resources depleted warning',
-								'New trade route established'
-							][Math.floor(Math.random() * 7)];
-
-							// Random duration between 3-8 seconds
-							const randomDuration = Math.floor(Math.random() * 5000) + 3000;
-
-							// This will show as both a popup notification AND be added to the Activity Center
-							multiplayerGameStore.addNotification({
-								type: randomType,
-								message: `${randomMessage} ${Math.floor(Math.random() * 1000)}`,
-								timestamp: Date.now(),
-								duration: randomDuration
-							});
-						}}
-					/>
-
-					<!-- Debug: Test persistent notification button -->
-					<Button
-						label="Persistent Alert"
-						size="sm"
-						variant="outline"
-						onclick={() =>
-							multiplayerGameStore.addNotification({
-								type: 'error',
-								message: `Critical alert ${Math.floor(Math.random() * 1000)} - Click to dismiss`,
-								timestamp: Date.now()
-							})}
-					/>
 				{/if}
 			</div>
 		</div>

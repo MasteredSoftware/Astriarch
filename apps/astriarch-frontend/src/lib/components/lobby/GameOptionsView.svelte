@@ -26,12 +26,14 @@
 	// Game options with defaults matching old game
 	let formData = JSON.parse(JSON.stringify(gameOptions));
 
-	// Ensure player name is synced with the store (which loads from localStorage)
-	$: {
-		const storeState = $multiplayerGameStore;
-		if (storeState.playerName && (!formData.playerName || formData.playerName === 'Player')) {
-			formData.playerName = storeState.playerName;
-		}
+	// Initialize playerName from store if it exists and is not the default
+	// This ensures we use the saved player name from localStorage
+	const storePlayerName = $multiplayerGameStore.playerName;
+	if (storePlayerName && storePlayerName !== 'Player') {
+		formData.playerName = storePlayerName;
+	} else {
+		// Default to 'Player' if no custom name is stored
+		formData.playerName = gameOptions.playerName || gameOptions.mainPlayerName || 'Player';
 	}
 
 	// React to changes in gameOptions prop (from server updates)
