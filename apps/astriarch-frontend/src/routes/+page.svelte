@@ -368,10 +368,10 @@
 	<header class="relative z-100 p-2">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center space-x-4">
-				<Logo size="lg" variant="primary" />
-
-				<!-- Game time info - only show when game is started -->
 				{#if gameStarted}
+					<Logo size="lg" variant="primary" />
+
+					<!-- Game time info - only show when game is started -->
 					<div class="flex flex-col items-center">
 						<Text style="font-size: 14px; color: #94A3B8; margin-left: 16px;">
 							Stardate {$gameTime.stardate}
@@ -397,62 +397,6 @@
 					>
 						{$isGameRunning ? '● RUNNING' : '⏸ PAUSED'}
 					</Text>
-				{:else}
-					<!-- Debug: Test notification button -->
-					<Button
-						label="Add Activity"
-						size="sm"
-						variant="outline"
-						onclick={() => {
-							const notificationTypes = [
-								'info',
-								'success',
-								'warning',
-								'error',
-								'battle',
-								'research',
-								'construction',
-								'fleet',
-								'planet',
-								'chat'
-							] as const;
-							const randomType =
-								notificationTypes[Math.floor(Math.random() * notificationTypes.length)];
-							const randomMessage = [
-								'Fleet has arrived at destination',
-								'Research completed successfully',
-								'Planet under attack!',
-								'Construction finished',
-								'Diplomatic message received',
-								'Resources depleted warning',
-								'New trade route established'
-							][Math.floor(Math.random() * 7)];
-
-							// Random duration between 3-8 seconds
-							const randomDuration = Math.floor(Math.random() * 5000) + 3000;
-
-							// This will show as both a popup notification AND be added to the Activity Center
-							multiplayerGameStore.addNotification({
-								type: randomType,
-								message: `${randomMessage} ${Math.floor(Math.random() * 1000)}`,
-								timestamp: Date.now(),
-								duration: randomDuration
-							});
-						}}
-					/>
-
-					<!-- Debug: Test persistent notification button -->
-					<Button
-						label="Persistent Alert"
-						size="sm"
-						variant="outline"
-						onclick={() =>
-							multiplayerGameStore.addNotification({
-								type: 'error',
-								message: `Critical alert ${Math.floor(Math.random() * 1000)} - Click to dismiss`,
-								timestamp: Date.now()
-							})}
-					/>
 				{/if}
 			</div>
 		</div>
@@ -462,9 +406,12 @@
 	<div class="relative z-10 flex-1">
 		{#if multiplayerState?.currentView === 'lobby' || multiplayerState?.currentView === 'game_options'}
 			<!-- Multiplayer Lobby -->
-			<div class="flex h-[calc(100vh-200px)] flex-col">
-				<div class="flex items-center justify-between px-4">
-					<Button label="← Back to Main" size="sm" variant="outline" onclick={handleBackToMain} />
+			<div class="flex flex-col">
+				<div class="flex flex-row gap-4">
+					<Logo size="lg" variant="primary" />
+					<div class="flex items-center justify-between px-4">
+						<Button label="← Back to Main" size="sm" variant="outline" onclick={handleBackToMain} />
+					</div>
 				</div>
 				<div class="flex-1">
 					<LobbyView />

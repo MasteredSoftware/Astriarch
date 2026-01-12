@@ -26,12 +26,14 @@
 	// Game options with defaults matching old game
 	let formData = JSON.parse(JSON.stringify(gameOptions));
 
-	// Ensure player name is synced with the store (which loads from localStorage)
-	$: {
-		const storeState = $multiplayerGameStore;
-		if (storeState.playerName && (!formData.playerName || formData.playerName === 'Player')) {
-			formData.playerName = storeState.playerName;
-		}
+	// Initialize playerName from store if it exists and is not the default
+	// This ensures we use the saved player name from localStorage
+	const storePlayerName = $multiplayerGameStore.playerName;
+	if (storePlayerName && storePlayerName !== 'Player') {
+		formData.playerName = storePlayerName;
+	} else {
+		// Default to 'Player' if no custom name is stored
+		formData.playerName = gameOptions.playerName || gameOptions.mainPlayerName || 'Player';
 	}
 
 	// React to changes in gameOptions prop (from server updates)
@@ -466,18 +468,22 @@
 
 <style>
 	.game-options-container {
-		width: 100%;
-		height: 100vh;
 		color: white;
+		flex: 1;
 		display: flex;
 		flex-direction: column;
-		overflow-y: auto;
 		box-sizing: border-box;
 		padding: 1rem;
+		position: relative;
+		overflow-y: hidden;
 	}
 
 	.scrollable-content {
-		flex: 1;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
 		overflow-y: auto;
 		padding-right: 0.5rem; /* Space for scrollbar */
 	}
@@ -493,8 +499,6 @@
 
 	.form-header {
 		text-align: center;
-		margin-bottom: 2rem;
-		margin-top: 2rem;
 	}
 
 	.game-options-content {
@@ -507,7 +511,6 @@
 		border: 1px solid rgba(0, 255, 255, 0.3);
 		border-radius: 12px;
 		padding: 2rem;
-		margin-bottom: 2rem;
 	}
 
 	.players-panel {

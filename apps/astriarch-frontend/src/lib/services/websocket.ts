@@ -1366,8 +1366,13 @@ class WebSocketService {
 	}
 
 	createGame(gameOptions: ServerGameOptions) {
-		// Use player name from game options, fallback to store or default
-		const playerName = gameOptions.mainPlayerName || get(this.gameStore).playerName || 'Player';
+		// Use player name from store first (localStorage), fallback to game options or default
+		// This ensures we use the saved player name instead of always resetting to 'Player'
+		const storedPlayerName = get(this.gameStore).playerName;
+		const playerName =
+			storedPlayerName && storedPlayerName !== 'Player'
+				? storedPlayerName
+				: gameOptions.mainPlayerName || 'Player';
 
 		// Update the store with the actual player name being used
 		this.gameStore.setPlayerName(playerName);
