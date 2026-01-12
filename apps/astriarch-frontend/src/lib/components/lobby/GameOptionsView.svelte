@@ -476,7 +476,6 @@
 		padding: 1rem;
 		position: relative;
 		overflow-y: auto;
-		margin: 0;
 	}
 
 	.scrollable-content {
@@ -499,8 +498,6 @@
 
 	.form-header {
 		text-align: center;
-		margin-bottom: 2rem;
-		margin-top: 2rem;
 	}
 
 	.game-options-content {
@@ -513,7 +510,6 @@
 		border: 1px solid rgba(0, 255, 255, 0.3);
 		border-radius: 12px;
 		padding: 2rem;
-		margin-bottom: 2rem;
 	}
 
 	.players-panel {

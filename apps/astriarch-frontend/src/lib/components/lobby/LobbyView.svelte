@@ -166,7 +166,7 @@
 	{/if}
 
 	<!-- Main Content -->
-	<div class="lobby-content">
+	<div class="lobby-content {currentView === 'game_options' ? 'full-width' : ''}">
 		{#if currentView === 'lobby'}
 			<!-- Regular Lobby View -->
 			<!-- Game Selection Interface -->
@@ -265,6 +265,12 @@
 		flex: 1;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.lobby-content.full-width {
+		max-width: none;
+		margin: 0;
+		width: 100%;
 	}
 
 	.game-selection {

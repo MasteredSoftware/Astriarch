@@ -213,7 +213,11 @@
 
 <style>
 	.game-details {
-		height: 100%;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
 		overflow-y: auto;
 	}
 
@@ -336,7 +340,7 @@
 
 	.actions {
 		margin-top: auto;
-		padding-top: 1rem;
+		padding: 1rem 0;
 		border-top: 1px solid rgba(0, 255, 255, 0.2);
 	}
 </style>
