@@ -475,7 +475,7 @@
 		box-sizing: border-box;
 		padding: 1rem;
 		position: relative;
-		overflow-y: auto;
+		overflow-y: hidden;
 	}
 
 	.scrollable-content {
@@ -484,6 +484,7 @@
 		bottom: 0;
 		left: 0;
 		right: 0;
+		overflow-y: auto;
 		padding-right: 0.5rem; /* Space for scrollbar */
 	}
 

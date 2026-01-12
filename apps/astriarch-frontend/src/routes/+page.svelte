@@ -406,7 +406,7 @@
 	<div class="relative z-10 flex-1">
 		{#if multiplayerState?.currentView === 'lobby' || multiplayerState?.currentView === 'game_options'}
 			<!-- Multiplayer Lobby -->
-			<div class="flex h-[calc(100vh-200px)] flex-col">
+			<div class="flex flex-col">
 				<div class="flex flex-row gap-4">
 					<Logo size="lg" variant="primary" />
 					<div class="flex items-center justify-between px-4">
