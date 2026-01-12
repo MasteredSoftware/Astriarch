@@ -157,16 +157,11 @@
 			<Text
 				style="font-size: 32px; font-weight: bold; color: #00FFFF; text-shadow: 0 0 10px rgba(0,255,255,0.5);"
 			>
-				ASTRIARCH LOBBY
+				LOBBY
 			</Text>
 			<Text style="font-size: 16px; color: #94A3B8; margin-top: 8px;">
 				Join an existing game or create a new one
 			</Text>
-			<!-- Debug Info -->
-			<div style="margin-top: 1rem; font-size: 12px; color: #888;">
-				Debug: Connected: {isConnected}, Current View: {currentView}, Games: {games.length}, Game
-				ID: {gameId}
-			</div>
 		</header>
 	{/if}
 
@@ -232,7 +227,7 @@
 
 <style>
 	.lobby-container {
-		height: 100vh;
+		height: calc(100vh - 68px);
 		color: white;
 		background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
 		display: flex;
@@ -260,7 +255,7 @@
 
 	.lobby-header {
 		text-align: center;
-		margin-bottom: 2rem;
+		margin-bottom: 0.5rem;
 	}
 
 	.lobby-content {
@@ -303,6 +298,7 @@
 		flex: 1;
 		padding: 1rem 1.5rem;
 		overflow-y: auto;
+		position: relative;
 	}
 
 	/* Responsive Design */

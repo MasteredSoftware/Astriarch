@@ -468,19 +468,23 @@
 
 <style>
 	.game-options-container {
-		width: 100%;
-		height: 100vh;
 		color: white;
+		flex: 1;
 		display: flex;
 		flex-direction: column;
-		overflow-y: auto;
 		box-sizing: border-box;
 		padding: 1rem;
+		position: relative;
+		overflow-y: auto;
+		margin: 0;
 	}
 
 	.scrollable-content {
-		flex: 1;
-		overflow-y: auto;
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		right: 0;
 		padding-right: 0.5rem; /* Space for scrollbar */
 	}
 
