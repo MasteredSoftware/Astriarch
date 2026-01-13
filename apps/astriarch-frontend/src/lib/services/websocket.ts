@@ -655,9 +655,7 @@ class WebSocketService {
 			timestamp: Date.now()
 		};
 
-		this.gameStore.addNotification(notification);
-
-		// For battle events with conflict data, also add to activity store with full event data
+		// For battle events with conflict data, add to activity store with full event data
 		const isBattleEvent =
 			event.type === ClientEventType.FLEET_ATTACK_FAILED ||
 			event.type === ClientEventType.FLEET_DEFENSE_SUCCESS ||
@@ -677,6 +675,10 @@ class WebSocketService {
 				undefined, // No ClientNotification
 				eventData['conflictData'] as unknown as PlanetaryConflictData // Pass the PlanetaryConflictData
 			);
+		} else {
+			// For non-battle events, add to the game store notification system
+			// (which will be picked up by activityStore subscription)
+			this.gameStore.addNotification(notification);
 		}
 	}
 
