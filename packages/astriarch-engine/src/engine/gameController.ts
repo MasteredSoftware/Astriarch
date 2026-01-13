@@ -435,7 +435,10 @@ export class GameController {
                     thiefPlayerId: player.id,
                     thiefPlayerName: player.name,
                     researchType: attackingPlayerResearch.type,
-                    researchName: Research.researchProgressToString(attackingPlayerResearch),
+                    researchName: Research.researchProgressToString(
+                      attackingPlayerResearch.type,
+                      attackingPlayerResearch.currentResearchLevel,
+                    ),
                     planetId: destinationPlanet.id,
                     planetName: destinationPlanet.name,
                     wasVictim: true,
@@ -450,7 +453,10 @@ export class GameController {
                     victimPlayerName: defendingPlayer.name,
                     thiefPlayerId: player.id,
                     researchType: attackingPlayerResearch.type,
-                    researchName: Research.researchProgressToString(attackingPlayerResearch),
+                    researchName: Research.researchProgressToString(
+                      attackingPlayerResearch.type,
+                      attackingPlayerResearch.currentResearchLevel,
+                    ),
                     planetId: destinationPlanet.id,
                     planetName: destinationPlanet.name,
                     wasVictim: false,

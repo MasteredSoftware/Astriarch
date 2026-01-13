@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Text, Button } from '$lib/components/astriarch';
+	import { Button } from '$lib/components/astriarch';
 	import TabController from '$lib/components/astriarch/tab-controller/TabController.svelte';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
@@ -9,8 +9,7 @@
 		combatActivities,
 		activityStore
 	} from '$lib/stores/activityStore';
-	import { selectedPlanetId, gameActions } from '$lib/stores/gameStore';
-	import { onMount } from 'svelte';
+	import { gameActions } from '$lib/stores/gameStore';
 	import type { ActivityLogEntry } from '$lib/stores/activityStore';
 	import { Fleet, GameTools } from 'astriarch-engine';
 	import type { StarshipData } from 'astriarch-engine';
@@ -60,10 +59,6 @@
 			}
 		})()
 	);
-
-	function setTab(tabIndex: number) {
-		currentTabIndex = tabIndex;
-	}
 
 	function toggleActivityExpansion(activityId: string) {
 		expandedActivity = expandedActivity === activityId ? null : activityId;

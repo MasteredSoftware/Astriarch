@@ -11,7 +11,7 @@ import type {
 	PlanetLostDueToStarvationNotification,
 	ResourcesAutoSpentNotification
 } from 'astriarch-engine';
-import { ClientNotificationType, GameTools } from 'astriarch-engine';
+import { ClientNotificationType, GameTools, Research } from 'astriarch-engine';
 
 export type UINotificationType =
 	| 'info'
@@ -73,7 +73,7 @@ export function convertClientNotificationToUINotification(
 		case ClientNotificationType.RESEARCH_COMPLETED: {
 			notificationType = 'research';
 			const data = (notification as ResearchCompletedNotification).data;
-			message = `Research complete (Level ${data.newLevel})`;
+			message = `${Research.researchProgressToString(data.researchType, data.newLevel)} Completed`;
 			break;
 		}
 		case ClientNotificationType.POPULATION_GREW: {
