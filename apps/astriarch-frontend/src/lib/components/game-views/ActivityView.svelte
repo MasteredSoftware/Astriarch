@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Text, Button } from '$lib/components/astriarch';
+	import { Button } from '$lib/components/astriarch';
 	import TabController from '$lib/components/astriarch/tab-controller/TabController.svelte';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
@@ -9,8 +9,7 @@
 		combatActivities,
 		activityStore
 	} from '$lib/stores/activityStore';
-	import { selectedPlanetId, gameActions } from '$lib/stores/gameStore';
-	import { onMount } from 'svelte';
+	import { gameActions } from '$lib/stores/gameStore';
 	import type { ActivityLogEntry } from '$lib/stores/activityStore';
 	import { Fleet, GameTools } from 'astriarch-engine';
 	import type { StarshipData } from 'astriarch-engine';
@@ -60,10 +59,6 @@
 			}
 		})()
 	);
-
-	function setTab(tabIndex: number) {
-		currentTabIndex = tabIndex;
-	}
 
 	function toggleActivityExpansion(activityId: string) {
 		expandedActivity = expandedActivity === activityId ? null : activityId;
@@ -130,167 +125,6 @@
 			setTimeout(() => {
 				scrollChatToBottom();
 			}, 0);
-		}
-	});
-
-	// Add some sample activities when component mounts for testing
-	onMount(() => {
-		// Add some test activities if the log is empty
-		if ($activityLog.length === 0) {
-			activityStore.addNotificationWithEventData(
-				{
-					type: 'research',
-					message: 'Research completed: Advanced Propulsion Systems',
-					timestamp: Date.now() - 300000 // 5 minutes ago
-				},
-				{
-					playerId: 'player1',
-					type: 8, // ResearchComplete
-					message: 'Research completed: Advanced Propulsion Systems',
-					planet: undefined,
-					data: undefined
-				}
-			);
-
-			activityStore.addNotificationWithEventData(
-				{
-					type: 'construction',
-					message: 'Construction finished on planet Kepler-442b: Orbital Shipyard',
-					timestamp: Date.now() - 180000 // 3 minutes ago
-				},
-				{
-					playerId: 'player1',
-					type: 4, // ImprovementBuilt
-					message: 'Construction finished on planet Kepler-442b: Orbital Shipyard',
-					planet: { id: 42, name: 'Kepler-442b' } as any,
-					data: undefined
-				}
-			);
-
-			activityStore.addNotificationWithEventData(
-				{
-					type: 'battle',
-					message: 'Planetary conflict at Sector 7-G: Defending fleet victorious!',
-					timestamp: Date.now() - 120000 // 2 minutes ago
-				},
-				{
-					playerId: 'player1',
-					type: 13, // DefendedAgainstAttackingFleet
-					message: 'Planetary conflict at Sector 7-G: Defending fleet victorious!',
-					planet: { id: 7, name: 'Sector 7-G' } as any,
-					data: {
-						attackingFleetChances: 0.35,
-						attackingClientPlayer: { name: 'Enemy Player' } as any,
-						defendingClientPlayer: { name: 'You' } as any,
-						attackingFleet: {
-							starships: [
-								{ id: 1, type: 3, health: 100, experienceAmount: 0 }, // Destroyer
-								{ id: 2, type: 3, health: 100, experienceAmount: 0 }, // Destroyer
-								{ id: 3, type: 2, health: 100, experienceAmount: 0 }, // Scout
-								{ id: 4, type: 2, health: 100, experienceAmount: 0 } // Scout
-							]
-						},
-						defendingFleet: {
-							starships: [
-								{ id: 5, type: 4, health: 100, experienceAmount: 0 }, // Cruiser
-								{ id: 6, type: 3, health: 100, experienceAmount: 0 }, // Destroyer
-								{ id: 7, type: 1, health: 100, experienceAmount: 0 } // System Defense
-							]
-						},
-						attackingFleetResearchBoost: { attack: 0.1, defense: 0.05 },
-						defendingFleetResearchBoost: { attack: 0.05, defense: 0.15 },
-						winningFleet: {
-							starships: [
-								{ id: 5, type: 4, health: 65, experienceAmount: 0 }, // Damaged Cruiser
-								{ id: 7, type: 1, health: 30, experienceAmount: 0 } // Heavily damaged System Defense
-							]
-						},
-						resourcesLooted: { food: 0, gold: 0, ore: 0, iridium: 0, research: 0 }
-					} as any
-				}
-			);
-
-			activityStore.addNotificationWithEventData(
-				{
-					type: 'planet',
-					message: 'Planet productivity increased: New mining operations online',
-					timestamp: Date.now() - 60000 // 1 minute ago
-				},
-				{
-					playerId: 'player1',
-					type: 1, // PopulationGrowth
-					message: 'Planet productivity increased: New mining operations online',
-					planet: { id: 15, name: 'Mining Station Alpha' } as any,
-					data: undefined
-				}
-			);
-
-			activityStore.addNotificationWithEventData(
-				{
-					type: 'fleet',
-					message: 'Fleet has arrived at destination: Alpha Centauri system',
-					timestamp: Date.now() - 30000 // 30 seconds ago
-				},
-				{
-					playerId: 'player1',
-					type: 0, // General info
-					message: 'Fleet has arrived at destination: Alpha Centauri system',
-					planet: { id: 23, name: 'Alpha Centauri Prime' } as any,
-					data: undefined
-				}
-			);
-
-			// Add a planet capture battle example with resource looting
-			activityStore.addNotificationWithEventData(
-				{
-					type: 'battle',
-					message: 'Planet captured at Kepler-442b! Victory achieved with heavy losses.',
-					timestamp: Date.now() - 300000 // 5 minutes ago
-				},
-				{
-					playerId: 'player1',
-					type: 15, // PlanetCaptured
-					message: 'Planet captured at Kepler-442b! Victory achieved with heavy losses.',
-					planet: { id: 42, name: 'Kepler-442b' } as any,
-					data: {
-						attackingFleetChances: 0.75,
-						attackingClientPlayer: { name: 'You' } as any,
-						defendingClientPlayer: { name: 'AI Opponent' } as any,
-						attackingFleet: {
-							starships: [
-								{ id: 10, type: 5, health: 100, experienceAmount: 0 }, // Battleship
-								{ id: 11, type: 4, health: 100, experienceAmount: 0 }, // Cruiser
-								{ id: 12, type: 4, health: 100, experienceAmount: 0 }, // Cruiser
-								{ id: 13, type: 3, health: 100, experienceAmount: 0 }, // Destroyer
-								{ id: 14, type: 3, health: 100, experienceAmount: 0 } // Destroyer
-							]
-						},
-						defendingFleet: {
-							starships: [
-								{ id: 20, type: 6, health: 100, experienceAmount: 0 }, // Space Platform
-								{ id: 21, type: 1, health: 100, experienceAmount: 0 }, // System Defense
-								{ id: 22, type: 1, health: 100, experienceAmount: 0 }, // System Defense
-								{ id: 23, type: 2, health: 100, experienceAmount: 0 } // Scout
-							]
-						},
-						attackingFleetResearchBoost: { attack: 0.15, defense: 0.1 },
-						defendingFleetResearchBoost: { attack: 0.0, defense: 0.2 },
-						winningFleet: {
-							starships: [
-								{ id: 10, type: 5, health: 45, experienceAmount: 0 }, // Heavily damaged Battleship
-								{ id: 11, type: 4, health: 20, experienceAmount: 0 } // Critically damaged Cruiser
-							]
-						},
-						resourcesLooted: {
-							food: 150.5,
-							gold: 87.25,
-							ore: 45.0,
-							iridium: 12.5,
-							research: 23.75
-						}
-					} as any
-				}
-			);
 		}
 	});
 
@@ -572,25 +406,6 @@
 														</div>
 													{:else}
 														<div class="font-semibold text-red-400">All ships destroyed</div>
-													{/if}
-												</div>
-											{:else if activity.conflictData}
-												<!-- Fallback for legacy conflict data -->
-												<div class="space-y-1 font-['Orbitron'] text-[12px] text-white/80">
-													<div><strong>Battle Details:</strong></div>
-													{#if activity.conflictData.attackingFleetChances}
-														<div>
-															• Attack success chance: {Math.round(
-																activity.conflictData.attackingFleetChances * 100
-															)}%
-														</div>
-													{/if}
-													{#if activity.conflictData.winningFleet}
-														<div>
-															• Outcome: {activity.conflictData.winningFleet
-																? 'Fleet survived'
-																: 'Fleet destroyed'}
-														</div>
 													{/if}
 												</div>
 											{/if}

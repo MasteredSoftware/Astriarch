@@ -261,10 +261,10 @@ export class Research {
     return notifications;
   }
 
-  public static researchProgressToString(researchProgress: ResearchTypeProgress, nextLevel?: number) {
-    const level = researchProgress.currentResearchLevel + (nextLevel ? 2 : 1);
-    let defaultName = Research.researchProgressFriendlyName(researchProgress);
-    switch (researchProgress.type) {
+  public static researchProgressToString(type: ResearchType, currentResearchLevel: number): string {
+    const level = currentResearchLevel + 1;
+    let defaultName = Research.researchTypeToFriendlyName(type);
+    switch (type) {
       case ResearchType.COMBAT_IMPROVEMENT_ATTACK:
         defaultName += ' Level ' + level;
         break;
@@ -293,9 +293,9 @@ export class Research {
     return defaultName;
   }
 
-  public static researchProgressFriendlyName(researchProgress: ResearchTypeProgress) {
+  public static researchTypeToFriendlyName(type: ResearchType) {
     let defaultName = 'Unknown';
-    switch (researchProgress.type) {
+    switch (type) {
       case ResearchType.NEW_SHIP_TYPE_DEFENDER:
         defaultName = GameTools.starShipTypeToFriendlyName(StarShipType.SystemDefense, true);
         break;

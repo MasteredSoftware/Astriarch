@@ -858,6 +858,14 @@
 					<h3 class="text-astriarch-body-16-semibold text-astriarch-primary">Build Queue</h3>
 					{#if isFullPlanetData($selectedPlanet)}
 						<div class="flex items-center space-x-2">
+							{#if $selectedPlanet.starshipTypeLastBuilt !== null}
+								<span class="text-xs text-slate-400">
+									{GameTools.starShipTypeToFriendlyName(
+										$selectedPlanet.starshipTypeLastBuilt,
+										$selectedPlanet.starshipCustomShipLastBuilt || false
+									)}
+								</span>
+							{/if}
 							<label class="flex cursor-pointer items-center space-x-1 text-xs text-slate-300">
 								<input
 									type="checkbox"

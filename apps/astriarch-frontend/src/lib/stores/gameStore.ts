@@ -1,4 +1,4 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, type Writable } from 'svelte/store';
 import {
 	advanceClientGameModelTime,
 	getPlayerTotalResources,
@@ -21,6 +21,7 @@ import {
 	isBuildCompletionNotification
 } from '$lib/utils/notificationUtils';
 import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+import type { ResearchProgressByType } from 'astriarch-engine/src/model';
 
 // Game state stores
 export const clientGameModel = writable<ClientModelData | null>(null);
@@ -116,16 +117,21 @@ export const currentCycle = derived(clientGameModel, ($clientGameModel) => {
 });
 
 // Research progress derived from client game model (creates new objects for reactivity)
-export const researchProgress = derived(clientGameModel, ($clientGameModel) => {
-	if (!$clientGameModel) return {};
-	// Create new objects to ensure Svelte reactivity works with nested mutations
-	const progress = $clientGameModel.mainPlayer.research.researchProgressByType;
-	const computed: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(progress)) {
-		computed[key] = { ...value };
+export const researchProgress = derived<Writable<ClientModelData | null>, ResearchProgressByType>(
+	clientGameModel,
+	($clientGameModel) => {
+		if (!$clientGameModel) {
+			return {} as ResearchProgressByType;
+		}
+		// Create new objects to ensure Svelte reactivity works with nested mutations
+		const progress = $clientGameModel.mainPlayer.research.researchProgressByType;
+		const computed: ResearchProgressByType = Object.keys(progress).reduce((acc, key) => {
+			acc[Number(key) as ResearchType] = { ...progress[Number(key) as ResearchType] };
+			return acc;
+		}, {} as ResearchProgressByType);
+		return computed;
 	}
-	return computed;
-});
+);
 
 // Current research type derived from client game model
 export const currentResearchType = derived(clientGameModel, ($clientGameModel) => {

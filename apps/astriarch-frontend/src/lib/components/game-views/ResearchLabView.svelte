@@ -165,7 +165,10 @@
 		const returnVal =
 			currentType && progressData && progressData[currentType]
 				? {
-						name: Research.researchProgressToString(progressData[currentType]),
+						name: Research.researchProgressToString(
+							progressData[currentType].type,
+							progressData[currentType].currentResearchLevel + 1
+						),
 						type: currentType,
 						progress: progressData[currentType],
 						levelData: currentResearchLevelData,
