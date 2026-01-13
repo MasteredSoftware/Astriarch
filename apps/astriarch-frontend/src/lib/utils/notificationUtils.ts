@@ -1,5 +1,17 @@
-import type { ClientNotification } from 'astriarch-engine';
-import { ClientNotificationType } from 'astriarch-engine';
+import type {
+	ClientNotification,
+	ShipBuiltNotification,
+	ImprovementBuiltNotification,
+	ImprovementDemolishedNotification,
+	ResearchCompletedNotification,
+	PopulationGrewNotification,
+	PopulationStarvationNotification,
+	FoodShortageRiotsNotification,
+	InsufficientFoodNotification,
+	PlanetLostDueToStarvationNotification,
+	ResourcesAutoSpentNotification
+} from 'astriarch-engine';
+import { ClientNotificationType, GameTools } from 'astriarch-engine';
 
 export type UINotificationType =
 	| 'info'
@@ -32,13 +44,9 @@ export function convertClientNotificationToUINotification(
 	switch (notification.type) {
 		case ClientNotificationType.SHIP_BUILT: {
 			notificationType = 'construction';
-			const data = notification.data as {
-				planetId: number;
-				planetName: string;
-				shipType: number;
-				nextItemInQueue?: string;
-			};
-			message = `Ship built at ${data.planetName}`;
+			const data = (notification as ShipBuiltNotification).data;
+			const shipName = GameTools.starShipTypeToFriendlyName(data.shipType, !!data.customShipData);
+			message = `${shipName} built at ${data.planetName}`;
 			if (data.nextItemInQueue) {
 				message += ` (Next: ${data.nextItemInQueue})`;
 			}
@@ -46,12 +54,7 @@ export function convertClientNotificationToUINotification(
 		}
 		case ClientNotificationType.IMPROVEMENT_BUILT: {
 			notificationType = 'construction';
-			const data = notification.data as {
-				planetId: number;
-				planetName: string;
-				improvementType: number;
-				nextItemInQueue?: string;
-			};
+			const data = (notification as ImprovementBuiltNotification).data;
 			message = `Improvement built at ${data.planetName}`;
 			if (data.nextItemInQueue) {
 				message += ` (Next: ${data.nextItemInQueue})`;
@@ -60,12 +63,7 @@ export function convertClientNotificationToUINotification(
 		}
 		case ClientNotificationType.IMPROVEMENT_DEMOLISHED: {
 			notificationType = 'construction';
-			const data = notification.data as {
-				planetId: number;
-				planetName: string;
-				improvementType: number;
-				nextItemInQueue?: string;
-			};
+			const data = (notification as ImprovementDemolishedNotification).data;
 			message = `Improvement demolished at ${data.planetName}`;
 			if (data.nextItemInQueue) {
 				message += ` (Next: ${data.nextItemInQueue})`;
@@ -74,51 +72,43 @@ export function convertClientNotificationToUINotification(
 		}
 		case ClientNotificationType.RESEARCH_COMPLETED: {
 			notificationType = 'research';
-			const data = notification.data as { researchType: number; newLevel: number };
+			const data = (notification as ResearchCompletedNotification).data;
 			message = `Research complete (Level ${data.newLevel})`;
 			break;
 		}
 		case ClientNotificationType.POPULATION_GREW: {
 			notificationType = 'planet';
-			const data = notification.data as {
-				planetId: number;
-				planetName: string;
-				newPopulation: number;
-			};
+			const data = (notification as PopulationGrewNotification).data;
 			message = `Population grew at ${data.planetName} (${data.newPopulation})`;
 			break;
 		}
 		case ClientNotificationType.POPULATION_STARVATION: {
 			notificationType = 'warning';
-			const data = notification.data as { planetId: number; planetName: string };
+			const data = (notification as PopulationStarvationNotification).data;
 			message = `Population lost to starvation at ${data.planetName}`;
 			break;
 		}
 		case ClientNotificationType.FOOD_SHORTAGE_RIOTS: {
 			notificationType = 'warning';
-			const data = notification.data as { planetId: number; planetName: string; reason: string };
+			const data = (notification as FoodShortageRiotsNotification).data;
 			message = `Food shortage riots at ${data.planetName}: ${data.reason}`;
 			break;
 		}
 		case ClientNotificationType.INSUFFICIENT_FOOD: {
 			notificationType = 'warning';
-			const data = notification.data as {
-				planetId: number;
-				planetName: string;
-				foodDeficit: number;
-			};
+			const data = (notification as InsufficientFoodNotification).data;
 			message = `Food shortage at ${data.planetName} (deficit: ${data.foodDeficit.toFixed(1)})`;
 			break;
 		}
 		case ClientNotificationType.PLANET_LOST_DUE_TO_STARVATION: {
 			notificationType = 'error';
-			const data = notification.data as { planetId: number; planetName: string };
+			const data = (notification as PlanetLostDueToStarvationNotification).data;
 			message = `Planet lost due to starvation: ${data.planetName}`;
 			break;
 		}
 		case ClientNotificationType.RESOURCES_AUTO_SPENT: {
 			notificationType = 'info';
-			const data = notification.data as { amount: number; resourceType: string; reason: string };
+			const data = (notification as ResourcesAutoSpentNotification).data;
 			message = `${data.amount.toFixed(1)} ${data.resourceType} spent: ${data.reason}`;
 			break;
 		}
