@@ -442,7 +442,8 @@ export class CommandProcessor {
 
     // Destination can be owned or just explored
     const destPlanet =
-      this.getPlanet(model, command.toPlanetId) || this.getAllPlanets(model).find((p: ClientPlanet | PlanetData) => p.id === command.toPlanetId);
+      this.getPlanet(model, command.toPlanetId) ||
+      this.getAllPlanets(model).find((p: ClientPlanet | PlanetData) => p.id === command.toPlanetId);
     if (!destPlanet) {
       return {
         success: false,

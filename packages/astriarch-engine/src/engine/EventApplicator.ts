@@ -193,12 +193,33 @@ export class EventApplicator {
       return;
     }
 
-    // Use engine method to replicate server logic exactly
-    Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer);
+    // Check if this fleet was already launched optimistically
+    // If so, we need to reset it to server's authoritative timing
+    const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
+    const existingFleet = clientModel.mainPlayer.fleetsInTransit.find((fleet) => {
+      // Match by destination and ship IDs
+      if (
+        fleet.destinationHexMidPoint?.x !== destPlanet.boundingHexMidPoint.x ||
+        fleet.destinationHexMidPoint?.y !== destPlanet.boundingHexMidPoint.y
+      ) {
+        return false;
+      }
+      const fleetShipIds = fleet.starships.map((s) => s.id);
+      return allShipIds.every((id) => fleetShipIds.includes(id)) && fleetShipIds.length === allShipIds.length;
+    });
 
-    const totalShips =
-      shipIds.scouts.length + shipIds.destroyers.length + shipIds.cruisers.length + shipIds.battleships.length;
-    console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`, shipIds);
+    if (existingFleet) {
+      // Fleet exists from optimistic update - reset to server timing
+      console.log(
+        `Resetting optimistically-launched fleet to server timing (from planet ${fromPlanetId} to ${toPlanetId})`,
+      );
+      Fleet.setDestination(existingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
+    } else {
+      // Normal application - launch the fleet
+      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer);
+      const totalShips = allShipIds.length;
+      console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`, shipIds);
+    }
   }
 
   private static applyPlanetWorkerAssignmentsUpdated(

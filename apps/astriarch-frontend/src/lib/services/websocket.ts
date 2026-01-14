@@ -652,6 +652,7 @@ class WebSocketService {
 		}
 
 		if (!message) {
+			console.warn('No message generated for event:', event.type);
 			return;
 		}
 		const notification = {
@@ -1186,6 +1187,25 @@ class WebSocketService {
 				for (const event of payload.events) {
 					let wasOptimisticallyApplied = false;
 
+					// EXCEPTION: Always re-apply FLEET_LAUNCHED events to sync fleet positions with server
+					// Even if we optimistically launched the fleet, we need to reset its position to match server timing
+					if (event.type === ClientEventType.FLEET_LAUNCHED) {
+						console.log(
+							`🚀 FLEET_LAUNCHED event - always re-applying to sync position with server`
+						);
+						eventsToApply.push(event);
+
+						// Still mark command as confirmed for cleanup
+						for (const [commandId, pendingCommand] of this.pendingCommands.entries()) {
+							const matchingEvent = pendingCommand.events.find((e) => e.type === event.type);
+							if (matchingEvent) {
+								matchedCommandIds.add(commandId);
+								break;
+							}
+						}
+						continue;
+					}
+
 					// Check if this event matches any pending command
 					for (const [commandId, pendingCommand] of this.pendingCommands.entries()) {
 						// Match by event type and basic data (simplified matching)
@@ -1245,16 +1265,11 @@ class WebSocketService {
 						.map(Number)
 						.sort();
 					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
-
-					// Convert event to user notification
-					this.convertClientEventToNotification(event);
 				}
 
 				// Still convert ALL events to notifications (even optimistically applied ones need notifications)
 				for (const event of payload.events) {
-					if (!eventsToApply.includes(event)) {
-						this.convertClientEventToNotification(event);
-					}
+					this.convertClientEventToNotification(event);
 				}
 
 				// Validate event checksum if provided (for player commands)
@@ -1323,9 +1338,7 @@ class WebSocketService {
 				} else {
 					// Command not in pending map - likely already confirmed via CLIENT_EVENT
 					// This is a normal race condition when ACK arrives after events
-					console.debug(
-						`ACK received for [${payload.commandId}] - already confirmed via events`
-					);
+					console.debug(`ACK received for [${payload.commandId}] - already confirmed via events`);
 				}
 				break;
 			}
