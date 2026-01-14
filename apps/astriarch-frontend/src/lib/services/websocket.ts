@@ -2181,11 +2181,15 @@ class WebSocketService {
 			// Map trade type to action
 			const action = tradeType === 1 ? 'buy' : 'sell';
 
+			// Generate trade ID on client to maintain consistency
+			const tradeId = crypto.randomUUID();
+
 			const command: GameCommand = {
 				type: GameCommandType.SUBMIT_TRADE,
 				playerId,
 				timestamp: Date.now(),
 				planetId,
+				tradeId,
 				tradeData: {
 					resourceType: resourceTypeMap[resourceType] || 'food',
 					amount,

@@ -91,10 +91,11 @@ export class TradingCenter {
     resourceType: TradingCenterResourceType,
     amount: number,
     delaySeconds = 5,
+    id?: string, // Optional ID for client-generated trades
   ): TradeData {
     const now = Date.now();
     return {
-      id: Utils.generateUniqueId(),
+      id: id || Utils.generateUniqueId(), // Use provided ID or generate new one
       playerId,
       planetId,
       tradeType,

@@ -232,6 +232,7 @@ export interface CancelResearchItemCommand extends GameCommand {
 
 export interface SubmitTradeCommand extends GameCommand {
   type: GameCommandType.SUBMIT_TRADE;
+  tradeId: string; // Client-generated trade ID
   tradeData: {
     resourceType: string;
     amount: number;

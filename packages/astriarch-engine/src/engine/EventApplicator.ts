@@ -347,18 +347,15 @@ export class EventApplicator {
       // Remove the trade from the client's trading center
       const tradeIndex = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
       if (tradeIndex < 0) {
-        console.warn(`Trade ${tradeInfo.tradeId} not found in player's trades`);
-        return;
+        console.warn(
+          `   ❌ Trade ${tradeInfo.tradeId} not found in player's trades (${clientModel.clientTradingCenter.mainPlayerTrades.length} trades in list)`,
+        );
+        // Continue processing other trades instead of returning
+      } else {
+        clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
       }
 
-      clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
-
       TradingCenter.completeTradeExecutionForClientPlayer(clientModel, grid, planetId, executedStatus);
-
-      const action = executedStatus.tradeType === 1 ? 'bought' : 'sold';
-      console.log(
-        `Trade ${tradeId} executed: ${action} ${executedStatus.foodAmount + executedStatus.oreAmount + executedStatus.iridiumAmount} of resource type ${executedStatus.resourceType} for ${executedStatus.tradeEnergyAmount} energy`,
-      );
     }
   }
 

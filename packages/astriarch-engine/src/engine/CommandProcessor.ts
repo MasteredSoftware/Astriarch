@@ -830,7 +830,7 @@ export class CommandProcessor {
       };
     }
 
-    // Create the trade using the engine method
+    // Create the trade using the engine method with client-provided ID
     const trade = TradingCenter.constructTrade(
       player.id,
       playerPlanetId,
@@ -838,11 +838,15 @@ export class CommandProcessor {
       resourceTypeEnum,
       amount,
       5, // 5 second delay
+      command.tradeId, // Use client-generated ID for consistency
     );
 
     // Add trade to the client trading center (note: this is optimistic, server is authoritative)
     if (this.isClientModel(model)) {
       model.clientTradingCenter.mainPlayerTrades.push(trade);
+    } else {
+      // On server, add to the global trading center
+      model.tradingCenter.currentTrades.push(trade);
     }
 
     // Generate event
