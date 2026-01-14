@@ -40,13 +40,25 @@ function createActivityStore() {
 				// Check if this notification is already in the activity log
 				const exists = store.activityLog.some((entry) => entry.id === notification.id);
 				if (!exists) {
-					// Add new notification to activity log
+					// Add new notification to activity log with enhanced data
 					const newEntry: ActivityLogEntry = {
 						id: notification.id,
 						type: notification.type,
 						message: notification.message,
 						timestamp: notification.timestamp,
-						read: false
+						read: false,
+						// Extract enhanced data from notification
+						clientEvent: notification.clientEvent,
+						conflictData: notification.conflictData,
+						// Extract planet info if available from event data
+						planetId:
+							((notification.clientEvent?.data as Record<string, unknown>)?.['planetId'] as
+								| number
+								| undefined),
+						planetName:
+							((notification.clientEvent?.data as Record<string, unknown>)?.['planetName'] as
+								| string
+								| undefined)
 					};
 
 					return {
@@ -64,43 +76,6 @@ function createActivityStore() {
 		subscribe,
 		set,
 		update,
-
-		// Add a notification with enhanced ClientEvent or ClientNotification data
-		addNotificationWithEventData: (
-			notification: Omit<GameNotification, 'id'>,
-			clientEvent?: ClientEvent,
-			clientNotification?: ClientNotification,
-			conflictData?: PlanetaryConflictData
-		) => {
-			const newEntry: ActivityLogEntry = {
-				id: `activity-${Date.now()}-${Math.random()}`,
-				type: notification.type,
-				message: notification.message,
-				timestamp: notification.timestamp,
-				read: false,
-				clientEvent,
-				clientNotification,
-				// Extract planet info if available from event/notification data
-				planetId:
-					((clientEvent?.data as Record<string, unknown>)?.['planetId'] as number | undefined) ||
-					((clientNotification?.data as Record<string, unknown>)?.['planetId'] as
-						| number
-						| undefined),
-				planetName:
-					((clientEvent?.data as Record<string, unknown>)?.['planetName'] as string | undefined) ||
-					((clientNotification?.data as Record<string, unknown>)?.['planetName'] as
-						| string
-						| undefined),
-				// Store conflict data if provided (for battle events)
-				conflictData
-			};
-
-			update((store) => ({
-				...store,
-				activityLog: [newEntry, ...store.activityLog],
-				unreadCount: store.unreadCount + 1
-			}));
-		},
 
 		// Add a manual activity entry (for system events, chat events, etc.)
 		addActivity: (entry: Omit<ActivityLogEntry, 'id'>) => {

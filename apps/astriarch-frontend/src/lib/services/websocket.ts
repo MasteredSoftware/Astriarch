@@ -30,7 +30,6 @@ import {
 } from 'astriarch-engine/src/utils/stateChecksum';
 
 // Import the main game stores to update them when receiving multiplayer game state
-import { activityStore } from '$lib/stores/activityStore';
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '$lib/stores/gameStore';
 import { PlayerStorage } from '$lib/utils/playerStorage';
 import type {
@@ -655,7 +654,7 @@ class WebSocketService {
 			timestamp: Date.now()
 		};
 
-		// For battle events with conflict data, add to activity store with full event data
+		// For battle events with conflict data, pass event data through game store
 		const isBattleEvent =
 			event.type === ClientEventType.FLEET_ATTACK_FAILED ||
 			event.type === ClientEventType.FLEET_DEFENSE_SUCCESS ||
@@ -669,10 +668,10 @@ class WebSocketService {
 			'conflictData' in event.data
 		) {
 			const eventData = event.data as Record<string, unknown>;
-			activityStore.addNotificationWithEventData(
+			// Pass event data through game store so activity store subscription picks it up
+			this.gameStore.addNotification(
 				notification,
 				event, // Pass the full ClientEvent
-				undefined, // No ClientNotification
 				eventData['conflictData'] as unknown as PlanetaryConflictData // Pass the PlanetaryConflictData
 			);
 		} else {
