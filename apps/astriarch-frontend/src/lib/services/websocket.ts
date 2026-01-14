@@ -1816,7 +1816,9 @@ class WebSocketService {
 			// OPTIMISTIC EXECUTION: Execute CommandProcessor locally before sending
 			console.log(`🎯 Executing command optimistically: ${command.type}`, command);
 
-			// Call CommandProcessor with client model directly (no need to construct fake ModelData)
+			// Call CommandProcessor with client model
+			// NOTE: processCommand mutates cgm directly for optimistic updates
+			// We don't need to apply the returned events - those are for the server to broadcast
 			const result = CommandProcessor.processCommand(cgm, grid, command);
 
 			if (!result.success) {
@@ -1830,13 +1832,9 @@ class WebSocketService {
 				return;
 			}
 
-			// Apply events optimistically to local model
-			console.log(`✅ Command successful, applying ${result.events.length} events optimistically`);
-			for (const event of result.events) {
-				EventApplicator.applyEvent(cgm, event, grid);
-			}
-
+			// CommandProcessor already mutated cgm for the optimistic update
 			// Update the store immediately for instant UI feedback
+			console.log(`✅ Command successful, model already mutated by CommandProcessor`);
 			clientGameModel.set(cgm);
 
 			// Track this command as pending
