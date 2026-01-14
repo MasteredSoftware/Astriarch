@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import type { IGame } from '$lib/services/websocket';
 import { PlayerStorage } from '$lib/utils/playerStorage';
+import type { ClientEvent, PlanetaryConflictData } from 'astriarch-engine';
 
 // WebSocket multiplayer game state interface
 export interface MultiplayerGameState {
@@ -70,6 +71,9 @@ export interface GameNotification {
 	actionText?: string;
 	actionType?: string;
 	duration?: number; // Duration in milliseconds before auto-removal (default: 5000ms)
+	// Enhanced data for activity store
+	clientEvent?: ClientEvent;
+	conflictData?: PlanetaryConflictData;
 }
 
 // Create the multiplayer game store
@@ -218,11 +222,17 @@ function createMultiplayerGameStore() {
 		},
 
 		// Notification actions
-		addNotification: (notification: Omit<GameNotification, 'id'>) => {
+		addNotification: (
+			notification: Omit<GameNotification, 'id'>,
+			clientEvent?: ClientEvent,
+			conflictData?: PlanetaryConflictData
+		) => {
 			const newNotification: GameNotification = {
 				...notification,
 				id: `notification-${Date.now()}-${Math.random()}`,
-				duration: notification.duration ?? 5000 // Default to 5 seconds
+				duration: notification.duration ?? 5000, // Default to 5 seconds
+				clientEvent,
+				conflictData
 			};
 			notifications.update((prev) => [...prev, newNotification]);
 
