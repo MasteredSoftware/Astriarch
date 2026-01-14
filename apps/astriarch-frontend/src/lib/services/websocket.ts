@@ -1973,7 +1973,8 @@ class WebSocketService {
 					destroyers: shipsByType.destroyers,
 					cruisers: shipsByType.cruisers,
 					battleships: shipsByType.battleships
-				}
+				},
+				commandId: '' // Will be set by sendCommand
 			};
 
 			this.sendCommand(command);
@@ -2121,7 +2122,8 @@ class WebSocketService {
 				playerId,
 				timestamp: Date.now(),
 				researchType,
-				data
+				data,
+				commandId: '' // Will be set by sendCommand
 			} as SubmitResearchItemCommand;
 
 			this.sendCommand(command);
@@ -2188,7 +2190,8 @@ class WebSocketService {
 					resourceType: resourceTypeMap[resourceType] || 'food',
 					amount,
 					action
-				}
+				},
+				commandId: '' // Will be set by sendCommand
 			} as SubmitTradeCommand;
 
 			this.sendCommand(command);

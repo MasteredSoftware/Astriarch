@@ -5,10 +5,7 @@ import {
 	getPlayerTotalResourceProductionPerTurn,
 	getPlayerTotalPopulation,
 	Grid,
-	Player,
-	Planet,
 	type ClientModelData,
-	type PlanetProductionItemData,
 	ResearchType,
 	GALAXY_WIDTH,
 	GALAXY_HEIGHT
