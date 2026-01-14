@@ -86,7 +86,7 @@ class WebSocketService {
 	private autoQueueRequested = false; // True when auto-queue check is needed
 	private pendingCommands = new Map<
 		string,
-		{ timestamp: number; type: GameCommandType; events: ClientEvent[] }
+		{ timestamp: number; type: GameCommandType; events: ClientEvent[]; acked: boolean }
 	>(); // Track optimistically applied commands
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
@@ -1316,11 +1316,15 @@ class WebSocketService {
 					console.log(
 						`✅ Command ACK received for [${payload.commandId}] type ${pending.type} (latency: ${latency}ms)`
 					);
+					// Mark as acked to prevent timeout warning
+					pending.acked = true;
 					// Don't delete yet - wait for events to match and confirm
 					// Events will remove from pending map when they match
 				} else {
-					console.warn(
-						`⚠️ Received ACK for unknown command [${payload.commandId}] - possible duplicate or desync`
+					// Command not in pending map - likely already confirmed via CLIENT_EVENT
+					// This is a normal race condition when ACK arrives after events
+					console.debug(
+						`ACK received for [${payload.commandId}] - already confirmed via events`
 					);
 				}
 				break;
@@ -1841,7 +1845,8 @@ class WebSocketService {
 			this.pendingCommands.set(command.commandId, {
 				timestamp: Date.now(),
 				type: command.type,
-				events: result.events
+				events: result.events,
+				acked: false
 			});
 
 			// Send command to server for authoritative processing
@@ -1855,7 +1860,8 @@ class WebSocketService {
 
 			// Set timeout to warn if command not ACKed within 10 seconds
 			setTimeout(() => {
-				if (this.pendingCommands.has(command.commandId)) {
+				const pending = this.pendingCommands.get(command.commandId);
+				if (pending && !pending.acked) {
 					console.warn(`⚠️ Command ${command.type} [${command.commandId}] not ACKed after 10s`);
 				}
 			}, 10000);
