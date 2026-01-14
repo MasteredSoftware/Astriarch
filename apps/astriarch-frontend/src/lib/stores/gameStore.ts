@@ -294,51 +294,6 @@ export const gameActions = {
 
 		// Send to server for persistence and broadcast
 		webSocketService.setGameSpeed(gameSpeedEnum);
-	},
-
-	// Validate with engine then add item to planet's build queue if resources are sufficient
-	addToPlanetBuildQueueOptimistic(planetId: number, item: PlanetProductionItemData): boolean {
-		const cgm = get(clientGameModel);
-		if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return false;
-
-		const grid = get(gameGrid);
-		if (!grid) return false;
-
-		const planet = cgm.mainPlayerOwnedPlanets[planetId];
-
-		// Use engine validation to check if we can build this item
-		const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
-			cgm,
-			grid,
-			planet,
-			item
-		);
-
-		if (canBuild) {
-			// The engine method already updated the planet's build queue and spent resources
-			// We need to trigger a store update to notify components
-			clientGameModel.update((current) => (current ? { ...current } : null));
-		}
-
-		return canBuild;
-	},
-
-	// Remove item from planet's build queue with refund
-	removeFromPlanetBuildQueueOptimistic(planetId: number, itemIndex: number): boolean {
-		const cgm = get(clientGameModel);
-		if (!cgm || !cgm.mainPlayerOwnedPlanets[planetId]) return false;
-
-		const planet = cgm.mainPlayerOwnedPlanets[planetId];
-
-		// Use engine method to remove item and handle refund
-		const success = Planet.removeBuildQueueItemForRefund(planet, itemIndex);
-
-		if (success) {
-			// Trigger a store update to notify components
-			clientGameModel.update((current) => (current ? { ...current } : null));
-		}
-
-		return success;
 	}
 };
 
