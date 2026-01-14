@@ -8,6 +8,7 @@
 import { GameModel } from './gameModel';
 import { Planet } from './planet';
 import type { ClientModelData } from '../model/clientModel';
+import type { ModelData } from '../model/model';
 import type { Grid } from './grid';
 import {
   GameCommand,
@@ -41,7 +42,6 @@ import {
   TradeSubmittedEvent,
   TradeCancelledEvent,
 } from './GameCommands';
-import { ClientGameModel } from './clientGameModel';
 import { Player } from './player';
 import { Fleet } from './fleet';
 import { TradingCenter } from './tradingCenter';
@@ -70,52 +70,92 @@ export class CommandProcessor {
   }
 
   /**
+   * Type guard to check if model is ClientModelData
+   */
+  private static isClientModel(model: ModelData | ClientModelData): model is ClientModelData {
+    return 'mainPlayerOwnedPlanets' in model;
+  }
+
+  /**
+   * Get the main player from either ModelData or ClientModelData
+   */
+  private static getMainPlayer(model: ModelData | ClientModelData, playerId: string): any {
+    if (this.isClientModel(model)) {
+      return model.mainPlayer;
+    } else {
+      return model.players.find((p) => p.id === playerId);
+    }
+  }
+
+  /**
+   * Get a planet by ID from either ModelData or ClientModelData
+   */
+  private static getPlanet(model: ModelData | ClientModelData, planetId: number): any {
+    if (this.isClientModel(model)) {
+      return model.mainPlayerOwnedPlanets[planetId];
+    } else {
+      return model.planets.find((p) => p.id === planetId);
+    }
+  }
+
+  /**
+   * Get all planets from either ModelData or ClientModelData
+   */
+  private static getAllPlanets(model: ModelData | ClientModelData): any[] {
+    if (this.isClientModel(model)) {
+      return model.clientPlanets;
+    } else {
+      return model.planets;
+    }
+  }
+
+  /**
    * Process a player command and return events to broadcast
    *
-   * @param clientModel - Client game model with player's data
+   * @param model - Either full ModelData (server) or ClientModelData (client)
    * @param grid - Game grid for distance calculations
    * @param command - The command to process
    */
-  public static processCommand(clientModel: ClientModelData, grid: Grid, command: GameCommand): CommandResult {
+  public static processCommand(model: ModelData | ClientModelData, grid: Grid, command: GameCommand): CommandResult {
     switch (command.type) {
       case GameCommandType.QUEUE_PRODUCTION_ITEM:
-        return this.processQueueProductionItem(clientModel, grid, command as QueueProductionItemCommand);
+        return this.processQueueProductionItem(model, grid, command as QueueProductionItemCommand);
 
       case GameCommandType.REMOVE_PRODUCTION_ITEM:
-        return this.processRemoveProductionItem(clientModel, command as RemoveProductionItemCommand);
+        return this.processRemoveProductionItem(model, command as RemoveProductionItemCommand);
 
       case GameCommandType.DEMOLISH_IMPROVEMENT:
-        return this.processDemolishImprovement(clientModel, grid, command as DemolishImprovementCommand);
+        return this.processDemolishImprovement(model, grid, command as DemolishImprovementCommand);
 
       case GameCommandType.SEND_SHIPS:
-        return this.processSendShips(clientModel, grid, command as SendShipsCommand);
+        return this.processSendShips(model, grid, command as SendShipsCommand);
 
       case GameCommandType.UPDATE_PLANET_WORKER_ASSIGNMENTS:
-        return this.processUpdatePlanetWorkerAssignments(clientModel, command as UpdatePlanetWorkerAssignmentsCommand);
+        return this.processUpdatePlanetWorkerAssignments(model, command as UpdatePlanetWorkerAssignmentsCommand);
 
       case GameCommandType.SET_WAYPOINT:
-        return this.processSetWaypoint(clientModel, command as SetWaypointCommand);
+        return this.processSetWaypoint(model, command as SetWaypointCommand);
 
       case GameCommandType.CLEAR_WAYPOINT:
-        return this.processClearWaypoint(clientModel, command as ClearWaypointCommand);
+        return this.processClearWaypoint(model, command as ClearWaypointCommand);
 
       case GameCommandType.ADJUST_RESEARCH_PERCENT:
-        return this.processAdjustResearchPercent(clientModel, command as AdjustResearchPercentCommand);
+        return this.processAdjustResearchPercent(model, command as AdjustResearchPercentCommand);
 
       case GameCommandType.SUBMIT_RESEARCH_ITEM:
-        return this.processSubmitResearchItem(clientModel, command as SubmitResearchItemCommand);
+        return this.processSubmitResearchItem(model, command as SubmitResearchItemCommand);
 
       case GameCommandType.CANCEL_RESEARCH_ITEM:
-        return this.processCancelResearchItem(clientModel, command as CancelResearchItemCommand);
+        return this.processCancelResearchItem(model, command as CancelResearchItemCommand);
 
       case GameCommandType.SUBMIT_TRADE:
-        return this.processSubmitTrade(clientModel, command as SubmitTradeCommand);
+        return this.processSubmitTrade(model, command as SubmitTradeCommand);
 
       case GameCommandType.CANCEL_TRADE:
-        return this.processCancelTrade(clientModel, command as CancelTradeCommand);
+        return this.processCancelTrade(model, command as CancelTradeCommand);
 
       case GameCommandType.UPDATE_PLANET_OPTIONS:
-        return this.processUpdatePlanetOptions(clientModel, command as UpdatePlanetOptionsCommand);
+        return this.processUpdatePlanetOptions(model, command as UpdatePlanetOptionsCommand);
 
       default:
         const unknownCommand = command as { type: string };
@@ -131,11 +171,11 @@ export class CommandProcessor {
   }
 
   private static processQueueProductionItem(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     grid: Grid,
     command: QueueProductionItemCommand,
   ): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+    const planet = this.getPlanet(model, command.planetId);
     if (!planet) {
       return {
         success: false,
@@ -144,7 +184,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -167,15 +207,15 @@ export class CommandProcessor {
     let compensatedResources = { energy: 0, ore: 0, iridium: 0 };
 
     if (command.clientCycle !== undefined) {
-      const cycleDrift = command.clientCycle - clientModel.currentCycle;
+      const cycleDrift = command.clientCycle - model.currentCycle;
       const MAX_DRIFT_COMPENSATION = 0.1; // Only compensate up to 0.1 cycles (~3 seconds at normal speed)
 
       if (cycleDrift > 0 && cycleDrift <= MAX_DRIFT_COMPENSATION) {
         // Client is slightly ahead - calculate extra resources they've generated
-        const resourcesPerCycle = GameModel.getPlayerTotalResourceProductionPerTurn(
-          player,
-          clientModel.mainPlayerOwnedPlanets,
-        );
+        const planetById = this.isClientModel(model)
+          ? model.mainPlayerOwnedPlanets
+          : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+        const resourcesPerCycle = GameModel.getPlayerTotalResourceProductionPerTurn(player, planetById);
 
         compensatedResources = {
           energy: resourcesPerCycle.energy * cycleDrift,
@@ -198,8 +238,14 @@ export class CommandProcessor {
       }
     }
 
-    // Enqueue using engine method (already have clientModel)
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
+    // Enqueue using engine method
+    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+      model,
+      grid,
+      planet,
+      productionItem,
+      command.playerId,
+    );
 
     // Remove temporary compensation after validation
     if (compensationApplied) {
@@ -223,7 +269,10 @@ export class CommandProcessor {
     }
 
     // Get player resources after spending
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+    const planetById = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+    const totalResources = Player.getTotalResourceAmount(player, planetById);
 
     const event: ProductionItemQueuedEvent = {
       type: ClientEventType.PRODUCTION_ITEM_QUEUED,
@@ -232,7 +281,7 @@ export class CommandProcessor {
         planetId: command.planetId,
         productionItem,
         playerResources: totalResources,
-        serverCycle: clientModel.currentCycle,
+        serverCycle: model.currentCycle,
         // Pass through metadata from command (e.g., autoQueued flag)
         metadata: command.metadata,
       },
@@ -242,7 +291,7 @@ export class CommandProcessor {
       'PRODUCTION_ITEM_QUEUED event in CommandProcessor:',
       event,
       'serverCycle:',
-      clientModel.currentCycle,
+      model.currentCycle,
       'resources:',
       totalResources,
     );
@@ -251,10 +300,10 @@ export class CommandProcessor {
   }
 
   private static processRemoveProductionItem(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     command: RemoveProductionItemCommand,
   ): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+    const planet = this.getPlanet(model, command.planetId);
     if (!planet) {
       return {
         success: false,
@@ -263,7 +312,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -307,11 +356,11 @@ export class CommandProcessor {
   }
 
   private static processDemolishImprovement(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     grid: Grid,
     command: DemolishImprovementCommand,
   ): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+    const planet = this.getPlanet(model, command.planetId);
     if (!planet) {
       return {
         success: false,
@@ -320,7 +369,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -339,7 +388,13 @@ export class CommandProcessor {
     }
 
     // Enqueue demolish order using engine method
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
+    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+      model,
+      grid,
+      planet,
+      productionItem,
+      command.playerId,
+    );
 
     if (!canBuild) {
       return {
@@ -350,7 +405,10 @@ export class CommandProcessor {
     }
 
     // Get player resources after spending (no actual cost for demolish, but might get refund)
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+    const planetById = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+    const totalResources = Player.getTotalResourceAmount(player, planetById);
 
     const event: ProductionItemQueuedEvent = {
       type: ClientEventType.PRODUCTION_ITEM_QUEUED,
@@ -359,15 +417,19 @@ export class CommandProcessor {
         planetId: command.planetId,
         productionItem: productionItem,
         playerResources: totalResources,
-        serverCycle: clientModel.currentCycle,
+        serverCycle: model.currentCycle,
       },
     };
 
     return { success: true, events: [event] };
   }
 
-  private static processSendShips(clientModel: ClientModelData, grid: Grid, command: SendShipsCommand): CommandResult {
-    const sourcePlanet = clientModel.mainPlayerOwnedPlanets[command.fromPlanetId];
+  private static processSendShips(
+    model: ModelData | ClientModelData,
+    grid: Grid,
+    command: SendShipsCommand,
+  ): CommandResult {
+    const sourcePlanet = this.getPlanet(model, command.fromPlanetId);
     if (!sourcePlanet) {
       return {
         success: false,
@@ -376,10 +438,9 @@ export class CommandProcessor {
       };
     }
 
-    // Destination can be owned or just explored (in clientPlanets)
+    // Destination can be owned or just explored
     const destPlanet =
-      clientModel.mainPlayerOwnedPlanets[command.toPlanetId] ||
-      clientModel.clientPlanets.find((p) => p.id === command.toPlanetId);
+      this.getPlanet(model, command.toPlanetId) || this.getAllPlanets(model).find((p) => p.id === command.toPlanetId);
     if (!destPlanet) {
       return {
         success: false,
@@ -388,7 +449,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -420,7 +481,7 @@ export class CommandProcessor {
       ...command.shipIds.battleships,
     ];
 
-    const existingShipIds = new Set<string>(sourcePlanet.planetaryFleet.starships.map((s) => s.id));
+    const existingShipIds = new Set<string>(sourcePlanet.planetaryFleet.starships.map((s: any) => s.id));
     const missingShips = allRequestedIds.filter((id) => !existingShipIds.has(id));
 
     if (missingShips.length > 0) {
@@ -453,10 +514,10 @@ export class CommandProcessor {
   }
 
   private static processUpdatePlanetWorkerAssignments(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     command: UpdatePlanetWorkerAssignmentsCommand,
   ): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+    const planet = this.getPlanet(model, command.planetId);
 
     if (!planet) {
       return {
@@ -466,7 +527,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -500,8 +561,8 @@ export class CommandProcessor {
     };
   }
 
-  private static processSetWaypoint(clientModel: ClientModelData, command: SetWaypointCommand): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+  private static processSetWaypoint(model: ModelData | ClientModelData, command: SetWaypointCommand): CommandResult {
+    const planet = this.getPlanet(model, command.planetId);
 
     if (!planet) {
       return {
@@ -512,8 +573,8 @@ export class CommandProcessor {
     }
 
     const waypointPlanet =
-      clientModel.mainPlayerOwnedPlanets[command.waypointPlanetId] ||
-      clientModel.clientPlanets.find((p) => p.id === command.waypointPlanetId);
+      this.getPlanet(model, command.waypointPlanetId) ||
+      this.getAllPlanets(model).find((p) => p.id === command.waypointPlanetId);
     if (!waypointPlanet) {
       return {
         success: false,
@@ -522,7 +583,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -549,8 +610,11 @@ export class CommandProcessor {
     };
   }
 
-  private static processClearWaypoint(clientModel: ClientModelData, command: ClearWaypointCommand): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+  private static processClearWaypoint(
+    model: ModelData | ClientModelData,
+    command: ClearWaypointCommand,
+  ): CommandResult {
+    const planet = this.getPlanet(model, command.planetId);
 
     if (!planet) {
       return {
@@ -560,7 +624,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -587,10 +651,10 @@ export class CommandProcessor {
   }
 
   private static processAdjustResearchPercent(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     command: AdjustResearchPercentCommand,
   ): CommandResult {
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
 
     if (player.id !== command.playerId) {
       return {
@@ -627,10 +691,10 @@ export class CommandProcessor {
   }
 
   private static processSubmitResearchItem(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     command: SubmitResearchItemCommand,
   ): CommandResult {
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
 
     if (player.id !== command.playerId) {
       return {
@@ -668,10 +732,10 @@ export class CommandProcessor {
   }
 
   private static processCancelResearchItem(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     command: CancelResearchItemCommand,
   ): CommandResult {
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
 
     if (player.id !== command.playerId) {
       return {
@@ -711,8 +775,8 @@ export class CommandProcessor {
     };
   }
 
-  private static processSubmitTrade(clientModel: ClientModelData, command: SubmitTradeCommand): CommandResult {
-    const player = clientModel.mainPlayer;
+  private static processSubmitTrade(model: ModelData | ClientModelData, command: SubmitTradeCommand): CommandResult {
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -774,7 +838,9 @@ export class CommandProcessor {
     );
 
     // Add trade to the client trading center (note: this is optimistic, server is authoritative)
-    clientModel.clientTradingCenter.mainPlayerTrades.push(trade);
+    if (this.isClientModel(model)) {
+      model.clientTradingCenter.mainPlayerTrades.push(trade);
+    }
 
     // Generate event
     const event: TradeSubmittedEvent = {
@@ -792,8 +858,8 @@ export class CommandProcessor {
     return { success: true, events: [event] };
   }
 
-  private static processCancelTrade(clientModel: ClientModelData, command: CancelTradeCommand): CommandResult {
-    const player = clientModel.mainPlayer;
+  private static processCancelTrade(model: ModelData | ClientModelData, command: CancelTradeCommand): CommandResult {
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,
@@ -803,7 +869,10 @@ export class CommandProcessor {
     }
 
     // Find and remove the trade from client trading center
-    const tradeIndex = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === command.tradeId);
+    let tradeIndex = -1;
+    if (this.isClientModel(model)) {
+      tradeIndex = model.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === command.tradeId);
+    }
     const cancelled = tradeIndex >= 0;
 
     if (!cancelled) {
@@ -819,10 +888,15 @@ export class CommandProcessor {
     }
 
     // Remove the trade
-    clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
+    if (this.isClientModel(model)) {
+      model.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
+    }
 
     // Get player resources after trade cancellation
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+    const planetById = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+    const totalResources = Player.getTotalResourceAmount(player, planetById);
 
     // Generate event
     const event: TradeCancelledEvent = {
@@ -838,10 +912,10 @@ export class CommandProcessor {
   }
 
   private static processUpdatePlanetOptions(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     command: UpdatePlanetOptionsCommand,
   ): CommandResult {
-    const planet = clientModel.mainPlayerOwnedPlanets[command.planetId];
+    const planet = this.getPlanet(model, command.planetId);
 
     if (!planet) {
       return {
@@ -851,7 +925,7 @@ export class CommandProcessor {
       };
     }
 
-    const player = clientModel.mainPlayer;
+    const player = this.getMainPlayer(model, command.playerId);
     if (player.id !== command.playerId) {
       return {
         success: false,

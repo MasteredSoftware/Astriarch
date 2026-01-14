@@ -706,10 +706,12 @@ export class GameController {
 
         // STEP 2: Process command if provided
         if (options?.command) {
-          // Construct client model for the player who issued the command
-          const clientModel = constructClientGameModel(gameModelData.modelData, options.command.playerId);
-
-          const commandResult = CommandProcessor.processCommand(clientModel, gameModelData.grid, options.command);
+          // Process command with full ModelData (mutations will persist)
+          const commandResult = CommandProcessor.processCommand(
+            gameModelData.modelData,
+            gameModelData.grid,
+            options.command,
+          );
 
           if (!commandResult.success) {
             commandError = commandResult.error || {
