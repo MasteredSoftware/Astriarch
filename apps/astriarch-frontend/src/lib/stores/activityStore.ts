@@ -51,14 +51,12 @@ function createActivityStore() {
 						clientEvent: notification.clientEvent,
 						conflictData: notification.conflictData,
 						// Extract planet info if available from event data
-						planetId:
-							((notification.clientEvent?.data as Record<string, unknown>)?.['planetId'] as
-								| number
-								| undefined),
-						planetName:
-							((notification.clientEvent?.data as Record<string, unknown>)?.['planetName'] as
-								| string
-								| undefined)
+						planetId: (notification.clientEvent?.data as Record<string, unknown>)?.['planetId'] as
+							| number
+							| undefined,
+						planetName: (notification.clientEvent?.data as Record<string, unknown>)?.[
+							'planetName'
+						] as string | undefined
 					};
 
 					return {

@@ -5,6 +5,15 @@
 		<link rel="icon" href="%sveltekit.assets%/favicon.ico" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 
+		<!-- Preload Orbitron font to prevent FOUT -->
+		<link
+			rel="preload"
+			href="%sveltekit.assets%/fonts/orbitron/Orbitron-VariableFont_wght.ttf"
+			as="font"
+			type="font/ttf"
+			crossorigin="anonymous"
+		/>
+
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
