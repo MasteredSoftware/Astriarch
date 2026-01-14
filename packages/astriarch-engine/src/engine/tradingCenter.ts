@@ -106,8 +106,8 @@ export class TradingCenter {
     };
   }
 
-  public static cancelTrade(tradingCenterData: TradingCenterData, tradeId: string, playerId: string): boolean {
-    const tradeIndex = tradingCenterData.currentTrades.findIndex(
+  public static cancelTrade(trades: TradeData[], tradeId: string, playerId: string): boolean {
+    const tradeIndex = trades.findIndex(
       (trade) => trade.id === tradeId && trade.playerId === playerId,
     );
 
@@ -115,12 +115,12 @@ export class TradingCenter {
       return false; // Trade not found or not owned by player
     }
 
-    const trade = tradingCenterData.currentTrades[tradeIndex];
+    const trade = trades[tradeIndex];
     const now = Date.now();
 
     // Allow cancellation only if trade hasn't been executed yet
     if (now < trade.executeAfter) {
-      tradingCenterData.currentTrades.splice(tradeIndex, 1);
+      trades.splice(tradeIndex, 1);
       return true; // Successfully cancelled
     }
 

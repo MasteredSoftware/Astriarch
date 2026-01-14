@@ -875,12 +875,13 @@ export class CommandProcessor {
       };
     }
 
-    // Find and remove the trade from client trading center
-    let tradeIndex = -1;
-    if (this.isClientModel(model)) {
-      tradeIndex = model.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === command.tradeId);
-    }
-    const cancelled = tradeIndex >= 0;
+    // Get the appropriate trades array based on model type
+    const trades = this.isClientModel(model)
+      ? model.clientTradingCenter.mainPlayerTrades
+      : model.tradingCenter.currentTrades;
+
+    // Use TradingCenter method to cancel the trade
+    const cancelled = TradingCenter.cancelTrade(trades, command.tradeId, command.playerId);
 
     if (!cancelled) {
       return {
@@ -892,11 +893,6 @@ export class CommandProcessor {
         ),
         events: [],
       };
-    }
-
-    // Remove the trade
-    if (this.isClientModel(model)) {
-      model.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
     }
 
     // Get player resources after trade cancellation
