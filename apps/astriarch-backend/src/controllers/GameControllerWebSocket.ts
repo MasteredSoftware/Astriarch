@@ -3,6 +3,7 @@ import { ServerGameModel, IGame, IPlayer } from "../models/Game";
 import { SessionModel } from "../models/Session";
 import { logger } from "../utils/logger";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
+import { WebSocketServer } from "../websocket/WebSocketServer";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 import {
@@ -705,7 +706,10 @@ export class GameController {
 
         // STEP 2: Process command if provided
         if (options?.command) {
-          const commandResult = CommandProcessor.processCommand(gameModelData, options.command);
+          // Construct client model for the player who issued the command
+          const clientModel = constructClientGameModel(gameModelData.modelData, options.command.playerId);
+
+          const commandResult = CommandProcessor.processCommand(clientModel, gameModelData.grid, options.command);
 
           if (!commandResult.success) {
             commandError = commandResult.error || {

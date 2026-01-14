@@ -1029,6 +1029,15 @@ export class WebSocketServer {
       // Handle broadcasting and game over conditions
       await this.handleGameStateUpdateResult(gameId, result);
 
+      // Send command acknowledgment to the client
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.COMMAND_ACK, {
+          commandId: command.commandId,
+          timestamp: Date.now(),
+        }),
+      );
+
       logger.info(`Processed ${command.type} command for player ${client.sessionId} in game ${gameId}`);
     } catch (error) {
       logger.error("handleGameCommand error:", error);

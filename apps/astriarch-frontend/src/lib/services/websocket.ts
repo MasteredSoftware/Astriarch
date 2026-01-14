@@ -22,7 +22,8 @@ import {
 	type PlanetProductionItemData,
 	type PlanetaryConflictData,
 	TradeType,
-	Player
+	Player,
+	CommandProcessor
 } from 'astriarch-engine';
 import {
 	calculateClientModelChecksum,
@@ -83,6 +84,10 @@ class WebSocketService {
 	private readonly gameSyncIntervalMs = 10000; // 10 seconds for game state synchronization
 	private autoQueuePending = false; // True when waiting for auto-queue command response
 	private autoQueueRequested = false; // True when auto-queue check is needed
+	private pendingCommands = new Map<
+		string,
+		{ timestamp: number; type: GameCommandType; events: ClientEvent[] }
+	>(); // Track optimistically applied commands
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
@@ -1174,11 +1179,60 @@ class WebSocketService {
 				// Get the grid for event application (needed for fleet distance calculations)
 				const grid = get(gameGrid);
 
-				// Apply each event to the client model and generate UI notifications
-				console.log(`\n📦 Processing ${payload.events.length} event(s):`);
-				payload.events.forEach((e, i) => console.log(`  ${i + 1}. ${e.type}`));
+				// Check if these events were already applied optimistically
+				const eventsToApply: ClientEvent[] = [];
+				const matchedCommandIds = new Set<string>();
 
 				for (const event of payload.events) {
+					let wasOptimisticallyApplied = false;
+
+					// Check if this event matches any pending command
+					for (const [commandId, pendingCommand] of this.pendingCommands.entries()) {
+						// Match by event type and basic data (simplified matching)
+						const matchingEvent = pendingCommand.events.find((e) => {
+							if (e.type !== event.type) return false;
+
+							// For most events, matching type is sufficient since they're player-specific
+							// and we only have one pending command of each type at a time
+							// More sophisticated matching could compare event.data fields if needed
+							return true;
+						});
+
+						if (matchingEvent) {
+							console.log(
+								`🔄 Event ${event.type} matches pending command [${commandId}] - skipping re-application`
+							);
+							wasOptimisticallyApplied = true;
+							matchedCommandIds.add(commandId);
+							break;
+						}
+					}
+
+					if (!wasOptimisticallyApplied) {
+						eventsToApply.push(event);
+					}
+				}
+
+				// Remove matched commands from pending (server confirmed them)
+				for (const commandId of matchedCommandIds) {
+					const pending = this.pendingCommands.get(commandId);
+					console.log(
+						`✅ Server confirmed optimistic command [${commandId}] of type ${pending?.type}`
+					);
+					this.pendingCommands.delete(commandId);
+				}
+
+				// Apply only non-optimistic events to the client model
+				console.log(
+					`\n📦 Processing events: ${payload.events.length} total, ${eventsToApply.length} to apply (${payload.events.length - eventsToApply.length} already applied optimistically):`
+				);
+				payload.events.forEach((e, i) =>
+					console.log(
+						`  ${i + 1}. ${e.type} ${eventsToApply.includes(e) ? '' : '[SKIP - optimistic]'}`
+					)
+				);
+
+				for (const event of eventsToApply) {
 					const ownedPlanetsBefore = Object.keys(currentModel.mainPlayerOwnedPlanets)
 						.map(Number)
 						.sort();
@@ -1194,6 +1248,13 @@ class WebSocketService {
 
 					// Convert event to user notification
 					this.convertClientEventToNotification(event);
+				}
+
+				// Still convert ALL events to notifications (even optimistically applied ones need notifications)
+				for (const event of payload.events) {
+					if (!eventsToApply.includes(event)) {
+						this.convertClientEventToNotification(event);
+					}
 				}
 
 				// Validate event checksum if provided (for player commands)
@@ -1242,6 +1303,26 @@ class WebSocketService {
 				// Clear the flag to allow future time advancement requests
 				gameActions.clearServerTimeAdvancementFlag();
 
+				break;
+			}
+
+			case MESSAGE_TYPE.COMMAND_ACK: {
+				// Handle command acknowledgment from server
+				const payload = message.payload as { commandId: string; timestamp: number };
+				const pending = this.pendingCommands.get(payload.commandId);
+
+				if (pending) {
+					const latency = Date.now() - pending.timestamp;
+					console.log(
+						`✅ Command ACK received for [${payload.commandId}] type ${pending.type} (latency: ${latency}ms)`
+					);
+					// Don't delete yet - wait for events to match and confirm
+					// Events will remove from pending map when they match
+				} else {
+					console.warn(
+						`⚠️ Received ACK for unknown command [${payload.commandId}] - possible duplicate or desync`
+					);
+				}
 				break;
 			}
 
@@ -1714,25 +1795,72 @@ class WebSocketService {
 	}
 
 	/**
-	 * Send a game command using the new event-driven architecture
+	 * Send a game command using the new event-driven architecture with optimistic updates
 	 */
 	sendCommand(command: GameCommand) {
 		try {
 			const gameId = this.requireGameId();
 			const cgm = get(clientGameModel);
+			const grid = get(gameGrid);
 
-			// Add client's current cycle for drift compensation
-			if (cgm) {
-				command.clientCycle = cgm.currentCycle;
+			if (!cgm || !grid) {
+				throw new Error('No game model or grid available');
 			}
 
+			// Generate UUID for command tracking
+			command.commandId = crypto.randomUUID();
+
+			// Add client's current cycle for drift compensation
+			command.clientCycle = cgm.currentCycle;
+
+			// OPTIMISTIC EXECUTION: Execute CommandProcessor locally before sending
+			console.log(`🎯 Executing command optimistically: ${command.type}`, command);
+
+			// Call CommandProcessor with client model directly (no need to construct fake ModelData)
+			const result = CommandProcessor.processCommand(cgm, grid, command);
+
+			if (!result.success) {
+				// Command validation failed - show error immediately, don't send to server
+				console.error('❌ Command validation failed:', result.error);
+				this.gameStore.addNotification({
+					type: 'error',
+					message: result.error?.message || 'Command failed validation',
+					timestamp: Date.now()
+				});
+				return;
+			}
+
+			// Apply events optimistically to local model
+			console.log(`✅ Command successful, applying ${result.events.length} events optimistically`);
+			for (const event of result.events) {
+				EventApplicator.applyEvent(cgm, event, grid);
+			}
+
+			// Update the store immediately for instant UI feedback
+			clientGameModel.set(cgm);
+
+			// Track this command as pending
+			this.pendingCommands.set(command.commandId, {
+				timestamp: Date.now(),
+				type: command.type,
+				events: result.events
+			});
+
+			// Send command to server for authoritative processing
 			const payload = {
 				gameId,
 				command
 			};
 
-			console.log(`Sending GAME_COMMAND: ${command.type}`, command);
+			console.log(`📤 Sending GAME_COMMAND to server: ${command.type} [${command.commandId}]`);
 			this.send(new Message(MESSAGE_TYPE.GAME_COMMAND, payload));
+
+			// Set timeout to warn if command not ACKed within 10 seconds
+			setTimeout(() => {
+				if (this.pendingCommands.has(command.commandId)) {
+					console.warn(`⚠️ Command ${command.type} [${command.commandId}] not ACKed after 10s`);
+				}
+			}, 10000);
 		} catch (error) {
 			console.error('Failed to send game command:', error);
 			this.gameStore.addNotification({
