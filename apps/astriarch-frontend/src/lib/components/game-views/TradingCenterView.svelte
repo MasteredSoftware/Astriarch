@@ -131,30 +131,9 @@
 	}
 
 	// Function to handle clicking on trade amount bars
-	function handleTradeAmountBarClick(event: MouseEvent) {
-		const target = event.currentTarget as HTMLElement;
-		const rect = target.getBoundingClientRect();
-		const clickX = event.clientX - rect.left;
-		const barWidth = rect.width;
-
-		// Calculate which bar was clicked (0-19 for 20 bars)
-		const barIndex = Math.floor((clickX / barWidth) * 20);
+	function handleTradeAmountBarClick(barIndex: number) {
 		const newAmount = Math.round(((barIndex + 1) / 20) * maxTradeAmount);
-
 		tradeAmount = Math.min(newAmount, maxTradeAmount);
-	}
-
-	// Function to handle keyboard events on trade amount bars
-	function handleTradeAmountBarKeydown(event: KeyboardEvent) {
-		if (event.key === 'Enter' || event.key === ' ') {
-			event.preventDefault();
-			// For keyboard navigation, let's increment/decrement by 10% of max
-			if (event.shiftKey) {
-				tradeAmount = Math.max(0, tradeAmount - Math.round(maxTradeAmount * 0.1));
-			} else {
-				tradeAmount = Math.min(maxTradeAmount, tradeAmount + Math.round(maxTradeAmount * 0.1));
-			}
-		}
 	}
 
 	// Helper functions
@@ -486,18 +465,21 @@
 					</div>
 
 					<!-- Clickable Trade Amount Bars (like Research view) -->
-					<div
-						class="mb-4 flex cursor-pointer gap-1"
-						on:click={handleTradeAmountBarClick}
-						on:keydown={handleTradeAmountBarKeydown}
-						role="button"
-						tabindex="0"
-					>
-						{#each tradeAmountBars as filled}
+					<div class="mb-4 flex gap-1">
+						{#each tradeAmountBars as filled, index}
 							<div
-								class="h-12 w-4 rounded-sm transition-colors {filled
+								class="h-12 w-4 cursor-pointer rounded-sm transition-colors {filled
 									? `${getResourceColor(selectedResourceType)} shadow-sm shadow-white/25`
 									: 'bg-white/10 hover:bg-white/20'}"
+								on:click={() => handleTradeAmountBarClick(index)}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										handleTradeAmountBarClick(index);
+									}
+								}}
+								role="button"
+								tabindex="0"
 							></div>
 						{/each}
 					</div>
