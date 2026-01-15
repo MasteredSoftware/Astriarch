@@ -90,13 +90,29 @@ export class CommandProcessor {
   }
 
   /**
-   * Get a planet by ID from either ModelData or ClientModelData
+   * Get a planet by ID only if owned by the specified player
+   * For ClientModelData: checks mainPlayerOwnedPlanets
+   * For ModelData: checks if planet exists and is in player's ownedPlanetIds
    */
-  private static getPlanet(model: ModelData | ClientModelData, planetId: number): PlanetData | undefined {
+  private static getPlanetIfOwned(
+    model: ModelData | ClientModelData,
+    planetId: number,
+    playerId: string,
+  ): PlanetData | undefined {
     if (this.isClientModel(model)) {
+      // For client model, mainPlayerOwnedPlanets already filters by ownership
       return model.mainPlayerOwnedPlanets[planetId];
     } else {
-      return model.planets.find((p) => p.id === planetId);
+      // For server model, verify planet exists and player owns it
+      const planet = model.planets.find((p) => p.id === planetId);
+      if (!planet) return undefined;
+
+      const player = model.players.find((p) => p.id === playerId);
+      if (!player || !player.ownedPlanetIds.includes(planetId)) {
+        return undefined;
+      }
+
+      return planet;
     }
   }
 
@@ -177,20 +193,20 @@ export class CommandProcessor {
     grid: Grid,
     command: QueueProductionItemCommand,
   ): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player ID mismatch', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -306,20 +322,20 @@ export class CommandProcessor {
     model: ModelData | ClientModelData,
     command: RemoveProductionItemCommand,
   ): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -364,20 +380,20 @@ export class CommandProcessor {
     grid: Grid,
     command: DemolishImprovementCommand,
   ): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -434,19 +450,17 @@ export class CommandProcessor {
     grid: Grid,
     command: SendShipsCommand,
   ): CommandResult {
-    const sourcePlanet = this.getPlanet(model, command.fromPlanetId);
+    const sourcePlanet = this.getPlanetIfOwned(model, command.fromPlanetId, command.playerId);
     if (!sourcePlanet) {
       return {
         success: false,
-        error: this.createError('Source planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Source planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    // Destination can be owned or just explored
-    const destPlanet =
-      this.getPlanet(model, command.toPlanetId) ||
-      this.getAllPlanets(model).find((p: ClientPlanet | PlanetData) => p.id === command.toPlanetId);
+    // Destination can be owned or just explored - use getAllPlanets for broader search
+    const destPlanet = this.getAllPlanets(model).find((p: ClientPlanet | PlanetData) => p.id === command.toPlanetId);
     if (!destPlanet) {
       return {
         success: false,
@@ -456,10 +470,10 @@ export class CommandProcessor {
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own source planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -525,21 +539,21 @@ export class CommandProcessor {
     model: ModelData | ClientModelData,
     command: UpdatePlanetWorkerAssignmentsCommand,
   ): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -571,19 +585,20 @@ export class CommandProcessor {
   }
 
   private static processSetWaypoint(model: ModelData | ClientModelData, command: SetWaypointCommand): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const waypointPlanet =
-      this.getPlanet(model, command.waypointPlanetId) ||
-      this.getAllPlanets(model).find((p: ClientPlanet | PlanetData) => p.id === command.waypointPlanetId);
+    // Waypoint planet can be owned or just explored - use getAllPlanets for broader search
+    const waypointPlanet = this.getAllPlanets(model).find(
+      (p: ClientPlanet | PlanetData) => p.id === command.waypointPlanetId,
+    );
     if (!waypointPlanet) {
       return {
         success: false,
@@ -593,10 +608,10 @@ export class CommandProcessor {
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -624,21 +639,21 @@ export class CommandProcessor {
     model: ModelData | ClientModelData,
     command: ClearWaypointCommand,
   ): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -931,21 +946,21 @@ export class CommandProcessor {
     model: ModelData | ClientModelData,
     command: UpdatePlanetOptionsCommand,
   ): CommandResult {
-    const planet = this.getPlanet(model, command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
     const player = this.getMainPlayer(model, command.playerId);
-    if (!player || player.id !== command.playerId) {
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
