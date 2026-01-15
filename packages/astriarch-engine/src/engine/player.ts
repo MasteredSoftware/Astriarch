@@ -9,6 +9,7 @@ import {
   PlanetType,
 } from '../model/planet';
 import { ColorRgbaData, EarnedPointsByType, PlayerData, PlayerType } from '../model/player';
+import { ModelData } from '../model/model';
 import { Fleet } from './fleet';
 import { calculateClientModelChecksum, calculateClientModelChecksumComponents } from '../utils/stateChecksum';
 import {
@@ -238,12 +239,19 @@ export class Player {
   }
 
   public static enqueueProductionItemAndSpendResourcesIfPossible(
-    clientModel: ClientModelData,
+    model: ModelData | ClientModelData,
     grid: Grid,
     planet: PlanetData,
     item: PlanetProductionItemData,
+    playerId: string,
   ): boolean {
-    const { mainPlayer, mainPlayerOwnedPlanets } = clientModel;
+    // Extract player and planetById based on model type
+    const mainPlayer =
+      'mainPlayer' in model ? model.mainPlayer : model.players.find((p: PlayerData) => p.id === playerId)!;
+    const mainPlayerOwnedPlanets: PlanetById =
+      'mainPlayerOwnedPlanets' in model
+        ? model.mainPlayerOwnedPlanets
+        : Object.fromEntries(model.planets.map((p: PlanetData) => [p.id, p]));
 
     // Use the new comprehensive validation
     const validationResult = PlanetProductionItem.canBuild(planet, mainPlayer, mainPlayerOwnedPlanets, item);

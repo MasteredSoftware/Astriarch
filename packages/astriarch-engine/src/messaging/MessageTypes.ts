@@ -30,6 +30,7 @@ export enum MESSAGE_TYPE {
   // New Command/Event Architecture
   GAME_COMMAND = 'GAME_COMMAND', // Client -> Server: Player command
   CLIENT_EVENT = 'CLIENT_EVENT', // Server -> Client: State change event
+  COMMAND_ACK = 'COMMAND_ACK', // Server -> Client: Command acknowledgment
   // NOTE: CLIENT_NOTIFICATION removed - notifications are now generated client-side
   // when advanceClientGameModelTime runs, eliminating the 10-second server delay
 
@@ -483,6 +484,7 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.PLAYER_ELIMINATED]: 71,
     [MESSAGE_TYPE.GAME_COMMAND]: 80,
     [MESSAGE_TYPE.CLIENT_EVENT]: 81,
+    [MESSAGE_TYPE.COMMAND_ACK]: 82,
   };
 
   return typeMap[type] ?? -1;
@@ -519,6 +521,9 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     69: MESSAGE_TYPE.PLAYER_RECONNECTED,
     70: MESSAGE_TYPE.CHAT_ROOM_SESSIONS_UPDATED,
     71: MESSAGE_TYPE.PLAYER_ELIMINATED,
+    80: MESSAGE_TYPE.GAME_COMMAND,
+    81: MESSAGE_TYPE.CLIENT_EVENT,
+    82: MESSAGE_TYPE.COMMAND_ACK,
   };
 
   return reverseMap[typeNum] ?? null;

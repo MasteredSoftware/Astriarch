@@ -7,20 +7,11 @@ import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 import {
   GameModel,
-  Fleet,
-  StarShipType,
-  ResearchType,
-  TradingCenter,
-  TradeType,
-  TradingCenterResourceType,
   PlayerType,
   GameCommand,
-  GameCommandType,
   ClientEvent,
-  ClientEventType,
   CommandProcessor,
   calculateRollingEventChecksum,
-  constructClientGameModel,
   advanceGameModelTime,
   type PlayerData,
   type GameEndConditions,
@@ -705,7 +696,12 @@ export class GameController {
 
         // STEP 2: Process command if provided
         if (options?.command) {
-          const commandResult = CommandProcessor.processCommand(gameModelData, options.command);
+          // Process command with full ModelData (mutations will persist)
+          const commandResult = CommandProcessor.processCommand(
+            gameModelData.modelData,
+            gameModelData.grid,
+            options.command,
+          );
 
           if (!commandResult.success) {
             commandError = commandResult.error || {

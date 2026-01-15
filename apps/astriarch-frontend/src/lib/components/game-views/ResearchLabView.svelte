@@ -323,16 +323,8 @@
 	}
 
 	// Handle clicking on resource bars
-	function handleBarClick(event: MouseEvent, isResearchBar: boolean) {
-		const target = event.currentTarget as HTMLElement;
-		const rect = target.getBoundingClientRect();
-		const clickX = event.clientX - rect.left;
-		const barWidth = rect.width;
-
-		// Calculate which bar was clicked (0-19 for 20 bars)
-		const barIndex = Math.floor((clickX / barWidth) * 20);
+	function handleBarClick(barIndex: number, isResearchBar: boolean) {
 		const newPercent = (barIndex + 1) / 20; // +1 to make it 1-20 range, then divide by 20
-
 		if (isResearchBar) {
 			adjustResearchPercent(newPercent);
 		} else {
@@ -366,17 +358,21 @@
 						</span>
 					</div>
 
-					<div
-						class="ml-9 flex cursor-pointer gap-1"
-						on:click={(e) => handleBarClick(e, false)}
-						role="button"
-						tabindex="0"
-					>
-						{#each energyBars as filled}
+					<div class="ml-9 flex gap-1">
+						{#each energyBars as filled, index}
 							<div
-								class="h-12 w-4 rounded-sm {filled
+								class="h-12 w-4 cursor-pointer rounded-sm {filled
 									? 'shadow-glow-white bg-yellow-500'
 									: 'bg-white/10'} transition-colors hover:bg-yellow-400"
+								on:click={() => handleBarClick(index, false)}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										handleBarClick(index, false);
+									}
+								}}
+								role="button"
+								tabindex="0"
 							></div>
 						{/each}
 					</div>
@@ -394,17 +390,21 @@
 						</span>
 					</div>
 
-					<div
-						class="ml-9 flex cursor-pointer gap-1"
-						on:click={(e) => handleBarClick(e, true)}
-						role="button"
-						tabindex="0"
-					>
-						{#each researchBars as filled}
+					<div class="ml-9 flex gap-1">
+						{#each researchBars as filled, index}
 							<div
-								class="h-12 w-4 rounded-sm {filled
+								class="h-12 w-4 cursor-pointer rounded-sm {filled
 									? 'shadow-glow-white bg-green-500'
 									: 'bg-white/10'} transition-colors hover:bg-green-400"
+								on:click={() => handleBarClick(index, true)}
+								on:keydown={(e) => {
+									if (e.key === 'Enter' || e.key === ' ') {
+										e.preventDefault();
+										handleBarClick(index, true);
+									}
+								}}
+								role="button"
+								tabindex="0"
 							></div>
 						{/each}
 					</div>

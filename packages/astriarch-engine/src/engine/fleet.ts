@@ -324,9 +324,15 @@ export class Fleet {
       battleships: string[];
     },
     player?: PlayerData,
+    fleetId?: number,
   ): FleetData {
     // Split the fleet by specific ship IDs
     const newFleet = this.splitFleetByShipIds(sourcePlanet.planetaryFleet, shipIds, player);
+
+    // Use provided fleet ID if available (from client-generated command)
+    if (fleetId !== undefined) {
+      newFleet.id = fleetId;
+    }
 
     // Set the destination for the new fleet
     this.setDestination(newFleet, grid, sourcePlanet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);

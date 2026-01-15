@@ -5,8 +5,13 @@
  * This is the core of the new event-driven architecture.
  */
 
-import { GameModel, GameModelData } from './gameModel';
+import { GameModel } from './gameModel';
 import { Planet } from './planet';
+import type { ClientModelData, ClientPlanet } from '../model/clientModel';
+import type { ModelData } from '../model/model';
+import type { PlanetData } from '../model/planet';
+import type { PlayerData } from '../model/player';
+import type { Grid } from './grid';
 import {
   GameCommand,
   CommandResult,
@@ -39,7 +44,6 @@ import {
   TradeSubmittedEvent,
   TradeCancelledEvent,
 } from './GameCommands';
-import { ClientGameModel } from './clientGameModel';
 import { Player } from './player';
 import { Fleet } from './fleet';
 import { TradingCenter } from './tradingCenter';
@@ -68,48 +72,108 @@ export class CommandProcessor {
   }
 
   /**
-   * Process a player command and return events to broadcast
+   * Type guard to check if model is ClientModelData
    */
-  public static processCommand(gameModel: GameModelData, command: GameCommand): CommandResult {
+  private static isClientModel(model: ModelData | ClientModelData): model is ClientModelData {
+    return 'mainPlayerOwnedPlanets' in model;
+  }
+
+  /**
+   * Get the main player from either ModelData or ClientModelData
+   */
+  private static getMainPlayer(model: ModelData | ClientModelData, playerId: string): PlayerData | undefined {
+    if (this.isClientModel(model)) {
+      return model.mainPlayer;
+    } else {
+      return model.players.find((p) => p.id === playerId);
+    }
+  }
+
+  /**
+   * Get a planet by ID only if owned by the specified player
+   * For ClientModelData: checks mainPlayerOwnedPlanets
+   * For ModelData: checks if planet exists and is in player's ownedPlanetIds
+   */
+  private static getPlanetIfOwned(
+    model: ModelData | ClientModelData,
+    planetId: number,
+    playerId: string,
+  ): PlanetData | undefined {
+    if (this.isClientModel(model)) {
+      // For client model, mainPlayerOwnedPlanets already filters by ownership
+      return model.mainPlayerOwnedPlanets[planetId];
+    } else {
+      // For server model, verify planet exists and player owns it
+      const planet = model.planets.find((p) => p.id === planetId);
+      if (!planet) return undefined;
+
+      const player = model.players.find((p) => p.id === playerId);
+      if (!player || !player.ownedPlanetIds.includes(planetId)) {
+        return undefined;
+      }
+
+      return planet;
+    }
+  }
+
+  /**
+   * Get all planets from either ModelData or ClientModelData
+   */
+  private static getAllPlanets(model: ModelData | ClientModelData): (ClientPlanet | PlanetData)[] {
+    if (this.isClientModel(model)) {
+      return model.clientPlanets;
+    } else {
+      return model.planets;
+    }
+  }
+
+  /**
+   * Process a player command and return events to broadcast
+   *
+   * @param model - Either full ModelData (server) or ClientModelData (client)
+   * @param grid - Game grid for distance calculations
+   * @param command - The command to process
+   */
+  public static processCommand(model: ModelData | ClientModelData, grid: Grid, command: GameCommand): CommandResult {
     switch (command.type) {
       case GameCommandType.QUEUE_PRODUCTION_ITEM:
-        return this.processQueueProductionItem(gameModel, command as QueueProductionItemCommand);
+        return this.processQueueProductionItem(model, grid, command as QueueProductionItemCommand);
 
       case GameCommandType.REMOVE_PRODUCTION_ITEM:
-        return this.processRemoveProductionItem(gameModel, command as RemoveProductionItemCommand);
+        return this.processRemoveProductionItem(model, command as RemoveProductionItemCommand);
 
       case GameCommandType.DEMOLISH_IMPROVEMENT:
-        return this.processDemolishImprovement(gameModel, command as DemolishImprovementCommand);
+        return this.processDemolishImprovement(model, grid, command as DemolishImprovementCommand);
 
       case GameCommandType.SEND_SHIPS:
-        return this.processSendShips(gameModel, command as SendShipsCommand);
+        return this.processSendShips(model, grid, command as SendShipsCommand);
 
       case GameCommandType.UPDATE_PLANET_WORKER_ASSIGNMENTS:
-        return this.processUpdatePlanetWorkerAssignments(gameModel, command as UpdatePlanetWorkerAssignmentsCommand);
+        return this.processUpdatePlanetWorkerAssignments(model, command as UpdatePlanetWorkerAssignmentsCommand);
 
       case GameCommandType.SET_WAYPOINT:
-        return this.processSetWaypoint(gameModel, command as SetWaypointCommand);
+        return this.processSetWaypoint(model, command as SetWaypointCommand);
 
       case GameCommandType.CLEAR_WAYPOINT:
-        return this.processClearWaypoint(gameModel, command as ClearWaypointCommand);
+        return this.processClearWaypoint(model, command as ClearWaypointCommand);
 
       case GameCommandType.ADJUST_RESEARCH_PERCENT:
-        return this.processAdjustResearchPercent(gameModel, command as AdjustResearchPercentCommand);
+        return this.processAdjustResearchPercent(model, command as AdjustResearchPercentCommand);
 
       case GameCommandType.SUBMIT_RESEARCH_ITEM:
-        return this.processSubmitResearchItem(gameModel, command as SubmitResearchItemCommand);
+        return this.processSubmitResearchItem(model, command as SubmitResearchItemCommand);
 
       case GameCommandType.CANCEL_RESEARCH_ITEM:
-        return this.processCancelResearchItem(gameModel, command as CancelResearchItemCommand);
+        return this.processCancelResearchItem(model, command as CancelResearchItemCommand);
 
       case GameCommandType.SUBMIT_TRADE:
-        return this.processSubmitTrade(gameModel, command as SubmitTradeCommand);
+        return this.processSubmitTrade(model, command as SubmitTradeCommand);
 
       case GameCommandType.CANCEL_TRADE:
-        return this.processCancelTrade(gameModel, command as CancelTradeCommand);
+        return this.processCancelTrade(model, command as CancelTradeCommand);
 
       case GameCommandType.UPDATE_PLANET_OPTIONS:
-        return this.processUpdatePlanetOptions(gameModel, command as UpdatePlanetOptionsCommand);
+        return this.processUpdatePlanetOptions(model, command as UpdatePlanetOptionsCommand);
 
       default:
         const unknownCommand = command as { type: string };
@@ -125,24 +189,24 @@ export class CommandProcessor {
   }
 
   private static processQueueProductionItem(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
+    grid: Grid,
     command: QueueProductionItemCommand,
   ): CommandResult {
-    const { modelData, grid } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
-    if (!player || !player.ownedPlanetIds.includes(command.planetId)) {
+    const player = this.getMainPlayer(model, command.playerId);
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -161,13 +225,15 @@ export class CommandProcessor {
     let compensatedResources = { energy: 0, ore: 0, iridium: 0 };
 
     if (command.clientCycle !== undefined) {
-      const cycleDrift = command.clientCycle - modelData.currentCycle;
+      const cycleDrift = command.clientCycle - model.currentCycle;
       const MAX_DRIFT_COMPENSATION = 0.1; // Only compensate up to 0.1 cycles (~3 seconds at normal speed)
 
       if (cycleDrift > 0 && cycleDrift <= MAX_DRIFT_COMPENSATION) {
         // Client is slightly ahead - calculate extra resources they've generated
-        const ownedPlanets = ClientGameModel.getOwnedPlanets(player.ownedPlanetIds, modelData.planets);
-        const resourcesPerCycle = GameModel.getPlayerTotalResourceProductionPerTurn(player, ownedPlanets);
+        const planetById = this.isClientModel(model)
+          ? model.mainPlayerOwnedPlanets
+          : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+        const resourcesPerCycle = GameModel.getPlayerTotalResourceProductionPerTurn(player, planetById);
 
         compensatedResources = {
           energy: resourcesPerCycle.energy * cycleDrift,
@@ -190,9 +256,14 @@ export class CommandProcessor {
       }
     }
 
-    // Build client model and enqueue using engine method
-    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
+    // Enqueue using engine method
+    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+      model,
+      grid,
+      planet,
+      productionItem,
+      command.playerId,
+    );
 
     // Remove temporary compensation after validation
     if (compensationApplied) {
@@ -216,16 +287,20 @@ export class CommandProcessor {
     }
 
     // Get player resources after spending
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+    const planetById = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+    const totalResources = Player.getTotalResourceAmount(player, planetById);
 
     const event: ProductionItemQueuedEvent = {
       type: ClientEventType.PRODUCTION_ITEM_QUEUED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         productionItem,
         playerResources: totalResources,
-        serverCycle: modelData.currentCycle,
+        serverCycle: model.currentCycle,
         // Pass through metadata from command (e.g., autoQueued flag)
         metadata: command.metadata,
       },
@@ -235,7 +310,7 @@ export class CommandProcessor {
       'PRODUCTION_ITEM_QUEUED event in CommandProcessor:',
       event,
       'serverCycle:',
-      modelData.currentCycle,
+      model.currentCycle,
       'resources:',
       totalResources,
     );
@@ -244,24 +319,23 @@ export class CommandProcessor {
   }
 
   private static processRemoveProductionItem(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
     command: RemoveProductionItemCommand,
   ): CommandResult {
-    const { modelData } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
-    if (!player || !player.ownedPlanetIds.includes(command.planetId)) {
+    const player = this.getMainPlayer(model, command.playerId);
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -291,6 +365,7 @@ export class CommandProcessor {
     const event = {
       type: ClientEventType.PRODUCTION_ITEM_REMOVED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         itemIndex: command.index,
@@ -301,24 +376,24 @@ export class CommandProcessor {
   }
 
   private static processDemolishImprovement(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
+    grid: Grid,
     command: DemolishImprovementCommand,
   ): CommandResult {
-    const { modelData, grid } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
-    if (!player || !player.ownedPlanetIds.includes(command.planetId)) {
+    const player = this.getMainPlayer(model, command.playerId);
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -332,9 +407,14 @@ export class CommandProcessor {
       };
     }
 
-    // Build client model and enqueue demolish order using engine method
-    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(clientModel, grid, planet, productionItem);
+    // Enqueue demolish order using engine method
+    const canBuild = Player.enqueueProductionItemAndSpendResourcesIfPossible(
+      model,
+      grid,
+      planet,
+      productionItem,
+      command.playerId,
+    );
 
     if (!canBuild) {
       return {
@@ -345,34 +425,42 @@ export class CommandProcessor {
     }
 
     // Get player resources after spending (no actual cost for demolish, but might get refund)
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+    const planetById = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+    const totalResources = Player.getTotalResourceAmount(player, planetById);
 
     const event: ProductionItemQueuedEvent = {
       type: ClientEventType.PRODUCTION_ITEM_QUEUED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         productionItem: productionItem,
         playerResources: totalResources,
-        serverCycle: modelData.currentCycle,
+        serverCycle: model.currentCycle,
       },
     };
 
     return { success: true, events: [event] };
   }
 
-  private static processSendShips(gameModel: GameModelData, command: SendShipsCommand): CommandResult {
-    const { modelData, grid } = gameModel;
-    const sourcePlanet = modelData.planets.find((p) => p.id === command.fromPlanetId);
+  private static processSendShips(
+    model: ModelData | ClientModelData,
+    grid: Grid,
+    command: SendShipsCommand,
+  ): CommandResult {
+    const sourcePlanet = this.getPlanetIfOwned(model, command.fromPlanetId, command.playerId);
     if (!sourcePlanet) {
       return {
         success: false,
-        error: this.createError('Source planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Source planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const destPlanet = modelData.planets.find((p) => p.id === command.toPlanetId);
+    // Destination can be owned or just explored - use getAllPlanets for broader search
+    const destPlanet = this.getAllPlanets(model).find((p: ClientPlanet | PlanetData) => p.id === command.toPlanetId);
     if (!destPlanet) {
       return {
         success: false,
@@ -381,11 +469,11 @@ export class CommandProcessor {
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
-    if (!player || !player.ownedPlanetIds.includes(command.fromPlanetId)) {
+    const player = this.getMainPlayer(model, command.playerId);
+    if (!player) {
       return {
         success: false,
-        error: this.createError('Player does not own source planet', CommandResultErrorCode.PERMISSION_DENIED),
+        error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
         events: [],
       };
     }
@@ -428,14 +516,16 @@ export class CommandProcessor {
         events: [],
       };
     }
-    // Launch the fleet using the engine method
-    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds, player);
+    // Launch the fleet using the engine method with client-provided fleet ID
+    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds, player, command.fleetId);
 
-    // Generate event with the ship IDs that were moved
+    // Generate event with the fleet ID and ship IDs that were moved
     const event: FleetLaunchedEvent = {
       type: ClientEventType.FLEET_LAUNCHED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
+        fleetId: command.fleetId,
         fromPlanetId: command.fromPlanetId,
         toPlanetId: command.toPlanetId,
         shipIds: command.shipIds,
@@ -446,33 +536,24 @@ export class CommandProcessor {
   }
 
   private static processUpdatePlanetWorkerAssignments(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
     command: UpdatePlanetWorkerAssignmentsCommand,
   ): CommandResult {
-    const { modelData } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
     if (!player) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
-        events: [],
-      };
-    }
-
-    if (!player.ownedPlanetIds.includes(command.planetId)) {
-      return {
-        success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -486,6 +567,7 @@ export class CommandProcessor {
     const event: PlanetWorkerAssignmentsUpdatedEvent = {
       type: ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: planet.id,
         workers: {
@@ -502,19 +584,21 @@ export class CommandProcessor {
     };
   }
 
-  private static processSetWaypoint(gameModel: GameModelData, command: SetWaypointCommand): CommandResult {
-    const { modelData } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+  private static processSetWaypoint(model: ModelData | ClientModelData, command: SetWaypointCommand): CommandResult {
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const waypointPlanet = modelData.planets.find((p) => p.id === command.waypointPlanetId);
+    // Waypoint planet can be owned or just explored - use getAllPlanets for broader search
+    const waypointPlanet = this.getAllPlanets(model).find(
+      (p: ClientPlanet | PlanetData) => p.id === command.waypointPlanetId,
+    );
     if (!waypointPlanet) {
       return {
         success: false,
@@ -523,19 +607,11 @@ export class CommandProcessor {
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
     if (!player) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
-        events: [],
-      };
-    }
-
-    if (!player.ownedPlanetIds.includes(command.planetId)) {
-      return {
-        success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -546,6 +622,7 @@ export class CommandProcessor {
     const event: WaypointSetEvent = {
       type: ClientEventType.WAYPOINT_SET,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         waypointPlanetId: command.waypointPlanetId,
@@ -558,31 +635,25 @@ export class CommandProcessor {
     };
   }
 
-  private static processClearWaypoint(gameModel: GameModelData, command: ClearWaypointCommand): CommandResult {
-    const { modelData } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+  private static processClearWaypoint(
+    model: ModelData | ClientModelData,
+    command: ClearWaypointCommand,
+  ): CommandResult {
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
     if (!player) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
-        events: [],
-      };
-    }
-
-    if (!player.ownedPlanetIds.includes(command.planetId)) {
-      return {
-        success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -593,6 +664,7 @@ export class CommandProcessor {
     const event: WaypointClearedEvent = {
       type: ClientEventType.WAYPOINT_CLEARED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
       },
@@ -605,13 +677,12 @@ export class CommandProcessor {
   }
 
   private static processAdjustResearchPercent(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
     command: AdjustResearchPercentCommand,
   ): CommandResult {
-    const { modelData } = gameModel;
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
 
-    if (!player) {
+    if (!player || player.id !== command.playerId) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
@@ -634,6 +705,7 @@ export class CommandProcessor {
     const event: ResearchPercentAdjustedEvent = {
       type: ClientEventType.RESEARCH_PERCENT_ADJUSTED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         researchPercent: command.researchPercent,
       },
@@ -646,13 +718,12 @@ export class CommandProcessor {
   }
 
   private static processSubmitResearchItem(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
     command: SubmitResearchItemCommand,
   ): CommandResult {
-    const { modelData } = gameModel;
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
 
-    if (!player) {
+    if (!player || player.id !== command.playerId) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
@@ -675,6 +746,7 @@ export class CommandProcessor {
     const event: ResearchQueuedEvent = {
       type: ClientEventType.RESEARCH_QUEUED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         researchType: command.researchType,
         turnsRemaining,
@@ -688,13 +760,12 @@ export class CommandProcessor {
   }
 
   private static processCancelResearchItem(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
     command: CancelResearchItemCommand,
   ): CommandResult {
-    const { modelData } = gameModel;
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
 
-    if (!player) {
+    if (!player || player.id !== command.playerId) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
@@ -721,6 +792,7 @@ export class CommandProcessor {
     const event: ResearchCancelledEvent = {
       type: ClientEventType.RESEARCH_CANCELLED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         researchType: command.researchType,
       },
@@ -732,10 +804,9 @@ export class CommandProcessor {
     };
   }
 
-  private static processSubmitTrade(gameModel: GameModelData, command: SubmitTradeCommand): CommandResult {
-    const { modelData } = gameModel;
-    const player = modelData.players.find((p) => p.id === command.playerId);
-    if (!player) {
+  private static processSubmitTrade(model: ModelData | ClientModelData, command: SubmitTradeCommand): CommandResult {
+    const player = this.getMainPlayer(model, command.playerId);
+    if (!player || player.id !== command.playerId) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
@@ -773,8 +844,8 @@ export class CommandProcessor {
     const tradeType = action === 'buy' ? TradeType.BUY : TradeType.SELL;
 
     // Find a planet owned by the player (trades need to be associated with a planet)
-    const playerPlanet = modelData.planets.find((p) => player.ownedPlanetIds.includes(p.id));
-    if (!playerPlanet) {
+    const playerPlanetId = player.ownedPlanetIds[0];
+    if (!playerPlanetId) {
       return {
         success: false,
         error: this.createError(
@@ -785,26 +856,33 @@ export class CommandProcessor {
       };
     }
 
-    // Create the trade using the engine method
+    // Create the trade using the engine method with client-provided ID
     const trade = TradingCenter.constructTrade(
       player.id,
-      playerPlanet.id,
+      playerPlanetId,
       tradeType,
       resourceTypeEnum,
       amount,
       5, // 5 second delay
+      command.tradeId, // Use client-generated ID for consistency
     );
 
-    // Add trade to the trading center
-    modelData.tradingCenter.currentTrades.push(trade);
+    // Add trade to the client trading center (note: this is optimistic, server is authoritative)
+    if (this.isClientModel(model)) {
+      model.clientTradingCenter.mainPlayerTrades.push(trade);
+    } else {
+      // On server, add to the global trading center
+      model.tradingCenter.currentTrades.push(trade);
+    }
 
     // Generate event
     const event: TradeSubmittedEvent = {
       type: ClientEventType.TRADE_SUBMITTED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         tradeId: trade.id,
-        planetId: playerPlanet.id,
+        planetId: playerPlanetId,
         resourceType,
         amount,
         action,
@@ -814,10 +892,9 @@ export class CommandProcessor {
     return { success: true, events: [event] };
   }
 
-  private static processCancelTrade(gameModel: GameModelData, command: CancelTradeCommand): CommandResult {
-    const { modelData } = gameModel;
-    const player = modelData.players.find((p) => p.id === command.playerId);
-    if (!player) {
+  private static processCancelTrade(model: ModelData | ClientModelData, command: CancelTradeCommand): CommandResult {
+    const player = this.getMainPlayer(model, command.playerId);
+    if (!player || player.id !== command.playerId) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
@@ -825,8 +902,13 @@ export class CommandProcessor {
       };
     }
 
-    // Cancel the trade using the engine method
-    const cancelled = TradingCenter.cancelTrade(modelData.tradingCenter, command.tradeId, player.id);
+    // Get the appropriate trades array based on model type
+    const trades = this.isClientModel(model)
+      ? model.clientTradingCenter.mainPlayerTrades
+      : model.tradingCenter.currentTrades;
+
+    // Use TradingCenter method to cancel the trade
+    const cancelled = TradingCenter.cancelTrade(trades, command.tradeId, command.playerId);
 
     if (!cancelled) {
       return {
@@ -841,13 +923,16 @@ export class CommandProcessor {
     }
 
     // Get player resources after trade cancellation
-    const clientModel = ClientGameModel.constructClientGameModel(modelData, command.playerId);
-    const totalResources = Player.getTotalResourceAmount(player, clientModel.mainPlayerOwnedPlanets);
+    const planetById = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : Object.fromEntries(model.planets.map((p) => [p.id, p]));
+    const totalResources = Player.getTotalResourceAmount(player, planetById);
 
     // Generate event
     const event: TradeCancelledEvent = {
       type: ClientEventType.TRADE_CANCELLED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         tradeId: command.tradeId,
         playerResources: totalResources,
@@ -858,33 +943,24 @@ export class CommandProcessor {
   }
 
   private static processUpdatePlanetOptions(
-    gameModel: GameModelData,
+    model: ModelData | ClientModelData,
     command: UpdatePlanetOptionsCommand,
   ): CommandResult {
-    const { modelData } = gameModel;
-    const planet = modelData.planets.find((p) => p.id === command.planetId);
+    const planet = this.getPlanetIfOwned(model, command.planetId, command.playerId);
 
     if (!planet) {
       return {
         success: false,
-        error: this.createError('Planet not found', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError('Planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
         events: [],
       };
     }
 
-    const player = modelData.players.find((p) => p.id === command.playerId);
+    const player = this.getMainPlayer(model, command.playerId);
     if (!player) {
       return {
         success: false,
         error: this.createError('Player not found', CommandResultErrorCode.INVALID_PLAYER),
-        events: [],
-      };
-    }
-
-    if (!player.ownedPlanetIds.includes(command.planetId)) {
-      return {
-        success: false,
-        error: this.createError('Player does not own this planet', CommandResultErrorCode.PERMISSION_DENIED),
         events: [],
       };
     }
@@ -897,6 +973,7 @@ export class CommandProcessor {
     const event: PlanetOptionsUpdatedEvent = {
       type: ClientEventType.PLANET_OPTIONS_UPDATED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         buildLastStarship: planet.buildLastStarship,

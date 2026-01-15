@@ -179,7 +179,7 @@ export class EventApplicator {
   }
 
   private static applyFleetLaunched(clientModel: ClientModelData, event: FleetLaunchedEvent, grid: Grid): void {
-    const { fromPlanetId, toPlanetId, shipIds } = event.data;
+    const { fleetId, fromPlanetId, toPlanetId, shipIds } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[fromPlanetId];
     if (!planet) {
@@ -193,12 +193,21 @@ export class EventApplicator {
       return;
     }
 
-    // Use engine method to replicate server logic exactly
-    Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer);
+    // Check if this fleet was already launched optimistically by matching fleet ID
+    const existingFleet = clientModel.mainPlayer.fleetsInTransit.find((fleet) => fleet.id === fleetId);
 
-    const totalShips =
-      shipIds.scouts.length + shipIds.destroyers.length + shipIds.cruisers.length + shipIds.battleships.length;
-    console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`, shipIds);
+    if (existingFleet) {
+      // Fleet exists from optimistic update - reset to server timing
+      console.log(
+        `Resetting optimistically-launched fleet ${fleetId} to server timing (from planet ${fromPlanetId} to ${toPlanetId})`,
+      );
+      Fleet.setDestination(existingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
+    } else {
+      // Normal application - launch the fleet with the server-confirmed fleet ID
+      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
+      const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
+      console.log(`Fleet ${fleetId} launched from planet ${fromPlanetId} to ${toPlanetId} with ${allShipIds.length} ships`, shipIds);
+    }
   }
 
   private static applyPlanetWorkerAssignmentsUpdated(
@@ -326,18 +335,15 @@ export class EventApplicator {
       // Remove the trade from the client's trading center
       const tradeIndex = clientModel.clientTradingCenter.mainPlayerTrades.findIndex((t) => t.id === tradeId);
       if (tradeIndex < 0) {
-        console.warn(`Trade ${tradeInfo.tradeId} not found in player's trades`);
-        return;
+        console.warn(
+          `   ❌ Trade ${tradeInfo.tradeId} not found in player's trades (${clientModel.clientTradingCenter.mainPlayerTrades.length} trades in list)`,
+        );
+        // Continue processing other trades instead of returning
+      } else {
+        clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
       }
 
-      clientModel.clientTradingCenter.mainPlayerTrades.splice(tradeIndex, 1);
-
       TradingCenter.completeTradeExecutionForClientPlayer(clientModel, grid, planetId, executedStatus);
-
-      const action = executedStatus.tradeType === 1 ? 'bought' : 'sold';
-      console.log(
-        `Trade ${tradeId} executed: ${action} ${executedStatus.foodAmount + executedStatus.oreAmount + executedStatus.iridiumAmount} of resource type ${executedStatus.resourceType} for ${executedStatus.tradeEnergyAmount} energy`,
-      );
     }
   }
 
