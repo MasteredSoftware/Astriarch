@@ -1206,24 +1206,22 @@ class WebSocketService {
 					}
 
 					// Check if this event matches any pending command
-					for (const [commandId, pendingCommand] of this.pendingCommands.entries()) {
-						// Match by event type and basic data (simplified matching)
-						const matchingEvent = pendingCommand.events.find((e) => {
-							if (e.type !== event.type) return false;
+					// Events without sourceCommandId are server-only events that should always be applied
+					if (event.sourceCommandId) {
+						for (const [commandId, pendingCommand] of this.pendingCommands.entries()) {
+							const matchingEvent = pendingCommand.events.find((e) => {
+								// Match by sourceCommandId and type
+								return e.type === event.type && event.sourceCommandId === commandId;
+							});
 
-							// For most events, matching type is sufficient since they're player-specific
-							// and we only have one pending command of each type at a time
-							// More sophisticated matching could compare event.data fields if needed
-							return true;
-						});
-
-						if (matchingEvent) {
-							console.log(
-								`🔄 Event ${event.type} matches pending command [${commandId}] - skipping re-application`
-							);
-							wasOptimisticallyApplied = true;
-							matchedCommandIds.add(commandId);
-							break;
+							if (matchingEvent) {
+								console.log(
+									`🔄 Event ${event.type} matches pending command [${commandId}] - skipping re-application`
+								);
+								wasOptimisticallyApplied = true;
+								matchedCommandIds.add(commandId);
+								break;
+							}
 						}
 					}
 

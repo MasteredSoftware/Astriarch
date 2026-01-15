@@ -127,6 +127,7 @@ export interface ClientEvent {
   type: ClientEventType;
   affectedPlayerIds: string[]; // Which players should receive this event
   data: unknown;
+  sourceCommandId?: string; // ID of the command that generated this event (for optimistic update matching)
 }
 
 export interface ClientNotification {

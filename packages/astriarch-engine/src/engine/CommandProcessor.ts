@@ -279,6 +279,7 @@ export class CommandProcessor {
     const event: ProductionItemQueuedEvent = {
       type: ClientEventType.PRODUCTION_ITEM_QUEUED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         productionItem,
@@ -348,6 +349,7 @@ export class CommandProcessor {
     const event = {
       type: ClientEventType.PRODUCTION_ITEM_REMOVED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         itemIndex: command.index,
@@ -415,6 +417,7 @@ export class CommandProcessor {
     const event: ProductionItemQueuedEvent = {
       type: ClientEventType.PRODUCTION_ITEM_QUEUED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         productionItem: productionItem,
@@ -506,6 +509,7 @@ export class CommandProcessor {
     const event: FleetLaunchedEvent = {
       type: ClientEventType.FLEET_LAUNCHED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         fromPlanetId: command.fromPlanetId,
         toPlanetId: command.toPlanetId,
@@ -548,6 +552,7 @@ export class CommandProcessor {
     const event: PlanetWorkerAssignmentsUpdatedEvent = {
       type: ClientEventType.PLANET_WORKER_ASSIGNMENTS_UPDATED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: planet.id,
         workers: {
@@ -601,6 +606,7 @@ export class CommandProcessor {
     const event: WaypointSetEvent = {
       type: ClientEventType.WAYPOINT_SET,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         waypointPlanetId: command.waypointPlanetId,
@@ -642,6 +648,7 @@ export class CommandProcessor {
     const event: WaypointClearedEvent = {
       type: ClientEventType.WAYPOINT_CLEARED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
       },
@@ -682,6 +689,7 @@ export class CommandProcessor {
     const event: ResearchPercentAdjustedEvent = {
       type: ClientEventType.RESEARCH_PERCENT_ADJUSTED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         researchPercent: command.researchPercent,
       },
@@ -722,6 +730,7 @@ export class CommandProcessor {
     const event: ResearchQueuedEvent = {
       type: ClientEventType.RESEARCH_QUEUED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         researchType: command.researchType,
         turnsRemaining,
@@ -767,6 +776,7 @@ export class CommandProcessor {
     const event: ResearchCancelledEvent = {
       type: ClientEventType.RESEARCH_CANCELLED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         researchType: command.researchType,
       },
@@ -853,6 +863,7 @@ export class CommandProcessor {
     const event: TradeSubmittedEvent = {
       type: ClientEventType.TRADE_SUBMITTED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         tradeId: trade.id,
         planetId: playerPlanetId,
@@ -905,6 +916,7 @@ export class CommandProcessor {
     const event: TradeCancelledEvent = {
       type: ClientEventType.TRADE_CANCELLED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         tradeId: command.tradeId,
         playerResources: totalResources,
@@ -945,6 +957,7 @@ export class CommandProcessor {
     const event: PlanetOptionsUpdatedEvent = {
       type: ClientEventType.PLANET_OPTIONS_UPDATED,
       affectedPlayerIds: [command.playerId],
+      sourceCommandId: command.commandId,
       data: {
         planetId: command.planetId,
         buildLastStarship: planet.buildLastStarship,

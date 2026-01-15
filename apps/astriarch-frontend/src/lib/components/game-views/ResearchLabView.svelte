@@ -325,9 +325,6 @@
 	// Handle clicking on resource bars
 	function handleBarClick(barIndex: number, isResearchBar: boolean) {
 		const newPercent = (barIndex + 1) / 20; // +1 to make it 1-20 range, then divide by 20
-		console.log(
-			`Clicked on ${isResearchBar ? 'Research' : 'Energy'} bar index ${barIndex}, setting percent to ${newPercent}`
-		);
 		if (isResearchBar) {
 			adjustResearchPercent(newPercent);
 		} else {
