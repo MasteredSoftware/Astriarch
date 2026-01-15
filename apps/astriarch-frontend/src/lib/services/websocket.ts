@@ -1959,13 +1959,17 @@ class WebSocketService {
 			}
 			const playerId = cgm.mainPlayer.id;
 
-			// Send command with ship IDs (user selected specific ships)
+			// Get next fleet ID from player's counter
+			const fleetId = cgm.mainPlayer.nextFleetId++;
+
+			// Send command with ship IDs (user selected specific ships) and fleet ID
 			const command: SendShipsCommand = {
 				type: GameCommandType.SEND_SHIPS,
 				playerId,
 				timestamp: Date.now(),
 				fromPlanetId: planetIdSource,
 				toPlanetId: planetIdDest,
+				fleetId,
 				shipIds: {
 					scouts: shipsByType.scouts,
 					destroyers: shipsByType.destroyers,

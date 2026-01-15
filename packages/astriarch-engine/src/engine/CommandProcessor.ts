@@ -502,15 +502,16 @@ export class CommandProcessor {
         events: [],
       };
     }
-    // Launch the fleet using the engine method
-    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds, player);
+    // Launch the fleet using the engine method with client-provided fleet ID
+    Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds, player, command.fleetId);
 
-    // Generate event with the ship IDs that were moved
+    // Generate event with the fleet ID and ship IDs that were moved
     const event: FleetLaunchedEvent = {
       type: ClientEventType.FLEET_LAUNCHED,
       affectedPlayerIds: [command.playerId],
       sourceCommandId: command.commandId,
       data: {
+        fleetId: command.fleetId,
         fromPlanetId: command.fromPlanetId,
         toPlanetId: command.toPlanetId,
         shipIds: command.shipIds,

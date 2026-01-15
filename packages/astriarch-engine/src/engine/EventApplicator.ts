@@ -179,7 +179,7 @@ export class EventApplicator {
   }
 
   private static applyFleetLaunched(clientModel: ClientModelData, event: FleetLaunchedEvent, grid: Grid): void {
-    const { fromPlanetId, toPlanetId, shipIds } = event.data;
+    const { fleetId, fromPlanetId, toPlanetId, shipIds } = event.data;
 
     const planet = clientModel.mainPlayerOwnedPlanets[fromPlanetId];
     if (!planet) {
@@ -193,32 +193,20 @@ export class EventApplicator {
       return;
     }
 
-    // Check if this fleet was already launched optimistically
-    // If so, we need to reset it to server's authoritative timing
-    const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
-    const existingFleet = clientModel.mainPlayer.fleetsInTransit.find((fleet) => {
-      // Match by destination and ship IDs
-      if (
-        fleet.destinationHexMidPoint?.x !== destPlanet.boundingHexMidPoint.x ||
-        fleet.destinationHexMidPoint?.y !== destPlanet.boundingHexMidPoint.y
-      ) {
-        return false;
-      }
-      const fleetShipIds = fleet.starships.map((s) => s.id);
-      return allShipIds.every((id) => fleetShipIds.includes(id)) && fleetShipIds.length === allShipIds.length;
-    });
+    // Check if this fleet was already launched optimistically by matching fleet ID
+    const existingFleet = clientModel.mainPlayer.fleetsInTransit.find((fleet) => fleet.id === fleetId);
 
     if (existingFleet) {
       // Fleet exists from optimistic update - reset to server timing
       console.log(
-        `Resetting optimistically-launched fleet to server timing (from planet ${fromPlanetId} to ${toPlanetId})`,
+        `Resetting optimistically-launched fleet ${fleetId} to server timing (from planet ${fromPlanetId} to ${toPlanetId})`,
       );
       Fleet.setDestination(existingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
     } else {
-      // Normal application - launch the fleet
-      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer);
-      const totalShips = allShipIds.length;
-      console.log(`Fleet launched from planet ${fromPlanetId} to ${toPlanetId} with ${totalShips} ships`, shipIds);
+      // Normal application - launch the fleet with the server-confirmed fleet ID
+      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
+      const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
+      console.log(`Fleet ${fleetId} launched from planet ${fromPlanetId} to ${toPlanetId} with ${allShipIds.length} ships`, shipIds);
     }
   }
 

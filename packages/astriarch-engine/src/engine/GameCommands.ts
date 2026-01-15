@@ -196,6 +196,7 @@ export interface SendShipsCommand extends GameCommand {
   type: GameCommandType.SEND_SHIPS;
   fromPlanetId: number;
   toPlanetId: number;
+  fleetId: number; // Client-generated fleet ID (player-scoped)
   shipIds: {
     // Specific ship IDs to send (user selected) - planet-scoped strings
     scouts: string[];
@@ -304,6 +305,7 @@ export interface ProductionItemRemovedEvent extends ClientEvent {
 export interface FleetLaunchedEvent extends ClientEvent {
   type: ClientEventType.FLEET_LAUNCHED;
   data: {
+    fleetId: number; // Player-scoped fleet ID
     fromPlanetId: number;
     toPlanetId: number;
     shipIds: {
