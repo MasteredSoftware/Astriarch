@@ -62,6 +62,7 @@ import { audioService } from '$lib/services/audioService';
 
 // Import environment configuration
 import { getBackendWsUrl, getHealthCheckUrl, config } from '$lib/config/environment';
+import type { StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };
@@ -2111,7 +2112,7 @@ class WebSocketService {
 		}
 	}
 
-	submitResearchItem(researchType: number, data: Record<string, unknown> = {}) {
+	submitResearchItem(researchType: number, data?: StarshipAdvantageData) {
 		try {
 			const cgm = get(clientGameModel);
 			if (!cgm) {
@@ -2119,14 +2120,14 @@ class WebSocketService {
 			}
 			const playerId = cgm.mainPlayer.id;
 
-			const command: GameCommand = {
+			const command: SubmitResearchItemCommand = {
 				type: GameCommandType.SUBMIT_RESEARCH_ITEM,
 				playerId,
 				timestamp: Date.now(),
 				researchType,
 				data,
 				commandId: '' // Will be set by sendCommand
-			} as SubmitResearchItemCommand;
+			};
 
 			this.sendCommand(command);
 		} catch (error) {

@@ -4,7 +4,7 @@
 	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
-	import { StarShipType } from 'astriarch-engine/src/model/fleet';
+	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
 	import type { IconImageType } from '$lib/components/astriarch/types';
@@ -225,14 +225,14 @@
 	}
 
 	// Function to submit a research item to the server
-	function submitResearchItem(researchType: ResearchType, data: Record<string, unknown> = {}) {
+	function submitResearchItem(researchType: ResearchType, data?: StarshipAdvantageData) {
 		// Send WebSocket message to server using the service method
 		webSocketService.submitResearchItem(researchType, data);
 	}
 
 	// Function to submit a ship research item with advantage/disadvantage data
 	function submitShipResearchItem(researchType: ResearchType) {
-		const shipData: Record<string, unknown> = {};
+		let shipData: StarshipAdvantageData | undefined = undefined;
 
 		// Convert string values to StarShipType enum values
 		const stringToShipType = {
@@ -244,13 +244,11 @@
 		};
 
 		// Add advantage/disadvantage data if selected
-		if (advantageAgainst) {
-			shipData.advantageAgainst =
-				stringToShipType[advantageAgainst as keyof typeof stringToShipType];
-		}
-		if (disadvantageAgainst) {
-			shipData.disadvantageAgainst =
-				stringToShipType[disadvantageAgainst as keyof typeof stringToShipType];
+		if (advantageAgainst && disadvantageAgainst) {
+			shipData = {
+				advantageAgainst: stringToShipType[advantageAgainst as keyof typeof stringToShipType],
+				disadvantageAgainst: stringToShipType[disadvantageAgainst as keyof typeof stringToShipType]
+			} as StarshipAdvantageData;
 		}
 
 		// Submit with the ship customization data

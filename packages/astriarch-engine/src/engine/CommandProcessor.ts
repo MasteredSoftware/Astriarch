@@ -454,7 +454,10 @@ export class CommandProcessor {
     if (!sourcePlanet) {
       return {
         success: false,
-        error: this.createError('Source planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError(
+          'Source planet not found or not owned by player',
+          CommandResultErrorCode.INVALID_PLANET,
+        ),
         events: [],
       };
     }
@@ -741,7 +744,11 @@ export class CommandProcessor {
         player.research.researchProgressByType[
           command.researchType as keyof typeof player.research.researchProgressByType
         ];
-      if (researchProgress && command.data.advantageAgainst !== undefined && command.data.disadvantageAgainst !== undefined) {
+      if (
+        researchProgress &&
+        command.data.advantageAgainst !== undefined &&
+        command.data.disadvantageAgainst !== undefined
+      ) {
         // Only set the specific properties we expect - don't trust client to send clean data
         researchProgress.data = {
           advantageAgainst: command.data.advantageAgainst,
