@@ -119,6 +119,38 @@ describe('Planet', function () {
       expect(counts.miners).toBe(2);
       expect(counts.builders).toBe(1);
     });
+
+    it('should not reassign protesting citizens', () => {
+      // Set up: 3 farmers (1 protesting, 2 content), 2 miners (content), 1 builder (content)
+      testPlanet.population = [
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 1, workerType: CitizenWorkerType.Farmer }, // Protesting farmer
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer }, // Content farmer
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer }, // Content farmer
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner }, // Content miner
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner }, // Content miner
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder }, // Content builder
+      ];
+
+      // Verify initial state: should count only content workers
+      const initialCounts = Planet.countPopulationWorkerTypes(testPlanet);
+      expect(initialCounts.farmers).toBe(2); // Only content farmers
+      expect(initialCounts.miners).toBe(2);
+      expect(initialCounts.builders).toBe(1);
+
+      // Try to move 1 farmer to miner (-1 farmer, +1 miner)
+      // This should reassign a CONTENT farmer, not the protesting one
+      Planet.updatePopulationWorkerTypesByDiff(testPlanet, player1, -1, 1, 0);
+
+      const finalCounts = Planet.countPopulationWorkerTypes(testPlanet);
+      expect(finalCounts.farmers).toBe(1); // Should have 1 content farmer left
+      expect(finalCounts.miners).toBe(3);
+      expect(finalCounts.builders).toBe(1);
+
+      // CRITICAL: Verify the protesting citizen is still a farmer (not reassigned)
+      const protestingCitizen = testPlanet.population.find((c) => c.protestLevel > 0);
+      expect(protestingCitizen).toBeDefined();
+      expect(protestingCitizen!.workerType).toBe(CitizenWorkerType.Farmer);
+    });
   });
 
   describe('updatePopulationWorkerTypes()', () => {
@@ -269,6 +301,44 @@ describe('Planet', function () {
       // Total should still be the same
       const total = counts.farmers + counts.miners + counts.builders;
       expect(total).toBe(testPlanet.population.length);
+    });
+
+    it('should not count protesting citizens in worker calculations - TDD for bug fix', () => {
+      // Set up: 3 farmers (1 protesting, 2 content), 2 miners (content), 1 builder (content)
+      testPlanet.population = [
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 1, workerType: CitizenWorkerType.Farmer }, // Protesting
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer }, // Content
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer }, // Content
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner }, // Content
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner }, // Content
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder }, // Content
+      ];
+
+      // Verify initial state: countPopulationWorkerTypes only counts content workers
+      const initialCounts = Planet.countPopulationWorkerTypes(testPlanet);
+      expect(initialCounts.farmers).toBe(2); // Only content farmers (protesting one not counted)
+      expect(initialCounts.miners).toBe(2);
+      expect(initialCounts.builders).toBe(1);
+      // Total CONTENT workers = 5 (not 6, because 1 is protesting)
+
+      // Try to add 1 miner using updatePopulationWorkerTypes
+      // EXPECTED: Should only work with content citizens (5 total)
+      // BUG HYPOTHESIS: If the method uses totalPopulation (6) instead of content workers (5),
+      // it might try to reassign the protesting citizen
+      Planet.updatePopulationWorkerTypes(testPlanet, player1, 0, 1, 0);
+
+      // Verify final counts
+      const finalCounts = Planet.countPopulationWorkerTypes(testPlanet);
+      expect(finalCounts.miners).toBe(3); // Should have gained 1 miner
+
+      // CRITICAL: Verify the protesting citizen is STILL a farmer (not reassigned)
+      const protestingCitizens = testPlanet.population.filter((c) => c.protestLevel > 0);
+      expect(protestingCitizens.length).toBe(1);
+      expect(protestingCitizens[0].workerType).toBe(CitizenWorkerType.Farmer);
+
+      // CRITICAL: Total CONTENT workers should still be 5
+      const contentWorkers = finalCounts.farmers + finalCounts.miners + finalCounts.builders;
+      expect(contentWorkers).toBe(5);
     });
 
     it('should return resource generation data', () => {

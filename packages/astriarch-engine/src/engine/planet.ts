@@ -549,7 +549,8 @@ export class Planet {
     let desiredMiners = Math.max(0, current.miners + minerDiff);
     let desiredBuilders = Math.max(0, current.builders + builderDiff);
 
-    const totalPopulation = p.population.length;
+    // Only count content (non-protesting) population since protesting citizens can't be reassigned
+    const totalPopulation = current.farmers + current.miners + current.builders;
     const desiredTotal = desiredFarmers + desiredMiners + desiredBuilders;
 
     // If we're trying to assign more workers than we have population, we need to adjust
