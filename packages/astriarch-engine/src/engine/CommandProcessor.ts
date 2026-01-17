@@ -734,6 +734,22 @@ export class CommandProcessor {
     // Set research in queue
     player.research.researchTypeInQueue = command.researchType;
 
+    // Store custom ship data if provided (for NEW_SHIP_TYPE_* research)
+    // Validate and sanitize the data to prevent cheating or bugs
+    if (command.data) {
+      const researchProgress =
+        player.research.researchProgressByType[
+          command.researchType as keyof typeof player.research.researchProgressByType
+        ];
+      if (researchProgress && command.data.advantageAgainst !== undefined && command.data.disadvantageAgainst !== undefined) {
+        // Only set the specific properties we expect - don't trust client to send clean data
+        researchProgress.data = {
+          advantageAgainst: command.data.advantageAgainst,
+          disadvantageAgainst: command.data.disadvantageAgainst,
+        };
+      }
+    }
+
     // Get research progress to determine turns remaining
     const researchProgress =
       player.research.researchProgressByType[

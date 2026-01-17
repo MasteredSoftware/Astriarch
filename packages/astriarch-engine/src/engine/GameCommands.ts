@@ -16,6 +16,7 @@ import { PlanetData, PlanetProductionItemData } from '../model';
 import { PlanetaryConflictData } from '../model/battle';
 import { ExecuteTradeResults } from './tradingCenter';
 import type { PlanetType } from '../model/planet';
+import type { StarshipAdvantageData } from '../model/fleet';
 
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
@@ -225,6 +226,7 @@ export interface AdjustResearchPercentCommand extends GameCommand {
 export interface SubmitResearchItemCommand extends GameCommand {
   type: GameCommandType.SUBMIT_RESEARCH_ITEM;
   researchType: number;
+  data?: StarshipAdvantageData; // Custom ship data for NEW_SHIP_TYPE_* research
 }
 
 export interface CancelResearchItemCommand extends GameCommand {
