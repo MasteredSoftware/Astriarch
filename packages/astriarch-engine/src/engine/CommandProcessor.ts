@@ -454,7 +454,10 @@ export class CommandProcessor {
     if (!sourcePlanet) {
       return {
         success: false,
-        error: this.createError('Source planet not found or not owned by player', CommandResultErrorCode.INVALID_PLANET),
+        error: this.createError(
+          'Source planet not found or not owned by player',
+          CommandResultErrorCode.INVALID_PLANET,
+        ),
         events: [],
       };
     }

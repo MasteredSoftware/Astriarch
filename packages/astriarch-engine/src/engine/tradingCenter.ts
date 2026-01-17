@@ -107,9 +107,7 @@ export class TradingCenter {
   }
 
   public static cancelTrade(trades: TradeData[], tradeId: string, playerId: string): boolean {
-    const tradeIndex = trades.findIndex(
-      (trade) => trade.id === tradeId && trade.playerId === playerId,
-    );
+    const tradeIndex = trades.findIndex((trade) => trade.id === tradeId && trade.playerId === playerId);
 
     if (tradeIndex === -1) {
       return false; // Trade not found or not owned by player

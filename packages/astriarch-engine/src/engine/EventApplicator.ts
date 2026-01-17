@@ -206,7 +206,10 @@ export class EventApplicator {
       // Normal application - launch the fleet with the server-confirmed fleet ID
       Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
       const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
-      console.log(`Fleet ${fleetId} launched from planet ${fromPlanetId} to ${toPlanetId} with ${allShipIds.length} ships`, shipIds);
+      console.log(
+        `Fleet ${fleetId} launched from planet ${fromPlanetId} to ${toPlanetId} with ${allShipIds.length} ships`,
+        shipIds,
+      );
     }
   }
 
