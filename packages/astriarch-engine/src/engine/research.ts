@@ -26,11 +26,13 @@ export class Research {
   public static researchTypeIndex: ResearchTypeIndex = Research.constructResearchTypeIndex();
 
   public static constructResearch(): ResearchData {
-    const researchProgressByType = Object.values(ResearchType).reduce((accum, curr) => {
-      const type = curr as ResearchType;
-      accum[type] = Research.constructResearchTypeProgress(type);
-      return accum;
-    }, {} as ResearchProgressByType);
+    const researchProgressByType = Object.values(ResearchType)
+      .filter(value => typeof value === 'number')
+      .reduce((accum, curr) => {
+        const type = curr as ResearchType;
+        accum[type] = Research.constructResearchTypeProgress(type);
+        return accum;
+      }, {} as ResearchProgressByType);
 
     return {
       researchProgressByType,
@@ -378,11 +380,13 @@ export class Research {
   }
 
   private static constructResearchTypeIndex(): ResearchTypeIndex {
-    return Object.values(ResearchType).reduce((accum, curr) => {
-      const type = curr as ResearchType;
-      accum[type] = Research.constructResearchTypeData(type);
-      return accum;
-    }, {} as ResearchTypeIndex);
+    return Object.values(ResearchType)
+      .filter(value => typeof value === 'number')
+      .reduce((accum, curr) => {
+        const type = curr as ResearchType;
+        accum[type] = Research.constructResearchTypeData(type);
+        return accum;
+      }, {} as ResearchTypeIndex);
   }
 
   private static constructResearchTypeData(type: ResearchType): ResearchTypeData {

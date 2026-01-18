@@ -191,4 +191,95 @@ describe('Research', function () {
       expect(levelData.percentComplete).toBe(1.0); // 100% complete
     });
   });
+
+  describe('constructResearch', function () {
+    it('should only create numeric keys in researchProgressByType', () => {
+      const research = Research.constructResearch();
+
+      // Get all keys from researchProgressByType
+      const keys = Object.keys(research.researchProgressByType);
+
+      // All keys should be numeric strings (0, 1, 2, etc.), not enum names
+      keys.forEach((key) => {
+        expect(key).toMatch(/^\d+$/);
+        expect(Number.isNaN(Number(key))).toBe(false);
+      });
+
+      // Should NOT have string enum names as keys
+      expect(research.researchProgressByType).not.toHaveProperty('UNKNOWN');
+      expect(research.researchProgressByType).not.toHaveProperty('NEW_SHIP_TYPE_DEFENDER');
+      expect(research.researchProgressByType).not.toHaveProperty('COMBAT_IMPROVEMENT_ATTACK');
+    });
+
+    it('should include all numeric ResearchType enum values', () => {
+      const research = Research.constructResearch();
+
+      // Get all numeric enum values
+      const numericValues = Object.values(ResearchType).filter((value) => typeof value === 'number');
+
+      // Each numeric value should have an entry
+      numericValues.forEach((value) => {
+        expect(research.researchProgressByType[value as ResearchType]).toBeDefined();
+        expect(research.researchProgressByType[value as ResearchType].type).toBe(value);
+      });
+    });
+
+    it('should initialize research with correct default values', () => {
+      const research = Research.constructResearch();
+
+      expect(research.researchTypeInQueue).toBeNull();
+      expect(research.researchPercent).toBe(0);
+      expect(research.researchProgressByType).toBeDefined();
+    });
+  });
+
+  describe('researchTypeIndex', function () {
+    it('should only create numeric keys in researchTypeIndex', () => {
+      const index = Research.researchTypeIndex;
+
+      // Get all keys from the index
+      const keys = Object.keys(index);
+
+      // All keys should be numeric strings (0, 1, 2, etc.), not enum names
+      keys.forEach((key) => {
+        expect(key).toMatch(/^\d+$/);
+        expect(Number.isNaN(Number(key))).toBe(false);
+      });
+
+      // Should NOT have string enum names as keys
+      expect(index).not.toHaveProperty('UNKNOWN');
+      expect(index).not.toHaveProperty('NEW_SHIP_TYPE_DEFENDER');
+      expect(index).not.toHaveProperty('COMBAT_IMPROVEMENT_ATTACK');
+    });
+
+    it('should include all numeric ResearchType enum values', () => {
+      const index = Research.researchTypeIndex;
+
+      // Get all numeric enum values
+      const numericValues = Object.values(ResearchType).filter((value) => typeof value === 'number');
+
+      // Each numeric value should have an entry
+      numericValues.forEach((value) => {
+        expect(index[value as ResearchType]).toBeDefined();
+        expect(index[value as ResearchType].type).toBe(value);
+      });
+    });
+
+    it('should have correct structure for each research type', () => {
+      const index = Research.researchTypeIndex;
+
+      // Check a few sample entries
+      const attackResearch = index[ResearchType.COMBAT_IMPROVEMENT_ATTACK];
+      expect(attackResearch.type).toBe(ResearchType.COMBAT_IMPROVEMENT_ATTACK);
+      expect(attackResearch.researchPointsBase).toBe(4);
+      expect(attackResearch.isCustomShip).toBe(false);
+      expect(attackResearch.researchLevelCosts).toHaveLength(10);
+
+      const scoutResearch = index[ResearchType.NEW_SHIP_TYPE_SCOUT];
+      expect(scoutResearch.type).toBe(ResearchType.NEW_SHIP_TYPE_SCOUT);
+      expect(scoutResearch.researchPointsBase).toBe(20);
+      expect(scoutResearch.isCustomShip).toBe(true);
+      expect(scoutResearch.researchLevelCosts).toHaveLength(10);
+    });
+  });
 });
