@@ -421,11 +421,11 @@ export class GameController {
                   ) + 1,
                 ),
               );
-              const levelIncrease = Research.setResearchPointsCompleted(
+              const result = Research.setResearchPointsCompleted(
                 attackingPlayerResearch,
                 attackingPlayerResearch.researchPointsCompleted + researchPointsStolen,
               );
-              if (levelIncrease) {
+              if (result.levelIncrease) {
                 // Notify defender that research was stolen
                 events.push({
                   type: ClientEventType.RESEARCH_STOLEN,

@@ -2,6 +2,9 @@ import { ResearchData, ResearchType } from '../model/research';
 import { PlayerData } from '../model/player';
 import { startNewTestGame, TestGameData } from '../test/testUtils';
 import { Research } from './research';
+import { ClientGameModel } from './clientGameModel';
+import { Grid } from './grid';
+import { AdvanceGameClockForPlayerData } from './gameModel';
 
 let testGameData: TestGameData;
 let player1: PlayerData;
@@ -280,6 +283,160 @@ describe('Research', function () {
       expect(scoutResearch.researchPointsBase).toBe(20);
       expect(scoutResearch.isCustomShip).toBe(true);
       expect(scoutResearch.researchLevelCosts).toHaveLength(10);
+    });
+  });
+
+  describe('setResearchPointsCompleted with maxResearchLevel', function () {
+    it('should cap research at maxResearchLevel and return surplus', () => {
+      const scoutResearch = researchData.researchProgressByType[ResearchType.NEW_SHIP_TYPE_SCOUT];
+
+      // Custom ships have maxResearchLevel of 0
+      expect(scoutResearch.maxResearchLevel).toBe(0);
+      expect(scoutResearch.currentResearchLevel).toBe(-1);
+
+      // Scout research base is 20, first level costs 20 total
+      const researchTypeData = Research.researchTypeIndex[ResearchType.NEW_SHIP_TYPE_SCOUT];
+      expect(researchTypeData.researchLevelCosts[0]).toBe(20);
+
+      // Try to add 100 research points (way more than needed)
+      const result = Research.setResearchPointsCompleted(scoutResearch, 100);
+
+      // Should only reach level 0 (max level)
+      expect(scoutResearch.currentResearchLevel).toBe(0);
+      expect(scoutResearch.researchPointsCompleted).toBe(20); // Only 20 points used
+      expect(result.levelIncrease).toBe(1); // Went from -1 to 0
+      expect(result.surplus).toBe(80); // 100 - 20 = 80 surplus
+    });
+
+    it('should not return surplus if points exactly match max level cost', () => {
+      const defenderResearch = researchData.researchProgressByType[ResearchType.NEW_SHIP_TYPE_DEFENDER];
+
+      expect(defenderResearch.maxResearchLevel).toBe(0);
+
+      // Defender research base is 10, first level costs 10 total
+      const researchTypeData = Research.researchTypeIndex[ResearchType.NEW_SHIP_TYPE_DEFENDER];
+      expect(researchTypeData.researchLevelCosts[0]).toBe(10);
+
+      // Add exactly 10 research points
+      const result = Research.setResearchPointsCompleted(defenderResearch, 10);
+
+      expect(defenderResearch.currentResearchLevel).toBe(0);
+      expect(defenderResearch.researchPointsCompleted).toBe(10);
+      expect(result.levelIncrease).toBe(1);
+      expect(result.surplus).toBe(0); // No surplus
+    });
+
+    it('should handle normal research with high max level correctly', () => {
+      const attackResearch = researchData.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK];
+
+      // Normal research has maxResearchLevel of 9
+      expect(attackResearch.maxResearchLevel).toBe(9);
+
+      // Add enough points to reach level 5
+      const researchTypeData = Research.researchTypeIndex[ResearchType.COMBAT_IMPROVEMENT_ATTACK];
+      const level5Cost = researchTypeData.researchLevelCosts[5]; // Total cost to reach level 5
+
+      const result = Research.setResearchPointsCompleted(attackResearch, level5Cost + 50);
+
+      expect(attackResearch.currentResearchLevel).toBe(5);
+      expect(result.levelIncrease).toBe(6); // From -1 to 5
+      expect(result.surplus).toBe(0); // Haven't exceeded max level yet
+    });
+
+    it('should cap at max level and return surplus for normal research', () => {
+      const minesResearch = researchData.researchProgressByType[ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES];
+
+      expect(minesResearch.maxResearchLevel).toBe(9);
+
+      // Get the cost to reach max level
+      const researchTypeData = Research.researchTypeIndex[ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES];
+      const maxLevelCost = researchTypeData.researchLevelCosts[9];
+
+      // Add way more points than needed for max level
+      const result = Research.setResearchPointsCompleted(minesResearch, maxLevelCost + 1000);
+
+      expect(minesResearch.currentResearchLevel).toBe(9); // Max level
+      expect(minesResearch.researchPointsCompleted).toBe(maxLevelCost);
+      expect(result.levelIncrease).toBe(10); // From -1 to 9
+      expect(result.surplus).toBe(1000); // Surplus points
+    });
+  });
+
+  describe('advanceResearchForPlayer with surplus', function () {
+    it('should return surplus research to planets proportionally', () => {
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, player1.id);
+      const grid = new Grid(640, 480, testGameData.gameModel.modelData.gameOptions);
+      const data: AdvanceGameClockForPlayerData = {
+        clientModel,
+        cyclesElapsed: 1,
+        currentCycle: 1,
+        grid,
+      };
+
+      const planets = Object.values(clientModel.mainPlayerOwnedPlanets);
+
+      // Set up custom ship research (maxLevel 0)
+      clientModel.mainPlayer.research.researchTypeInQueue = ResearchType.NEW_SHIP_TYPE_SCOUT;
+      const scoutResearch = clientModel.mainPlayer.research.researchProgressByType[ResearchType.NEW_SHIP_TYPE_SCOUT];
+
+      // Scout needs 20 research points to complete
+      expect(Research.researchTypeIndex[ResearchType.NEW_SHIP_TYPE_SCOUT].researchLevelCosts[0]).toBe(20);
+
+      // Give planets research (total 100, only need 20, so 80 surplus)
+      // Distribute across available planets
+      if (planets.length >= 2) {
+        planets[0].resources.research = 60; // 60% contribution
+        planets[1].resources.research = 40; // 40% contribution
+      } else {
+        planets[0].resources.research = 100; // Single planet gets all
+      }
+
+      // Advance research
+      const notifications = Research.advanceResearchForPlayer(data);
+
+      // Research should complete
+      expect(scoutResearch.currentResearchLevel).toBe(0);
+      expect(scoutResearch.researchPointsCompleted).toBe(20);
+      expect(notifications.length).toBeGreaterThan(0);
+
+      // Surplus (80 points) should be returned proportionally
+      if (planets.length >= 2) {
+        expect(planets[0].resources.research).toBeCloseTo(48, 1); // 60% of 80
+        expect(planets[1].resources.research).toBeCloseTo(32, 1); // 40% of 80
+      } else {
+        expect(planets[0].resources.research).toBeCloseTo(80, 1); // All surplus
+      }
+    });
+
+    it('should not return surplus when research does not complete', () => {
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, player1.id);
+      const grid = new Grid(640, 480, testGameData.gameModel.modelData.gameOptions);
+      const data: AdvanceGameClockForPlayerData = {
+        clientModel,
+        cyclesElapsed: 1,
+        currentCycle: 1,
+        grid,
+      };
+
+      const planets = Object.values(clientModel.mainPlayerOwnedPlanets);
+
+      // Set up regular research
+      clientModel.mainPlayer.research.researchTypeInQueue = ResearchType.COMBAT_IMPROVEMENT_ATTACK;
+      const attackResearch =
+        clientModel.mainPlayer.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK];
+
+      // Give planets some research (not enough to complete)
+      planets[0].resources.research = 2;
+
+      // Advance research
+      Research.advanceResearchForPlayer(data);
+
+      // Research should not complete (need 4 points)
+      expect(attackResearch.currentResearchLevel).toBe(-1);
+      expect(attackResearch.researchPointsCompleted).toBe(2);
+
+      // No surplus to return
+      expect(planets[0].resources.research).toBe(0);
     });
   });
 });
