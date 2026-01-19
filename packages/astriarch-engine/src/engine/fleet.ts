@@ -170,6 +170,9 @@ export class Fleet {
         return undefined;
         break;
     }
+    if (advantageAgainst === null || disadvantageAgainst === null) {
+      return undefined;
+    }
     return {
       advantageAgainst,
       disadvantageAgainst,

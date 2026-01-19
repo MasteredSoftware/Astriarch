@@ -1,3 +1,4 @@
+import { PlanetData } from '../model';
 import { StarshipAdvantageData, StarShipType } from '../model/fleet';
 import { PlayerData } from '../model/player';
 import {
@@ -26,11 +27,13 @@ export class Research {
   public static researchTypeIndex: ResearchTypeIndex = Research.constructResearchTypeIndex();
 
   public static constructResearch(): ResearchData {
-    const researchProgressByType = Object.values(ResearchType).reduce((accum, curr) => {
-      const type = curr as ResearchType;
-      accum[type] = Research.constructResearchTypeProgress(type);
-      return accum;
-    }, {} as ResearchProgressByType);
+    const researchProgressByType = Object.values(ResearchType)
+      .filter((value) => typeof value === 'number')
+      .reduce((accum, curr) => {
+        const type = curr as ResearchType;
+        accum[type] = Research.constructResearchTypeProgress(type);
+        return accum;
+      }, {} as ResearchProgressByType);
 
     return {
       researchProgressByType,
@@ -226,16 +229,22 @@ export class Research {
 
     if (mainPlayer.research.researchTypeInQueue) {
       let totalResearch = 0;
+      const planetContributions: { planet: PlanetData; contribution: number }[] = [];
+
       Object.values(mainPlayerOwnedPlanets).forEach((planet) => {
-        totalResearch += planet.resources.research;
+        const contribution = planet.resources.research;
+        totalResearch += contribution;
+        planetContributions.push({ planet, contribution });
         planet.resources.research = 0;
       });
+
       const rtpInQueue = mainPlayer.research.researchProgressByType[mainPlayer.research.researchTypeInQueue];
-      const levelIncrease = Research.setResearchPointsCompleted(
+      const result = Research.setResearchPointsCompleted(
         rtpInQueue,
         rtpInQueue.researchPointsCompleted + totalResearch,
       );
-      if (levelIncrease) {
+
+      if (result.levelIncrease) {
         //we've gained a level
         const researchQueueCleared = !Research.canResearch(rtpInQueue);
 
@@ -254,6 +263,14 @@ export class Research {
         if (researchQueueCleared) {
           mainPlayer.research.researchTypeInQueue = null;
         }
+      }
+
+      // Distribute surplus research back to planets proportionally
+      if (result.surplus > 0 && totalResearch > 0) {
+        planetContributions.forEach(({ planet, contribution }) => {
+          const proportion = contribution / totalResearch;
+          planet.resources.research += result.surplus * proportion;
+        });
       }
     }
     // else notifiy the player at some point?
@@ -339,12 +356,26 @@ export class Research {
     return defaultName;
   }
 
-  public static setResearchPointsCompleted(researchProgress: ResearchTypeProgress, pointsCompleted: number): number {
+  public static setResearchPointsCompleted(
+    researchProgress: ResearchTypeProgress,
+    pointsCompleted: number,
+  ): { levelIncrease: number; surplus: number } {
     const originalLevel = researchProgress.currentResearchLevel;
-    researchProgress.researchPointsCompleted = pointsCompleted;
     const { researchLevelCosts } = Research.researchTypeIndex[researchProgress.type];
+    const maxLevel = researchProgress.maxResearchLevel;
+
+    // Calculate the maximum points needed to reach max level
+    const maxLevelIndex = Math.min(maxLevel, researchLevelCosts.length - 1);
+    const maxPointsNeeded = maxLevelIndex >= 0 ? researchLevelCosts[maxLevelIndex] : 0;
+
+    // Cap points at max level and calculate surplus
+    const cappedPoints = Math.min(pointsCompleted, maxPointsNeeded);
+    const surplus = Math.max(0, pointsCompleted - maxPointsNeeded);
+
+    researchProgress.researchPointsCompleted = cappedPoints;
+
     //set current level based on completed points
-    for (let i = 0; i < researchLevelCosts.length; i++) {
+    for (let i = 0; i <= maxLevel && i < researchLevelCosts.length; i++) {
       const researchCost = researchLevelCosts[i];
       if (researchProgress.researchPointsCompleted >= researchCost) {
         researchProgress.currentResearchLevel = i;
@@ -353,7 +384,11 @@ export class Research {
       }
     }
     Research.setDataBasedOnLevel(researchProgress);
-    return researchProgress.currentResearchLevel - originalLevel; //returns level increase
+
+    return {
+      levelIncrease: researchProgress.currentResearchLevel - originalLevel,
+      surplus,
+    };
   }
 
   private static setDataBasedOnLevel(researchProgress: ResearchTypeProgress) {
@@ -378,11 +413,13 @@ export class Research {
   }
 
   private static constructResearchTypeIndex(): ResearchTypeIndex {
-    return Object.values(ResearchType).reduce((accum, curr) => {
-      const type = curr as ResearchType;
-      accum[type] = Research.constructResearchTypeData(type);
-      return accum;
-    }, {} as ResearchTypeIndex);
+    return Object.values(ResearchType)
+      .filter((value) => typeof value === 'number')
+      .reduce((accum, curr) => {
+        const type = curr as ResearchType;
+        accum[type] = Research.constructResearchTypeData(type);
+        return accum;
+      }, {} as ResearchTypeIndex);
   }
 
   private static constructResearchTypeData(type: ResearchType): ResearchTypeData {

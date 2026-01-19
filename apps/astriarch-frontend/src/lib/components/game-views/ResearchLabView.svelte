@@ -4,7 +4,7 @@
 	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
-	import { StarShipType } from 'astriarch-engine/src/model/fleet';
+	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
 	import type { IconImageType } from '$lib/components/astriarch/types';
@@ -140,6 +140,16 @@
 	let disadvantageAgainst = $state('');
 	let selectedCustomShipType = $state<ResearchType | null>(null);
 
+	// Validation: check if advantage and disadvantage are the same
+	const hasMatchingTypes = $derived(
+		advantageAgainst !== '' && disadvantageAgainst !== '' && advantageAgainst === disadvantageAgainst
+	);
+
+	// Check if custom ship form is valid (both selected and different)
+	const isCustomShipFormValid = $derived(
+		advantageAgainst !== '' && disadvantageAgainst !== '' && advantageAgainst !== disadvantageAgainst
+	);
+
 	// Dropdown options for ship types
 	const shipTypeOptions = [
 		{ value: 'defender', label: 'Defender' },
@@ -225,14 +235,14 @@
 	}
 
 	// Function to submit a research item to the server
-	function submitResearchItem(researchType: ResearchType, data: Record<string, unknown> = {}) {
+	function submitResearchItem(researchType: ResearchType, data?: StarshipAdvantageData) {
 		// Send WebSocket message to server using the service method
 		webSocketService.submitResearchItem(researchType, data);
 	}
 
 	// Function to submit a ship research item with advantage/disadvantage data
 	function submitShipResearchItem(researchType: ResearchType) {
-		const shipData: Record<string, unknown> = {};
+		let shipData: StarshipAdvantageData | undefined = undefined;
 
 		// Convert string values to StarShipType enum values
 		const stringToShipType = {
@@ -244,13 +254,11 @@
 		};
 
 		// Add advantage/disadvantage data if selected
-		if (advantageAgainst) {
-			shipData.advantageAgainst =
-				stringToShipType[advantageAgainst as keyof typeof stringToShipType];
-		}
-		if (disadvantageAgainst) {
-			shipData.disadvantageAgainst =
-				stringToShipType[disadvantageAgainst as keyof typeof stringToShipType];
+		if (advantageAgainst && disadvantageAgainst) {
+			shipData = {
+				advantageAgainst: stringToShipType[advantageAgainst as keyof typeof stringToShipType],
+				disadvantageAgainst: stringToShipType[disadvantageAgainst as keyof typeof stringToShipType]
+			} as StarshipAdvantageData;
 		}
 
 		// Submit with the ship customization data
@@ -287,23 +295,6 @@
 	function submitSelectedCustomShipResearch() {
 		if (selectedCustomShipType) {
 			submitShipResearchItem(selectedCustomShipType);
-		}
-	}
-
-	// Function to update current ship research with new advantage/disadvantage settings
-	function updateCurrentShipResearch() {
-		if (currentType && isCustomShipResearch) {
-			submitShipResearchItem(currentType);
-		}
-	}
-
-	// Function to start a new ship research (used when no research is currently active)
-	function startNewShipResearch() {
-		// We need to know which ship type the user wants to research
-		// For now, we could default to a common ship type or require selection
-		// Let's use scout as a default example, but this might need refinement
-		if (advantageAgainst || disadvantageAgainst) {
-			submitShipResearchItem(ResearchType.NEW_SHIP_TYPE_SCOUT);
 		}
 	}
 
@@ -561,10 +552,22 @@
 											/>
 										</div>
 									</div>
-								</div>
 
-								<div class="mt-auto flex">
-									<Button onclick={submitSelectedCustomShipResearch} label="RESEARCH SHIP" />
+								{#if hasMatchingTypes}
+									<div class="mt-4">
+										<Text class="astriarch-body-12" style="color: #ff4444;">
+											Advantage and disadvantage cannot be the same ship type
+										</Text>
+									</div>
+								{/if}
+							</div>
+
+							<div class="mt-auto flex">
+								<Button
+									onclick={submitSelectedCustomShipResearch}
+									label="RESEARCH SHIP"
+									disabled={!isCustomShipFormValid}
+								/>
 								</div>
 							{:else if currentResearchInfo}
 								<!-- Currently Researching Section (for both standard and custom ship research) -->

@@ -46,6 +46,7 @@ import {
 } from './GameCommands';
 import { Player } from './player';
 import { Fleet } from './fleet';
+import { StarShipType } from '../model/fleet';
 import { TradingCenter } from './tradingCenter';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 import { PlanetProductionItemType } from '../model/planet';
@@ -736,6 +737,54 @@ export class CommandProcessor {
 
     // Set research in queue
     player.research.researchTypeInQueue = command.researchType;
+
+    // Store custom ship data if provided (for NEW_SHIP_TYPE_* research)
+    // Validate and sanitize the data to prevent cheating or bugs
+    if (command.data) {
+      const researchProgress =
+        player.research.researchProgressByType[
+          command.researchType as keyof typeof player.research.researchProgressByType
+        ];
+      if (
+        researchProgress &&
+        command.data.advantageAgainst !== undefined &&
+        command.data.disadvantageAgainst !== undefined
+      ) {
+        // Validate that both values are valid StarShipType enum values
+        const validShipTypes = Object.values(StarShipType).filter((value) => typeof value === 'number');
+        const advantageValid = validShipTypes.includes(command.data.advantageAgainst);
+        const disadvantageValid = validShipTypes.includes(command.data.disadvantageAgainst);
+
+        if (!advantageValid || !disadvantageValid) {
+          return {
+            success: false,
+            error: this.createError(
+              'Invalid ship type for advantage/disadvantage',
+              CommandResultErrorCode.INVALID_PARAMETER,
+            ),
+            events: [],
+          };
+        }
+
+        // Validate that advantageAgainst and disadvantageAgainst are different
+        if (command.data.advantageAgainst === command.data.disadvantageAgainst) {
+          return {
+            success: false,
+            error: this.createError(
+              'Ship cannot have advantage and disadvantage against the same type',
+              CommandResultErrorCode.INVALID_PARAMETER,
+            ),
+            events: [],
+          };
+        }
+
+        // Only set the specific properties we expect - don't trust client to send clean data
+        researchProgress.data = {
+          advantageAgainst: command.data.advantageAgainst,
+          disadvantageAgainst: command.data.disadvantageAgainst,
+        };
+      }
+    }
 
     // Get research progress to determine turns remaining
     const researchProgress =
