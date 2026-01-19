@@ -46,6 +46,7 @@ import {
 } from './GameCommands';
 import { Player } from './player';
 import { Fleet } from './fleet';
+import { StarShipType } from '../model/fleet';
 import { TradingCenter } from './tradingCenter';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 import { PlanetProductionItemType } from '../model/planet';
@@ -749,6 +750,34 @@ export class CommandProcessor {
         command.data.advantageAgainst !== undefined &&
         command.data.disadvantageAgainst !== undefined
       ) {
+        // Validate that both values are valid StarShipType enum values
+        const validShipTypes = Object.values(StarShipType).filter((value) => typeof value === 'number');
+        const advantageValid = validShipTypes.includes(command.data.advantageAgainst);
+        const disadvantageValid = validShipTypes.includes(command.data.disadvantageAgainst);
+
+        if (!advantageValid || !disadvantageValid) {
+          return {
+            success: false,
+            error: this.createError(
+              'Invalid ship type for advantage/disadvantage',
+              CommandResultErrorCode.INVALID_PARAMETER,
+            ),
+            events: [],
+          };
+        }
+
+        // Validate that advantageAgainst and disadvantageAgainst are different
+        if (command.data.advantageAgainst === command.data.disadvantageAgainst) {
+          return {
+            success: false,
+            error: this.createError(
+              'Ship cannot have advantage and disadvantage against the same type',
+              CommandResultErrorCode.INVALID_PARAMETER,
+            ),
+            events: [],
+          };
+        }
+
         // Only set the specific properties we expect - don't trust client to send clean data
         researchProgress.data = {
           advantageAgainst: command.data.advantageAgainst,

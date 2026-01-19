@@ -140,6 +140,16 @@
 	let disadvantageAgainst = $state('');
 	let selectedCustomShipType = $state<ResearchType | null>(null);
 
+	// Validation: check if advantage and disadvantage are the same
+	const hasMatchingTypes = $derived(
+		advantageAgainst !== '' && disadvantageAgainst !== '' && advantageAgainst === disadvantageAgainst
+	);
+
+	// Check if custom ship form is valid (both selected and different)
+	const isCustomShipFormValid = $derived(
+		advantageAgainst !== '' && disadvantageAgainst !== '' && advantageAgainst !== disadvantageAgainst
+	);
+
 	// Dropdown options for ship types
 	const shipTypeOptions = [
 		{ value: 'defender', label: 'Defender' },
@@ -285,23 +295,6 @@
 	function submitSelectedCustomShipResearch() {
 		if (selectedCustomShipType) {
 			submitShipResearchItem(selectedCustomShipType);
-		}
-	}
-
-	// Function to update current ship research with new advantage/disadvantage settings
-	function updateCurrentShipResearch() {
-		if (currentType && isCustomShipResearch) {
-			submitShipResearchItem(currentType);
-		}
-	}
-
-	// Function to start a new ship research (used when no research is currently active)
-	function startNewShipResearch() {
-		// We need to know which ship type the user wants to research
-		// For now, we could default to a common ship type or require selection
-		// Let's use scout as a default example, but this might need refinement
-		if (advantageAgainst || disadvantageAgainst) {
-			submitShipResearchItem(ResearchType.NEW_SHIP_TYPE_SCOUT);
 		}
 	}
 
@@ -559,10 +552,22 @@
 											/>
 										</div>
 									</div>
-								</div>
 
-								<div class="mt-auto flex">
-									<Button onclick={submitSelectedCustomShipResearch} label="RESEARCH SHIP" />
+								{#if hasMatchingTypes}
+									<div class="mt-4">
+										<Text class="astriarch-body-12" style="color: #ff4444;">
+											Advantage and disadvantage cannot be the same ship type
+										</Text>
+									</div>
+								{/if}
+							</div>
+
+							<div class="mt-auto flex">
+								<Button
+									onclick={submitSelectedCustomShipResearch}
+									label="RESEARCH SHIP"
+									disabled={!isCustomShipFormValid}
+								/>
 								</div>
 							{:else if currentResearchInfo}
 								<!-- Currently Researching Section (for both standard and custom ship research) -->
