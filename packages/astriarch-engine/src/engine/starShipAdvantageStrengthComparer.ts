@@ -18,9 +18,15 @@ export class StarShipAdvantageStrengthComparer {
     const strengthA = this.getStarShipAdvantageDisadvantageAdjustedStrength(a);
     const strengthB = this.getStarShipAdvantageDisadvantageAdjustedStrength(b);
 
-    if (strengthA === strengthB) ret = 0;
-    else if (strengthA < strengthB) ret = -1;
-    else ret = 1;
+    if (strengthA === strengthB) {
+      // When strengths are equal, use ID as a tiebreaker to ensure stable sorting
+      // This prevents damage from spreading across multiple identical ships
+      ret = a.id.localeCompare(b.id);
+    } else if (strengthA < strengthB) {
+      ret = -1;
+    } else {
+      ret = 1;
+    }
 
     return ret;
   }
