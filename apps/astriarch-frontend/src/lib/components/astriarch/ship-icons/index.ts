@@ -1,0 +1,11 @@
+export { default as Defender } from './Defender.svelte';
+export { default as DefenderCustom } from './DefenderCustom.svelte';
+export { default as Scout } from './Scout.svelte';
+export { default as ScoutCustom } from './ScoutCustom.svelte';
+export { default as Destroyer } from './Destroyer.svelte';
+export { default as DestroyerCustom } from './DestroyerCustom.svelte';
+export { default as Cruiser } from './Cruiser.svelte';
+export { default as CruiserCustom } from './CruiserCustom.svelte';
+export { default as Battleship } from './Battleship.svelte';
+export { default as BattleshipCustom } from './BattleshipCustom.svelte';
+export { default as SpacePlatform } from './SpacePlatform.svelte';
