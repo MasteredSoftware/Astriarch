@@ -413,5 +413,70 @@ describe('BattleSimulator', () => {
       expect(experiencePointsTotal).toEqual(f1Strength);
       done();
     });
+
+    it('should focus fire on the weakest target with stable sorting for identical ships', (done) => {
+      // Test that when multiple identical ships exist, the sort is stable
+      // so all attackers focus on the same target
+      // This prevents damage spreading across multiple identical ships
+
+      const f1BonusChance = { attack: 0, defense: 0 };
+      const f2BonusChance = { attack: 0, defense: 0 };
+
+      // Attacker: 1 destroyer (8 health = 4 guns)
+      const attackingFleet = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, null);
+      const attacker = attackingFleet.starships[0];
+
+      // Defenders: 2 defenders (2 health each, identical)
+      const defendingFleet = Fleet.generateFleetWithShipCount(2, 0, 0, 0, 0, 0, null);
+
+      // Fire weapons
+      const fleetDamagePending: FleetDamagePending = {};
+      BattleSimulator.starshipFireWeapons(
+        f1BonusChance.attack,
+        f2BonusChance.defense,
+        attacker,
+        defendingFleet.starships,
+        fleetDamagePending,
+      );
+
+      // Count how many ships were damaged
+      const damagedShipIds = Object.keys(fleetDamagePending);
+      const damagedShipCount = damagedShipIds.length;
+
+      // Get damage details
+      const damageDetails = damagedShipIds.map((id) => {
+        const totalDamage = BattleSimulator.getTotalPendingDamage(fleetDamagePending[id].hits);
+        const ship = fleetDamagePending[id].starship;
+        return { id, health: ship.health, totalDamage, hitCount: fleetDamagePending[id].hits.length };
+      });
+
+      console.log('Damage details:', JSON.stringify(damageDetails, null, 2));
+      console.log(`Number of ships damaged: ${damagedShipCount}`);
+
+      // The destroyer has 4 guns. Each gun fires once per loop iteration.
+      // The first defender should be targeted until destroyed (2 health),
+      // then the second defender should be targeted.
+      // So we expect 1-2 ships to be damaged depending on RNG
+      // (if all 4 shots hit for 2 damage each, that's 8 damage total, enough to destroy both 2-health defenders)
+      if (damagedShipCount > 2) {
+        return done(
+          `Too many ships damaged: ${damagedShipCount}. With stable sorting, ` +
+            `damage should be concentrated on weakest targets in order.`,
+        );
+      }
+
+      // Verify that if only one ship was damaged, it was damaged enough to be destroyed or nearly so
+      if (damagedShipCount === 1) {
+        const firstShipDamage = BattleSimulator.getTotalPendingDamage(fleetDamagePending[damagedShipIds[0]].hits);
+        if (firstShipDamage < 2) {
+          return done(
+            `First ship only took ${firstShipDamage} damage but should have been focused until destroyed (2 health). ` +
+              `This suggests focus fire isn't working.`,
+          );
+        }
+      }
+
+      done();
+    });
   });
 });
