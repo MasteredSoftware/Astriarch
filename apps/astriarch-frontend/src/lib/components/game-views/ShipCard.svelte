@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
 	import { Fleet } from 'astriarch-engine/src/engine/fleet';
+	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import IconImage from '$lib/components/astriarch/icon-image/IconImage.svelte';
 	import type { IconImageType } from '$lib/components/astriarch/types.js';
 
@@ -99,11 +100,12 @@
 	type="button"
 	class="relative h-[72px] w-[90px] cursor-pointer transition-all hover:scale-105 focus:ring-2 focus:ring-cyan-400 focus:outline-none"
 	onclick={onToggleSelection}
-	aria-label="Toggle selection of {getShipTypeName(
-		ship.type
+	aria-label="Toggle selection of {GameTools.starShipTypeToFriendlyName(
+		ship.type,
+		!!ship.customShipData
 	)} (ID: {ship.id}, Health: {ship.health})"
 	aria-pressed={isSelected}
-	title="{getShipTypeName(ship.type)} - Health: {ship.health}/{Fleet.maxStrength(
+	title="{GameTools.starShipTypeToFriendlyName(ship.type, !!ship.customShipData)} - Health: {ship.health}/{Fleet.maxStrength(
 		ship
 	)}, Level: {Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type))
 		.level}, Experience: {ship.experienceAmount}"
@@ -117,7 +119,7 @@
 
 	<!-- Ship Icon - Much larger, takes up most of the card -->
 	<div
-		class="absolute top-[-7.2px] left-[14.4px] h-[61.2px] w-[61.2px] shadow-[0px_0px_14px_0px_rgba(255,255,255,0.24)]"
+		class="absolute top-[-7.2px] left-[14.4px] h-[61.2px] w-[61.2px]"
 	>
 		<div class="absolute inset-0 flex items-center justify-center">
 			<div class="h-[61.2px] w-[61.2px]">
@@ -130,7 +132,7 @@
 					<IconImage
 						type={getShipIconType(ship.type, !!ship.customShipData)}
 						size={61}
-						altText={`${ship.type} ship`}
+						altText={GameTools.starShipTypeToFriendlyName(ship.type, !!ship.customShipData)}
 						class="h-full w-full"
 					/>
 				</div>

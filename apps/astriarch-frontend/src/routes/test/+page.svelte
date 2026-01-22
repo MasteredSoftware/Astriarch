@@ -585,6 +585,147 @@
 				</div>
 			</div>
 
+			<!-- Ship Icon Comparison Section -->
+			<div class="mb-8">
+				<h3 class="mb-6 text-center text-xl font-bold text-cyan-400">
+					🚀 Ship Icons - Standard vs Custom Comparison
+				</h3>
+				<p class="mb-6 text-center text-slate-300">
+					Compare standard ships with their custom variants to see the glow effect
+				</p>
+
+				<div class="bg-astriarch-ui-dark-grey rounded-lg p-6">
+					<div class="grid grid-cols-2 gap-8 md:grid-cols-3 lg:grid-cols-5">
+						<!-- Defender -->
+						<div class="flex flex-col items-center space-y-4">
+							<div class="text-center">
+								<h4 class="mb-2 text-sm font-semibold text-cyan-400">Defender</h4>
+								<div class="flex flex-col space-y-4">
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-slate-400">Standard</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="defender" size={61} />
+										</div>
+									</div>
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-cyan-300">Custom (Glow)</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="defender_custom" size={61} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Scout -->
+						<div class="flex flex-col items-center space-y-4">
+							<div class="text-center">
+								<h4 class="mb-2 text-sm font-semibold text-cyan-400">Scout</h4>
+								<div class="flex flex-col space-y-4">
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-slate-400">Standard</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="scout" size={61} />
+										</div>
+									</div>
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-cyan-300">Custom (Glow)</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="scout_custom" size={61} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Destroyer -->
+						<div class="flex flex-col items-center space-y-4">
+							<div class="text-center">
+								<h4 class="mb-2 text-sm font-semibold text-cyan-400">Destroyer</h4>
+								<div class="flex flex-col space-y-4">
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-slate-400">Standard</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="destroyer" size={61} />
+										</div>
+									</div>
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-cyan-300">Custom (Glow)</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="destroyer_custom" size={61} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Cruiser -->
+						<div class="flex flex-col items-center space-y-4">
+							<div class="text-center">
+								<h4 class="mb-2 text-sm font-semibold text-cyan-400">Cruiser</h4>
+								<div class="flex flex-col space-y-4">
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-slate-400">Standard</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="cruiser" size={61} />
+										</div>
+									</div>
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-cyan-300">Custom (Glow)</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="cruiser_custom" size={61} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Battleship -->
+						<div class="flex flex-col items-center space-y-4">
+							<div class="text-center">
+								<h4 class="mb-2 text-sm font-semibold text-cyan-400">Battleship</h4>
+								<div class="flex flex-col space-y-4">
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-slate-400">Standard</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="battleship" size={61} />
+										</div>
+									</div>
+									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
+										<span class="text-xs text-cyan-300">Custom (Glow)</span>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type="battleship_custom" size={61} />
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Size comparison -->
+					<div class="mt-8 border-t border-slate-700 pt-6">
+						<h4 class="mb-4 text-center text-sm font-semibold text-cyan-400">
+							Size Comparison: All Ships Side by Side
+						</h4>
+						<div class="flex flex-wrap justify-center gap-6">
+							{#each ['defender', 'scout', 'destroyer', 'cruiser', 'battleship'] as shipType}
+								<div class="flex flex-col items-center space-y-2">
+									<div class="flex space-x-2">
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type={`${shipType}` as IconImageType} size={61} />
+										</div>
+										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+											<IconImage type={`${shipType}_custom` as IconImageType} size={61} />
+										</div>
+									</div>
+									<span class="text-xs text-slate-400 capitalize">{shipType}</span>
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<!-- TopOverview Component Demo -->
 			<div class="mb-8">
 				<h3 class="mb-4 text-center text-lg font-semibold text-cyan-400">TopOverview Component</h3>
