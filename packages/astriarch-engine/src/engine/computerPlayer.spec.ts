@@ -102,8 +102,8 @@ describe('ComputerPlayer', () => {
       const hardPlanetsSorted = Player.getOwnedPlanetsListSorted(hardPlayer, hardPlanets);
 
       ComputerPlayer.computerManageResearch(testGameData.gameModel, hardPlayer, hardPlanets, hardPlanetsSorted);
-      expect(hardPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.5);
-      expect(hardPlayer.research.researchPercent).toBeLessThanOrEqual(0.7);
+      expect(hardPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.4);
+      expect(hardPlayer.research.researchPercent).toBeLessThanOrEqual(0.56);
 
       const expertPlanets = ClientGameModel.getOwnedPlanets(
         [player1.ownedPlanetIds[0]],
@@ -112,8 +112,8 @@ describe('ComputerPlayer', () => {
       const expertPlanetsSorted = Player.getOwnedPlanetsListSorted(expertPlayer, expertPlanets);
 
       ComputerPlayer.computerManageResearch(testGameData.gameModel, expertPlayer, expertPlanets, expertPlanetsSorted);
-      expect(expertPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.7);
-      expect(expertPlayer.research.researchPercent).toBeLessThanOrEqual(0.9);
+      expect(expertPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.45);
+      expect(expertPlayer.research.researchPercent).toBeLessThanOrEqual(0.61);
     });
 
     test('should queue appropriate research for early game', () => {

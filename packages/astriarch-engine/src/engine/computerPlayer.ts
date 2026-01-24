@@ -1227,10 +1227,10 @@ export class ComputerPlayer {
         targetResearchPercent = Utils.nextRandom(30, 51) / 100.0; // 30-50%
         break;
       case PlayerType.Computer_Hard:
-        targetResearchPercent = Utils.nextRandom(50, 71) / 100.0; // 50-70%
+        targetResearchPercent = Utils.nextRandom(40, 56) / 100.0; // 40-55%
         break;
       case PlayerType.Computer_Expert:
-        targetResearchPercent = Utils.nextRandom(70, 91) / 100.0; // 70-90%
+        targetResearchPercent = Utils.nextRandom(45, 61) / 100.0; // 45-60%
         break;
     }
 
