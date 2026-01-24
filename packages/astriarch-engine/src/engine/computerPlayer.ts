@@ -1246,6 +1246,7 @@ export class ComputerPlayer {
   /**
    * returns true if it has been enough turns since this planet was explored
    * Strategic focus: only explore HIGH-VALUE, NEARBY planets to avoid wasting resources
+   * Uses weighted scoring to prioritize the most important planets to scout
    */
   public static planetNeedsExploration(
     planet: PlanetData,
@@ -1253,6 +1254,11 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
   ) {
+    // Easy AI never re-scouts
+    if (player.type === PlayerType.Computer_Easy && player.knownPlanetIds.includes(planet.id)) {
+      return false;
+    }
+
     // Always explore completely unknown planets that are nearby and valuable
     if (!player.knownPlanetIds.includes(planet.id)) {
       // Calculate if this unknown planet is worth exploring based on strategic value
@@ -1267,49 +1273,112 @@ export class ComputerPlayer {
       } else {
         return explorationPriority > 15; // Hard/Expert: moderate range
       }
-    } else if (player.type === PlayerType.Computer_Easy) {
-      return false; //easy computers never update intelligence by scouting
     }
 
-    const turnsSinceLastExplored =
-      planet.id in player.lastKnownPlanetFleetStrength
-        ? gameModel.modelData.currentCycle - player.lastKnownPlanetFleetStrength[planet.id].cycleLastExplored
-        : 0;
+    // For known planets, use weighted scoring to determine if this is a high-priority scout target
+    // Calculate scout priority for this planet
+    const scoutPriority = this.calculateScoutPriority(planet, gameModel, player, ownedPlanets);
 
-    // Enhanced intelligence for Hard/Expert: prioritize re-scouting enemy-owned planets
-    // This is CRITICAL - enemy planets must be monitored frequently regardless of distance
-    const lastKnownInfo = player.lastKnownPlanetFleetStrength[planet.id];
-    const isEnemyOwned =
-      lastKnownInfo && lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
+    // Get all unowned planets and calculate their scout priorities
+    const scoutCandidates: { planet: PlanetData; priority: number }[] = [];
+    for (const p of gameModel.modelData.planets) {
+      if (p.id in ownedPlanets) continue; // Skip owned planets
+      if (Player.planetContainsFriendlyInboundFleet(player, p)) continue; // Skip if we're already scouting
+      if (!player.knownPlanetIds.includes(p.id)) continue; // Skip unknown (handled above)
 
-    if (isEnemyOwned) {
-      if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
-        // Re-scout enemy planets more frequently (every 5-10 turns) - ALWAYS, regardless of distance
-        if (turnsSinceLastExplored > Utils.nextRandom(5, 11)) {
-          return true;
-        }
-      } else if (player.type === PlayerType.Computer_Normal) {
-        // Normal AI re-scouts enemy planets less frequently (every 10-15 turns)
-        if (turnsSinceLastExplored > Utils.nextRandom(10, 16)) {
-          return true;
-        }
+      const priority = this.calculateScoutPriority(p, gameModel, player, ownedPlanets);
+      if (priority > 0) {
+        scoutCandidates.push({ planet: p, priority });
       }
     }
 
-    // For known non-enemy planets, only re-scout if they're strategically valuable and nearby
-    // This prevents wasting resources on distant, worthless planets
-    const explorationPriority = this.calculateExplorationPriority(planet, player, ownedPlanets, gameModel);
-
-    // Higher difficulty = more aggressive re-scouting of valuable nearby targets
-    const minPriorityForRescouting = player.type === PlayerType.Computer_Expert ? 25 : 30;
-
-    if (explorationPriority < minPriorityForRescouting) {
-      return false; // Don't waste scouts on low-value distant planets
+    // If no candidates or this planet has no priority, don't scout
+    if (scoutCandidates.length === 0 || scoutPriority <= 0) {
+      return false;
     }
 
-    // Only re-scout high-value nearby planets after a reasonable time
-    const rescoutInterval = player.type === PlayerType.Computer_Expert ? 20 : 30;
-    return turnsSinceLastExplored > rescoutInterval;
+    // Sort by priority (highest first)
+    scoutCandidates.sort((a, b) => b.priority - a.priority);
+
+    // Determine what percentage of top candidates to scout based on difficulty
+    let topPercentage = 0.2; // Default 20%
+    if (player.type === PlayerType.Computer_Normal) {
+      topPercentage = 0.15; // Normal: top 15%
+    } else if (player.type === PlayerType.Computer_Expert) {
+      topPercentage = 0.3; // Expert: top 30% (more aggressive)
+    }
+
+    const topCount = Math.max(1, Math.ceil(scoutCandidates.length * topPercentage));
+
+    // Return true if this planet is in the top candidates
+    return scoutCandidates.slice(0, topCount).some((c) => c.planet.id === planet.id);
+  }
+
+  /**
+   * Calculate how important it is to scout this known planet
+   * Higher score = more important to scout
+   */
+  private static calculateScoutPriority(
+    planet: PlanetData,
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+  ): number {
+    let priority = 0;
+
+    const lastKnownInfo = player.lastKnownPlanetFleetStrength[planet.id];
+    if (!lastKnownInfo) return 0; // No intel, can't prioritize
+
+    const turnsSinceLastExplored = gameModel.modelData.currentCycle - lastKnownInfo.cycleLastExplored;
+    const isEnemyOwned = lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
+
+    // Distance is the most important factor
+    let minDistance = Infinity;
+    for (const ownedPlanet of Object.values(ownedPlanets)) {
+      const distance = Grid.getHexDistanceForMidPoints(
+        gameModel.grid,
+        planet.boundingHexMidPoint,
+        ownedPlanet.boundingHexMidPoint,
+      );
+      if (distance < minDistance) minDistance = distance;
+    }
+
+    // Proximity scoring (0-50 points)
+    if (minDistance < 5) priority += 50;
+    else if (minDistance < 10) priority += 35;
+    else if (minDistance < 15) priority += 20;
+    else if (minDistance < 20) priority += 10;
+    else if (minDistance < 30) priority += 3;
+    // Distant planets (30+) get 0 proximity points
+
+    // Enemy-owned planets are HIGH priority (0-40 points)
+    if (isEnemyOwned) {
+      priority += 40;
+
+      // Enemy planets that haven't been scouted in a while are even more important
+      if (player.type === PlayerType.Computer_Expert) {
+        if (turnsSinceLastExplored > 5) priority += 20;
+      } else if (player.type === PlayerType.Computer_Hard) {
+        if (turnsSinceLastExplored > 7) priority += 15;
+      } else if (player.type === PlayerType.Computer_Normal) {
+        if (turnsSinceLastExplored > 10) priority += 10;
+      }
+    }
+
+    // Planet type/value (0-15 points)
+    if (planet.type === PlanetType.PlanetClass2) priority += 15;
+    else if (planet.type === PlanetType.PlanetClass1) priority += 10;
+    else if (planet.type === PlanetType.DeadPlanet) priority += 5;
+    else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
+
+    // Staleness - how long since we last scouted (0-20 points)
+    if (turnsSinceLastExplored > 30) priority += 20;
+    else if (turnsSinceLastExplored > 20) priority += 15;
+    else if (turnsSinceLastExplored > 15) priority += 10;
+    else if (turnsSinceLastExplored > 10) priority += 5;
+    // Recently scouted planets get 0 staleness points
+
+    return priority;
   }
 
   /**
