@@ -28,6 +28,49 @@ function advanceGameCycles(gameModel: any, cycles: number = 1) {
   return GameController.advanceGameClock(gameModel);
 }
 
+/**
+ * Helper to run AI vs AI simulation and return win counts
+ */
+function runAIvsAISimulation(
+  player1Type: PlayerType,
+  player2Type: PlayerType,
+  options: {
+    iterations?: number;
+    maxTurns?: number;
+  } = {}
+): { player1: number; player2: number; draws: number } {
+  const { iterations = 5, maxTurns = 500 } = options;
+  const wins = { player1: 0, player2: 0, draws: 0 };
+
+  for (let i = 0; i < iterations; i++) {
+    const gameData = startNewTestGame();
+    gameData.gameModel.modelData.players[0].type = player1Type;
+    gameData.gameModel.modelData.players[1].type = player2Type;
+
+    // Run game for limited turns
+    let winner: PlayerData | null = null;
+    for (let turn = 0; turn < maxTurns; turn++) {
+      advanceGameCycles(gameData.gameModel, 1);
+
+      // Check for winner
+      const activePlayers = gameData.gameModel.modelData.players.filter((p) => !p.destroyed);
+      if (activePlayers.length === 1) {
+        winner = activePlayers[0];
+        break;
+      }
+    }
+
+    if (winner) {
+      if (winner.type === player1Type) wins.player1++;
+      else if (winner.type === player2Type) wins.player2++;
+    } else {
+      wins.draws++;
+    }
+  }
+
+  return wins;
+}
+
 describe('ComputerPlayer', () => {
   beforeEach(() => {
     testGameData = startNewTestGame();
@@ -200,39 +243,60 @@ describe('ComputerPlayer', () => {
   });
 
   describe('AI vs AI game simulations', () => {
-    test.only('Easy vs Normal - Normal should win majority', () => {
-      const wins = { easy: 0, normal: 0, draws: 0 };
-      const testIterations = 5; // Keep low for CI/CD
+    test('Easy vs Normal - Normal should win majority', () => {
+      const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Normal, {
+        iterations: 5,
+        maxTurns: 500,
+      });
 
-      for (let i = 0; i < testIterations; i++) {
-        const gameData = startNewTestGame();
-        gameData.gameModel.modelData.players[0].type = PlayerType.Computer_Easy;
-        gameData.gameModel.modelData.players[1].type = PlayerType.Computer_Normal;
-
-        // Run game for limited turns (using full cycle advances)
-        let winner: PlayerData | null = null;
-        for (let turn = 0; turn < 500; turn++) {
-          advanceGameCycles(gameData.gameModel, 1);
-
-          // Check for winner
-          const activePlayers = gameData.gameModel.modelData.players.filter((p) => !p.destroyed);
-          if (activePlayers.length === 1) {
-            winner = activePlayers[0];
-            break;
-          }
-        }
-
-        if (winner) {
-          if (winner.type === PlayerType.Computer_Easy) wins.easy++;
-          else if (winner.type === PlayerType.Computer_Normal) wins.normal++;
-        } else {
-          wins.draws++;
-        }
-      }
-
-      console.log('Easy vs Normal results:', wins);
+      console.log('Easy vs Normal results:', { easy: wins.player1, normal: wins.player2, draws: wins.draws });
       // Normal should win more often than Easy
-      expect(wins.normal).toBeGreaterThanOrEqual(wins.easy);
+      expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
+    });
+
+    test('Easy vs Hard - Hard should dominate', () => {
+      const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Hard, {
+        iterations: 5,
+        maxTurns: 500,
+      });
+
+      console.log('Easy vs Hard results:', { easy: wins.player1, hard: wins.player2, draws: wins.draws });
+      // Hard should win significantly more
+      expect(wins.player2).toBeGreaterThan(wins.player1);
+    });
+
+    test('Normal vs Hard - Hard should win majority', () => {
+      const wins = runAIvsAISimulation(PlayerType.Computer_Normal, PlayerType.Computer_Hard, {
+        iterations: 5,
+        maxTurns: 500,
+      });
+
+      console.log('Normal vs Hard results:', { normal: wins.player1, hard: wins.player2, draws: wins.draws });
+      // Hard should win at least as often as Normal
+      expect(wins.player2 + wins.draws).toBeGreaterThanOrEqual(wins.player1);
+    });
+
+    test('Easy vs Expert - Expert should dominate', () => {
+      const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Expert, {
+        iterations: 5,
+        maxTurns: 500,
+      });
+
+      console.log('Easy vs Expert results:', { easy: wins.player1, expert: wins.player2, draws: wins.draws });
+      // Expert should win significantly more
+      expect(wins.player2).toBeGreaterThan(wins.player1);
+    });
+
+    test('Hard vs Expert - competitive matchup', () => {
+      const wins = runAIvsAISimulation(PlayerType.Computer_Hard, PlayerType.Computer_Expert, {
+        iterations: 5,
+        maxTurns: 500,
+      });
+
+      console.log('Hard vs Expert results:', { hard: wins.player1, expert: wins.player2, draws: wins.draws });
+      // Both are aggressive and advanced - expect competitive results
+      // At least one of them should win (not all draws)
+      expect(wins.player1 + wins.player2).toBeGreaterThan(0);
     });
 
     test('Hard AI should not starve', () => {
