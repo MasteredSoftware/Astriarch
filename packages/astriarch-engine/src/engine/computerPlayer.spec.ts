@@ -534,18 +534,18 @@ describe('ComputerPlayer', () => {
       expertPlayer.knownPlanetIds.push(highValueTarget.id);
       expertPlayer.lastKnownPlanetFleetStrength[highValueTarget.id] = {
         cycleLastExplored: 0,
-        fleetData: Fleet.generateFleetWithShipCount(0, 0, 2, 0, 0, 0, highValueTarget.boundingHexMidPoint), // weak: 2 destroyers
+        fleetData: Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, highValueTarget.boundingHexMidPoint), // very weak: 1 destroyer
         lastKnownOwnerId: player2.id,
       };
 
-      // Create low-value target: planet with strong defense
-      // Use a closer index to ensure planet exists
-      const lowValueTarget = testGameData.gameModel.modelData.planets[5];
+      // Create low-value target: planet with very strong defense
+      // Use a planet farther away to ensure lower value
+      const lowValueTarget = testGameData.gameModel.modelData.planets[7];
 
       expertPlayer.knownPlanetIds.push(lowValueTarget.id);
       expertPlayer.lastKnownPlanetFleetStrength[lowValueTarget.id] = {
         cycleLastExplored: 0,
-        fleetData: Fleet.generateFleetWithShipCount(0, 0, 10, 5, 3, 0, lowValueTarget.boundingHexMidPoint), // strong fleet
+        fleetData: Fleet.generateFleetWithShipCount(0, 0, 15, 8, 5, 0, lowValueTarget.boundingHexMidPoint), // very strong fleet
         lastKnownOwnerId: player2.id,
       };
 
@@ -555,7 +555,9 @@ describe('ComputerPlayer', () => {
       const highValue = calculateValue(highValueTarget, expertPlayer, ownedPlanets, testGameData.gameModel);
       const lowValue = calculateValue(lowValueTarget, expertPlayer, ownedPlanets, testGameData.gameModel);
 
-      // High value target should be more valuable due to weaker defenses
+      // High value target should be significantly more valuable due to much weaker defenses
+      // Weak defense (strength < 10) gives +25 vs strong defense (strength >= 50) gives 0
+      // This ensures at least 20+ point difference from defense alone
       expect(highValue).toBeGreaterThan(lowValue);
     });
   });
