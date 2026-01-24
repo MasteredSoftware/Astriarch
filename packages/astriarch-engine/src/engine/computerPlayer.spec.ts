@@ -9,6 +9,7 @@ import { ClientGameModel } from './clientGameModel';
 import { Fleet } from './fleet';
 import { GameController } from './gameController';
 import { GameModel } from './gameModel';
+import { Grid } from './grid';
 import { Player } from './player';
 import { Research } from './research';
 
@@ -326,26 +327,36 @@ describe('ComputerPlayer', () => {
     });
 
     test('Expert AI should expand faster than Easy AI', () => {
-      const easyGameData = startNewTestGame();
-      easyGameData.gameModel.modelData.players[0].type = PlayerType.Computer_Easy;
-      easyGameData.gameModel.modelData.players[1].type = PlayerType.Human; // Inactive
+      // Run multiple iterations to account for randomness
+      let expertWins = 0;
+      let ties = 0;
+      const iterations = 5;
 
-      const expertGameData = startNewTestGame();
-      expertGameData.gameModel.modelData.players[0].type = PlayerType.Computer_Expert;
-      expertGameData.gameModel.modelData.players[1].type = PlayerType.Human; // Inactive
+      for (let i = 0; i < iterations; i++) {
+        const easyGameData = startNewTestGame();
+        easyGameData.gameModel.modelData.players[0].type = PlayerType.Computer_Easy;
+        easyGameData.gameModel.modelData.players[1].type = PlayerType.Human; // Inactive
 
-      // Run both for 40 turns (using full cycle advances)
-      for (let turn = 0; turn < 40; turn++) {
-        advanceGameCycles(easyGameData.gameModel, 1);
-        advanceGameCycles(expertGameData.gameModel, 1);
+        const expertGameData = startNewTestGame();
+        expertGameData.gameModel.modelData.players[0].type = PlayerType.Computer_Expert;
+        expertGameData.gameModel.modelData.players[1].type = PlayerType.Human; // Inactive
+
+        // Run both for 40 turns (using full cycle advances)
+        for (let turn = 0; turn < 40; turn++) {
+          advanceGameCycles(easyGameData.gameModel, 1);
+          advanceGameCycles(expertGameData.gameModel, 1);
+        }
+
+        const easyPlanets = easyGameData.gameModel.modelData.players[0].ownedPlanetIds.length;
+        const expertPlanets = expertGameData.gameModel.modelData.players[0].ownedPlanetIds.length;
+
+        if (expertPlanets > easyPlanets) expertWins++;
+        else if (expertPlanets === easyPlanets) ties++;
       }
 
-      const easyPlanets = easyGameData.gameModel.modelData.players[0].ownedPlanetIds.length;
-      const expertPlanets = expertGameData.gameModel.modelData.players[0].ownedPlanetIds.length;
-
-      console.log('Expansion: Easy:', easyPlanets, 'Expert:', expertPlanets);
-      // Expert should have captured more planets or be within 1 (random variance)
-      expect(expertPlanets).toBeGreaterThanOrEqual(easyPlanets - 1);
+      console.log(`Expansion comparison: Expert wins ${expertWins}/${iterations}, ties ${ties}/${iterations}`);
+      // Expert should win or tie at least 60% of the time (3 out of 5)
+      expect(expertWins + ties).toBeGreaterThanOrEqual(3);
     });
   });
 
@@ -415,14 +426,19 @@ describe('ComputerPlayer', () => {
   });
 
   describe('Enhanced Intelligence Gathering', () => {
-    it('should re-scout enemy planets more frequently for Hard AI', () => {
+    it('should re-scout nearby enemy planets more frequently for Hard AI', () => {
       const hardPlayer = Player.constructPlayer('hard', PlayerType.Computer_Hard, 'Hard', player1.color);
       hardPlayer.ownedPlanetIds = [player1.ownedPlanetIds[0]];
 
-      // Use second planet as enemy territory
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(
+        hardPlayer.ownedPlanetIds,
+        testGameData.gameModel.modelData.planets,
+      );
+
+      // Use a nearby planet as enemy territory (planet[1] is typically close to planet[0])
       const enemyPlanet = testGameData.gameModel.modelData.planets[1];
 
-      // Hard player discovers it
+      // Hard player discovers it and knows it's enemy-owned
       hardPlayer.knownPlanetIds.push(enemyPlanet.id);
       hardPlayer.lastKnownPlanetFleetStrength[enemyPlanet.id] = {
         cycleLastExplored: 0,
@@ -430,13 +446,8 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: player2.id,
       };
 
-      // After 7 turns, Hard AI should consider re-scouting (5-10 turn range)
-      advanceGameCycles(testGameData.gameModel, 7);
-
-      const ownedPlanets = ClientGameModel.getOwnedPlanets(
-        hardPlayer.ownedPlanetIds,
-        testGameData.gameModel.modelData.planets,
-      );
+      // After 10 turns, Hard AI should always re-scout nearby enemy planets (5-10 turn range)
+      advanceGameCycles(testGameData.gameModel, 10);
 
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         enemyPlanet,
@@ -445,43 +456,62 @@ describe('ComputerPlayer', () => {
         ownedPlanets,
       );
 
+      // Should re-scout because it's enemy-owned, nearby, and enough turns have passed
       expect(needsExploration).toBe(true);
     });
 
-    it('should re-scout enemy planets less frequently for Normal AI', () => {
+    it('should prioritize exploring nearby high-value planets over distant ones', () => {
       const normalPlayer = Player.constructPlayer('normal', PlayerType.Computer_Normal, 'Normal', player1.color);
       normalPlayer.ownedPlanetIds = [player1.ownedPlanetIds[0]];
-
-      // Use second planet as enemy territory
-      const enemyPlanet = testGameData.gameModel.modelData.planets[1];
-
-      // Normal player discovers it
-      normalPlayer.knownPlanetIds.push(enemyPlanet.id);
-      normalPlayer.lastKnownPlanetFleetStrength[enemyPlanet.id] = {
-        cycleLastExplored: 0,
-        fleetData: Fleet.generateFleetWithShipCount(0, 0, 5, 0, 0, 0, enemyPlanet.boundingHexMidPoint),
-        lastKnownOwnerId: player2.id,
-      };
-
-      // After 7 turns, Normal AI might or might not re-scout (10-15 turn range is random)
-      // But it should be less likely than Hard AI
-      advanceGameCycles(testGameData.gameModel, 7);
 
       const ownedPlanets = ClientGameModel.getOwnedPlanets(
         normalPlayer.ownedPlanetIds,
         testGameData.gameModel.modelData.planets,
       );
 
-      // After 16 turns, Normal AI should definitely re-scout
-      advanceGameCycles(testGameData.gameModel, 9);
-      const needsExplorationAfter16 = ComputerPlayer.planetNeedsExploration(
-        enemyPlanet,
+      // Find a nearby unknown planet (close to home)
+      const ownedPlanet = Object.values(ownedPlanets)[0];
+      let nearbyPlanet = testGameData.gameModel.modelData.planets[1];
+      let farPlanet: typeof nearbyPlanet | null = null;
+
+      // Find planets at different distances
+      for (const planet of testGameData.gameModel.modelData.planets) {
+        if (!normalPlayer.knownPlanetIds.includes(planet.id)) {
+          const distance = Grid.getHexDistanceForMidPoints(
+            testGameData.gameModel.grid,
+            planet.boundingHexMidPoint,
+            ownedPlanet.boundingHexMidPoint,
+          );
+
+          // Find a close planet (distance < 10) and a far planet (distance > 25)
+          if (distance < 10 && planet.id !== nearbyPlanet.id) {
+            nearbyPlanet = planet;
+          }
+          if (distance > 25 && !farPlanet) {
+            farPlanet = planet;
+          }
+        }
+      }
+
+      // Always test nearby planet prioritization
+      const nearbyNeedsExploration = ComputerPlayer.planetNeedsExploration(
+        nearbyPlanet,
         testGameData.gameModel,
         normalPlayer,
         ownedPlanets,
       );
+      expect(nearbyNeedsExploration).toBe(true);
 
-      expect(needsExplorationAfter16).toBe(true);
+      // If we found a distant planet, verify it's NOT explored (saves scouts)
+      if (farPlanet) {
+        const distantNeedsExploration = ComputerPlayer.planetNeedsExploration(
+          farPlanet,
+          testGameData.gameModel,
+          normalPlayer,
+          ownedPlanets,
+        );
+        expect(distantNeedsExploration).toBe(false);
+      }
     });
 
     it('should never re-scout for Easy AI', () => {

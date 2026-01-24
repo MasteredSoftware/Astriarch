@@ -1245,6 +1245,7 @@ export class ComputerPlayer {
 
   /**
    * returns true if it has been enough turns since this planet was explored
+   * Strategic focus: only explore HIGH-VALUE, NEARBY planets to avoid wasting resources
    */
   public static planetNeedsExploration(
     planet: PlanetData,
@@ -1252,8 +1253,20 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
   ) {
+    // Always explore completely unknown planets that are nearby and valuable
     if (!player.knownPlanetIds.includes(planet.id)) {
-      return true;
+      // Calculate if this unknown planet is worth exploring based on strategic value
+      const explorationPriority = this.calculateExplorationPriority(planet, player, ownedPlanets, gameModel);
+
+      // Only explore high-priority unknown planets (close, likely valuable)
+      // This prevents wasting scouts on distant, low-value planets
+      if (player.type === PlayerType.Computer_Easy) {
+        return explorationPriority > 30; // Easy: only very close planets
+      } else if (player.type === PlayerType.Computer_Normal) {
+        return explorationPriority > 20; // Normal: close-ish planets
+      } else {
+        return explorationPriority > 15; // Hard/Expert: moderate range
+      }
     } else if (player.type === PlayerType.Computer_Easy) {
       return false; //easy computers never update intelligence by scouting
     }
@@ -1264,45 +1277,79 @@ export class ComputerPlayer {
         : 0;
 
     // Enhanced intelligence for Hard/Expert: prioritize re-scouting enemy-owned planets
+    // This is CRITICAL - enemy planets must be monitored frequently regardless of distance
     const lastKnownInfo = player.lastKnownPlanetFleetStrength[planet.id];
     const isEnemyOwned =
       lastKnownInfo && lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
 
-    if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
-      // Re-scout enemy planets more frequently (every 5-10 turns)
-      if (isEnemyOwned && turnsSinceLastExplored > Utils.nextRandom(5, 11)) {
-        return true;
-      }
-    } else if (player.type === PlayerType.Computer_Normal) {
-      // Normal AI re-scouts enemy planets less frequently (every 10-15 turns)
-      if (isEnemyOwned && turnsSinceLastExplored > Utils.nextRandom(10, 16)) {
-        return true;
+    if (isEnemyOwned) {
+      if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+        // Re-scout enemy planets more frequently (every 5-10 turns) - ALWAYS, regardless of distance
+        if (turnsSinceLastExplored > Utils.nextRandom(5, 11)) {
+          return true;
+        }
+      } else if (player.type === PlayerType.Computer_Normal) {
+        // Normal AI re-scouts enemy planets less frequently (every 10-15 turns)
+        if (turnsSinceLastExplored > Utils.nextRandom(10, 16)) {
+          return true;
+        }
       }
     }
 
-    //the more planets and larger the galaxy, the longer the time till new intelligence is needed
-    const turnLastExploredCutoff =
-      (gameModel.modelData.planets.length / 2) * gameModel.modelData.gameOptions.galaxySize; //range: 4 - 48
-    if (turnsSinceLastExplored > turnLastExploredCutoff) {
-      //this is just a quick short circuit
-      return true;
-    } else {
-      //get average distance of planet to other owned planets, if distance below threshold, treat as needs exploration
-      const distanceCutoff = turnLastExploredCutoff / 2;
-      let totalDistance = player.ownedPlanetIds.length || 1;
-      for (const ownedPlanet of Object.values(ownedPlanets)) {
-        totalDistance += Grid.getHexDistanceForMidPoints(
-          gameModel.grid,
-          planet.boundingHexMidPoint,
-          ownedPlanet.boundingHexMidPoint,
-        );
-      }
-      const averageDistance = totalDistance / (player.ownedPlanetIds.length || 1);
-      if (averageDistance <= distanceCutoff && turnsSinceLastExplored > averageDistance) {
-        return true;
-      }
+    // For known non-enemy planets, only re-scout if they're strategically valuable and nearby
+    // This prevents wasting resources on distant, worthless planets
+    const explorationPriority = this.calculateExplorationPriority(planet, player, ownedPlanets, gameModel);
+
+    // Higher difficulty = more aggressive re-scouting of valuable nearby targets
+    const minPriorityForRescouting = player.type === PlayerType.Computer_Expert ? 25 : 30;
+
+    if (explorationPriority < minPriorityForRescouting) {
+      return false; // Don't waste scouts on low-value distant planets
     }
-    return false;
+
+    // Only re-scout high-value nearby planets after a reasonable time
+    const rescoutInterval = player.type === PlayerType.Computer_Expert ? 20 : 30;
+    return turnsSinceLastExplored > rescoutInterval;
+  }
+
+  /**
+   * Calculate exploration priority for a planet based on strategic value
+   * Higher score = more important to explore/scout
+   */
+  private static calculateExplorationPriority(
+    planet: PlanetData,
+    _player: PlayerData,
+    ownedPlanets: PlanetById,
+    gameModel: GameModelData,
+  ): number {
+    let priority = 0;
+
+    // Find distance to nearest owned planet
+    let minDistance = Infinity;
+    for (const ownedPlanet of Object.values(ownedPlanets)) {
+      const distance = Grid.getHexDistanceForMidPoints(
+        gameModel.grid,
+        planet.boundingHexMidPoint,
+        ownedPlanet.boundingHexMidPoint,
+      );
+      if (distance < minDistance) minDistance = distance;
+    }
+
+    // Proximity is KEY - nearby planets are much more important
+    if (minDistance < 5) priority += 40;
+    else if (minDistance < 10) priority += 25;
+    else if (minDistance < 15) priority += 10;
+    else if (minDistance < 20) priority += 5;
+    // Distant planets (20+) get 0 priority - don't waste scouts!
+
+    // Planet type indicates likely resource value
+    // But this is secondary to distance
+    if (planet.type === PlanetType.PlanetClass2) priority += 15;
+    else if (planet.type === PlanetType.PlanetClass1) priority += 10;
+    else if (planet.type === PlanetType.DeadPlanet) priority += 5;
+    else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
+
+    return priority;
   }
 
   public static getClosestUnownedPlanet(
