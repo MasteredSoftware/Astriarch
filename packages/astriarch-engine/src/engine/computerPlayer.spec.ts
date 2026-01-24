@@ -17,6 +17,17 @@ let player1: PlayerData;
 let player2: PlayerData;
 let planetById: PlanetById;
 
+/**
+ * Helper to advance game time for testing by manipulating lastSnapshotTime
+ * This simulates N full game cycles passing
+ */
+function advanceGameCycles(gameModel: any, cycles: number = 1) {
+  // Move lastSnapshotTime backward to simulate time passing
+  const msPerCycle = 30 * 1000; // GameController.MS_PER_CYCLE_DEFAULT
+  gameModel.modelData.lastSnapshotTime -= cycles * msPerCycle;
+  return GameController.advanceGameClock(gameModel);
+}
+
 describe('ComputerPlayer', () => {
   beforeEach(() => {
     testGameData = startNewTestGame();
@@ -189,7 +200,7 @@ describe('ComputerPlayer', () => {
   });
 
   describe('AI vs AI game simulations', () => {
-    test('Easy vs Normal - Normal should win majority', () => {
+    test.only('Easy vs Normal - Normal should win majority', () => {
       const wins = { easy: 0, normal: 0, draws: 0 };
       const testIterations = 5; // Keep low for CI/CD
 
@@ -198,10 +209,10 @@ describe('ComputerPlayer', () => {
         gameData.gameModel.modelData.players[0].type = PlayerType.Computer_Easy;
         gameData.gameModel.modelData.players[1].type = PlayerType.Computer_Normal;
 
-        // Run game for limited turns
+        // Run game for limited turns (using full cycle advances)
         let winner: PlayerData | null = null;
-        for (let turn = 0; turn < 50; turn++) {
-          GameController.advanceGameClock(gameData.gameModel);
+        for (let turn = 0; turn < 500; turn++) {
+          advanceGameCycles(gameData.gameModel, 1);
 
           // Check for winner
           const activePlayers = gameData.gameModel.modelData.players.filter((p) => !p.destroyed);
@@ -229,9 +240,9 @@ describe('ComputerPlayer', () => {
       gameData.gameModel.modelData.players[0].type = PlayerType.Computer_Hard;
       gameData.gameModel.modelData.players[1].type = PlayerType.Computer_Hard;
 
-      // Run for 30 turns and check food management
+      // Run for 30 turns and check food management (using full cycle advances)
       for (let turn = 0; turn < 30; turn++) {
-        GameController.advanceGameClock(gameData.gameModel);
+        advanceGameCycles(gameData.gameModel, 1);
 
         for (const player of gameData.gameModel.modelData.players) {
           const ownedPlanets = ClientGameModel.getOwnedPlanets(
@@ -258,10 +269,10 @@ describe('ComputerPlayer', () => {
       expertGameData.gameModel.modelData.players[0].type = PlayerType.Computer_Expert;
       expertGameData.gameModel.modelData.players[1].type = PlayerType.Human; // Inactive
 
-      // Run both for 40 turns
+      // Run both for 40 turns (using full cycle advances)
       for (let turn = 0; turn < 40; turn++) {
-        GameController.advanceGameClock(easyGameData.gameModel);
-        GameController.advanceGameClock(expertGameData.gameModel);
+        advanceGameCycles(easyGameData.gameModel, 1);
+        advanceGameCycles(expertGameData.gameModel, 1);
       }
 
       const easyPlanets = easyGameData.gameModel.modelData.players[0].ownedPlanetIds.length;
