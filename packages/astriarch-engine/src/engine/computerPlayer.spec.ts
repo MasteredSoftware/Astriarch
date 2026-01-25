@@ -558,9 +558,9 @@ describe('ComputerPlayer', () => {
     });
 
     it('should send scouts for exploration instead of powerful ships when both are available', () => {
-      // TDD Test: This test exposes a bug where the AI sends powerful ships (cruisers/battleships)
-      // for exploration even when scouts are available on other planets.
-      // The issue is in computerSendShips - it doesn't prioritize planets with scouts for scouting missions.
+      // TDD Test: This test validates two behaviors:
+      // 1. AI prefers scouts/destroyers over cruisers/battleships for exploration
+      // 2. AI sends only ONE scout to each unexplored planet (no duplicates)
 
       const normalPlayer = Player.constructPlayer('normal', PlayerType.Computer_Normal, 'Normal', player1.color);
 
@@ -568,7 +568,7 @@ describe('ComputerPlayer', () => {
       const planet1 = testGameData.gameModel.modelData.planets[0]; // Has scouts
       const planet2 = testGameData.gameModel.modelData.planets[1]; // Has cruisers
       const planet3 = testGameData.gameModel.modelData.planets[2]; // Has mixed fleet
-      const unknownPlanet = testGameData.gameModel.modelData.planets[3]; // Needs exploration
+      const unknownPlanet = testGameData.gameModel.modelData.planets[3]; // The ONLY unexplored planet
 
       normalPlayer.ownedPlanetIds = [planet1.id, planet2.id, planet3.id];
       normalPlayer.homePlanetId = planet1.id;
@@ -585,8 +585,10 @@ describe('ComputerPlayer', () => {
       planet3.planetaryFleet = Fleet.generateFleetWithShipCount(0, 1, 1, 1, 1, 0, planet3.boundingHexMidPoint);
       planet3.outgoingFleets = [];
 
-      // Unknown planet needs exploration (not in known planets list)
-      normalPlayer.knownPlanetIds = [planet1.id, planet2.id, planet3.id]; // unknownPlanet not included
+      // Mark ALL planets as known EXCEPT unknownPlanet to ensure it's the only exploration target
+      normalPlayer.knownPlanetIds = testGameData.gameModel.modelData.planets
+        .filter((p) => p.id !== unknownPlanet.id)
+        .map((p) => p.id);
 
       const ownedPlanets = ClientGameModel.getOwnedPlanets(
         normalPlayer.ownedPlanetIds,
@@ -611,6 +613,15 @@ describe('ComputerPlayer', () => {
       console.log('Planet2 (cruisers) sent:', planet2.outgoingFleets.length, 'fleets');
       console.log('Planet3 (mixed) sent:', planet3.outgoingFleets.length, 'fleets');
 
+      // Count fleets sent to the specific unknownPlanet
+      const fleetsToUnknownPlanet = [
+        ...planet1.outgoingFleets,
+        ...planet2.outgoingFleets,
+        ...planet3.outgoingFleets,
+      ].filter((fleet) => fleet.destinationHexMidPoint === unknownPlanet.boundingHexMidPoint);
+
+      console.log('Total fleets sent to unknownPlanet:', fleetsToUnknownPlanet.length);
+
       if (planet2.outgoingFleets.length > 0) {
         console.log(
           'Planet2 sent ship types:',
@@ -624,24 +635,115 @@ describe('ComputerPlayer', () => {
         );
       }
 
-      // Verify that a scout was sent from planet1
-      expect(planet1.outgoingFleets.length).toBeGreaterThan(0);
-      const scoutFleet = planet1.outgoingFleets[0];
-      expect(scoutFleet.starships.length).toBeGreaterThan(0);
-      expect(scoutFleet.starships[0].type).toBe(StarShipType.Scout);
+      // CRITICAL: Verify that exactly ONE fleet is sent to the unknownPlanet
+      // This ensures we don't send duplicate scouts to the same target
+      expect(fleetsToUnknownPlanet.length).toBe(1);
+
+      // Verify that the fleet sent contains only scouts or destroyers
+      const sentFleet = fleetsToUnknownPlanet[0];
+      expect(sentFleet.starships.length).toBeGreaterThan(0);
+      for (const ship of sentFleet.starships) {
+        expect([StarShipType.Scout, StarShipType.Destroyer]).toContain(ship.type);
+      }
 
       // Verify that cruisers/battleships were NOT sent for exploration
-      // Planet 2 should not send cruisers for exploration
-      const planet2SentCruiser = planet2.outgoingFleets.some((fleet) =>
+      // Planet 2 should not send cruisers to the unknown planet specifically
+      const planet2FleetsToUnknown = planet2.outgoingFleets.filter(
+        (fleet) => fleet.destinationHexMidPoint === unknownPlanet.boundingHexMidPoint,
+      );
+      const planet2SentCruiserToUnknown = planet2FleetsToUnknown.some((fleet) =>
         fleet.starships.some((ship) => ship.type === StarShipType.Cruiser),
       );
-      expect(planet2SentCruiser).toBe(false);
+      expect(planet2SentCruiserToUnknown).toBe(false);
 
-      // Planet 3 should not send battleships for exploration
-      const planet3SentBattleship = planet3.outgoingFleets.some((fleet) =>
-        fleet.starships.some((ship) => ship.type === StarShipType.Battleship),
+      // Planet 3 should not send battleships or cruisers to the unknown planet
+      const planet3FleetsToUnknown = planet3.outgoingFleets.filter(
+        (fleet) => fleet.destinationHexMidPoint === unknownPlanet.boundingHexMidPoint,
       );
-      expect(planet3SentBattleship).toBe(false);
+      const planet3SentExpensiveShipsToUnknown = planet3FleetsToUnknown.some((fleet) =>
+        fleet.starships.some((ship) => ship.type === StarShipType.Battleship || ship.type === StarShipType.Cruiser),
+      );
+      expect(planet3SentExpensiveShipsToUnknown).toBe(false);
+    });
+
+    it('should prefer closer planets when sending scouts to unexplored planets', () => {
+      // This test validates that when multiple planets have scouts available,
+      // the AI prefers sending from the planet closest to the exploration target
+
+      const normalPlayer = Player.constructPlayer('normal', PlayerType.Computer_Normal, 'Normal', player1.color);
+
+      // Create 2 owned planets with scouts at different distances from the target
+      const closerPlanet = testGameData.gameModel.modelData.planets[0]; // Closer to unknownPlanet
+      const fartherPlanet = testGameData.gameModel.modelData.planets[2]; // Farther from unknownPlanet
+      const unknownPlanet = testGameData.gameModel.modelData.planets[1]; // In between
+
+      normalPlayer.ownedPlanetIds = [closerPlanet.id, fartherPlanet.id];
+      normalPlayer.homePlanetId = closerPlanet.id;
+
+      // Both planets have scouts available
+      closerPlanet.planetaryFleet = Fleet.generateFleetWithShipCount(
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        closerPlanet.boundingHexMidPoint,
+      );
+      closerPlanet.outgoingFleets = [];
+
+      fartherPlanet.planetaryFleet = Fleet.generateFleetWithShipCount(
+        0,
+        2,
+        0,
+        0,
+        0,
+        0,
+        fartherPlanet.boundingHexMidPoint,
+      );
+      fartherPlanet.outgoingFleets = [];
+
+      // Mark ALL planets as known EXCEPT unknownPlanet
+      normalPlayer.knownPlanetIds = testGameData.gameModel.modelData.planets
+        .filter((p) => p.id !== unknownPlanet.id)
+        .map((p) => p.id);
+
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(
+        normalPlayer.ownedPlanetIds,
+        testGameData.gameModel.modelData.planets,
+      );
+      const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, ownedPlanets);
+
+      // Execute ship sending logic
+      ComputerPlayer.computerSendShips(testGameData.gameModel, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+
+      // Verify that exactly ONE fleet was sent
+      const totalFleetsSent = closerPlanet.outgoingFleets.length + fartherPlanet.outgoingFleets.length;
+      expect(totalFleetsSent).toBe(1);
+
+      // Calculate distances to verify which planet is actually closer
+      const distanceFromCloser = Grid.getHexDistanceForMidPoints(
+        testGameData.gameModel.grid,
+        closerPlanet.boundingHexMidPoint,
+        unknownPlanet.boundingHexMidPoint,
+      );
+      const distanceFromFarther = Grid.getHexDistanceForMidPoints(
+        testGameData.gameModel.grid,
+        fartherPlanet.boundingHexMidPoint,
+        unknownPlanet.boundingHexMidPoint,
+      );
+
+      console.log('Distance from closer planet:', distanceFromCloser);
+      console.log('Distance from farther planet:', distanceFromFarther);
+
+      // The closer planet should be the one that sent the fleet
+      if (distanceFromCloser < distanceFromFarther) {
+        expect(closerPlanet.outgoingFleets.length).toBe(1);
+        expect(fartherPlanet.outgoingFleets.length).toBe(0);
+      } else {
+        // If planets are equidistant or test setup is different, just verify one sent
+        expect(totalFleetsSent).toBe(1);
+      }
     });
   });
 

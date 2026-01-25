@@ -924,6 +924,13 @@ export class ComputerPlayer {
 
           //send smallest detachment possible
           const inboundPlanet = planetCandidatesForInboundScouts[i];
+
+          // Check if there's already a fleet heading to this planet
+          // This prevents sending multiple scouts to the same unexplored planet
+          if (Player.planetContainsFriendlyInboundFleet(player, inboundPlanet)) {
+            continue; // Skip this planet, already has a fleet en route
+          }
+
           const newFleet = Fleet.splitOffSmallestPossibleFleet(pFriendly.planetaryFleet, player);
           //if we do this right newFleet should never be null
           if (newFleet) {
