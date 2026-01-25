@@ -556,6 +556,93 @@ describe('ComputerPlayer', () => {
 
       expect(needsExploration).toBe(false);
     });
+
+    it('should send scouts for exploration instead of powerful ships when both are available', () => {
+      // TDD Test: This test exposes a bug where the AI sends powerful ships (cruisers/battleships)
+      // for exploration even when scouts are available on other planets.
+      // The issue is in computerSendShips - it doesn't prioritize planets with scouts for scouting missions.
+
+      const normalPlayer = Player.constructPlayer('normal', PlayerType.Computer_Normal, 'Normal', player1.color);
+
+      // Create 3 owned planets with different fleet compositions
+      const planet1 = testGameData.gameModel.modelData.planets[0]; // Has scouts
+      const planet2 = testGameData.gameModel.modelData.planets[1]; // Has cruisers
+      const planet3 = testGameData.gameModel.modelData.planets[2]; // Has mixed fleet
+      const unknownPlanet = testGameData.gameModel.modelData.planets[3]; // Needs exploration
+
+      normalPlayer.ownedPlanetIds = [planet1.id, planet2.id, planet3.id];
+      normalPlayer.homePlanetId = planet1.id;
+
+      // Planet 1: Only scouts (should send from here for exploration)
+      planet1.planetaryFleet = Fleet.generateFleetWithShipCount(0, 3, 0, 0, 0, 0, planet1.boundingHexMidPoint);
+      planet1.outgoingFleets = [];
+
+      // Planet 2: Only cruisers (should NOT send from here for exploration)
+      planet2.planetaryFleet = Fleet.generateFleetWithShipCount(0, 0, 0, 2, 0, 0, planet2.boundingHexMidPoint);
+      planet2.outgoingFleets = [];
+
+      // Planet 3: Mixed fleet with battleships (should NOT send from here for exploration)
+      planet3.planetaryFleet = Fleet.generateFleetWithShipCount(0, 1, 1, 1, 1, 0, planet3.boundingHexMidPoint);
+      planet3.outgoingFleets = [];
+
+      // Unknown planet needs exploration (not in known planets list)
+      normalPlayer.knownPlanetIds = [planet1.id, planet2.id, planet3.id]; // unknownPlanet not included
+
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(
+        normalPlayer.ownedPlanetIds,
+        testGameData.gameModel.modelData.planets,
+      );
+      const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, ownedPlanets);
+
+      // Verify unknownPlanet needs exploration
+      const needsExploration = ComputerPlayer.planetNeedsExploration(
+        unknownPlanet,
+        testGameData.gameModel,
+        normalPlayer,
+        ownedPlanets,
+      );
+      expect(needsExploration).toBe(true);
+
+      // Execute ship sending logic
+      ComputerPlayer.computerSendShips(testGameData.gameModel, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+
+      // Debug: log what actually happened
+      console.log('Planet1 (scouts) sent:', planet1.outgoingFleets.length, 'fleets');
+      console.log('Planet2 (cruisers) sent:', planet2.outgoingFleets.length, 'fleets');
+      console.log('Planet3 (mixed) sent:', planet3.outgoingFleets.length, 'fleets');
+
+      if (planet2.outgoingFleets.length > 0) {
+        console.log(
+          'Planet2 sent ship types:',
+          planet2.outgoingFleets[0].starships.map((s) => s.type),
+        );
+      }
+      if (planet3.outgoingFleets.length > 0) {
+        console.log(
+          'Planet3 sent ship types:',
+          planet3.outgoingFleets[0].starships.map((s) => s.type),
+        );
+      }
+
+      // Verify that a scout was sent from planet1
+      expect(planet1.outgoingFleets.length).toBeGreaterThan(0);
+      const scoutFleet = planet1.outgoingFleets[0];
+      expect(scoutFleet.starships.length).toBeGreaterThan(0);
+      expect(scoutFleet.starships[0].type).toBe(StarShipType.Scout);
+
+      // Verify that cruisers/battleships were NOT sent for exploration
+      // Planet 2 should not send cruisers for exploration
+      const planet2SentCruiser = planet2.outgoingFleets.some((fleet) =>
+        fleet.starships.some((ship) => ship.type === StarShipType.Cruiser),
+      );
+      expect(planet2SentCruiser).toBe(false);
+
+      // Planet 3 should not send battleships for exploration
+      const planet3SentBattleship = planet3.outgoingFleets.some((fleet) =>
+        fleet.starships.some((ship) => ship.type === StarShipType.Battleship),
+      );
+      expect(planet3SentBattleship).toBe(false);
+    });
   });
 
   describe('Strategic Target Valuation', () => {

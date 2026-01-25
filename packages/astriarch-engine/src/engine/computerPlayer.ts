@@ -545,7 +545,7 @@ export class ComputerPlayer {
       if (
         player.planetBuildGoals[p.id] &&
         (ownedPlanetsSorted.length > 3 || ownedPlanetsSorted.length == 1) &&
-        mineCount != origRecommendedMines
+        mineCount < origRecommendedMines
       ) {
         //do this for now so that the computer builds improvements before too much scouting, however might want to revisit this so that there is some scouting done before all buildings are built
         continue;
@@ -885,30 +885,59 @@ export class ComputerPlayer {
       for (let i = planetCandidatesForInboundScouts.length - 1; i >= 0; i--) {
         const pEnemyInbound = planetCandidatesForInboundScouts[i];
 
-        if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
-          const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
-          planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
-        } else {
-          // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
-          const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
-            gameModel.grid,
-            pEnemyInbound,
-            player.lastKnownPlanetFleetStrength,
-          );
-          planetCandidatesForSendingShips.sort((a, b) => planetValueDistanceStrengthComparer.sortFunction(a, b));
-          //because the PlanetValueDistanceStrengthComparer prefers weakest planets, we want the opposite in this case
-          //so we want to prefer sending from asteroid belts with high strength value
-          planetCandidatesForSendingShips.reverse();
-        }
+        // For exploration missions, prioritize planets with scouts/destroyers over expensive ships
+        // Sort by: 1) ship type suitability (scouts > destroyers > cruisers > battleships)
+        //          2) distance to target (closer is better)
+        planetCandidatesForSendingShips.sort((a, b) => {
+          const aShipCounts = Fleet.countStarshipsByType(a.planetaryFleet);
+          const bShipCounts = Fleet.countStarshipsByType(b.planetaryFleet);
 
-        for (let j = planetCandidatesForSendingShips.length - 1; j >= 0; j--) {
+          // Calculate "exploration suitability score" (lower is better for cheaper ships)
+          // Scouts = 1, Destroyers = 2, Cruisers = 3, Battleships = 4
+          const aScore = aShipCounts.scouts > 0 ? 1 : aShipCounts.destroyers > 0 ? 2 : aShipCounts.cruisers > 0 ? 3 : 4;
+          const bScore = bShipCounts.scouts > 0 ? 1 : bShipCounts.destroyers > 0 ? 2 : bShipCounts.cruisers > 0 ? 3 : 4;
+
+          // Primary sort: prefer cheaper ships for exploration
+          if (aScore !== bScore) {
+            return aScore - bScore;
+          }
+
+          // Secondary sort: prefer closer planets
+          const distanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
+          return distanceComparer.sortFunction(a, b);
+        });
+
+        // Iterate from start of list (best candidates first) to send scouts preferentially
+        let fleetSent = false;
+        for (let j = 0; j < planetCandidatesForSendingShips.length; j++) {
           const pFriendly = planetCandidatesForSendingShips[j];
+
+          // Check what type of ship would be sent from this planet
+          const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
+          const hasScoutsOrDestroyers = starshipCounts.scouts > 0 || starshipCounts.destroyers > 0;
+
+          // For exploration, only send scouts or destroyers
+          // Skip planets that would send cruisers/battleships
+          if (!hasScoutsOrDestroyers) {
+            continue;
+          }
 
           //send smallest detachment possible
           const inboundPlanet = planetCandidatesForInboundScouts[i];
           const newFleet = Fleet.splitOffSmallestPossibleFleet(pFriendly.planetaryFleet, player);
           //if we do this right newFleet should never be null
           if (newFleet) {
+            // For exploration, verify the fleet only contains scouts/destroyers
+            // splitOffSmallestPossibleFleet might include multiple ship types
+            const fleetShipTypes = Fleet.countStarshipsByType(newFleet);
+            if (fleetShipTypes.cruisers > 0 || fleetShipTypes.battleships > 0) {
+              // This fleet has expensive ships - put the ships back and skip this planet
+              for (const ship of newFleet.starships) {
+                pFriendly.planetaryFleet.starships.push(ship);
+              }
+              continue;
+            }
+
             Fleet.setDestination(
               newFleet,
               gameModel.grid,
@@ -924,10 +953,17 @@ export class ComputerPlayer {
               planetCandidatesForSendingShips.splice(j, 1);
             }
 
+            fleetSent = true;
+            // Successfully sent a scout - move to next exploration target
             break;
           } else {
             console.error('splitOffSmallestPossibleFleet returned no newFleet!');
           }
+        }
+
+        // If no planet could send scouts/destroyers, we're done with exploration
+        if (!fleetSent) {
+          break;
         }
 
         if (planetCandidatesForSendingShips.length == 0) break;
