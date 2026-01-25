@@ -1343,13 +1343,19 @@ export class ComputerPlayer {
       if (distance < minDistance) minDistance = distance;
     }
 
-    // Proximity scoring (0-50 points)
-    if (minDistance < 5) priority += 50;
-    else if (minDistance < 10) priority += 35;
-    else if (minDistance < 15) priority += 20;
-    else if (minDistance < 20) priority += 10;
-    else if (minDistance < 30) priority += 3;
-    // Distant planets (30+) get 0 proximity points
+    // Proximity scoring (0-50 points) - continuous function that scales with map size
+    // Estimate typical max distance as ~1/4 of grid diagonal for strategic relevance
+    const gridSize = Math.sqrt(gameModel.grid.hexes.length);
+    const strategicRange = gridSize * 0.75; // Most planets beyond this are too far to care about
+
+    // Use inverse relationship: closer = exponentially higher priority
+    // Formula: maxPoints * (1 - (distance / strategicRange)^2)
+    // This gives smooth decay: distance 0 = 50pts, strategicRange/2 = 37.5pts, strategicRange = 0pts
+    if (minDistance < strategicRange) {
+      const normalizedDistance = minDistance / strategicRange;
+      priority += Math.round(50 * (1 - normalizedDistance * normalizedDistance));
+    }
+    // Distant planets beyond strategic range get 0 proximity points
 
     // Enemy-owned planets are HIGH priority (0-40 points)
     if (isEnemyOwned) {
@@ -1404,12 +1410,18 @@ export class ComputerPlayer {
       if (distance < minDistance) minDistance = distance;
     }
 
-    // Proximity is KEY - nearby planets are much more important
-    if (minDistance < 5) priority += 40;
-    else if (minDistance < 10) priority += 25;
-    else if (minDistance < 15) priority += 10;
-    else if (minDistance < 20) priority += 5;
-    // Distant planets (20+) get 0 priority - don't waste scouts!
+    // Proximity is KEY - nearby planets are much more important (0-40 points)
+    // Scale based on map size for flexibility
+    const gridSize = Math.sqrt(gameModel.grid.hexes.length);
+    const explorationRange = gridSize * 0.7; // Explore planets within strategic range
+
+    // Use inverse square decay for smooth prioritization
+    // Formula: maxPoints * (1 - (distance / explorationRange)^2)
+    if (minDistance < explorationRange) {
+      const normalizedDistance = minDistance / explorationRange;
+      priority += Math.round(40 * (1 - normalizedDistance * normalizedDistance));
+    }
+    // Distant planets beyond exploration range get 0 priority - don't waste scouts!
 
     // Planet type indicates likely resource value
     // But this is secondary to distance
