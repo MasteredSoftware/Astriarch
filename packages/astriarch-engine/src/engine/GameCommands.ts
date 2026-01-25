@@ -461,6 +461,23 @@ export interface FleetDefenseSuccessEvent extends ClientEvent {
   };
 }
 
+export interface ResearchStolenEvent extends ClientEvent {
+  type: ClientEventType.RESEARCH_STOLEN;
+  data: {
+    victimPlayerId: string;
+    victimPlayerName?: string;
+    thiefPlayerId: string;
+    thiefPlayerName?: string;
+    researchType: number; // ResearchType
+    researchName: string;
+    newResearchLevel: number;
+    researchPointsStolen: number;
+    planetId: number;
+    planetName: string;
+    wasVictim: boolean; // True if receiving player was the victim, false if they were the thief
+  };
+}
+
 // ============================================================================
 // TIME-BASED NOTIFICATION PAYLOADS (from game clock advancement)
 // These are informational only - client already applied changes locally
