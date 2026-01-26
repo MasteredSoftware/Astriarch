@@ -603,13 +603,13 @@
 								<div class="flex flex-col space-y-4">
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-slate-400">Standard</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="defender" size={61} />
 										</div>
 									</div>
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-cyan-300">Custom (Glow)</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="defender_custom" size={61} />
 										</div>
 									</div>
@@ -624,13 +624,13 @@
 								<div class="flex flex-col space-y-4">
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-slate-400">Standard</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="scout" size={61} />
 										</div>
 									</div>
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-cyan-300">Custom (Glow)</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="scout_custom" size={61} />
 										</div>
 									</div>
@@ -645,13 +645,13 @@
 								<div class="flex flex-col space-y-4">
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-slate-400">Standard</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="destroyer" size={61} />
 										</div>
 									</div>
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-cyan-300">Custom (Glow)</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="destroyer_custom" size={61} />
 										</div>
 									</div>
@@ -666,13 +666,13 @@
 								<div class="flex flex-col space-y-4">
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-slate-400">Standard</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="cruiser" size={61} />
 										</div>
 									</div>
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-cyan-300">Custom (Glow)</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="cruiser_custom" size={61} />
 										</div>
 									</div>
@@ -687,13 +687,13 @@
 								<div class="flex flex-col space-y-4">
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-slate-400">Standard</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="battleship" size={61} />
 										</div>
 									</div>
 									<div class="flex flex-col items-center space-y-2 rounded-lg bg-slate-800/50 p-4">
 										<span class="text-xs text-cyan-300">Custom (Glow)</span>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type="battleship_custom" size={61} />
 										</div>
 									</div>
@@ -711,10 +711,10 @@
 							{#each ['defender', 'scout', 'destroyer', 'cruiser', 'battleship'] as shipType}
 								<div class="flex flex-col items-center space-y-2">
 									<div class="flex space-x-2">
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type={`${shipType}` as IconImageType} size={61} />
 										</div>
-										<div class="flex h-16 w-16 items-center justify-center bg-black/30 rounded">
+										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">
 											<IconImage type={`${shipType}_custom` as IconImageType} size={61} />
 										</div>
 									</div>

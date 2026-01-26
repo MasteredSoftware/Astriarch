@@ -2,8 +2,10 @@ import { PlanetById } from '../model/clientModel';
 import { FleetData, StarShipType } from '../model/fleet';
 import { PlanetData, PlanetImprovementType, PlanetResourceType, PlanetType } from '../model/planet';
 import { PlayerData, PlayerType } from '../model/player';
+import { ResearchType } from '../model/research';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 import { Utils } from '../utils/utils';
+import { BattleSimulator } from './battleSimulator';
 import { Fleet } from './fleet';
 import { GameModelData } from './gameModel';
 import { Grid } from './grid';
@@ -41,6 +43,10 @@ export class ComputerPlayer {
     //
 
     const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(player, ownedPlanets);
+
+    // Manage research allocation based on game state and difficulty
+    this.computerManageResearch(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+
     this.computerSetPlanetBuildGoals(gameModel, player, ownedPlanets, ownedPlanetsSorted);
 
     this.computerSubmitTrades(gameModel, player, ownedPlanets, ownedPlanetsSorted);
@@ -49,6 +55,9 @@ export class ComputerPlayer {
 
     //adjust population assignments as appropriate based on planet and needs
     this.computerAdjustPopulationAssignments(player, ownedPlanets, ownedPlanetsSorted);
+
+    // Manage fleet repairs - send damaged fleets back to repair capable planets
+    this.computerManageFleetRepairs(gameModel, player, ownedPlanets, ownedPlanetsSorted);
 
     //base strategies on computer-level
     //here is the basic strategy:
@@ -159,7 +168,13 @@ export class ComputerPlayer {
         mineralOverestimation = Utils.nextRandom(20, 41) / 10.0;
         break;
       case PlayerType.Computer_Normal:
-        mineralOverestimation = Utils.nextRandom(10, 21) / 10.0;
+        mineralOverestimation = Utils.nextRandom(15, 26) / 10.0;
+        break;
+      case PlayerType.Computer_Hard:
+        mineralOverestimation = Utils.nextRandom(11, 16) / 10.0;
+        break;
+      case PlayerType.Computer_Expert:
+        mineralOverestimation = Utils.nextRandom(10, 14) / 10.0;
         break;
     }
 
@@ -535,34 +550,53 @@ export class ComputerPlayer {
         //do this for now so that the computer builds improvements before too much scouting, however might want to revisit this so that there is some scouting done before all buildings are built
         continue;
       }
-      //defenders and destroyers will be built at random for the easier computers
+      // Fleet composition strategy based on difficulty and game state
       let buildDefenders = false;
       let buildDestroyers = false;
+
       if (player.type == PlayerType.Computer_Easy) {
-        //50% chance to build defenders, 50% chance for destroyers
+        //Easy: 50% chance to build defenders, 50% chance for destroyers
         buildDefenders = Utils.nextRandom(0, 4) <= 1;
         buildDestroyers = !buildDefenders && Utils.nextRandom(0, 4) <= 1;
       } else if (player.type == PlayerType.Computer_Normal) {
-        //25% chance to build defenders, 25% chance for destroyers
+        //Normal: 25% chance to build defenders, analyze enemy for counters
         buildDefenders = Utils.nextRandom(0, 4) == 0;
         buildDestroyers = !buildDefenders && Utils.nextRandom(0, 4) == 0;
       }
 
       if (Planet.getSpacePlatformCount(p, false) > 0 && !buildDefenders) {
-        const rand = Utils.nextRandom(4);
-        //build battleships at half the planets with spaceplatforms
-        if (rand < 2) {
-          if (rand % 2 == 0)
-            //1/4 the time we build battleships 1/2 time build destroyers
-            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Battleship);
-          else
+        // With space platforms, build balanced mixed fleets
+        // Hard/Expert prefer balanced compositions, Normal/Easy more random
+        if (player.type == PlayerType.Computer_Hard || player.type == PlayerType.Computer_Expert) {
+          // Maintain 1:1:1 destroyer:cruiser:battleship ratio with scout support
+          const rand = Utils.nextRandom(3);
+          if (rand == 0) {
             player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
-        } else {
-          if (rand % 2 == 1)
-            //1/4 the time we build cruisers 1/2 time build destroyers
+          } else if (rand == 1) {
             player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Cruiser);
-          else
-            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
+          } else {
+            player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Battleship);
+          }
+        } else {
+          // Normal/Easy: more random distribution
+          const rand = Utils.nextRandom(4);
+          if (rand < 2) {
+            if (rand % 2 == 0)
+              player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
+                StarShipType.Battleship,
+              );
+            else
+              player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
+                StarShipType.Destroyer,
+              );
+          } else {
+            if (rand % 2 == 1)
+              player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Cruiser);
+            else
+              player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(
+                StarShipType.Destroyer,
+              );
+          }
         }
       } else if (planetCountNeedingExploration != 0) {
         //if there are unexplored planets still, build some scouts
@@ -902,6 +936,24 @@ export class ComputerPlayer {
 
     //next for each candidate for inbound attacking fleets, sort the candidates for sending ships by closest first
 
+    // Expert AI: Use strategic target value to prioritize attacks
+    if (player.type === PlayerType.Computer_Expert) {
+      // Calculate strategic value for each target
+      const targetValues = planetCandidatesForInboundAttackingFleets.map((target) => ({
+        planet: target,
+        value: this.calculatePlanetTargetValue(target, player, ownedPlanets, gameModel),
+      }));
+
+      // Sort by strategic value (highest first) - modify array in place
+      targetValues.sort((a, b) => b.value - a.value);
+
+      // Clear and repopulate based on strategic value
+      const highValueTargets = targetValues.filter((tv) => tv.value > 0).map((tv) => tv.planet);
+
+      planetCandidatesForInboundAttackingFleets.length = 0;
+      planetCandidatesForInboundAttackingFleets.push(...highValueTargets);
+    }
+
     //look for closest planet to attack first
     for (let i = planetCandidatesForInboundAttackingFleets.length - 1; i >= 0; i--) {
       const pEnemyInbound = planetCandidatesForInboundAttackingFleets[i];
@@ -947,60 +999,160 @@ export class ComputerPlayer {
         ) / 10.0;
 
       let fleetSent = false;
-      for (let j = planetCandidatesForSendingShips.length - 1; j >= 0; j--) {
-        const pFriendly = planetCandidatesForSendingShips[j]; //Planet
 
-        //send attacking fleet
+      // Expert AI: Try to coordinate multi-planet attacks for high-value targets
+      if (player.type === PlayerType.Computer_Expert && planetCandidatesForSendingShips.length >= 2) {
+        // Check if we can overwhelm this target with multiple fleets
+        let estimatedEnemyStrength = Math.floor(Math.pow(pEnemyInbound.type + 1, 2) * 4);
+        let enemyHasSpacePlatform = false;
 
-        //rely only on our last known-information
-        let fleetStrength = Math.floor(Math.pow(pEnemyInbound.type + 1, 2) * 4); //estimate required strength based on planet type
         const lkpfs = player.lastKnownPlanetFleetStrength[pEnemyInbound.id];
         if (lkpfs) {
-          fleetStrength = Fleet.determineFleetStrength(lkpfs.fleetData);
+          estimatedEnemyStrength = Fleet.determineFleetStrength(lkpfs.fleetData);
+          enemyHasSpacePlatform = Fleet.getStarshipsByType(lkpfs.fleetData)[StarShipType.SpacePlatform].length > 0;
         }
 
-        const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
+        // Calculate total available strength from multiple planets
+        let totalAvailableStrength = 0;
+        const contributingPlanets: PlanetData[] = [];
 
-        //TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
-
-        //generate this fleet just to ensure strength > destination fleet strength
-        let newFleet = Fleet.generateFleetWithShipCount(
-          0,
-          starshipCounts.scouts,
-          starshipCounts.destroyers,
-          starshipCounts.cruisers,
-          starshipCounts.battleships,
-          0,
-          pFriendly.boundingHexMidPoint,
-        );
-        if (Fleet.determineFleetStrength(newFleet) > fleetStrength * additionalStrengthMultiplierNeededToAttack) {
-          newFleet = Fleet.splitFleet(
-            pFriendly.planetaryFleet,
+        for (const pFriendly of planetCandidatesForSendingShips) {
+          const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
+          const testFleet = Fleet.generateFleetWithShipCount(
+            0,
             starshipCounts.scouts,
             starshipCounts.destroyers,
             starshipCounts.cruisers,
             starshipCounts.battleships,
+            0,
+            pFriendly.boundingHexMidPoint,
+          );
+
+          const enemyFleet = lkpfs ? lkpfs.fleetData : Fleet.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, null);
+          const effectiveStrength = this.calculateEffectiveFleetStrength(
+            testFleet,
+            enemyFleet,
+            enemyHasSpacePlatform,
             player,
           );
 
-          Fleet.setDestination(
-            newFleet,
-            gameModel.grid,
-            pFriendly.boundingHexMidPoint,
-            pEnemyInbound.boundingHexMidPoint,
-          );
+          // Only include planets that can contribute meaningfully (at least 20% of estimated enemy strength)
+          if (effectiveStrength > estimatedEnemyStrength * 0.2) {
+            totalAvailableStrength += effectiveStrength;
+            contributingPlanets.push(pFriendly);
+          }
 
-          pFriendly.outgoingFleets.push(newFleet);
+          // Limit to 3 planets for coordination to avoid excessive complexity
+          if (contributingPlanets.length >= 3) break;
+        }
 
-          this.onComputerSentFleet(newFleet);
+        // If we can overwhelm with 1.5x strength using multiple planets, coordinate attack
+        if (contributingPlanets.length >= 2 && totalAvailableStrength > estimatedEnemyStrength * 1.5) {
+          for (const pFriendly of contributingPlanets) {
+            const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
 
-          const mobileStarshipsLeft = Fleet.countMobileStarships(pFriendly.planetaryFleet);
-          if (mobileStarshipsLeft == 0) {
-            planetCandidatesForSendingShips.splice(j, 1);
+            // Send all mobile ships from each contributing planet
+            const newFleet = Fleet.splitFleet(
+              pFriendly.planetaryFleet,
+              starshipCounts.scouts,
+              starshipCounts.destroyers,
+              starshipCounts.cruisers,
+              starshipCounts.battleships,
+              player,
+            );
+
+            Fleet.setDestination(
+              newFleet,
+              gameModel.grid,
+              pFriendly.boundingHexMidPoint,
+              pEnemyInbound.boundingHexMidPoint,
+            );
+
+            pFriendly.outgoingFleets.push(newFleet);
+            this.onComputerSentFleet(newFleet);
+
+            // Remove from candidates
+            const idx = planetCandidatesForSendingShips.indexOf(pFriendly);
+            if (idx >= 0) {
+              planetCandidatesForSendingShips.splice(idx, 1);
+            }
           }
 
           fleetSent = true;
-          break;
+        }
+      }
+
+      // Standard single-planet attack logic (if multi-planet coordination didn't happen)
+      if (!fleetSent) {
+        for (let j = planetCandidatesForSendingShips.length - 1; j >= 0; j--) {
+          const pFriendly = planetCandidatesForSendingShips[j]; //Planet
+
+          //send attacking fleet
+
+          //rely only on our last known-information
+          let estimatedEnemyStrength = Math.floor(Math.pow(pEnemyInbound.type + 1, 2) * 4); //estimate required strength based on planet type
+          let enemyHasSpacePlatform = false;
+
+          const lkpfs = player.lastKnownPlanetFleetStrength[pEnemyInbound.id];
+          if (lkpfs) {
+            estimatedEnemyStrength = Fleet.determineFleetStrength(lkpfs.fleetData);
+            enemyHasSpacePlatform = Fleet.getStarshipsByType(lkpfs.fleetData)[StarShipType.SpacePlatform].length > 0;
+          }
+
+          const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
+
+          //generate this fleet just to check effective strength
+          const testFleet = Fleet.generateFleetWithShipCount(
+            0,
+            starshipCounts.scouts,
+            starshipCounts.destroyers,
+            starshipCounts.cruisers,
+            starshipCounts.battleships,
+            0,
+            pFriendly.boundingHexMidPoint,
+          );
+
+          // Use effective strength calculation for Hard/Expert
+          let ourEffectiveStrength = Fleet.determineFleetStrength(testFleet);
+          if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+            const enemyFleet = lkpfs ? lkpfs.fleetData : Fleet.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, null);
+            ourEffectiveStrength = this.calculateEffectiveFleetStrength(
+              testFleet,
+              enemyFleet,
+              enemyHasSpacePlatform,
+              player,
+            );
+          }
+
+          if (ourEffectiveStrength > estimatedEnemyStrength * additionalStrengthMultiplierNeededToAttack) {
+            const newFleet = Fleet.splitFleet(
+              pFriendly.planetaryFleet,
+              starshipCounts.scouts,
+              starshipCounts.destroyers,
+              starshipCounts.cruisers,
+              starshipCounts.battleships,
+              player,
+            );
+
+            Fleet.setDestination(
+              newFleet,
+              gameModel.grid,
+              pFriendly.boundingHexMidPoint,
+              pEnemyInbound.boundingHexMidPoint,
+            );
+
+            pFriendly.outgoingFleets.push(newFleet);
+
+            this.onComputerSentFleet(newFleet);
+
+            const mobileStarshipsLeft = Fleet.countMobileStarships(pFriendly.planetaryFleet);
+            if (mobileStarshipsLeft == 0) {
+              planetCandidatesForSendingShips.splice(j, 1);
+            }
+
+            fleetSent = true;
+            break;
+          }
         }
       }
 
@@ -1093,6 +1245,8 @@ export class ComputerPlayer {
 
   /**
    * returns true if it has been enough turns since this planet was explored
+   * Strategic focus: only explore HIGH-VALUE, NEARBY planets to avoid wasting resources
+   * Uses weighted scoring to prioritize the most important planets to scout
    */
   public static planetNeedsExploration(
     planet: PlanetData,
@@ -1100,39 +1254,183 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
   ) {
-    if (!player.knownPlanetIds.includes(planet.id)) {
-      return true;
-    } else if (player.type === PlayerType.Computer_Easy) {
-      return false; //easy computers never update intelligence by scouting
+    // Easy AI never re-scouts
+    if (player.type === PlayerType.Computer_Easy && player.knownPlanetIds.includes(planet.id)) {
+      return false;
     }
 
-    const turnsSinceLastExplored =
-      planet.id in player.lastKnownPlanetFleetStrength
-        ? gameModel.modelData.currentCycle - player.lastKnownPlanetFleetStrength[planet.id].cycleLastExplored
-        : 0;
-    //the more planets and larger the galaxy, the longer the time till new intelligence is needed
-    const turnLastExploredCutoff =
-      (gameModel.modelData.planets.length / 2) * gameModel.modelData.gameOptions.galaxySize; //range: 4 - 48
-    if (turnsSinceLastExplored > turnLastExploredCutoff) {
-      //this is just a quick short circuit
-      return true;
-    } else {
-      //get average distance of planet to other owned planets, if distance below threshold, treat as needs exploration
-      const distanceCutoff = turnLastExploredCutoff / 2;
-      let totalDistance = player.ownedPlanetIds.length || 1;
-      for (const ownedPlanet of Object.values(ownedPlanets)) {
-        totalDistance += Grid.getHexDistanceForMidPoints(
-          gameModel.grid,
-          planet.boundingHexMidPoint,
-          ownedPlanet.boundingHexMidPoint,
-        );
-      }
-      const averageDistance = totalDistance / (player.ownedPlanetIds.length || 1);
-      if (averageDistance <= distanceCutoff && turnsSinceLastExplored > averageDistance) {
-        return true;
+    // Always explore completely unknown planets that are nearby and valuable
+    if (!player.knownPlanetIds.includes(planet.id)) {
+      // Calculate if this unknown planet is worth exploring based on strategic value
+      const explorationPriority = this.calculateExplorationPriority(planet, player, ownedPlanets, gameModel);
+
+      // Only explore high-priority unknown planets (close, likely valuable)
+      // This prevents wasting scouts on distant, low-value planets
+      if (player.type === PlayerType.Computer_Easy) {
+        return explorationPriority > 30; // Easy: only very close planets
+      } else if (player.type === PlayerType.Computer_Normal) {
+        return explorationPriority > 20; // Normal: close-ish planets
+      } else {
+        return explorationPriority > 15; // Hard/Expert: moderate range
       }
     }
-    return false;
+
+    // For known planets, use weighted scoring to determine if this is a high-priority scout target
+    // Calculate scout priority for this planet
+    const scoutPriority = this.calculateScoutPriority(planet, gameModel, player, ownedPlanets);
+
+    // Get all unowned planets and calculate their scout priorities
+    const scoutCandidates: { planet: PlanetData; priority: number }[] = [];
+    for (const p of gameModel.modelData.planets) {
+      if (p.id in ownedPlanets) continue; // Skip owned planets
+      if (Player.planetContainsFriendlyInboundFleet(player, p)) continue; // Skip if we're already scouting
+      if (!player.knownPlanetIds.includes(p.id)) continue; // Skip unknown (handled above)
+
+      const priority = this.calculateScoutPriority(p, gameModel, player, ownedPlanets);
+      if (priority > 0) {
+        scoutCandidates.push({ planet: p, priority });
+      }
+    }
+
+    // If no candidates or this planet has no priority, don't scout
+    if (scoutCandidates.length === 0 || scoutPriority <= 0) {
+      return false;
+    }
+
+    // Sort by priority (highest first)
+    scoutCandidates.sort((a, b) => b.priority - a.priority);
+
+    // Determine what percentage of top candidates to scout based on difficulty
+    let topPercentage = 0.2; // Default 20%
+    if (player.type === PlayerType.Computer_Normal) {
+      topPercentage = 0.15; // Normal: top 15%
+    } else if (player.type === PlayerType.Computer_Expert) {
+      topPercentage = 0.3; // Expert: top 30% (more aggressive)
+    }
+
+    const topCount = Math.max(1, Math.ceil(scoutCandidates.length * topPercentage));
+
+    // Return true if this planet is in the top candidates
+    return scoutCandidates.slice(0, topCount).some((c) => c.planet.id === planet.id);
+  }
+
+  /**
+   * Calculate how important it is to scout this known planet
+   * Higher score = more important to scout
+   */
+  private static calculateScoutPriority(
+    planet: PlanetData,
+    gameModel: GameModelData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+  ): number {
+    let priority = 0;
+
+    const lastKnownInfo = player.lastKnownPlanetFleetStrength[planet.id];
+    if (!lastKnownInfo) return 0; // No intel, can't prioritize
+
+    const turnsSinceLastExplored = gameModel.modelData.currentCycle - lastKnownInfo.cycleLastExplored;
+    const isEnemyOwned = lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
+
+    // Distance is the most important factor
+    let minDistance = Infinity;
+    for (const ownedPlanet of Object.values(ownedPlanets)) {
+      const distance = Grid.getHexDistanceForMidPoints(
+        gameModel.grid,
+        planet.boundingHexMidPoint,
+        ownedPlanet.boundingHexMidPoint,
+      );
+      if (distance < minDistance) minDistance = distance;
+    }
+
+    // Proximity scoring (0-50 points) - continuous function that scales with map size
+    // Estimate typical max distance as ~1/4 of grid diagonal for strategic relevance
+    const gridSize = Math.sqrt(gameModel.grid.hexes.length);
+    const strategicRange = gridSize * 0.75; // Most planets beyond this are too far to care about
+
+    // Use inverse relationship: closer = exponentially higher priority
+    // Formula: maxPoints * (1 - (distance / strategicRange)^2)
+    // This gives smooth decay: distance 0 = 50pts, strategicRange/2 = 37.5pts, strategicRange = 0pts
+    if (minDistance < strategicRange) {
+      const normalizedDistance = minDistance / strategicRange;
+      priority += Math.round(50 * (1 - normalizedDistance * normalizedDistance));
+    }
+    // Distant planets beyond strategic range get 0 proximity points
+
+    // Enemy-owned planets are HIGH priority (0-40 points)
+    if (isEnemyOwned) {
+      priority += 40;
+
+      // Enemy planets that haven't been scouted in a while are even more important
+      if (player.type === PlayerType.Computer_Expert) {
+        if (turnsSinceLastExplored > 5) priority += 20;
+      } else if (player.type === PlayerType.Computer_Hard) {
+        if (turnsSinceLastExplored > 7) priority += 15;
+      } else if (player.type === PlayerType.Computer_Normal) {
+        if (turnsSinceLastExplored > 10) priority += 10;
+      }
+    }
+
+    // Planet type/value (0-15 points)
+    if (planet.type === PlanetType.PlanetClass2) priority += 15;
+    else if (planet.type === PlanetType.PlanetClass1) priority += 10;
+    else if (planet.type === PlanetType.DeadPlanet) priority += 5;
+    else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
+
+    // Staleness - how long since we last scouted (0-20 points)
+    if (turnsSinceLastExplored > 30) priority += 20;
+    else if (turnsSinceLastExplored > 20) priority += 15;
+    else if (turnsSinceLastExplored > 15) priority += 10;
+    else if (turnsSinceLastExplored > 10) priority += 5;
+    // Recently scouted planets get 0 staleness points
+
+    return priority;
+  }
+
+  /**
+   * Calculate exploration priority for a planet based on strategic value
+   * Higher score = more important to explore/scout
+   */
+  private static calculateExplorationPriority(
+    planet: PlanetData,
+    _player: PlayerData,
+    ownedPlanets: PlanetById,
+    gameModel: GameModelData,
+  ): number {
+    let priority = 0;
+
+    // Find distance to nearest owned planet
+    let minDistance = Infinity;
+    for (const ownedPlanet of Object.values(ownedPlanets)) {
+      const distance = Grid.getHexDistanceForMidPoints(
+        gameModel.grid,
+        planet.boundingHexMidPoint,
+        ownedPlanet.boundingHexMidPoint,
+      );
+      if (distance < minDistance) minDistance = distance;
+    }
+
+    // Proximity is KEY - nearby planets are much more important (0-40 points)
+    // Scale based on map size for flexibility
+    const gridSize = Math.sqrt(gameModel.grid.hexes.length);
+    const explorationRange = gridSize * 0.7; // Explore planets within strategic range
+
+    // Use inverse square decay for smooth prioritization
+    // Formula: maxPoints * (1 - (distance / explorationRange)^2)
+    if (minDistance < explorationRange) {
+      const normalizedDistance = minDistance / explorationRange;
+      priority += Math.round(40 * (1 - normalizedDistance * normalizedDistance));
+    }
+    // Distant planets beyond exploration range get 0 priority - don't waste scouts!
+
+    // Planet type indicates likely resource value
+    // But this is secondary to distance
+    if (planet.type === PlanetType.PlanetClass2) priority += 15;
+    else if (planet.type === PlanetType.PlanetClass1) priority += 10;
+    else if (planet.type === PlanetType.DeadPlanet) priority += 5;
+    else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
+
+    return priority;
   }
 
   public static getClosestUnownedPlanet(
@@ -1157,5 +1455,308 @@ export class ComputerPlayer {
     }
 
     return returnVal;
+  }
+
+  /**
+   * Calculate strategic value of a target planet for Expert AI
+   * Considers: resources, defenses, distance, strategic location
+   */
+  private static calculatePlanetTargetValue(
+    targetPlanet: PlanetData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+    gameModel: GameModelData,
+  ): number {
+    let value = 0;
+
+    // Check if we have intelligence on this planet
+    const lastKnownInfo = player.lastKnownPlanetFleetStrength[targetPlanet.id];
+    if (!lastKnownInfo) return 0;
+
+    const isEnemyOwned = lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
+    if (!isEnemyOwned) return 0;
+
+    // Resource value (planet type is a proxy for resources)
+    if (targetPlanet.type === PlanetType.PlanetClass2) value += 30;
+    else if (targetPlanet.type === PlanetType.PlanetClass1) value += 20;
+    else if (targetPlanet.type === PlanetType.DeadPlanet) value += 10;
+    else if (targetPlanet.type === PlanetType.AsteroidBelt) value += 5;
+
+    // Weak defenses make it more valuable
+    const defenseStrength = Fleet.determineFleetStrength(lastKnownInfo.fleetData);
+    if (defenseStrength < 10) value += 25;
+    else if (defenseStrength < 30) value += 15;
+    else if (defenseStrength < 50) value += 5;
+
+    // Proximity to our territory increases value (easier to attack and hold)
+    let minDistanceToOwned = Infinity;
+    for (const ownedPlanet of Object.values(ownedPlanets)) {
+      const distance = Grid.getHexDistanceForMidPoints(
+        gameModel.grid,
+        targetPlanet.boundingHexMidPoint,
+        ownedPlanet.boundingHexMidPoint,
+      );
+      if (distance < minDistanceToOwned) minDistanceToOwned = distance;
+    }
+    // Closer planets are more valuable (inverse relationship)
+    if (minDistanceToOwned < 5) value += 20;
+    else if (minDistanceToOwned < 10) value += 10;
+    else if (minDistanceToOwned < 15) value += 5;
+
+    // Strategic location: planets near center of map are more valuable
+    const gridCenter = {
+      x: gameModel.grid.hexes[Math.floor(gameModel.grid.hexes.length / 2)].midPoint.x,
+      y: gameModel.grid.hexes[Math.floor(gameModel.grid.hexes.length / 2)].midPoint.y,
+    };
+    const distanceFromCenter = Math.sqrt(
+      Math.pow(targetPlanet.boundingHexMidPoint.x - gridCenter.x, 2) +
+        Math.pow(targetPlanet.boundingHexMidPoint.y - gridCenter.y, 2),
+    );
+    if (distanceFromCenter < 100) value += 10;
+    else if (distanceFromCenter < 200) value += 5;
+
+    return value;
+  }
+
+  /**
+   * Manages research allocation and priorities based on game state and difficulty
+   */
+  public static computerManageResearch(
+    _gameModel: GameModelData,
+    player: PlayerData,
+    _ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[],
+  ) {
+    // Set research percentage based on difficulty
+    let targetResearchPercent = 0;
+
+    switch (player.type) {
+      case PlayerType.Computer_Easy:
+        targetResearchPercent = Utils.nextRandom(10, 31) / 100.0; // 10-30%
+        break;
+      case PlayerType.Computer_Normal:
+        targetResearchPercent = Utils.nextRandom(30, 51) / 100.0; // 30-50%
+        break;
+      case PlayerType.Computer_Hard:
+        targetResearchPercent = Utils.nextRandom(40, 56) / 100.0; // 40-55%
+        break;
+      case PlayerType.Computer_Expert:
+        targetResearchPercent = Utils.nextRandom(45, 61) / 100.0; // 45-60%
+        break;
+    }
+
+    player.research.researchPercent = targetResearchPercent;
+
+    // If no research queued, determine priority based on game state
+    if (!player.research.researchTypeInQueue) {
+      const researchPriorities: ResearchType[] = [];
+
+      // Early game: building efficiency
+      if (ownedPlanetsSorted.length <= 2) {
+        if (player.type === PlayerType.Computer_Easy || player.type === PlayerType.Computer_Normal) {
+          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES);
+          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES);
+        } else {
+          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES);
+          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES);
+          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS);
+        }
+      }
+      // Mid game: space platforms and combat
+      else if (ownedPlanetsSorted.length <= 4) {
+        if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+          researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_ATTACK);
+          researchPriorities.push(ResearchType.SPACE_PLATFORM_IMPROVEMENT);
+          researchPriorities.push(ResearchType.PROPULSION_IMPROVEMENT);
+        } else {
+          researchPriorities.push(ResearchType.SPACE_PLATFORM_IMPROVEMENT);
+          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES);
+        }
+      }
+      // Late game: combat and propulsion
+      else {
+        if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+          researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_ATTACK);
+          researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_DEFENSE);
+          researchPriorities.push(ResearchType.PROPULSION_IMPROVEMENT);
+        } else {
+          researchPriorities.push(ResearchType.PROPULSION_IMPROVEMENT);
+          researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_ATTACK);
+        }
+      }
+
+      // Find first research that can still be researched
+      for (const researchType of researchPriorities) {
+        const researchProgress = player.research.researchProgressByType[researchType];
+        if (Research.canResearch(researchProgress)) {
+          player.research.researchTypeInQueue = researchType;
+          this.debugLog(player.name, 'Queuing research:', researchType);
+          break;
+        }
+      }
+    }
+  }
+
+  /**
+   * Calculates effective fleet strength considering ship type advantages/disadvantages and space platforms
+   */
+  public static calculateEffectiveFleetStrength(
+    ourFleet: FleetData,
+    enemyFleet: FleetData,
+    enemyHasSpacePlatform: boolean,
+    ourPlayer: PlayerData,
+  ): number {
+    let effectiveStrength = 0;
+    const ourShipsByType = Fleet.getStarshipsByType(ourFleet);
+    const enemyShipsByType = Fleet.getStarshipsByType(enemyFleet);
+
+    // Space platforms have 2x effective strength since they have advantage over all ships
+    if (enemyHasSpacePlatform) {
+      const spacePlatformStrength = Fleet.determineFleetStrength({
+        starships: enemyShipsByType[StarShipType.SpacePlatform],
+      } as FleetData);
+      // Need 2x strength to overcome space platform advantage
+      effectiveStrength -= spacePlatformStrength * 2;
+    }
+
+    // Calculate effective strength for each of our ship types against enemy composition
+    for (const ourShipType of [
+      StarShipType.Scout,
+      StarShipType.Destroyer,
+      StarShipType.Cruiser,
+      StarShipType.Battleship,
+      StarShipType.SystemDefense,
+    ]) {
+      const ourShips = ourShipsByType[ourShipType];
+      if (ourShips.length === 0) continue;
+
+      const baseStrength = Fleet.determineFleetStrength({ starships: ourShips } as FleetData);
+      let strengthMultiplier = 1.0;
+
+      // Check advantages/disadvantages against enemy composition
+      for (const enemyShipType of [
+        StarShipType.Scout,
+        StarShipType.Destroyer,
+        StarShipType.Cruiser,
+        StarShipType.Battleship,
+        StarShipType.SystemDefense,
+      ]) {
+        const enemyShips = enemyShipsByType[enemyShipType];
+        if (enemyShips.length === 0) continue;
+
+        const sampleOurShip = ourShips[0];
+        const sampleEnemyShip = enemyShips[0];
+
+        // Use existing advantage checking from BattleSimulator
+        if (BattleSimulator.starshipHasAdvantage(sampleOurShip, sampleEnemyShip)) {
+          strengthMultiplier += 0.25; // Advantage gives ~50% more damage, so +25% effective strength
+        } else if (BattleSimulator.starshipHasDisadvantage(sampleOurShip, sampleEnemyShip)) {
+          strengthMultiplier -= 0.25; // Disadvantage
+        }
+      }
+
+      effectiveStrength += baseStrength * strengthMultiplier;
+    }
+
+    // Factor in research bonuses (small adjustment)
+    const attackBonus =
+      ourPlayer.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_ATTACK].data.chance || 0;
+    const defenseBonus =
+      ourPlayer.research.researchProgressByType[ResearchType.COMBAT_IMPROVEMENT_DEFENSE].data.chance || 0;
+    const researchMultiplier = 1.0 + (attackBonus + defenseBonus) / 2;
+
+    effectiveStrength *= researchMultiplier;
+
+    return Math.max(0, effectiveStrength);
+  }
+
+  /**
+   * Manages fleet repairs by sending damaged fleets back to planets with repair capabilities
+   */
+  public static computerManageFleetRepairs(
+    gameModel: GameModelData,
+    player: PlayerData,
+    _ownedPlanets: PlanetById,
+    ownedPlanetsSorted: PlanetData[],
+  ) {
+    // Only Hard and Expert AI manage repairs actively
+    if (player.type !== PlayerType.Computer_Hard && player.type !== PlayerType.Computer_Expert) {
+      return;
+    }
+
+    // Find planets capable of repairing ships
+    const repairPlanets: PlanetData[] = [];
+    for (const planet of ownedPlanetsSorted) {
+      // Need colony for any repairs, factory for advanced repairs
+      if (
+        planet.builtImprovements[PlanetImprovementType.Colony] > 0 &&
+        planet.builtImprovements[PlanetImprovementType.Factory] > 0
+      ) {
+        repairPlanets.push(planet);
+      }
+    }
+
+    if (repairPlanets.length === 0) return;
+
+    // Check fleets in transit for damage
+    for (const fleet of player.fleetsInTransit) {
+      const totalHealth = fleet.starships.reduce((sum, ship) => sum + ship.health, 0);
+      const totalMaxHealth = fleet.starships.reduce(
+        (sum, ship) => sum + Fleet.getStarshipTypeBaseStrength(ship.type),
+        0,
+      );
+
+      // If fleet is less than 75% health and has at least one non-scout ship, consider retreat
+      if (totalHealth < totalMaxHealth * 0.75 && fleet.starships.some((s) => s.type !== StarShipType.Scout)) {
+        // Find nearest repair planet
+        let nearestRepairPlanet: PlanetData | null = null;
+        let minDistance = Infinity;
+
+        for (const repairPlanet of repairPlanets) {
+          // Check if planet can repair the ship types in this fleet
+          const hasSpacePlatform = Planet.getSpacePlatformCount(repairPlanet, false) > 0;
+          const canRepairThisFleet = fleet.starships.every((ship) => {
+            if (ship.type === StarShipType.Scout || ship.type === StarShipType.SystemDefense) return true;
+            if (ship.type === StarShipType.Destroyer || ship.type === StarShipType.SpacePlatform) return true;
+            // Cruisers and Battleships need space platform
+            return hasSpacePlatform;
+          });
+
+          if (!canRepairThisFleet) continue;
+          if (!fleet.locationHexMidPoint) continue;
+
+          const distance = Grid.getHexDistanceForMidPoints(
+            gameModel.grid,
+            fleet.locationHexMidPoint,
+            repairPlanet.boundingHexMidPoint,
+          );
+
+          if (distance < minDistance) {
+            minDistance = distance;
+            nearestRepairPlanet = repairPlanet;
+          }
+        }
+
+        // Redirect fleet to repair planet if found and not already going there
+        if (nearestRepairPlanet && fleet.destinationHexMidPoint && fleet.locationHexMidPoint) {
+          const currentDestDistance = Grid.getHexDistanceForMidPoints(
+            gameModel.grid,
+            fleet.locationHexMidPoint,
+            fleet.destinationHexMidPoint,
+          );
+
+          // Only redirect if repair planet is closer or we're heading into danger
+          if (minDistance < currentDestDistance * 0.7 && fleet.locationHexMidPoint) {
+            Fleet.setDestination(
+              fleet,
+              gameModel.grid,
+              fleet.locationHexMidPoint,
+              nearestRepairPlanet.boundingHexMidPoint,
+            );
+            this.debugLog(player.name, 'Retreating damaged fleet to', nearestRepairPlanet.name, 'for repairs');
+          }
+        }
+      }
+    }
   }
 }
