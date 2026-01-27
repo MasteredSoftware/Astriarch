@@ -19,9 +19,227 @@ import { TradingCenter } from './tradingCenter';
 
 export type PlanetResourcesPerTurn = Record<number, PlanetPerTurnResourceGeneration>;
 
+/**
+ * Configuration settings for AI difficulty levels
+ * This allows easy tweaking and testing of AI behavior
+ */
+interface AISettings {
+  // Food management - multipliers for totalPopulation
+  foodSurplusAdjustmentLowMultiplier: number; // Multiplied by totalPopulation for low bound
+  foodSurplusAdjustmentHighMultiplier: number; // Multiplied by totalPopulation for high bound
+  // Energy surplus for building - varies by difficulty:
+  // Easy/Normal: randomize from 0 to base * multiplier (makes them starve sometimes)
+  // Hard/Expert: base + (planets * adder) (more consistent, scales with empire)
+  useRandomizedEnergySurplus: boolean; // If true, use random 0 to base*multiplier, else use base + planets*adder
+  energySurplusMultiplier: number; // For Easy/Normal: multiplier for random range
+  energySurplusAdder: number; // For Hard/Expert: added per planet beyond first
+
+  // Resource management
+  mineralOverestimationLow: number; // Multiplier for mineral needs (low end of range)
+  mineralOverestimationHigh: number; // Multiplier for mineral needs (high end of range)
+
+  // Combat behavior
+  additionalStrengthMultiplierNeededToAttackLow: number;
+  additionalStrengthMultiplierNeededToAttackHigh: number;
+
+  // Research allocation
+  researchPercentMin: number;
+  researchPercentMax: number;
+  prioritizeCombatResearch: boolean; // Prefer attack/defense over building efficiency
+  prioritizeFarmsEarly: boolean; // Include farm efficiency in early research
+
+  // Intelligence gathering
+  enableReScouting: boolean; // Whether to re-scout known planets
+  explorationPriorityThreshold: number; // Minimum priority to explore unknown planets
+  scoutPriorityTopPercentage: number; // Top % of planets to re-scout
+  reScoutingUrgencyThreshold: number; // Turns before re-scouting enemy planets becomes high priority
+  reScoutingUrgencyBonus: number; // Priority bonus for stale enemy planet intelligence
+
+  // Fleet management
+  enableFleetRepairs: boolean; // Whether to redirect damaged fleets to repair
+  useEffectiveStrengthCalculation: boolean; // Use combat advantage calculations
+  enableMultiPlanetAttacks: boolean; // Coordinate attacks from multiple planets
+  useStrategicTargetPriority: boolean; // Use strategic value for target selection
+
+  // Fleet composition
+  defenderBuildChance: number; // Chance to build system defenders (0-1)
+  destroyerBuildChance: number; // Chance to build destroyers early (0-1)
+  useBalancedFleetComposition: boolean; // Use 1:1:1 destroyer:cruiser:battleship ratio
+
+  // Defense strategy
+  defenseCalculationStrategy: 'simple' | 'moderate' | 'advanced'; // Consider enemy fleet strength for defense
+  usePrioritizedTargetSorting: boolean; // Use complex value/distance/strength sorting
+  enableStrategicReinforcements: boolean; // Send reinforcements to factory planets
+}
+
+/**
+ * AI configuration by difficulty level
+ * Allows centralized tuning of AI behavior
+ */
+const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
+  [PlayerType.Computer_Easy]: {
+    foodSurplusAdjustmentLowMultiplier: -3,
+    foodSurplusAdjustmentHighMultiplier: 1.5,
+    useRandomizedEnergySurplus: true,
+    energySurplusMultiplier: 4, // Divisor: random from 0 to (base + 1) / 4
+    energySurplusAdder: 0,
+    mineralOverestimationLow: 2.0,
+    mineralOverestimationHigh: 4.0,
+    additionalStrengthMultiplierNeededToAttackLow: 3.0,
+    additionalStrengthMultiplierNeededToAttackHigh: 6.0,
+    researchPercentMin: 0.1,
+    researchPercentMax: 0.3,
+    prioritizeCombatResearch: false,
+    prioritizeFarmsEarly: false,
+    enableReScouting: false,
+    explorationPriorityThreshold: 30,
+    scoutPriorityTopPercentage: 0.2,
+    reScoutingUrgencyThreshold: 15,
+    reScoutingUrgencyBonus: 5,
+    enableFleetRepairs: false,
+    useEffectiveStrengthCalculation: false,
+    enableMultiPlanetAttacks: false,
+    useStrategicTargetPriority: false,
+    defenderBuildChance: 0.5,
+    destroyerBuildChance: 0.5,
+    useBalancedFleetComposition: false,
+    defenseCalculationStrategy: 'simple',
+    usePrioritizedTargetSorting: false,
+    enableStrategicReinforcements: false,
+  },
+  [PlayerType.Computer_Normal]: {
+    foodSurplusAdjustmentLowMultiplier: -1.5,
+    foodSurplusAdjustmentHighMultiplier: 1,
+    useRandomizedEnergySurplus: true,
+    energySurplusMultiplier: 2, // Divisor: random from 0 to (base + 1) / 2
+    energySurplusAdder: 0,
+    mineralOverestimationLow: 1.5,
+    mineralOverestimationHigh: 2.5,
+    additionalStrengthMultiplierNeededToAttackLow: 2.0,
+    additionalStrengthMultiplierNeededToAttackHigh: 4.0,
+    researchPercentMin: 0.3,
+    researchPercentMax: 0.5,
+    prioritizeCombatResearch: false,
+    prioritizeFarmsEarly: false,
+    enableReScouting: true,
+    explorationPriorityThreshold: 20,
+    scoutPriorityTopPercentage: 0.15,
+    reScoutingUrgencyThreshold: 10,
+    reScoutingUrgencyBonus: 10,
+    enableFleetRepairs: false,
+    useEffectiveStrengthCalculation: false,
+    enableMultiPlanetAttacks: false,
+    useStrategicTargetPriority: false,
+    defenderBuildChance: 0.25,
+    destroyerBuildChance: 0.25,
+    useBalancedFleetComposition: false,
+    defenseCalculationStrategy: 'moderate',
+    usePrioritizedTargetSorting: false,
+    enableStrategicReinforcements: false,
+  },
+  [PlayerType.Computer_Hard]: {
+    foodSurplusAdjustmentLowMultiplier: -0.5,
+    foodSurplusAdjustmentHighMultiplier: 0,
+    useRandomizedEnergySurplus: false,
+    energySurplusMultiplier: 0,
+    energySurplusAdder: 0.5, // base + (planets - 1) * 0.5
+    mineralOverestimationLow: 1.1,
+    mineralOverestimationHigh: 1.5,
+    additionalStrengthMultiplierNeededToAttackLow: 1.0,
+    additionalStrengthMultiplierNeededToAttackHigh: 2.0,
+    researchPercentMin: 0.4,
+    researchPercentMax: 0.55,
+    prioritizeCombatResearch: true,
+    prioritizeFarmsEarly: true,
+    enableReScouting: true,
+    explorationPriorityThreshold: 15,
+    scoutPriorityTopPercentage: 0.2,
+    reScoutingUrgencyThreshold: 7,
+    reScoutingUrgencyBonus: 15,
+    enableFleetRepairs: true,
+    useEffectiveStrengthCalculation: true,
+    enableMultiPlanetAttacks: false,
+    useStrategicTargetPriority: false,
+    defenderBuildChance: 0,
+    destroyerBuildChance: 0,
+    useBalancedFleetComposition: true,
+    defenseCalculationStrategy: 'advanced',
+    usePrioritizedTargetSorting: true,
+    enableStrategicReinforcements: false,
+  },
+  [PlayerType.Computer_Expert]: {
+    foodSurplusAdjustmentLowMultiplier: 0,
+    foodSurplusAdjustmentHighMultiplier: 0,
+    useRandomizedEnergySurplus: false,
+    energySurplusMultiplier: 0,
+    energySurplusAdder: 0.25, // base + (planets - 1) * 0.25
+    mineralOverestimationLow: 1.0,
+    mineralOverestimationHigh: 1.3,
+    additionalStrengthMultiplierNeededToAttackLow: 0.5,
+    additionalStrengthMultiplierNeededToAttackHigh: 1.0,
+    researchPercentMin: 0.45,
+    researchPercentMax: 0.6,
+    prioritizeCombatResearch: true,
+    prioritizeFarmsEarly: true,
+    enableReScouting: true,
+    explorationPriorityThreshold: 15,
+    scoutPriorityTopPercentage: 0.3,
+    reScoutingUrgencyThreshold: 5,
+    reScoutingUrgencyBonus: 20,
+    enableFleetRepairs: true,
+    useEffectiveStrengthCalculation: true,
+    enableMultiPlanetAttacks: true,
+    useStrategicTargetPriority: true,
+    defenderBuildChance: 0,
+    destroyerBuildChance: 0,
+    useBalancedFleetComposition: true,
+    defenseCalculationStrategy: 'advanced',
+    usePrioritizedTargetSorting: true,
+    enableStrategicReinforcements: true,
+  },
+  // Default settings for human players (unused but required for type safety)
+  [PlayerType.Human]: {
+    foodSurplusAdjustmentLowMultiplier: 0,
+    foodSurplusAdjustmentHighMultiplier: 0,
+    useRandomizedEnergySurplus: false,
+    energySurplusMultiplier: 0,
+    energySurplusAdder: 0.25,
+    mineralOverestimationLow: 1.0,
+    mineralOverestimationHigh: 1.0,
+    additionalStrengthMultiplierNeededToAttackLow: 1.0,
+    additionalStrengthMultiplierNeededToAttackHigh: 1.0,
+    researchPercentMin: 0.5,
+    researchPercentMax: 0.5,
+    prioritizeCombatResearch: true,
+    prioritizeFarmsEarly: true,
+    enableReScouting: true,
+    explorationPriorityThreshold: 0,
+    scoutPriorityTopPercentage: 1.0,
+    reScoutingUrgencyThreshold: 5,
+    reScoutingUrgencyBonus: 20,
+    enableFleetRepairs: true,
+    useEffectiveStrengthCalculation: true,
+    enableMultiPlanetAttacks: true,
+    useStrategicTargetPriority: true,
+    defenderBuildChance: 0,
+    destroyerBuildChance: 0,
+    useBalancedFleetComposition: true,
+    defenseCalculationStrategy: 'advanced',
+    usePrioritizedTargetSorting: true,
+    enableStrategicReinforcements: true,
+  },
+};
+
 export class ComputerPlayer {
   // Set to true to enable detailed AI decision-making logs
   private static DEBUG_AI = false;
+
+  /**
+   * Get AI settings for a player based on their difficulty level
+   */
+  private static getAISettings(player: PlayerData): AISettings {
+    return aiSettingsByDifficultyLevel[player.type] || aiSettingsByDifficultyLevel[PlayerType.Computer_Normal];
+  }
 
   private static debugLog(...args: unknown[]) {
     if (this.DEBUG_AI) {
@@ -111,28 +329,11 @@ export class ComputerPlayer {
     totalFoodAmountOnPlanets -= totalPlanetsWithPopulationGrowthPotential;
 
     //to make the easier computers even easier we will sometimes have them generate too much food and sometimes generate too little so they starve
-    let totalFoodAmountOnPlanetsAdjustmentLow = 0;
-    let totalFoodAmountOnPlanetsAdjustmentHigh = 0;
-    //add some extra food padding based on player type, this will make the easier computers less agressive
-    switch (player.type) {
-      case PlayerType.Computer_Easy:
-        totalFoodAmountOnPlanetsAdjustmentLow -= totalPopulation * 3;
-        totalFoodAmountOnPlanetsAdjustmentHigh = Math.floor(totalPopulation * 1.5);
-        break;
-      case PlayerType.Computer_Normal:
-        totalFoodAmountOnPlanetsAdjustmentLow -= Math.floor(totalPopulation * 1.5);
-        totalFoodAmountOnPlanetsAdjustmentHigh = totalPopulation;
-        break;
-      case PlayerType.Computer_Hard:
-        totalFoodAmountOnPlanetsAdjustmentLow -= totalPopulation / 2;
-        totalFoodAmountOnPlanetsAdjustmentHigh = 0;
-        break;
-    }
-
-    const totalFoodAmountOnPlanetsAdjustment = Utils.nextRandom(
-      totalFoodAmountOnPlanetsAdjustmentLow,
-      totalFoodAmountOnPlanetsAdjustmentHigh + 1,
-    );
+    const aiSettings = this.getAISettings(player);
+    // Scale adjustment bounds by total population
+    const adjustmentLow = Math.floor(aiSettings.foodSurplusAdjustmentLowMultiplier * totalPopulation);
+    const adjustmentHigh = Math.floor(aiSettings.foodSurplusAdjustmentHighMultiplier * totalPopulation);
+    const totalFoodAmountOnPlanetsAdjustment = Utils.nextRandom(adjustmentLow, adjustmentHigh + 1);
 
     totalFoodAmountOnPlanets += totalFoodAmountOnPlanetsAdjustment;
 
@@ -162,21 +363,11 @@ export class ComputerPlayer {
     }
 
     //further stunt the easy computers growth by over estimating ore and iridium amount recommended
-    let mineralOverestimation = 1.0;
-    switch (player.type) {
-      case PlayerType.Computer_Easy:
-        mineralOverestimation = Utils.nextRandom(20, 41) / 10.0;
-        break;
-      case PlayerType.Computer_Normal:
-        mineralOverestimation = Utils.nextRandom(15, 26) / 10.0;
-        break;
-      case PlayerType.Computer_Hard:
-        mineralOverestimation = Utils.nextRandom(11, 16) / 10.0;
-        break;
-      case PlayerType.Computer_Expert:
-        mineralOverestimation = Utils.nextRandom(10, 14) / 10.0;
-        break;
-    }
+    const mineralOverestimation =
+      Utils.nextRandom(
+        Math.floor(aiSettings.mineralOverestimationLow * 10),
+        Math.floor(aiSettings.mineralOverestimationHigh * 10) + 1,
+      ) / 10.0;
 
     let oreAmountNeeded = Math.round(oreAmountRecommended * mineralOverestimation) - totalResources.ore;
     let iridiumAmountNeeded = Math.round(iridiumAmountRecommended * mineralOverestimation) - totalResources.iridium;
@@ -551,23 +742,14 @@ export class ComputerPlayer {
         continue;
       }
       // Fleet composition strategy based on difficulty and game state
-      let buildDefenders = false;
-      let buildDestroyers = false;
-
-      if (player.type == PlayerType.Computer_Easy) {
-        //Easy: 50% chance to build defenders, 50% chance for destroyers
-        buildDefenders = Utils.nextRandom(0, 4) <= 1;
-        buildDestroyers = !buildDefenders && Utils.nextRandom(0, 4) <= 1;
-      } else if (player.type == PlayerType.Computer_Normal) {
-        //Normal: 25% chance to build defenders, analyze enemy for counters
-        buildDefenders = Utils.nextRandom(0, 4) == 0;
-        buildDestroyers = !buildDefenders && Utils.nextRandom(0, 4) == 0;
-      }
+      const aiSettings = this.getAISettings(player);
+      const buildDefenders = Utils.nextRandom(0, 100) / 100 < aiSettings.defenderBuildChance;
+      const buildDestroyers = !buildDefenders && Utils.nextRandom(0, 100) / 100 < aiSettings.destroyerBuildChance;
 
       if (Planet.getSpacePlatformCount(p, false) > 0 && !buildDefenders) {
         // With space platforms, build balanced mixed fleets
         // Hard/Expert prefer balanced compositions, Normal/Easy more random
-        if (player.type == PlayerType.Computer_Hard || player.type == PlayerType.Computer_Expert) {
+        if (aiSettings.useBalancedFleetComposition) {
           // Maintain 1:1:1 destroyer:cruiser:battleship ratio with scout support
           const rand = Utils.nextRandom(3);
           if (rand == 0) {
@@ -707,22 +889,20 @@ export class ComputerPlayer {
   ) {
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
     //determine energy surplus needed to ship food
-    let energySurplus = player.lastTurnFoodNeededToBeShipped;
+    const aiSettings = this.getAISettings(player);
 
-    //increase recommended energySurplus based on computer difficulty to further make the easier computers a bit less agressive
-    switch (player.type) {
-      case PlayerType.Computer_Easy:
-        energySurplus = Utils.nextRandom(0, (energySurplus + 1) / 4); //this should make the easy computer even easier, because sometimes he should starve himself
-        break;
-      case PlayerType.Computer_Normal:
-        energySurplus = Utils.nextRandom(0, (energySurplus + 1) / 2); //this should make the normal computer easier, because sometimes he should starve himself
-        break;
-      case PlayerType.Computer_Hard:
-        energySurplus += (ownedPlanetsSorted.length - 1) / 2;
-        break;
-      case PlayerType.Computer_Expert:
-        energySurplus += (ownedPlanetsSorted.length - 1) / 4;
-        break;
+    // Calculate energy surplus based on difficulty strategy:
+    // Easy/Normal: Randomize to sometimes starve (less aggressive)
+    // Hard/Expert: Scale with empire size (more consistent)
+    let energySurplus = player.lastTurnFoodNeededToBeShipped;
+    if (aiSettings.useRandomizedEnergySurplus) {
+      // Easy/Normal: random from 0 to (base + 1) / divisor
+      // energySurplusMultiplier IS the divisor (4 for Easy, 2 for Normal)
+      const maxEnergy = (energySurplus + 1) / aiSettings.energySurplusMultiplier;
+      energySurplus = Utils.nextRandom(0, maxEnergy);
+    } else {
+      // Hard/Expert: base + (planets - 1) * adder
+      energySurplus += (ownedPlanetsSorted.length - 1) * aiSettings.energySurplusAdder;
     }
 
     //build improvements and ships based on build goals
@@ -762,10 +942,11 @@ export class ComputerPlayer {
 
     //all but easy computers will also re-scout enemy planets after a time to re-establish intelligence
 
+    const aiSettings = ComputerPlayer.getAISettings(player);
     const planetCandidatesForSendingShips = [];
     for (const p of ownedPlanetsSorted) {
       if (Fleet.countMobileStarships(p.planetaryFleet) > 0) {
-        if (player.type == PlayerType.Computer_Easy) {
+        if (aiSettings.defenseCalculationStrategy === 'simple') {
           //easy computers can send ships as long as there is somthing to send
           planetCandidatesForSendingShips.push(p);
         } else {
@@ -780,7 +961,7 @@ export class ComputerPlayer {
             strengthToDefend = Math.floor(Math.pow(p.type, 2) * 4); //defense based on planet type
           }
 
-          if (player.type == PlayerType.Computer_Hard || player.type == PlayerType.Computer_Expert) {
+          if (aiSettings.defenseCalculationStrategy === 'advanced') {
             //base defense upon enemy fleet strength within a certain range of last known planets
             // as well as if there are ships in queue and estimated time till production
 
@@ -842,7 +1023,7 @@ export class ComputerPlayer {
     if (player.homePlanetId && player.homePlanetId in ownedPlanets) {
       //just to make sure
       const homePlanet = ownedPlanets[player.homePlanetId];
-      if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
+      if (!aiSettings.usePrioritizedTargetSorting) {
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, homePlanet);
         planetCandidatesForInboundAttackingFleets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         planetCandidatesForInboundScouts.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
@@ -861,7 +1042,7 @@ export class ComputerPlayer {
     }
 
     const planetCandidatesForInboundReinforcements = [];
-    if (player.type == PlayerType.Computer_Expert) {
+    if (aiSettings.enableStrategicReinforcements) {
       for (const p of ownedPlanetsSorted) {
         if (p.builtImprovements[PlanetImprovementType.Factory] > 0) {
           planetCandidatesForInboundReinforcements.push(p);
@@ -980,7 +1161,7 @@ export class ComputerPlayer {
     //next for each candidate for inbound attacking fleets, sort the candidates for sending ships by closest first
 
     // Expert AI: Use strategic target value to prioritize attacks
-    if (player.type === PlayerType.Computer_Expert) {
+    if (aiSettings.useStrategicTargetPriority) {
       // Calculate strategic value for each target
       const targetValues = planetCandidatesForInboundAttackingFleets.map((target) => ({
         planet: target,
@@ -1001,7 +1182,7 @@ export class ComputerPlayer {
     for (let i = planetCandidatesForInboundAttackingFleets.length - 1; i >= 0; i--) {
       const pEnemyInbound = planetCandidatesForInboundAttackingFleets[i];
 
-      if (player.type == PlayerType.Computer_Easy || player.type == PlayerType.Computer_Normal) {
+      if (!aiSettings.usePrioritizedTargetSorting) {
         const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
         planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
@@ -1018,33 +1199,16 @@ export class ComputerPlayer {
       }
 
       //in order to slow the agression of the easier computers we want to only attack when we have a multiple of the enemy fleet
-      let additionalStrengthMultiplierNeededToAttackLow = 0.5;
-      let additionalStrengthMultiplierNeededToAttackHigh = 1.0;
-      switch (player.type) {
-        case PlayerType.Computer_Easy:
-          additionalStrengthMultiplierNeededToAttackLow = 3.0;
-          additionalStrengthMultiplierNeededToAttackHigh = 6.0;
-          break;
-        case PlayerType.Computer_Normal:
-          additionalStrengthMultiplierNeededToAttackLow = 2.0;
-          additionalStrengthMultiplierNeededToAttackHigh = 4.0;
-          break;
-        case PlayerType.Computer_Hard:
-          additionalStrengthMultiplierNeededToAttackLow = 1.0;
-          additionalStrengthMultiplierNeededToAttackHigh = 2.0;
-          break;
-      }
-
       const additionalStrengthMultiplierNeededToAttack =
         Utils.nextRandom(
-          Math.floor(additionalStrengthMultiplierNeededToAttackLow * 10),
-          Math.floor(additionalStrengthMultiplierNeededToAttackHigh * 10) + 1,
+          Math.floor(aiSettings.additionalStrengthMultiplierNeededToAttackLow * 10),
+          Math.floor(aiSettings.additionalStrengthMultiplierNeededToAttackHigh * 10) + 1,
         ) / 10.0;
 
       let fleetSent = false;
 
       // Expert AI: Try to coordinate multi-planet attacks for high-value targets
-      if (player.type === PlayerType.Computer_Expert && planetCandidatesForSendingShips.length >= 2) {
+      if (aiSettings.enableMultiPlanetAttacks && planetCandidatesForSendingShips.length >= 2) {
         // Check if we can overwhelm this target with multiple fleets
         let estimatedEnemyStrength = Math.floor(Math.pow(pEnemyInbound.type + 1, 2) * 4);
         let enemyHasSpacePlatform = false;
@@ -1157,7 +1321,7 @@ export class ComputerPlayer {
 
           // Use effective strength calculation for Hard/Expert
           let ourEffectiveStrength = Fleet.determineFleetStrength(testFleet);
-          if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+          if (aiSettings.useEffectiveStrengthCalculation) {
             const enemyFleet = lkpfs ? lkpfs.fleetData : Fleet.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, null);
             ourEffectiveStrength = this.calculateEffectiveFleetStrength(
               testFleet,
@@ -1297,8 +1461,10 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
   ) {
-    // Easy AI never re-scouts
-    if (player.type === PlayerType.Computer_Easy && player.knownPlanetIds.includes(planet.id)) {
+    const aiSettings = this.getAISettings(player);
+
+    // Check if AI re-scouts known planets
+    if (!aiSettings.enableReScouting && player.knownPlanetIds.includes(planet.id)) {
       return false;
     }
 
@@ -1309,13 +1475,7 @@ export class ComputerPlayer {
 
       // Only explore high-priority unknown planets (close, likely valuable)
       // This prevents wasting scouts on distant, low-value planets
-      if (player.type === PlayerType.Computer_Easy) {
-        return explorationPriority > 30; // Easy: only very close planets
-      } else if (player.type === PlayerType.Computer_Normal) {
-        return explorationPriority > 20; // Normal: close-ish planets
-      } else {
-        return explorationPriority > 15; // Hard/Expert: moderate range
-      }
+      return explorationPriority > aiSettings.explorationPriorityThreshold;
     }
 
     // For known planets, use weighted scoring to determine if this is a high-priority scout target
@@ -1344,13 +1504,7 @@ export class ComputerPlayer {
     scoutCandidates.sort((a, b) => b.priority - a.priority);
 
     // Determine what percentage of top candidates to scout based on difficulty
-    let topPercentage = 0.2; // Default 20%
-    if (player.type === PlayerType.Computer_Normal) {
-      topPercentage = 0.15; // Normal: top 15%
-    } else if (player.type === PlayerType.Computer_Expert) {
-      topPercentage = 0.3; // Expert: top 30% (more aggressive)
-    }
-
+    const topPercentage = aiSettings.scoutPriorityTopPercentage;
     const topCount = Math.max(1, Math.ceil(scoutCandidates.length * topPercentage));
 
     // Return true if this planet is in the top candidates
@@ -1405,12 +1559,9 @@ export class ComputerPlayer {
       priority += 40;
 
       // Enemy planets that haven't been scouted in a while are even more important
-      if (player.type === PlayerType.Computer_Expert) {
-        if (turnsSinceLastExplored > 5) priority += 20;
-      } else if (player.type === PlayerType.Computer_Hard) {
-        if (turnsSinceLastExplored > 7) priority += 15;
-      } else if (player.type === PlayerType.Computer_Normal) {
-        if (turnsSinceLastExplored > 10) priority += 10;
+      const aiSettings = ComputerPlayer.getAISettings(player);
+      if (turnsSinceLastExplored > aiSettings.reScoutingUrgencyThreshold) {
+        priority += aiSettings.reScoutingUrgencyBonus;
       }
     }
 
@@ -1571,22 +1722,12 @@ export class ComputerPlayer {
     ownedPlanetsSorted: PlanetData[],
   ) {
     // Set research percentage based on difficulty
-    let targetResearchPercent = 0;
-
-    switch (player.type) {
-      case PlayerType.Computer_Easy:
-        targetResearchPercent = Utils.nextRandom(10, 31) / 100.0; // 10-30%
-        break;
-      case PlayerType.Computer_Normal:
-        targetResearchPercent = Utils.nextRandom(30, 51) / 100.0; // 30-50%
-        break;
-      case PlayerType.Computer_Hard:
-        targetResearchPercent = Utils.nextRandom(40, 56) / 100.0; // 40-55%
-        break;
-      case PlayerType.Computer_Expert:
-        targetResearchPercent = Utils.nextRandom(45, 61) / 100.0; // 45-60%
-        break;
-    }
+    const aiSettings = this.getAISettings(player);
+    const targetResearchPercent =
+      Utils.nextRandom(
+        Math.floor(aiSettings.researchPercentMin * 100),
+        Math.floor(aiSettings.researchPercentMax * 100) + 1,
+      ) / 100;
 
     player.research.researchPercent = targetResearchPercent;
 
@@ -1596,18 +1737,20 @@ export class ComputerPlayer {
 
       // Early game: building efficiency
       if (ownedPlanetsSorted.length <= 2) {
-        if (player.type === PlayerType.Computer_Easy || player.type === PlayerType.Computer_Normal) {
+        if (!aiSettings.prioritizeCombatResearch) {
           researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES);
           researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES);
         } else {
           researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FACTORIES);
           researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_MINES);
-          researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS);
+          if (aiSettings.prioritizeFarmsEarly) {
+            researchPriorities.push(ResearchType.BUILDING_EFFICIENCY_IMPROVEMENT_FARMS);
+          }
         }
       }
       // Mid game: space platforms and combat
       else if (ownedPlanetsSorted.length <= 4) {
-        if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+        if (aiSettings.prioritizeCombatResearch) {
           researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_ATTACK);
           researchPriorities.push(ResearchType.SPACE_PLATFORM_IMPROVEMENT);
           researchPriorities.push(ResearchType.PROPULSION_IMPROVEMENT);
@@ -1618,7 +1761,7 @@ export class ComputerPlayer {
       }
       // Late game: combat and propulsion
       else {
-        if (player.type === PlayerType.Computer_Hard || player.type === PlayerType.Computer_Expert) {
+        if (aiSettings.prioritizeCombatResearch) {
           researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_ATTACK);
           researchPriorities.push(ResearchType.COMBAT_IMPROVEMENT_DEFENSE);
           researchPriorities.push(ResearchType.PROPULSION_IMPROVEMENT);
@@ -1722,8 +1865,10 @@ export class ComputerPlayer {
     _ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
   ) {
+    const aiSettings = ComputerPlayer.getAISettings(player);
+
     // Only Hard and Expert AI manage repairs actively
-    if (player.type !== PlayerType.Computer_Hard && player.type !== PlayerType.Computer_Expert) {
+    if (!aiSettings.enableFleetRepairs) {
       return;
     }
 
