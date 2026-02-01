@@ -1,6 +1,12 @@
 import { PlanetById } from '../model/clientModel';
 import { FleetData, StarShipType } from '../model/fleet';
-import { PlanetData, PlanetImprovementType, PlanetResourceType, PlanetType } from '../model/planet';
+import {
+  PlanetData,
+  PlanetImprovementType,
+  PlanetProductionItemType,
+  PlanetResourceType,
+  PlanetType,
+} from '../model/planet';
 import { PlayerData, PlayerType } from '../model/player';
 import { ResearchType } from '../model/research';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
@@ -230,9 +236,23 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
   },
 };
 
+/**
+ * AI Decision Log entry for visualization and debugging
+ */
+export interface AIDecisionLog {
+  turn: number;
+  playerId: string;
+  playerName: string;
+  decision: string;
+  category: 'research' | 'building' | 'combat' | 'economy' | 'exploration' | 'population';
+  details: Record<string, unknown>;
+  timestamp: number;
+}
+
 export class ComputerPlayer {
   // Set to true to enable detailed AI decision-making logs
   private static DEBUG_AI = false;
+  private static aiDecisions: AIDecisionLog[] = [];
 
   /**
    * Get AI settings for a player based on their difficulty level
@@ -245,6 +265,50 @@ export class ComputerPlayer {
     if (this.DEBUG_AI) {
       console.debug(...args);
     }
+  }
+
+  /**
+   * Log an AI decision for later analysis
+   */
+  private static logDecision(
+    player: PlayerData,
+    gameModel: GameModelData,
+    category: AIDecisionLog['category'],
+    decision: string,
+    details: Record<string, unknown>,
+  ): void {
+    if (this.DEBUG_AI) {
+      this.aiDecisions.push({
+        turn: gameModel.modelData.currentCycle,
+        playerId: player.id,
+        playerName: player.name,
+        decision,
+        category,
+        details,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  /**
+   * Get all AI decisions logged so far
+   */
+  public static getAIDecisions(): AIDecisionLog[] {
+    return this.aiDecisions;
+  }
+
+  /**
+   * Clear the AI decision log
+   */
+  public static clearAIDecisions(): void {
+    this.aiDecisions = [];
+  }
+
+  /**
+   * Enable or disable AI debug logging
+   */
+  public static setDebugMode(enabled: boolean): void {
+    this.DEBUG_AI = enabled;
   }
 
   private static onComputerSentFleet(fleet: FleetData) {
@@ -272,7 +336,7 @@ export class ComputerPlayer {
     this.computerBuildImprovementsAndShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
 
     //adjust population assignments as appropriate based on planet and needs
-    this.computerAdjustPopulationAssignments(player, ownedPlanets, ownedPlanetsSorted);
+    this.computerAdjustPopulationAssignments(gameModel, player, ownedPlanets, ownedPlanetsSorted);
 
     // Manage fleet repairs - send damaged fleets back to repair capable planets
     this.computerManageFleetRepairs(gameModel, player, ownedPlanets, ownedPlanetsSorted);
@@ -292,6 +356,7 @@ export class ComputerPlayer {
   }
 
   public static computerAdjustPopulationAssignments(
+    gameModel: GameModelData,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -336,6 +401,15 @@ export class ComputerPlayer {
     const totalFoodAmountOnPlanetsAdjustment = Utils.nextRandom(adjustmentLow, adjustmentHigh + 1);
 
     totalFoodAmountOnPlanets += totalFoodAmountOnPlanetsAdjustment;
+
+    this.logDecision(player, gameModel, 'population', 'Food surplus adjustment', {
+      totalPopulation,
+      adjustmentLow,
+      adjustmentHigh,
+      actualAdjustment: totalFoodAmountOnPlanetsAdjustment,
+      foodProduction: totalFoodProduction,
+      currentFoodStockpile: totalFoodAmountOnPlanets,
+    });
 
     let oreAmountRecommended = 0;
     let iridiumAmountRecommended = 0;
@@ -725,6 +799,15 @@ export class ComputerPlayer {
       }
       if (player.planetBuildGoals[p.id]) {
         this.debugLog(player.name, 'Planet:', p.name, 'Improvement Build Goal:', player.planetBuildGoals[p.id]);
+        this.logDecision(player, gameModel, 'building', 'Set improvement build goal', {
+          planetName: p.name,
+          planetType: p.type,
+          improvementType: player.planetBuildGoals[p.id].improvementData?.type,
+          isDestroy: player.planetBuildGoals[p.id].itemType === PlanetProductionItemType.PlanetImprovementToDestroy,
+          currentFarms: p.builtImprovements[PlanetImprovementType.Farm],
+          currentMines: p.builtImprovements[PlanetImprovementType.Mine],
+          currentFactories: p.builtImprovements[PlanetImprovementType.Factory],
+        });
       }
 
       //after all that we should be ready to set fleet goals
@@ -793,6 +876,15 @@ export class ComputerPlayer {
       }
       if (player.planetBuildGoals[p.id]) {
         this.debugLog(player.name, 'Planet:', p.name, 'StarShip Build Goal:', player.planetBuildGoals[p.id]);
+        this.logDecision(player, gameModel, 'building', 'Set ship build goal', {
+          planetName: p.name,
+          shipType: player.planetBuildGoals[p.id].starshipData?.type,
+          hasSpacePlatform: Planet.getSpacePlatformCount(p, false) > 0,
+          needsExploration: planetCountNeedingExploration > 0,
+          buildDefenders,
+          buildDestroyers,
+          balancedComposition: aiSettings.useBalancedFleetComposition,
+        });
       }
     }
   }
@@ -917,6 +1009,15 @@ export class ComputerPlayer {
             totalResources.iridium - ppi.iridiumCost >= 0
           ) {
             Planet.enqueueProductionItemAndSpendResources(gameModel.grid, player, ownedPlanets, p, ppi);
+            this.logDecision(player, gameModel, 'building', 'Enqueued production item', {
+              planetName: p.name,
+              itemType: ppi.itemType,
+              energyCost: ppi.energyCost,
+              oreCost: ppi.oreCost,
+              iridiumCost: ppi.iridiumCost,
+              energyRemaining: totalResources.energy - ppi.energyCost,
+              energySurplusRequired: energySurplus,
+            });
             delete player.planetBuildGoals[p.id];
           }
         } //could this be a problem?
@@ -1135,6 +1236,17 @@ export class ComputerPlayer {
 
             pFriendly.outgoingFleets.push(newFleet);
             this.onComputerSentFleet(newFleet);
+            this.logDecision(player, gameModel, 'exploration', 'Sent exploration fleet', {
+              fromPlanet: pFriendly.name,
+              toPlanet: inboundPlanet.name,
+              shipTypes: Fleet.countStarshipsByType(newFleet),
+              distance: Grid.getHexDistanceForMidPoints(
+                gameModel.grid,
+                pFriendly.boundingHexMidPoint,
+                inboundPlanet.boundingHexMidPoint,
+              ),
+              planetsNeedingExploration: planetCandidatesForInboundScouts.length,
+            });
 
             const mobileStarshipsLeft = Fleet.countMobileStarships(pFriendly.planetaryFleet);
             if (mobileStarshipsLeft == 0) {
@@ -1277,6 +1389,15 @@ export class ComputerPlayer {
 
             pFriendly.outgoingFleets.push(newFleet);
             this.onComputerSentFleet(newFleet);
+            this.logDecision(player, gameModel, 'combat', 'Sent coordinated attack fleet', {
+              fromPlanet: pFriendly.name,
+              toPlanet: pEnemyInbound.name,
+              contributingPlanets: contributingPlanets.length,
+              totalStrength: totalAvailableStrength,
+              enemyStrength: estimatedEnemyStrength,
+              isCoordinated: true,
+              shipTypes: Fleet.countStarshipsByType(newFleet),
+            });
 
             // Remove from candidates
             const idx = planetCandidatesForSendingShips.indexOf(pFriendly);
@@ -1351,6 +1472,18 @@ export class ComputerPlayer {
             pFriendly.outgoingFleets.push(newFleet);
 
             this.onComputerSentFleet(newFleet);
+            this.logDecision(player, gameModel, 'combat', 'Sent attack fleet', {
+              fromPlanet: pFriendly.name,
+              toPlanet: pEnemyInbound.name,
+              ourStrength: ourEffectiveStrength,
+              enemyStrength: estimatedEnemyStrength,
+              strengthAdvantage:
+                estimatedEnemyStrength > 0 ? (ourEffectiveStrength / estimatedEnemyStrength).toFixed(2) : 'Undefended',
+              requiredAdvantage: additionalStrengthMultiplierNeededToAttack.toFixed(2),
+              shipTypes: Fleet.countStarshipsByType(newFleet),
+              enemyHasSpacePlatform,
+              multiPlanetAttack: false,
+            });
 
             const mobileStarshipsLeft = Fleet.countMobileStarships(pFriendly.planetaryFleet);
             if (mobileStarshipsLeft == 0) {
@@ -1762,6 +1895,15 @@ export class ComputerPlayer {
 
     player.research.researchPercent = adjustedResearchPercent;
 
+    this.logDecision(player, _gameModel, 'research', 'Set research percentage', {
+      targetPercent: targetResearchPercent,
+      adjustedPercent: adjustedResearchPercent,
+      wasAdjusted: adjustedResearchPercent !== targetResearchPercent,
+      energyNeeded: totalEnergyNeededForBuilds,
+      currentEnergy: totalResources.energy,
+      buildGoalsCount: Object.keys(player.planetBuildGoals).length,
+    });
+
     // If no research queued, determine priority based on game state
     if (!player.research.researchTypeInQueue) {
       const researchPriorities: ResearchType[] = [];
@@ -1808,6 +1950,11 @@ export class ComputerPlayer {
         if (Research.canResearch(researchProgress)) {
           player.research.researchTypeInQueue = researchType;
           this.debugLog(player.name, 'Queuing research:', researchType);
+          this.logDecision(player, _gameModel, 'research', 'Queued research type', {
+            researchType,
+            gamePhase: ownedPlanetsSorted.length <= 2 ? 'early' : ownedPlanetsSorted.length <= 4 ? 'mid' : 'late',
+            planetCount: ownedPlanetsSorted.length,
+          });
           break;
         }
       }

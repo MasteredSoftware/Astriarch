@@ -3,7 +3,13 @@ import { PlayerData, PlayerType } from '../model/player';
 import { StarShipType } from '../model/fleet';
 import { PlanetData, PlanetImprovementType, PlanetType } from '../model/planet';
 import { ResearchType } from '../model/research';
-import { startNewTestGame, TestGameData } from '../test/testUtils';
+import {
+  startNewTestGame,
+  TestGameData,
+  enableAIDebug,
+  disableAIDebug,
+  exportAIDecisionsJSON,
+} from '../test/testUtils';
 import { ComputerPlayer } from './computerPlayer';
 import { ClientGameModel } from './clientGameModel';
 import { Fleet } from './fleet';
@@ -12,6 +18,8 @@ import { GameModel } from './gameModel';
 import { Grid } from './grid';
 import { Player } from './player';
 import { Research } from './research';
+import * as fs from 'fs';
+import * as path from 'path';
 
 let testGameData: TestGameData;
 let player1: PlayerData;
@@ -256,7 +264,7 @@ describe('ComputerPlayer', () => {
       expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test.only('Easy vs Hard - Hard should dominate', () => {
+    test('Easy vs Hard - Hard should dominate', () => {
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Hard, {
         iterations: 5,
         maxTurns: 500,
@@ -278,13 +286,26 @@ describe('ComputerPlayer', () => {
       expect(wins.player2 + wins.draws).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test('Easy vs Expert - Expert should dominate', () => {
+    test.only('Easy vs Expert - Expert should dominate', () => {
+      // Enable AI debug logging
+      enableAIDebug();
+
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Expert, {
-        iterations: 5,
+        iterations: 1,
         maxTurns: 500,
       });
 
       console.log('Easy vs Expert results:', { easy: wins.player1, expert: wins.player2, draws: wins.draws });
+
+      // Save AI decisions to file
+      const aiDecisionsJSON = exportAIDecisionsJSON();
+      const outputPath = path.join(__dirname, '../../ai-decisions-easy-vs-expert.json');
+      fs.writeFileSync(outputPath, aiDecisionsJSON);
+      console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
+
+      // Disable debug logging
+      disableAIDebug();
+
       // Expert should win significantly more
       expect(wins.player2).toBeGreaterThan(wins.player1);
     });
