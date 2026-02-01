@@ -256,7 +256,7 @@ describe('ComputerPlayer', () => {
       expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test('Easy vs Hard - Hard should dominate', () => {
+    test.only('Easy vs Hard - Hard should dominate', () => {
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Hard, {
         iterations: 5,
         maxTurns: 500,

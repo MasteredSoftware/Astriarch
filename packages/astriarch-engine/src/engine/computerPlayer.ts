@@ -1718,7 +1718,7 @@ export class ComputerPlayer {
   public static computerManageResearch(
     _gameModel: GameModelData,
     player: PlayerData,
-    _ownedPlanets: PlanetById,
+    ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
   ) {
     // Set research percentage based on difficulty
@@ -1729,7 +1729,38 @@ export class ComputerPlayer {
         Math.floor(aiSettings.researchPercentMax * 100) + 1,
       ) / 100;
 
-    player.research.researchPercent = targetResearchPercent;
+    // Calculate total energy needed for pending build goals
+    let totalEnergyNeededForBuilds = 0;
+    for (const ppi of Object.values(player.planetBuildGoals)) {
+      totalEnergyNeededForBuilds += ppi.energyCost;
+    }
+
+    // Get current total resources
+    const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
+
+    // If we don't have enough energy for builds, reduce research temporarily
+    // Keep at least 20% of target or 10% absolute minimum
+    let adjustedResearchPercent = targetResearchPercent;
+    if (totalResources.energy < totalEnergyNeededForBuilds * 1.5) {
+      // We're low on energy - scale back research to prioritize building
+      const energyShortfall = totalEnergyNeededForBuilds * 1.5 - totalResources.energy;
+      const reductionFactor = Math.max(0.2, 1 - energyShortfall / (totalEnergyNeededForBuilds * 2));
+      adjustedResearchPercent = Math.max(0.1, targetResearchPercent * reductionFactor);
+
+      this.debugLog(
+        player.name,
+        'Reducing research from',
+        targetResearchPercent,
+        'to',
+        adjustedResearchPercent,
+        'due to energy needs:',
+        totalEnergyNeededForBuilds,
+        'current:',
+        totalResources.energy,
+      );
+    }
+
+    player.research.researchPercent = adjustedResearchPercent;
 
     // If no research queued, determine priority based on game state
     if (!player.research.researchTypeInQueue) {
