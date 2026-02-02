@@ -83,18 +83,39 @@ console.log(`Items actually built: ${productionEnqueued.length}`);
 
 // Building by player
 const buildingByPlayer = {};
+const shipTypesByPlayer = {};
 buildingDecisions.forEach(d => {
   if (!buildingByPlayer[d.playerName]) {
     buildingByPlayer[d.playerName] = { improvementGoals: 0, shipGoals: 0, itemsBuilt: 0 };
+    shipTypesByPlayer[d.playerName] = {};
   }
   if (d.decision === 'Set improvement build goal') buildingByPlayer[d.playerName].improvementGoals++;
   if (d.decision === 'Set ship build goal') buildingByPlayer[d.playerName].shipGoals++;
-  if (d.decision === 'Enqueued production item') buildingByPlayer[d.playerName].itemsBuilt++;
+  if (d.decision === 'Enqueued production item') {
+    buildingByPlayer[d.playerName].itemsBuilt++;
+    // Track ship types using shipType field (2=Scout, 3=Destroyer, 4=Cruiser, 5=Battleship, 6=SpacePlatform, 1=SystemDefense)
+    if (d.details.shipType) {
+      const shipTypeNames = {
+        1: 'SystemDefense',
+        2: 'Scout',
+        3: 'Destroyer',
+        4: 'Cruiser',
+        5: 'Battleship',
+        6: 'SpacePlatform'
+      };
+      const typeName = shipTypeNames[d.details.shipType] || `Type${d.details.shipType}`;
+      shipTypesByPlayer[d.playerName][typeName] = (shipTypesByPlayer[d.playerName][typeName] || 0) + 1;
+    }
+  }
 });
 
 console.log('\nBy player:');
 Object.entries(buildingByPlayer).forEach(([player, stats]) => {
   console.log(`  ${player}: ${stats.improvementGoals} improvements, ${stats.shipGoals} ships, ${stats.itemsBuilt} built`);
+  const shipTypes = shipTypesByPlayer[player];
+  if (Object.keys(shipTypes).length > 0) {
+    console.log(`    Ship types built: ${Object.entries(shipTypes).map(([type, count]) => `${type}: ${count}`).join(', ')}`);
+  }
 });
 
 // Analyze combat decisions

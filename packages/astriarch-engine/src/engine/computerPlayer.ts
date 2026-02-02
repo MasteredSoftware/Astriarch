@@ -181,15 +181,15 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     energySurplusAdder: 0.25, // base + (planets - 1) * 0.25
     mineralOverestimationLow: 1.0,
     mineralOverestimationHigh: 1.3,
-    additionalStrengthMultiplierNeededToAttackLow: 0.5,
-    additionalStrengthMultiplierNeededToAttackHigh: 1.0,
+    additionalStrengthMultiplierNeededToAttackLow: 0.3,
+    additionalStrengthMultiplierNeededToAttackHigh: 0.7,
     researchPercentMin: 0.45,
     researchPercentMax: 0.6,
     prioritizeCombatResearch: true,
     prioritizeFarmsEarly: true,
     enableReScouting: true,
-    explorationPriorityThreshold: 15,
-    scoutPriorityTopPercentage: 0.3,
+    explorationPriorityThreshold: 35,
+    scoutPriorityTopPercentage: 0.15,
     reScoutingUrgencyThreshold: 5,
     reScoutingUrgencyBonus: 20,
     enableFleetRepairs: true,
@@ -197,7 +197,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableMultiPlanetAttacks: true,
     useStrategicTargetPriority: true,
     defenderBuildChance: 0,
-    destroyerBuildChance: 0,
+    destroyerBuildChance: 0.8,
     useBalancedFleetComposition: true,
     defenseCalculationStrategy: 'advanced',
     usePrioritizedTargetSorting: true,
@@ -815,6 +815,17 @@ export class ComputerPlayer {
 
     //build ships
     for (const p of planetCandidatesForNeedingShips) {
+      // Skip planets with non-empty build queues - they're already building something
+      if (p.buildQueue.length > 0) {
+        continue;
+      }
+
+      // Don't set new ship goals if planet already has one (even if queue is empty)
+      // This prevents overwriting goals that couldn't be afforded yet
+      if (player.planetBuildGoals[p.id] && player.planetBuildGoals[p.id].starshipData) {
+        continue;
+      }
+
       const mineCount = Planet.builtAndBuildQueueImprovementTypeCount(p, PlanetImprovementType.Mine);
       if (
         player.planetBuildGoals[p.id] &&
@@ -871,7 +882,7 @@ export class ComputerPlayer {
         //NOTE: this actually never gets hit because right now we're always building scouts, then spaceplatforms, then above applies
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
       } else if (gameModel.modelData.currentCycle % 4 == 0 && buildDefenders) {
-        //else create defender (but only sometimes so we save gold)
+        //else create defender (but only sometimes so we save energy)
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
       }
       if (player.planetBuildGoals[p.id]) {
@@ -1012,6 +1023,7 @@ export class ComputerPlayer {
             this.logDecision(player, gameModel, 'building', 'Enqueued production item', {
               planetName: p.name,
               itemType: ppi.itemType,
+              shipType: ppi.starshipData?.type,
               energyCost: ppi.energyCost,
               oreCost: ppi.oreCost,
               iridiumCost: ppi.iridiumCost,
@@ -1019,6 +1031,12 @@ export class ComputerPlayer {
               energySurplusRequired: energySurplus,
             });
             delete player.planetBuildGoals[p.id];
+          } else {
+            // Can't afford this goal yet - reserve resources by subtracting from total
+            // This prevents lower-priority planets from spending resources needed by higher-priority planets
+            totalResources.energy -= ppi.energyCost;
+            totalResources.ore -= ppi.oreCost;
+            totalResources.iridium -= ppi.iridiumCost;
           }
         } //could this be a problem?
         else {
