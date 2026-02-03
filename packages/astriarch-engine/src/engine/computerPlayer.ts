@@ -56,8 +56,8 @@ interface AISettings {
 
   // Intelligence gathering
   enableReScouting: boolean; // Whether to re-scout known planets
-  explorationPriorityThreshold: number; // Minimum priority to explore unknown planets
-  scoutPriorityTopPercentage: number; // Top % of planets to re-scout
+  scoutPriorityTopPercentage: number; // Top % of unknown planets to explore
+  reScoutPriorityThreshold: number; // Minimum priority score to re-scout (absolute threshold, not percentile)
   reScoutingUrgencyThreshold: number; // Turns before re-scouting enemy planets becomes high priority
   reScoutingUrgencyBonus: number; // Priority bonus for stale enemy planet intelligence
 
@@ -97,11 +97,11 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     researchPercentMax: 0.3,
     prioritizeCombatResearch: false,
     prioritizeFarmsEarly: false,
-    enableReScouting: false,
-    explorationPriorityThreshold: 30,
-    scoutPriorityTopPercentage: 0.4,
-    reScoutingUrgencyThreshold: 15,
-    reScoutingUrgencyBonus: 5,
+    enableReScouting: false, // Easy AI doesn't re-scout
+    scoutPriorityTopPercentage: 0.2,
+    reScoutPriorityThreshold: 30, // Unused since re-scouting is disabled
+    reScoutingUrgencyThreshold: 10,
+    reScoutingUrgencyBonus: 10,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
@@ -128,8 +128,8 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeCombatResearch: false,
     prioritizeFarmsEarly: false,
     enableReScouting: true,
-    explorationPriorityThreshold: 20,
-    scoutPriorityTopPercentage: 0.5,
+    scoutPriorityTopPercentage: 0.3,
+    reScoutPriorityThreshold: 45, // Moderate - re-scouts nearby/valuable targets
     reScoutingUrgencyThreshold: 10,
     reScoutingUrgencyBonus: 10,
     enableFleetRepairs: false,
@@ -158,9 +158,9 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeCombatResearch: true,
     prioritizeFarmsEarly: true,
     enableReScouting: true,
-    explorationPriorityThreshold: 15,
-    scoutPriorityTopPercentage: 0.6,
-    reScoutingUrgencyThreshold: 7,
+    scoutPriorityTopPercentage: 0.5,
+    reScoutPriorityThreshold: 60, // Selective - nearby enemy planets
+    reScoutingUrgencyThreshold: 15,
     reScoutingUrgencyBonus: 15,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
@@ -187,11 +187,11 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     researchPercentMax: 0.6,
     prioritizeCombatResearch: true,
     prioritizeFarmsEarly: true,
-    enableReScouting: false,
-    explorationPriorityThreshold: 35,
-    scoutPriorityTopPercentage: 0.75,
-    reScoutingUrgencyThreshold: 5,
-    reScoutingUrgencyBonus: 20,
+    enableReScouting: true,
+    scoutPriorityTopPercentage: 0.6, // Explore top 60% - more selective than before
+    reScoutPriorityThreshold: 100, // Very selective - only very close enemy planets get re-scouted
+    reScoutingUrgencyThreshold: 20, // Don't add urgency bonus unless 20+ turns old
+    reScoutingUrgencyBonus: 10,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
@@ -219,8 +219,8 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeCombatResearch: true,
     prioritizeFarmsEarly: true,
     enableReScouting: true,
-    explorationPriorityThreshold: 0,
     scoutPriorityTopPercentage: 1.0,
+    reScoutPriorityThreshold: 50, // Unused for human players
     reScoutingUrgencyThreshold: 5,
     reScoutingUrgencyBonus: 20,
     enableFleetRepairs: true,
@@ -1709,37 +1709,13 @@ export class ComputerPlayer {
       return topCandidates.some((c) => c.planet.id === planet.id);
     }
 
-    // For known planets, use weighted scoring to determine if this is a high-priority scout target
-    // Calculate scout priority for this planet
+    // For known planets, use absolute threshold instead of percentile
+    // This prevents feedback loop where staleness constantly pushes planets into "top N%"
     const scoutPriority = this.calculateScoutPriority(planet, gameModel, player, ownedPlanets);
 
-    // Get all unowned planets and calculate their scout priorities
-    const scoutCandidates: { planet: PlanetData; priority: number }[] = [];
-    for (const p of gameModel.modelData.planets) {
-      if (p.id in ownedPlanets) continue; // Skip owned planets
-      if (Player.planetContainsFriendlyInboundFleet(player, p)) continue; // Skip if we're already scouting
-      if (!player.knownPlanetIds.includes(p.id)) continue; // Skip unknown (handled above)
-
-      const priority = this.calculateScoutPriority(p, gameModel, player, ownedPlanets);
-      if (priority > 0) {
-        scoutCandidates.push({ planet: p, priority });
-      }
-    }
-
-    // If no candidates or this planet has no priority, don't scout
-    if (scoutCandidates.length === 0 || scoutPriority <= 0) {
-      return false;
-    }
-
-    // Sort by priority (highest first)
-    scoutCandidates.sort((a, b) => b.priority - a.priority);
-
-    // Determine what percentage of top candidates to scout based on difficulty
-    const topPercentage = aiSettings.scoutPriorityTopPercentage;
-    const topCount = Math.max(1, Math.ceil(scoutCandidates.length * topPercentage));
-
-    // Return true if this planet is in the top candidates
-    return scoutCandidates.slice(0, topCount).some((c) => c.planet.id === planet.id);
+    // Re-scout if priority exceeds threshold
+    // This ensures only truly important planets (nearby enemies, urgent intel) get re-scouted
+    return scoutPriority >= aiSettings.reScoutPriorityThreshold;
   }
 
   /**
