@@ -153,7 +153,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeFarmsEarly: true,
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.5,
-    reScoutPriorityThreshold: 80, // Selective - nearby enemy planets
+    reScoutPriorityThreshold: 95, // Selective - nearby enemy planets
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: false,

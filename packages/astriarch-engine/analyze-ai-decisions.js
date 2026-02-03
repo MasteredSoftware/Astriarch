@@ -2,21 +2,41 @@
 /**
  * AI Decision Analyzer
  * 
- * Analyzes the AI decisions JSON file and provides insights.
- * Usage: node analyze-ai-decisions.js [filepath]
+ * Analyzes AI decision JSON files in the ai-decision-debugging directory.
+ * Usage: node analyze-ai-decisions.js [directory]
  */
 
 const fs = require('fs');
 const path = require('path');
 
-const filepath = process.argv[2] || './ai-decisions-easy-vs-expert.json';
+const directory = process.argv[2] || './ai-decision-debugging';
 
-if (!fs.existsSync(filepath)) {
-  console.error(`❌ File not found: ${filepath}`);
-  process.exit(1);
+if (!fs.existsSync(directory)) {
+  console.error(`❌ Directory not found: ${directory}`);
+  console.log('Creating directory...');
+  fs.mkdirSync(directory, { recursive: true });
+  console.log(`✅ Created ${directory}`);
+  process.exit(0);
 }
 
-console.log(`\n📊 Analyzing AI decisions from: ${filepath}\n`);
+// Find all JSON files in the directory (excluding summary files)
+const files = fs.readdirSync(directory)
+  .filter(file => file.endsWith('.json') && !file.endsWith('-summary.json'))
+  .map(file => path.join(directory, file));
+
+if (files.length === 0) {
+  console.log(`\n📂 No AI decision files found in ${directory}`);
+  console.log('Run tests with AI debugging enabled to generate decision logs.\n');
+  process.exit(0);
+}
+
+console.log(`\n📊 Found ${files.length} AI decision file(s) in ${directory}\n`);
+
+// Process each file
+files.forEach(filepath => {
+  console.log('═'.repeat(80));
+  console.log(`📄 Analyzing: ${path.basename(filepath)}`);
+  console.log('═'.repeat(80));
 
 const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
 
@@ -177,96 +197,99 @@ exploration.forEach(d => {
 console.log('\nBy player:');
 Object.entries(explorationByPlayer).forEach(([player, count]) => {
   console.log(`  ${player}: ${count} scouts`);
-});
-
-// Turn analysis - find interesting patterns
-const turnKeys = Object.keys(data.byTurn).map(Number).sort((a, b) => a - b);
-const firstTurn = turnKeys[0];
-const lastTurn = turnKeys[turnKeys.length - 1];
-const gameLength = Math.floor(lastTurn);
-
-console.log(`\n=== GAME TIMELINE ===`);
-console.log(`Game lasted: ${gameLength} turns`);
-console.log(`Average decisions per turn: ${(data.total / gameLength).toFixed(1)}`);
-
-// Find most active turns
-const topTurns = Object.entries(data.byTurn)
-  .map(([turn, count]) => ({ turn: parseFloat(turn), count }))
-  .sort((a, b) => b.count - a.count)
-  .slice(0, 5);
-
-console.log(`\nMost active turns:`);
-topTurns.forEach(({ turn, count }) => {
-  console.log(`  Turn ${Math.floor(turn)}: ${count} decisions`);
-});
-
-// Find player-specific patterns
-console.log(`\n=== PLAYER-SPECIFIC PATTERNS ===`);
-['Matt', 'Computer1'].forEach(playerName => {
-  const playerDecisions = data.decisions.filter(d => d.playerName === playerName);
-  if (playerDecisions.length === 0) return;
-  
-  const categories = {};
-  playerDecisions.forEach(d => {
-    categories[d.category] = (categories[d.category] || 0) + 1;
   });
-  
-  console.log(`\n${playerName}:`);
-  Object.entries(categories).sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
-    const percent = ((count / playerDecisions.length) * 100).toFixed(1);
-    console.log(`  ${cat.padEnd(15)}: ${count.toString().padStart(4)} (${percent}%)`);
+
+  // Turn analysis - find interesting patterns
+  const turnKeys = Object.keys(data.byTurn).map(Number).sort((a, b) => a - b);
+  const firstTurn = turnKeys[0];
+  const lastTurn = turnKeys[turnKeys.length - 1];
+  const gameLength = Math.floor(lastTurn);
+
+  console.log(`\n=== GAME TIMELINE ===`);
+  console.log(`Game lasted: ${gameLength} turns`);
+  console.log(`Average decisions per turn: ${(data.total / gameLength).toFixed(1)}`);
+
+  // Find most active turns
+  const topTurns = Object.entries(data.byTurn)
+    .map(([turn, count]) => ({ turn: parseFloat(turn), count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
+  console.log(`\nMost active turns:`);
+  topTurns.forEach(({ turn, count }) => {
+    console.log(`  Turn ${Math.floor(turn)}: ${count} decisions`);
   });
+
+  // Find player-specific patterns
+  console.log(`\n=== PLAYER-SPECIFIC PATTERNS ===`);
+  const playerNames = [...new Set(data.decisions.map(d => d.playerName))];
+  playerNames.forEach(playerName => {
+    const playerDecisions = data.decisions.filter(d => d.playerName === playerName);
+    if (playerDecisions.length === 0) return;
+    
+    const categories = {};
+    playerDecisions.forEach(d => {
+      categories[d.category] = (categories[d.category] || 0) + 1;
+    });
+    
+    console.log(`\n${playerName}:`);
+    Object.entries(categories).sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
+      const percent = ((count / playerDecisions.length) * 100).toFixed(1);
+      console.log(`  ${cat.padEnd(15)}: ${count.toString().padStart(4)} (${percent}%)`);
+    });
+  });
+
+  console.log(`\n✅ Analysis complete!\n`);
+
+  // Export summary
+  const summary = {
+    totalDecisions: data.total,
+    gameLength,
+    byCategory: data.byCategory,
+    byPlayer: data.byPlayer,
+    research: {
+      avgResearchPercent: Object.fromEntries(
+        Object.entries(avgResearchByPlayer).map(([player, stats]) => 
+          [player, (stats.sum / stats.count * 100).toFixed(1)]
+        )
+      ),
+      byPlayer: researchByPlayer
+    },
+    building: {
+      improvementGoals: improvementBuilds.length,
+      shipGoals: shipBuilds.length,
+      itemsBuilt: productionEnqueued.length,
+      byPlayer: buildingByPlayer
+    },
+    combat: {
+      totalAttacks: attacks.length,
+      coordinatedAttacks: coordinated.length,
+      undefendedAttacks: attacks.filter(d => 
+        d.details.strengthAdvantage === 'Undefended' || 
+        d.details.strengthAdvantage === 'Infinity' ||
+        d.details.enemyStrength === 0
+      ).length,
+      avgStrengthAdvantage: (() => {
+        const validAdvantages = attacks
+          .map(d => d.details.strengthAdvantage)
+          .filter(adv => adv !== 'Undefended' && adv !== 'Infinity' && !isNaN(parseFloat(adv)));
+        
+        return validAdvantages.length > 0
+          ? (validAdvantages.reduce((sum, adv) => sum + parseFloat(adv), 0) / validAdvantages.length).toFixed(2)
+          : 'N/A';
+      })(),
+      byPlayer: combatByPlayer
+    },
+    exploration: {
+      scoutsSent: exploration.length,
+      byPlayer: explorationByPlayer
+    }
+  };
+
+  const summaryPath = filepath.replace('.json', '-summary.json');
+  fs.writeFileSync(summaryPath, JSON.stringify(summary, null, 2));
+  console.log(`📄 Summary saved to: ${path.basename(summaryPath)}\n`);
 });
 
-console.log(`\n✅ Analysis complete!\n`);
-
-// Export summary
-const summary = {
-  totalDecisions: data.total,
-  gameLength,
-  byCategory: data.byCategory,
-  byPlayer: data.byPlayer,
-  research: {
-    avgResearchPercent: Object.fromEntries(
-      Object.entries(avgResearchByPlayer).map(([player, stats]) => 
-        [player, (stats.sum / stats.count * 100).toFixed(1)]
-      )
-    ),
-    byPlayer: researchByPlayer
-  },
-  building: {
-    improvementGoals: improvementBuilds.length,
-    shipGoals: shipBuilds.length,
-    itemsBuilt: productionEnqueued.length,
-    byPlayer: buildingByPlayer
-  },
-  combat: {
-    totalAttacks: attacks.length,
-    coordinatedAttacks: coordinated.length,
-    undefendedAttacks: attacks.filter(d => 
-      d.details.strengthAdvantage === 'Undefended' || 
-      d.details.strengthAdvantage === 'Infinity' ||
-      d.details.enemyStrength === 0
-    ).length,
-    avgStrengthAdvantage: (() => {
-      const validAdvantages = attacks
-        .map(d => d.details.strengthAdvantage)
-        .filter(adv => adv !== 'Undefended' && adv !== 'Infinity' && !isNaN(parseFloat(adv)));
-      
-      return validAdvantages.length > 0
-        ? (validAdvantages.reduce((sum, adv) => sum + parseFloat(adv), 0) / validAdvantages.length).toFixed(2)
-        : 'N/A';
-    })(),
-    byPlayer: combatByPlayer
-  },
-  exploration: {
-    scoutsSent: exploration.length,
-    byPlayer: explorationByPlayer
-  }
-};
-
-fs.writeFileSync(
-  filepath.replace('.json', '-summary.json'),
-  JSON.stringify(summary, null, 2)
-);
-console.log(`📄 Summary saved to: ${filepath.replace('.json', '-summary.json')}\n`);
+console.log('═'.repeat(80));
+console.log(`\n🎉 Processed ${files.length} file(s) successfully!\n`);

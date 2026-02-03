@@ -126,13 +126,34 @@ combatDecisions.forEach(d => {
 ```typescript
 import { exportAIDecisionsJSON } from './testUtils';
 import fs from 'fs';
+import path from 'path';
 
-// Export to JSON file
+// Export to JSON file in ai-decision-debugging directory
 const json = exportAIDecisionsJSON();
-fs.writeFileSync('ai-decisions.json', json);
+const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-my-test.json');
+fs.writeFileSync(outputPath, json);
 
-// Can now analyze in Excel, Jupyter, or other tools
+// Can now analyze with: node analyze-ai-decisions.js
+// This will process all JSON files in the ai-decision-debugging directory
 ```
+
+## Analyzing Multiple Decision Files
+
+The `analyze-ai-decisions.js` script automatically processes all JSON files in the `ai-decision-debugging` directory:
+
+```bash
+# Analyze all AI decision files
+node analyze-ai-decisions.js
+
+# Or specify a custom directory
+node analyze-ai-decisions.js ./path/to/decisions
+```
+
+The script will:
+- Find all `.json` files (excluding `*-summary.json` files)
+- Analyze each file individually
+- Generate a `-summary.json` file for each
+- Display comprehensive statistics for all matchups
 
 ## Example Test
 

@@ -253,41 +253,73 @@ describe('ComputerPlayer', () => {
   });
 
   describe('AI vs AI game simulations', () => {
-    test.only('Easy vs Normal - Normal should win eventually', () => {
+    test('Easy vs Normal - Normal should win eventually', () => {
+      enableAIDebug();
+
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Normal, {
         iterations: 1,
         maxTurns: 150,
       });
 
       console.log('Easy vs Normal results:', { easy: wins.player1, normal: wins.player2, draws: wins.draws });
+
+      // Save AI decisions to file
+      const aiDecisionsJSON = exportAIDecisionsJSON();
+      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-normal.json');
+      fs.writeFileSync(outputPath, aiDecisionsJSON);
+      console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
+
+      disableAIDebug();
+
       // Normal should win
       expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test.only('Easy vs Hard - Hard should dominate', () => {
+    test('Easy vs Hard - Hard should dominate', () => {
+      enableAIDebug();
+
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Hard, {
         iterations: 1,
         maxTurns: 100,
       });
 
       console.log('Easy vs Hard results:', { easy: wins.player1, hard: wins.player2, draws: wins.draws });
+
+      // Save AI decisions to file
+      const aiDecisionsJSON = exportAIDecisionsJSON();
+      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-hard.json');
+      fs.writeFileSync(outputPath, aiDecisionsJSON);
+      console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
+
+      disableAIDebug();
+
       // Hard should win
       expect(wins.player2).toBeGreaterThan(wins.player1);
     });
 
-    test.only('Normal vs Hard - Hard should win eventually', () => {
+    test('Normal vs Hard - Hard should win eventually', () => {
+      enableAIDebug();
+
       const wins = runAIvsAISimulation(PlayerType.Computer_Normal, PlayerType.Computer_Hard, {
         iterations: 1,
         maxTurns: 150,
       });
 
       console.log('Normal vs Hard results:', { normal: wins.player1, hard: wins.player2, draws: wins.draws });
+
+      // Save AI decisions to file
+      const aiDecisionsJSON = exportAIDecisionsJSON();
+      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-normal-vs-hard.json');
+      fs.writeFileSync(outputPath, aiDecisionsJSON);
+      console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
+
+      disableAIDebug();
+
       // Hard should win at least as often as Normal
       expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test.only('Easy vs Expert - Expert should dominate', () => {
-      // Enable AI debug logging
+    test('Easy vs Expert - Expert should dominate', () => {
       enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Expert, {
@@ -299,24 +331,34 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decisions-easy-vs-expert.json');
+      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-expert.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
-      // Disable debug logging
       disableAIDebug();
 
       // Expert should win significantly more
       expect(wins.player2).toBeGreaterThan(wins.player1);
     });
 
-    test.only('Hard vs Expert - expert should win eventually', () => {
+    test('Hard vs Expert - expert should win eventually', () => {
+      enableAIDebug();
+
       const wins = runAIvsAISimulation(PlayerType.Computer_Hard, PlayerType.Computer_Expert, {
         iterations: 1,
         maxTurns: 150,
       });
 
       console.log('Hard vs Expert results:', { hard: wins.player1, expert: wins.player2, draws: wins.draws });
+
+      // Save AI decisions to file
+      const aiDecisionsJSON = exportAIDecisionsJSON();
+      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-hard-vs-expert.json');
+      fs.writeFileSync(outputPath, aiDecisionsJSON);
+      console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
+
+      disableAIDebug();
+
       // Both are aggressive and advanced - expect competitive results
       expect(wins.player2).toBeGreaterThan(wins.player1);
     });
@@ -1000,7 +1042,7 @@ describe('ComputerPlayer', () => {
 
       const testPlanet = testGameData.gameModel.modelData.planets[1];
       testPlanet.type = PlanetType.PlanetClass2; // High value (+15)
-      
+
       expertPlayer.knownPlanetIds.push(testPlanet.id);
       expertPlayer.lastKnownPlanetFleetStrength[testPlanet.id] = {
         cycleLastExplored: 70, // Will be 30 turns old after advance
