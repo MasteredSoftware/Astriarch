@@ -88,7 +88,7 @@
 
 <div style={containerStyle} {...$$restProps}>
 	{#if isShipIcon && shipComponent}
-		<svelte:component this={shipComponent} {size} class="w-full h-full" />
+		<svelte:component this={shipComponent} {size} class="h-full w-full" />
 	{:else if icon}
 		<img src={icon} {alt} />
 	{/if}

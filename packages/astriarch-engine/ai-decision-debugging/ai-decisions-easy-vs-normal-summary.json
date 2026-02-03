@@ -1,0 +1,71 @@
+{
+  "totalDecisions": 3099,
+  "gameLength": 149,
+  "byCategory": {
+    "research": 303,
+    "building": 753,
+    "population": 300,
+    "combat": 1630,
+    "exploration": 113
+  },
+  "byPlayer": {
+    "Matt": 1787,
+    "Computer1": 1312
+  },
+  "research": {
+    "avgResearchPercent": {
+      "Matt": "20.9",
+      "Computer1": "39.9"
+    },
+    "byPlayer": {
+      "Matt": {
+        "total": 150,
+        "energyAdjusted": 0
+      },
+      "Computer1": {
+        "total": 150,
+        "energyAdjusted": 4
+      }
+    }
+  },
+  "building": {
+    "improvementGoals": 128,
+    "shipGoals": 268,
+    "itemsBuilt": 357,
+    "byPlayer": {
+      "Matt": {
+        "improvementGoals": 51,
+        "shipGoals": 23,
+        "itemsBuilt": 56
+      },
+      "Computer1": {
+        "improvementGoals": 77,
+        "shipGoals": 245,
+        "itemsBuilt": 301
+      }
+    }
+  },
+  "combat": {
+    "totalAttacks": 8,
+    "coordinatedAttacks": 0,
+    "undefendedAttacks": 0,
+    "avgStrengthAdvantage": "4.63",
+    "byPlayer": {
+      "Matt": {
+        "attacks": 8,
+        "coordinated": 0
+      },
+      "Computer1": {
+        "attacks": 0,
+        "coordinated": 0
+      }
+    }
+  },
+  "exploration": {
+    "scoutsSent": 113,
+    "byPlayer": {
+      "Computer1": 104,
+      "Matt": 9
+    }
+  }
+}

@@ -2,7 +2,7 @@
 	export let size: number = 32;
 	let className: string = '';
 	export { className as class };
-	
+
 	// Generate unique IDs for filters to avoid conflicts
 	const uid = Math.random().toString(36).substring(2, 9);
 	const filter0Id = `filter0_d_defender_custom_${uid}`;
@@ -19,10 +19,7 @@
 >
 	<g filter="url(#{filter0Id})">
 		<g filter="url(#{filter1Id})">
-			<path
-				d="M42.4096 39.4659L30.2048 18.2059V32.9698L36.1104 39.4659H42.4096Z"
-				fill="#13F3FB"
-			/>
+			<path d="M42.4096 39.4659L30.2048 18.2059V32.9698L36.1104 39.4659H42.4096Z" fill="#13F3FB" />
 			<path d="M18 39.4659L30.2048 18.2059V32.9698L24.2993 39.4659H18Z" fill="#13F3FB" />
 		</g>
 	</g>

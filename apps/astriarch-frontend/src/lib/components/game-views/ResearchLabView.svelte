@@ -142,12 +142,16 @@
 
 	// Validation: check if advantage and disadvantage are the same
 	const hasMatchingTypes = $derived(
-		advantageAgainst !== '' && disadvantageAgainst !== '' && advantageAgainst === disadvantageAgainst
+		advantageAgainst !== '' &&
+			disadvantageAgainst !== '' &&
+			advantageAgainst === disadvantageAgainst
 	);
 
 	// Check if custom ship form is valid (both selected and different)
 	const isCustomShipFormValid = $derived(
-		advantageAgainst !== '' && disadvantageAgainst !== '' && advantageAgainst !== disadvantageAgainst
+		advantageAgainst !== '' &&
+			disadvantageAgainst !== '' &&
+			advantageAgainst !== disadvantageAgainst
 	);
 
 	// Dropdown options for ship types
@@ -553,21 +557,21 @@
 										</div>
 									</div>
 
-								{#if hasMatchingTypes}
-									<div class="mt-4">
-										<Text class="astriarch-body-12" style="color: #ff4444;">
-											Advantage and disadvantage cannot be the same ship type
-										</Text>
-									</div>
-								{/if}
-							</div>
+									{#if hasMatchingTypes}
+										<div class="mt-4">
+											<Text class="astriarch-body-12" style="color: #ff4444;">
+												Advantage and disadvantage cannot be the same ship type
+											</Text>
+										</div>
+									{/if}
+								</div>
 
-							<div class="mt-auto flex">
-								<Button
-									onclick={submitSelectedCustomShipResearch}
-									label="RESEARCH SHIP"
-									disabled={!isCustomShipFormValid}
-								/>
+								<div class="mt-auto flex">
+									<Button
+										onclick={submitSelectedCustomShipResearch}
+										label="RESEARCH SHIP"
+										disabled={!isCustomShipFormValid}
+									/>
 								</div>
 							{:else if currentResearchInfo}
 								<!-- Currently Researching Section (for both standard and custom ship research) -->

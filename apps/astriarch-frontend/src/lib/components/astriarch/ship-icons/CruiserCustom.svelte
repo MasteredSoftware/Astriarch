@@ -2,7 +2,7 @@
 	export let size: number = 32;
 	let className: string = '';
 	export { className as class };
-	
+
 	const uid = Math.random().toString(36).substring(2, 9);
 	const filter0Id = `filter0_d_cruiser_custom_${uid}`;
 	const filter1Id = `filter1_d_cruiser_custom_${uid}`;

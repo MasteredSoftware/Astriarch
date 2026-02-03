@@ -17,6 +17,7 @@ import { PlanetaryConflictData } from '../model/battle';
 import { ExecuteTradeResults } from './tradingCenter';
 import type { PlanetType } from '../model/planet';
 import type { StarshipAdvantageData } from '../model/fleet';
+import type { ResearchType } from '../model/research';
 
 // ============================================================================
 // COMMAND TYPES - Player actions that change game state
@@ -458,6 +459,23 @@ export interface FleetDefenseSuccessEvent extends ClientEvent {
     attackerName: string;
     attackerId: string;
     conflictData: PlanetaryConflictData;
+  };
+}
+
+export interface ResearchStolenEvent extends ClientEvent {
+  type: ClientEventType.RESEARCH_STOLEN;
+  data: {
+    victimPlayerId: string;
+    victimPlayerName?: string;
+    thiefPlayerId: string;
+    thiefPlayerName?: string;
+    researchType: ResearchType;
+    researchName: string;
+    newResearchLevel: number;
+    researchPointsStolen: number;
+    planetId: number;
+    planetName: string;
+    wasVictim: boolean; // True if receiving player was the victim, false if they were the thief
   };
 }
 

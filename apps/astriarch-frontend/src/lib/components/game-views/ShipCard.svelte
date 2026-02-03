@@ -105,10 +105,13 @@
 		!!ship.customShipData
 	)} (ID: {ship.id}, Health: {ship.health})"
 	aria-pressed={isSelected}
-	title="{GameTools.starShipTypeToFriendlyName(ship.type, !!ship.customShipData)} - Health: {ship.health}/{Fleet.maxStrength(
-		ship
-	)}, Level: {Fleet.starShipLevel(ship, Fleet.getStarshipTypeBaseStrength(ship.type))
-		.level}, Experience: {ship.experienceAmount}"
+	title="{GameTools.starShipTypeToFriendlyName(
+		ship.type,
+		!!ship.customShipData
+	)} - Health: {ship.health}/{Fleet.maxStrength(ship)}, Level: {Fleet.starShipLevel(
+		ship,
+		Fleet.getStarshipTypeBaseStrength(ship.type)
+	).level}, Experience: {ship.experienceAmount}"
 >
 	<!-- Frame with selection border -->
 	<div
@@ -118,9 +121,7 @@
 	></div>
 
 	<!-- Ship Icon - Much larger, takes up most of the card -->
-	<div
-		class="absolute top-[-7.2px] left-[14.4px] h-[61.2px] w-[61.2px]"
-	>
+	<div class="absolute top-[-7.2px] left-[14.4px] h-[61.2px] w-[61.2px]">
 		<div class="absolute inset-0 flex items-center justify-center">
 			<div class="h-[61.2px] w-[61.2px]">
 				<div

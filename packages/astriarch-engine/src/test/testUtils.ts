@@ -7,6 +7,7 @@ import { ResearchType } from '../model/research';
 import { CitizenWorkerType } from '../model/planet';
 import { ClientModelData } from '../model/clientModel';
 import { EarnedPointsType } from '../model/earnedPoints';
+import { ComputerPlayer } from '../engine/computerPlayer';
 
 export interface TestGameData {
   gameModel: GameModelData;
@@ -25,7 +26,7 @@ export const startNewTestGame = (): TestGameData => {
     planetsPerSystem: PlanetsPerSystemOption.FIVE,
     galaxySize: GalaxySizeOption.SMALL,
     distributePlanetsEvenly: true,
-    quickStart: true,
+    quickStart: false,
     gameSpeed: GameSpeed.NORMAL,
     version: '2.0',
   };
@@ -92,4 +93,81 @@ export const startNewTestGameWithOptions = (
   }
 
   return { gameModel };
+};
+
+/**
+ * Enable AI debug logging for tests
+ */
+export const enableAIDebug = (): void => {
+  ComputerPlayer.setDebugMode(true);
+  ComputerPlayer.clearAIDecisions();
+};
+
+/**
+ * Disable AI debug logging
+ */
+export const disableAIDebug = (): void => {
+  ComputerPlayer.setDebugMode(false);
+};
+
+/**
+ * Get a summary of AI decisions grouped by category
+ */
+export const getAIDecisionSummary = () => {
+  const decisions = ComputerPlayer.getAIDecisions();
+  const summary = {
+    total: decisions.length,
+    byCategory: {} as Record<string, number>,
+    byPlayer: {} as Record<string, number>,
+    byTurn: {} as Record<number, number>,
+    decisions,
+  };
+
+  for (const decision of decisions) {
+    // Count by category
+    summary.byCategory[decision.category] = (summary.byCategory[decision.category] || 0) + 1;
+
+    // Count by player
+    summary.byPlayer[decision.playerName] = (summary.byPlayer[decision.playerName] || 0) + 1;
+
+    // Count by turn
+    summary.byTurn[decision.turn] = (summary.byTurn[decision.turn] || 0) + 1;
+  }
+
+  return summary;
+};
+
+/**
+ * Print AI decisions to console in a readable format
+ */
+export const printAIDecisions = (filterByCategory?: string, filterByPlayer?: string): void => {
+  const decisions = ComputerPlayer.getAIDecisions();
+
+  console.log('\n========== AI DECISION LOG ==========');
+  console.log(`Total Decisions: ${decisions.length}\n`);
+
+  let filteredDecisions = decisions;
+  if (filterByCategory) {
+    filteredDecisions = filteredDecisions.filter((d) => d.category === filterByCategory);
+  }
+  if (filterByPlayer) {
+    filteredDecisions = filteredDecisions.filter((d) => d.playerName === filterByPlayer);
+  }
+
+  for (const decision of filteredDecisions) {
+    console.log(`[Turn ${decision.turn}] [${decision.category.toUpperCase()}] ${decision.playerName}`);
+    console.log(`  Decision: ${decision.decision}`);
+    console.log(`  Details:`, JSON.stringify(decision.details, null, 2));
+    console.log('');
+  }
+
+  console.log('========== END AI DECISION LOG ==========\n');
+};
+
+/**
+ * Export AI decisions to JSON string
+ */
+export const exportAIDecisionsJSON = (): string => {
+  const summary = getAIDecisionSummary();
+  return JSON.stringify(summary, null, 2);
 };

@@ -34,11 +34,13 @@ import {
   PlanetLostEvent,
   FleetAttackFailedEvent,
   FleetDefenseSuccessEvent,
+  ResearchStolenEvent,
 } from './GameCommands';
 import { Grid } from './grid';
 import { Player } from './player';
 import { GameModel } from './gameModel';
 import { TradingCenter } from './tradingCenter';
+import { Research } from './research';
 
 /**
  * Apply client events to a client model
@@ -115,8 +117,7 @@ export class EventApplicator {
         break;
 
       case ClientEventType.RESEARCH_STOLEN:
-        // Notification-only event - the research level change already happened on the server
-        // No client state changes needed
+        this.applyResearchStolen(clientModel, event as ResearchStolenEvent);
         break;
 
       default:
@@ -415,6 +416,33 @@ export class EventApplicator {
     } else {
       console.warn(`No combat result diff provided in FLEET_DEFENSE_SUCCESS event for planet ${planetId}`);
     }
+  }
+
+  private static applyResearchStolen(clientModel: ClientModelData, event: ResearchStolenEvent): void {
+    const { wasVictim, researchType, researchPointsStolen } = event.data;
+
+    // If the main player was the victim, this is notification-only (no state changes needed)
+    if (wasVictim) {
+      return;
+    }
+
+    // Main player stole research - update their local research state
+    const researchProgress = clientModel.mainPlayer.research.researchProgressByType[researchType];
+    if (!researchProgress) {
+      console.warn(`Research type ${researchType} not found in main player's research`);
+      return;
+    }
+
+    // Apply the stolen research points using the same method the server uses
+    // This will automatically advance the level and update research data
+    const result = Research.setResearchPointsCompleted(
+      researchProgress,
+      researchProgress.researchPointsCompleted + researchPointsStolen,
+    );
+
+    console.log(
+      `Research stolen: ${researchType} advanced by ${result.levelIncrease} level(s) to level ${researchProgress.currentResearchLevel + 1} (+${researchPointsStolen} points)`,
+    );
   }
 
   /**
