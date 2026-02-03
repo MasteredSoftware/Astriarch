@@ -1,70 +1,70 @@
 {
-  "totalDecisions": 1372,
-  "gameLength": 72,
+  "totalDecisions": 1210,
+  "gameLength": 66,
   "byCategory": {
-    "research": 147,
-    "building": 385,
-    "population": 146,
-    "combat": 670,
-    "exploration": 24
+    "research": 135,
+    "building": 322,
+    "population": 134,
+    "combat": 600,
+    "exploration": 19
   },
   "byPlayer": {
-    "Matt": 645,
-    "Computer1": 727
+    "Matt": 462,
+    "Computer1": 748
   },
   "research": {
     "avgResearchPercent": {
-      "Matt": "20.1",
-      "Computer1": "49.2"
+      "Matt": "19.5",
+      "Computer1": "48.3"
     },
     "byPlayer": {
       "Matt": {
-        "total": 73,
+        "total": 67,
         "energyAdjusted": 0
       },
       "Computer1": {
-        "total": 73,
-        "energyAdjusted": 18
+        "total": 67,
+        "energyAdjusted": 23
       }
     }
   },
   "building": {
-    "improvementGoals": 117,
-    "shipGoals": 94,
-    "itemsBuilt": 174,
+    "improvementGoals": 106,
+    "shipGoals": 67,
+    "itemsBuilt": 149,
     "byPlayer": {
       "Matt": {
-        "improvementGoals": 43,
-        "shipGoals": 16,
-        "itemsBuilt": 42
+        "improvementGoals": 34,
+        "shipGoals": 10,
+        "itemsBuilt": 33
       },
       "Computer1": {
-        "improvementGoals": 74,
-        "shipGoals": 78,
-        "itemsBuilt": 132
+        "improvementGoals": 72,
+        "shipGoals": 57,
+        "itemsBuilt": 116
       }
     }
   },
   "combat": {
-    "totalAttacks": 17,
-    "coordinatedAttacks": 10,
-    "undefendedAttacks": 1,
-    "avgStrengthAdvantage": "2.18",
+    "totalAttacks": 13,
+    "coordinatedAttacks": 4,
+    "undefendedAttacks": 0,
+    "avgStrengthAdvantage": "2.22",
     "byPlayer": {
       "Matt": {
-        "attacks": 6,
+        "attacks": 1,
         "coordinated": 0
       },
       "Computer1": {
-        "attacks": 11,
-        "coordinated": 10
+        "attacks": 12,
+        "coordinated": 4
       }
     }
   },
   "exploration": {
-    "scoutsSent": 24,
+    "scoutsSent": 19,
     "byPlayer": {
-      "Computer1": 15,
+      "Computer1": 10,
       "Matt": 9
     }
   }
