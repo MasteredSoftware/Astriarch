@@ -26,7 +26,7 @@ export const startNewTestGame = (): TestGameData => {
     planetsPerSystem: PlanetsPerSystemOption.FIVE,
     galaxySize: GalaxySizeOption.SMALL,
     distributePlanetsEvenly: true,
-    quickStart: true,
+    quickStart: false,
     gameSpeed: GameSpeed.NORMAL,
     version: '2.0',
   };

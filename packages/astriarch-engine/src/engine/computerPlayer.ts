@@ -99,7 +99,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeFarmsEarly: false,
     enableReScouting: false,
     explorationPriorityThreshold: 30,
-    scoutPriorityTopPercentage: 0.2,
+    scoutPriorityTopPercentage: 0.4,
     reScoutingUrgencyThreshold: 15,
     reScoutingUrgencyBonus: 5,
     enableFleetRepairs: false,
@@ -129,7 +129,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeFarmsEarly: false,
     enableReScouting: true,
     explorationPriorityThreshold: 20,
-    scoutPriorityTopPercentage: 0.15,
+    scoutPriorityTopPercentage: 0.5,
     reScoutingUrgencyThreshold: 10,
     reScoutingUrgencyBonus: 10,
     enableFleetRepairs: false,
@@ -159,7 +159,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeFarmsEarly: true,
     enableReScouting: true,
     explorationPriorityThreshold: 15,
-    scoutPriorityTopPercentage: 0.2,
+    scoutPriorityTopPercentage: 0.6,
     reScoutingUrgencyThreshold: 7,
     reScoutingUrgencyBonus: 15,
     enableFleetRepairs: true,
@@ -189,13 +189,13 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     prioritizeFarmsEarly: true,
     enableReScouting: false,
     explorationPriorityThreshold: 35,
-    scoutPriorityTopPercentage: 0.15,
+    scoutPriorityTopPercentage: 0.75,
     reScoutingUrgencyThreshold: 5,
     reScoutingUrgencyBonus: 20,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
-    useStrategicTargetPriority: true,
+    useStrategicTargetPriority: false,
     defenderBuildChance: 0,
     destroyerBuildChance: 0.8,
     useBalancedFleetComposition: true,
@@ -1135,7 +1135,7 @@ export class ComputerPlayer {
       this.logDecision(player, gameModel, 'combat', 'Target analysis', {
         planetsToScout: planetCandidatesForInboundScouts.length,
         planetsToAttack: planetCandidatesForInboundAttackingFleets.length,
-        totalUnownedPlanets: gameModel.modelData.planets.filter(p => !(p.id in ownedPlanets)).length,
+        totalUnownedPlanets: gameModel.modelData.planets.filter((p) => !(p.id in ownedPlanets)).length,
       });
     }
 
@@ -1316,7 +1316,7 @@ export class ComputerPlayer {
       // Log target values for debugging
       this.logDecision(player, gameModel, 'combat', 'Strategic target evaluation', {
         totalTargets: targetValues.length,
-        targetDetails: targetValues.map(tv => ({
+        targetDetails: targetValues.map((tv) => ({
           planetName: tv.planet.name,
           planetType: tv.planet.type,
           value: tv.value,
@@ -1335,7 +1335,7 @@ export class ComputerPlayer {
         beforeFiltering: targetValues.length,
         afterFiltering: highValueTargets.length,
         filteredOut: targetValues.length - highValueTargets.length,
-        highValueTargetNames: highValueTargets.map(p => p.name),
+        highValueTargetNames: highValueTargets.map((p) => p.name),
       });
 
       planetCandidatesForInboundAttackingFleets.length = 0;
@@ -1661,8 +1661,8 @@ export class ComputerPlayer {
 
   /**
    * returns true if it has been enough turns since this planet was explored
-   * Strategic focus: only explore HIGH-VALUE, NEARBY planets to avoid wasting resources
-   * Uses weighted scoring to prioritize the most important planets to scout
+   * Uses percentile-based prioritization: always explore top N closest/most valuable planets
+   * This ensures AI continues exploring even when all options are distant
    */
   public static planetNeedsExploration(
     planet: PlanetData,
@@ -1677,14 +1677,36 @@ export class ComputerPlayer {
       return false;
     }
 
-    // Always explore completely unknown planets that are nearby and valuable
+    // For unknown planets, use top-N prioritization instead of threshold
     if (!player.knownPlanetIds.includes(planet.id)) {
-      // Calculate if this unknown planet is worth exploring based on strategic value
-      const explorationPriority = this.calculateExplorationPriority(planet, player, ownedPlanets, gameModel);
+      // Calculate priority for all unexplored planets
+      const explorationCandidates: { planet: PlanetData; priority: number }[] = [];
 
-      // Only explore high-priority unknown planets (close, likely valuable)
-      // This prevents wasting scouts on distant, low-value planets
-      return explorationPriority > aiSettings.explorationPriorityThreshold;
+      for (const p of gameModel.modelData.planets) {
+        if (p.id in ownedPlanets) continue; // Skip owned planets
+        if (player.knownPlanetIds.includes(p.id)) continue; // Skip known planets
+        if (Player.planetContainsFriendlyInboundFleet(player, p)) continue; // Skip if already exploring
+
+        const priority = this.calculateExplorationPriority(p, player, ownedPlanets, gameModel);
+        explorationCandidates.push({ planet: p, priority });
+      }
+
+      // If no candidates, nothing to explore
+      if (explorationCandidates.length === 0) {
+        return false;
+      }
+
+      // Sort by priority (highest first)
+      explorationCandidates.sort((a, b) => b.priority - a.priority);
+
+      // Determine how many planets to explore based on difficulty
+      // Easy: top 20%, Normal: top 30%, Hard: top 50%, Expert: top 60%
+      const topPercentage = aiSettings.scoutPriorityTopPercentage;
+      const topCount = Math.max(1, Math.ceil(explorationCandidates.length * topPercentage));
+
+      // Return true if this planet is in the top N candidates
+      const topCandidates = explorationCandidates.slice(0, topCount);
+      return topCandidates.some((c) => c.planet.id === planet.id);
     }
 
     // For known planets, use weighted scoring to determine if this is a high-priority scout target
