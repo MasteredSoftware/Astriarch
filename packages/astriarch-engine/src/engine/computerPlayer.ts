@@ -58,8 +58,6 @@ interface AISettings {
   enableReScouting: boolean; // Whether to re-scout known planets
   scoutPriorityTopPercentage: number; // Top % of unknown planets to explore
   reScoutPriorityThreshold: number; // Minimum priority score to re-scout (absolute threshold, not percentile)
-  reScoutingUrgencyThreshold: number; // Turns before re-scouting enemy planets becomes high priority
-  reScoutingUrgencyBonus: number; // Priority bonus for stale enemy planet intelligence
 
   // Fleet management
   enableFleetRepairs: boolean; // Whether to redirect damaged fleets to repair
@@ -100,8 +98,6 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: false, // Easy AI doesn't re-scout
     scoutPriorityTopPercentage: 0.2,
     reScoutPriorityThreshold: 30, // Unused since re-scouting is disabled
-    reScoutingUrgencyThreshold: 10,
-    reScoutingUrgencyBonus: 10,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
@@ -130,8 +126,6 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.3,
     reScoutPriorityThreshold: 45, // Moderate - re-scouts nearby/valuable targets
-    reScoutingUrgencyThreshold: 10,
-    reScoutingUrgencyBonus: 10,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
@@ -160,8 +154,6 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.5,
     reScoutPriorityThreshold: 60, // Selective - nearby enemy planets
-    reScoutingUrgencyThreshold: 15,
-    reScoutingUrgencyBonus: 15,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: false,
@@ -190,8 +182,6 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.6, // Explore top 60% - more selective than before
     reScoutPriorityThreshold: 100, // Very selective - only very close enemy planets get re-scouted
-    reScoutingUrgencyThreshold: 20, // Don't add urgency bonus unless 20+ turns old
-    reScoutingUrgencyBonus: 10,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
@@ -221,8 +211,6 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 1.0,
     reScoutPriorityThreshold: 50, // Unused for human players
-    reScoutingUrgencyThreshold: 5,
-    reScoutingUrgencyBonus: 20,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
@@ -1761,15 +1749,9 @@ export class ComputerPlayer {
     }
     // Distant planets beyond strategic range get 0 proximity points
 
-    // Enemy-owned planets are HIGH priority (0-40 points)
+    // Enemy-owned planets are HIGH priority (+30 points)
     if (isEnemyOwned) {
-      priority += 40;
-
-      // Enemy planets that haven't been scouted in a while are even more important
-      const aiSettings = ComputerPlayer.getAISettings(player);
-      if (turnsSinceLastExplored > aiSettings.reScoutingUrgencyThreshold) {
-        priority += aiSettings.reScoutingUrgencyBonus;
-      }
+      priority += 30;
     }
 
     // Planet type/value (0-15 points)
@@ -1778,12 +1760,34 @@ export class ComputerPlayer {
     else if (planet.type === PlanetType.DeadPlanet) priority += 5;
     else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
 
-    // Staleness - how long since we last scouted (0-20 points)
-    if (turnsSinceLastExplored > 30) priority += 20;
-    else if (turnsSinceLastExplored > 20) priority += 15;
-    else if (turnsSinceLastExplored > 15) priority += 10;
-    else if (turnsSinceLastExplored > 10) priority += 5;
-    // Recently scouted planets get 0 staleness points
+    // Staleness - dynamic threshold based on exploration workload
+    // Count UNKNOWN planets needing exploration (avoids circular dependency with re-scouting logic)
+    let unknownPlanetsNeedingExploration = 0;
+    for (const p of gameModel.modelData.planets) {
+      if (
+        !(p.id in ownedPlanets) &&
+        !player.knownPlanetIds.includes(p.id) &&
+        !Player.planetContainsFriendlyInboundFleet(player, p)
+      ) {
+        unknownPlanetsNeedingExploration++;
+      }
+    }
+
+    // Calculate staleness threshold: more unknown planets = higher threshold (re-scout less)
+    // Enemy planets get lower thresholds (more urgent to track their movements)
+    const baseStalenessThreshold = isEnemyOwned ? 10 : 15;
+    const maxStalenessThreshold = isEnemyOwned ? 25 : 40;
+    const thresholdScaling = isEnemyOwned ? 1 : 2; // Enemies scale slower with workload
+
+    const stalenessThreshold = Math.min(
+      maxStalenessThreshold,
+      baseStalenessThreshold + unknownPlanetsNeedingExploration * thresholdScaling,
+    );
+
+    // Add significant bonus if intel is stale (0 or 25 points)
+    if (turnsSinceLastExplored > stalenessThreshold) {
+      priority += 25;
+    }
 
     return priority;
   }

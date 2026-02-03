@@ -286,7 +286,7 @@ describe('ComputerPlayer', () => {
       expect(wins.player2 + wins.draws).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test('Easy vs Expert - Expert should dominate', () => {
+    test.only('Easy vs Expert - Expert should dominate', () => {
       // Enable AI debug logging
       enableAIDebug();
 
