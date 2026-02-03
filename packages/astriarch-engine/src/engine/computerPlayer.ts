@@ -187,7 +187,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     researchPercentMax: 0.6,
     prioritizeCombatResearch: true,
     prioritizeFarmsEarly: true,
-    enableReScouting: true,
+    enableReScouting: false,
     explorationPriorityThreshold: 35,
     scoutPriorityTopPercentage: 0.15,
     reScoutingUrgencyThreshold: 5,
@@ -1068,6 +1068,11 @@ export class ComputerPlayer {
         if (aiSettings.defenseCalculationStrategy === 'simple') {
           //easy computers can send ships as long as there is somthing to send
           planetCandidatesForSendingShips.push(p);
+          this.logDecision(player, gameModel, 'combat', 'Planet can send ships', {
+            planetName: p.name,
+            mobileShips: Fleet.countMobileStarships(p.planetaryFleet),
+            totalStrength: Fleet.determineFleetStrength(p.planetaryFleet),
+          });
         } else {
           let strengthToDefend = 0;
 
@@ -1127,6 +1132,11 @@ export class ComputerPlayer {
           }
         }
       }
+      this.logDecision(player, gameModel, 'combat', 'Target analysis', {
+        planetsToScout: planetCandidatesForInboundScouts.length,
+        planetsToAttack: planetCandidatesForInboundAttackingFleets.length,
+        totalUnownedPlanets: gameModel.modelData.planets.filter(p => !(p.id in ownedPlanets)).length,
+      });
     }
 
     //computer should send one available ship to unexplored planets (TODO: later build scouts/destroyers as appropriate for this)
@@ -1290,6 +1300,11 @@ export class ComputerPlayer {
 
     //next for each candidate for inbound attacking fleets, sort the candidates for sending ships by closest first
 
+    this.logDecision(player, gameModel, 'combat', 'Starting attack phase', {
+      planetsCanSendShips: planetCandidatesForSendingShips.length,
+      planetsToAttack: planetCandidatesForInboundAttackingFleets.length,
+    });
+
     // Expert AI: Use strategic target value to prioritize attacks
     if (aiSettings.useStrategicTargetPriority) {
       // Calculate strategic value for each target
@@ -1298,11 +1313,30 @@ export class ComputerPlayer {
         value: this.calculatePlanetTargetValue(target, player, ownedPlanets, gameModel),
       }));
 
+      // Log target values for debugging
+      this.logDecision(player, gameModel, 'combat', 'Strategic target evaluation', {
+        totalTargets: targetValues.length,
+        targetDetails: targetValues.map(tv => ({
+          planetName: tv.planet.name,
+          planetType: tv.planet.type,
+          value: tv.value,
+          hasIntelligence: !!player.lastKnownPlanetFleetStrength[tv.planet.id],
+          lastKnownOwner: player.lastKnownPlanetFleetStrength[tv.planet.id]?.lastKnownOwnerId,
+        })),
+      });
+
       // Sort by strategic value (highest first) - modify array in place
       targetValues.sort((a, b) => b.value - a.value);
 
       // Clear and repopulate based on strategic value
       const highValueTargets = targetValues.filter((tv) => tv.value > 0).map((tv) => tv.planet);
+
+      this.logDecision(player, gameModel, 'combat', 'Strategic target filtering', {
+        beforeFiltering: targetValues.length,
+        afterFiltering: highValueTargets.length,
+        filteredOut: targetValues.length - highValueTargets.length,
+        highValueTargetNames: highValueTargets.map(p => p.name),
+      });
 
       planetCandidatesForInboundAttackingFleets.length = 0;
       planetCandidatesForInboundAttackingFleets.push(...highValueTargets);
@@ -1336,6 +1370,14 @@ export class ComputerPlayer {
         ) / 10.0;
 
       let fleetSent = false;
+
+      // Check if target already has friendly inbound fleet before attempting attack
+      if (Player.planetContainsFriendlyInboundFleet(player, pEnemyInbound)) {
+        this.logDecision(player, gameModel, 'combat', 'Skipped target - fleet already en route', {
+          targetPlanet: pEnemyInbound.name,
+        });
+        continue; // Skip to next target planet
+      }
 
       // Expert AI: Try to coordinate multi-planet attacks for high-value targets
       if (aiSettings.enableMultiPlanetAttacks && planetCandidatesForSendingShips.length >= 2) {
@@ -1469,6 +1511,22 @@ export class ComputerPlayer {
               player,
             );
           }
+
+          // Log attack evaluation to debug why Expert doesn't attack
+          const attackThreshold = estimatedEnemyStrength * additionalStrengthMultiplierNeededToAttack;
+          const willAttack = ourEffectiveStrength > attackThreshold;
+          this.logDecision(player, gameModel, 'combat', 'Attack evaluation', {
+            fromPlanet: pFriendly.name,
+            toPlanet: pEnemyInbound.name,
+            ourStrength: ourEffectiveStrength,
+            enemyStrength: estimatedEnemyStrength,
+            requiredMultiplier: additionalStrengthMultiplierNeededToAttack,
+            attackThreshold: attackThreshold,
+            willAttack: willAttack,
+            hasIntelligence: !!lkpfs,
+            enemyHasSpacePlatform: enemyHasSpacePlatform,
+            shipCounts: starshipCounts,
+          });
 
           if (ourEffectiveStrength > estimatedEnemyStrength * additionalStrengthMultiplierNeededToAttack) {
             const newFleet = Fleet.splitFleet(
@@ -1814,12 +1872,13 @@ export class ComputerPlayer {
   ): number {
     let value = 0;
 
+    // Skip if we already own this planet
+    const isPlayerOwned = player.ownedPlanetIds.includes(targetPlanet.id);
+    if (isPlayerOwned) return 0;
+
     // Check if we have intelligence on this planet
     const lastKnownInfo = player.lastKnownPlanetFleetStrength[targetPlanet.id];
     if (!lastKnownInfo) return 0;
-
-    const isEnemyOwned = lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
-    if (!isEnemyOwned) return 0;
 
     // Resource value (planet type is a proxy for resources)
     if (targetPlanet.type === PlanetType.PlanetClass2) value += 30;

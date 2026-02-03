@@ -1,71 +1,71 @@
 {
-  "totalDecisions": 4424,
+  "totalDecisions": 21454,
   "gameLength": 499,
   "byCategory": {
     "research": 1005,
-    "building": 2242,
+    "building": 2551,
     "population": 1000,
-    "exploration": 158,
-    "combat": 19
+    "combat": 16893,
+    "exploration": 5
   },
   "byPlayer": {
-    "Matt": 2279,
-    "Computer1": 2145
+    "Matt": 16824,
+    "Computer1": 4630
   },
   "research": {
     "avgResearchPercent": {
-      "Matt": "20.2",
-      "Computer1": "47.3"
+      "Matt": "20.0",
+      "Computer1": "49.0"
     },
     "byPlayer": {
       "Matt": {
         "total": 500,
-        "energyAdjusted": 2
+        "energyAdjusted": 1
       },
       "Computer1": {
         "total": 500,
-        "energyAdjusted": 166
+        "energyAdjusted": 138
       }
     }
   },
   "building": {
-    "improvementGoals": 91,
-    "shipGoals": 1035,
-    "itemsBuilt": 1116,
+    "improvementGoals": 62,
+    "shipGoals": 1217,
+    "itemsBuilt": 1272,
     "byPlayer": {
       "Matt": {
-        "improvementGoals": 40,
-        "shipGoals": 590,
-        "itemsBuilt": 625
+        "improvementGoals": 30,
+        "shipGoals": 434,
+        "itemsBuilt": 461
       },
       "Computer1": {
-        "improvementGoals": 51,
-        "shipGoals": 445,
-        "itemsBuilt": 491
+        "improvementGoals": 32,
+        "shipGoals": 783,
+        "itemsBuilt": 811
       }
     }
   },
   "combat": {
-    "totalAttacks": 17,
-    "coordinatedAttacks": 2,
-    "undefendedAttacks": 1,
-    "avgStrengthAdvantage": "4.42",
+    "totalAttacks": 15,
+    "coordinatedAttacks": 7,
+    "undefendedAttacks": 2,
+    "avgStrengthAdvantage": "3.55",
     "byPlayer": {
       "Matt": {
-        "attacks": 17,
+        "attacks": 11,
         "coordinated": 0
       },
       "Computer1": {
-        "attacks": 0,
-        "coordinated": 2
+        "attacks": 4,
+        "coordinated": 7
       }
     }
   },
   "exploration": {
-    "scoutsSent": 158,
+    "scoutsSent": 5,
     "byPlayer": {
-      "Matt": 6,
-      "Computer1": 152
+      "Matt": 4,
+      "Computer1": 1
     }
   }
 }

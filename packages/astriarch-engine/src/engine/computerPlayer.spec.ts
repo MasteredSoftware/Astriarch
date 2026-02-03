@@ -286,7 +286,7 @@ describe('ComputerPlayer', () => {
       expect(wins.player2 + wins.draws).toBeGreaterThanOrEqual(wins.player1);
     });
 
-    test.only('Easy vs Expert - Expert should dominate', () => {
+    test('Easy vs Expert - Expert should dominate', () => {
       // Enable AI debug logging
       enableAIDebug();
 
@@ -809,6 +809,85 @@ describe('ComputerPlayer', () => {
       // Weak defense (strength < 10) gives +25 vs strong defense (strength >= 50) gives 0
       // This ensures at least 20+ point difference from defense alone
       expect(highValue).toBeGreaterThan(lowValue);
+    });
+
+    it('should return 0 value for planets with no intelligence data', () => {
+      const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
+      expertPlayer.ownedPlanetIds = [player1.ownedPlanetIds[0]];
+
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(
+        expertPlayer.ownedPlanetIds,
+        testGameData.gameModel.modelData.planets,
+      );
+
+      const targetPlanet = testGameData.gameModel.modelData.planets[1];
+      
+      // Planet is known but no intelligence data exists
+      expertPlayer.knownPlanetIds.push(targetPlanet.id);
+      // Deliberately NOT adding to lastKnownPlanetFleetStrength
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+
+      // This is the current behavior that causes the bug:
+      // No intelligence = 0 value = filtered out of attack targets
+      expect(value).toBe(0);
+    });
+
+    it('should return positive value for unowned planets with intelligence', () => {
+      const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
+      expertPlayer.ownedPlanetIds = [player1.ownedPlanetIds[0]];
+
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(
+        expertPlayer.ownedPlanetIds,
+        testGameData.gameModel.modelData.planets,
+      );
+
+      const targetPlanet = testGameData.gameModel.modelData.planets[1];
+      
+      // Planet that isn't owned by the player and has some intelligence
+      expertPlayer.knownPlanetIds.push(targetPlanet.id);
+      expertPlayer.lastKnownPlanetFleetStrength[targetPlanet.id] = {
+        cycleLastExplored: 10,
+        fleetData: Fleet.generateFleetWithShipCount(0, 0, 0, 0, 0, 0, targetPlanet.boundingHexMidPoint),
+        lastKnownOwnerId: undefined, // Unowned or unknown owner
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+
+      // Should have positive value since we don't own it and we have intelligence
+      // Planet type + proximity + strategic location should all add value
+      expect(value).toBeGreaterThan(0);
+    });
+
+    it('should return positive value for planets with recent intelligence showing enemy ownership', () => {
+      const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
+      expertPlayer.ownedPlanetIds = [player1.ownedPlanetIds[0]];
+
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(
+        expertPlayer.ownedPlanetIds,
+        testGameData.gameModel.modelData.planets,
+      );
+
+      const targetPlanet = testGameData.gameModel.modelData.planets[1];
+      
+      // Expert re-scouted recently and knows it's enemy-owned
+      expertPlayer.knownPlanetIds.push(targetPlanet.id);
+      expertPlayer.lastKnownPlanetFleetStrength[targetPlanet.id] = {
+        cycleLastExplored: 95, // Recent
+        fleetData: Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, targetPlanet.boundingHexMidPoint),
+        lastKnownOwnerId: player2.id, // Enemy owned
+      };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+
+      // With good intelligence, value should be positive
+      expect(value).toBeGreaterThan(0);
     });
   });
 });
