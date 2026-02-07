@@ -58,6 +58,7 @@ interface AISettings {
   enableReScouting: boolean; // Whether to re-scout known planets
   scoutPriorityTopPercentage: number; // Top % of unknown planets to explore
   reScoutPriorityThreshold: number; // Minimum priority score to re-scout (absolute threshold, not percentile)
+  quadrantIntelligence: boolean; // Prioritize nearby system expansion when under 4 owned planets
 
   // Fleet management
   enableFleetRepairs: boolean; // Whether to redirect damaged fleets to repair
@@ -98,6 +99,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: false, // Easy AI doesn't re-scout
     scoutPriorityTopPercentage: 0.2,
     reScoutPriorityThreshold: 30, // Unused since re-scouting is disabled
+    quadrantIntelligence: false,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
@@ -126,6 +128,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.3,
     reScoutPriorityThreshold: 45, // Moderate - re-scouts nearby/valuable targets
+    quadrantIntelligence: true,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
@@ -154,6 +157,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.5,
     reScoutPriorityThreshold: 95, // Selective - nearby enemy planets
+    quadrantIntelligence: true,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: false,
@@ -182,6 +186,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.6, // Explore top 60% - more selective than before
     reScoutPriorityThreshold: 100, // Very selective - only very close enemy planets get re-scouted
+    quadrantIntelligence: true,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
@@ -211,6 +216,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 1.0,
     reScoutPriorityThreshold: 50, // Unused for human players
+    quadrantIntelligence: false,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
@@ -1796,9 +1802,35 @@ export class ComputerPlayer {
    * Calculate exploration priority for a planet based on strategic value
    * Higher score = more important to explore/scout
    */
+  /**
+   * Calculate bonus priority for a planet when quadrant intelligence is active.
+   * When the AI owns fewer than 4 planets (including home), nearby system planets
+   * with mineral/resource value get a large priority boost to drive early expansion.
+   * Returns 0 when the feature is inactive or the planet type doesn't qualify.
+   */
+  private static getQuadrantIntelligenceBonus(planet: PlanetData, player: PlayerData, ownedPlanets: PlanetById): number {
+    const aiSettings = this.getAISettings(player);
+    const ownedPlanetCount = Object.keys(ownedPlanets).length;
+    const hasHomePlanet = Boolean(player.homePlanetId && player.homePlanetId in ownedPlanets);
+
+    if (!aiSettings.quadrantIntelligence || !hasHomePlanet || ownedPlanetCount <= 0 || ownedPlanetCount >= 4) {
+      return 0;
+    }
+
+    // Mineral-rich / resource planets get large bonuses to ensure early system capture:
+    //   AsteroidBelt: highest ore+iridium per worker, no defenders → immediate scout target
+    //   DeadPlanet: good ore+iridium, moderate defenders → 2-3 scouts needed
+    //   PlanetClass1: balanced resources, more defenders → 3+ scouts needed
+    //   PlanetClass2: food-rich but low minerals → no bonus (AI already starts on one)
+    if (planet.type === PlanetType.AsteroidBelt) return 40;
+    if (planet.type === PlanetType.DeadPlanet) return 30;
+    if (planet.type === PlanetType.PlanetClass1) return 20;
+    return 0;
+  }
+
   private static calculateExplorationPriority(
     planet: PlanetData,
-    _player: PlayerData,
+    player: PlayerData,
     ownedPlanets: PlanetById,
     gameModel: GameModelData,
   ): number {
@@ -1834,6 +1866,9 @@ export class ComputerPlayer {
     else if (planet.type === PlanetType.PlanetClass1) priority += 10;
     else if (planet.type === PlanetType.DeadPlanet) priority += 5;
     else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
+
+    // Quadrant intelligence: prioritize early system expansion when under 4 planets
+    priority += this.getQuadrantIntelligenceBonus(planet, player, ownedPlanets);
 
     return priority;
   }
@@ -1920,6 +1955,9 @@ export class ComputerPlayer {
     );
     if (distanceFromCenter < 100) value += 10;
     else if (distanceFromCenter < 200) value += 5;
+
+    // Quadrant intelligence: boost nearby mineral/resource planets during early expansion
+    value += this.getQuadrantIntelligenceBonus(targetPlanet, player, ownedPlanets);
 
     return value;
   }
