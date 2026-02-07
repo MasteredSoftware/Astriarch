@@ -1,21 +1,21 @@
 {
-  "totalDecisions": 3099,
+  "totalDecisions": 2846,
   "gameLength": 149,
   "byCategory": {
     "research": 303,
-    "building": 753,
+    "building": 744,
     "population": 300,
-    "combat": 1630,
-    "exploration": 113
+    "combat": 1409,
+    "exploration": 90
   },
   "byPlayer": {
-    "Matt": 1787,
-    "Computer1": 1312
+    "Matt": 1557,
+    "Computer1": 1289
   },
   "research": {
     "avgResearchPercent": {
-      "Matt": "20.9",
-      "Computer1": "39.9"
+      "Matt": "19.9",
+      "Computer1": "40.2"
     },
     "byPlayer": {
       "Matt": {
@@ -24,35 +24,35 @@
       },
       "Computer1": {
         "total": 150,
-        "energyAdjusted": 4
+        "energyAdjusted": 0
       }
     }
   },
   "building": {
-    "improvementGoals": 128,
-    "shipGoals": 268,
-    "itemsBuilt": 357,
+    "improvementGoals": 114,
+    "shipGoals": 270,
+    "itemsBuilt": 360,
     "byPlayer": {
       "Matt": {
-        "improvementGoals": 51,
-        "shipGoals": 23,
-        "itemsBuilt": 56
+        "improvementGoals": 45,
+        "shipGoals": 20,
+        "itemsBuilt": 49
       },
       "Computer1": {
-        "improvementGoals": 77,
-        "shipGoals": 245,
-        "itemsBuilt": 301
+        "improvementGoals": 69,
+        "shipGoals": 250,
+        "itemsBuilt": 311
       }
     }
   },
   "combat": {
-    "totalAttacks": 8,
+    "totalAttacks": 10,
     "coordinatedAttacks": 0,
     "undefendedAttacks": 0,
-    "avgStrengthAdvantage": "4.63",
+    "avgStrengthAdvantage": "7.70",
     "byPlayer": {
       "Matt": {
-        "attacks": 8,
+        "attacks": 10,
         "coordinated": 0
       },
       "Computer1": {
@@ -62,9 +62,9 @@
     }
   },
   "exploration": {
-    "scoutsSent": 113,
+    "scoutsSent": 90,
     "byPlayer": {
-      "Computer1": 104,
+      "Computer1": 81,
       "Matt": 9
     }
   }

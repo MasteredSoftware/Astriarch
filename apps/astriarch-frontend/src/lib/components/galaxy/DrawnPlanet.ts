@@ -45,7 +45,8 @@ export class DrawnPlanet {
 	private planetImage: Konva.Image | null = null;
 	private planetRing: Konva.Circle | null = null; // Persistent ring for all planets
 	private nameText!: Konva.Text;
-	private strengthText!: Konva.Text;
+	private strengthTextMobile!: Konva.Text;
+	private strengthTextDefense!: Konva.Text;
 	private fleetStrengthIndicator: Konva.Group | null = null; // Mobile ship strength indicator (left side)
 	private spacePlatformIndicators: Konva.Group | null = null; // Space platform icons (right side)
 	private defenderStrengthIndicator: Konva.Group | null = null; // Defender strength indicator (far right)
@@ -108,21 +109,37 @@ export class DrawnPlanet {
 		});
 		this.group.add(this.nameText);
 
-		// Fleet strength text - positioned above planet
-		this.strengthText = new Konva.Text({
-			x: -20,
-			y: -20,
-			width: 40,
+		// Mobile fleet strength text - positioned top-left of planet
+		this.strengthTextMobile = new Konva.Text({
+			x: -28,
+			y: -24,
+			width: 24,
 			text: this.textBlockStrengthText,
 			fontSize: 7,
 			fontFamily: 'Orbitron, monospace',
 			fontStyle: 'bold',
 			fill: this.textBlockStrengthForeground,
-			align: 'center',
+			align: 'left',
 			perfectDrawEnabled: false,
 			listening: false // Disable events
 		});
-		this.group.add(this.strengthText);
+		this.group.add(this.strengthTextMobile);
+
+		// Defender strength text - positioned top-right of planet
+		this.strengthTextDefense = new Konva.Text({
+			x: 4,
+			y: -24,
+			width: 24,
+			text: this.textBlockStrengthText,
+			fontSize: 7,
+			fontFamily: 'Orbitron, monospace',
+			fontStyle: 'bold',
+			fill: this.textBlockStrengthForeground,
+			align: 'right',
+			perfectDrawEnabled: false,
+			listening: false // Disable events
+		});
+		this.group.add(this.strengthTextDefense);
 	}
 
 	update(gameModel: ClientModelData): void {
@@ -499,25 +516,22 @@ export class DrawnPlanet {
 		let mobileStrength = 0;
 
 		// For owned planets with planetary fleet data
-		if (
-			this.owner &&
-			this.owner.id === this.gameModel.mainPlayer.id &&
-			this.planetData.planetaryFleet?.starships?.length
-		) {
+		if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
 			// Calculate mobile fleet strength (only mobile ships)
-			mobileStrength = this.planetData.planetaryFleet.starships
+			mobileStrength =
+				this.planetData.planetaryFleet?.starships
+					?.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
+					.reduce((total: number, ship: StarshipData) => total + ship.health, 0) ?? 0;
+			return mobileStrength;
+		}
+
+		// For non-owned or other players' planets, check last known fleet data
+		const lastKnownData =
+			this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
+		if (lastKnownData?.fleetData?.starships?.length) {
+			mobileStrength = lastKnownData.fleetData.starships
 				.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
 				.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
-		}
-		// For non-owned or other players' planets, check last known fleet data
-		else {
-			const lastKnownData =
-				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
-			if (lastKnownData?.fleetData?.starships?.length) {
-				mobileStrength = lastKnownData.fleetData.starships
-					.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
-					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
-			}
 		}
 
 		return mobileStrength;
@@ -609,8 +623,12 @@ export class DrawnPlanet {
 			this.createDefenderStrengthIndicator(defenderStrength);
 		}
 
-		// Clear the old text-based strength display
-		this.strengthText.text('');
+		// Update text-based strength displays
+		const mobileText = mobileStrength > 0 ? Math.round(mobileStrength).toString() : '';
+		this.strengthTextMobile.text(mobileText);
+
+		const defenderText = defenderStrength > 0 ? Math.round(defenderStrength).toString() : '';
+		this.strengthTextDefense.text(defenderText);
 		this.textBlockStrengthText = '';
 	}
 
