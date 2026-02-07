@@ -65,6 +65,7 @@ interface AISettings {
   useEffectiveStrengthCalculation: boolean; // Use combat advantage calculations
   enableMultiPlanetAttacks: boolean; // Coordinate attacks from multiple planets
   useStrategicTargetPriority: boolean; // Use strategic value for target selection
+  strategicDefense: boolean; // Retain defenders on planets without space platforms and prioritize building them
 
   // Fleet composition
   defenderBuildChance: number; // Chance to build system defenders (0-1)
@@ -104,6 +105,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
     useStrategicTargetPriority: false,
+    strategicDefense: false,
     defenderBuildChance: 0.5,
     destroyerBuildChance: 0.5,
     useBalancedFleetComposition: false,
@@ -133,6 +135,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
     useStrategicTargetPriority: false,
+    strategicDefense: false,
     defenderBuildChance: 0.25,
     destroyerBuildChance: 0.25,
     useBalancedFleetComposition: false,
@@ -162,6 +165,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: false,
     useStrategicTargetPriority: true,
+    strategicDefense: true,
     defenderBuildChance: 0.15,
     destroyerBuildChance: 0,
     useBalancedFleetComposition: true,
@@ -191,6 +195,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
     useStrategicTargetPriority: true,
+    strategicDefense: true,
     defenderBuildChance: 0.05,
     destroyerBuildChance: 0.8,
     useBalancedFleetComposition: true,
@@ -221,6 +226,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
     useStrategicTargetPriority: true,
+    strategicDefense: false,
     defenderBuildChance: 0,
     destroyerBuildChance: 0,
     useBalancedFleetComposition: true,
@@ -831,6 +837,19 @@ export class ComputerPlayer {
       }
       // Fleet composition strategy based on difficulty and game state
       const aiSettings = this.getAISettings(player);
+
+      // Strategic defense: if planet has no space platform and no defenders, build a defender first
+      const starshipCounts = Fleet.countStarshipsByType(p.planetaryFleet);
+      if (aiSettings.strategicDefense && Planet.getSpacePlatformCount(p, false) === 0 && starshipCounts.defenders === 0) {
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
+        this.logDecision(player, gameModel, 'building', 'Strategic defense: build defender for undefended planet', {
+          planetName: p.name,
+          planetType: p.type,
+          hasSpacePlatform: false,
+        });
+        continue;
+      }
+
       const buildDefenders = Utils.nextRandom(0, 100) / 100 < aiSettings.defenderBuildChance;
       const buildDestroyers = !buildDefenders && Utils.nextRandom(0, 100) / 100 < aiSettings.destroyerBuildChance;
 
@@ -1077,6 +1096,13 @@ export class ComputerPlayer {
           } else if (p.builtImprovements[PlanetImprovementType.Factory] > 0) {
             //if we can build ships it is probably later in the game and we should start defending this planet
             strengthToDefend = Math.floor(Math.pow(p.type, 2) * 4); //defense based on planet type
+          }
+
+          // Strategic defense: retain a garrison on planets without space platforms
+          if (aiSettings.strategicDefense && Planet.getSpacePlatformCount(p, false) === 0) {
+            // Minimum defense based on planet type value (higher-value planets get more)
+            const minDefense = Math.floor(Math.pow(p.type, 2) * 2);
+            strengthToDefend = Math.max(strengthToDefend, minDefense);
           }
 
           if (aiSettings.defenseCalculationStrategy === 'advanced') {
