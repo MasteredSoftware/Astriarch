@@ -38,7 +38,6 @@ export class DrawnPlanet {
 	private owner: PlayerData | ClientPlayer | null = null;
 	private textBlockForeground = 'yellow';
 	private textBlockStrengthForeground = 'yellow';
-	private textBlockStrengthText = '';
 	private productionItemStatusColor: string | null = null;
 
 	// Visual elements
@@ -114,7 +113,7 @@ export class DrawnPlanet {
 			x: -28,
 			y: -24,
 			width: 24,
-			text: this.textBlockStrengthText,
+			text: '', // Will be set in updateFleetStrengthIndicator()
 			fontSize: 7,
 			fontFamily: 'Orbitron, monospace',
 			fontStyle: 'bold',
@@ -130,7 +129,7 @@ export class DrawnPlanet {
 			x: 4,
 			y: -24,
 			width: 24,
-			text: this.textBlockStrengthText,
+			text: '', // Will be set in updateFleetStrengthIndicator()
 			fontSize: 7,
 			fontFamily: 'Orbitron, monospace',
 			fontStyle: 'bold',
@@ -519,8 +518,8 @@ export class DrawnPlanet {
 		if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
 			// Calculate mobile fleet strength (only mobile ships)
 			mobileStrength =
-				this.planetData.planetaryFleet?.starships
-					?.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
+				this.planetData.planetaryFleet.starships
+					.filter((ship) => Fleet.starshipTypeIsMobile(ship.type))
 					.reduce((total: number, ship: StarshipData) => total + ship.health, 0) ?? 0;
 			return mobileStrength;
 		}
@@ -541,25 +540,19 @@ export class DrawnPlanet {
 		let defenderStrength = 0;
 
 		// For owned planets with planetary fleet data
-		if (
-			this.owner &&
-			this.owner.id === this.gameModel.mainPlayer.id &&
-			this.planetData.planetaryFleet?.starships?.length
-		) {
+		if (this.owner && this.owner.id === this.gameModel.mainPlayer.id) {
 			// Calculate defender strength (SystemDefense ships only)
 			defenderStrength = this.planetData.planetaryFleet.starships
 				.filter((ship) => ship.type === StarShipType.SystemDefense)
 				.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
 		}
 		// For non-owned or other players' planets, check last known fleet data
-		else {
-			const lastKnownData =
-				this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
-			if (lastKnownData?.fleetData?.starships?.length) {
-				defenderStrength = lastKnownData.fleetData.starships
-					.filter((ship) => ship.type === StarShipType.SystemDefense)
-					.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
-			}
+		const lastKnownData =
+			this.gameModel.mainPlayer.lastKnownPlanetFleetStrength[this.planetData.id];
+		if (lastKnownData?.fleetData?.starships?.length) {
+			defenderStrength = lastKnownData.fleetData.starships
+				.filter((ship) => ship.type === StarShipType.SystemDefense)
+				.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
 		}
 
 		return defenderStrength;
@@ -629,7 +622,6 @@ export class DrawnPlanet {
 
 		const defenseText = defenderStrength > 0 ? Math.round(defenderStrength).toString() : '';
 		this.strengthTextDefense.text(defenseText);
-		this.textBlockStrengthText = '';
 	}
 
 	private createSpacePlatformIndicators(platformCount: number): void {
