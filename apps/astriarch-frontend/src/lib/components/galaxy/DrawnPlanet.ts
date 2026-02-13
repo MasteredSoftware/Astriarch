@@ -627,8 +627,8 @@ export class DrawnPlanet {
 		const mobileText = mobileStrength > 0 ? Math.round(mobileStrength).toString() : '';
 		this.strengthTextMobile.text(mobileText);
 
-		const defenderText = defenderStrength > 0 ? Math.round(defenderStrength).toString() : '';
-		this.strengthTextDefense.text(defenderText);
+		const defenseText = defenderStrength > 0 ? Math.round(defenderStrength).toString() : '';
+		this.strengthTextDefense.text(defenseText);
 		this.textBlockStrengthText = '';
 	}
 

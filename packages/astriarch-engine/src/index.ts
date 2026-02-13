@@ -41,6 +41,7 @@ import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } fr
 import { Grid } from './engine/grid';
 import { PlanetaryConflictData, ResearchBoost, CombatResultDiff } from './model/battle';
 import { GameTools } from './utils/gameTools';
+import { Utils } from './utils/utils';
 
 // Export messaging types
 export * from './messaging/MessageTypes';
@@ -65,6 +66,7 @@ export { Grid };
 export { Research };
 export { TradingCenter };
 export { GameTools };
+export { Utils };
 
 // Export model types and enums
 export { PlayerType };

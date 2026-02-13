@@ -840,7 +840,11 @@ export class ComputerPlayer {
 
       // Strategic defense: if planet has no space platform and no defenders, build a defender first
       const starshipCounts = Fleet.countStarshipsByType(p.planetaryFleet);
-      if (aiSettings.strategicDefense && Planet.getSpacePlatformCount(p, false) === 0 && starshipCounts.defenders === 0) {
+      if (
+        aiSettings.strategicDefense &&
+        Planet.getSpacePlatformCount(p, false) === 0 &&
+        starshipCounts.defenders === 0
+      ) {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
         this.logDecision(player, gameModel, 'building', 'Strategic defense: build defender for undefended planet', {
           planetName: p.name,
@@ -1834,7 +1838,11 @@ export class ComputerPlayer {
    * with mineral/resource value get a large priority boost to drive early expansion.
    * Returns 0 when the feature is inactive or the planet type doesn't qualify.
    */
-  private static getQuadrantIntelligenceBonus(planet: PlanetData, player: PlayerData, ownedPlanets: PlanetById): number {
+  private static getQuadrantIntelligenceBonus(
+    planet: PlanetData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+  ): number {
     const aiSettings = this.getAISettings(player);
     const ownedPlanetCount = Object.keys(ownedPlanets).length;
     const hasHomePlanet = Boolean(player.homePlanetId && player.homePlanetId in ownedPlanets);
