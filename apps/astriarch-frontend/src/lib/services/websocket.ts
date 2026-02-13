@@ -1823,7 +1823,7 @@ class WebSocketService {
 				throw new Error('No game model or grid available');
 			}
 
-			// Generate UUID for command tracking
+			// Generate unique ID for command tracking
 			command.commandId = Utils.generateUniqueId();
 
 			// Add client's current cycle for drift compensation

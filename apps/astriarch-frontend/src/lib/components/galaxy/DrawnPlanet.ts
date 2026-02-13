@@ -545,6 +545,7 @@ export class DrawnPlanet {
 			defenderStrength = this.planetData.planetaryFleet.starships
 				.filter((ship) => ship.type === StarShipType.SystemDefense)
 				.reduce((total: number, ship: StarshipData) => total + ship.health, 0);
+			return defenderStrength;
 		}
 		// For non-owned or other players' planets, check last known fleet data
 		const lastKnownData =

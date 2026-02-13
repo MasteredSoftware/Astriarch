@@ -1829,10 +1829,6 @@ export class ComputerPlayer {
   }
 
   /**
-   * Calculate exploration priority for a planet based on strategic value
-   * Higher score = more important to explore/scout
-   */
-  /**
    * Calculate bonus priority for a planet when quadrant intelligence is active.
    * When the AI owns fewer than 4 planets (including home), nearby system planets
    * with mineral/resource value get a large priority boost to drive early expansion.
@@ -1862,6 +1858,10 @@ export class ComputerPlayer {
     return 0;
   }
 
+  /**
+   * Calculate exploration priority for a planet based on strategic value
+   * Higher score = more important to explore/scout
+   */
   private static calculateExplorationPriority(
     planet: PlanetData,
     player: PlayerData,
