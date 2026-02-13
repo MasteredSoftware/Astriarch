@@ -23,7 +23,8 @@ import {
 	type PlanetaryConflictData,
 	TradeType,
 	Player,
-	CommandProcessor
+	CommandProcessor,
+	Utils
 } from 'astriarch-engine';
 import {
 	calculateClientModelChecksum,
@@ -1822,8 +1823,8 @@ class WebSocketService {
 				throw new Error('No game model or grid available');
 			}
 
-			// Generate UUID for command tracking
-			command.commandId = crypto.randomUUID();
+			// Generate unique ID for command tracking
+			command.commandId = Utils.generateUniqueId();
 
 			// Add client's current cycle for drift compensation
 			command.clientCycle = cgm.currentCycle;
@@ -2185,7 +2186,7 @@ class WebSocketService {
 			const action = tradeType === 1 ? 'buy' : 'sell';
 
 			// Generate trade ID on client to maintain consistency
-			const tradeId = crypto.randomUUID();
+			const tradeId = Utils.generateUniqueId();
 
 			const command: GameCommand = {
 				type: GameCommandType.SUBMIT_TRADE,

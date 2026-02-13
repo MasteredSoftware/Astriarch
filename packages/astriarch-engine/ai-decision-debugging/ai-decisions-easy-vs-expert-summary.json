@@ -1,70 +1,70 @@
 {
-  "totalDecisions": 1949,
-  "gameLength": 71,
+  "totalDecisions": 1389,
+  "gameLength": 79,
   "byCategory": {
-    "research": 145,
-    "building": 374,
-    "population": 144,
-    "combat": 1264,
-    "exploration": 22
+    "research": 161,
+    "building": 342,
+    "population": 160,
+    "combat": 705,
+    "exploration": 21
   },
   "byPlayer": {
-    "Matt": 1193,
-    "Computer1": 756
+    "Matt": 509,
+    "Computer1": 880
   },
   "research": {
     "avgResearchPercent": {
-      "Matt": "20.2",
-      "Computer1": "51.5"
+      "Matt": "20.8",
+      "Computer1": "49.8"
     },
     "byPlayer": {
       "Matt": {
-        "total": 72,
+        "total": 80,
         "energyAdjusted": 0
       },
       "Computer1": {
-        "total": 72,
-        "energyAdjusted": 10
+        "total": 80,
+        "energyAdjusted": 15
       }
     }
   },
   "building": {
-    "improvementGoals": 115,
-    "shipGoals": 90,
-    "itemsBuilt": 169,
+    "improvementGoals": 103,
+    "shipGoals": 79,
+    "itemsBuilt": 160,
     "byPlayer": {
       "Matt": {
-        "improvementGoals": 55,
-        "shipGoals": 20,
-        "itemsBuilt": 54
+        "improvementGoals": 32,
+        "shipGoals": 12,
+        "itemsBuilt": 34
       },
       "Computer1": {
-        "improvementGoals": 60,
-        "shipGoals": 70,
-        "itemsBuilt": 115
+        "improvementGoals": 71,
+        "shipGoals": 67,
+        "itemsBuilt": 126
       }
     }
   },
   "combat": {
-    "totalAttacks": 8,
-    "coordinatedAttacks": 9,
+    "totalAttacks": 5,
+    "coordinatedAttacks": 14,
     "undefendedAttacks": 0,
-    "avgStrengthAdvantage": "3.67",
+    "avgStrengthAdvantage": "5.30",
     "byPlayer": {
       "Matt": {
-        "attacks": 4,
+        "attacks": 2,
         "coordinated": 0
       },
       "Computer1": {
-        "attacks": 4,
-        "coordinated": 9
+        "attacks": 3,
+        "coordinated": 14
       }
     }
   },
   "exploration": {
-    "scoutsSent": 22,
+    "scoutsSent": 21,
     "byPlayer": {
-      "Computer1": 13,
+      "Computer1": 12,
       "Matt": 9
     }
   }

@@ -58,12 +58,14 @@ interface AISettings {
   enableReScouting: boolean; // Whether to re-scout known planets
   scoutPriorityTopPercentage: number; // Top % of unknown planets to explore
   reScoutPriorityThreshold: number; // Minimum priority score to re-scout (absolute threshold, not percentile)
+  quadrantIntelligence: boolean; // Prioritize nearby system expansion when under 4 owned planets
 
   // Fleet management
   enableFleetRepairs: boolean; // Whether to redirect damaged fleets to repair
   useEffectiveStrengthCalculation: boolean; // Use combat advantage calculations
   enableMultiPlanetAttacks: boolean; // Coordinate attacks from multiple planets
   useStrategicTargetPriority: boolean; // Use strategic value for target selection
+  strategicDefense: boolean; // Retain defenders on planets without space platforms and prioritize building them
 
   // Fleet composition
   defenderBuildChance: number; // Chance to build system defenders (0-1)
@@ -89,7 +91,7 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     energySurplusAdder: 0,
     mineralOverestimationLow: 2.0,
     mineralOverestimationHigh: 4.0,
-    additionalStrengthMultiplierNeededToAttackLow: 3.0,
+    additionalStrengthMultiplierNeededToAttackLow: 4.5,
     additionalStrengthMultiplierNeededToAttackHigh: 6.0,
     researchPercentMin: 0.1,
     researchPercentMax: 0.3,
@@ -98,10 +100,12 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: false, // Easy AI doesn't re-scout
     scoutPriorityTopPercentage: 0.2,
     reScoutPriorityThreshold: 30, // Unused since re-scouting is disabled
+    quadrantIntelligence: false,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
     useStrategicTargetPriority: false,
+    strategicDefense: false,
     defenderBuildChance: 0.5,
     destroyerBuildChance: 0.5,
     useBalancedFleetComposition: false,
@@ -117,8 +121,8 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     energySurplusAdder: 0,
     mineralOverestimationLow: 1.5,
     mineralOverestimationHigh: 2.5,
-    additionalStrengthMultiplierNeededToAttackLow: 2.0,
-    additionalStrengthMultiplierNeededToAttackHigh: 4.0,
+    additionalStrengthMultiplierNeededToAttackLow: 3.5,
+    additionalStrengthMultiplierNeededToAttackHigh: 4.5,
     researchPercentMin: 0.3,
     researchPercentMax: 0.5,
     prioritizeCombatResearch: false,
@@ -126,10 +130,12 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.3,
     reScoutPriorityThreshold: 45, // Moderate - re-scouts nearby/valuable targets
+    quadrantIntelligence: true,
     enableFleetRepairs: false,
     useEffectiveStrengthCalculation: false,
     enableMultiPlanetAttacks: false,
     useStrategicTargetPriority: false,
+    strategicDefense: false,
     defenderBuildChance: 0.25,
     destroyerBuildChance: 0.25,
     useBalancedFleetComposition: false,
@@ -145,8 +151,8 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     energySurplusAdder: 0.5, // base + (planets - 1) * 0.5
     mineralOverestimationLow: 1.1,
     mineralOverestimationHigh: 1.5,
-    additionalStrengthMultiplierNeededToAttackLow: 1.0,
-    additionalStrengthMultiplierNeededToAttackHigh: 2.0,
+    additionalStrengthMultiplierNeededToAttackLow: 2.5,
+    additionalStrengthMultiplierNeededToAttackHigh: 3.5,
     researchPercentMin: 0.4,
     researchPercentMax: 0.55,
     prioritizeCombatResearch: true,
@@ -154,10 +160,12 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.5,
     reScoutPriorityThreshold: 95, // Selective - nearby enemy planets
+    quadrantIntelligence: true,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: false,
     useStrategicTargetPriority: true,
+    strategicDefense: true,
     defenderBuildChance: 0.15,
     destroyerBuildChance: 0,
     useBalancedFleetComposition: true,
@@ -173,8 +181,8 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     energySurplusAdder: 0.25, // base + (planets - 1) * 0.25
     mineralOverestimationLow: 1.0,
     mineralOverestimationHigh: 1.3,
-    additionalStrengthMultiplierNeededToAttackLow: 0.3,
-    additionalStrengthMultiplierNeededToAttackHigh: 0.7,
+    additionalStrengthMultiplierNeededToAttackLow: 1.5,
+    additionalStrengthMultiplierNeededToAttackHigh: 2.5,
     researchPercentMin: 0.45,
     researchPercentMax: 0.6,
     prioritizeCombatResearch: true,
@@ -182,10 +190,12 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 0.6, // Explore top 60% - more selective than before
     reScoutPriorityThreshold: 100, // Very selective - only very close enemy planets get re-scouted
+    quadrantIntelligence: true,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
     useStrategicTargetPriority: true,
+    strategicDefense: true,
     defenderBuildChance: 0.05,
     destroyerBuildChance: 0.8,
     useBalancedFleetComposition: true,
@@ -211,10 +221,12 @@ const aiSettingsByDifficultyLevel: Record<PlayerType, AISettings> = {
     enableReScouting: true,
     scoutPriorityTopPercentage: 1.0,
     reScoutPriorityThreshold: 50, // Unused for human players
+    quadrantIntelligence: false,
     enableFleetRepairs: true,
     useEffectiveStrengthCalculation: true,
     enableMultiPlanetAttacks: true,
     useStrategicTargetPriority: true,
+    strategicDefense: false,
     defenderBuildChance: 0,
     destroyerBuildChance: 0,
     useBalancedFleetComposition: true,
@@ -825,6 +837,23 @@ export class ComputerPlayer {
       }
       // Fleet composition strategy based on difficulty and game state
       const aiSettings = this.getAISettings(player);
+
+      // Strategic defense: if planet has no space platform and no defenders, build a defender first
+      const starshipCounts = Fleet.countStarshipsByType(p.planetaryFleet);
+      if (
+        aiSettings.strategicDefense &&
+        Planet.getSpacePlatformCount(p, false) === 0 &&
+        starshipCounts.defenders === 0
+      ) {
+        player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
+        this.logDecision(player, gameModel, 'building', 'Strategic defense: build defender for undefended planet', {
+          planetName: p.name,
+          planetType: p.type,
+          hasSpacePlatform: false,
+        });
+        continue;
+      }
+
       const buildDefenders = Utils.nextRandom(0, 100) / 100 < aiSettings.defenderBuildChance;
       const buildDestroyers = !buildDefenders && Utils.nextRandom(0, 100) / 100 < aiSettings.destroyerBuildChance;
 
@@ -1071,6 +1100,13 @@ export class ComputerPlayer {
           } else if (p.builtImprovements[PlanetImprovementType.Factory] > 0) {
             //if we can build ships it is probably later in the game and we should start defending this planet
             strengthToDefend = Math.floor(Math.pow(p.type, 2) * 4); //defense based on planet type
+          }
+
+          // Strategic defense: retain a garrison on planets without space platforms
+          if (aiSettings.strategicDefense && Planet.getSpacePlatformCount(p, false) === 0) {
+            // Minimum defense based on planet type value (higher-value planets get more)
+            const minDefense = Math.floor(Math.pow(p.type, 2) * 2);
+            strengthToDefend = Math.max(strengthToDefend, minDefense);
           }
 
           if (aiSettings.defenseCalculationStrategy === 'advanced') {
@@ -1793,12 +1829,42 @@ export class ComputerPlayer {
   }
 
   /**
+   * Calculate bonus priority for a planet when quadrant intelligence is active.
+   * When the AI owns fewer than 4 planets (including home), nearby system planets
+   * with mineral/resource value get a large priority boost to drive early expansion.
+   * Returns 0 when the feature is inactive or the planet type doesn't qualify.
+   */
+  private static getQuadrantIntelligenceBonus(
+    planet: PlanetData,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+  ): number {
+    const aiSettings = this.getAISettings(player);
+    const ownedPlanetCount = Object.keys(ownedPlanets).length;
+    const hasHomePlanet = Boolean(player.homePlanetId && player.homePlanetId in ownedPlanets);
+
+    if (!aiSettings.quadrantIntelligence || !hasHomePlanet || ownedPlanetCount <= 0 || ownedPlanetCount >= 4) {
+      return 0;
+    }
+
+    // Mineral-rich / resource planets get large bonuses to ensure early system capture:
+    //   AsteroidBelt: highest ore+iridium per worker, no defenders → immediate scout target
+    //   DeadPlanet: good ore+iridium, moderate defenders → 2-3 scouts needed
+    //   PlanetClass1: balanced resources, more defenders → 3+ scouts needed
+    //   PlanetClass2: food-rich but low minerals → no bonus (AI already starts on one)
+    if (planet.type === PlanetType.AsteroidBelt) return 40;
+    if (planet.type === PlanetType.DeadPlanet) return 30;
+    if (planet.type === PlanetType.PlanetClass1) return 20;
+    return 0;
+  }
+
+  /**
    * Calculate exploration priority for a planet based on strategic value
    * Higher score = more important to explore/scout
    */
   private static calculateExplorationPriority(
     planet: PlanetData,
-    _player: PlayerData,
+    player: PlayerData,
     ownedPlanets: PlanetById,
     gameModel: GameModelData,
   ): number {
@@ -1834,6 +1900,9 @@ export class ComputerPlayer {
     else if (planet.type === PlanetType.PlanetClass1) priority += 10;
     else if (planet.type === PlanetType.DeadPlanet) priority += 5;
     else if (planet.type === PlanetType.AsteroidBelt) priority += 3;
+
+    // Quadrant intelligence: prioritize early system expansion when under 4 planets
+    priority += this.getQuadrantIntelligenceBonus(planet, player, ownedPlanets);
 
     return priority;
   }
@@ -1920,6 +1989,9 @@ export class ComputerPlayer {
     );
     if (distanceFromCenter < 100) value += 10;
     else if (distanceFromCenter < 200) value += 5;
+
+    // Quadrant intelligence: boost nearby mineral/resource planets during early expansion
+    value += this.getQuadrantIntelligenceBonus(targetPlanet, player, ownedPlanets);
 
     return value;
   }
