@@ -7,6 +7,7 @@ import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
 import { ServerGameModel } from "../models/Game";
 import { ChatMessageModel, IChatMessage } from "../models/ChatMessage";
+import { HighScoreModel } from "../models/HighScore";
 import { GameController } from "../controllers/GameControllerWebSocket";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { v4 as uuidv4 } from "uuid";
@@ -1207,6 +1208,9 @@ export class WebSocketServer {
 
       const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, false);
 
+      // Persist high score entry for the resigning player
+      this.saveHighScoreEntry(player.name, player.id, score, game.id, false);
+
       // Send GAME_OVER message to the resigning player
       const payload = {
         winningSerializablePlayer: null,
@@ -1574,6 +1578,9 @@ export class WebSocketServer {
         false, // playerWon = false for destroyed players
       );
 
+      // Persist high score entry for the destroyed player
+      this.saveHighScoreEntry(destroyedPlayer.name, destroyedPlayer.id, score, gameId, false);
+
       // Send GAME_OVER message to destroyed player if they're human
       if (dbPlayer.sessionId && !dbPlayer.isAI) {
         const clientId = this.sessionLookup.get(dbPlayer.sessionId);
@@ -1658,6 +1665,9 @@ export class WebSocketServer {
 
         const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, playerWon);
 
+        // Persist high score entry
+        this.saveHighScoreEntry(player.name, player.id, score, gameId, playerWon);
+
         // Send GAME_OVER message
         const gameOverMessage = new Message(MESSAGE_TYPE.GAME_OVER, {
           winningPlayer: gameEndConditions.winningPlayer
@@ -1691,6 +1701,29 @@ export class WebSocketServer {
     const clientId = this.sessionLookup.get(sessionId);
     if (!clientId) return null;
     return this.clients.get(clientId) || null;
+  }
+
+  /**
+   * Persist a high score entry to the database (fire-and-forget).
+   * Does not block game flow on failure.
+   */
+  private saveHighScoreEntry(
+    playerName: string,
+    playerId: string,
+    playerPoints: number,
+    gameId: string,
+    playerWon: boolean,
+  ): void {
+    const entry = new HighScoreModel({
+      playerName,
+      playerId,
+      playerPoints,
+      playerWon,
+      gameId,
+    });
+    entry.save().catch((err) => {
+      logger.error("Failed to save high score entry:", err);
+    });
   }
 
   private startPingInterval(): void {

@@ -5,3 +5,4 @@ export { GameState, IGameState } from "./GameState";
 export { PlayerAction, IPlayerAction } from "./PlayerAction";
 export { GameEvent, IGameEvent } from "./GameEvent";
 export { RealtimeConnection, IRealtimeConnection } from "./RealtimeConnection";
+export { HighScoreModel as HighScore, IHighScore } from "./HighScore";
