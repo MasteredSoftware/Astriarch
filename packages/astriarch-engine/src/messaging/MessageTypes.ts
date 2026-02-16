@@ -54,6 +54,10 @@ export enum MESSAGE_TYPE {
   EXIT_RESIGN = 'EXIT_RESIGN',
   LOGOUT = 'LOGOUT',
   PLAYER_ELIMINATED = 'PLAYER_ELIMINATED',
+
+  // Desync Pre-flight Checks
+  PLANET_SHIPS_CHECKSUM_CHECK = 'PLANET_SHIPS_CHECKSUM_CHECK', // Client -> Server: Check planet fleet composition
+  PLANET_SHIPS_CHECKSUM_RESULT = 'PLANET_SHIPS_CHECKSUM_RESULT', // Server -> Client: Result of fleet checksum check
 }
 
 export enum ERROR_TYPE {
@@ -207,6 +211,21 @@ export interface IPlayerEliminatedPayload {
   playerId: string;
   gameId: string;
   reason: 'resigned' | 'destroyed';
+}
+
+// =============================================
+// DESYNC PRE-FLIGHT CHECK PAYLOADS
+// =============================================
+
+export interface IPlanetShipsChecksumCheckPayload {
+  gameId: string;
+  planetId: number;
+  checksum: string; // FNV-1a hash of sorted ship IDs on the planet
+}
+
+export interface IPlanetShipsChecksumResultPayload {
+  planetId: number;
+  match: boolean; // true if server fleet composition matches client
 }
 
 // =============================================
@@ -485,6 +504,8 @@ export function getMessageTypeNumeric(type: MESSAGE_TYPE): number {
     [MESSAGE_TYPE.GAME_COMMAND]: 80,
     [MESSAGE_TYPE.CLIENT_EVENT]: 81,
     [MESSAGE_TYPE.COMMAND_ACK]: 82,
+    [MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK]: 83,
+    [MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_RESULT]: 84,
   };
 
   return typeMap[type] ?? -1;
@@ -524,6 +545,8 @@ export function getMessageTypeFromNumeric(typeNum: number): MESSAGE_TYPE | null 
     80: MESSAGE_TYPE.GAME_COMMAND,
     81: MESSAGE_TYPE.CLIENT_EVENT,
     82: MESSAGE_TYPE.COMMAND_ACK,
+    83: MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK,
+    84: MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_RESULT,
   };
 
   return reverseMap[typeNum] ?? null;

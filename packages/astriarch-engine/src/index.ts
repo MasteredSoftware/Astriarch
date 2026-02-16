@@ -51,6 +51,7 @@ export * from './engine/GameCommands';
 export { CommandProcessor } from './engine/CommandProcessor';
 export { EventApplicator } from './engine/EventApplicator';
 export { calculateRollingEventChecksum } from './engine/StateChecksum';
+export { calculateFleetCompositionHash } from './utils/stateChecksum';
 // NOTE: calculateClientModelChecksum and calculateClientModelChecksumComponents are no longer exported
 // Checksums are calculated automatically in Player.advanceGameClockForPlayer and stored in ClientModelData
 

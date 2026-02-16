@@ -57,6 +57,13 @@
 			return ship.type === selectedShipType;
 		}) || [];
 
+	// Pre-flight desync check: verify fleet composition with server whenever
+	// the selected planet changes or ships are updated and the view is active.
+	// Debounced per-planet (10s) inside the service to avoid excessive messages.
+	$: if (currentSelectedPlanet && $fleetCommandStore.isViewActive && ships.length > 0) {
+		webSocketService.checkPlanetShipsChecksum(currentSelectedPlanet.id);
+	}
+
 	// Ship type tabs configuration (excluding defenders)
 	const shipTypeTabs = [
 		{ type: 'all' as const, label: 'ALL' },
