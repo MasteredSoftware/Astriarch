@@ -50,6 +50,8 @@ import {
   calculateRollingEventChecksum,
   calculateFleetCompositionHash,
   type IPlanetShipsChecksumCheckPayload,
+  type SnapshotData,
+  advanceGameModelTimeTo,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -344,9 +346,10 @@ export class WebSocketServer {
   }
 
   private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
-    // Advance game time for periodic updates and pre-flight checks
+    // Advance game time for periodic updates only
     // Game commands handle their own time advancement internally
-    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME || messageType === MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK;
+    // Checksum checks are read-only and advance in memory without persisting
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME;
   }
 
   /**
@@ -1059,8 +1062,9 @@ export class WebSocketServer {
 
   /**
    * Handle PLANET_SHIPS_CHECKSUM_CHECK message.
-   * Compares the client's fleet composition hash with the server's current state
-   * (after time advancement) to detect desync before the player tries to send ships.
+   * Compares the client's fleet composition hash with the server's state
+   * advanced in-memory to the client's reported cycle (capped for safety).
+   * This is a read-only operation — the DB is never written.
    */
   private async handlePlanetShipsChecksumCheck(
     clientId: string,
@@ -1070,7 +1074,7 @@ export class WebSocketServer {
     if (!client) return;
 
     try {
-      const { planetId, checksum } = message.payload;
+      const { planetId, checksum, clientCycle } = message.payload;
       const gameId = client.gameId;
 
       if (!gameId) {
@@ -1078,22 +1082,15 @@ export class WebSocketServer {
         return;
       }
 
-      // NOTE: Game time has already been advanced by advanceGameTimeAndBroadcastEvents()
-      // which is called before this handler (see processMessage / isGameTimeAdvanceRequired)
-
-      const game = await Game.findById(gameId);
+      // Use lean() to get a plain JS object — this is a read-only path
+      // that mutates in memory for time advancement but never persists.
+      const game = await Game.findById(gameId).lean();
       if (!game || !game.gameState) {
         logger.warn(`Game ${gameId} not found for planet ships checksum check`);
         return;
       }
 
       const modelData = game.gameState as unknown as ModelData;
-      const planet = modelData.planets.find((p: { id: number }) => p.id === planetId);
-
-      if (!planet) {
-        logger.warn(`Planet ${planetId} not found in game ${gameId}`);
-        return;
-      }
 
       // Verify the requesting player owns this planet
       const player = modelData.players.find((p: { id: string }) => p.id === client.playerId);
@@ -1102,7 +1099,40 @@ export class WebSocketServer {
         return;
       }
 
-      // Calculate server-side fleet composition hash
+      // Validate clientCycle before using it in arithmetic
+      if (typeof clientCycle !== "number" || !isFinite(clientCycle) || clientCycle < 0) {
+        logger.warn(`Invalid clientCycle value from ${client.sessionId}: ${clientCycle}`);
+        return;
+      }
+
+      // Determine how far to advance: use the client's reported cycle, capped
+      // to prevent abuse (max 0.5 cycles beyond the server's own "now" calculation)
+      const MAX_CYCLE_TOLERANCE = 0.5;
+      const serverSnapshot = EngineGameController.startModelSnapshot(modelData);
+      const maxAllowedCycle = serverSnapshot.currentCycle + MAX_CYCLE_TOLERANCE;
+      const targetCycle = Math.min(clientCycle, maxAllowedCycle);
+
+      // Only advance if the target is ahead of the persisted state
+      if (targetCycle > modelData.currentCycle) {
+        const cyclesElapsed = targetCycle - modelData.currentCycle;
+        const snapshotData: SnapshotData = {
+          newSnapshotTime: new Date().getTime(),
+          cyclesElapsed,
+          currentCycle: targetCycle,
+        };
+
+        // Advance in-memory only (mutates the loaded document, never saved back)
+        const gameModelData = GameModel.constructGridWithModelData(modelData);
+        advanceGameModelTimeTo(gameModelData, snapshotData);
+      }
+
+      // Now compare fleet hash against the (possibly advanced) model
+      const planet = modelData.planets.find((p: { id: number }) => p.id === planetId);
+      if (!planet) {
+        logger.warn(`Planet ${planetId} not found in game ${gameId}`);
+        return;
+      }
+
       const serverShipIds = planet.planetaryFleet.starships.map((s: { id: string }) => s.id);
       const serverChecksum = calculateFleetCompositionHash(serverShipIds);
       const match = serverChecksum === checksum;
@@ -1111,7 +1141,7 @@ export class WebSocketServer {
         logger.warn(
           `Fleet checksum mismatch for planet ${planetId} in game ${gameId}: ` +
             `client=${checksum}, server=${serverChecksum} ` +
-            `(server has ${serverShipIds.length} ships)`,
+            `(server has ${serverShipIds.length} ships, clientCycle=${clientCycle}, targetCycle=${targetCycle})`,
         );
       }
 

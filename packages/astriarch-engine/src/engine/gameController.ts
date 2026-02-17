@@ -16,7 +16,13 @@ import {
   ClientNotificationType,
   ResourcesAutoSpentNotification,
 } from './GameCommands';
-import { AdvanceGameClockForPlayerData, AdvanceGameClockResult, GameModel, GameModelData } from './gameModel';
+import {
+  AdvanceGameClockForPlayerData,
+  AdvanceGameClockResult,
+  GameModel,
+  GameModelData,
+  SnapshotData,
+} from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
 import { PlanetResources } from './planetResources';
@@ -34,7 +40,7 @@ export class GameController {
     [GameSpeed.FASTEST]: 10 * 1000,
   };
 
-  public static startModelSnapshot(modelDataBase: ModelBase) {
+  public static startModelSnapshot(modelDataBase: ModelBase): SnapshotData {
     const newSnapshotTime = new Date().getTime();
     const lastSnapshotTime = modelDataBase.lastSnapshotTime;
 
@@ -54,8 +60,18 @@ export class GameController {
   }
 
   public static advanceGameClock(gameModel: GameModelData): AdvanceGameClockResult {
+    const snapshotData = GameController.startModelSnapshot(gameModel.modelData);
+    return GameController.advanceGameClockTo(gameModel, snapshotData);
+  }
+
+  /**
+   * Advance game state to a specific cycle defined by the provided snapshot data.
+   * This allows callers to control exactly how far time advances, e.g. for
+   * read-only checksum comparisons at the client's reported cycle.
+   */
+  public static advanceGameClockTo(gameModel: GameModelData, snapshotData: SnapshotData): AdvanceGameClockResult {
     const { modelData, grid } = gameModel;
-    const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(modelData);
+    const { cyclesElapsed, newSnapshotTime, currentCycle } = snapshotData;
     const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
 
     for (const p of modelData.players) {
@@ -276,6 +292,16 @@ export class GameController {
       //battle!
       const enemyFleet = destinationPlanet.planetaryFleet;
       const planetOwner = GameModel.findPlanetOwner(gameModel, destinationPlanet.id);
+
+      // Check if the attacking player already owns this planet (can happen when multiple fleets
+      // from the same player arrive at the same planet in the same turn - the first fleet captures,
+      // then the second fleet would be fighting against its own side)
+      if (planetOwner && planetOwner.id === player.id) {
+        // Player already owns this planet, just merge the fleet without battle
+        Fleet.landFleet(destinationPlanet.planetaryFleet, playerFleet);
+        Fleet.recalculateFleetCompositionHash(destinationPlanet.planetaryFleet);
+        continue; // Skip to next fleet
+      }
 
       // Calculate fleet strengths for win chance calculation
       const enemyFleetStrength = Fleet.determineFleetStrength(enemyFleet);
