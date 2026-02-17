@@ -24,20 +24,14 @@ interface HighScoresResponse {
 router.get("/", async (req: Request, res: Response) => {
   try {
     const limitParam = parseInt(req.query.limit as string, 10);
-    const limit = Number.isFinite(limitParam)
-      ? Math.min(Math.max(limitParam, 1), MAX_LIMIT)
-      : DEFAULT_LIMIT;
+    const limit = Number.isFinite(limitParam) ? Math.min(Math.max(limitParam, 1), MAX_LIMIT) : DEFAULT_LIMIT;
 
     const recentCutoff = new Date(Date.now() - RECENT_DAYS * 24 * 60 * 60 * 1000);
 
     const selectFields = "playerName playerId playerPoints playerWon createdAt -_id";
 
     const [allTime, recent] = await Promise.all([
-      HighScoreModel.find({})
-        .select(selectFields)
-        .sort({ playerPoints: -1 })
-        .limit(limit)
-        .lean<HighScoreEntry[]>(),
+      HighScoreModel.find({}).select(selectFields).sort({ playerPoints: -1 }).limit(limit).lean<HighScoreEntry[]>(),
       HighScoreModel.find({ createdAt: { $gt: recentCutoff } })
         .select(selectFields)
         .sort({ playerPoints: -1 })

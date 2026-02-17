@@ -1741,7 +1741,7 @@ export class WebSocketServer {
 
         const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, playerWon);
 
-        if(!dbPlayer.isAI) {
+        if (!dbPlayer.isAI) {
           // Persist high score entry
           this.saveHighScoreEntry(player.name, player.id, score, gameId, playerWon);
         }

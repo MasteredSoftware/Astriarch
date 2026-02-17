@@ -39,9 +39,7 @@
 		<!-- All Time Top Rulers -->
 		{#if allTime.length > 0}
 			<div class="high-score-panel">
-				<h3 class="panel-title">
-					<span class="title-icon">👑</span> All Time Top Rulers
-				</h3>
+				<h3 class="panel-title">All Time Top Rulers</h3>
 				<ol class="score-list">
 					{#each allTime as entry, i (entry.playerId + '-' + i)}
 						<li class="score-entry" class:winner={entry.playerWon}>
@@ -57,9 +55,7 @@
 		<!-- Recent Top Rulers -->
 		{#if recent.length > 0}
 			<div class="high-score-panel">
-				<h3 class="panel-title">
-					<span class="title-icon">⚡</span> Recent Top Rulers
-				</h3>
+				<h3 class="panel-title">Recent Top Rulers</h3>
 				<ol class="score-list">
 					{#each recent as entry, i (entry.playerId + '-' + i)}
 						<li class="score-entry" class:winner={entry.playerWon}>
@@ -84,6 +80,7 @@
 	}
 
 	.panel-title {
+		justify-content: center;
 		font-size: 14px;
 		font-weight: 600;
 		color: #94a3b8;
@@ -93,10 +90,6 @@
 		display: flex;
 		align-items: center;
 		gap: 6px;
-	}
-
-	.title-icon {
-		font-size: 16px;
 	}
 
 	.score-list {
