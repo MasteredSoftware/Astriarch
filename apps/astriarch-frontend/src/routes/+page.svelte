@@ -46,7 +46,7 @@
 	import ExitGameDialog from '$lib/components/game/ExitGameDialog.svelte';
 
 	// Import lobby components
-	import { LobbyView } from '$lib/components/lobby';
+	import { LobbyView, HighScoreBoard } from '$lib/components/lobby';
 
 	// Import websocket service
 	import { webSocketService } from '$lib/services/websocket';
@@ -350,7 +350,7 @@
 	/>
 </svelte:head>
 
-<main class="h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white">
+<main class="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-black text-white">
 	<!-- Space Background Effect -->
 	<div class="fixed inset-0 opacity-20">
 		<div
@@ -534,7 +534,7 @@
 			{/if}
 		{:else}
 			<!-- Welcome Screen -->
-			<div class="flex h-[calc(100vh-200px)] items-center justify-center">
+			<div class="flex flex-col items-center justify-center py-8">
 				<div class="mx-auto max-w-2xl p-8 text-center">
 					<div class="mb-6 flex justify-center">
 						<Logo size="xl" variant="primary" />
@@ -550,6 +550,7 @@
 					<div class="mt-4 flex justify-center">
 						<Button label="Play Now" size="lg" variant="primary" onclick={handleShowLobby} />
 					</div>
+					<HighScoreBoard />
 				</div>
 			</div>
 		{/if}

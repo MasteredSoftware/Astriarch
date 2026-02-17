@@ -12,6 +12,7 @@ import config from "config";
 import { connectDatabase } from "./database/connection";
 import { WebSocketServer } from "./websocket";
 import { healthRoutes } from "./routes/healthRoutes";
+import { highScoreRoutes } from "./routes/highScoreRoutes";
 import { GameController } from "./controllers/GameControllerWebSocket";
 import { logger } from "./utils/logger";
 
@@ -77,8 +78,9 @@ app.use(
   }),
 );
 
-// Routes - Only health check needed, everything else goes through WebSocket
+// Routes
 app.use("/api/health", healthRoutes);
+app.use("/api/highscores", highScoreRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {

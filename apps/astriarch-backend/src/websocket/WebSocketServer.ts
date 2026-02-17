@@ -7,6 +7,7 @@ import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
 import { ServerGameModel } from "../models/Game";
 import { ChatMessageModel, IChatMessage } from "../models/ChatMessage";
+import { HighScoreModel } from "../models/HighScore";
 import { GameController } from "../controllers/GameControllerWebSocket";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { v4 as uuidv4 } from "uuid";
@@ -47,6 +48,8 @@ import {
   type ClientEvent,
   type ClientNotification,
   calculateRollingEventChecksum,
+  calculateFleetCompositionHash,
+  type IPlanetShipsChecksumCheckPayload,
 } from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 
@@ -275,6 +278,10 @@ export class WebSocketServer {
         await this.handleGameCommand(clientId, message);
         break;
 
+      case MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK:
+        await this.handlePlanetShipsChecksumCheck(clientId, message as IMessage<IPlanetShipsChecksumCheckPayload>);
+        break;
+
       case MESSAGE_TYPE.CHAT_MESSAGE:
         await this.handleChatMessage(clientId, message);
         break;
@@ -337,9 +344,9 @@ export class WebSocketServer {
   }
 
   private isGameTimeAdvanceRequired(messageType: MESSAGE_TYPE): boolean {
-    // Advance game time for periodic updates only
+    // Advance game time for periodic updates and pre-flight checks
     // Game commands handle their own time advancement internally
-    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME;
+    return messageType === MESSAGE_TYPE.ADVANCE_GAME_TIME || messageType === MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK;
   }
 
   /**
@@ -1050,6 +1057,76 @@ export class WebSocketServer {
     }
   }
 
+  /**
+   * Handle PLANET_SHIPS_CHECKSUM_CHECK message.
+   * Compares the client's fleet composition hash with the server's current state
+   * (after time advancement) to detect desync before the player tries to send ships.
+   */
+  private async handlePlanetShipsChecksumCheck(
+    clientId: string,
+    message: IMessage<IPlanetShipsChecksumCheckPayload>,
+  ): Promise<void> {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    try {
+      const { planetId, checksum } = message.payload;
+      const gameId = client.gameId;
+
+      if (!gameId) {
+        logger.warn(`Planet ships checksum check without active game from ${client.sessionId}`);
+        return;
+      }
+
+      // NOTE: Game time has already been advanced by advanceGameTimeAndBroadcastEvents()
+      // which is called before this handler (see processMessage / isGameTimeAdvanceRequired)
+
+      const game = await Game.findById(gameId);
+      if (!game || !game.gameState) {
+        logger.warn(`Game ${gameId} not found for planet ships checksum check`);
+        return;
+      }
+
+      const modelData = game.gameState as unknown as ModelData;
+      const planet = modelData.planets.find((p: { id: number }) => p.id === planetId);
+
+      if (!planet) {
+        logger.warn(`Planet ${planetId} not found in game ${gameId}`);
+        return;
+      }
+
+      // Verify the requesting player owns this planet
+      const player = modelData.players.find((p: { id: string }) => p.id === client.playerId);
+      if (!player || !player.ownedPlanetIds.includes(planetId)) {
+        logger.warn(`Player ${client.playerId} does not own planet ${planetId}`);
+        return;
+      }
+
+      // Calculate server-side fleet composition hash
+      const serverShipIds = planet.planetaryFleet.starships.map((s: { id: string }) => s.id);
+      const serverChecksum = calculateFleetCompositionHash(serverShipIds);
+      const match = serverChecksum === checksum;
+
+      if (!match) {
+        logger.warn(
+          `Fleet checksum mismatch for planet ${planetId} in game ${gameId}: ` +
+            `client=${checksum}, server=${serverChecksum} ` +
+            `(server has ${serverShipIds.length} ships)`,
+        );
+      }
+
+      this.sendToClient(
+        clientId,
+        new Message(MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_RESULT, {
+          planetId,
+          match,
+        }),
+      );
+    } catch (error) {
+      logger.error("handlePlanetShipsChecksumCheck error:", error);
+    }
+  }
+
   private async handleChatMessage(clientId: string, message: IMessage<unknown>): Promise<void> {
     const client = this.clients.get(clientId);
     if (!client) return;
@@ -1206,6 +1283,9 @@ export class WebSocketServer {
       await persistGame(game);
 
       const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, false);
+
+      // Persist high score entry for the resigning player
+      this.saveHighScoreEntry(player.name, player.id, score, game.id, false);
 
       // Send GAME_OVER message to the resigning player
       const payload = {
@@ -1576,6 +1656,9 @@ export class WebSocketServer {
 
       // Send GAME_OVER message to destroyed player if they're human
       if (dbPlayer.sessionId && !dbPlayer.isAI) {
+        // Persist high score entry for the destroyed player
+        this.saveHighScoreEntry(destroyedPlayer.name, destroyedPlayer.id, score, gameId, false);
+
         const clientId = this.sessionLookup.get(dbPlayer.sessionId);
         if (clientId) {
           const gameOverMessage = new Message(MESSAGE_TYPE.GAME_OVER, {
@@ -1658,6 +1741,11 @@ export class WebSocketServer {
 
         const score = EngineGameController.calculateEndGamePoints(game.gameState as ModelData, player, playerWon);
 
+        if (!dbPlayer.isAI) {
+          // Persist high score entry
+          this.saveHighScoreEntry(player.name, player.id, score, gameId, playerWon);
+        }
+
         // Send GAME_OVER message
         const gameOverMessage = new Message(MESSAGE_TYPE.GAME_OVER, {
           winningPlayer: gameEndConditions.winningPlayer
@@ -1691,6 +1779,29 @@ export class WebSocketServer {
     const clientId = this.sessionLookup.get(sessionId);
     if (!clientId) return null;
     return this.clients.get(clientId) || null;
+  }
+
+  /**
+   * Persist a high score entry to the database (fire-and-forget).
+   * Does not block game flow on failure.
+   */
+  private saveHighScoreEntry(
+    playerName: string,
+    playerId: string,
+    playerPoints: number,
+    gameId: string,
+    playerWon: boolean,
+  ): void {
+    const entry = new HighScoreModel({
+      playerName,
+      playerId,
+      playerPoints,
+      playerWon,
+      gameId,
+    });
+    entry.save().catch((err) => {
+      logger.error("Failed to save high score entry:", err);
+    });
   }
 
   private startPingInterval(): void {

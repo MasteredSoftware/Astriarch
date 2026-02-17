@@ -19,6 +19,7 @@ import {
 	GameCommandType,
 	EventApplicator,
 	calculateRollingEventChecksum,
+	calculateFleetCompositionHash,
 	type PlanetProductionItemData,
 	type PlanetaryConflictData,
 	TradeType,
@@ -89,6 +90,10 @@ class WebSocketService {
 		string,
 		{ timestamp: number; type: GameCommandType; events: ClientEvent[]; acked: boolean }
 	>(); // Track optimistically applied commands
+
+	// Debounce state for planet ships checksum checks (per-planet, 10s interval)
+	private _lastChecksumCheckByPlanet = new Map<number, number>();
+	private static readonly CHECKSUM_CHECK_DEBOUNCE_MS = 10_000;
 
 	constructor(private gameStore: typeof multiplayerGameStore) {}
 
@@ -1392,6 +1397,22 @@ class WebSocketService {
 				console.log('Received synchronized game state from server');
 				break;
 
+			case MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_RESULT: {
+				const checksumResult = message.payload as { planetId: number; match: boolean };
+				if (!checksumResult.match) {
+					console.warn(
+						`⚠️ Fleet checksum mismatch for planet ${checksumResult.planetId} - requesting full state sync`
+					);
+					this.requestStateSync();
+					this.gameStore.addNotification({
+						type: 'warning',
+						message: 'Fleet data refreshed - syncing with server...',
+						timestamp: Date.now()
+					});
+				}
+				break;
+			}
+
 			default:
 				console.log('Unhandled message type:', message.type);
 		}
@@ -2033,6 +2054,44 @@ class WebSocketService {
 				message: 'Cannot sync state - no active game session',
 				timestamp: Date.now()
 			});
+		}
+	}
+
+	/**
+	 * Check planet fleet composition against the server.
+	 * Debounced per-planet (10s). On mismatch, triggers a full state sync
+	 * so the user sees corrected fleet data before trying to send ships.
+	 */
+	checkPlanetShipsChecksum(planetId: number) {
+		// Debounce: skip if we checked this planet recently
+		const now = Date.now();
+		const lastCheck = this._lastChecksumCheckByPlanet.get(planetId) ?? 0;
+		if (now - lastCheck < WebSocketService.CHECKSUM_CHECK_DEBOUNCE_MS) {
+			return;
+		}
+		this._lastChecksumCheckByPlanet.set(planetId, now);
+
+		try {
+			const gameId = this.requireGameId();
+			const cgm = get(clientGameModel);
+			if (!cgm) return;
+
+			const planet = cgm.mainPlayerOwnedPlanets[planetId];
+			if (!planet) return;
+
+			const shipIds = planet.planetaryFleet.starships.map((s) => s.id);
+			const checksum = calculateFleetCompositionHash(shipIds);
+
+			this.send(
+				new Message(MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK, {
+					gameId,
+					planetId,
+					checksum
+				})
+			);
+		} catch (error) {
+			// Silently ignore - this is a best-effort pre-flight check
+			console.debug('Fleet checksum check skipped:', error);
 		}
 	}
 
