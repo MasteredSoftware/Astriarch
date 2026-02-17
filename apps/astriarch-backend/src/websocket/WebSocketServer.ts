@@ -1082,7 +1082,9 @@ export class WebSocketServer {
         return;
       }
 
-      const game = await Game.findById(gameId);
+      // Use lean() to get a plain JS object — this is a read-only path
+      // that mutates in memory for time advancement but never persists.
+      const game = await Game.findById(gameId).lean();
       if (!game || !game.gameState) {
         logger.warn(`Game ${gameId} not found for planet ships checksum check`);
         return;
@@ -1094,6 +1096,12 @@ export class WebSocketServer {
       const player = modelData.players.find((p: { id: string }) => p.id === client.playerId);
       if (!player || !player.ownedPlanetIds.includes(planetId)) {
         logger.warn(`Player ${client.playerId} does not own planet ${planetId}`);
+        return;
+      }
+
+      // Validate clientCycle before using it in arithmetic
+      if (typeof clientCycle !== "number" || !isFinite(clientCycle) || clientCycle < 0) {
+        logger.warn(`Invalid clientCycle value from ${client.sessionId}: ${clientCycle}`);
         return;
       }
 
