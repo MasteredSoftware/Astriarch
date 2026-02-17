@@ -6,6 +6,7 @@ import {
   GameModelData,
   GameEndConditions,
   AdvanceGameClockResult,
+  SnapshotData,
   playerColors,
   GALAXY_WIDTH,
   GALAXY_HEIGHT,
@@ -95,6 +96,7 @@ export type { ModelData };
 export type { GameModelData };
 export type { GameEndConditions };
 export type { AdvanceGameClockResult };
+export type { SnapshotData };
 export type { ClientModelData };
 export type { PlanetById };
 export type { ClientPlayer };
@@ -176,6 +178,23 @@ export const startNewGame = () => {
 
 export const advanceGameModelTime = (gameModel: GameModelData) => {
   const result = GameController.advanceGameClock(gameModel);
+
+  return {
+    gameModel,
+    destroyedPlayers: result.destroyedPlayers,
+    gameEndConditions: result.gameEndConditions,
+    events: result.events,
+    notifications: result.notifications,
+  };
+};
+
+/**
+ * Advance game state to a specific cycle defined by the provided snapshot data.
+ * Useful for read-only operations like checksum comparisons at the client's reported cycle
+ * without persisting the advanced state.
+ */
+export const advanceGameModelTimeTo = (gameModel: GameModelData, snapshotData: SnapshotData) => {
+  const result = GameController.advanceGameClockTo(gameModel, snapshotData);
 
   return {
     gameModel,

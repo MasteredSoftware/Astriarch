@@ -16,7 +16,13 @@ import {
   ClientNotificationType,
   ResourcesAutoSpentNotification,
 } from './GameCommands';
-import { AdvanceGameClockForPlayerData, AdvanceGameClockResult, GameModel, GameModelData } from './gameModel';
+import {
+  AdvanceGameClockForPlayerData,
+  AdvanceGameClockResult,
+  GameModel,
+  GameModelData,
+  SnapshotData,
+} from './gameModel';
 import { Grid } from './grid';
 import { Planet } from './planet';
 import { PlanetResources } from './planetResources';
@@ -34,7 +40,7 @@ export class GameController {
     [GameSpeed.FASTEST]: 10 * 1000,
   };
 
-  public static startModelSnapshot(modelDataBase: ModelBase) {
+  public static startModelSnapshot(modelDataBase: ModelBase): SnapshotData {
     const newSnapshotTime = new Date().getTime();
     const lastSnapshotTime = modelDataBase.lastSnapshotTime;
 
@@ -54,8 +60,18 @@ export class GameController {
   }
 
   public static advanceGameClock(gameModel: GameModelData): AdvanceGameClockResult {
+    const snapshotData = GameController.startModelSnapshot(gameModel.modelData);
+    return GameController.advanceGameClockTo(gameModel, snapshotData);
+  }
+
+  /**
+   * Advance game state to a specific cycle defined by the provided snapshot data.
+   * This allows callers to control exactly how far time advances, e.g. for
+   * read-only checksum comparisons at the client's reported cycle.
+   */
+  public static advanceGameClockTo(gameModel: GameModelData, snapshotData: SnapshotData): AdvanceGameClockResult {
     const { modelData, grid } = gameModel;
-    const { cyclesElapsed, newSnapshotTime, currentCycle } = GameController.startModelSnapshot(modelData);
+    const { cyclesElapsed, newSnapshotTime, currentCycle } = snapshotData;
     const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
 
     for (const p of modelData.players) {

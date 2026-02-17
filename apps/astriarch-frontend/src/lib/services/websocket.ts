@@ -2086,7 +2086,8 @@ class WebSocketService {
 				new Message(MESSAGE_TYPE.PLANET_SHIPS_CHECKSUM_CHECK, {
 					gameId,
 					planetId,
-					checksum
+					checksum,
+					clientCycle: cgm.currentCycle
 				})
 			);
 		} catch (error) {

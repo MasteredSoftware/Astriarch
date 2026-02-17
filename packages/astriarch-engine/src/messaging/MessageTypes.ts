@@ -221,6 +221,7 @@ export interface IPlanetShipsChecksumCheckPayload {
   gameId: string;
   planetId: number;
   checksum: string; // FNV-1a hash of sorted ship IDs on the planet
+  clientCycle: number; // Client's currentCycle when the hash was computed
 }
 
 export interface IPlanetShipsChecksumResultPayload {

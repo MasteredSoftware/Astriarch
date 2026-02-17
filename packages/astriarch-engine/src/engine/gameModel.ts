@@ -22,6 +22,12 @@ export interface GameModelData {
   grid: Grid;
 }
 
+export interface SnapshotData {
+  newSnapshotTime: number;
+  cyclesElapsed: number;
+  currentCycle: number;
+}
+
 export interface AdvanceGameClockForPlayerData {
   clientModel: ClientModelData;
   cyclesElapsed: number;
