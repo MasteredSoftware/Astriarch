@@ -588,23 +588,32 @@ export class Planet {
     }
 
     // If we have unassigned population, assign to the type that needs the most
+    // BUT exclude types that the user explicitly decreased (negative diff) to avoid
+    // undoing the user's intended change
     const assignedTotal = desiredFarmers + desiredMiners + desiredBuilders;
     if (assignedTotal < totalPopulation) {
       const unassigned = totalPopulation - assignedTotal;
 
       // Find which assignment has the least workers to balance things out
-      const assignments = [
-        { type: 'farmers', count: desiredFarmers },
-        { type: 'miners', count: desiredMiners },
-        { type: 'builders', count: desiredBuilders },
+      // Exclude types that the user explicitly decreased
+      const allAssignments = [
+        { type: 'farmers', count: desiredFarmers, wasDecreased: farmerDiff < 0 },
+        { type: 'miners', count: desiredMiners, wasDecreased: minerDiff < 0 },
+        { type: 'builders', count: desiredBuilders, wasDecreased: builderDiff < 0 },
       ];
-      assignments.sort((a, b) => a.count - b.count);
+
+      // Prefer non-decreased types; only fall back to decreased types if all were decreased
+      let eligibleAssignments = allAssignments.filter((a) => !a.wasDecreased);
+      if (eligibleAssignments.length === 0) {
+        eligibleAssignments = allAssignments;
+      }
+      eligibleAssignments.sort((a, b) => a.count - b.count);
 
       // Distribute unassigned workers starting with the lowest assignment
       let remaining = unassigned;
-      for (const assignment of assignments) {
+      for (const assignment of eligibleAssignments) {
         if (remaining <= 0) break;
-        const toAdd = Math.min(remaining, Math.ceil(remaining / assignments.length));
+        const toAdd = Math.min(remaining, Math.ceil(remaining / eligibleAssignments.length));
         if (assignment.type === 'farmers') desiredFarmers += toAdd;
         else if (assignment.type === 'miners') desiredMiners += toAdd;
         else if (assignment.type === 'builders') desiredBuilders += toAdd;

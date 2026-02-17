@@ -277,6 +277,56 @@ describe('Planet', function () {
       expect(counts.farmers).toBe(3);
       expect(counts.miners + counts.builders).toBe(3); // One should have decreased
     });
+
+    it('should not reassign decreased type back when clicking minus on a low-count worker', () => {
+      // BUG FIX: 3 farmers, 1 miner, 3 builders — clicking minus on miner
+      // should reassign that miner elsewhere, NOT put it back on miners
+      testPlanet.population = [
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder },
+      ];
+
+      // Verify initial state: 3f, 1m, 3b
+      let counts = Planet.countPopulationWorkerTypes(testPlanet);
+      expect(counts.farmers).toBe(3);
+      expect(counts.miners).toBe(1);
+      expect(counts.builders).toBe(3);
+
+      // Click minus on miners
+      Planet.updatePopulationWorkerTypes(testPlanet, player1, 0, -1, 0);
+
+      counts = Planet.countPopulationWorkerTypes(testPlanet);
+      // Miner should have been reduced to 0
+      expect(counts.miners).toBe(0);
+      // The freed worker should go to farmers or builders, NOT back to miners
+      expect(counts.farmers + counts.builders).toBe(7);
+      // Total should still be 7
+      expect(counts.farmers + counts.miners + counts.builders).toBe(7);
+    });
+
+    it('should not reassign decreased type back when all have equal count', () => {
+      // 2 farmers, 2 miners, 2 builders — click minus on miners
+      testPlanet.population = [
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Farmer },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Miner },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder },
+        { populationChange: 0, loyalToPlayerId: player1.id, protestLevel: 0, workerType: CitizenWorkerType.Builder },
+      ];
+
+      Planet.updatePopulationWorkerTypes(testPlanet, player1, 0, -1, 0);
+
+      const counts = Planet.countPopulationWorkerTypes(testPlanet);
+      expect(counts.miners).toBe(1);
+      expect(counts.farmers + counts.builders).toBe(5);
+      expect(counts.farmers + counts.miners + counts.builders).toBe(6);
+    });
   });
 
   describe('integration tests', () => {
