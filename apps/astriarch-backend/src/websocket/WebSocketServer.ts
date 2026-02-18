@@ -1031,6 +1031,7 @@ export class WebSocketServer {
             error: result.error || "Command failed",
             errorCode: result.errorCode,
             possibleDesync: result.possibleDesync,
+            commandId: command.commandId,
           }),
         );
         return;
