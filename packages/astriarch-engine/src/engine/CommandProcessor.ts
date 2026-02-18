@@ -227,7 +227,7 @@ export class CommandProcessor {
 
     if (command.clientCycle !== undefined) {
       const cycleDrift = command.clientCycle - model.currentCycle;
-      const MAX_DRIFT_COMPENSATION = 0.1; // Only compensate up to 0.1 cycles (~3 seconds at normal speed)
+      const MAX_DRIFT_COMPENSATION = 0.3; // Only compensate up to 0.3 cycles (~9 seconds at normal speed)
 
       if (cycleDrift > 0 && cycleDrift <= MAX_DRIFT_COMPENSATION) {
         // Client is slightly ahead - calculate extra resources they've generated

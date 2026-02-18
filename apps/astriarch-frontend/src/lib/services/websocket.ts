@@ -1352,8 +1352,26 @@ class WebSocketService {
 					const errorMessage =
 						message.payload.message || message.payload.error || 'An error occurred';
 
-					// Check if this error indicates a possible desync
-					if (message.payload.possibleDesync) {
+					// Check if this error is for a command we optimistically applied
+					const errorCommandId = message.payload.commandId;
+					const hasPendingOptimisticCommand = errorCommandId && this.pendingCommands.has(errorCommandId);
+
+					if (hasPendingOptimisticCommand) {
+						// Server rejected a command that we already applied optimistically.
+						// This is always a desync - we must sync to undo the optimistic mutation.
+						const pending = this.pendingCommands.get(errorCommandId);
+						console.error(
+							`⚠️ Server rejected optimistic command [${errorCommandId}] type=${pending?.type}: ${errorMessage} - Requesting state sync`
+						);
+						this.pendingCommands.delete(errorCommandId);
+						this.requestStateSync();
+
+						this.gameStore.addNotification({
+							type: 'warning',
+							message: `${errorMessage} - Syncing with server...`,
+							timestamp: Date.now()
+						});
+					} else if (message.payload.possibleDesync) {
 						console.error('⚠️ POSSIBLE DESYNC DETECTED - Requesting full state sync');
 						console.error('Error code:', message.payload.errorCode);
 						console.error('Error message:', errorMessage);
