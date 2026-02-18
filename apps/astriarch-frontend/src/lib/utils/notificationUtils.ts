@@ -55,7 +55,8 @@ export function convertClientNotificationToUINotification(
 		case ClientNotificationType.IMPROVEMENT_BUILT: {
 			notificationType = 'construction';
 			const data = (notification as ImprovementBuiltNotification).data;
-			message = `Improvement built at ${data.planetName}`;
+			const builtImprovementName = GameTools.planetImprovementTypeToFriendlyName(data.improvementType);
+			message = `${builtImprovementName} built at ${data.planetName}`;
 			if (data.nextItemInQueue) {
 				message += ` (Next: ${data.nextItemInQueue})`;
 			}
@@ -64,7 +65,8 @@ export function convertClientNotificationToUINotification(
 		case ClientNotificationType.IMPROVEMENT_DEMOLISHED: {
 			notificationType = 'construction';
 			const data = (notification as ImprovementDemolishedNotification).data;
-			message = `Improvement demolished at ${data.planetName}`;
+			const demolishedImprovementName = GameTools.planetImprovementTypeToFriendlyName(data.improvementType);
+			message = `${demolishedImprovementName} demolished at ${data.planetName}`;
 			if (data.nextItemInQueue) {
 				message += ` (Next: ${data.nextItemInQueue})`;
 			}
