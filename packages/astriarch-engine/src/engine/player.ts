@@ -728,6 +728,10 @@ export class Player {
 
     //for each fleet in transit, move the fleet towards it's destination
     for (const f of mainPlayer.fleetsInTransit) {
+      // Skip fleets already awaiting conflict resolution - don't move them further
+      if (f.awaitingConflictResolution) {
+        continue;
+      }
       Fleet.moveFleet(f, mainPlayer, cyclesElapsed);
     }
 
@@ -735,6 +739,10 @@ export class Player {
     //merge multiple friendly fleets arriving on unowned planets (before conflicts are resolved)
     for (let i = mainPlayer.fleetsInTransit.length - 1; i >= 0; i--) {
       const playerFleet = mainPlayer.fleetsInTransit[i];
+      // Skip fleets already awaiting conflict resolution
+      if (playerFleet.awaitingConflictResolution) {
+        continue;
+      }
       if (playerFleet.parsecsToDestination! <= 0) {
         const destinationPlanet = Planet.getClientPlanetAtMidPoint(
           clientModel.clientPlanets,
@@ -747,12 +755,15 @@ export class Player {
         }
 
         if (destinationPlanet.id in mainPlayerOwnedPlanets) {
-          //merge/land fleet
+          //merge/land fleet on owned planet - safe to remove immediately
           Fleet.landFleet(mainPlayerOwnedPlanets[destinationPlanet.id].planetaryFleet, playerFleet);
+          mainPlayer.fleetsInTransit.splice(i, 1);
         } else {
+          // Fleet arriving at unowned planet - mark as awaiting server conflict resolution
+          // Do NOT remove from fleetsInTransit; the server will confirm via CLIENT_EVENT
+          playerFleet.awaitingConflictResolution = true;
           fleetsArrivingOnUnownedPlanets.push(playerFleet);
         }
-        mainPlayer.fleetsInTransit.splice(i, 1);
       }
     }
     return fleetsArrivingOnUnownedPlanets;

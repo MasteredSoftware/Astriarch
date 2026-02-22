@@ -398,6 +398,7 @@ export class GameController {
               defenderName: planetOwner?.name,
               defenderId: planetOwner?.id,
               conflictData,
+              attackingFleetId: playerFleet.id,
             },
           });
         }
@@ -413,6 +414,7 @@ export class GameController {
               attackerName: player.name,
               attackerId: player.id,
               conflictData,
+              attackingFleetId: playerFleet.id,
             },
           });
         }
@@ -531,6 +533,7 @@ export class GameController {
               previousOwnerName: defendingPlayer?.name,
               conflictData,
               planetData: destinationPlanet,
+              attackingFleetId: playerFleet.id,
             },
           });
         }
@@ -547,6 +550,7 @@ export class GameController {
               newOwnerId: player.id,
               newOwnerName: player.name,
               conflictData,
+              attackingFleetId: playerFleet.id,
             },
           });
         }

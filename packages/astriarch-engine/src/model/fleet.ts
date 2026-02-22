@@ -31,6 +31,7 @@ export interface FleetData {
   parsecsToDestination: number | null;
   totalTravelDistance: number | null;
   compositionHash?: string; // Hash of sorted ship IDs for desync detection
+  awaitingConflictResolution?: boolean; // Client-only: fleet has arrived at unowned planet, awaiting server resolution
 }
 
 export interface LastKnownFleetData {

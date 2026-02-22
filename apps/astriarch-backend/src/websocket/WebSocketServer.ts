@@ -199,7 +199,9 @@ export class WebSocketServer {
     // - For GAME_COMMAND: Time advancement happens inside the command handler atomically
     // Concurrency protection is now handled at the database level via optimistic locking
     if (this.isGameTimeAdvanceRequired(message.type) && client.gameId) {
-      await this.advanceGameTimeAndBroadcastEvents(client.gameId);
+      // Extract clientCycle from ADVANCE_GAME_TIME payload so server can advance to at least that cycle
+      const clientCycle = (message.payload as any)?.clientCycle as number | undefined;
+      await this.advanceGameTimeAndBroadcastEvents(client.gameId, clientCycle);
     }
 
     // If this is a full state sync request (desync recovery), advance time and broadcast full state
@@ -403,11 +405,16 @@ export class WebSocketServer {
    * This is now a thin wrapper around the shared game state update logic.
    * @param gameId - The game to advance
    * @param broadcastFullState - If true, sends complete game state to all players (for SYNC_STATE)
+   * @param clientCycle - Optional client cycle hint to ensure server advances at least this far
    */
-  private async advanceGameTime(gameId: string, broadcastFullState: boolean = false): Promise<void> {
+  private async advanceGameTime(
+    gameId: string,
+    broadcastFullState: boolean = false,
+    clientCycle?: number,
+  ): Promise<void> {
     try {
       // Use the shared method to advance game time without processing a command
-      const result = await GameController.advanceGameStateWithOptionalCommand(gameId);
+      const result = await GameController.advanceGameStateWithOptionalCommand(gameId, undefined, clientCycle);
 
       // Handle broadcasting and game over conditions
       await this.handleGameStateUpdateResult(gameId, result, broadcastFullState);
@@ -416,8 +423,8 @@ export class WebSocketServer {
     }
   }
 
-  private async advanceGameTimeAndBroadcastEvents(gameId: string): Promise<void> {
-    await this.advanceGameTime(gameId, false);
+  private async advanceGameTimeAndBroadcastEvents(gameId: string, clientCycle?: number): Promise<void> {
+    await this.advanceGameTime(gameId, false, clientCycle);
   }
 
   private async advanceGameTimeForSync(gameId: string): Promise<void> {
