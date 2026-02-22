@@ -204,9 +204,25 @@ export class EventApplicator {
       );
       Fleet.setDestination(existingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
     } else {
-      // Normal application - launch the fleet with the server-confirmed fleet ID
-      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
+      // Fleet not in transit — either it was never optimistically launched (non-host player),
+      // or it was optimistically launched and already arrived at its destination.
+      // Verify the ships still exist on the source planet before attempting to re-launch.
       const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
+      const existingShipIds = new Set(planet.planetaryFleet.starships.map((s) => s.id));
+      const missingShips = allShipIds.filter((id) => !existingShipIds.has(id));
+
+      if (missingShips.length > 0) {
+        // Ships already moved (fleet was optimistically launched and already arrived/merged).
+        // This is expected when the server FLEET_LAUNCHED event arrives after the client's
+        // game loop already landed the fleet at its destination. Safe to skip.
+        console.warn(
+          `Fleet ${fleetId} not in transit and ${missingShips.length}/${allShipIds.length} ships missing from source planet ${fromPlanetId} — fleet likely already arrived. Skipping re-launch.`,
+        );
+        return;
+      }
+
+      // Ships are still on the source planet — normal application (e.g., non-host receiving another player's fleet event)
+      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
       console.log(
         `Fleet ${fleetId} launched from planet ${fromPlanetId} to ${toPlanetId} with ${allShipIds.length} ships`,
         shipIds,
