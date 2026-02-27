@@ -11,6 +11,16 @@
 	font-display: swap;
 }
 
+/* Load local Azeret Mono font */
+@font-face {
+	font-family: 'Azeret Mono';
+	src: url('/fonts/azeret-mono/AzeretMono-VariableFont_wght.ttf') format('truetype-variations');
+	font-weight: 100 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

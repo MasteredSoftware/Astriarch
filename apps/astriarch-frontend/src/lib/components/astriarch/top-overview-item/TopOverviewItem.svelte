@@ -33,10 +33,10 @@
 
 	const baseTextStyle = $derived(`
     color: #FFF;
+    font-family: 'Azeret Mono', monospace;
     font-size: 18px;
     font-weight: 600;
     line-height: 32px;
-    letter-spacing: 0.09px;
     margin-left: 4px;
     display: inline-block;
     vertical-align: bottom;
@@ -44,10 +44,10 @@
 
 	const perTurnTextStyle = $derived(`
     color: ${color || '#FFF'};
+    font-family: 'Azeret Mono', monospace;
     font-size: 18px;
     font-weight: 600;
     line-height: 32px;
-    letter-spacing: 0.09px;
     display: inline-block;
     vertical-align: bottom;
   `);
@@ -59,7 +59,7 @@
 
 <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
 <div
-	class="relative z-[100] flex {className || ''}"
+	class="relative z-[100] mt-[8px] flex {className || ''}"
 	onclick={handleClick}
 	onkeydown={(e) => {
 		if (onClick && (e.key === 'Enter' || e.key === ' ')) {
@@ -82,7 +82,7 @@
 		</Text>
 		{#if amountPerTurnFormatted}
 			<Text style={perTurnTextStyle}>
-				&nbsp;&nbsp;{amountPerTurnSign}{amountPerTurnFormatted}
+				&nbsp;{amountPerTurnSign}{amountPerTurnFormatted}
 			</Text>
 		{/if}
 	</div>
