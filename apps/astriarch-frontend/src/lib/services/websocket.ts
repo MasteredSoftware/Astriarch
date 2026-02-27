@@ -731,6 +731,9 @@ class WebSocketService {
 
 						// Clear the flag to allow future time advancement requests
 						gameActions.clearServerTimeAdvancementFlag();
+
+						// Full state sync replaces all client state — clear pending arrival tracking
+						gameActions.clearAllPendingArrivalFleets();
 					}
 				} else {
 					console.warn('Unexpected GAME_STATE_UPDATE payload format:', message.payload);
@@ -1271,6 +1274,30 @@ class WebSocketService {
 					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
 				}
 
+				// Clear pending arrival fleet tracking for conflict resolution events
+				// (EventApplicator already removed the fleet from fleetsInTransit)
+				for (const event of payload.events) {
+					if (
+						event.type === ClientEventType.PLANET_CAPTURED ||
+						event.type === ClientEventType.FLEET_ATTACK_FAILED
+					) {
+						const attackingFleetId = (event.data as any)?.attackingFleetId;
+						if (attackingFleetId !== undefined) {
+							gameActions.clearPendingArrivalFleet(attackingFleetId);
+						}
+					} else if (
+						event.type === ClientEventType.PLANET_LOST ||
+						event.type === ClientEventType.FLEET_DEFENSE_SUCCESS
+					) {
+						// For defender events, also clear any pending fleet with matching attackingFleetId
+						// (unlikely to have one, but be thorough)
+						const attackingFleetId = (event.data as any)?.attackingFleetId;
+						if (attackingFleetId !== undefined) {
+							gameActions.clearPendingArrivalFleet(attackingFleetId);
+						}
+					}
+				}
+
 				// Still convert ALL events to notifications (even optimistically applied ones need notifications)
 				for (const event of payload.events) {
 					this.convertClientEventToNotification(event);
@@ -1354,7 +1381,8 @@ class WebSocketService {
 
 					// Check if this error is for a command we optimistically applied
 					const errorCommandId = message.payload.commandId;
-					const hasPendingOptimisticCommand = errorCommandId && this.pendingCommands.has(errorCommandId);
+					const hasPendingOptimisticCommand =
+						errorCommandId && this.pendingCommands.has(errorCommandId);
 
 					if (hasPendingOptimisticCommand) {
 						// Server rejected a command that we already applied optimistically.
@@ -2045,7 +2073,12 @@ class WebSocketService {
 			// Set flag to prevent duplicate requests
 			gameActions.setServerTimeAdvancementFlag(true);
 
-			const payload = { gameId };
+			// Include client cycle so server can advance to at least our time
+			const cgm = get(clientGameModel);
+			const payload: { gameId: string; clientCycle?: number } = { gameId };
+			if (cgm) {
+				payload.clientCycle = cgm.currentCycle;
+			}
 			this.send(new Message(MESSAGE_TYPE.ADVANCE_GAME_TIME, payload));
 		} catch (error) {
 			console.error('Failed to request game time advancement:', error);

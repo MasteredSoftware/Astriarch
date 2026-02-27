@@ -204,9 +204,25 @@ export class EventApplicator {
       );
       Fleet.setDestination(existingFleet, grid, planet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
     } else {
-      // Normal application - launch the fleet with the server-confirmed fleet ID
-      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
+      // Fleet not in transit — either it was never optimistically launched (non-host player),
+      // or it was optimistically launched and already arrived at its destination.
+      // Verify the ships still exist on the source planet before attempting to re-launch.
       const allShipIds = [...shipIds.scouts, ...shipIds.destroyers, ...shipIds.cruisers, ...shipIds.battleships];
+      const existingShipIds = new Set(planet.planetaryFleet.starships.map((s) => s.id));
+      const missingShips = allShipIds.filter((id) => !existingShipIds.has(id));
+
+      if (missingShips.length > 0) {
+        // Ships already moved (fleet was optimistically launched and already arrived/merged).
+        // This is expected when the server FLEET_LAUNCHED event arrives after the client's
+        // game loop already landed the fleet at its destination. Safe to skip.
+        console.warn(
+          `Fleet ${fleetId} not in transit and ${missingShips.length}/${allShipIds.length} ships missing from source planet ${fromPlanetId} — fleet likely already arrived. Skipping re-launch.`,
+        );
+        return;
+      }
+
+      // Ships are still on the source planet — normal application (e.g., non-host receiving another player's fleet event)
+      Fleet.launchFleetToPlanet(planet, destPlanet, grid, shipIds, clientModel.mainPlayer, fleetId);
       console.log(
         `Fleet ${fleetId} launched from planet ${fromPlanetId} to ${toPlanetId} with ${allShipIds.length} ships`,
         shipIds,
@@ -352,7 +368,12 @@ export class EventApplicator {
   }
 
   private static applyPlanetCaptured(clientModel: ClientModelData, event: PlanetCapturedEvent): void {
-    const { planetId, planetData } = event.data;
+    const { planetId, planetData, attackingFleetId } = event.data;
+
+    // Remove the attacking fleet from fleetsInTransit (it was kept there awaiting server confirmation)
+    if (attackingFleetId !== undefined) {
+      this.removeFleetFromTransit(clientModel, attackingFleetId);
+    }
 
     // We captured a planet - add it to our owned planets
     // The planetData already has the merged fleet from the server
@@ -361,7 +382,12 @@ export class EventApplicator {
   }
 
   private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
-    const { planetId, newOwnerId, conflictData } = event.data;
+    const { planetId, newOwnerId, conflictData, attackingFleetId } = event.data;
+
+    // Remove the attacking fleet from fleetsInTransit if present (shouldn't be for defender, but be safe)
+    if (attackingFleetId !== undefined) {
+      this.removeFleetFromTransit(clientModel, attackingFleetId);
+    }
 
     // Remove planet from our owned planets immediately
     if (clientModel.mainPlayerOwnedPlanets[planetId]) {
@@ -385,9 +411,13 @@ export class EventApplicator {
   }
 
   private static applyFleetAttackFailed(clientModel: ClientModelData, event: FleetAttackFailedEvent): void {
-    const { planetId, conflictData, defenderId } = event.data;
+    const { planetId, conflictData, defenderId, attackingFleetId } = event.data;
 
-    // No need to modify fleets here, landing fleets were already removed during time advancement
+    // Remove the attacking fleet from fleetsInTransit (it was kept there awaiting server confirmation)
+    if (attackingFleetId !== undefined) {
+      this.removeFleetFromTransit(clientModel, attackingFleetId);
+    }
+
     // Set planet as explored with last known fleet strength
     Player.setPlanetExploredForClientModel(
       clientModel.mainPlayer,
@@ -482,5 +512,17 @@ export class EventApplicator {
     // Recalculate fleet hash after applying changes
     const shipIds = fleet.starships.map((s) => s.id);
     fleet.compositionHash = calculateFleetCompositionHash(shipIds);
+  }
+
+  /**
+   * Remove a fleet from the player's fleetsInTransit by fleet ID.
+   * Called when the server confirms conflict resolution (PLANET_CAPTURED, FLEET_ATTACK_FAILED, etc.)
+   * so the fleet that was kept in transit awaiting confirmation can be cleaned up.
+   */
+  private static removeFleetFromTransit(clientModel: ClientModelData, fleetId: number): void {
+    const index = clientModel.mainPlayer.fleetsInTransit.findIndex((f) => f.id === fleetId);
+    if (index >= 0) {
+      clientModel.mainPlayer.fleetsInTransit.splice(index, 1);
+    }
   }
 }

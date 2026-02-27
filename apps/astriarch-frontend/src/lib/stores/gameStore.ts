@@ -231,6 +231,22 @@ export const gameActions = {
 		awaitingServerTimeAdvancement = false;
 	},
 
+	// Clear a specific fleet from the pending arrival tracking (called when server confirms conflict resolution)
+	clearPendingArrivalFleet(fleetId: number) {
+		if (pendingArrivalFleets.has(fleetId)) {
+			console.log(`Clearing pending arrival fleet ${fleetId} - server confirmed resolution`);
+			pendingArrivalFleets.delete(fleetId);
+		}
+	},
+
+	// Clear all pending arrival fleets (called on full state sync)
+	clearAllPendingArrivalFleets() {
+		if (pendingArrivalFleets.size > 0) {
+			console.log(`Clearing all ${pendingArrivalFleets.size} pending arrival fleets`);
+			pendingArrivalFleets.clear();
+		}
+	},
+
 	// Planet selection actions
 	selectPlanet(planetId: number | null) {
 		console.log('gameActions.selectPlanet called with ID:', planetId);
@@ -306,6 +322,13 @@ function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T
 let animationFrameId: number | null = null;
 let awaitingServerTimeAdvancement = false;
 
+// Track fleets that have arrived at unowned planets and are awaiting server conflict resolution.
+// Maps fleet ID → timestamp when arrival was first detected.
+const pendingArrivalFleets = new Map<number, number>();
+
+// How long to wait for server confirmation before requesting a full state sync (ms)
+const PENDING_ARRIVAL_TIMEOUT_MS = 15000;
+
 function startGameLoop() {
 	if (animationFrameId !== null) {
 		cancelAnimationFrame(animationFrameId);
@@ -350,9 +373,38 @@ function startGameLoop() {
 			}
 
 			if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
-				// Request time advancement from server (debouncing handled in the method)
-				console.log('Fleets arriving on unowned planets, requesting state synchronization');
-				webSocketService.requestGameTimeAdvancement();
+				// Track newly arriving fleets and request server time advancement only for new ones
+				let hasNewArrivals = false;
+				const now = Date.now();
+				for (const fleet of result.fleetsArrivingOnUnownedPlanets) {
+					if (!pendingArrivalFleets.has(fleet.id)) {
+						pendingArrivalFleets.set(fleet.id, now);
+						hasNewArrivals = true;
+					}
+				}
+				if (hasNewArrivals) {
+					console.log('Fleets arriving on unowned planets, requesting state synchronization');
+					webSocketService.requestGameTimeAdvancement();
+				}
+			}
+
+			// Check for pending arrival fleets that have been waiting too long
+			// This handles edge cases where the server event was lost or never sent
+			if (pendingArrivalFleets.size > 0) {
+				const now = Date.now();
+				let hasTimedOut = false;
+				for (const [fleetId, timestamp] of pendingArrivalFleets) {
+					if (now - timestamp > PENDING_ARRIVAL_TIMEOUT_MS) {
+						console.warn(
+							`Fleet ${fleetId} pending arrival timed out after ${PENDING_ARRIVAL_TIMEOUT_MS}ms - requesting full state sync`
+						);
+						pendingArrivalFleets.delete(fleetId);
+						hasTimedOut = true;
+					}
+				}
+				if (hasTimedOut) {
+					webSocketService.requestStateSync();
+				}
 			}
 		}
 

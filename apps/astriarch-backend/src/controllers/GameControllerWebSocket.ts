@@ -7,15 +7,18 @@ import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 import {
   GameModel,
+  GameController as EngineGameController,
   PlayerType,
   GameCommand,
   ClientEvent,
   CommandProcessor,
   calculateRollingEventChecksum,
   advanceGameModelTime,
+  advanceGameModelTimeTo,
   type PlayerData,
   type GameEndConditions,
   type CommandResultError,
+  type SnapshotData,
 } from "astriarch-engine";
 
 export interface GameSettings {
@@ -640,6 +643,7 @@ export class GameController {
       sessionId?: string;
       command?: GameCommand;
     },
+    clientCycle?: number,
   ): Promise<
     GameResult & {
       events?: ClientEvent[];
@@ -684,7 +688,41 @@ export class GameController {
 
         // STEP 1: Advance game time (always happens)
         const gameModelData = GameModel.constructGridWithModelData(game.gameState as any);
-        const timeAdvanceResult = advanceGameModelTime(gameModelData);
+
+        // If clientCycle is provided and is slightly ahead of server time,
+        // advance to at least the client's cycle to ensure fleet arrivals are resolved.
+        // Cap the allowed drift to prevent abuse (max 2 seconds worth of cycles ahead).
+        let timeAdvanceResult;
+        if (clientCycle !== undefined && clientCycle > 0) {
+          const serverSnapshot = EngineGameController.startModelSnapshot(gameModelData.modelData);
+          const cycleDiff = clientCycle - serverSnapshot.currentCycle;
+          const msPerCycle =
+            EngineGameController.GAME_SPEED_MS_PER_CYCLE[
+              gameModelData.modelData.gameOptions.gameSpeed as keyof typeof EngineGameController.GAME_SPEED_MS_PER_CYCLE
+            ] || EngineGameController.MS_PER_CYCLE_DEFAULT;
+          const maxAllowedCycleDrift = 2000 / msPerCycle; // 2 seconds of drift
+
+          if (cycleDiff > 0 && cycleDiff <= maxAllowedCycleDrift) {
+            // Client is slightly ahead - advance to client's cycle
+            const adjustedSnapshot: SnapshotData = {
+              newSnapshotTime: serverSnapshot.newSnapshotTime,
+              cyclesElapsed: serverSnapshot.cyclesElapsed + cycleDiff,
+              currentCycle: clientCycle,
+            };
+            logger.debug(`Advancing server to client cycle ${clientCycle} (drift: ${cycleDiff.toFixed(6)} cycles)`);
+            timeAdvanceResult = advanceGameModelTimeTo(gameModelData, adjustedSnapshot);
+          } else {
+            // Client cycle is behind server, or drift exceeds cap - use normal advancement
+            if (cycleDiff > maxAllowedCycleDrift) {
+              logger.warn(
+                `Client cycle drift too large (${cycleDiff.toFixed(4)} cycles, max ${maxAllowedCycleDrift.toFixed(4)}) - using server time`,
+              );
+            }
+            timeAdvanceResult = advanceGameModelTime(gameModelData);
+          }
+        } else {
+          timeAdvanceResult = advanceGameModelTime(gameModelData);
+        }
 
         // Store time-based events
         const timeBasedEvents = timeAdvanceResult.events || [];
