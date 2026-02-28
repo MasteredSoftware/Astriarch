@@ -3,6 +3,7 @@ import { ServerGameModel, IGame, IPlayer } from "../models/Game";
 import { SessionModel } from "../models/Session";
 import { logger } from "../utils/logger";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
+import { eventPersistenceService } from "../services/EventPersistenceService";
 import * as engine from "astriarch-engine";
 import { getPlayerId } from "../utils/player-id-helper";
 import {
@@ -785,6 +786,21 @@ export class GameController {
       // Check if there was an error during command processing
       if (commandError) {
         const { message, code, possibleDesync } = commandError;
+
+        // Persist failed command for debugging (fire-and-forget)
+        if (options?.command) {
+          eventPersistenceService.persistCommandAndEvents(
+            gameId,
+            options.command,
+            {
+              success: false,
+              error: commandError,
+              events: [],
+            },
+            0, // gameCycle unknown for failed commands (state may not have loaded)
+          );
+        }
+
         return {
           success: false,
           error: message,
@@ -800,6 +816,36 @@ export class GameController {
         );
       } else {
         logger.info(`Advanced game time for game ${gameId} (${allEvents.length} events generated)`);
+      }
+
+      // Persist commands and events for debugging (fire-and-forget)
+      const currentCycleForPersistence = modelData!.currentCycle || 0;
+      if (options?.command) {
+        // Separate time-based events from command events
+        const commandEventTypes = new Set(
+          allEvents.filter((e) => e.sourceCommandId === options.command!.commandId).map((e) => e),
+        );
+        const timeBasedEvents = allEvents.filter((e) => !commandEventTypes.has(e));
+
+        // Persist time-based events first (from advanceGameModelTime)
+        if (timeBasedEvents.length > 0) {
+          eventPersistenceService.persistEvents(gameId, timeBasedEvents, currentCycleForPersistence, "server");
+        }
+
+        // Persist the command + its events together
+        const commandResult = {
+          success: true as const,
+          events: [...commandEventTypes],
+        };
+        eventPersistenceService.persistCommandAndEvents(
+          gameId,
+          options.command,
+          commandResult,
+          currentCycleForPersistence,
+        );
+      } else if (allEvents.length > 0) {
+        // Time advancement only — persist server-generated events
+        eventPersistenceService.persistEvents(gameId, allEvents, currentCycleForPersistence, "server");
       }
 
       return {

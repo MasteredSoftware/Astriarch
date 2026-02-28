@@ -583,3 +583,67 @@ export interface ResourcesAutoSpentNotification extends ClientNotification {
     reason: string;
   };
 }
+
+// ============================================================================
+// EVENT SOURCING TYPES - Server-side envelopes for persistent event/command log
+// ============================================================================
+
+/**
+ * A DomainEvent wraps an existing ClientEvent with metadata needed for
+ * event sourcing: ordering, correlation, and replay.
+ *
+ * These are persisted to MongoDB for debugging, replay, and observer mode.
+ * The inner `payload` is the same ClientEvent that gets broadcast to clients.
+ */
+export interface DomainEvent {
+  /** Globally unique event ID (UUID) */
+  eventId: string;
+  /** Game this event belongs to */
+  gameId: string;
+  /** Monotonically increasing sequence number within this game (shared with PersistedCommand) */
+  sequenceNumber: number;
+  /** Game cycle (currentCycle) when this event was produced */
+  gameCycle: number;
+  /** Wall-clock timestamp (ms since epoch) */
+  timestamp: number;
+  /** Player who triggered this event (or 'server' for time-based events like conflicts/trades) */
+  sourcePlayerId: string;
+  /** Command ID that produced this event, if any (null for server-generated events) */
+  sourceCommandId: string | null;
+  /** The event type (mirrors payload.type for indexed queries) */
+  eventType: ClientEventType;
+  /** Which players this event affects (mirrors payload.affectedPlayerIds) */
+  affectedPlayerIds: string[];
+  /** The full ClientEvent payload — same data that gets broadcast to clients */
+  payload: ClientEvent;
+}
+
+/**
+ * A PersistedCommand records the raw command input plus its processing result.
+ * Shares the same monotonic sequence space as DomainEvent within a game,
+ * giving a total ordering of commands and events for debugging.
+ */
+export interface PersistedCommand {
+  /** The command's own ID (from GameCommand.commandId) */
+  commandId: string;
+  /** Game this command was issued in */
+  gameId: string;
+  /** Monotonically increasing sequence number within this game (shared with DomainEvent) */
+  sequenceNumber: number;
+  /** Game cycle when this command was processed */
+  gameCycle: number;
+  /** Wall-clock timestamp (ms since epoch) */
+  timestamp: number;
+  /** Player who issued the command */
+  playerId: string;
+  /** Command type (for indexed queries) */
+  commandType: GameCommandType;
+  /** The full command payload */
+  command: GameCommand;
+  /** Whether the command succeeded */
+  resultSuccess: boolean;
+  /** Error code if the command failed, null otherwise */
+  errorCode: string | null;
+  /** Error message if the command failed, null otherwise */
+  errorMessage: string | null;
+}
