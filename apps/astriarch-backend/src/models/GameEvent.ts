@@ -1,23 +1,23 @@
 import { Schema, model, Document } from "mongoose";
 
+/**
+ * Persistent domain event record for event sourcing.
+ * Wraps the engine's ClientEvent with metadata for ordering, correlation, and replay.
+ *
+ * Shares a monotonic sequenceNumber space with GameCommandLog within each game,
+ * giving a total ordering of commands and events for debugging.
+ */
 export interface IGameEvent extends Document {
   gameId: string;
+  eventId: string;
+  sequenceNumber: number;
+  gameCycle: number;
   timestamp: Date;
-  gameTime: number; // Game time when event occurred
-  eventType: string;
-  eventData: {
-    playerId?: string;
-    planetId?: string;
-    fleetId?: string;
-    message?: string;
-    severity?: "info" | "warning" | "error" | "critical";
-    details?: any;
-  };
-  affectedPlayers: string[]; // Which players should see this event
-  broadcasted: boolean; // Whether this event has been sent to clients
-  broadcastTime?: Date;
-  persistent: boolean; // Whether to store in player's event history
-  category: string; // For filtering and organization
+  sourcePlayerId: string;
+  sourceCommandId: string | null;
+  eventType: string; // ClientEventType value
+  affectedPlayerIds: string[];
+  payload: any; // Full ClientEvent object
 }
 
 const GameEventSchema = new Schema<IGameEvent>(
@@ -25,68 +25,43 @@ const GameEventSchema = new Schema<IGameEvent>(
     gameId: {
       type: String,
       required: true,
-      index: true,
+    },
+    eventId: {
+      type: String,
+      required: true,
+    },
+    sequenceNumber: {
+      type: Number,
+      required: true,
+    },
+    gameCycle: {
+      type: Number,
+      required: true,
     },
     timestamp: {
       type: Date,
       default: Date.now,
-      index: true,
     },
-    gameTime: {
-      type: Number,
+    sourcePlayerId: {
+      type: String,
       required: true,
-      // Removed index: true - using schema-level index instead
+    },
+    sourceCommandId: {
+      type: String,
+      default: null,
     },
     eventType: {
       type: String,
       required: true,
-      enum: [
-        "game_start",
-        "game_end",
-        "player_join",
-        "player_leave",
-        "planet_colonized",
-        "planet_attacked",
-        "planet_conquered",
-        "fleet_arrived",
-        "FLEET_ATTACK_FAILED", // TODO: fix all of these and use this schema
-        "building_completed",
-        "research_completed",
-        "battle_result",
-        "diplomacy_change",
-        "trade_completed",
-        "game_message",
-        "system_notification",
-        "error_occurred",
-      ],
     },
-    eventData: {
-      type: Schema.Types.Mixed,
-      required: true,
-    },
-    affectedPlayers: [
+    affectedPlayerIds: [
       {
         type: String,
-        required: true,
       },
     ],
-    broadcasted: {
-      type: Boolean,
+    payload: {
+      type: Schema.Types.Mixed,
       required: true,
-      default: false,
-      index: true,
-    },
-    broadcastTime: Date,
-    persistent: {
-      type: Boolean,
-      required: true,
-      default: true,
-    },
-    category: {
-      type: String,
-      required: true,
-      enum: ["game_flow", "player_action", "battle", "economy", "diplomacy", "system", "error"],
-      index: true,
     },
   },
   {
@@ -95,12 +70,15 @@ const GameEventSchema = new Schema<IGameEvent>(
   },
 );
 
-// Critical indexes for realtime event processing
-GameEventSchema.index({ gameId: 1, timestamp: -1 });
-GameEventSchema.index({ gameId: 1, eventType: 1, timestamp: -1 });
-GameEventSchema.index({ gameId: 1, broadcasted: 1 });
-GameEventSchema.index({ gameId: 1, affectedPlayers: 1, timestamp: -1 });
-GameEventSchema.index({ gameId: 1, category: 1, timestamp: -1 });
-GameEventSchema.index({ gameTime: 1 });
+// Primary query: replay events for a game in order
+GameEventSchema.index({ gameId: 1, sequenceNumber: 1 }, { unique: true });
+// Debug: filter by event type within a game
+GameEventSchema.index({ gameId: 1, eventType: 1, sequenceNumber: 1 });
+// Player-scoped replay (observer viewing one player's perspective)
+GameEventSchema.index({ gameId: 1, sourcePlayerId: 1, sequenceNumber: 1 });
+// Lookup by eventId
+GameEventSchema.index({ eventId: 1 }, { unique: true });
+// Player-affected query (what events did a specific player see?)
+GameEventSchema.index({ gameId: 1, affectedPlayerIds: 1, sequenceNumber: 1 });
 
 export const GameEvent = model<IGameEvent>("GameEvent", GameEventSchema);

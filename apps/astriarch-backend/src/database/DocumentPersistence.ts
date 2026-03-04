@@ -39,27 +39,6 @@ export class DocumentPersistence {
   }
 
   /**
-   * Save a PlayerAction document (convenience method)
-   */
-  static async savePlayerAction(actionDocument: Document): Promise<Document> {
-    return DocumentPersistence.saveDocument(actionDocument, ["actionData", "changes"]);
-  }
-
-  /**
-   * Save a GameEvent document (convenience method)
-   */
-  static async saveGameEvent(eventDocument: Document): Promise<Document> {
-    return DocumentPersistence.saveDocument(eventDocument, ["eventData"]);
-  }
-
-  /**
-   * Save a GameState document (convenience method)
-   */
-  static async saveGameState(gameStateDocument: Document): Promise<Document> {
-    return DocumentPersistence.saveDocument(gameStateDocument, ["planets", "fleets", "players", "gameSettings"]);
-  }
-
-  /**
    * Auto-detect Mixed type fields from the document's schema
    */
   private static detectMixedFields(document: Document): string[] {
@@ -214,7 +193,4 @@ export class DocumentPersistence {
  */
 export const persist = DocumentPersistence.saveDocument;
 export const persistGame = DocumentPersistence.saveGame;
-export const persistPlayerAction = DocumentPersistence.savePlayerAction;
-export const persistGameEvent = DocumentPersistence.saveGameEvent;
-export const persistGameState = DocumentPersistence.saveGameState;
 export const saveGameWithConcurrencyProtection = DocumentPersistence.saveGameWithConcurrencyProtection;
