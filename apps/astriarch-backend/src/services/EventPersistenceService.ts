@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { GameEvent } from "../models/GameEvent";
 import { GameCommandLog } from "../models/GameCommandLog";
+import { SequenceCounter } from "../models/SequenceCounter";
 import { logger } from "../utils/logger";
 import type { ClientEvent, GameCommand, CommandResult, DomainEvent, PersistedCommand } from "astriarch-engine";
 
@@ -13,43 +14,38 @@ import type { ClientEvent, GameCommand, CommandResult, DomainEvent, PersistedCom
  *
  * Commands and events share a monotonic sequence number per game, giving a
  * total ordering for debugging (e.g., "command 42 produced events 43, 44, 45").
+ *
+ * Sequence numbers are allocated atomically via MongoDB's findOneAndUpdate + $inc
+ * on a dedicated counters collection — no in-memory state, no race conditions,
+ * works across multiple server nodes.
  */
 export class EventPersistenceService {
   /**
-   * Next sequence number per game. Loaded lazily from MongoDB on first access.
-   * Key: gameId, Value: next sequence number to assign.
+   * Atomically reserve a contiguous block of sequence numbers for a game.
+   * Uses MongoDB findOneAndUpdate with $inc — a single atomic operation that
+   * returns the value *before* incrementing (returnDocument: 'before').
+   *
+   * @param gameId - The game ID
+   * @param count - How many sequence numbers to reserve (default: 1)
+   * @returns The first sequence number in the reserved block
    */
-  private sequenceCounters: Map<string, number> = new Map();
-
-  /**
-   * Get the next sequence number for a game, loading from MongoDB if needed.
-   */
-  private async getNextSequence(gameId: string): Promise<number> {
-    if (!this.sequenceCounters.has(gameId)) {
-      // Find the highest sequence number across both collections
-      const [latestEvent, latestCommand] = await Promise.all([
-        GameEvent.findOne({ gameId }).sort({ sequenceNumber: -1 }).select("sequenceNumber").lean(),
-        GameCommandLog.findOne({ gameId }).sort({ sequenceNumber: -1 }).select("sequenceNumber").lean(),
-      ]);
-
-      const maxEventSeq = latestEvent?.sequenceNumber ?? -1;
-      const maxCommandSeq = latestCommand?.sequenceNumber ?? -1;
-      const nextSeq = Math.max(maxEventSeq, maxCommandSeq) + 1;
-
-      this.sequenceCounters.set(gameId, nextSeq);
-    }
-
-    const seq = this.sequenceCounters.get(gameId)!;
-    this.sequenceCounters.set(gameId, seq + 1);
-    return seq;
+  private async reserveSequenceBlock(gameId: string, count: number = 1): Promise<number> {
+    const counterKey = `game:${gameId}`;
+    const result = await SequenceCounter.findOneAndUpdate(
+      { _id: counterKey },
+      { $inc: { seq: count } },
+      { upsert: true, returnDocument: "before" },
+    );
+    // On first upsert, result is null — counter starts at 0
+    return result?.seq ?? 0;
   }
 
   /**
    * Persist a command and its resulting events to MongoDB.
    *
    * This is the primary entry point — call it after CommandProcessor.processCommand
-   * returns. It persists the command first, then its events, all with sequential
-   * sequence numbers.
+   * returns. It reserves a contiguous block of sequence numbers (1 for the command
+   * + N for events) in a single atomic operation, then writes them all.
    *
    * @param gameId - The game ID
    * @param command - The original GameCommand
@@ -64,13 +60,16 @@ export class EventPersistenceService {
   ): Promise<void> {
     try {
       const now = Date.now();
+      const eventCount = result.success ? result.events.length : 0;
+
+      // Reserve 1 (command) + N (events) sequence numbers atomically
+      const firstSeq = await this.reserveSequenceBlock(gameId, 1 + eventCount);
 
       // Persist the command
-      const commandSeq = await this.getNextSequence(gameId);
       const persistedCommand: PersistedCommand = {
         commandId: command.commandId,
         gameId,
-        sequenceNumber: commandSeq,
+        sequenceNumber: firstSeq,
         gameCycle,
         timestamp: now,
         playerId: command.playerId,
@@ -81,7 +80,7 @@ export class EventPersistenceService {
         errorMessage: result.error?.message ?? null,
       };
 
-      await GameCommandLog.create({
+      const commandPromise = GameCommandLog.create({
         gameId: persistedCommand.gameId,
         commandId: persistedCommand.commandId,
         sequenceNumber: persistedCommand.sequenceNumber,
@@ -95,9 +94,25 @@ export class EventPersistenceService {
         errorMessage: persistedCommand.errorMessage,
       });
 
-      // Persist the resulting events (if command succeeded and produced events)
-      if (result.success && result.events.length > 0) {
-        await this.persistEvents(gameId, result.events, gameCycle, command.playerId, command.commandId);
+      // Persist resulting events with pre-assigned sequence numbers
+      if (eventCount > 0) {
+        const eventDocs = result.events.map((event, i) => ({
+          gameId,
+          eventId: uuidv4(),
+          sequenceNumber: firstSeq + 1 + i,
+          gameCycle,
+          timestamp: new Date(now),
+          sourcePlayerId: command.playerId,
+          sourceCommandId: event.sourceCommandId ?? command.commandId,
+          eventType: event.type,
+          affectedPlayerIds: event.affectedPlayerIds,
+          payload: event,
+        }));
+
+        // Write command and events in parallel
+        await Promise.all([commandPromise, GameEvent.insertMany(eventDocs, { ordered: true })]);
+      } else {
+        await commandPromise;
       }
     } catch (error) {
       // Fire-and-forget: log but don't throw
@@ -126,59 +141,28 @@ export class EventPersistenceService {
 
     try {
       const now = Date.now();
-      const domainEvents: DomainEvent[] = [];
 
-      for (const event of events) {
-        const seq = await this.getNextSequence(gameId);
-        domainEvents.push({
-          eventId: uuidv4(),
-          gameId,
-          sequenceNumber: seq,
-          gameCycle,
-          timestamp: now,
-          sourcePlayerId,
-          sourceCommandId: event.sourceCommandId ?? sourceCommandId,
-          eventType: event.type,
-          affectedPlayerIds: event.affectedPlayerIds,
-          payload: event,
-        });
-      }
+      // Reserve all sequence numbers in one atomic operation
+      const firstSeq = await this.reserveSequenceBlock(gameId, events.length);
 
-      // Bulk insert all events at once
-      await GameEvent.insertMany(
-        domainEvents.map((de) => ({
-          gameId: de.gameId,
-          eventId: de.eventId,
-          sequenceNumber: de.sequenceNumber,
-          gameCycle: de.gameCycle,
-          timestamp: new Date(de.timestamp),
-          sourcePlayerId: de.sourcePlayerId,
-          sourceCommandId: de.sourceCommandId,
-          eventType: de.eventType,
-          affectedPlayerIds: de.affectedPlayerIds,
-          payload: de.payload,
-        })),
-        { ordered: true },
-      );
+      const eventDocs = events.map((event, i) => ({
+        gameId,
+        eventId: uuidv4(),
+        sequenceNumber: firstSeq + i,
+        gameCycle,
+        timestamp: new Date(now),
+        sourcePlayerId,
+        sourceCommandId: event.sourceCommandId ?? sourceCommandId,
+        eventType: event.type,
+        affectedPlayerIds: event.affectedPlayerIds,
+        payload: event,
+      }));
+
+      await GameEvent.insertMany(eventDocs, { ordered: true });
     } catch (error) {
       // Fire-and-forget: log but don't throw
       logger.error(`Failed to persist ${events.length} events for game ${gameId}:`, error);
     }
-  }
-
-  /**
-   * Reset the cached sequence counter for a game.
-   * Call this when a game ends or is deleted to free memory.
-   */
-  resetSequenceCounter(gameId: string): void {
-    this.sequenceCounters.delete(gameId);
-  }
-
-  /**
-   * Clear all cached sequence counters.
-   */
-  resetAllSequenceCounters(): void {
-    this.sequenceCounters.clear();
   }
 }
 
