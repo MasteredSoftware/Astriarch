@@ -389,6 +389,7 @@ export class WebSocketServer {
           gameEndConditions: gameEndConditions!,
           events: eventsToSend,
           notifications: [],
+          aiCommandResults: [],
         },
         result.game!,
       );

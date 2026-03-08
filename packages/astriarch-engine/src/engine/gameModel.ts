@@ -41,11 +41,22 @@ export interface GameEndConditions {
   allHumansDestroyed: boolean;
 }
 
+/**
+ * Result of processing a single AI command through CommandProcessor.
+ * Used to collect AI actions for persistence and event broadcasting.
+ */
+export interface AICommandResult {
+  command: import('./GameCommands').GameCommand;
+  result: import('./GameCommands').CommandResult;
+}
+
 export interface AdvanceGameClockResult {
   destroyedPlayers: PlayerData[];
   gameEndConditions: GameEndConditions;
   events: import('./GameCommands').ClientEvent[];
   notifications: import('./GameCommands').ClientNotification[];
+  /** AI commands processed during this time advancement, for persistence */
+  aiCommandResults: AICommandResult[];
 }
 
 export const playerColors = [

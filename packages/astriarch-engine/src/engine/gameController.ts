@@ -19,6 +19,7 @@ import {
 import {
   AdvanceGameClockForPlayerData,
   AdvanceGameClockResult,
+  AICommandResult,
   GameModel,
   GameModelData,
   SnapshotData,
@@ -74,10 +75,13 @@ export class GameController {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = snapshotData;
     const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
 
+    const allAICommandResults: AICommandResult[] = [];
+
     for (const p of modelData.players) {
       if (p.type !== PlayerType.Human) {
         const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
-        ComputerPlayer.computerTakeTurn(gameModel, p, ownedPlanets);
+        const aiResults = ComputerPlayer.computerTakeTurn(gameModel, p, ownedPlanets);
+        allAICommandResults.push(...aiResults);
       }
     }
 
@@ -128,6 +132,7 @@ export class GameController {
       gameEndConditions,
       events: allEvents,
       notifications: allNotifications,
+      aiCommandResults: allAICommandResults,
     };
   }
 

@@ -95,6 +95,9 @@ describe('ComputerPlayer', () => {
       const hardPlayer = Player.constructPlayer('hard', PlayerType.Computer_Hard, 'Hard', player1.color);
       const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
 
+      // Add test players to the model so CommandProcessor can find them
+      testGameData.gameModel.modelData.players.push(easyPlayer, hardPlayer, expertPlayer);
+
       const easyPlanets = ClientGameModel.getOwnedPlanets(
         [player1.ownedPlanetIds[0]],
         testGameData.gameModel.modelData.planets,
@@ -128,6 +131,8 @@ describe('ComputerPlayer', () => {
 
     test('should queue appropriate research for early game', () => {
       const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
+      // Add test player to model so CommandProcessor can find them
+      testGameData.gameModel.modelData.players.push(expertPlayer);
       const expertPlanets = ClientGameModel.getOwnedPlanets(
         [player1.ownedPlanetIds[0]],
         testGameData.gameModel.modelData.planets,

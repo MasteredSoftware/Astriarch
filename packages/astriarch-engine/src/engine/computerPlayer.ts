@@ -12,8 +12,21 @@ import { ResearchType } from '../model/research';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';
 import { Utils } from '../utils/utils';
 import { BattleSimulator } from './battleSimulator';
+import { CommandProcessor } from './CommandProcessor';
 import { Fleet } from './fleet';
-import { GameModelData } from './gameModel';
+import {
+  GameCommand,
+  GameCommandType,
+  CommandResult,
+  AdjustResearchPercentCommand,
+  SubmitResearchItemCommand,
+  SubmitTradeCommand,
+  QueueProductionItemCommand,
+  DemolishImprovementCommand,
+  SendShipsCommand,
+  UpdatePlanetWorkerAssignmentsCommand,
+} from './GameCommands';
+import { AICommandResult, GameModelData } from './gameModel';
 import { Grid } from './grid';
 import { Planet, PlanetPerTurnResourceGeneration, PopulationAssignments } from './planet';
 import { PlanetDistanceComparer } from './planetDistanceComparer';
@@ -311,11 +324,66 @@ export class ComputerPlayer {
     this.DEBUG_AI = enabled;
   }
 
+  // ============================================================================
+  // AI Command Pipeline Helpers
+  // ============================================================================
+
+  /** Counter for generating unique AI command IDs within a game session */
+  private static aiCommandIdCounter = 0;
+
+  /**
+   * Generate a unique command ID for an AI command.
+   * Format: ai-{playerId}-{counter} for deterministic, unique IDs.
+   */
+  private static generateAICommandId(player: PlayerData): string {
+    return `ai-${player.id}-${this.aiCommandIdCounter++}`;
+  }
+
+  /**
+   * Reset the AI command ID counter (called at start of each game or test)
+   */
+  public static resetAICommandIdCounter(): void {
+    this.aiCommandIdCounter = 0;
+  }
+
+  /**
+   * Create a GameCommand with common AI metadata fields pre-filled.
+   */
+  private static createAICommand<T extends GameCommand>(
+    player: PlayerData,
+    commandFields: Omit<T, 'playerId' | 'timestamp' | 'commandId' | 'metadata'>,
+  ): T {
+    return {
+      ...commandFields,
+      playerId: player.id,
+      timestamp: Date.now(),
+      commandId: this.generateAICommandId(player),
+      metadata: { source: 'ai' as const },
+    } as T;
+  }
+
+  /**
+   * Process an AI command through CommandProcessor and collect the result.
+   * Returns true if the command succeeded.
+   */
+  private static processAICommand(
+    gameModel: GameModelData,
+    command: GameCommand,
+    results: AICommandResult[],
+  ): boolean {
+    const result = CommandProcessor.processCommand(gameModel.modelData, gameModel.grid, command);
+    results.push({ command, result });
+    if (!result.success) {
+      this.debugLog('AI command failed:', command.type, result.error?.message);
+    }
+    return result.success;
+  }
+
   private static onComputerSentFleet(fleet: FleetData) {
     this.debugLog('Computer Sent Fleet:', fleet);
   }
 
-  public static computerTakeTurn(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById) {
+  public static computerTakeTurn(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById): AICommandResult[] {
     //determine highest priority for resource usage
     //early game should be building developments and capturing/exploring planets while keeping up food production
     //mid game should be building space-platforms, high-class ships and further upgrading planets
@@ -324,21 +392,27 @@ export class ComputerPlayer {
     //if the planet has slots available and we have enough resources build (in order when we don't have)
     //
 
+    const allResults: AICommandResult[] = [];
     const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(player, ownedPlanets);
 
     // Manage research allocation based on game state and difficulty
-    this.computerManageResearch(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const researchResults = this.computerManageResearch(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    allResults.push(...researchResults);
 
     this.computerSetPlanetBuildGoals(gameModel, player, ownedPlanets, ownedPlanetsSorted);
 
-    this.computerSubmitTrades(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const tradeResults = this.computerSubmitTrades(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    allResults.push(...tradeResults);
 
-    this.computerBuildImprovementsAndShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const buildResults = this.computerBuildImprovementsAndShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    allResults.push(...buildResults);
 
     //adjust population assignments as appropriate based on planet and needs
-    this.computerAdjustPopulationAssignments(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const popResults = this.computerAdjustPopulationAssignments(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    allResults.push(...popResults);
 
     // Manage fleet repairs - send damaged fleets back to repair capable planets
+    // DEFERRED: Fleet repairs still use direct mutation (no command type for in-transit fleet redirect)
     this.computerManageFleetRepairs(gameModel, player, ownedPlanets, ownedPlanetsSorted);
 
     //base strategies on computer-level
@@ -352,7 +426,10 @@ export class ComputerPlayer {
 
     //send scouts to unexplored planets (harder levels of computers know where better planets are?)
 
-    this.computerSendShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const shipResults = this.computerSendShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    allResults.push(...shipResults);
+
+    return allResults;
   }
 
   public static computerAdjustPopulationAssignments(
@@ -360,7 +437,13 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
-  ) {
+  ): AICommandResult[] {
+    // Record starting population assignments to compute net diffs later
+    const startingAssignments: Record<number, PopulationAssignments> = {};
+    for (const planet of ownedPlanetsSorted) {
+      startingAssignments[planet.id] = Planet.countPopulationWorkerTypes(planet);
+    }
+
     const planetPopulationWorkerTypes: Record<number, PopulationAssignments> = {};
     const planetResourcesPerTurn: PlanetResourcesPerTurn = {};
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
@@ -672,6 +755,46 @@ export class ComputerPlayer {
         if (!changedAssignment) break;
       } //while (oreAmountNeeded < 0 || iridiumAmountNeeded < 0)
     }
+
+    // Compute net population diffs per planet and emit commands for persistence
+    // The mutations were applied directly above (iterative algorithm needs intermediate state),
+    // so these commands are recorded for persistence/replay only (already applied to game state).
+    const results: AICommandResult[] = [];
+    for (const planet of ownedPlanetsSorted) {
+      const ending = Planet.countPopulationWorkerTypes(planet);
+      const starting = startingAssignments[planet.id];
+      if (!starting) continue;
+
+      const farmerDiff = ending.farmers - starting.farmers;
+      const minerDiff = ending.miners - starting.miners;
+      const builderDiff = ending.builders - starting.builders;
+
+      if (farmerDiff !== 0 || minerDiff !== 0 || builderDiff !== 0) {
+        const popCmd = this.createAICommand<UpdatePlanetWorkerAssignmentsCommand>(player, {
+          type: GameCommandType.UPDATE_PLANET_WORKER_ASSIGNMENTS,
+          planetId: planet.id,
+          workers: { farmerDiff, minerDiff, builderDiff },
+        });
+        // Record as pre-applied (state already mutated, command is for persistence only)
+        results.push({
+          command: popCmd,
+          result: {
+            success: true,
+            events: [{
+              type: 'PLANET_WORKER_ASSIGNMENTS_UPDATED' as import('./GameCommands').ClientEventType,
+              affectedPlayerIds: [player.id],
+              sourceCommandId: popCmd.commandId,
+              data: {
+                planetId: planet.id,
+                workers: ending,
+              },
+            }],
+          },
+        });
+      }
+    }
+
+    return results;
   }
 
   public static computerSetPlanetBuildGoals(
@@ -922,14 +1045,16 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
-  ) {
+  ): AICommandResult[] {
+    const results: AICommandResult[] = [];
+
     //first decide if we want to trade based on resource prices and needed resources (based on planet build goals)
     const totalPopulation = Player.getTotalPopulation(player, ownedPlanets);
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
 
     // Early return if player has no owned planets
     if (ownedPlanetsSorted.length === 0) {
-      return;
+      return results;
     }
 
     let energyDesired = 0;
@@ -941,8 +1066,11 @@ export class ComputerPlayer {
       iridiumDesired += ppi.iridiumCost;
     }
     const purchaseMultiplier = 0.25;
-    const tradesToExecute = [];
-    const planetId = player.homePlanetId ? player.homePlanetId : ownedPlanetsSorted[0].id;
+    const tradesToExecute: {
+      resourceType: TradingCenterResourceType;
+      amount: number;
+      tradeType: TradeType;
+    }[] = [];
     let amount = 0;
     if (totalResources.energy < energyDesired) {
       //try to sell resources
@@ -950,55 +1078,85 @@ export class ComputerPlayer {
       if (totalResources.food >= totalPopulation * 4) {
         //sell some food
         amount = Math.floor(totalResources.food * purchaseMultiplier);
-        tradesToExecute.push(
-          TradingCenter.constructTrade(player.id, planetId, TradeType.SELL, TradingCenterResourceType.FOOD, amount),
-        );
+        tradesToExecute.push({
+          resourceType: TradingCenterResourceType.FOOD,
+          amount,
+          tradeType: TradeType.SELL,
+        });
       }
       if (totalResources.ore >= oreDesired * 2) {
         amount = Math.floor(totalResources.ore * purchaseMultiplier);
-        tradesToExecute.push(
-          TradingCenter.constructTrade(player.id, planetId, TradeType.SELL, TradingCenterResourceType.ORE, amount),
-        );
+        tradesToExecute.push({
+          resourceType: TradingCenterResourceType.ORE,
+          amount,
+          tradeType: TradeType.SELL,
+        });
       }
 
       if (totalResources.iridium >= iridiumDesired * 2) {
         amount = Math.floor(totalResources.iridium * purchaseMultiplier);
-        tradesToExecute.push(
-          TradingCenter.constructTrade(player.id, planetId, TradeType.SELL, TradingCenterResourceType.IRIDIUM, amount),
-        );
+        tradesToExecute.push({
+          resourceType: TradingCenterResourceType.IRIDIUM,
+          amount,
+          tradeType: TradeType.SELL,
+        });
       }
     } else if (totalResources.energy > energyDesired * 1.2) {
       //try to buy resources
       if (totalResources.food <= totalPopulation * 1.2) {
         //buy some food
         const amount = Math.floor(totalPopulation * purchaseMultiplier);
-        tradesToExecute.push(
-          TradingCenter.constructTrade(player.id, planetId, TradeType.BUY, TradingCenterResourceType.FOOD, amount),
-        );
+        tradesToExecute.push({
+          resourceType: TradingCenterResourceType.FOOD,
+          amount,
+          tradeType: TradeType.BUY,
+        });
       }
 
       if (totalResources.ore <= oreDesired * 1.2) {
         const amount = Math.floor(oreDesired * purchaseMultiplier);
-        tradesToExecute.push(
-          TradingCenter.constructTrade(player.id, planetId, TradeType.BUY, TradingCenterResourceType.ORE, amount),
-        );
+        tradesToExecute.push({
+          resourceType: TradingCenterResourceType.ORE,
+          amount,
+          tradeType: TradeType.BUY,
+        });
       }
       if (totalResources.iridium <= iridiumDesired * 1.2) {
         const amount = Math.floor(iridiumDesired * purchaseMultiplier);
-        tradesToExecute.push(
-          TradingCenter.constructTrade(player.id, planetId, TradeType.BUY, TradingCenterResourceType.IRIDIUM, amount),
-        );
+        tradesToExecute.push({
+          resourceType: TradingCenterResourceType.IRIDIUM,
+          amount,
+          tradeType: TradeType.BUY,
+        });
       }
     }
+
+    const resourceTypeToString: Record<number, string> = {
+      [TradingCenterResourceType.FOOD]: 'food',
+      [TradingCenterResourceType.ORE]: 'ore',
+      [TradingCenterResourceType.IRIDIUM]: 'iridium',
+    };
 
     for (const trade of tradesToExecute) {
       if (trade.amount > 0) {
         this.debugLog(player.name, 'Submitted a Trade: ', trade);
-        gameModel.modelData.tradingCenter.currentTrades.push(trade);
+
+        const tradeCmd = this.createAICommand<SubmitTradeCommand>(player, {
+          type: GameCommandType.SUBMIT_TRADE,
+          tradeId: this.generateAICommandId(player),
+          tradeData: {
+            resourceType: resourceTypeToString[trade.resourceType] || 'food',
+            amount: trade.amount,
+            action: trade.tradeType === TradeType.BUY ? 'buy' : 'sell',
+          },
+        });
+        this.processAICommand(gameModel, tradeCmd, results);
       } else {
         this.debugLog(player.name, 'Trade found with zero amount.', trade);
       }
     }
+
+    return results;
   }
 
   public static computerBuildImprovementsAndShips(
@@ -1006,7 +1164,8 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
-  ) {
+  ): AICommandResult[] {
+    const results: AICommandResult[] = [];
     const totalResources = Player.getTotalResourceAmount(player, ownedPlanets);
     //determine energy surplus needed to ship food
     const aiSettings = this.getAISettings(player);
@@ -1036,7 +1195,23 @@ export class ComputerPlayer {
             totalResources.ore - ppi.oreCost >= 0 &&
             totalResources.iridium - ppi.iridiumCost >= 0
           ) {
-            Planet.enqueueProductionItemAndSpendResources(gameModel.grid, player, ownedPlanets, p, ppi);
+            // Emit command based on production item type (build vs demolish)
+            if (ppi.itemType === PlanetProductionItemType.PlanetImprovementToDestroy) {
+              const demolishCmd = this.createAICommand<DemolishImprovementCommand>(player, {
+                type: GameCommandType.DEMOLISH_IMPROVEMENT,
+                planetId: p.id,
+                productionItem: ppi,
+              });
+              this.processAICommand(gameModel, demolishCmd, results);
+            } else {
+              const buildCmd = this.createAICommand<QueueProductionItemCommand>(player, {
+                type: GameCommandType.QUEUE_PRODUCTION_ITEM,
+                planetId: p.id,
+                productionItem: ppi,
+              });
+              this.processAICommand(gameModel, buildCmd, results);
+            }
+
             this.logDecision(player, gameModel, 'building', 'Enqueued production item', {
               planetName: p.name,
               itemType: ppi.itemType,
@@ -1061,6 +1236,8 @@ export class ComputerPlayer {
         }
       }
     }
+
+    return results;
   }
 
   public static computerSendShips(
@@ -1068,7 +1245,8 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
-  ) {
+  ): AICommandResult[] {
+    const results: AICommandResult[] = [];
     //easy computer sends ships to closest planet at random
     //normal computers keep detachments of ships as defence as deemed necessary based on scouted enemy forces and planet value
     //hard computers also prefer planets based on class, location, and fleet defence
@@ -1279,6 +1457,14 @@ export class ComputerPlayer {
               continue;
             }
 
+            // Record as SEND_SHIPS command for persistence (fleet already split above)
+            const shipIds = {
+              scouts: newFleet.starships.filter(s => s.type === StarShipType.Scout).map(s => s.id),
+              destroyers: newFleet.starships.filter(s => s.type === StarShipType.Destroyer).map(s => s.id),
+              cruisers: [] as string[],
+              battleships: [] as string[],
+            };
+
             Fleet.setDestination(
               newFleet,
               gameModel.grid,
@@ -1288,6 +1474,32 @@ export class ComputerPlayer {
 
             pFriendly.outgoingFleets.push(newFleet);
             this.onComputerSentFleet(newFleet);
+
+            // Record the pre-applied command for persistence
+            const sendCmd = this.createAICommand<SendShipsCommand>(player, {
+              type: GameCommandType.SEND_SHIPS,
+              fromPlanetId: pFriendly.id,
+              toPlanetId: inboundPlanet.id,
+              fleetId: newFleet.id,
+              shipIds,
+            });
+            results.push({
+              command: sendCmd,
+              result: {
+                success: true,
+                events: [{
+                  type: 'FLEET_LAUNCHED' as import('./GameCommands').ClientEventType,
+                  affectedPlayerIds: [player.id],
+                  sourceCommandId: sendCmd.commandId,
+                  data: {
+                    fleetId: newFleet.id,
+                    fromPlanetId: pFriendly.id,
+                    toPlanetId: inboundPlanet.id,
+                    shipIds,
+                  },
+                }],
+              },
+            });
             this.logDecision(player, gameModel, 'exploration', 'Sent exploration fleet', {
               fromPlanet: pFriendly.name,
               toPlanet: inboundPlanet.name,
@@ -1454,25 +1666,25 @@ export class ComputerPlayer {
           for (const pFriendly of contributingPlanets) {
             const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
 
-            // Send all mobile ships from each contributing planet
-            const newFleet = Fleet.splitFleet(
-              pFriendly.planetaryFleet,
-              starshipCounts.scouts,
-              starshipCounts.destroyers,
-              starshipCounts.cruisers,
-              starshipCounts.battleships,
-              player,
-            );
+            // Resolve ship IDs for SEND_SHIPS command
+            const shipsByType = Fleet.getStarshipsByType(pFriendly.planetaryFleet);
+            const shipIds = {
+              scouts: shipsByType[StarShipType.Scout].slice(0, starshipCounts.scouts).map(s => s.id),
+              destroyers: shipsByType[StarShipType.Destroyer].slice(0, starshipCounts.destroyers).map(s => s.id),
+              cruisers: shipsByType[StarShipType.Cruiser].slice(0, starshipCounts.cruisers).map(s => s.id),
+              battleships: shipsByType[StarShipType.Battleship].slice(0, starshipCounts.battleships).map(s => s.id),
+            };
+            const fleetId = player.nextFleetId++;
 
-            Fleet.setDestination(
-              newFleet,
-              gameModel.grid,
-              pFriendly.boundingHexMidPoint,
-              pEnemyInbound.boundingHexMidPoint,
-            );
+            const sendCmd = this.createAICommand<SendShipsCommand>(player, {
+              type: GameCommandType.SEND_SHIPS,
+              fromPlanetId: pFriendly.id,
+              toPlanetId: pEnemyInbound.id,
+              fleetId,
+              shipIds,
+            });
+            this.processAICommand(gameModel, sendCmd, results);
 
-            pFriendly.outgoingFleets.push(newFleet);
-            this.onComputerSentFleet(newFleet);
             this.logDecision(player, gameModel, 'combat', 'Sent coordinated attack fleet', {
               fromPlanet: pFriendly.name,
               toPlanet: pEnemyInbound.name,
@@ -1480,7 +1692,7 @@ export class ComputerPlayer {
               totalStrength: totalAvailableStrength,
               enemyStrength: estimatedEnemyStrength,
               isCoordinated: true,
-              shipTypes: Fleet.countStarshipsByType(newFleet),
+              shipTypes: starshipCounts,
             });
 
             // Remove from candidates
@@ -1553,25 +1765,25 @@ export class ComputerPlayer {
           });
 
           if (ourEffectiveStrength > estimatedEnemyStrength * additionalStrengthMultiplierNeededToAttack) {
-            const newFleet = Fleet.splitFleet(
-              pFriendly.planetaryFleet,
-              starshipCounts.scouts,
-              starshipCounts.destroyers,
-              starshipCounts.cruisers,
-              starshipCounts.battleships,
-              player,
-            );
+            // Resolve ship IDs for SEND_SHIPS command
+            const shipsByType = Fleet.getStarshipsByType(pFriendly.planetaryFleet);
+            const shipIds = {
+              scouts: shipsByType[StarShipType.Scout].slice(0, starshipCounts.scouts).map(s => s.id),
+              destroyers: shipsByType[StarShipType.Destroyer].slice(0, starshipCounts.destroyers).map(s => s.id),
+              cruisers: shipsByType[StarShipType.Cruiser].slice(0, starshipCounts.cruisers).map(s => s.id),
+              battleships: shipsByType[StarShipType.Battleship].slice(0, starshipCounts.battleships).map(s => s.id),
+            };
+            const fleetId = player.nextFleetId++;
 
-            Fleet.setDestination(
-              newFleet,
-              gameModel.grid,
-              pFriendly.boundingHexMidPoint,
-              pEnemyInbound.boundingHexMidPoint,
-            );
+            const sendCmd = this.createAICommand<SendShipsCommand>(player, {
+              type: GameCommandType.SEND_SHIPS,
+              fromPlanetId: pFriendly.id,
+              toPlanetId: pEnemyInbound.id,
+              fleetId,
+              shipIds,
+            });
+            this.processAICommand(gameModel, sendCmd, results);
 
-            pFriendly.outgoingFleets.push(newFleet);
-
-            this.onComputerSentFleet(newFleet);
             this.logDecision(player, gameModel, 'combat', 'Sent attack fleet', {
               fromPlanet: pFriendly.name,
               toPlanet: pEnemyInbound.name,
@@ -1580,7 +1792,7 @@ export class ComputerPlayer {
               strengthAdvantage:
                 estimatedEnemyStrength > 0 ? (ourEffectiveStrength / estimatedEnemyStrength).toFixed(2) : 'Undefended',
               requiredAdvantage: additionalStrengthMultiplierNeededToAttack.toFixed(2),
-              shipTypes: Fleet.countStarshipsByType(newFleet),
+              shipTypes: starshipCounts,
               enemyHasSpacePlatform,
               multiPlanetAttack: false,
             });
@@ -1633,27 +1845,24 @@ export class ComputerPlayer {
 
           //TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
 
-          //const newFleet = StarShipFactoryHelper.GenerateFleetWithShipCount(player, 0, scouts, destroyers, cruisers, battleships, pFriendly.BoundingHex);//Fleet
+          // Resolve ship IDs for SEND_SHIPS command
+          const shipsByType = Fleet.getStarshipsByType(pFriendly.planetaryFleet);
+          const shipIds = {
+            scouts: shipsByType[StarShipType.Scout].slice(0, starshipCounts.scouts).map(s => s.id),
+            destroyers: shipsByType[StarShipType.Destroyer].slice(0, starshipCounts.destroyers).map(s => s.id),
+            cruisers: shipsByType[StarShipType.Cruiser].slice(0, starshipCounts.cruisers).map(s => s.id),
+            battleships: shipsByType[StarShipType.Battleship].slice(0, starshipCounts.battleships).map(s => s.id),
+          };
+          const fleetId = player.nextFleetId++;
 
-          const newFleet = Fleet.splitFleet(
-            pFriendly.planetaryFleet,
-            starshipCounts.scouts,
-            starshipCounts.destroyers,
-            starshipCounts.cruisers,
-            starshipCounts.battleships,
-            player,
-          );
-
-          Fleet.setDestination(
-            newFleet,
-            gameModel.grid,
-            pFriendly.boundingHexMidPoint,
-            planetToReinforce.boundingHexMidPoint,
-          );
-
-          pFriendly.outgoingFleets.push(newFleet);
-
-          this.onComputerSentFleet(newFleet);
+          const sendCmd = this.createAICommand<SendShipsCommand>(player, {
+            type: GameCommandType.SEND_SHIPS,
+            fromPlanetId: pFriendly.id,
+            toPlanetId: planetToReinforce.id,
+            fleetId,
+            shipIds,
+          });
+          this.processAICommand(gameModel, sendCmd, results);
 
           const mobileStarshipsLeft = Fleet.countMobileStarships(pFriendly.planetaryFleet);
           if (mobileStarshipsLeft == 0) {
@@ -1667,6 +1876,8 @@ export class ComputerPlayer {
 
       if (planetCandidatesForSendingShips.length == 0) break;
     } //end planetCandidatesForInboundAttackingFleets loop
+
+    return results;
   }
 
   public static countPlanetsNeedingExploration(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById) {
@@ -2004,7 +2215,9 @@ export class ComputerPlayer {
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
-  ) {
+  ): AICommandResult[] {
+    const results: AICommandResult[] = [];
+
     // Set research percentage based on difficulty
     const aiSettings = this.getAISettings(player);
     const targetResearchPercent =
@@ -2044,7 +2257,12 @@ export class ComputerPlayer {
       );
     }
 
-    player.research.researchPercent = adjustedResearchPercent;
+    // Emit ADJUST_RESEARCH_PERCENT command
+    const adjustResearchCmd = this.createAICommand<AdjustResearchPercentCommand>(player, {
+      type: GameCommandType.ADJUST_RESEARCH_PERCENT,
+      researchPercent: adjustedResearchPercent,
+    });
+    this.processAICommand(_gameModel, adjustResearchCmd, results);
 
     this.logDecision(player, _gameModel, 'research', 'Set research percentage', {
       targetPercent: targetResearchPercent,
@@ -2099,7 +2317,13 @@ export class ComputerPlayer {
       for (const researchType of researchPriorities) {
         const researchProgress = player.research.researchProgressByType[researchType];
         if (Research.canResearch(researchProgress)) {
-          player.research.researchTypeInQueue = researchType;
+          // Emit SUBMIT_RESEARCH_ITEM command
+          const submitResearchCmd = this.createAICommand<SubmitResearchItemCommand>(player, {
+            type: GameCommandType.SUBMIT_RESEARCH_ITEM,
+            researchType,
+          });
+          this.processAICommand(_gameModel, submitResearchCmd, results);
+
           this.debugLog(player.name, 'Queuing research:', researchType);
           this.logDecision(player, _gameModel, 'research', 'Queued research type', {
             researchType,
@@ -2110,6 +2334,8 @@ export class ComputerPlayer {
         }
       }
     }
+
+    return results;
   }
 
   /**

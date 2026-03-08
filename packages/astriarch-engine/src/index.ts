@@ -6,6 +6,7 @@ import {
   GameModelData,
   GameEndConditions,
   AdvanceGameClockResult,
+  AICommandResult,
   SnapshotData,
   playerColors,
   GALAXY_WIDTH,
@@ -96,6 +97,7 @@ export type { ModelData };
 export type { GameModelData };
 export type { GameEndConditions };
 export type { AdvanceGameClockResult };
+export type { AICommandResult };
 export type { SnapshotData };
 export type { ClientModelData };
 export type { PlanetById };
@@ -185,6 +187,7 @@ export const advanceGameModelTime = (gameModel: GameModelData) => {
     gameEndConditions: result.gameEndConditions,
     events: result.events,
     notifications: result.notifications,
+    aiCommandResults: result.aiCommandResults,
   };
 };
 
@@ -202,6 +205,7 @@ export const advanceGameModelTimeTo = (gameModel: GameModelData, snapshotData: S
     gameEndConditions: result.gameEndConditions,
     events: result.events,
     notifications: result.notifications,
+    aiCommandResults: result.aiCommandResults,
   };
 };
 
