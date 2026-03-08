@@ -1,4 +1,4 @@
-import { PlanetById } from '../model/clientModel';
+import { ClientModelData, PlanetById } from '../model/clientModel';
 import { FleetData, StarShipType } from '../model/fleet';
 import {
   PlanetData,
@@ -25,7 +25,7 @@ import {
   SendShipsCommand,
   UpdatePlanetWorkerAssignmentsCommand,
 } from './GameCommands';
-import { AICommandResult, GameModelData } from './gameModel';
+import { AICommandResult } from './gameModel';
 import { Grid } from './grid';
 import { Planet, PlanetPerTurnResourceGeneration, PopulationAssignments } from './planet';
 import { PlanetDistanceComparer } from './planetDistanceComparer';
@@ -283,14 +283,14 @@ export class ComputerPlayer {
    */
   private static logDecision(
     player: PlayerData,
-    gameModel: GameModelData,
+    currentCycle: number,
     category: AIDecisionLog['category'],
     decision: string,
     details: Record<string, unknown>,
   ): void {
     if (this.DEBUG_AI) {
       this.aiDecisions.push({
-        turn: gameModel.modelData.currentCycle,
+        turn: currentCycle,
         playerId: player.id,
         playerName: player.name,
         decision,
@@ -347,11 +347,12 @@ export class ComputerPlayer {
    * Returns true if the command succeeded.
    */
   private static processAICommand(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     command: GameCommand,
     results: AICommandResult[],
   ): boolean {
-    const result = CommandProcessor.processCommand(gameModel.modelData, gameModel.grid, command);
+    const result = CommandProcessor.processCommand(clientModel, grid, command);
     results.push({ command, result });
     if (!result.success) {
       this.debugLog('AI command failed:', command.type, result.error?.message);
@@ -363,7 +364,7 @@ export class ComputerPlayer {
     this.debugLog('Computer Sent Fleet:', fleet);
   }
 
-  public static computerTakeTurn(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById): AICommandResult[] {
+  public static computerTakeTurn(clientModel: ClientModelData, grid: Grid): GameCommand[] {
     //determine highest priority for resource usage
     //early game should be building developments and capturing/exploring planets while keeping up food production
     //mid game should be building space-platforms, high-class ships and further upgrading planets
@@ -372,28 +373,30 @@ export class ComputerPlayer {
     //if the planet has slots available and we have enough resources build (in order when we don't have)
     //
 
+    const player = clientModel.mainPlayer;
+    const ownedPlanets = clientModel.mainPlayerOwnedPlanets;
     const allResults: AICommandResult[] = [];
     const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(player, ownedPlanets);
 
     // Manage research allocation based on game state and difficulty
-    const researchResults = this.computerManageResearch(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const researchResults = this.computerManageResearch(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
     allResults.push(...researchResults);
 
-    this.computerSetPlanetBuildGoals(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    this.computerSetPlanetBuildGoals(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
 
-    const tradeResults = this.computerSubmitTrades(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const tradeResults = this.computerSubmitTrades(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
     allResults.push(...tradeResults);
 
-    const buildResults = this.computerBuildImprovementsAndShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const buildResults = this.computerBuildImprovementsAndShips(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
     allResults.push(...buildResults);
 
     //adjust population assignments as appropriate based on planet and needs
-    const popResults = this.computerAdjustPopulationAssignments(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const popResults = this.computerAdjustPopulationAssignments(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
     allResults.push(...popResults);
 
     // Manage fleet repairs - send damaged fleets back to repair capable planets
     // DEFERRED: Fleet repairs still use direct mutation (no command type for in-transit fleet redirect)
-    this.computerManageFleetRepairs(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    this.computerManageFleetRepairs(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
 
     //base strategies on computer-level
     //here is the basic strategy:
@@ -406,14 +409,15 @@ export class ComputerPlayer {
 
     //send scouts to unexplored planets (harder levels of computers know where better planets are?)
 
-    const shipResults = this.computerSendShips(gameModel, player, ownedPlanets, ownedPlanetsSorted);
+    const shipResults = this.computerSendShips(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
     allResults.push(...shipResults);
 
-    return allResults;
+    return allResults.map(r => r.command);
   }
 
   public static computerAdjustPopulationAssignments(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    _grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -465,7 +469,7 @@ export class ComputerPlayer {
 
     totalFoodAmountOnPlanets += totalFoodAmountOnPlanetsAdjustment;
 
-    this.logDecision(player, gameModel, 'population', 'Food surplus adjustment', {
+    this.logDecision(player, clientModel.currentCycle, 'population', 'Food surplus adjustment', {
       totalPopulation,
       adjustmentLow,
       adjustmentHigh,
@@ -778,7 +782,8 @@ export class ComputerPlayer {
   }
 
   public static computerSetPlanetBuildGoals(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -789,7 +794,7 @@ export class ComputerPlayer {
     const planetCandidatesForNeedingSpacePlatforms: PlanetData[] = [];
     const planetCandidatesForNeedingShips: PlanetData[] = [];
 
-    const planetCountNeedingExploration = this.countPlanetsNeedingExploration(gameModel, player, ownedPlanets);
+    const planetCountNeedingExploration = this.countPlanetsNeedingExploration(clientModel, grid, player, ownedPlanets);
 
     for (const p of ownedPlanetsSorted) {
       //if this planet doesn't already have a build goal in player.planetBuildGoals
@@ -902,7 +907,7 @@ export class ComputerPlayer {
       }
       if (player.planetBuildGoals[p.id]) {
         this.debugLog(player.name, 'Planet:', p.name, 'Improvement Build Goal:', player.planetBuildGoals[p.id]);
-        this.logDecision(player, gameModel, 'building', 'Set improvement build goal', {
+        this.logDecision(player, clientModel.currentCycle, 'building', 'Set improvement build goal', {
           planetName: p.name,
           planetType: p.type,
           improvementType: player.planetBuildGoals[p.id].improvementData?.type,
@@ -949,7 +954,7 @@ export class ComputerPlayer {
         starshipCounts.defenders === 0
       ) {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
-        this.logDecision(player, gameModel, 'building', 'Strategic defense: build defender for undefended planet', {
+        this.logDecision(player, clientModel.currentCycle, 'building', 'Strategic defense: build defender for undefended planet', {
           planetName: p.name,
           planetType: p.type,
           hasSpacePlatform: false,
@@ -1001,13 +1006,13 @@ export class ComputerPlayer {
       } else if (p.builtImprovements[PlanetImprovementType.Factory] > 0 && buildDestroyers) {
         //NOTE: this actually never gets hit because right now we're always building scouts, then spaceplatforms, then above applies
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.Destroyer);
-      } else if (gameModel.modelData.currentCycle % 4 == 0 && buildDefenders) {
+      } else if (clientModel.currentCycle % 4 == 0 && buildDefenders) {
         //else create defender (but only sometimes so we save energy)
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
       }
       if (player.planetBuildGoals[p.id]) {
         this.debugLog(player.name, 'Planet:', p.name, 'StarShip Build Goal:', player.planetBuildGoals[p.id]);
-        this.logDecision(player, gameModel, 'building', 'Set ship build goal', {
+        this.logDecision(player, clientModel.currentCycle, 'building', 'Set ship build goal', {
           planetName: p.name,
           shipType: player.planetBuildGoals[p.id].starshipData?.type,
           hasSpacePlatform: Planet.getSpacePlatformCount(p, false) > 0,
@@ -1021,7 +1026,8 @@ export class ComputerPlayer {
   }
 
   public static computerSubmitTrades(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -1130,7 +1136,7 @@ export class ComputerPlayer {
             action: trade.tradeType === TradeType.BUY ? 'buy' : 'sell',
           },
         });
-        this.processAICommand(gameModel, tradeCmd, results);
+        this.processAICommand(clientModel, grid, tradeCmd, results);
       } else {
         this.debugLog(player.name, 'Trade found with zero amount.', trade);
       }
@@ -1140,7 +1146,8 @@ export class ComputerPlayer {
   }
 
   public static computerBuildImprovementsAndShips(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -1182,17 +1189,17 @@ export class ComputerPlayer {
                 planetId: p.id,
                 productionItem: ppi,
               });
-              this.processAICommand(gameModel, demolishCmd, results);
+              this.processAICommand(clientModel, grid, demolishCmd, results);
             } else {
               const buildCmd = this.createAICommand<QueueProductionItemCommand>(player, {
                 type: GameCommandType.QUEUE_PRODUCTION_ITEM,
                 planetId: p.id,
                 productionItem: ppi,
               });
-              this.processAICommand(gameModel, buildCmd, results);
+              this.processAICommand(clientModel, grid, buildCmd, results);
             }
 
-            this.logDecision(player, gameModel, 'building', 'Enqueued production item', {
+            this.logDecision(player, clientModel.currentCycle, 'building', 'Enqueued production item', {
               planetName: p.name,
               itemType: ppi.itemType,
               shipType: ppi.starshipData?.type,
@@ -1221,7 +1228,8 @@ export class ComputerPlayer {
   }
 
   public static computerSendShips(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -1243,7 +1251,7 @@ export class ComputerPlayer {
         if (aiSettings.defenseCalculationStrategy === 'simple') {
           //easy computers can send ships as long as there is somthing to send
           planetCandidatesForSendingShips.push(p);
-          this.logDecision(player, gameModel, 'combat', 'Planet can send ships', {
+          this.logDecision(player, clientModel.currentCycle, 'combat', 'Planet can send ships', {
             planetName: p.name,
             mobileShips: Fleet.countMobileStarships(p.planetaryFleet),
             totalStrength: Fleet.determineFleetStrength(p.planetaryFleet),
@@ -1251,7 +1259,7 @@ export class ComputerPlayer {
         } else {
           let strengthToDefend = 0;
 
-          if (this.countPlanetsNeedingExploration(gameModel, player, ownedPlanets) != 0) {
+          if (this.countPlanetsNeedingExploration(clientModel, grid, player, ownedPlanets) != 0) {
             //this is done because of how the goals are set right now,
             //we don't want the computer defending with all of it's ships when there is exploring to be done
             strengthToDefend = 0;
@@ -1272,7 +1280,7 @@ export class ComputerPlayer {
             // as well as if there are ships in queue and estimated time till production
 
             //TODO: we should get all enemy planets within a certain range instead of just the closest one
-            const closestUnownedPlanetResults = this.getClosestUnownedPlanet(gameModel, ownedPlanets, p);
+            const closestUnownedPlanetResults = this.getClosestUnownedPlanet(clientModel, grid, ownedPlanets, p);
             if (closestUnownedPlanetResults.planet) {
               if (closestUnownedPlanetResults.planet.id in player.lastKnownPlanetFleetStrength) {
                 strengthToDefend += Fleet.determineFleetStrength(
@@ -1303,10 +1311,10 @@ export class ComputerPlayer {
     const planetCandidatesForInboundScouts = [];
     const planetCandidatesForInboundAttackingFleets = [];
     if (planetCandidatesForSendingShips.length > 0) {
-      for (const p of gameModel.modelData.planets) {
+      for (const p of clientModel.clientPlanets as unknown as PlanetData[]) {
         if (!(p.id in ownedPlanets) && !Player.planetContainsFriendlyInboundFleet(player, p)) {
           //exploring/attacking inbound fleets to unowned planets should be excluded
-          if (this.planetNeedsExploration(p, gameModel, player, ownedPlanets)) {
+          if (this.planetNeedsExploration(p, clientModel, grid, player, ownedPlanets)) {
             planetCandidatesForInboundScouts.push(p);
           } else {
             //TODO: we might still want to gather fleets strategically
@@ -1314,10 +1322,10 @@ export class ComputerPlayer {
           }
         }
       }
-      this.logDecision(player, gameModel, 'combat', 'Target analysis', {
+      this.logDecision(player, clientModel.currentCycle, 'combat', 'Target analysis', {
         planetsToScout: planetCandidatesForInboundScouts.length,
         planetsToAttack: planetCandidatesForInboundAttackingFleets.length,
-        totalUnownedPlanets: gameModel.modelData.planets.filter((p) => !(p.id in ownedPlanets)).length,
+        totalUnownedPlanets: (clientModel.clientPlanets as unknown as PlanetData[]).filter((p) => !(p.id in ownedPlanets)).length,
       });
     }
 
@@ -1335,13 +1343,13 @@ export class ComputerPlayer {
       //just to make sure
       const homePlanet = ownedPlanets[player.homePlanetId];
       if (!aiSettings.usePrioritizedTargetSorting) {
-        const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, homePlanet);
+        const planetDistanceComparer = new PlanetDistanceComparer(grid, homePlanet);
         planetCandidatesForInboundAttackingFleets.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         planetCandidatesForInboundScouts.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } else {
         //hard and expert computer will sort with a bit of complexly (based on value and last known strength as well as distance)
         const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
-          gameModel.grid,
+          grid,
           homePlanet,
           player.lastKnownPlanetFleetStrength,
         );
@@ -1395,7 +1403,7 @@ export class ComputerPlayer {
           }
 
           // Secondary sort: prefer closer planets
-          const distanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
+          const distanceComparer = new PlanetDistanceComparer(grid, pEnemyInbound);
           return distanceComparer.sortFunction(a, b);
         });
 
@@ -1447,7 +1455,7 @@ export class ComputerPlayer {
 
             Fleet.setDestination(
               newFleet,
-              gameModel.grid,
+              grid,
               pFriendly.boundingHexMidPoint,
               inboundPlanet.boundingHexMidPoint,
             );
@@ -1480,12 +1488,12 @@ export class ComputerPlayer {
                 }],
               },
             });
-            this.logDecision(player, gameModel, 'exploration', 'Sent exploration fleet', {
+            this.logDecision(player, clientModel.currentCycle, 'exploration', 'Sent exploration fleet', {
               fromPlanet: pFriendly.name,
               toPlanet: inboundPlanet.name,
               shipTypes: Fleet.countStarshipsByType(newFleet),
               distance: Grid.getHexDistanceForMidPoints(
-                gameModel.grid,
+                grid,
                 pFriendly.boundingHexMidPoint,
                 inboundPlanet.boundingHexMidPoint,
               ),
@@ -1516,7 +1524,7 @@ export class ComputerPlayer {
 
     //next for each candidate for inbound attacking fleets, sort the candidates for sending ships by closest first
 
-    this.logDecision(player, gameModel, 'combat', 'Starting attack phase', {
+    this.logDecision(player, clientModel.currentCycle, 'combat', 'Starting attack phase', {
       planetsCanSendShips: planetCandidatesForSendingShips.length,
       planetsToAttack: planetCandidatesForInboundAttackingFleets.length,
     });
@@ -1526,11 +1534,11 @@ export class ComputerPlayer {
       // Calculate strategic value for each target
       const targetValues = planetCandidatesForInboundAttackingFleets.map((target) => ({
         planet: target,
-        value: this.calculatePlanetTargetValue(target, player, ownedPlanets, gameModel),
+        value: this.calculatePlanetTargetValue(target, player, ownedPlanets, clientModel, grid),
       }));
 
       // Log target values for debugging
-      this.logDecision(player, gameModel, 'combat', 'Strategic target evaluation', {
+      this.logDecision(player, clientModel.currentCycle, 'combat', 'Strategic target evaluation', {
         totalTargets: targetValues.length,
         targetDetails: targetValues.map((tv) => ({
           planetName: tv.planet.name,
@@ -1547,7 +1555,7 @@ export class ComputerPlayer {
       // Clear and repopulate based on strategic value
       const highValueTargets = targetValues.filter((tv) => tv.value > 0).map((tv) => tv.planet);
 
-      this.logDecision(player, gameModel, 'combat', 'Strategic target filtering', {
+      this.logDecision(player, clientModel.currentCycle, 'combat', 'Strategic target filtering', {
         beforeFiltering: targetValues.length,
         afterFiltering: highValueTargets.length,
         filteredOut: targetValues.length - highValueTargets.length,
@@ -1563,12 +1571,12 @@ export class ComputerPlayer {
       const pEnemyInbound = planetCandidatesForInboundAttackingFleets[i];
 
       if (!aiSettings.usePrioritizedTargetSorting) {
-        const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
+        const planetDistanceComparer = new PlanetDistanceComparer(grid, pEnemyInbound);
         planetCandidatesForSendingShips.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
       } // harder computers should start with planets with more ships and/or reinforce closer planets from further planets with more ships
       else {
         const planetValueDistanceStrengthComparer = new PlanetDistanceComparer(
-          gameModel.grid,
+          grid,
           pEnemyInbound,
           player.lastKnownPlanetFleetStrength,
         );
@@ -1589,7 +1597,7 @@ export class ComputerPlayer {
 
       // Check if target already has friendly inbound fleet before attempting attack
       if (Player.planetContainsFriendlyInboundFleet(player, pEnemyInbound)) {
-        this.logDecision(player, gameModel, 'combat', 'Skipped target - fleet already en route', {
+        this.logDecision(player, clientModel.currentCycle, 'combat', 'Skipped target - fleet already en route', {
           targetPlanet: pEnemyInbound.name,
         });
         continue; // Skip to next target planet
@@ -1663,9 +1671,9 @@ export class ComputerPlayer {
               fleetId,
               shipIds,
             });
-            this.processAICommand(gameModel, sendCmd, results);
+            this.processAICommand(clientModel, grid, sendCmd, results);
 
-            this.logDecision(player, gameModel, 'combat', 'Sent coordinated attack fleet', {
+            this.logDecision(player, clientModel.currentCycle, 'combat', 'Sent coordinated attack fleet', {
               fromPlanet: pFriendly.name,
               toPlanet: pEnemyInbound.name,
               contributingPlanets: contributingPlanets.length,
@@ -1731,7 +1739,7 @@ export class ComputerPlayer {
           // Log attack evaluation to debug why Expert doesn't attack
           const attackThreshold = estimatedEnemyStrength * additionalStrengthMultiplierNeededToAttack;
           const willAttack = ourEffectiveStrength > attackThreshold;
-          this.logDecision(player, gameModel, 'combat', 'Attack evaluation', {
+          this.logDecision(player, clientModel.currentCycle, 'combat', 'Attack evaluation', {
             fromPlanet: pFriendly.name,
             toPlanet: pEnemyInbound.name,
             ourStrength: ourEffectiveStrength,
@@ -1762,9 +1770,9 @@ export class ComputerPlayer {
               fleetId,
               shipIds,
             });
-            this.processAICommand(gameModel, sendCmd, results);
+            this.processAICommand(clientModel, grid, sendCmd, results);
 
-            this.logDecision(player, gameModel, 'combat', 'Sent attack fleet', {
+            this.logDecision(player, clientModel.currentCycle, 'combat', 'Sent attack fleet', {
               fromPlanet: pFriendly.name,
               toPlanet: pEnemyInbound.name,
               ourStrength: ourEffectiveStrength,
@@ -1794,12 +1802,12 @@ export class ComputerPlayer {
         //logic:
         //  find closest planet capable of building better ships (has at least one factory) to enemy planet
         //  send a detachment from each planetCandidatesForSendingShips other than closest ship builder to reinforce and amass for later
-        const planetDistanceComparer = new PlanetDistanceComparer(gameModel.grid, pEnemyInbound);
+        const planetDistanceComparer = new PlanetDistanceComparer(grid, pEnemyInbound);
         planetCandidatesForInboundReinforcements.sort((a, b) => planetDistanceComparer.sortFunction(a, b));
         const planetToReinforce =
           planetCandidatesForInboundReinforcements[planetCandidatesForInboundReinforcements.length - 1];
         const distanceFromPlanetToReinforceToEnemy = Grid.getHexDistanceForMidPoints(
-          gameModel.grid,
+          grid,
           pEnemyInbound.boundingHexMidPoint,
           planetToReinforce.boundingHexMidPoint,
         );
@@ -1814,7 +1822,7 @@ export class ComputerPlayer {
           //also make sure the friendly planet is further from our target than the planet to reinforce
           if (
             Grid.getHexDistanceForMidPoints(
-              gameModel.grid,
+              grid,
               pEnemyInbound.boundingHexMidPoint,
               pFriendly.boundingHexMidPoint,
             ) < distanceFromPlanetToReinforceToEnemy
@@ -1842,7 +1850,7 @@ export class ComputerPlayer {
             fleetId,
             shipIds,
           });
-          this.processAICommand(gameModel, sendCmd, results);
+          this.processAICommand(clientModel, grid, sendCmd, results);
 
           const mobileStarshipsLeft = Fleet.countMobileStarships(pFriendly.planetaryFleet);
           if (mobileStarshipsLeft == 0) {
@@ -1860,12 +1868,12 @@ export class ComputerPlayer {
     return results;
   }
 
-  public static countPlanetsNeedingExploration(gameModel: GameModelData, player: PlayerData, ownedPlanets: PlanetById) {
+  public static countPlanetsNeedingExploration(clientModel: ClientModelData, grid: Grid, player: PlayerData, ownedPlanets: PlanetById) {
     let planetsNeedingExploration = 0;
-    for (const p of gameModel.modelData.planets) {
+    for (const p of clientModel.clientPlanets as unknown as PlanetData[]) {
       if (!(p.id in ownedPlanets) && !Player.planetContainsFriendlyInboundFleet(player, p)) {
         //exploring/attacking inbound fleets to unowned planets should be excluded
-        if (this.planetNeedsExploration(p, gameModel, player, ownedPlanets)) {
+        if (this.planetNeedsExploration(p, clientModel, grid, player, ownedPlanets)) {
           planetsNeedingExploration++;
         }
       }
@@ -1881,7 +1889,8 @@ export class ComputerPlayer {
    */
   public static planetNeedsExploration(
     planet: PlanetData,
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
   ) {
@@ -1897,12 +1906,12 @@ export class ComputerPlayer {
       // Calculate priority for all unexplored planets
       const explorationCandidates: { planet: PlanetData; priority: number }[] = [];
 
-      for (const p of gameModel.modelData.planets) {
+      for (const p of clientModel.clientPlanets as unknown as PlanetData[]) {
         if (p.id in ownedPlanets) continue; // Skip owned planets
         if (player.knownPlanetIds.includes(p.id)) continue; // Skip known planets
         if (Player.planetContainsFriendlyInboundFleet(player, p)) continue; // Skip if already exploring
 
-        const priority = this.calculateExplorationPriority(p, player, ownedPlanets, gameModel);
+        const priority = this.calculateExplorationPriority(p, player, ownedPlanets, clientModel, grid);
         explorationCandidates.push({ planet: p, priority });
       }
 
@@ -1926,7 +1935,7 @@ export class ComputerPlayer {
 
     // For known planets, use absolute threshold instead of percentile
     // This prevents feedback loop where staleness constantly pushes planets into "top N%"
-    const scoutPriority = this.calculateScoutPriority(planet, gameModel, player, ownedPlanets);
+    const scoutPriority = this.calculateScoutPriority(planet, clientModel, grid, player, ownedPlanets);
 
     // Re-scout if priority exceeds threshold
     // This ensures only truly important planets (nearby enemies, urgent intel) get re-scouted
@@ -1939,7 +1948,8 @@ export class ComputerPlayer {
    */
   private static calculateScoutPriority(
     planet: PlanetData,
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
   ): number {
@@ -1948,14 +1958,14 @@ export class ComputerPlayer {
     const lastKnownInfo = player.lastKnownPlanetFleetStrength[planet.id];
     if (!lastKnownInfo) return 0; // No intel, can't prioritize
 
-    const turnsSinceLastExplored = gameModel.modelData.currentCycle - lastKnownInfo.cycleLastExplored;
+    const turnsSinceLastExplored = clientModel.currentCycle - lastKnownInfo.cycleLastExplored;
     const isEnemyOwned = lastKnownInfo.lastKnownOwnerId && lastKnownInfo.lastKnownOwnerId !== player.id;
 
     // Distance is the most important factor
     let minDistance = Infinity;
     for (const ownedPlanet of Object.values(ownedPlanets)) {
       const distance = Grid.getHexDistanceForMidPoints(
-        gameModel.grid,
+        grid,
         planet.boundingHexMidPoint,
         ownedPlanet.boundingHexMidPoint,
       );
@@ -1964,7 +1974,7 @@ export class ComputerPlayer {
 
     // Proximity scoring (0-50 points) - continuous function that scales with map size
     // Estimate typical max distance as ~1/4 of grid diagonal for strategic relevance
-    const gridSize = Math.sqrt(gameModel.grid.hexes.length);
+    const gridSize = Math.sqrt(grid.hexes.length);
     const strategicRange = gridSize * 0.75; // Most planets beyond this are too far to care about
 
     // Use inverse relationship: closer = exponentially higher priority
@@ -1990,7 +2000,7 @@ export class ComputerPlayer {
     // Staleness - dynamic threshold based on exploration workload
     // Count UNKNOWN planets needing exploration (avoids circular dependency with re-scouting logic)
     let unknownPlanetsNeedingExploration = 0;
-    for (const p of gameModel.modelData.planets) {
+    for (const p of clientModel.clientPlanets as unknown as PlanetData[]) {
       if (
         !(p.id in ownedPlanets) &&
         !player.knownPlanetIds.includes(p.id) &&
@@ -2057,7 +2067,8 @@ export class ComputerPlayer {
     planet: PlanetData,
     player: PlayerData,
     ownedPlanets: PlanetById,
-    gameModel: GameModelData,
+    _clientModel: ClientModelData,
+    grid: Grid,
   ): number {
     let priority = 0;
 
@@ -2065,7 +2076,7 @@ export class ComputerPlayer {
     let minDistance = Infinity;
     for (const ownedPlanet of Object.values(ownedPlanets)) {
       const distance = Grid.getHexDistanceForMidPoints(
-        gameModel.grid,
+        grid,
         planet.boundingHexMidPoint,
         ownedPlanet.boundingHexMidPoint,
       );
@@ -2074,7 +2085,7 @@ export class ComputerPlayer {
 
     // Proximity is KEY - nearby planets are much more important (0-40 points)
     // Scale based on map size for flexibility
-    const gridSize = Math.sqrt(gameModel.grid.hexes.length);
+    const gridSize = Math.sqrt(grid.hexes.length);
     const explorationRange = gridSize * 0.7; // Explore planets within strategic range
 
     // Use inverse square decay for smooth prioritization
@@ -2099,16 +2110,17 @@ export class ComputerPlayer {
   }
 
   public static getClosestUnownedPlanet(
-    gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     ownedPlanets: PlanetById,
     ownedPlanet: PlanetData,
   ): { minDistance: number; planet: PlanetData | null } {
     const returnVal: { minDistance: number; planet: PlanetData | null } = { minDistance: 999, planet: null };
 
-    for (const p of gameModel.modelData.planets) {
+    for (const p of clientModel.clientPlanets as unknown as PlanetData[]) {
       if (!(p.id in ownedPlanets)) {
         const distance = Grid.getHexDistanceForMidPoints(
-          gameModel.grid,
+          grid,
           p.boundingHexMidPoint,
           ownedPlanet.boundingHexMidPoint,
         );
@@ -2130,7 +2142,8 @@ export class ComputerPlayer {
     targetPlanet: PlanetData,
     player: PlayerData,
     ownedPlanets: PlanetById,
-    gameModel: GameModelData,
+    _clientModel: ClientModelData,
+    grid: Grid,
   ): number {
     let value = 0;
 
@@ -2158,7 +2171,7 @@ export class ComputerPlayer {
     let minDistanceToOwned = Infinity;
     for (const ownedPlanet of Object.values(ownedPlanets)) {
       const distance = Grid.getHexDistanceForMidPoints(
-        gameModel.grid,
+        grid,
         targetPlanet.boundingHexMidPoint,
         ownedPlanet.boundingHexMidPoint,
       );
@@ -2171,8 +2184,8 @@ export class ComputerPlayer {
 
     // Strategic location: planets near center of map are more valuable
     const gridCenter = {
-      x: gameModel.grid.hexes[Math.floor(gameModel.grid.hexes.length / 2)].midPoint.x,
-      y: gameModel.grid.hexes[Math.floor(gameModel.grid.hexes.length / 2)].midPoint.y,
+      x: grid.hexes[Math.floor(grid.hexes.length / 2)].midPoint.x,
+      y: grid.hexes[Math.floor(grid.hexes.length / 2)].midPoint.y,
     };
     const distanceFromCenter = Math.sqrt(
       Math.pow(targetPlanet.boundingHexMidPoint.x - gridCenter.x, 2) +
@@ -2191,7 +2204,8 @@ export class ComputerPlayer {
    * Manages research allocation and priorities based on game state and difficulty
    */
   public static computerManageResearch(
-    _gameModel: GameModelData,
+    clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -2242,9 +2256,9 @@ export class ComputerPlayer {
       type: GameCommandType.ADJUST_RESEARCH_PERCENT,
       researchPercent: adjustedResearchPercent,
     });
-    this.processAICommand(_gameModel, adjustResearchCmd, results);
+    this.processAICommand(clientModel, grid, adjustResearchCmd, results);
 
-    this.logDecision(player, _gameModel, 'research', 'Set research percentage', {
+    this.logDecision(player, clientModel.currentCycle, 'research', 'Set research percentage', {
       targetPercent: targetResearchPercent,
       adjustedPercent: adjustedResearchPercent,
       wasAdjusted: adjustedResearchPercent !== targetResearchPercent,
@@ -2302,10 +2316,10 @@ export class ComputerPlayer {
             type: GameCommandType.SUBMIT_RESEARCH_ITEM,
             researchType,
           });
-          this.processAICommand(_gameModel, submitResearchCmd, results);
+          this.processAICommand(clientModel, grid, submitResearchCmd, results);
 
           this.debugLog(player.name, 'Queuing research:', researchType);
-          this.logDecision(player, _gameModel, 'research', 'Queued research type', {
+          this.logDecision(player, clientModel.currentCycle, 'research', 'Queued research type', {
             researchType,
             gamePhase: ownedPlanetsSorted.length <= 2 ? 'early' : ownedPlanetsSorted.length <= 4 ? 'mid' : 'late',
             planetCount: ownedPlanetsSorted.length,
@@ -2395,7 +2409,8 @@ export class ComputerPlayer {
    * Manages fleet repairs by sending damaged fleets back to planets with repair capabilities
    */
   public static computerManageFleetRepairs(
-    gameModel: GameModelData,
+    _clientModel: ClientModelData,
+    grid: Grid,
     player: PlayerData,
     _ownedPlanets: PlanetById,
     ownedPlanetsSorted: PlanetData[],
@@ -2449,7 +2464,7 @@ export class ComputerPlayer {
           if (!fleet.locationHexMidPoint) continue;
 
           const distance = Grid.getHexDistanceForMidPoints(
-            gameModel.grid,
+            grid,
             fleet.locationHexMidPoint,
             repairPlanet.boundingHexMidPoint,
           );
@@ -2463,7 +2478,7 @@ export class ComputerPlayer {
         // Redirect fleet to repair planet if found and not already going there
         if (nearestRepairPlanet && fleet.destinationHexMidPoint && fleet.locationHexMidPoint) {
           const currentDestDistance = Grid.getHexDistanceForMidPoints(
-            gameModel.grid,
+            grid,
             fleet.locationHexMidPoint,
             fleet.destinationHexMidPoint,
           );
@@ -2472,7 +2487,7 @@ export class ComputerPlayer {
           if (minDistance < currentDestDistance * 0.7 && fleet.locationHexMidPoint) {
             Fleet.setDestination(
               fleet,
-              gameModel.grid,
+              grid,
               fleet.locationHexMidPoint,
               nearestRepairPlanet.boundingHexMidPoint,
             );

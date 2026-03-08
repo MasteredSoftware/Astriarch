@@ -79,9 +79,14 @@ export class GameController {
 
     for (const p of modelData.players) {
       if (p.type !== PlayerType.Human) {
-        const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
-        const aiResults = ComputerPlayer.computerTakeTurn(gameModel, p, ownedPlanets);
-        allAICommandResults.push(...aiResults);
+        const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
+        const aiCommands = ComputerPlayer.computerTakeTurn(clientModel, grid);
+        // AI processed commands internally via shared refs (clientModel.mainPlayer IS modelData.players[i]).
+        // Mutations are already applied. Wrap commands for persistence tracking.
+        // TODO: In deep refactor, AI will NOT process internally — caller will process here.
+        for (const command of aiCommands) {
+          allAICommandResults.push({ command, result: { success: true, events: [] } });
+        }
       }
     }
 

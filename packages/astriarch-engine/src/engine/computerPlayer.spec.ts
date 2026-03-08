@@ -104,7 +104,8 @@ describe('ComputerPlayer', () => {
       );
       const easyPlanetsSorted = Player.getOwnedPlanetsListSorted(easyPlayer, easyPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, easyPlayer, easyPlanets, easyPlanetsSorted);
+      const easyClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
+      ComputerPlayer.computerManageResearch(easyClientModel, testGameData.gameModel.grid, easyPlayer, easyPlanets, easyPlanetsSorted);
       expect(easyPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.1);
       expect(easyPlayer.research.researchPercent).toBeLessThanOrEqual(0.3);
 
@@ -114,7 +115,8 @@ describe('ComputerPlayer', () => {
       );
       const hardPlanetsSorted = Player.getOwnedPlanetsListSorted(hardPlayer, hardPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, hardPlayer, hardPlanets, hardPlanetsSorted);
+      const hardClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, hardPlayer.id);
+      ComputerPlayer.computerManageResearch(hardClientModel, testGameData.gameModel.grid, hardPlayer, hardPlanets, hardPlanetsSorted);
       expect(hardPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.4);
       expect(hardPlayer.research.researchPercent).toBeLessThanOrEqual(0.56);
 
@@ -124,7 +126,8 @@ describe('ComputerPlayer', () => {
       );
       const expertPlanetsSorted = Player.getOwnedPlanetsListSorted(expertPlayer, expertPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, expertPlayer, expertPlanets, expertPlanetsSorted);
+      const expertClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      ComputerPlayer.computerManageResearch(expertClientModel, testGameData.gameModel.grid, expertPlayer, expertPlanets, expertPlanetsSorted);
       expect(expertPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.45);
       expect(expertPlayer.research.researchPercent).toBeLessThanOrEqual(0.61);
     });
@@ -139,7 +142,8 @@ describe('ComputerPlayer', () => {
       );
       const expertPlanetsSorted = Player.getOwnedPlanetsListSorted(expertPlayer, expertPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, expertPlayer, expertPlanets, expertPlanetsSorted);
+      const expertClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      ComputerPlayer.computerManageResearch(expertClientModel, testGameData.gameModel.grid, expertPlayer, expertPlanets, expertPlanetsSorted);
 
       expect(expertPlayer.research.researchTypeInQueue).toBeDefined();
       expect([
@@ -207,8 +211,11 @@ describe('ComputerPlayer', () => {
       normalPlayer.fleetsInTransit.push(fleet);
 
       const originalDest = fleet.destinationHexMidPoint;
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       ComputerPlayer.computerManageFleetRepairs(
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         normalPlanets,
         normalPlanetsSorted,
@@ -249,7 +256,9 @@ describe('ComputerPlayer', () => {
       hardPlayer.fleetsInTransit.push(fleet);
 
       const originalDest = fleet.destinationHexMidPoint;
-      ComputerPlayer.computerManageFleetRepairs(testGameData.gameModel, hardPlayer, hardPlanets, hardPlanetsSorted);
+      testGameData.gameModel.modelData.players.push(hardPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, hardPlayer.id);
+      ComputerPlayer.computerManageFleetRepairs(clientModel, testGameData.gameModel.grid, hardPlayer, hardPlanets, hardPlanetsSorted);
 
       // Destination should change toward the repair planet (which is planet itself)
       // The logic will redirect toward nearest repair planet when fleet is damaged
@@ -451,7 +460,9 @@ describe('ComputerPlayer', () => {
       };
       easyPlayer.knownPlanetIds.push(enemyPlanet.id);
 
-      ComputerPlayer.computerSendShips(testGameData.gameModel, easyPlayer, ownedPlanets, ownedPlanetsSorted);
+      testGameData.gameModel.modelData.players.push(easyPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
+      ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, easyPlayer, ownedPlanets, ownedPlanetsSorted);
 
       // Easy AI might attack, but not always due to high threshold
       const fleetsCount = homePlanet.outgoingFleets.length;
@@ -483,7 +494,9 @@ describe('ComputerPlayer', () => {
       };
       expertPlayer.knownPlanetIds.push(enemyPlanet.id);
 
-      ComputerPlayer.computerSendShips(testGameData.gameModel, expertPlayer, ownedPlanets, ownedPlanetsSorted);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, expertPlayer, ownedPlanets, ownedPlanetsSorted);
 
       // Expert AI more likely to attack with smaller advantage
       const fleetsCount = homePlanet.outgoingFleets.length;
@@ -516,9 +529,12 @@ describe('ComputerPlayer', () => {
       // After 10 turns, Hard AI should always re-scout nearby enemy planets (5-10 turn range)
       advanceGameCycles(testGameData.gameModel, 10);
 
+      testGameData.gameModel.modelData.players.push(hardPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, hardPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         enemyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         hardPlayer,
         ownedPlanets,
       );
@@ -553,9 +569,11 @@ describe('ComputerPlayer', () => {
       const expectedTopCount = Math.max(1, Math.ceil(unknownPlanets.length * topPercentage));
 
       // Count planets needing exploration
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       let planetsNeedingExploration = 0;
       for (const planet of unknownPlanets) {
-        if (ComputerPlayer.planetNeedsExploration(planet, testGameData.gameModel, normalPlayer, ownedPlanets)) {
+        if (ComputerPlayer.planetNeedsExploration(planet, clientModel, testGameData.gameModel.grid, normalPlayer, ownedPlanets)) {
           planetsNeedingExploration++;
         }
       }
@@ -592,9 +610,12 @@ describe('ComputerPlayer', () => {
         testGameData.gameModel.modelData.planets,
       );
 
+      testGameData.gameModel.modelData.players.push(easyPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         enemyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         easyPlayer,
         ownedPlanets,
       );
@@ -642,16 +663,19 @@ describe('ComputerPlayer', () => {
       const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, ownedPlanets);
 
       // Verify unknownPlanet needs exploration
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         unknownPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
       expect(needsExploration).toBe(true);
 
       // Execute ship sending logic
-      ComputerPlayer.computerSendShips(testGameData.gameModel, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+      ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, normalPlayer, ownedPlanets, ownedPlanetsSorted);
 
       // Debug: log what actually happened
       console.log('Planet1 (scouts) sent:', planet1.outgoingFleets.length, 'fleets');
@@ -760,9 +784,12 @@ describe('ComputerPlayer', () => {
       const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, ownedPlanets);
 
       // Verify that unknownPlanet needs exploration with percentile logic
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         unknownPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
@@ -777,7 +804,7 @@ describe('ComputerPlayer', () => {
       }
 
       // Execute ship sending logic
-      ComputerPlayer.computerSendShips(testGameData.gameModel, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+      ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, normalPlayer, ownedPlanets, ownedPlanetsSorted);
 
       // Verify that exactly ONE fleet was sent
       const totalFleetsSent = closerPlanet.outgoingFleets.length + fartherPlanet.outgoingFleets.length;
@@ -844,8 +871,10 @@ describe('ComputerPlayer', () => {
       // Use the private method via casting
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const highValue = calculateValue(highValueTarget, expertPlayer, ownedPlanets, testGameData.gameModel);
-      const lowValue = calculateValue(lowValueTarget, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const highValue = calculateValue(highValueTarget, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
+      const lowValue = calculateValue(lowValueTarget, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // High value target should be significantly more valuable due to much weaker defenses
       // Weak defense (strength < 10) gives +25 vs strong defense (strength >= 50) gives 0
@@ -870,7 +899,9 @@ describe('ComputerPlayer', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // This is the current behavior that causes the bug:
       // No intelligence = 0 value = filtered out of attack targets
@@ -898,7 +929,9 @@ describe('ComputerPlayer', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // Should have positive value since we don't own it and we have intelligence
       // Planet type + proximity + strategic location should all add value
@@ -926,7 +959,9 @@ describe('ComputerPlayer', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // With good intelligence, value should be positive
       expect(value).toBeGreaterThan(0);
@@ -953,9 +988,12 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: undefined,
       };
 
+      testGameData.gameModel.modelData.players.push(easyPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         targetPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         easyPlayer,
         ownedPlanets,
       );
@@ -982,9 +1020,12 @@ describe('ComputerPlayer', () => {
       // Planet is NOT known (never scouted)
       expect(expertPlayer.knownPlanetIds.includes(targetPlanet.id)).toBe(false);
 
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         targetPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1015,9 +1056,11 @@ describe('ComputerPlayer', () => {
       const expectedTopCount = Math.max(1, Math.ceil(unknownPlanets.length * topPercentage));
 
       // Count how many planets actually need exploration
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       let planetsNeedingExploration = 0;
       for (const planet of unknownPlanets) {
-        if (ComputerPlayer.planetNeedsExploration(planet, testGameData.gameModel, expertPlayer, ownedPlanets)) {
+        if (ComputerPlayer.planetNeedsExploration(planet, clientModel, testGameData.gameModel.grid, expertPlayer, ownedPlanets)) {
           planetsNeedingExploration++;
         }
       }
@@ -1058,10 +1101,13 @@ describe('ComputerPlayer', () => {
       advanceGameCycles(testGameData.gameModel, 30);
 
       // Calculate the actual priority to understand if it meets threshold
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const actualPriority = (ComputerPlayer as any).calculateScoutPriority(
         testPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1070,7 +1116,8 @@ describe('ComputerPlayer', () => {
 
       const needsRescouting = ComputerPlayer.planetNeedsExploration(
         testPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1110,10 +1157,13 @@ describe('ComputerPlayer', () => {
       advanceGameCycles(testGameData.gameModel, 15);
 
       // Calculate actual priority to verify threshold mechanism
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const actualPriority = (ComputerPlayer as any).calculateScoutPriority(
         nearbyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
@@ -1122,7 +1172,8 @@ describe('ComputerPlayer', () => {
 
       const needsRescouting = ComputerPlayer.planetNeedsExploration(
         nearbyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
@@ -1151,9 +1202,12 @@ describe('ComputerPlayer', () => {
       expertPlayer.knownPlanetIds.push(targetPlanet.id);
       // No entry in lastKnownPlanetFleetStrength
 
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         targetPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1182,9 +1236,12 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: expertPlayer.id,
       };
 
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         ownedPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
