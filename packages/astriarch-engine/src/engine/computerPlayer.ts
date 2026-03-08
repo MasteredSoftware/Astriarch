@@ -326,24 +326,6 @@ export class ComputerPlayer {
   // AI Command Pipeline Helpers
   // ============================================================================
 
-  /** Counter for generating unique AI command IDs within a game session */
-  private static aiCommandIdCounter = 0;
-
-  /**
-   * Generate a unique command ID for an AI command.
-   * Format: ai-{playerId}-{counter} for deterministic, unique IDs.
-   */
-  private static generateAICommandId(player: PlayerData): string {
-    return `ai-${player.id}-${this.aiCommandIdCounter++}`;
-  }
-
-  /**
-   * Reset the AI command ID counter (called at start of each game or test)
-   */
-  public static resetAICommandIdCounter(): void {
-    this.aiCommandIdCounter = 0;
-  }
-
   /**
    * Create a GameCommand with common AI metadata fields pre-filled.
    */
@@ -355,7 +337,7 @@ export class ComputerPlayer {
       ...commandFields,
       playerId: player.id,
       timestamp: Date.now(),
-      commandId: this.generateAICommandId(player),
+      commandId: Utils.generateUniqueId(),
       metadata: { source: 'ai' as const },
     } as T;
   }
@@ -1141,7 +1123,7 @@ export class ComputerPlayer {
 
         const tradeCmd = this.createAICommand<SubmitTradeCommand>(player, {
           type: GameCommandType.SUBMIT_TRADE,
-          tradeId: this.generateAICommandId(player),
+          tradeId: Utils.generateUniqueId(),
           tradeData: {
             resourceType: resourceTypeToString[trade.resourceType] || 'food',
             amount: trade.amount,
