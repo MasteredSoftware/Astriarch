@@ -17,7 +17,6 @@ import { Fleet } from './fleet';
 import {
   GameCommand,
   GameCommandType,
-  CommandResult,
   AdjustResearchPercentCommand,
   SubmitResearchItemCommand,
   SubmitTradeCommand,
@@ -34,7 +33,6 @@ import { PlanetProductionItem } from './planetProductionItem';
 import { PlanetResourcePotentialComparer } from './planetResourcePotentialComparer';
 import { Player } from './player';
 import { Research } from './research';
-import { TradingCenter } from './tradingCenter';
 
 export type PlanetResourcesPerTurn = Record<number, PlanetPerTurnResourceGeneration>;
 
