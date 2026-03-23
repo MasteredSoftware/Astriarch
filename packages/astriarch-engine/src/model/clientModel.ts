@@ -7,6 +7,15 @@ import type { TradeData, TradingCenterBase } from './tradingCenter';
 
 export type PlanetById = Record<number, PlanetData>;
 
+/**
+ * Minimal planet interface for location-based calculations (distance, inbound fleet checks).
+ * Both PlanetData and ClientPlanet satisfy this interface.
+ */
+export interface PlanetLocation {
+  id: number;
+  boundingHexMidPoint: PointData;
+}
+
 export interface ClientPlayer {
   id: string;
   type: PlayerType;

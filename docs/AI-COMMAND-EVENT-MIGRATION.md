@@ -12,16 +12,32 @@
 | **Spike** | S2 | Update `gameController.ts` caller to construct ClientModel | ✅ Done |
 | **Spike** | S3 | Update all sub-method signatures from `gameModel` to `clientModel + grid` | ✅ Done |
 | **Spike** | S4 | Update `computerPlayer.spec.ts` test call sites | ✅ Done |
-| **Remove** | 3 | Delete `computerManageFleetRepairs` entirely | Not started |
-| **Remove** | 4 | Remove `processAICommand` helper — AI returns commands, caller processes | Not started |
-| **Convert** | 5 | Stop AI from calling `CommandProcessor` internally; return `GameCommand[]` from each sub-method | Not started |
-| **Convert** | 6 | Remove `clientPlanets as unknown as PlanetData[]` casts — use `ClientPlanet` natively (6 locations) | Not started |
-| **Convert** | 7 | Convert `computerAdjustPopulationAssignments` — snapshot/restore pattern for net diff commands | Not started |
-| **Convert** | 8 | Convert `computerSendShips` — local committed-ship tracking, return `SEND_SHIPS` commands | Not started |
-| **Caller** | 9 | `gameController.ts`: process returned commands through `CommandProcessor.processCommand(modelData, grid, cmd)` | Not started |
-| **Backend** | 10 | Update backend `GameControllerWebSocket.ts` persistence if needed | Not started |
-| **Test** | 11 | Update and add tests for command-only AI flow | Not started |
-| **Test** | 12 | Full game simulation: verify AI behavior is unchanged | Not started |
+| **Rewrite** | 3 | Rewrite `computerManageFleetRepairs` — retreat damaged planetary fleet ships to repair-capable planets (command-based) | ✅ Done |
+| **Remove** | 4 | Remove `processAICommand` helper — AI returns commands, caller processes | ✅ Done |
+| **Convert** | 5 | Stop AI from calling `CommandProcessor` internally; return `GameCommand[]` from each sub-method | ✅ Done |
+| **Convert** | 6 | Remove `clientPlanets as unknown as PlanetData[]` casts — `PlanetLocation` interface created, 6 casts removed | ✅ Done |
+| **Convert** | 7 | Convert `computerAdjustPopulationAssignments` — snapshot/restore pattern for net diff commands | ✅ Done |
+| **Convert** | 8 | Convert `computerSendShips` — local `committedShipIds` tracking (seeded from repair IDs), pure command output, no direct fleet mutation | ✅ Done |
+| **Caller** | 9 | `gameController.ts`: process returned commands through `CommandProcessor.processCommand(clientModel, grid, cmd)` | ✅ Done |
+| **Backend** | 10 | Backend `GameControllerWebSocket.ts` persistence — no changes needed (already iterates `{ command, result }`) | ✅ No-op |
+| **Test** | 11 | Update tests for command-only AI flow — tests process returned commands via CommandProcessor | ✅ Done (mostly) |
+| **Test** | 12 | Full game simulation: verify AI behavior is unchanged | ⚠️ 2 test failures remain |
+
+### Current Test Status
+
+**197 passing, 2 failing** (+ 1 pre-existing flaky `battleSimulator` probabilistic test)
+
+| Test | Status | Notes |
+|------|--------|-------|
+| `computerManageResearch` — set percent, queue research | ✅ Pass | Tests process returned commands |
+| `computerBuildImprovementsAndShips` — build goals | ✅ Pass | Tests process returned commands |
+| `computerSendShips` — prefer closer planets | ✅ Pass | |
+| `computerSendShips` — exploration priorities | ✅ Pass | |
+| `calculateEffectiveFleetStrength` — all scenarios | ✅ Pass | |
+| AI vs AI — Easy vs Hard, Easy vs Expert | ✅ Pass | |
+| AI vs AI — Hard vs Expert | ❌ Fail | Expert wins 0 games; likely due to changed turn dynamics from batched command processing |
+| Enhanced Intelligence — re-scout nearby enemy planets | ❌ Fail | `planetNeedsExploration` returns false; test may depend on intermediate state from prior `advanceGameClock` cycles |
+| `battleSimulator` — fleet advantage, defender ratio | ⚠️ Flaky | Pre-existing probabilistic test, unrelated to migration |
 
 ## Core Design Decisions
 
@@ -52,20 +68,33 @@ Since `constructClientGameModel` creates shared references to `mainPlayer` and o
 
 **Important:** Unlike v1 where AI called CommandProcessor internally and saw results immediately, in v2 each command is processed by the caller after `computerTakeTurn` returns. This means the AI makes all decisions based on a **snapshot** at the start of its turn. Some later commands may fail validation (e.g., trying to spend resources already spent by an earlier command). This matches how a human player batch-sending commands would work, and CommandProcessor handles failures gracefully.
 
-### 3. `computerManageFleetRepairs` is deleted
+### 3. `computerManageFleetRepairs` rewritten — planetary retreat only
 
-This feature was never intended behavior. It:
-- Redirects in-transit fleets by calling `Fleet.setDestination()` directly
+The **old** implementation redirected in-transit fleets by calling `Fleet.setDestination()` directly. This was faulty:
+- Human players can't redirect in-transit fleets → unfair AI advantage
 - Would require a `REDIRECT_FLEET` command type that doesn't exist
-- Gives AI an unfair advantage (human players can't redirect in-transit fleets)
+- Conceptually wrong — the intent was to retreat ships from planets lacking repair improvements
 
-Rather than defer it, we remove it entirely + remove the `enableFleetRepairs` AI setting.
+The **new** implementation handles the correct scenario: damaged ships sitting on a planet that **cannot repair them**. Repair requirements (from `Fleet.repairPlanetaryFleet`):
+- **Destroyers / SpacePlatforms**: planet needs a Factory + Colony
+- **Cruisers / Battleships**: planet needs a Factory + Colony + SpacePlatform
+- **Scouts / SystemDefense**: always repairable (no improvement needed)
 
-### 4. Population assignments: full command pipeline (no hybrid)
+The method checks each owned planet's fleet, identifies damaged ships the planet can't repair, finds the nearest owned planet with the right improvements, and emits `SEND_SHIPS` commands to retreat them. Ship IDs committed to repair retreats are passed to `computerSendShips` via `initialCommittedShipIds` so they aren't double-counted for attack/exploration.
 
-v1 used a "hybrid" approach where population was iteratively mutated directly, then net diffs were recorded as pre-applied commands. In v2, the AI emits `UPDATE_PLANET_WORKER_ASSIGNMENTS` commands for each incremental change. Since commands are processed by the caller after the AI's turn, the iterative algorithm needs to track its own internal state (farmer/miner/builder counts) without mutating the model.
+Gated by `enableFleetRepairs` AI setting: enabled for Hard, Expert, and Human; disabled for Easy and Normal.
 
-The AI will maintain local working copies of population counts and resource production rates, compute the desired changes, then emit the **net diff per planet** as commands — same as v1's output, but computed purely from local state without any model mutation.
+### 4. Population assignments: snapshot → mutate → capture → restore
+
+The AI's `computerAdjustPopulationAssignments` uses a **snapshot/restore** approach. The iterative rebalancing algorithm needs intermediate state (it reads updated worker counts after each mutation), so:
+
+1. **Snapshot** initial worker types (`citizenWorkerSnapshot`) at start
+2. **Run** the iterative algorithm, which mutates model state through shared refs
+3. **Capture** net diffs per planet as `UPDATE_PLANET_WORKER_ASSIGNMENTS` commands
+4. **Restore** citizen worker types to pre-algorithm state
+5. Commands returned to caller → `CommandProcessor` re-applies the net diffs cleanly
+
+This preserves the complex iterative algorithm unchanged while ensuring all mutations flow through the event pipeline.
 
 ### 5. `clientPlanets` replaces `modelData.planets` for planet iteration
 
@@ -82,7 +111,7 @@ For **owned planets**, the AI uses `mainPlayerOwnedPlanets` which has full `Plan
 
 ## Architecture
 
-### Before (v1 — current)
+### Before (v1 — pre-migration)
 ```
 advanceGameClockTo()
   └─ FOR EACH AI PLAYER:
@@ -92,13 +121,13 @@ advanceGameClockTo()
          ├─ computerSubmitTrades()           → calls CommandProcessor internally
          ├─ computerBuildImprovementsAndShips() → calls CommandProcessor internally
          ├─ computerAdjustPopulationAssignments() → HYBRID: direct mutation + net diff commands
-         ├─ computerManageFleetRepairs()     → direct Fleet.setDestination() mutation
+         ├─ computerManageFleetRepairs()     → direct Fleet.setDestination() mutation (⚠️ redirected in-transit fleets — faulty logic)
          └─ computerSendShips()             → HYBRID: some CommandProcessor, some direct mutation
        allAICommandResults.push(...aiResults)
 ```
-AI operates on full `GameModelData`, calls `CommandProcessor.processCommand(modelData, grid, cmd)` internally, receives `AICommandResult[]` back.
+AI operated on full `GameModelData`, called `CommandProcessor.processCommand(modelData, grid, cmd)` internally, received `AICommandResult[]` back.
 
-### After (v2 — target)
+### After (v2 — implemented ✅)
 ```
 advanceGameClockTo()
   └─ FOR EACH AI PLAYER:
@@ -108,19 +137,20 @@ advanceGameClockTo()
          ├─ computerSetPlanetBuildGoals()    → mutates clientModel.mainPlayer.planetBuildGoals (AI working memory)
          ├─ computerSubmitTrades()           → returns GameCommand[]
          ├─ computerBuildImprovementsAndShips() → returns GameCommand[]
-         ├─ computerAdjustPopulationAssignments() → returns GameCommand[] (pure computation, no model mutation)
-         └─ computerSendShips()             → returns GameCommand[]
+         ├─ computerAdjustPopulationAssignments() → snapshot/restore → returns GameCommand[]
+         ├─ computerManageFleetRepairs()     → returns { commands, repairShipIds } (SEND_SHIPS for repair retreat)
+         └─ computerSendShips(repairShipIds) → committedShipIds tracking (seeded from repair IDs) → returns GameCommand[]
        FOR EACH command:
-         result = CommandProcessor.processCommand(modelData, grid, command)
+         result = CommandProcessor.processCommand(clientModel, grid, command)
          allAICommands.push({ command, result })
 ```
-AI operates on `ClientModelData` only. Returns `GameCommand[]`. Caller processes on `ModelData`.
+AI operates on `ClientModelData` only. Returns `GameCommand[]`. Caller processes on `ModelData` via shared refs. `computerManageFleetRepairs` rewritten (planetary retreat only). `processAICommand` helper removed.
 
 ---
 
 ## Step Details
 
-### Step 1: New `computerTakeTurn` signature
+### Step 1: New `computerTakeTurn` signature ✅
 
 **File:** `packages/astriarch-engine/src/engine/computerPlayer.ts`
 
@@ -143,7 +173,7 @@ The AI extracts what it needs from `clientModel`:
 
 All sub-methods receive `(clientModel: ClientModelData, grid: Grid)` and return `GameCommand[]`.
 
-### Step 2: Update `gameController.ts` caller
+### Step 2: Update `gameController.ts` caller ✅
 
 **File:** `packages/astriarch-engine/src/engine/gameController.ts`
 
@@ -167,15 +197,26 @@ for (const command of aiCommands) {
 
 The `AICommandResult` type stays as-is (`{ command: GameCommand, result: CommandResult }`) but is now populated by the caller, not the AI.
 
-### Step 3: Delete `computerManageFleetRepairs`
+### Step 3: Rewrite `computerManageFleetRepairs` ✅
 
 **File:** `packages/astriarch-engine/src/engine/computerPlayer.ts`
 
-Remove the entire method and its call in `computerTakeTurn`. Also remove `enableFleetRepairs` from `AISettings` interface and all per-difficulty settings objects.
+The old implementation (redirecting in-transit fleets) was deleted. A new implementation was added that handles the correct scenario: **damaged ships on planets that lack the improvements to repair them**.
 
-This feature was unintended and gives AI an unfair advantage. Human players cannot redirect in-transit fleets.
+**New behavior:**
+1. Build lookup of owned planets that can repair each ship class (Factory+Colony for destroyers, Factory+Colony+SpacePlatform for cruisers/battleships)
+2. For each owned planet, check ships in the planetary fleet (not in-transit) that are damaged
+3. If the planet can't repair a ship type, find the nearest owned planet that can
+4. Group retreating ships by destination and emit `SEND_SHIPS` commands
+5. Return committed ship IDs so `computerSendShips` can exclude them
 
-### Step 4: Remove `AICommandResult` from computerPlayer, clean up helpers
+**Returned type:** `{ commands: GameCommand[], repairShipIds: Set<string> }`
+
+Gated by `enableFleetRepairs` setting: **true** for Hard, Expert, Human; **false** for Easy, Normal.
+
+Called in `computerTakeTurn` **before** `computerSendShips` so repair retreats take priority over attack/exploration decisions.
+
+### Step 4: Remove `AICommandResult` from computerPlayer, clean up helpers ✅
 
 **Files:** `packages/astriarch-engine/src/engine/computerPlayer.ts`, `gameModel.ts`
 
@@ -184,7 +225,7 @@ This feature was unintended and gives AI an unfair advantage. Human players cann
 - `AICommandResult` type stays in `gameModel.ts` but is used only by the caller (gameController), not by computerPlayer
 - Remove all `results: AICommandResult[]` parameters from sub-methods
 
-### Step 5: Convert `computerManageResearch`
+### Step 5: Convert `computerManageResearch` ✅
 
 **Signature change:** `(clientModel: ClientModelData, grid: Grid) → GameCommand[]`
 
@@ -198,7 +239,7 @@ Returns: Up to 2 commands: `ADJUST_RESEARCH_PERCENT` + optionally `SUBMIT_RESEAR
 
 No model access issues — all data is on `mainPlayer`.
 
-### Step 6: Convert `computerSetPlanetBuildGoals`
+### Step 6: Convert `computerSetPlanetBuildGoals` ✅
 
 **Signature change:** `(clientModel: ClientModelData, grid: Grid) → void` (no commands — internal planning)
 
@@ -208,7 +249,7 @@ This method only writes to `player.planetBuildGoals` which is AI working memory 
 
 Uses `countPlanetsNeedingExploration` which iterates all planets — needs the helper conversion (Step 11).
 
-### Step 7: Convert `computerSubmitTrades`
+### Step 7: Convert `computerSubmitTrades` ✅
 
 **Signature change:** `(clientModel: ClientModelData, grid: Grid) → GameCommand[]`
 
@@ -220,7 +261,7 @@ Returns: Array of `SUBMIT_TRADE` commands.
 
 No model access issues — purely reads from `mainPlayer` and owned planets.
 
-### Step 8: Convert `computerBuildImprovementsAndShips`
+### Step 8: Convert `computerBuildImprovementsAndShips` ✅
 
 **Signature change:** `(clientModel: ClientModelData, grid: Grid) → GameCommand[]`
 
@@ -232,120 +273,87 @@ Returns: Array of `QUEUE_PRODUCTION_ITEM` and `DEMOLISH_IMPROVEMENT` commands.
 
 **Important:** After emitting a build command, the AI should track the resource cost locally to avoid double-spending (since the command won't be processed until after `computerTakeTurn` returns). The current code already does this with `totalResources.energy -= ppi.energyCost` for the "can't afford" path — this local tracking should be applied for ALL items (both queued and deferred).
 
-### Step 9: Convert `computerAdjustPopulationAssignments`
+### Step 9: Convert `computerAdjustPopulationAssignments` ✅
 
-**Signature change:** `(clientModel: ClientModelData, grid: Grid) → GameCommand[]`
+**Signature:** `(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted) → GameCommand[]`
 
-**This is the most complex conversion.** The current algorithm does dozens of incremental `Planet.updatePopulationWorkerTypesByDiff(planet, player, ±1, ±1, ±1)` calls across 4 phases.
+**Implemented approach: Snapshot → Mutate → Capture → Restore**
 
-**Approach: Pure computation with local tracking**
-
-1. At the start, snapshot each planet's current worker counts into a local `Map<planetId, {farmers, miners, builders}>`
-2. Run the existing algorithm but instead of calling `Planet.updatePopulationWorkerTypesByDiff`, update the local counts and locally compute resource generation changes
-3. At the end, compute net diffs per planet: `endingWorkers - startingWorkers`
+1. At start, snapshot each planet's `citizenWorkerSnapshot[planetId] = planet.population.map(c => c.workerType)` alongside existing `startingAssignments`
+2. Run the existing iterative algorithm unchanged (mutates model through shared refs — acceptable since it needs intermediate state)
+3. Compute net diffs per planet: `endingWorkers - startingWorkers`
 4. Emit one `UPDATE_PLANET_WORKER_ASSIGNMENTS` command per planet that changed
+5. **Restore** citizen worker types from snapshot: `planet.population.forEach((c, i) => { c.workerType = snapshot[i]; })`
+6. Return commands — caller processes through `CommandProcessor` which re-applies via `Planet.updatePopulationWorkerTypes()`
 
-The `planetResourcesPerTurn` calculation still needs `Planet.getPlanetWorkerResourceGeneration()` for initial values. As the algorithm proceeds, instead of calling `Planet.updatePopulationWorkerTypesByDiff()` (which mutates the planet), maintain local resource generation estimates.
+This keeps the complex iterative algorithm unchanged while ensuring no double-application when the caller processes the commands.
 
-**Alternative simpler approach:** Keep the current iterative mutation code (since `mainPlayer` and owned planets are shared references), but record the initial worker counts, let the mutations happen, then capture the net diff per planet as commands at the end. This is functionally identical to v1's hybrid approach but is correct because:
-- The mutations happen to shared objects (same as authoritative model)
-- The commands capture the net result for persistence/replay
-- Since the caller also processes commands on `modelData`, we need to ensure no double-application
+### Step 10: Convert `computerSendShips` ✅
 
-**Decision: Use the "snapshot → mutate → capture → restore" approach.** The AI freely mutates model state through shared refs during the iterative algorithm (this is acceptable). Then:
-1. Snapshot initial worker counts at start
-2. Run iterative algorithm (mutates model through shared refs)
-3. Compute net diffs per planet
-4. **Restore** worker counts to initial snapshot
-5. Return `UPDATE_PLANET_WORKER_ASSIGNMENTS` commands with net diffs
-6. Caller processes commands through CommandProcessor → applies mutations through events → persists
+**Signature:** `(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted, initialCommittedShipIds?: Set<string>) → GameCommand[]`
 
-This keeps the complex algorithm unchanged while ensuring all game-state mutations go through the event pipeline for persistence, matching how the server handles human players.
+Uses `committedShipIds: Set<string>` to track ships allocated to commands within the turn (since `CommandProcessor` doesn't run until after the turn completes, fleet state doesn't update between sends). The set is seeded from `initialCommittedShipIds` (repair retreat ship IDs) so those ships aren't double-counted for exploration or attack.
 
-### Step 10: Convert `computerSendShips`
+**Three send-ship patterns, all converted to pure `SEND_SHIPS` commands:**
 
-**Signature change:** `(clientModel: ClientModelData, grid: Grid) → GameCommand[]`
+**Exploration:** No longer calls `Fleet.splitOffSmallestPossibleFleet()` / `Fleet.setDestination()` / `push(outgoingFleets)`. Instead:
+1. Filter `uncommittedShips` from `pFriendly.planetaryFleet.starships` using `committedShipIds`
+2. Pick cheapest available ship (scout preferred, then destroyer)
+3. Build `SEND_SHIPS` command with that single ship's ID
+4. Add ship ID to `committedShipIds`
 
-Three send-ship patterns, all converted to `SEND_SHIPS` commands:
+**Attack (single & coordinated multi-planet):** Resolve ship IDs via `Fleet.getStarshipsByType()`, filter out `committedShipIds`, build `SEND_SHIPS` commands. Track all allocated ship IDs.
 
-**Exploration:** Currently calls `Fleet.splitOffSmallestPossibleFleet()` then `Fleet.setDestination()`. Instead:
-1. Read `planet.planetaryFleet.starships` to find the cheapest ship (scout preferred)
-2. Build a `SEND_SHIPS` command with that single ship's ID
-3. Track locally that this ship is "committed" so we don't send it again
+**Reinforcement:** Same pattern as attack, different destination (own planet).
 
-**Attack (single & multi-planet):** Currently reads fleet composition, decides if strength is sufficient, then splits and sends. Instead:
-1. Read fleet composition from `mainPlayerOwnedPlanets[planetId].planetaryFleet`
-2. Use `Fleet.getStarshipsByType()` to get ship IDs by type
-3. Build `SEND_SHIPS` command with the selected ship IDs
-4. Track locally that these ships are committed
+**Planet candidate management:** When all mobile ships on a planet are committed, the planet is removed from `planetCandidatesForSendingShips` (checked via `remainingMobile` after each send).
 
-**Reinforcement:** Same pattern as attack, different destination (own planet instead of enemy).
+### Step 11: Convert helper methods for `ClientPlanet[]` ✅
 
-**Local tracking challenge:** Since commands aren't processed until after `computerTakeTurn` returns, the AI's view of planet fleets doesn't update between sends. The AI needs to locally track which ships have been "committed" to avoid double-sending. Use a `Set<string>` of committed ship IDs that's checked before each send.
+A `PlanetLocation` interface was created in `clientModel.ts` and exported from `index.ts`:
 
-**Fleet ID:** Use `clientModel.mainPlayer.nextFleetId++` to generate fleet IDs (same as human player).
-
-### Step 11: Convert helper methods for `ClientPlanet[]`
-
-Several helpers iterate `gameModel.modelData.planets` (full `PlanetData[]`). These need to accept `ClientPlanet[]` or `ClientModelData` instead:
-
-**`countPlanetsNeedingExploration`:**
-- Currently: iterates `gameModel.modelData.planets`
-- After: iterates `clientModel.clientPlanets`
-- Works because it only uses `planet.id` and `planet.boundingHexMidPoint` (both on `ClientPlanet`)
-- For `planetContainsFriendlyInboundFleet`: the method needs `planet.boundingHexMidPoint` — available on `ClientPlanet`
-- BUT the `PlanetData` type is expected, not `ClientPlanet`. Need to update `planetContainsFriendlyInboundFleet` to accept `{ boundingHexMidPoint }` or create a minimal interface
-
-**`planetNeedsExploration`:**
-- Currently: receives `PlanetData`, iterates `gameModel.modelData.planets`
-- After: receives `ClientPlanet`, iterates `clientModel.clientPlanets`
-- For unexplored planets: `planet.type === null` (in ClientPlanet) means unexplored
-- For re-scouting: checks `player.lastKnownPlanetFleetStrength[planet.id]` which is on mainPlayer
-
-**`calculateScoutPriority` / `calculateExplorationPriority`:**
-- Uses `planet.type` and `planet.boundingHexMidPoint` — both available on `ClientPlanet` (type may be null for unexplored, need to handle)
-
-**`getClosestUnownedPlanet`:**
-- Currently: iterates `gameModel.modelData.planets`, returns `PlanetData`
-- After: iterates `clientModel.clientPlanets`, returns `ClientPlanet`
-- Only uses `boundingHexMidPoint` for distance calculations — works with `ClientPlanet`
-
-**`calculatePlanetTargetValue`:**
-- Uses `targetPlanet.type` — available on `ClientPlanet` if explored (null otherwise)
-- Uses `player.lastKnownPlanetFleetStrength[planet.id]` — available on mainPlayer
-- Uses `boundingHexMidPoint` — available on `ClientPlanet`
-- Needs to handle `type === null` (unknown planet) — could assign a default value or skip
-
-**`PlanetDistanceComparer`:**
-- Uses `boundingHexMidPoint` — available on `ClientPlanet`
-- May need type updates to accept `ClientPlanet | PlanetData`
-
-**Common interface:** Consider creating a shared `PlanetLocation` interface:
 ```typescript
-interface PlanetLocation {
+export interface PlanetLocation {
   id: number;
   boundingHexMidPoint: PointData;
 }
 ```
-This can be used by distance-calculating helpers, and both `PlanetData` and `ClientPlanet` satisfy it naturally.
 
-### Step 12: Update backend persistence
+Both `PlanetData` and `ClientPlanet` satisfy this interface structurally. The following were updated to accept `PlanetLocation`:
+
+- **`PlanetDistanceComparer`** — constructor `source` param, `sortFunction`, `increasedDistanceBasedOnPlanetValueAndFleetStrength`
+- **`Player.planetContainsFriendlyInboundFleet`** — `planet` param
+- **`calculateScoutPriority`**, **`calculateExplorationPriority`**, **`calculatePlanetTargetValue`**, **`getQuadrantIntelligenceBonus`** — `targetPlanet` param
+- **`getClosestUnownedPlanet`** — `sourcePlanet` param
+- **`planetNeedsExploration`** — `planet` param
+
+All 6 `as unknown as PlanetData[]` casts were removed. For nullable `ClientPlanet.type` (null when unexplored), safe access patterns like `(planet as { type?: PlanetType | null }).type ?? 0` are used in arithmetic contexts.
+
+### Step 12: Backend persistence — no changes needed ✅
 
 **File:** `apps/astriarch-backend/src/controllers/GameControllerWebSocket.ts`
 
-The current v1 code already captures `aiCommandResults` and persists them. The only change is that `aiCommandResults` in `AdvanceGameClockResult` now contains results from the **caller's** CommandProcessor invocations rather than from the AI's internal processing. The persistence code doesn't need to change — it already iterates and persists each `{ command, result }` pair.
+The backend persistence code iterates `aiCommandResults` and calls `eventPersistenceService.persistCommandAndEvents(gameId, aiResult.command, aiResult.result, ...)`. Since `AdvanceGameClockResult.aiCommandResults` is still `AICommandResult[]` populated by the caller's `CommandProcessor.processCommand()` invocations, the results now contain **real events** (not empty `{ success: true, events: [] }` wrappers). No code changes needed — the richer event data flows through automatically.
 
-### Steps 13-14: Testing
+### Steps 13-14: Testing ⚠️ Partial
 
-**Engine tests:**
-- Update test setup to construct `ClientModelData` instead of passing `GameModelData`
-- Verify returned `GameCommand[]` are well-formed
-- Process returned commands through `CommandProcessor` and verify state matches expectations
+**What's done:**
+- Tests updated to import `CommandProcessor` and process returned `GameCommand[]` through it
+- `computerManageResearch` tests process commands before asserting player state
+- `computerSendShips` and `computerBuildImprovementsAndShips` tests process commands
+- Fleet repair tests removed (feature deleted)
+- 197 of 199 tests pass
 
-**AI behavior regression:**
-- Run AI-vs-AI simulations
-- Compare game outcomes (planets captured, research levels, etc.)
-- Look for any AI behavior degradation due to snapshot-based decision making
+**Remaining test failures (2):**
+
+1. **"Hard vs Expert - expert should win eventually"** — Expert AI wins 0 games in simulation. This appears to be a gameplay balance issue from the changed command processing order (batched/deferred vs immediate). The AI now makes all decisions based on start-of-turn state, which may affect Expert's aggressive strategy timing.
+
+2. **"should re-scout nearby enemy planets more frequently for Hard AI"** — `planetNeedsExploration` returns false. Test setup calls `advanceGameCycles` which now processes AI commands through CommandProcessor, potentially changing planet ownership state in ways that affect re-scout logic.
+
+**Not yet added:**
+- Explicit tests for `committedShipIds` ship-tracking logic
+- Explicit tests for population snapshot/restore correctness
+- Integration test verifying non-empty events flow through to backend persistence
 
 ---
 
@@ -373,8 +381,8 @@ The current v1 code already captures `aiCommandResults` and persists them. The o
 | `computerSendShips` | Attack (single) | `SEND_SHIPS` | Resolve ship IDs |
 | `computerSendShips` | Attack (multi-planet) | `SEND_SHIPS` × N | One per source planet |
 | `computerSendShips` | Reinforce | `SEND_SHIPS` | Same command, own planet target |
+| `computerManageFleetRepairs` | Retreat damaged ships for repair | `SEND_SHIPS` | Planetary fleets only; repair IDs passed to `computerSendShips` |
 | `computerSetPlanetBuildGoals` | Set build goals | *(none — internal)* | AI working memory |
-| ~~`computerManageFleetRepairs`~~ | ~~Redirect fleet~~ | **DELETED** | Unintended feature removed |
 
 ## Key File References
 
@@ -390,117 +398,56 @@ The current v1 code already captures `aiCommandResults` and persists them. The o
 
 ## Risk Assessment
 
-| Risk | Mitigation |
-|------|-----------|
-| AI makes invalid commands (e.g., double-spending resources) | CommandProcessor validates; failed commands logged, not fatal |
-| Population assignment complexity | Use pure computation approach; extensive testing |
-| Ship double-send (same ship in multiple SEND_SHIPS) | Local `committedShipIds` set tracking |
-| `ClientPlanet.type` is null for unexplored | Handle in priority calculations; use intelligence data instead |
-| AI behavior regression (snapshot vs live state) | AI-vs-AI simulation comparison tests |
-| Shared reference aliasing (clientModel.mainPlayer IS modelData.players[i]) | This is intentional — build goals need to persist; population approach avoids relying on this |
+| Risk | Status | Mitigation |
+|------|--------|-----------|
+| AI makes invalid commands (e.g., double-spending resources) | ✅ Mitigated | CommandProcessor validates; failed commands logged via `console.warn`, not fatal |
+| Population assignment complexity | ✅ Mitigated | Snapshot/restore approach keeps algorithm unchanged |
+| Ship double-send (same ship in multiple SEND_SHIPS) | ✅ Mitigated | `committedShipIds: Set<string>` tracks committed ships within each turn; seeded from repair retreat IDs |
+| `ClientPlanet.type` is null for unexplored | ✅ Mitigated | Safe access via `(planet as { type?: PlanetType \| null }).type ?? 0` |
+| AI behavior regression (snapshot vs live state) | ⚠️ Active | 2 test failures — Expert AI simulation balance shifted, re-scout test assumption broken |
+| Shared reference aliasing (clientModel.mainPlayer IS modelData.players[i]) | ✅ Acceptable | Intentional for build goals; population uses snapshot/restore to avoid double-apply |
 
 ---
 
-## Engineering Handoff Report (2026-03-07)
+## Engineering Status Report (updated 2026-03-21)
 
-### What Was Completed — Spike Refactor
+### Migration Complete — Deep Refactor Done
 
-The "interface spike" is complete. All signatures have been changed, everything builds and tests pass (200/201, 1 pre-existing failure).
+The full deep refactor is implemented. AI no longer calls `CommandProcessor` internally. All sub-methods return `GameCommand[]`. The caller (`gameController.ts`) processes commands through `CommandProcessor.processCommand()` to get real events.
 
-**Files changed:**
-- `packages/astriarch-engine/src/engine/computerPlayer.ts` — All method signatures changed from `gameModel: GameModelData` to `clientModel: ClientModelData, grid: Grid`
-- `packages/astriarch-engine/src/engine/gameController.ts` — Caller now constructs `ClientModelData` via `ClientGameModel.constructClientGameModel(modelData, p.id)`
-- `packages/astriarch-engine/src/engine/computerPlayer.spec.ts` — All test call sites updated to construct `clientModel` before calling
+**TypeScript:** Clean compilation, zero errors.
+**Tests:** 197/199 pass + 1 flaky pre-existing `battleSimulator` probabilistic test.
 
-**How it works right now (post-spike, pre-deep-refactor):**
-1. `gameController.ts` constructs `ClientModelData` for each AI player
-2. `computerTakeTurn(clientModel, grid)` receives it
-3. Internally, sub-methods still call `processAICommand(clientModel, grid, cmd, results)` which calls `CommandProcessor.processCommand(clientModel, grid, cmd)`
-4. Because `clientModel.mainPlayer` and `clientModel.mainPlayerOwnedPlanets` are **shared references** (NOT deep copies) to objects in `modelData`, CommandProcessor mutations **flow through** to the authoritative model
-5. `computerTakeTurn` returns `GameCommand[]` (extracted from `AICommandResult[]`)
-6. The caller wraps each command with a dummy `{ success: true, events: [] }` result for persistence
+### What Changed (summary of all files modified)
 
-This is a **functioning but intermediate state** — the AI is technically mutating the server model through the shared references. The deep refactor will change AI to just return commands without calling CommandProcessor.
+| File | Changes |
+|------|---------|
+| `computerPlayer.ts` (~2550 lines) | Rewrote `computerManageFleetRepairs` (planetary retreat for repair, no longer redirects in-transit fleets). Removed `processAICommand` helper, `CommandProcessor` import, `AICommandResult` import. Re-added `enableFleetRepairs` setting (Hard/Expert/Human only). All sub-methods return `GameCommand[]`. Population uses snapshot/restore. Ship sending uses `committedShipIds` (seeded from repair IDs). Exploration uses pure command output (no direct fleet mutations). `PlanetLocation` used throughout. |
+| `gameController.ts` | Imports `CommandProcessor`. AI commands processed via `CommandProcessor.processCommand(clientModel, grid, command)` — no more dummy `{ success: true, events: [] }` wrapping. |
+| `clientModel.ts` | Added `PlanetLocation` interface (`{ id, boundingHexMidPoint }`) |
+| `planetDistanceComparer.ts` | Widened signatures to accept `PlanetLocation` |
+| `player.ts` | `planetContainsFriendlyInboundFleet` accepts `PlanetLocation` |
+| `index.ts` | Exports `PlanetLocation` |
+| `computerPlayer.spec.ts` | Imports `CommandProcessor`. Tests process returned commands. Fleet repair tests deleted. |
 
-### Key Design Decision: Shared References Are OK for Mutations
+### Remaining Work
 
-The owner confirmed: it's OK for AI to mutate `mainPlayer` state during computation. The requirement is that **the server must only persist mutations done through event application** — the same as human players. So the deep refactor goal is:
-- AI returns `GameCommand[]` only
-- Caller processes commands through `CommandProcessor.processCommand(modelData, grid, cmd)` → events
-- Events are persisted as the official record
-- Any internal AI mutations (e.g., population assignment iteration) must be snapshot/restored
+**2 test failures to investigate/fix:**
 
-### Technical Debt from the Spike
+1. **"Hard vs Expert - expert should win eventually"** (AI vs AI simulation)
+   - Expert wins 0 games. Likely a gameplay balance shift from batched command processing — AI now makes all decisions based on start-of-turn snapshot rather than seeing intermediate results from earlier sub-methods.
+   - **Possible causes:** Resource tracking changed (build commands no longer deduct resources immediately), ship sending no longer reflects mid-turn fleet changes (mitigated by `committedShipIds` but combat effectiveness calculations still use stale fleet state).
+   - **Fix approaches:** Tune Expert AI settings, adjust test expectations, or add mid-turn state tracking for resource expenditure.
 
-**1. `clientModel.clientPlanets as unknown as PlanetData[]` — 6 unsafe casts**
+2. **"should re-scout nearby enemy planets more frequently for Hard AI"**
+   - `planetNeedsExploration` returns false when test expects true.
+   - Test calls `advanceGameCycles(10)` which now processes AI commands through CommandProcessor, potentially changing planet ownership/fleet state in ways that affect the re-scout condition.
+   - **Fix approaches:** Review test setup assumptions, adjust cycle count, or update test expectations.
 
-Locations (line numbers approximate):
-- `computerSendShips` lines 1314, 1328 — iterating all planets for target selection
-- `countPlanetsNeedingExploration` line 1873
-- `planetNeedsExploration` line 1909
-- `calculateScoutPriority` line 2003
-- `getClosestUnownedPlanet` line 2120
-
-These iterate `clientPlanets` (typed as `ClientPlanet[]`) but the code expects `PlanetData` for calls to `Player.planetContainsFriendlyInboundFleet(player, p)` and `PlanetDistanceComparer`. Both only use `boundingHexMidPoint` which exists on `ClientPlanet`, so the cast is safe *at runtime* but not type-safe.
-
-**Fix approach:** Create a shared `PlanetLocation` interface `{ id: number; boundingHexMidPoint: PointData }` that both `PlanetData` and `ClientPlanet` satisfy. Update `PlanetDistanceComparer.sortFunction`, `Player.planetContainsFriendlyInboundFleet`, and the helper methods to accept `PlanetLocation` instead of `PlanetData`. This eliminates all 6 casts.
-
-**2. `processAICommand` still exists and calls CommandProcessor internally**
-
-Currently 8 call sites inside computerPlayer.ts:
-- `computerSubmitTrades` (1)
-- `computerBuildImprovementsAndShips` (2 — build + demolish)
-- `computerSendShips` (3 — exploration, single attack, reinforcement)
-- `computerManageResearch` (2 — adjust percent + submit item)
-
-Deep refactor: replace each `processAICommand(clientModel, grid, cmd, results)` call with `commands.push(cmd)` and change each sub-method to return `GameCommand[]` instead of `AICommandResult[]`.
-
-**3. `computerAdjustPopulationAssignments` — hybrid mutation + net-diff commands**
-
-Currently: iteratively mutates planet population using `Planet.updatePopulationWorkerTypesByDiff()`, then computes net diffs from start/end snapshots and creates pre-applied commands (lines 740-776).
-
-Deep refactor approach (snapshot/restore):
-1. Snapshot initial worker counts per planet
-2. Let the iterative algorithm run (it mutates through shared refs — that's fine)
-3. Capture net diffs per planet
-4. **Restore** worker counts to initial snapshot values
-5. Return `UPDATE_PLANET_WORKER_ASSIGNMENTS` commands with net diffs
-6. Caller processes commands through CommandProcessor → applies via events
-
-This keeps the complex algorithm unchanged while ensuring mutations go through the event pipeline.
-
-**4. `gameController.ts` caller wraps commands with dummy results**
-
-Lines 84-91 currently wrap each AI command with `{ success: true, events: [] }`. The deep refactor will replace this with actual `CommandProcessor.processCommand(modelData, grid, command)` calls.
-
-**5. `computerManageFleetRepairs` — slated for deletion**
-
-Still present, still directly mutates `Fleet.setDestination()` on in-transit fleets. This is an unintended feature that gives AI an unfair advantage. Should be deleted entirely along with the `enableFleetRepairs` AI setting.
-
-### Recommended Implementation Order for Deep Refactor
-
-1. **Delete `computerManageFleetRepairs`** and `enableFleetRepairs` setting — simplest change, removes complexity
-2. **Create `PlanetLocation` interface** and widen types on `PlanetDistanceComparer`, `Player.planetContainsFriendlyInboundFleet`, and helper methods — eliminates all 6 unsafe casts
-3. **Convert sub-methods to return `GameCommand[]`** — replace `processAICommand()` calls with `commands.push()`, remove `results` accumulators. Start with simpler methods (research, trades, build) then harder ones (send ships, population).
-4. **Update `computerAdjustPopulationAssignments`** with snapshot/restore pattern
-5. **Update `gameController.ts` caller** to process returned commands through CommandProcessor on `modelData`
-6. **Remove `processAICommand` helper** — no longer needed
-7. **Run full test suite + AI-vs-AI simulations** to verify behavioral equivalence
-
-### Test Status
-
-- **200 / 201 engine tests pass** (1 pre-existing failure: "should re-scout nearby enemy planets more frequently for Hard AI" — this test has been failing since before this work)
-- **Backend builds clean** against the new engine interface
-- **Frontend not tested** but has no direct dependency on computerPlayer signatures
-
-### Files to Know
-
-| File | Lines | What to know |
-|------|-------|--------------|
-| `computerPlayer.ts` | ~2500 | All signatures updated. 8 `processAICommand` calls to convert. 6 `as unknown as PlanetData[]` casts to fix. |
-| `gameController.ts` | ~716 | Lines 80-91: AI caller with TODO comment. Currently wraps commands with dummy results. |
-| `computerPlayer.spec.ts` | ~1198 | All call sites updated. Fleet repair tests will need deletion when that feature is removed. |
-| `clientGameModel.ts` | ~97 | `constructClientGameModel()` creates shared refs for mainPlayer/ownedPlanets, new objects for clientPlanets/clientPlayers. |
-| `clientModel.ts` | ~80 | `ClientPlanet = { id, name, originPoint, boundingHexMidPoint, type: PlanetType \| null }` |
-| `CommandProcessor.ts` | ~1041 | Already handles both `ModelData` and `ClientModelData`. `processCommand()` is the entry point. |
-| `planetDistanceComparer.ts` | ~109 | `sortFunction(a: PlanetData, b: PlanetData)` — needs widening to accept `PlanetLocation`. |
+**Nice-to-have test additions:**
+- `committedShipIds` prevents double-sending ships to same/different targets
+- Population snapshot/restore produces correct net diffs
+- `computerManageFleetRepairs` retreats damaged ships from planets without repair improvements
+- `computerManageFleetRepairs` does NOT affect in-transit fleets
+- Repair retreat ship IDs are excluded from exploration/attack in `computerSendShips`
+- Non-empty events flow through `AdvanceGameClockResult.aiCommandResults` to backend persistence

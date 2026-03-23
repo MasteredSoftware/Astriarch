@@ -1,4 +1,5 @@
 import { PlanetData, PlanetType } from '../model/planet';
+import { PlanetLocation } from '../model/clientModel';
 import { LastKnownPlanetFleetStrength } from '../model/player';
 import { Fleet } from './fleet';
 import { Grid, GridHex } from './grid';
@@ -8,11 +9,11 @@ import { Grid, GridHex } from './grid';
  */
 export class PlanetDistanceComparer {
   grid: Grid;
-  source: PlanetData;
+  source: PlanetLocation;
   sourceHex: GridHex;
   lastKnownPlanetFleetStrength: LastKnownPlanetFleetStrength | undefined;
 
-  constructor(grid: Grid, source: PlanetData, lastKnownPlanetFleetStrength?: LastKnownPlanetFleetStrength) {
+  constructor(grid: Grid, source: PlanetLocation, lastKnownPlanetFleetStrength?: LastKnownPlanetFleetStrength) {
     this.grid = grid;
     this.source = source;
     this.lastKnownPlanetFleetStrength = lastKnownPlanetFleetStrength;
@@ -29,7 +30,7 @@ export class PlanetDistanceComparer {
    * @param b
    * @returns
    */
-  public sortFunction(a: PlanetData, b: PlanetData): number {
+  public sortFunction(a: PlanetLocation, b: PlanetLocation): number {
     //TODO: this could be slow, we could just have an index for all distances instead of calculating it each time
     let ret = 0;
     let distanceA = 0;
@@ -65,7 +66,7 @@ export class PlanetDistanceComparer {
   /**
    * returns the distance to increase a planet for sorting based on strength
    */
-  private increasedDistanceBasedOnPlanetValueAndFleetStrength(p: PlanetData) {
+  private increasedDistanceBasedOnPlanetValueAndFleetStrength(p: PlanetLocation) {
     //to normalize distance, value and strength we increase the distance as follows
     //Based on Value (could eventually base this on what we need so if we need more minerals we prefer asteroids:
     // Class 2 planets add +0 distance
@@ -79,16 +80,20 @@ export class PlanetDistanceComparer {
     // Strength > 80 + 3
 
     let distance = 0;
-    switch (p.type) {
-      case PlanetType.AsteroidBelt:
-        distance += 3;
-        break;
-      case PlanetType.DeadPlanet:
-        distance += 2;
-        break;
-      case PlanetType.PlanetClass1:
-        distance += 1;
-        break;
+    // type may be undefined/null for unexplored ClientPlanets — treat as neutral (no distance adjustment)
+    const planetType = (p as { type?: PlanetType | null }).type;
+    if (planetType != null) {
+      switch (planetType) {
+        case PlanetType.AsteroidBelt:
+          distance += 3;
+          break;
+        case PlanetType.DeadPlanet:
+          distance += 2;
+          break;
+        case PlanetType.PlanetClass1:
+          distance += 1;
+          break;
+      }
     }
 
     if (this.lastKnownPlanetFleetStrength && p.id in this.lastKnownPlanetFleetStrength) {

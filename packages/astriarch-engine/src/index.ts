@@ -18,7 +18,7 @@ import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
 import { Research } from './engine/research';
 import { TradingCenter } from './engine/tradingCenter';
-import { ClientModelData, PlanetById, ClientPlayer } from './model/clientModel';
+import { ClientModelData, PlanetById, ClientPlayer, PlanetLocation } from './model/clientModel';
 import { StarShipType, FleetData, StarshipData } from './model/fleet';
 import {
   GalaxySizeOption,
@@ -102,6 +102,7 @@ export type { SnapshotData };
 export type { ClientModelData };
 export type { PlanetById };
 export type { ClientPlayer };
+export type { PlanetLocation };
 export type { PlanetProductionItemData };
 export type { CanBuildValidationResult };
 export type { FleetData };

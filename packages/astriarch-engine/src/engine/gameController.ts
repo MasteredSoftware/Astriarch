@@ -7,6 +7,7 @@ import { ResearchType } from '../model/research';
 import { Utils } from '../utils/utils';
 import { BattleSimulator } from './battleSimulator';
 import { ClientGameModel } from './clientGameModel';
+import { CommandProcessor } from './CommandProcessor';
 import { ComputerPlayer } from './computerPlayer';
 import { Fleet } from './fleet';
 import {
@@ -81,11 +82,13 @@ export class GameController {
       if (p.type !== PlayerType.Human) {
         const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
         const aiCommands = ComputerPlayer.computerTakeTurn(clientModel, grid);
-        // AI processed commands internally via shared refs (clientModel.mainPlayer IS modelData.players[i]).
-        // Mutations are already applied. Wrap commands for persistence tracking.
-        // TODO: In deep refactor, AI will NOT process internally — caller will process here.
+        // Process each AI command through CommandProcessor to get real events
         for (const command of aiCommands) {
-          allAICommandResults.push({ command, result: { success: true, events: [] } });
+          const result = CommandProcessor.processCommand(clientModel, grid, command);
+          allAICommandResults.push({ command, result });
+          if (!result.success) {
+            console.warn(`AI command failed: ${command.type}`, result.error?.message);
+          }
         }
       }
     }
