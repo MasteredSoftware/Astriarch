@@ -83,6 +83,12 @@ function runAIvsAISimulation(
   return wins;
 }
 
+function getAiDecisionDebugFilePath(fileName: string) {
+  const outputPath = path.join(__dirname, '../../ai-decision-debugging/data', fileName);
+  return outputPath;
+}
+
+
 describe('ComputerPlayer', () => {
   beforeEach(() => {
     testGameData = startNewTestGame();
@@ -213,7 +219,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-normal.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-easy-vs-normal.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -235,7 +241,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-hard.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-easy-vs-hard.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -257,7 +263,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-normal-vs-hard.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-normal-vs-hard.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -279,7 +285,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-expert.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-easy-vs-expert.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -301,7 +307,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-hard-vs-expert.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-hard-vs-expert.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
