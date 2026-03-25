@@ -299,7 +299,7 @@ describe('ComputerPlayer', () => {
       enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Hard, PlayerType.Computer_Expert, {
-        iterations: 1,
+        iterations: 5,
         maxTurns: 150,
       });
 
@@ -313,8 +313,9 @@ describe('ComputerPlayer', () => {
 
       disableAIDebug();
 
-      // Both are aggressive and advanced - expect competitive results
-      expect(wins.player2).toBeGreaterThan(wins.player1);
+      // Both are aggressive and advanced - these AIs are closely matched
+      // Expert should win at least 1 more game than Hard to prove it's competitive
+      expect(wins.player2).toBeGreaterThanOrEqual(wins.player1 + 1);
     });
 
     test('Hard AI should not starve', () => {
@@ -468,8 +469,9 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: player2.id,
       };
 
-      // After 10 turns, Hard AI should always re-scout nearby enemy planets (5-10 turn range)
-      advanceGameCycles(testGameData.gameModel, 10);
+      // After enough turns, Hard AI should re-scout nearby enemy planets once intel becomes stale
+      // Staleness threshold scales with unknown planet count; with ~8 unknown planets, threshold is ~18
+      advanceGameCycles(testGameData.gameModel, 20);
 
       testGameData.gameModel.modelData.players.push(hardPlayer);
       const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, hardPlayer.id);
@@ -1025,7 +1027,7 @@ describe('ComputerPlayer', () => {
       );
 
       // Expert has threshold of 100 for re-scouting
-      // Priority breakdown: Proximity (0-50) + Enemy (40) + Urgency (20) + Type (3-15) + Staleness (0-20)
+      // Priority breakdown: Proximity (0-50) + Enemy (30) + Type (3-15) + Staleness (0-25)
       // This test validates the threshold mechanism works correctly
 
       // Since actual map distances vary, let's test the mechanism by checking that:
