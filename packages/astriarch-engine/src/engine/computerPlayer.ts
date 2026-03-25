@@ -724,9 +724,9 @@ export class ComputerPlayer {
       } //while (oreAmountNeeded < 0 || iridiumAmountNeeded < 0)
     }
 
-    // Compute net population diffs per planet and emit commands for persistence
-    // The mutations were applied directly above (iterative algorithm needs intermediate state),
-    // so these commands are recorded for persistence/replay only (already applied to game state).
+    // The iterative algorithm above mutates worker types in-place (it needs intermediate state
+    // to make correct decisions). Compute net diffs from the starting snapshot, then restore
+    // worker types so that CommandProcessor can authoritatively apply the final assignments.
     const commands: GameCommand[] = [];
     for (const planet of ownedPlanetsSorted) {
       const ending = Planet.countPopulationWorkerTypes(planet);
