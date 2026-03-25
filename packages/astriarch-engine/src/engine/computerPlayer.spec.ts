@@ -12,8 +12,10 @@ import {
 } from '../test/testUtils';
 import { ComputerPlayer } from './computerPlayer';
 import { ClientGameModel } from './clientGameModel';
+import { CommandProcessor } from './CommandProcessor';
 import { Fleet } from './fleet';
 import { GameController } from './gameController';
+import { GameCommandType, SendShipsCommand } from './GameCommands';
 import { GameModel } from './gameModel';
 import { Grid } from './grid';
 import { Player } from './player';
@@ -81,6 +83,12 @@ function runAIvsAISimulation(
   return wins;
 }
 
+function getAiDecisionDebugFilePath(fileName: string) {
+  const outputPath = path.join(__dirname, '../../ai-decision-debugging/data', fileName);
+  return outputPath;
+}
+
+
 describe('ComputerPlayer', () => {
   beforeEach(() => {
     testGameData = startNewTestGame();
@@ -95,13 +103,18 @@ describe('ComputerPlayer', () => {
       const hardPlayer = Player.constructPlayer('hard', PlayerType.Computer_Hard, 'Hard', player1.color);
       const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
 
+      // Add test players to the model so CommandProcessor can find them
+      testGameData.gameModel.modelData.players.push(easyPlayer, hardPlayer, expertPlayer);
+
       const easyPlanets = ClientGameModel.getOwnedPlanets(
         [player1.ownedPlanetIds[0]],
         testGameData.gameModel.modelData.planets,
       );
       const easyPlanetsSorted = Player.getOwnedPlanetsListSorted(easyPlayer, easyPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, easyPlayer, easyPlanets, easyPlanetsSorted);
+      const easyClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
+      const easyCmds = ComputerPlayer.computerManageResearch(easyClientModel, testGameData.gameModel.grid, easyPlayer, easyPlanets, easyPlanetsSorted);
+      for (const cmd of easyCmds) CommandProcessor.processCommand(easyClientModel, testGameData.gameModel.grid, cmd);
       expect(easyPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.1);
       expect(easyPlayer.research.researchPercent).toBeLessThanOrEqual(0.3);
 
@@ -111,7 +124,9 @@ describe('ComputerPlayer', () => {
       );
       const hardPlanetsSorted = Player.getOwnedPlanetsListSorted(hardPlayer, hardPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, hardPlayer, hardPlanets, hardPlanetsSorted);
+      const hardClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, hardPlayer.id);
+      const hardCmds = ComputerPlayer.computerManageResearch(hardClientModel, testGameData.gameModel.grid, hardPlayer, hardPlanets, hardPlanetsSorted);
+      for (const cmd of hardCmds) CommandProcessor.processCommand(hardClientModel, testGameData.gameModel.grid, cmd);
       expect(hardPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.4);
       expect(hardPlayer.research.researchPercent).toBeLessThanOrEqual(0.56);
 
@@ -121,20 +136,26 @@ describe('ComputerPlayer', () => {
       );
       const expertPlanetsSorted = Player.getOwnedPlanetsListSorted(expertPlayer, expertPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, expertPlayer, expertPlanets, expertPlanetsSorted);
+      const expertClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const expertCmds = ComputerPlayer.computerManageResearch(expertClientModel, testGameData.gameModel.grid, expertPlayer, expertPlanets, expertPlanetsSorted);
+      for (const cmd of expertCmds) CommandProcessor.processCommand(expertClientModel, testGameData.gameModel.grid, cmd);
       expect(expertPlayer.research.researchPercent).toBeGreaterThanOrEqual(0.45);
       expect(expertPlayer.research.researchPercent).toBeLessThanOrEqual(0.61);
     });
 
     test('should queue appropriate research for early game', () => {
       const expertPlayer = Player.constructPlayer('expert', PlayerType.Computer_Expert, 'Expert', player1.color);
+      // Add test player to model so CommandProcessor can find them
+      testGameData.gameModel.modelData.players.push(expertPlayer);
       const expertPlanets = ClientGameModel.getOwnedPlanets(
         [player1.ownedPlanetIds[0]],
         testGameData.gameModel.modelData.planets,
       );
       const expertPlanetsSorted = Player.getOwnedPlanetsListSorted(expertPlayer, expertPlanets);
 
-      ComputerPlayer.computerManageResearch(testGameData.gameModel, expertPlayer, expertPlanets, expertPlanetsSorted);
+      const expertClientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const cmds = ComputerPlayer.computerManageResearch(expertClientModel, testGameData.gameModel.grid, expertPlayer, expertPlanets, expertPlanetsSorted);
+      for (const cmd of cmds) CommandProcessor.processCommand(expertClientModel, testGameData.gameModel.grid, cmd);
 
       expect(expertPlayer.research.researchTypeInQueue).toBeDefined();
       expect([
@@ -185,73 +206,6 @@ describe('ComputerPlayer', () => {
     });
   });
 
-  describe('computerManageFleetRepairs', () => {
-    test('should not redirect Easy or Normal AI fleets', () => {
-      const normalPlayer = Player.constructPlayer('normal', PlayerType.Computer_Normal, 'Normal', player1.color);
-      const normalPlanets = ClientGameModel.getOwnedPlanets(
-        [player1.ownedPlanetIds[0]],
-        testGameData.gameModel.modelData.planets,
-      );
-      const normalPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, normalPlanets);
-
-      // Create damaged fleet in transit
-      const fleet = Fleet.generateFleetWithShipCount(0, 0, 2, 0, 0, 0, { x: 100, y: 100 });
-      fleet.starships[0].health = 2; // Damage ship
-      fleet.destinationHexMidPoint = { x: 200, y: 200 };
-      fleet.locationHexMidPoint = { x: 100, y: 100 };
-      normalPlayer.fleetsInTransit.push(fleet);
-
-      const originalDest = fleet.destinationHexMidPoint;
-      ComputerPlayer.computerManageFleetRepairs(
-        testGameData.gameModel,
-        normalPlayer,
-        normalPlanets,
-        normalPlanetsSorted,
-      );
-
-      // Should not have changed destination
-      expect(fleet.destinationHexMidPoint).toEqual(originalDest);
-    });
-
-    test('should redirect Hard AI damaged fleets to repair planets', () => {
-      const hardPlayer = Player.constructPlayer('hard', PlayerType.Computer_Hard, 'Hard', player1.color);
-
-      // Give player a planet with repair capabilities
-      const planet = testGameData.gameModel.modelData.planets[0];
-      GameModel.changePlanetOwner(undefined, hardPlayer, planet, testGameData.gameModel.modelData.currentCycle);
-      planet.builtImprovements[PlanetImprovementType.Colony] = 1;
-      planet.builtImprovements[PlanetImprovementType.Factory] = 1;
-
-      const hardPlanets = ClientGameModel.getOwnedPlanets([planet.id], testGameData.gameModel.modelData.planets);
-      const hardPlanetsSorted = Player.getOwnedPlanetsListSorted(hardPlayer, hardPlanets);
-
-      // Create damaged fleet at a valid grid location (near the planet)
-      const planetMidPoint = planet.boundingHexMidPoint;
-      const planetHex = testGameData.gameModel.grid.getHexAt(planetMidPoint);
-      if (!planetHex) throw new Error('Could not find planet hex');
-
-      // Find a nearby hex for the destination
-      const nearbyHex = testGameData.gameModel.grid.getHexAt({
-        x: planetMidPoint.x + 100,
-        y: planetMidPoint.y + 100,
-      });
-
-      const fleet = Fleet.generateFleetWithShipCount(0, 0, 4, 0, 0, 0, planetMidPoint);
-      fleet.starships[0].health = 2; // Heavy damage
-      fleet.starships[1].health = 3;
-      fleet.destinationHexMidPoint = nearbyHex ? nearbyHex.midPoint : planetMidPoint;
-      fleet.locationHexMidPoint = planetMidPoint;
-      hardPlayer.fleetsInTransit.push(fleet);
-
-      const originalDest = fleet.destinationHexMidPoint;
-      ComputerPlayer.computerManageFleetRepairs(testGameData.gameModel, hardPlayer, hardPlanets, hardPlanetsSorted);
-
-      // Destination should change toward the repair planet (which is planet itself)
-      // The logic will redirect toward nearest repair planet when fleet is damaged
-      expect(fleet.destinationHexMidPoint).toBeDefined();
-    });
-  });
-
   describe('AI vs AI game simulations', () => {
     test('Easy vs Normal - Normal should win eventually', () => {
       enableAIDebug();
@@ -265,7 +219,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-normal.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-easy-vs-normal.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -287,7 +241,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-hard.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-easy-vs-hard.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -309,7 +263,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-normal-vs-hard.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-normal-vs-hard.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -331,7 +285,7 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-easy-vs-expert.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-easy-vs-expert.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
@@ -345,7 +299,7 @@ describe('ComputerPlayer', () => {
       enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Hard, PlayerType.Computer_Expert, {
-        iterations: 1,
+        iterations: 5,
         maxTurns: 150,
       });
 
@@ -353,14 +307,15 @@ describe('ComputerPlayer', () => {
 
       // Save AI decisions to file
       const aiDecisionsJSON = exportAIDecisionsJSON();
-      const outputPath = path.join(__dirname, '../../ai-decision-debugging/ai-decisions-hard-vs-expert.json');
+      const outputPath = getAiDecisionDebugFilePath('ai-decisions-hard-vs-expert.json');
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
       disableAIDebug();
 
-      // Both are aggressive and advanced - expect competitive results
-      expect(wins.player2).toBeGreaterThan(wins.player1);
+      // Both are aggressive and advanced - these AIs are closely matched
+      // Expert should win at least 1 more game than Hard to prove it's competitive
+      expect(wins.player2).toBeGreaterThanOrEqual(wins.player1 + 1);
     });
 
     test('Hard AI should not starve', () => {
@@ -446,7 +401,10 @@ describe('ComputerPlayer', () => {
       };
       easyPlayer.knownPlanetIds.push(enemyPlanet.id);
 
-      ComputerPlayer.computerSendShips(testGameData.gameModel, easyPlayer, ownedPlanets, ownedPlanetsSorted);
+      testGameData.gameModel.modelData.players.push(easyPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
+      const easyCmds = ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, easyPlayer, ownedPlanets, ownedPlanetsSorted);
+      for (const cmd of easyCmds) CommandProcessor.processCommand(clientModel, testGameData.gameModel.grid, cmd);
 
       // Easy AI might attack, but not always due to high threshold
       const fleetsCount = homePlanet.outgoingFleets.length;
@@ -478,7 +436,10 @@ describe('ComputerPlayer', () => {
       };
       expertPlayer.knownPlanetIds.push(enemyPlanet.id);
 
-      ComputerPlayer.computerSendShips(testGameData.gameModel, expertPlayer, ownedPlanets, ownedPlanetsSorted);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const expertCmds = ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, expertPlayer, ownedPlanets, ownedPlanetsSorted);
+      for (const cmd of expertCmds) CommandProcessor.processCommand(clientModel, testGameData.gameModel.grid, cmd);
 
       // Expert AI more likely to attack with smaller advantage
       const fleetsCount = homePlanet.outgoingFleets.length;
@@ -508,12 +469,16 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: player2.id,
       };
 
-      // After 10 turns, Hard AI should always re-scout nearby enemy planets (5-10 turn range)
-      advanceGameCycles(testGameData.gameModel, 10);
+      // After enough turns, Hard AI should re-scout nearby enemy planets once intel becomes stale
+      // Staleness threshold scales with unknown planet count; with ~8 unknown planets, threshold is ~18
+      advanceGameCycles(testGameData.gameModel, 20);
 
+      testGameData.gameModel.modelData.players.push(hardPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, hardPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         enemyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         hardPlayer,
         ownedPlanets,
       );
@@ -548,9 +513,11 @@ describe('ComputerPlayer', () => {
       const expectedTopCount = Math.max(1, Math.ceil(unknownPlanets.length * topPercentage));
 
       // Count planets needing exploration
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       let planetsNeedingExploration = 0;
       for (const planet of unknownPlanets) {
-        if (ComputerPlayer.planetNeedsExploration(planet, testGameData.gameModel, normalPlayer, ownedPlanets)) {
+        if (ComputerPlayer.planetNeedsExploration(planet, clientModel, testGameData.gameModel.grid, normalPlayer, ownedPlanets)) {
           planetsNeedingExploration++;
         }
       }
@@ -587,9 +554,12 @@ describe('ComputerPlayer', () => {
         testGameData.gameModel.modelData.planets,
       );
 
+      testGameData.gameModel.modelData.players.push(easyPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         enemyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         easyPlayer,
         ownedPlanets,
       );
@@ -637,16 +607,20 @@ describe('ComputerPlayer', () => {
       const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, ownedPlanets);
 
       // Verify unknownPlanet needs exploration
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         unknownPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
       expect(needsExploration).toBe(true);
 
-      // Execute ship sending logic
-      ComputerPlayer.computerSendShips(testGameData.gameModel, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+      // Execute ship sending logic and process returned commands
+      const shipCmds = ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+      for (const cmd of shipCmds) CommandProcessor.processCommand(clientModel, testGameData.gameModel.grid, cmd);
 
       // Debug: log what actually happened
       console.log('Planet1 (scouts) sent:', planet1.outgoingFleets.length, 'fleets');
@@ -755,9 +729,12 @@ describe('ComputerPlayer', () => {
       const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(normalPlayer, ownedPlanets);
 
       // Verify that unknownPlanet needs exploration with percentile logic
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         unknownPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
@@ -771,8 +748,9 @@ describe('ComputerPlayer', () => {
         return;
       }
 
-      // Execute ship sending logic
-      ComputerPlayer.computerSendShips(testGameData.gameModel, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+      // Execute ship sending logic and process returned commands
+      const shipCmds2 = ComputerPlayer.computerSendShips(clientModel, testGameData.gameModel.grid, normalPlayer, ownedPlanets, ownedPlanetsSorted);
+      for (const cmd of shipCmds2) CommandProcessor.processCommand(clientModel, testGameData.gameModel.grid, cmd);
 
       // Verify that exactly ONE fleet was sent
       const totalFleetsSent = closerPlanet.outgoingFleets.length + fartherPlanet.outgoingFleets.length;
@@ -839,8 +817,10 @@ describe('ComputerPlayer', () => {
       // Use the private method via casting
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const highValue = calculateValue(highValueTarget, expertPlayer, ownedPlanets, testGameData.gameModel);
-      const lowValue = calculateValue(lowValueTarget, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const highValue = calculateValue(highValueTarget, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
+      const lowValue = calculateValue(lowValueTarget, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // High value target should be significantly more valuable due to much weaker defenses
       // Weak defense (strength < 10) gives +25 vs strong defense (strength >= 50) gives 0
@@ -865,7 +845,9 @@ describe('ComputerPlayer', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // This is the current behavior that causes the bug:
       // No intelligence = 0 value = filtered out of attack targets
@@ -893,7 +875,9 @@ describe('ComputerPlayer', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // Should have positive value since we don't own it and we have intelligence
       // Planet type + proximity + strategic location should all add value
@@ -921,7 +905,9 @@ describe('ComputerPlayer', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const calculateValue = (ComputerPlayer as any).calculatePlanetTargetValue.bind(ComputerPlayer);
-      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, testGameData.gameModel);
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
+      const value = calculateValue(targetPlanet, expertPlayer, ownedPlanets, clientModel, testGameData.gameModel.grid);
 
       // With good intelligence, value should be positive
       expect(value).toBeGreaterThan(0);
@@ -948,9 +934,12 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: undefined,
       };
 
+      testGameData.gameModel.modelData.players.push(easyPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, easyPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         targetPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         easyPlayer,
         ownedPlanets,
       );
@@ -977,9 +966,12 @@ describe('ComputerPlayer', () => {
       // Planet is NOT known (never scouted)
       expect(expertPlayer.knownPlanetIds.includes(targetPlanet.id)).toBe(false);
 
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         targetPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1010,9 +1002,11 @@ describe('ComputerPlayer', () => {
       const expectedTopCount = Math.max(1, Math.ceil(unknownPlanets.length * topPercentage));
 
       // Count how many planets actually need exploration
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       let planetsNeedingExploration = 0;
       for (const planet of unknownPlanets) {
-        if (ComputerPlayer.planetNeedsExploration(planet, testGameData.gameModel, expertPlayer, ownedPlanets)) {
+        if (ComputerPlayer.planetNeedsExploration(planet, clientModel, testGameData.gameModel.grid, expertPlayer, ownedPlanets)) {
           planetsNeedingExploration++;
         }
       }
@@ -1033,7 +1027,7 @@ describe('ComputerPlayer', () => {
       );
 
       // Expert has threshold of 100 for re-scouting
-      // Priority breakdown: Proximity (0-50) + Enemy (40) + Urgency (20) + Type (3-15) + Staleness (0-20)
+      // Priority breakdown: Proximity (0-50) + Enemy (30) + Type (3-15) + Staleness (0-25)
       // This test validates the threshold mechanism works correctly
 
       // Since actual map distances vary, let's test the mechanism by checking that:
@@ -1053,10 +1047,13 @@ describe('ComputerPlayer', () => {
       advanceGameCycles(testGameData.gameModel, 30);
 
       // Calculate the actual priority to understand if it meets threshold
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const actualPriority = (ComputerPlayer as any).calculateScoutPriority(
         testPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1065,7 +1062,8 @@ describe('ComputerPlayer', () => {
 
       const needsRescouting = ComputerPlayer.planetNeedsExploration(
         testPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1105,10 +1103,13 @@ describe('ComputerPlayer', () => {
       advanceGameCycles(testGameData.gameModel, 15);
 
       // Calculate actual priority to verify threshold mechanism
+      testGameData.gameModel.modelData.players.push(normalPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, normalPlayer.id);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const actualPriority = (ComputerPlayer as any).calculateScoutPriority(
         nearbyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
@@ -1117,7 +1118,8 @@ describe('ComputerPlayer', () => {
 
       const needsRescouting = ComputerPlayer.planetNeedsExploration(
         nearbyPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         normalPlayer,
         ownedPlanets,
       );
@@ -1146,9 +1148,12 @@ describe('ComputerPlayer', () => {
       expertPlayer.knownPlanetIds.push(targetPlanet.id);
       // No entry in lastKnownPlanetFleetStrength
 
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         targetPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1177,9 +1182,12 @@ describe('ComputerPlayer', () => {
         lastKnownOwnerId: expertPlayer.id,
       };
 
+      testGameData.gameModel.modelData.players.push(expertPlayer);
+      const clientModel = ClientGameModel.constructClientGameModel(testGameData.gameModel.modelData, expertPlayer.id);
       const needsExploration = ComputerPlayer.planetNeedsExploration(
         ownedPlanet,
-        testGameData.gameModel,
+        clientModel,
+        testGameData.gameModel.grid,
         expertPlayer,
         ownedPlanets,
       );
@@ -1187,6 +1195,348 @@ describe('ComputerPlayer', () => {
       // We shouldn't explore our own planets
       // Both exploration paths (unknown percentile & known threshold) filter owned planets
       expect(needsExploration).toBe(false);
+    });
+  });
+
+  describe('computerManageFleetRepairs', () => {
+    /**
+     * Helper: set up a Hard AI player owning specific planets with controlled improvements and fleets.
+     */
+    function setupRepairScenario(gameData: TestGameData, opts: {
+      planet1Improvements?: Partial<Record<PlanetImprovementType, number>>;
+      planet1Fleet?: ReturnType<typeof Fleet.generateFleetWithShipCount>;
+      planet2Improvements?: Partial<Record<PlanetImprovementType, number>>;
+      planet2Fleet?: ReturnType<typeof Fleet.generateFleetWithShipCount>;
+      planet2SpacePlatforms?: number;
+      playerType?: PlayerType;
+    }) {
+      const planet1 = gameData.gameModel.modelData.planets[0];
+      const planet2 = gameData.gameModel.modelData.planets[1];
+
+      const aiPlayer = Player.constructPlayer('ai', opts.playerType ?? PlayerType.Computer_Hard, 'AI', player1.color);
+      aiPlayer.ownedPlanetIds = [planet1.id, planet2.id];
+      aiPlayer.homePlanetId = planet1.id;
+
+      // Set up planet 1
+      planet1.builtImprovements = {
+        [PlanetImprovementType.Colony]: 0,
+        [PlanetImprovementType.Factory]: 0,
+        [PlanetImprovementType.Farm]: 0,
+        [PlanetImprovementType.Mine]: 0,
+        ...opts.planet1Improvements,
+      };
+      if (opts.planet1Fleet) {
+        planet1.planetaryFleet = opts.planet1Fleet;
+      }
+      planet1.outgoingFleets = [];
+
+      // Set up planet 2
+      planet2.builtImprovements = {
+        [PlanetImprovementType.Colony]: 0,
+        [PlanetImprovementType.Factory]: 0,
+        [PlanetImprovementType.Farm]: 0,
+        [PlanetImprovementType.Mine]: 0,
+        ...opts.planet2Improvements,
+      };
+      if (opts.planet2Fleet) {
+        planet2.planetaryFleet = opts.planet2Fleet;
+      } else {
+        planet2.planetaryFleet = Fleet.generateFleetWithShipCount(0, 0, 0, 0, 0, opts.planet2SpacePlatforms ?? 0, planet2.boundingHexMidPoint);
+      }
+      planet2.outgoingFleets = [];
+
+      gameData.gameModel.modelData.players.push(aiPlayer);
+
+      const ownedPlanets = ClientGameModel.getOwnedPlanets(aiPlayer.ownedPlanetIds, gameData.gameModel.modelData.planets);
+      const ownedPlanetsSorted = Player.getOwnedPlanetsListSorted(aiPlayer, ownedPlanets);
+      const clientModel = ClientGameModel.constructClientGameModel(gameData.gameModel.modelData, aiPlayer.id);
+
+      return { aiPlayer, planet1, planet2, ownedPlanets, ownedPlanetsSorted, clientModel };
+    }
+
+    it('should retreat a damaged destroyer from a planet with no factory to one with factory+colony', () => {
+      // Planet 1: no improvements, has a damaged destroyer
+      // Planet 2: has factory + colony (can repair destroyers)
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      // Damage the destroyer to 50% health
+      fleet1.starships[0].health = Math.floor(Fleet.getStarshipTypeBaseStrength(StarShipType.Destroyer) / 2);
+
+      const { aiPlayer, planet1, planet2, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(1);
+      expect(repairShipIds.size).toBe(1);
+
+      const sendCmd = commands[0] as SendShipsCommand;
+      expect(sendCmd.type).toBe(GameCommandType.SEND_SHIPS);
+      expect(sendCmd.fromPlanetId).toBe(planet1.id);
+      expect(sendCmd.toPlanetId).toBe(planet2.id);
+      expect(sendCmd.shipIds.destroyers.length).toBe(1);
+      expect(sendCmd.shipIds.destroyers[0]).toBe(fleet1.starships[0].id);
+    });
+
+    it('should retreat a damaged cruiser to a planet with factory+colony+space platform', () => {
+      // Planet 1: has factory+colony but NO space platform → can't repair cruisers
+      // Planet 2: has factory+colony+space platform → can repair cruisers
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 0, 1, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = Math.floor(Fleet.getStarshipTypeBaseStrength(StarShipType.Cruiser) / 2);
+
+      const { aiPlayer, planet1, planet2, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+        planet2SpacePlatforms: 1,
+      });
+
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(1);
+      expect(repairShipIds.size).toBe(1);
+
+      const sendCmd = commands[0] as SendShipsCommand;
+      expect(sendCmd.type).toBe(GameCommandType.SEND_SHIPS);
+      expect(sendCmd.fromPlanetId).toBe(planet1.id);
+      expect(sendCmd.toPlanetId).toBe(planet2.id);
+      expect(sendCmd.shipIds.cruisers.length).toBe(1);
+    });
+
+    it('should NOT retreat ships that the current planet can repair', () => {
+      // Planet 1: has factory+colony → CAN repair destroyer
+      // Damaged destroyer should stay
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = Math.floor(Fleet.getStarshipTypeBaseStrength(StarShipType.Destroyer) / 2);
+
+      const { aiPlayer, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(0);
+      expect(repairShipIds.size).toBe(0);
+    });
+
+    it('should NOT retreat undamaged ships even if planet lacks improvements', () => {
+      // Planet 1: no improvements, has a full-health destroyer
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      // Ensure ship is full health (default)
+
+      const { aiPlayer, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(0);
+      expect(repairShipIds.size).toBe(0);
+    });
+
+    it('should NOT retreat for Easy or Normal AI (enableFleetRepairs is false)', () => {
+      // Damaged destroyer on planet with no factory — but Easy AI shouldn't retreat
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = 1;
+
+      const { aiPlayer, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        playerType: PlayerType.Computer_Easy,
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      const { commands } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(0);
+    });
+
+    it('should retreat scouts from ineligible planets to ones with a colony', () => {
+      // Scouts need a colony + normal happiness to be repaired (same as all ship types)
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 1, 0, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = 1;
+
+      const { aiPlayer, planet2, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(1);
+      expect(repairShipIds.size).toBe(1);
+      const sendCmd = commands[0] as SendShipsCommand;
+      expect(sendCmd.toPlanetId).toBe(planet2.id);
+      expect(sendCmd.shipIds.scouts.length).toBe(1);
+    });
+
+    it('should not retreat if no other planet can repair the ship', () => {
+      // Planet 1: no factory, has damaged destroyer
+      // Planet 2: also no factory — nowhere to retreat to
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = 1;
+
+      const { aiPlayer, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        // Planet 2 has no improvements either
+      });
+
+      const { commands } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(0);
+    });
+
+    it('should retreat multiple damaged ships in one command when going to the same planet', () => {
+      // Planet 1: no improvements, has 2 damaged destroyers and 1 damaged battleship
+      // Planet 2: factory + colony + space platform (can repair all)
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 2, 0, 1, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      for (const ship of fleet1.starships) {
+        ship.health = 1;
+      }
+
+      const { aiPlayer, planet2, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+        planet2SpacePlatforms: 1,
+      });
+
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      // All 3 ships should go to planet2 in a single command
+      expect(commands.length).toBe(1);
+      expect(repairShipIds.size).toBe(3);
+
+      const sendCmd = commands[0] as SendShipsCommand;
+      expect(sendCmd.toPlanetId).toBe(planet2.id);
+      expect(sendCmd.shipIds.destroyers.length).toBe(2);
+      expect(sendCmd.shipIds.battleships.length).toBe(1);
+    });
+
+    it('should produce valid commands that CommandProcessor can execute', () => {
+      // End-to-end: generate repair commands and process them
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 1, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = 1;
+
+      const { aiPlayer, planet1, planet2, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      const { commands } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(commands.length).toBe(1);
+
+      // Process through CommandProcessor
+      const result = CommandProcessor.processCommand(clientModel, testGameData.gameModel.grid, commands[0]);
+      expect(result.success).toBe(true);
+
+      // The ship should now be in outgoing fleets headed to planet2
+      expect(planet1.outgoingFleets.length).toBe(1);
+      expect(planet1.outgoingFleets[0].destinationHexMidPoint).toEqual(planet2.boundingHexMidPoint);
+      expect(planet1.planetaryFleet.starships.length).toBe(0);
+    });
+
+    it('repair ship IDs should prevent computerSendShips from double-sending those ships', () => {
+      // Set up: damaged destroyer on planet1 (no factory), planet2 has factory+colony
+      // Also set up an enemy planet so computerSendShips would want to attack
+      const fleet1 = Fleet.generateFleetWithShipCount(0, 0, 2, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
+      fleet1.starships[0].health = 1; // Damage first destroyer
+      // Second destroyer is at full health
+
+      const { aiPlayer, planet1, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+        planet1Fleet: fleet1,
+        planet2Improvements: {
+          [PlanetImprovementType.Factory]: 1,
+          [PlanetImprovementType.Colony]: 1,
+        },
+      });
+
+      // Set up an enemy planet so AI has attack targets
+      const enemyPlanet = testGameData.gameModel.modelData.planets[2];
+      aiPlayer.knownPlanetIds.push(enemyPlanet.id);
+      aiPlayer.lastKnownPlanetFleetStrength[enemyPlanet.id] = {
+        cycleLastExplored: testGameData.gameModel.modelData.currentCycle,
+        fleetData: Fleet.generateFleetWithShipCount(0, 1, 0, 0, 0, 0, enemyPlanet.boundingHexMidPoint),
+        lastKnownOwnerId: player2.id,
+      };
+
+      // Get repair commands and IDs
+      const { commands: repairCmds, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
+      );
+
+      expect(repairShipIds.size).toBe(1);
+      const repairedShipId = [...repairShipIds][0];
+
+      // Now run computerSendShips with those repair IDs
+      const shipCmds = ComputerPlayer.computerSendShips(
+        clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted, repairShipIds,
+      );
+
+      // Ensure the repaired ship ID does NOT appear in any sendShips commands
+      for (const cmd of shipCmds) {
+        const sendCmd = cmd as SendShipsCommand;
+        if (sendCmd.shipIds) {
+          const allIds = [
+            ...sendCmd.shipIds.scouts,
+            ...sendCmd.shipIds.destroyers,
+            ...sendCmd.shipIds.cruisers,
+            ...sendCmd.shipIds.battleships,
+          ];
+          expect(allIds).not.toContain(repairedShipId);
+        }
+      }
     });
   });
 });

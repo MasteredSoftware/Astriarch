@@ -1,4 +1,4 @@
-import { ClientModelData, PlanetById, TaskNotificationType } from '../model/clientModel';
+import { ClientModelData, PlanetById, PlanetLocation, TaskNotificationType } from '../model/clientModel';
 import { EarnedPointsType, earnedPointsConfigByType } from '../model/earnedPoints';
 import { FleetData, StarshipAdvantageData } from '../model/fleet';
 import {
@@ -206,7 +206,7 @@ export class Player {
   /**
    * returns true if the planet already has reinforcements arriving
    */
-  public static planetContainsFriendlyInboundFleet(p: PlayerData, planet: PlanetData) {
+  public static planetContainsFriendlyInboundFleet(p: PlayerData, planet: PlanetLocation) {
     for (const f of p.fleetsInTransit) {
       if (Grid.pointsAreEqual(f.destinationHexMidPoint, planet.boundingHexMidPoint)) {
         return true;

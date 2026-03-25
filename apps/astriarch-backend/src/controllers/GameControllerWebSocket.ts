@@ -661,6 +661,7 @@ export class GameController {
       let commandError: CommandResultError | null = null;
       let destroyedPlayers: PlayerData[] = [];
       let gameEndConditions: GameEndConditions = { gameEnded: false, winningPlayer: null, allHumansDestroyed: false };
+      let aiCommandResults: engine.AICommandResult[] = [];
 
       // Use concurrency protection to safely update game state
       const updatedGame = await saveGameWithConcurrencyProtection(ServerGameModel, gameId, async (game) => {
@@ -729,6 +730,7 @@ export class GameController {
         const timeBasedEvents = timeAdvanceResult.events || [];
         destroyedPlayers = timeAdvanceResult.destroyedPlayers;
         gameEndConditions = timeAdvanceResult.gameEndConditions;
+        aiCommandResults = timeAdvanceResult.aiCommandResults || [];
 
         // Start with time-based events
         allEvents = [...timeBasedEvents];
@@ -820,6 +822,17 @@ export class GameController {
 
       // Persist commands and events for debugging (fire-and-forget)
       const currentCycleForPersistence = modelData!.currentCycle || 0;
+
+      // Persist AI command results from time advancement (computer player actions)
+      for (const aiResult of aiCommandResults) {
+        eventPersistenceService.persistCommandAndEvents(
+          gameId,
+          aiResult.command,
+          aiResult.result,
+          currentCycleForPersistence,
+        );
+      }
+
       if (options?.command) {
         // Separate time-based events from command events
         const commandEventTypes = new Set(

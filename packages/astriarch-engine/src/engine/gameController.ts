@@ -7,6 +7,7 @@ import { ResearchType } from '../model/research';
 import { Utils } from '../utils/utils';
 import { BattleSimulator } from './battleSimulator';
 import { ClientGameModel } from './clientGameModel';
+import { CommandProcessor } from './CommandProcessor';
 import { ComputerPlayer } from './computerPlayer';
 import { Fleet } from './fleet';
 import {
@@ -19,6 +20,7 @@ import {
 import {
   AdvanceGameClockForPlayerData,
   AdvanceGameClockResult,
+  AICommandResult,
   GameModel,
   GameModelData,
   SnapshotData,
@@ -74,10 +76,22 @@ export class GameController {
     const { cyclesElapsed, newSnapshotTime, currentCycle } = snapshotData;
     const planetById = ClientGameModel.getPlanetByIdIndex(modelData.planets);
 
+    const allAICommandResults: AICommandResult[] = [];
+
     for (const p of modelData.players) {
       if (p.type !== PlayerType.Human) {
-        const ownedPlanets = ClientGameModel.getOwnedPlanets(p.ownedPlanetIds, modelData.planets);
-        ComputerPlayer.computerTakeTurn(gameModel, p, ownedPlanets);
+        const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
+        const aiCommands = ComputerPlayer.computerTakeTurn(clientModel, grid);
+        // Process AI commands against the authoritative modelData (not clientModel)
+        // so that commands like SUBMIT_TRADE mutate the real tradingCenter, not the
+        // client-side optimistic copy.
+        for (const command of aiCommands) {
+          const result = CommandProcessor.processCommand(modelData, grid, command);
+          allAICommandResults.push({ command, result });
+          if (!result.success) {
+            console.warn(`AI command failed: ${command.type}`, result.error?.message);
+          }
+        }
       }
     }
 
@@ -128,6 +142,7 @@ export class GameController {
       gameEndConditions,
       events: allEvents,
       notifications: allNotifications,
+      aiCommandResults: allAICommandResults,
     };
   }
 
