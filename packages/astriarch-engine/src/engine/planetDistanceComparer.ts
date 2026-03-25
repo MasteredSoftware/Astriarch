@@ -1,4 +1,4 @@
-import { PlanetData, PlanetType } from '../model/planet';
+import { PlanetType } from '../model/planet';
 import { PlanetLocation } from '../model/clientModel';
 import { LastKnownPlanetFleetStrength } from '../model/player';
 import { Fleet } from './fleet';

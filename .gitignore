@@ -47,4 +47,4 @@ node_modules
 dist
 build
 .env
-ai-decision-debugging/data
+**/ai-decision-debugging/data/*
