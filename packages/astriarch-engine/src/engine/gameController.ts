@@ -82,9 +82,11 @@ export class GameController {
       if (p.type !== PlayerType.Human) {
         const clientModel = ClientGameModel.constructClientGameModel(modelData, p.id);
         const aiCommands = ComputerPlayer.computerTakeTurn(clientModel, grid);
-        // Process each AI command through CommandProcessor to get real events
+        // Process AI commands against the authoritative modelData (not clientModel)
+        // so that commands like SUBMIT_TRADE mutate the real tradingCenter, not the
+        // client-side optimistic copy.
         for (const command of aiCommands) {
-          const result = CommandProcessor.processCommand(clientModel, grid, command);
+          const result = CommandProcessor.processCommand(modelData, grid, command);
           allAICommandResults.push({ command, result });
           if (!result.success) {
             console.warn(`AI command failed: ${command.type}`, result.error?.message);

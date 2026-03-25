@@ -18,7 +18,7 @@
 | **Convert** | 6 | Remove `clientPlanets as unknown as PlanetData[]` casts — `PlanetLocation` interface created, 6 casts removed | ✅ Done |
 | **Convert** | 7 | Convert `computerAdjustPopulationAssignments` — snapshot/restore pattern for net diff commands | ✅ Done |
 | **Convert** | 8 | Convert `computerSendShips` — local `committedShipIds` tracking (seeded from repair IDs), pure command output, no direct fleet mutation | ✅ Done |
-| **Caller** | 9 | `gameController.ts`: process returned commands through `CommandProcessor.processCommand(clientModel, grid, cmd)` | ✅ Done |
+| **Caller** | 9 | `gameController.ts`: process returned commands through `CommandProcessor.processCommand(modelData, grid, cmd)` | ✅ Done |
 | **Backend** | 10 | Backend `GameControllerWebSocket.ts` persistence — no changes needed (already iterates `{ command, result }`) | ✅ No-op |
 | **Test** | 11 | Update tests for command-only AI flow — tests process returned commands via CommandProcessor | ✅ Done (mostly) |
 | **Test** | 12 | Full game simulation: verify AI behavior is unchanged | ⚠️ 2 test failures remain |
@@ -141,7 +141,7 @@ advanceGameClockTo()
          ├─ computerManageFleetRepairs()     → returns { commands, repairShipIds } (SEND_SHIPS for repair retreat)
          └─ computerSendShips(repairShipIds) → committedShipIds tracking (seeded from repair IDs) → returns GameCommand[]
        FOR EACH command:
-         result = CommandProcessor.processCommand(clientModel, grid, command)
+         result = CommandProcessor.processCommand(modelData, grid, command)
          allAICommands.push({ command, result })
 ```
 AI operates on `ClientModelData` only. Returns `GameCommand[]`. Caller processes on `ModelData` via shared refs. `computerManageFleetRepairs` rewritten (planetary retreat only). `processAICommand` helper removed.
@@ -423,7 +423,7 @@ The full deep refactor is implemented. AI no longer calls `CommandProcessor` int
 | File | Changes |
 |------|---------|
 | `computerPlayer.ts` (~2550 lines) | Rewrote `computerManageFleetRepairs` (planetary retreat for repair, no longer redirects in-transit fleets). Removed `processAICommand` helper, `CommandProcessor` import, `AICommandResult` import. Re-added `enableFleetRepairs` setting (Hard/Expert/Human only). All sub-methods return `GameCommand[]`. Population uses snapshot/restore. Ship sending uses `committedShipIds` (seeded from repair IDs). Exploration uses pure command output (no direct fleet mutations). `PlanetLocation` used throughout. |
-| `gameController.ts` | Imports `CommandProcessor`. AI commands processed via `CommandProcessor.processCommand(clientModel, grid, command)` — no more dummy `{ success: true, events: [] }` wrapping. |
+| `gameController.ts` | Imports `CommandProcessor`. AI commands processed via `CommandProcessor.processCommand(modelData, grid, command)` — uses authoritative server model so trades and other commands mutate real game state, not the client-side optimistic copy. |
 | `clientModel.ts` | Added `PlanetLocation` interface (`{ id, boundingHexMidPoint }`) |
 | `planetDistanceComparer.ts` | Widened signatures to accept `PlanetLocation` |
 | `player.ts` | `planetContainsFriendlyInboundFleet` accepts `PlanetLocation` |
