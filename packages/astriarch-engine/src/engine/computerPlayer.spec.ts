@@ -1385,12 +1385,12 @@ describe('ComputerPlayer', () => {
       expect(commands.length).toBe(0);
     });
 
-    it('should NOT retreat scouts even if planet has no improvements', () => {
-      // Scouts are always repairable — should never be retreated
+    it('should retreat scouts from ineligible planets to ones with a colony', () => {
+      // Scouts need a colony + normal happiness to be repaired (same as all ship types)
       const fleet1 = Fleet.generateFleetWithShipCount(0, 1, 0, 0, 0, 0, testGameData.gameModel.modelData.planets[0].boundingHexMidPoint);
       fleet1.starships[0].health = 1;
 
-      const { aiPlayer, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
+      const { aiPlayer, planet2, ownedPlanets, ownedPlanetsSorted, clientModel } = setupRepairScenario(testGameData, {
         planet1Fleet: fleet1,
         planet2Improvements: {
           [PlanetImprovementType.Factory]: 1,
@@ -1398,11 +1398,15 @@ describe('ComputerPlayer', () => {
         },
       });
 
-      const { commands } = ComputerPlayer.computerManageFleetRepairs(
+      const { commands, repairShipIds } = ComputerPlayer.computerManageFleetRepairs(
         clientModel, testGameData.gameModel.grid, aiPlayer, ownedPlanets, ownedPlanetsSorted,
       );
 
-      expect(commands.length).toBe(0);
+      expect(commands.length).toBe(1);
+      expect(repairShipIds.size).toBe(1);
+      const sendCmd = commands[0] as SendShipsCommand;
+      expect(sendCmd.toPlanetId).toBe(planet2.id);
+      expect(sendCmd.shipIds.scouts.length).toBe(1);
     });
 
     it('should not retreat if no other planet can repair the ship', () => {
