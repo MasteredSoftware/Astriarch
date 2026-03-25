@@ -3,6 +3,7 @@ import { FleetData, StarShipType } from '../model/fleet';
 import {
   CitizenWorkerType,
   PlanetData,
+  PlanetHappinessType,
   PlanetImprovementType,
   PlanetProductionItemType,
   PlanetResourceType,
@@ -2413,10 +2414,11 @@ export class ComputerPlayer {
    * Retreat damaged ships on planets that lack the improvements needed to repair them.
    * Only applies to planetary fleets (not fleets in transit).
    *
-   * Repair requirements (from Fleet.repairPlanetaryFleet):
+   * Repair requirements (from Fleet.repairPlanetaryFleet & Player.repairPlanetaryFleets):
+   *  - All repairs require a Colony and Normal happiness
+   *  - Scouts / SystemDefense: no additional improvements needed
    *  - Destroyers / SpacePlatforms: planet needs a Factory
    *  - Cruisers / Battleships: planet needs a Factory AND a SpacePlatform
-   *  - Scouts / SystemDefense: always repairable (no improvement requirement)
    *
    * Returns the generated commands and the set of ship IDs committed to retreat
    * so that computerSendShips can exclude them from attack / exploration decisions.
@@ -2436,13 +2438,24 @@ export class ComputerPlayer {
       return { commands, repairShipIds };
     }
 
+    // Filter to planets eligible for any repairs (requires colony + normal happiness),
+    // matching the guard in Player.repairPlanetaryFleets
+    const eligiblePlanets = ownedPlanetsSorted.filter(
+      (p) =>
+        p.planetHappiness === PlanetHappinessType.Normal &&
+        (p.builtImprovements[PlanetImprovementType.Colony] ?? 0) > 0,
+    );
+
     // Build a lookup of planets that can repair each class of ship
+    // Scouts: any eligible planet (no Factory needed)
+    // Destroyers: eligible planet with a Factory
+    // Cruisers/Battleships: eligible planet with a Factory AND a SpacePlatform
+    const repairPlanetsForScout: PlanetData[] = [...eligiblePlanets];
     const repairPlanetsForDestroyer: PlanetData[] = [];
     const repairPlanetsForCapitalShip: PlanetData[] = []; // cruiser / battleship
-    for (const planet of ownedPlanetsSorted) {
+    for (const planet of eligiblePlanets) {
       const hasFactory = (planet.builtImprovements[PlanetImprovementType.Factory] ?? 0) > 0;
-      const hasColony = (planet.builtImprovements[PlanetImprovementType.Colony] ?? 0) > 0;
-      if (hasFactory && hasColony) {
+      if (hasFactory) {
         repairPlanetsForDestroyer.push(planet);
         const hasSpacePlatform = Planet.getSpacePlatformCount(planet, false) > 0;
         if (hasSpacePlatform) {
@@ -2452,13 +2465,14 @@ export class ComputerPlayer {
     }
 
     for (const planet of ownedPlanetsSorted) {
-      const hasFactory = (planet.builtImprovements[PlanetImprovementType.Factory] ?? 0) > 0;
-      const hasColony = (planet.builtImprovements[PlanetImprovementType.Colony] ?? 0) > 0;
-      const hasSpacePlatform = Planet.getSpacePlatformCount(planet, false) > 0;
+      const isEligible = eligiblePlanets.includes(planet);
+      const hasFactory = isEligible && (planet.builtImprovements[PlanetImprovementType.Factory] ?? 0) > 0;
+      const hasSpacePlatform = hasFactory && Planet.getSpacePlatformCount(planet, false) > 0;
 
       // Determine which ship types this planet CANNOT repair
-      const canRepairDestroyer = hasFactory && hasColony;
-      const canRepairCapitalShip = canRepairDestroyer && hasSpacePlatform;
+      const canRepairScout = isEligible;
+      const canRepairDestroyer = hasFactory;
+      const canRepairCapitalShip = hasSpacePlatform;
 
       // Collect damaged ships that need to retreat for repairs
       const shipsToRetreat: { id: string; type: StarShipType; repairCandidates: PlanetData[] }[] = [];
@@ -2468,12 +2482,16 @@ export class ComputerPlayer {
         const maxHealth = Fleet.maxStrength(ship);
         if (ship.health >= maxHealth) continue;
 
-        // Skip ship types that are always repairable or immobile
-        if (ship.type === StarShipType.Scout || ship.type === StarShipType.SystemDefense || ship.type === StarShipType.SpacePlatform) {
+        // Skip immobile ship types
+        if (ship.type === StarShipType.SystemDefense || ship.type === StarShipType.SpacePlatform) {
           continue;
         }
 
-        if (ship.type === StarShipType.Destroyer) {
+        if (ship.type === StarShipType.Scout) {
+          if (!canRepairScout) {
+            shipsToRetreat.push({ id: ship.id, type: ship.type, repairCandidates: repairPlanetsForScout });
+          }
+        } else if (ship.type === StarShipType.Destroyer) {
           if (!canRepairDestroyer) {
             shipsToRetreat.push({ id: ship.id, type: ship.type, repairCandidates: repairPlanetsForDestroyer });
           }
@@ -2513,7 +2531,7 @@ export class ComputerPlayer {
       // Emit a SEND_SHIPS command per destination planet
       for (const [, { planet: destPlanet, shipIds: ships }] of shipsByDestination) {
         const shipIds = {
-          scouts: [] as string[],
+          scouts: ships.filter(s => s.type === StarShipType.Scout).map(s => s.id),
           destroyers: ships.filter(s => s.type === StarShipType.Destroyer).map(s => s.id),
           cruisers: ships.filter(s => s.type === StarShipType.Cruiser).map(s => s.id),
           battleships: ships.filter(s => s.type === StarShipType.Battleship).map(s => s.id),
