@@ -309,6 +309,7 @@
 				hotkey="s"
 				hotkeyContext="fleet-command"
 				size="md"
+				data-testid="send-ships-btn"
 				onclick={sendShips}
 				disabled={$fleetCommandStore.selectedShipIds.size === 0 ||
 					!$fleetCommandStore.destinationPlanetId}

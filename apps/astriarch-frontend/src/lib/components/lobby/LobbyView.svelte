@@ -143,10 +143,10 @@
 	}
 </script>
 
-<div class="lobby-container {currentView === 'lobby' ? 'lobby-view' : 'game-options-view'}">
+<div class="lobby-container {currentView === 'lobby' ? 'lobby-view' : 'game-options-view'}" data-testid={currentView === 'lobby' ? 'view-lobby' : 'view-game-options'}>
 	<!-- Connection Status -->
 	{#if !isConnected}
-		<div class="connection-status">
+		<div class="connection-status" data-testid="connection-status">
 			<Text style="color: #F59E0B; font-size: 14px;">Connecting to server...</Text>
 		</div>
 	{/if}
@@ -183,6 +183,7 @@
 							variant="primary"
 							onclick={handleCreateGame}
 							disabled={!isConnected}
+							data-testid="create-game-btn"
 						/>
 					</div>
 					<div class="panel-content">

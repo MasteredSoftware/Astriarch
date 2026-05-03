@@ -2,9 +2,10 @@
 	interface Props {
 		onclick?: () => void;
 		scale?: number;
+		ariaLabel?: string;
 	}
 
-	let { onclick, scale = 1 }: Props = $props();
+	let { onclick, scale = 1, ariaLabel }: Props = $props();
 	const width = 241 * scale;
 	const height = 48 * scale;
 </script>

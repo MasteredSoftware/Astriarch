@@ -1,5 +1,5 @@
 import { PlayerType, PlayerData } from '../model/player';
-import { startNewTestGameWithOptions } from '../test/testUtils';
+import { startNewTestGame, startNewTestGameWithOptions } from '../test/testUtils';
 import { ClientGameModel } from './clientGameModel';
 import { GameController } from './gameController';
 import { Fleet } from './fleet';
@@ -11,6 +11,13 @@ import { PlanetType, PlanetData } from '../model/planet';
 import { Utils } from '../utils/utils';
 import { GridHex } from './grid';
 import { HexagonData } from '../shapes/shapes';
+import { ComputerPlayer } from './computerPlayer';
+import {
+  AdjustResearchPercentCommand,
+  ClientEventType,
+  GameCommandType,
+  SubmitTradeCommand,
+} from './GameCommands';
 
 const assertPointsBasedOnGameOptions = (
   expectedPoints: number,
@@ -60,6 +67,79 @@ describe('GameController', () => {
 
     it('should give less points for an easier game', () => {
       assertPointsBasedOnGameOptions(413, 100, 100, 2, 4, 8, 2, true, PlayerType.Human);
+    });
+  });
+
+  describe('advanceGameClockTo() AI command processing', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('should process AI trades on authoritative modelData', () => {
+      const testGame = startNewTestGame();
+      const { gameModel } = testGame;
+      const aiPlayer = gameModel.modelData.players.find((p) => p.type !== PlayerType.Human)!;
+      const initialTradeCount = gameModel.modelData.tradingCenter.currentTrades.length;
+
+      const tradeCommand: SubmitTradeCommand = {
+        type: GameCommandType.SUBMIT_TRADE,
+        playerId: aiPlayer.id,
+        timestamp: Date.now(),
+        commandId: 'test-ai-trade-command',
+        tradeId: 'test-ai-trade',
+        metadata: { source: 'ai' },
+        tradeData: {
+          resourceType: 'ore',
+          amount: 1,
+          action: 'buy',
+        },
+      };
+
+      jest.spyOn(ComputerPlayer, 'computerTakeTurn').mockReturnValue([tradeCommand]);
+
+      const snapshotData = {
+        cyclesElapsed: 0,
+        newSnapshotTime: gameModel.modelData.lastSnapshotTime,
+        currentCycle: gameModel.modelData.currentCycle,
+      };
+
+      const result = GameController.advanceGameClockTo(gameModel, snapshotData);
+
+      expect(gameModel.modelData.tradingCenter.currentTrades.length).toBe(initialTradeCount + 1);
+      expect(result.aiCommandResults).toHaveLength(1);
+      expect(result.aiCommandResults[0].result.success).toBe(true);
+      expect(result.aiCommandResults[0].result.events).toHaveLength(1);
+      expect(result.aiCommandResults[0].result.events[0].type).toBe(ClientEventType.TRADE_SUBMITTED);
+    });
+
+    it('should include real command events in aiCommandResults (not empty placeholder results)', () => {
+      const testGame = startNewTestGame();
+      const { gameModel } = testGame;
+      const aiPlayer = gameModel.modelData.players.find((p) => p.type !== PlayerType.Human)!;
+
+      const researchCommand: AdjustResearchPercentCommand = {
+        type: GameCommandType.ADJUST_RESEARCH_PERCENT,
+        playerId: aiPlayer.id,
+        timestamp: Date.now(),
+        commandId: 'test-ai-research-command',
+        metadata: { source: 'ai' },
+        researchPercent: 0.5,
+      };
+
+      jest.spyOn(ComputerPlayer, 'computerTakeTurn').mockReturnValue([researchCommand]);
+
+      const snapshotData = {
+        cyclesElapsed: 0,
+        newSnapshotTime: gameModel.modelData.lastSnapshotTime,
+        currentCycle: gameModel.modelData.currentCycle,
+      };
+
+      const result = GameController.advanceGameClockTo(gameModel, snapshotData);
+
+      expect(result.aiCommandResults).toHaveLength(1);
+      expect(result.aiCommandResults[0].result.success).toBe(true);
+      expect(result.aiCommandResults[0].result.events.length).toBeGreaterThan(0);
+      expect(result.aiCommandResults[0].result.events[0].type).toBe(ClientEventType.RESEARCH_PERCENT_ADJUSTED);
     });
   });
 

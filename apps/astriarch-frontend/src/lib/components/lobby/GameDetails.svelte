@@ -194,11 +194,11 @@
 			<!-- Actions -->
 			<div class="actions">
 				{#if canJoinGame(game)}
-					<Button onclick={handleJoinGame}>Join Game</Button>
+					<Button onclick={handleJoinGame} data-testid="join-game-btn">Join Game</Button>
 				{/if}
 
 				{#if canResumeGame(game)}
-					<Button onclick={handleResumeGame}>Resume Game</Button>
+					<Button onclick={handleResumeGame} data-testid="resume-game-btn">Resume Game</Button>
 				{/if}
 
 				{#if game.status === 'completed'}

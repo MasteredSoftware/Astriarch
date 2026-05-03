@@ -406,7 +406,7 @@
 	<div class="relative z-10 flex-1">
 		{#if multiplayerState?.currentView === 'lobby' || multiplayerState?.currentView === 'game_options'}
 			<!-- Multiplayer Lobby -->
-			<div class="flex flex-col">
+			<div class="flex flex-col" data-testid="view-lobby">
 				<div class="flex flex-row gap-4">
 					<Logo size="lg" variant="primary" />
 					<div class="flex items-center justify-between px-4">
@@ -421,7 +421,7 @@
 			<!-- Game View -->
 			{#if $layoutMode === 'landscape'}
 				<!-- Landscape Layout: Right sidebar with navigation -->
-				<div class="flex h-[calc(100vh-80px)] flex-row">
+				<div class="flex h-[calc(100vh-80px)] flex-row" data-testid="view-game">
 					<!-- Galaxy Canvas - Full width left side -->
 					<div class="relative flex-1 overflow-hidden rounded-l-lg">
 						<div class="absolute inset-0">
@@ -470,7 +470,7 @@
 				</div>
 			{:else}
 				<!-- Portrait Layout: Bottom panels with navigation -->
-				<div class="flex h-[calc(100vh-80px)] flex-col">
+				<div class="flex h-[calc(100vh-80px)] flex-col" data-testid="view-game">
 					<!-- Central Game Content Area with Galaxy Canvas as background -->
 					<div class="relative mx-4 flex-1 overflow-hidden rounded-lg">
 						<!-- Galaxy Canvas - Always visible as background (client-side only) -->
@@ -548,7 +548,7 @@
 						fleets, and rule the stars.
 					</Text>
 					<div class="mt-4 flex justify-center">
-						<Button label="Play Now" size="lg" variant="primary" onclick={handleShowLobby} />
+						<Button label="Play Now" size="lg" variant="primary" onclick={handleShowLobby} data-testid="show-lobby-btn" />
 					</div>
 					<HighScoreBoard />
 				</div>
@@ -593,6 +593,7 @@
 			{#each $notifications.slice(-5) as notification, i (notification.id)}
 				<NotificationItem
 					{notification}
+					data-testid={notification.type === 'error' ? 'notification-error' : undefined}
 					onDismiss={() => multiplayerGameStore.dismissNotification(notification.id)}
 				/>
 			{/each}
