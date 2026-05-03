@@ -548,7 +548,13 @@
 						fleets, and rule the stars.
 					</Text>
 					<div class="mt-4 flex justify-center">
-						<Button label="Play Now" size="lg" variant="primary" onclick={handleShowLobby} data-testid="show-lobby-btn" />
+						<Button
+							label="Play Now"
+							size="lg"
+							variant="primary"
+							onclick={handleShowLobby}
+							data-testid="show-lobby-btn"
+						/>
 					</div>
 					<HighScoreBoard />
 				</div>

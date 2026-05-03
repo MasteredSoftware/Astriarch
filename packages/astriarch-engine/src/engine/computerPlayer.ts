@@ -369,15 +369,33 @@ export class ComputerPlayer {
     const tradeCmds = this.computerSubmitTrades(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
     allCommands.push(...tradeCmds);
 
-    const buildCmds = this.computerBuildImprovementsAndShips(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
+    const buildCmds = this.computerBuildImprovementsAndShips(
+      clientModel,
+      grid,
+      player,
+      ownedPlanets,
+      ownedPlanetsSorted,
+    );
     allCommands.push(...buildCmds);
 
     //adjust population assignments as appropriate based on planet and needs
-    const popCmds = this.computerAdjustPopulationAssignments(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
+    const popCmds = this.computerAdjustPopulationAssignments(
+      clientModel,
+      grid,
+      player,
+      ownedPlanets,
+      ownedPlanetsSorted,
+    );
     allCommands.push(...popCmds);
 
     // Retreat damaged ships on planets that lack repair improvements
-    const { commands: repairCmds, repairShipIds } = this.computerManageFleetRepairs(clientModel, grid, player, ownedPlanets, ownedPlanetsSorted);
+    const { commands: repairCmds, repairShipIds } = this.computerManageFleetRepairs(
+      clientModel,
+      grid,
+      player,
+      ownedPlanets,
+      ownedPlanetsSorted,
+    );
     allCommands.push(...repairCmds);
 
     //base strategies on computer-level
@@ -410,7 +428,7 @@ export class ComputerPlayer {
     const citizenWorkerSnapshot: Record<number, CitizenWorkerType[]> = {};
     for (const planet of ownedPlanetsSorted) {
       startingAssignments[planet.id] = Planet.countPopulationWorkerTypes(planet);
-      citizenWorkerSnapshot[planet.id] = planet.population.map(c => c.workerType);
+      citizenWorkerSnapshot[planet.id] = planet.population.map((c) => c.workerType);
     }
 
     const planetPopulationWorkerTypes: Record<number, PopulationAssignments> = {};
@@ -753,7 +771,9 @@ export class ComputerPlayer {
     for (const planet of ownedPlanetsSorted) {
       const snapshot = citizenWorkerSnapshot[planet.id];
       if (snapshot) {
-        planet.population.forEach((c, i) => { c.workerType = snapshot[i]; });
+        planet.population.forEach((c, i) => {
+          c.workerType = snapshot[i];
+        });
       }
     }
 
@@ -933,11 +953,17 @@ export class ComputerPlayer {
         starshipCounts.defenders === 0
       ) {
         player.planetBuildGoals[p.id] = PlanetProductionItem.constructStarShipInProduction(StarShipType.SystemDefense);
-        this.logDecision(player, clientModel.currentCycle, 'building', 'Strategic defense: build defender for undefended planet', {
-          planetName: p.name,
-          planetType: p.type,
-          hasSpacePlatform: false,
-        });
+        this.logDecision(
+          player,
+          clientModel.currentCycle,
+          'building',
+          'Strategic defense: build defender for undefended planet',
+          {
+            planetName: p.name,
+            planetType: p.type,
+            hasSpacePlatform: false,
+          },
+        );
         continue;
       }
 
@@ -1396,9 +1422,9 @@ export class ComputerPlayer {
           const pFriendly = planetCandidatesForSendingShips[j];
 
           // Check what type of ship would be sent from this planet (excluding already-committed ships)
-          const uncommittedShips = pFriendly.planetaryFleet.starships.filter(s => !committedShipIds.has(s.id));
+          const uncommittedShips = pFriendly.planetaryFleet.starships.filter((s) => !committedShipIds.has(s.id));
           const hasScoutsOrDestroyers = uncommittedShips.some(
-            s => s.type === StarShipType.Scout || s.type === StarShipType.Destroyer,
+            (s) => s.type === StarShipType.Scout || s.type === StarShipType.Destroyer,
           );
 
           // For exploration, only send scouts or destroyers
@@ -1421,8 +1447,8 @@ export class ComputerPlayer {
           let selectedShipId: string | undefined;
           let selectedShipType: StarShipType | undefined;
 
-          const uncommittedScouts = uncommittedShips.filter(s => s.type === StarShipType.Scout);
-          const uncommittedDestroyers = uncommittedShips.filter(s => s.type === StarShipType.Destroyer);
+          const uncommittedScouts = uncommittedShips.filter((s) => s.type === StarShipType.Scout);
+          const uncommittedDestroyers = uncommittedShips.filter((s) => s.type === StarShipType.Destroyer);
 
           if (uncommittedScouts.length > 0) {
             selectedShipId = uncommittedScouts[0].id;
@@ -1464,7 +1490,7 @@ export class ComputerPlayer {
 
             // Remove planet from candidates if all mobile ships are committed
             const remainingMobile = pFriendly.planetaryFleet.starships.filter(
-              s => !committedShipIds.has(s.id) && s.type !== StarShipType.SpacePlatform,
+              (s) => !committedShipIds.has(s.id) && s.type !== StarShipType.SpacePlatform,
             );
             if (remainingMobile.length === 0) {
               planetCandidatesForSendingShips.splice(j, 1);
@@ -1618,20 +1644,20 @@ export class ComputerPlayer {
         if (contributingPlanets.length >= 2 && totalAvailableStrength > estimatedEnemyStrength * 1.5) {
           for (const pFriendly of contributingPlanets) {
             // Filter out already-committed ships
-            const uncommitted = pFriendly.planetaryFleet.starships.filter(s => !committedShipIds.has(s.id));
+            const uncommitted = pFriendly.planetaryFleet.starships.filter((s) => !committedShipIds.has(s.id));
             const shipsByType: Record<number, typeof uncommitted> = {
-              [StarShipType.Scout]: uncommitted.filter(s => s.type === StarShipType.Scout),
-              [StarShipType.Destroyer]: uncommitted.filter(s => s.type === StarShipType.Destroyer),
-              [StarShipType.Cruiser]: uncommitted.filter(s => s.type === StarShipType.Cruiser),
-              [StarShipType.Battleship]: uncommitted.filter(s => s.type === StarShipType.Battleship),
+              [StarShipType.Scout]: uncommitted.filter((s) => s.type === StarShipType.Scout),
+              [StarShipType.Destroyer]: uncommitted.filter((s) => s.type === StarShipType.Destroyer),
+              [StarShipType.Cruiser]: uncommitted.filter((s) => s.type === StarShipType.Cruiser),
+              [StarShipType.Battleship]: uncommitted.filter((s) => s.type === StarShipType.Battleship),
             };
 
             // Resolve ship IDs for SEND_SHIPS command
             const shipIds = {
-              scouts: shipsByType[StarShipType.Scout].map(s => s.id),
-              destroyers: shipsByType[StarShipType.Destroyer].map(s => s.id),
-              cruisers: shipsByType[StarShipType.Cruiser].map(s => s.id),
-              battleships: shipsByType[StarShipType.Battleship].map(s => s.id),
+              scouts: shipsByType[StarShipType.Scout].map((s) => s.id),
+              destroyers: shipsByType[StarShipType.Destroyer].map((s) => s.id),
+              cruisers: shipsByType[StarShipType.Cruiser].map((s) => s.id),
+              battleships: shipsByType[StarShipType.Battleship].map((s) => s.id),
             };
             const fleetId = player.nextFleetId++;
 
@@ -1643,7 +1669,7 @@ export class ComputerPlayer {
               shipIds,
             });
             commands.push(sendCmd);
-            for (const ids of Object.values(shipIds)) ids.forEach(id => committedShipIds.add(id));
+            for (const ids of Object.values(shipIds)) ids.forEach((id) => committedShipIds.add(id));
 
             this.logDecision(player, clientModel.currentCycle, 'combat', 'Sent coordinated attack fleet', {
               fromPlanet: pFriendly.name,
@@ -1691,7 +1717,7 @@ export class ComputerPlayer {
           const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
 
           // Adjust counts for already-committed ships
-          const committedFromPlanet = pFriendly.planetaryFleet.starships.filter(s => committedShipIds.has(s.id));
+          const committedFromPlanet = pFriendly.planetaryFleet.starships.filter((s) => committedShipIds.has(s.id));
           for (const s of committedFromPlanet) {
             if (s.type === StarShipType.Scout) starshipCounts.scouts--;
             else if (s.type === StarShipType.Destroyer) starshipCounts.destroyers--;
@@ -1700,7 +1726,10 @@ export class ComputerPlayer {
           }
 
           // Skip if no uncommitted ships
-          if (starshipCounts.scouts + starshipCounts.destroyers + starshipCounts.cruisers + starshipCounts.battleships <= 0) {
+          if (
+            starshipCounts.scouts + starshipCounts.destroyers + starshipCounts.cruisers + starshipCounts.battleships <=
+            0
+          ) {
             continue;
           }
 
@@ -1745,12 +1774,24 @@ export class ComputerPlayer {
 
           if (ourEffectiveStrength > estimatedEnemyStrength * additionalStrengthMultiplierNeededToAttack) {
             // Resolve ship IDs for SEND_SHIPS command (excluding committed ships)
-            const uncommitted = pFriendly.planetaryFleet.starships.filter(s => !committedShipIds.has(s.id));
+            const uncommitted = pFriendly.planetaryFleet.starships.filter((s) => !committedShipIds.has(s.id));
             const shipIds = {
-              scouts: uncommitted.filter(s => s.type === StarShipType.Scout).slice(0, starshipCounts.scouts).map(s => s.id),
-              destroyers: uncommitted.filter(s => s.type === StarShipType.Destroyer).slice(0, starshipCounts.destroyers).map(s => s.id),
-              cruisers: uncommitted.filter(s => s.type === StarShipType.Cruiser).slice(0, starshipCounts.cruisers).map(s => s.id),
-              battleships: uncommitted.filter(s => s.type === StarShipType.Battleship).slice(0, starshipCounts.battleships).map(s => s.id),
+              scouts: uncommitted
+                .filter((s) => s.type === StarShipType.Scout)
+                .slice(0, starshipCounts.scouts)
+                .map((s) => s.id),
+              destroyers: uncommitted
+                .filter((s) => s.type === StarShipType.Destroyer)
+                .slice(0, starshipCounts.destroyers)
+                .map((s) => s.id),
+              cruisers: uncommitted
+                .filter((s) => s.type === StarShipType.Cruiser)
+                .slice(0, starshipCounts.cruisers)
+                .map((s) => s.id),
+              battleships: uncommitted
+                .filter((s) => s.type === StarShipType.Battleship)
+                .slice(0, starshipCounts.battleships)
+                .map((s) => s.id),
             };
             const fleetId = player.nextFleetId++;
 
@@ -1762,7 +1803,7 @@ export class ComputerPlayer {
               shipIds,
             });
             commands.push(sendCmd);
-            for (const ids of Object.values(shipIds)) ids.forEach(id => committedShipIds.add(id));
+            for (const ids of Object.values(shipIds)) ids.forEach((id) => committedShipIds.add(id));
 
             this.logDecision(player, clientModel.currentCycle, 'combat', 'Sent attack fleet', {
               fromPlanet: pFriendly.name,
@@ -1811,37 +1852,49 @@ export class ComputerPlayer {
 
           //also make sure the friendly planet is further from our target than the planet to reinforce
           if (
-            Grid.getHexDistanceForMidPoints(
-              grid,
-              pEnemyInbound.boundingHexMidPoint,
-              pFriendly.boundingHexMidPoint,
-            ) < distanceFromPlanetToReinforceToEnemy
+            Grid.getHexDistanceForMidPoints(grid, pEnemyInbound.boundingHexMidPoint, pFriendly.boundingHexMidPoint) <
+            distanceFromPlanetToReinforceToEnemy
           )
             break;
 
           const starshipCounts = Fleet.countStarshipsByType(pFriendly.planetaryFleet);
 
           // Adjust counts for already-committed ships
-          const committedReinf = pFriendly.planetaryFleet.starships.filter(s => committedShipIds.has(s.id));
+          const committedReinf = pFriendly.planetaryFleet.starships.filter((s) => committedShipIds.has(s.id));
           for (const s of committedReinf) {
             if (s.type === StarShipType.Scout) starshipCounts.scouts--;
             else if (s.type === StarShipType.Destroyer) starshipCounts.destroyers--;
             else if (s.type === StarShipType.Cruiser) starshipCounts.cruisers--;
             else if (s.type === StarShipType.Battleship) starshipCounts.battleships--;
           }
-          if (starshipCounts.scouts + starshipCounts.destroyers + starshipCounts.cruisers + starshipCounts.battleships <= 0) {
+          if (
+            starshipCounts.scouts + starshipCounts.destroyers + starshipCounts.cruisers + starshipCounts.battleships <=
+            0
+          ) {
             continue;
           }
 
           //TODO: for some computer levels below we should also leave a defending detachment based on strength to defend, etc...
 
           // Resolve ship IDs for SEND_SHIPS command (excluding committed ships)
-          const uncommitted = pFriendly.planetaryFleet.starships.filter(s => !committedShipIds.has(s.id));
+          const uncommitted = pFriendly.planetaryFleet.starships.filter((s) => !committedShipIds.has(s.id));
           const shipIds = {
-            scouts: uncommitted.filter(s => s.type === StarShipType.Scout).slice(0, starshipCounts.scouts).map(s => s.id),
-            destroyers: uncommitted.filter(s => s.type === StarShipType.Destroyer).slice(0, starshipCounts.destroyers).map(s => s.id),
-            cruisers: uncommitted.filter(s => s.type === StarShipType.Cruiser).slice(0, starshipCounts.cruisers).map(s => s.id),
-            battleships: uncommitted.filter(s => s.type === StarShipType.Battleship).slice(0, starshipCounts.battleships).map(s => s.id),
+            scouts: uncommitted
+              .filter((s) => s.type === StarShipType.Scout)
+              .slice(0, starshipCounts.scouts)
+              .map((s) => s.id),
+            destroyers: uncommitted
+              .filter((s) => s.type === StarShipType.Destroyer)
+              .slice(0, starshipCounts.destroyers)
+              .map((s) => s.id),
+            cruisers: uncommitted
+              .filter((s) => s.type === StarShipType.Cruiser)
+              .slice(0, starshipCounts.cruisers)
+              .map((s) => s.id),
+            battleships: uncommitted
+              .filter((s) => s.type === StarShipType.Battleship)
+              .slice(0, starshipCounts.battleships)
+              .map((s) => s.id),
           };
           const fleetId = player.nextFleetId++;
 
@@ -1853,7 +1906,7 @@ export class ComputerPlayer {
             shipIds,
           });
           commands.push(sendCmd);
-          for (const ids of Object.values(shipIds)) ids.forEach(id => committedShipIds.add(id));
+          for (const ids of Object.values(shipIds)) ids.forEach((id) => committedShipIds.add(id));
 
           // Remove from candidates since all mobile ships are now committed
           planetCandidatesForSendingShips.splice(r, 1);
@@ -1869,7 +1922,12 @@ export class ComputerPlayer {
     return commands;
   }
 
-  public static countPlanetsNeedingExploration(clientModel: ClientModelData, grid: Grid, player: PlayerData, ownedPlanets: PlanetById) {
+  public static countPlanetsNeedingExploration(
+    clientModel: ClientModelData,
+    grid: Grid,
+    player: PlayerData,
+    ownedPlanets: PlanetById,
+  ) {
     let planetsNeedingExploration = 0;
     for (const p of clientModel.clientPlanets) {
       if (!(p.id in ownedPlanets) && !Player.planetContainsFriendlyInboundFleet(player, p)) {
@@ -2123,11 +2181,7 @@ export class ComputerPlayer {
 
     for (const p of clientModel.clientPlanets) {
       if (!(p.id in ownedPlanets)) {
-        const distance = Grid.getHexDistanceForMidPoints(
-          grid,
-          p.boundingHexMidPoint,
-          ownedPlanet.boundingHexMidPoint,
-        );
+        const distance = Grid.getHexDistanceForMidPoints(grid, p.boundingHexMidPoint, ownedPlanet.boundingHexMidPoint);
         if (distance < returnVal.minDistance) {
           returnVal.minDistance = distance;
           returnVal.planet = p;
@@ -2531,10 +2585,10 @@ export class ComputerPlayer {
       // Emit a SEND_SHIPS command per destination planet
       for (const [, { planet: destPlanet, shipIds: ships }] of shipsByDestination) {
         const shipIds = {
-          scouts: ships.filter(s => s.type === StarShipType.Scout).map(s => s.id),
-          destroyers: ships.filter(s => s.type === StarShipType.Destroyer).map(s => s.id),
-          cruisers: ships.filter(s => s.type === StarShipType.Cruiser).map(s => s.id),
-          battleships: ships.filter(s => s.type === StarShipType.Battleship).map(s => s.id),
+          scouts: ships.filter((s) => s.type === StarShipType.Scout).map((s) => s.id),
+          destroyers: ships.filter((s) => s.type === StarShipType.Destroyer).map((s) => s.id),
+          cruisers: ships.filter((s) => s.type === StarShipType.Cruiser).map((s) => s.id),
+          battleships: ships.filter((s) => s.type === StarShipType.Battleship).map((s) => s.id),
         };
         const fleetId = player.nextFleetId++;
 
@@ -2563,5 +2617,4 @@ export class ComputerPlayer {
 
     return { commands, repairShipIds };
   }
-
 }

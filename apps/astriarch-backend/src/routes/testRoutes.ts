@@ -36,9 +36,7 @@ router.post("/cleanup", async (req: Request, res: Response) => {
     let sessionCount = 0;
     if (db) {
       try {
-        const sessionResult = await db
-          .collection("sessions")
-          .deleteMany({ "session.e2eTestMarker": prefix });
+        const sessionResult = await db.collection("sessions").deleteMany({ "session.e2eTestMarker": prefix });
         sessionCount = sessionResult.deletedCount ?? 0;
       } catch {
         // Sessions collection may not exist yet — not a fatal error.
@@ -46,7 +44,7 @@ router.post("/cleanup", async (req: Request, res: Response) => {
     }
 
     logger.info(
-      `[test/cleanup] Deleted ${gameResult.deletedCount} game(s) and ${sessionCount} session(s) with prefix "${prefix}"`
+      `[test/cleanup] Deleted ${gameResult.deletedCount} game(s) and ${sessionCount} session(s) with prefix "${prefix}"`,
     );
 
     res.json({

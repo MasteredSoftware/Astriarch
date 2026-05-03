@@ -27,10 +27,9 @@ export async function waitForConnected(page: Page): Promise<void> {
 	// The lobby hides the "Connecting…" banner once connected.
 	// We wait until it is gone rather than asserting a positive state,
 	// since the connected state is implied by the lobby being interactive.
-	await page.waitForFunction(
-		() => !document.querySelector('[data-testid="connection-status"]'),
-		{ timeout: DEFAULT_TIMEOUT }
-	);
+	await page.waitForFunction(() => !document.querySelector('[data-testid="connection-status"]'), {
+		timeout: DEFAULT_TIMEOUT
+	});
 }
 
 /** Create a new game and wait for the game-options screen. Returns the page. */

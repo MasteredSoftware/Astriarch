@@ -45,7 +45,7 @@ export async function waitForCommandAck(page: Page, commandId?: string): Promise
 	} else {
 		await page.waitForSelector('[data-testid="view-game"]', { timeout: DEFAULT_TIMEOUT });
 		await expect(page.locator('[data-testid="notification-error"]')).toHaveCount(0, {
-			timeout: 5_000,
+			timeout: 5_000
 		});
 	}
 }

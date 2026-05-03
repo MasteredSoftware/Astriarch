@@ -18,15 +18,11 @@ export const OpponentType = {
 	EASY_COMPUTER: '1',
 	NORMAL_COMPUTER: '2',
 	HARD_COMPUTER: '3',
-	EXPERT_COMPUTER: '4',
+	EXPERT_COMPUTER: '4'
 } as const;
 
 /** Set a player slot (1-indexed, slot 1 = second player position) to the given opponent type. */
-export async function setOpponentSlot(
-	page: Page,
-	slotIndex: number,
-	type: string
-): Promise<void> {
+export async function setOpponentSlot(page: Page, slotIndex: number, type: string): Promise<void> {
 	const select = page.locator(`[data-testid="opponent-slot-${slotIndex}"]`);
 	await select.waitFor({ timeout: DEFAULT_TIMEOUT });
 	await select.selectOption(type);

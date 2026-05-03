@@ -10,7 +10,13 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { openLobby, waitForConnected, createGame, selectGameByName, resumeGame } from '../helpers/lobby';
+import {
+	openLobby,
+	waitForConnected,
+	createGame,
+	selectGameByName,
+	resumeGame
+} from '../helpers/lobby';
 import { setOpponentSlot, startGame, OpponentType } from '../helpers/gameOptions';
 import { waitForGameView, assertNoDesyncError } from '../helpers/inGame';
 import { cleanupTestData, testGameName } from '../helpers/cleanup';

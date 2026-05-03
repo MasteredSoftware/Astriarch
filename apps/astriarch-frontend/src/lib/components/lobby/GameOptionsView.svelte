@@ -461,7 +461,13 @@
 			<div class="form-actions">
 				<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
 				{#if isHost}
-					<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" data-testid="start-game-btn" />
+					<Button
+						onclick={handleStartGame}
+						label="Start Game"
+						size="md"
+						variant="primary"
+						data-testid="start-game-btn"
+					/>
 				{:else}
 					<Text style="font-size: 14px; color: #94A3B8;">Waiting for host to start the game...</Text
 					>

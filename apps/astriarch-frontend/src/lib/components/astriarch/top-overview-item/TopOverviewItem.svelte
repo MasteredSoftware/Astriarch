@@ -25,7 +25,9 @@
 		...restProps
 	}: Props = $props();
 
-	const amountFormatted = $derived(['population'].includes(type) ? amount ?? 0 : toShortNumberString(amount ?? 0));
+	const amountFormatted = $derived(
+		['population'].includes(type) ? (amount ?? 0) : toShortNumberString(amount ?? 0)
+	);
 	const amountPerTurnFormatted = $derived(
 		amountPerTurn ? toShortNumberString(amountPerTurn) : null
 	);

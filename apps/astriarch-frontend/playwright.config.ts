@@ -40,14 +40,14 @@ export default defineConfig({
 		baseURL: FRONTEND_URL,
 		trace: 'on-first-retry',
 		screenshot: 'only-on-failure',
-		video: 'on-first-retry',
+		video: 'on-first-retry'
 	},
 
 	projects: [
 		{
 			name: 'chromium',
-			use: { ...devices['Desktop Chrome'] },
-		},
+			use: { ...devices['Desktop Chrome'] }
+		}
 	],
 
 	webServer: [
@@ -63,16 +63,15 @@ export default defineConfig({
 				NODE_ENV: 'test',
 				// Inherit Mongo connection from environment or fall back to local dev DB.
 				MONGODB_CONNECTION_STRING:
-					process.env.MONGODB_CONNECTION_STRING ??
-					'mongodb://localhost:27017/astriarch_v2_test',
-			},
+					process.env.MONGODB_CONNECTION_STRING ?? 'mongodb://localhost:27017/astriarch_v2_test'
+			}
 		},
 		// 2. Frontend — uses Vite dev server on a dedicated port, pointed at the test backend.
 		{
 			command: `PUBLIC_BACKEND_HTTP_URL=${BACKEND_HTTP} PUBLIC_BACKEND_WS_URL=${BACKEND_WS} pnpm --filter astriarch-frontend dev --port ${FRONTEND_PORT}`,
 			url: FRONTEND_URL,
 			timeout: 30_000,
-			reuseExistingServer: !process.env.CI,
-		},
-	],
+			reuseExistingServer: !process.env.CI
+		}
+	]
 });

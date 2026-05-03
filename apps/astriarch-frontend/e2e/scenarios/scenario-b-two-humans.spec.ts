@@ -10,8 +10,19 @@
 
 import { expect } from '@playwright/test';
 import { test } from '../fixtures/player';
-import { openLobby, waitForConnected, createGame, selectGameByName, joinGame } from '../helpers/lobby';
-import { setOpponentSlot, startGame, waitForGameOptions, OpponentType } from '../helpers/gameOptions';
+import {
+	openLobby,
+	waitForConnected,
+	createGame,
+	selectGameByName,
+	joinGame
+} from '../helpers/lobby';
+import {
+	setOpponentSlot,
+	startGame,
+	waitForGameOptions,
+	OpponentType
+} from '../helpers/gameOptions';
 import { waitForGameView, assertNoDesyncError } from '../helpers/inGame';
 import { cleanupTestData, testGameName } from '../helpers/cleanup';
 
@@ -25,7 +36,7 @@ test.afterEach(async () => {
 
 test('two human players create, join, and both reach in-game view', async ({
 	playerOne,
-	playerTwo,
+	playerTwo
 }) => {
 	const gameName = testGameName('scenarioB');
 
@@ -55,10 +66,7 @@ test('two human players create, join, and both reach in-game view', async ({
 	await startGame(playerOne.page);
 
 	// --- Both players should reach the in-game view ---
-	await Promise.all([
-		waitForGameView(playerOne.page),
-		waitForGameView(playerTwo.page),
-	]);
+	await Promise.all([waitForGameView(playerOne.page), waitForGameView(playerTwo.page)]);
 
 	await expect(playerOne.page.locator('[data-testid="view-game"]')).toBeVisible();
 	await expect(playerTwo.page.locator('[data-testid="view-game"]')).toBeVisible();

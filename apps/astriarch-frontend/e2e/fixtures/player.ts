@@ -34,7 +34,7 @@ export const test = base.extend<PlayerFixtures>({
 		const page = await context.newPage();
 		await use({ context, page, name: 'TestPlayer2' });
 		await context.close();
-	},
+	}
 });
 
 export { expect } from '@playwright/test';

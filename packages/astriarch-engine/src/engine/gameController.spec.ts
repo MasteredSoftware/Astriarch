@@ -12,12 +12,7 @@ import { Utils } from '../utils/utils';
 import { GridHex } from './grid';
 import { HexagonData } from '../shapes/shapes';
 import { ComputerPlayer } from './computerPlayer';
-import {
-  AdjustResearchPercentCommand,
-  ClientEventType,
-  GameCommandType,
-  SubmitTradeCommand,
-} from './GameCommands';
+import { AdjustResearchPercentCommand, ClientEventType, GameCommandType, SubmitTradeCommand } from './GameCommands';
 
 const assertPointsBasedOnGameOptions = (
   expectedPoints: number,

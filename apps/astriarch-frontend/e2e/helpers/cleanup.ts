@@ -11,7 +11,7 @@ export async function cleanupTestData(prefix = '__e2e__'): Promise<void> {
 		const res = await fetch(CLEANUP_URL, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ prefix }),
+			body: JSON.stringify({ prefix })
 		});
 		if (!res.ok) {
 			console.warn(`[e2e cleanup] HTTP ${res.status} — test data may not have been cleaned up.`);
