@@ -27,6 +27,8 @@ const FRONTEND_URL = `http://localhost:${FRONTEND_PORT}`;
 
 export default defineConfig({
 	testDir: './e2e',
+	globalSetup: './e2e/global-setup.ts',
+	globalTeardown: './e2e/global-teardown.ts',
 	// Run scenario files in parallel; tests within a file run serially by default.
 	fullyParallel: false,
 	forbidOnly: !!process.env.CI,

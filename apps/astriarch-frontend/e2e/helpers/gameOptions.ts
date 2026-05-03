@@ -3,6 +3,7 @@
  */
 
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const DEFAULT_TIMEOUT = 10_000;
 
@@ -29,8 +30,7 @@ export async function setOpponentSlot(
 	const select = page.locator(`[data-testid="opponent-slot-${slotIndex}"]`);
 	await select.waitFor({ timeout: DEFAULT_TIMEOUT });
 	await select.selectOption(type);
-	// Allow the options-change to propagate to the server.
-	await page.waitForTimeout(300);
+	await expect(select).toHaveValue(type);
 }
 
 /** Click Start Game and wait for the in-game view. */

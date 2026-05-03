@@ -46,9 +46,6 @@ test('start game, verify no desync, fleet command UI is reachable', async ({ pag
 	await startGame(page);
 	await waitForGameView(page);
 
-	// Allow initial CLIENT_EVENT messages to arrive and settle.
-	await page.waitForTimeout(2_000);
-
 	// No error/desync notification should appear after initial sync.
 	await assertNoDesyncError(page);
 

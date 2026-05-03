@@ -3,6 +3,7 @@
  */
 
 import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const DEFAULT_TIMEOUT = 15_000;
 
@@ -18,9 +19,8 @@ export async function waitForGameView(page: Page): Promise<void> {
  * Returns immediately if the notification is already absent.
  */
 export async function assertNoDesyncError(page: Page): Promise<void> {
-	// Give the UI a moment to surface any error that may already be in-flight.
-	await page.waitForTimeout(500);
 	const errorNotification = page.locator('[data-testid="notification-error"]');
+	await expect(errorNotification).toHaveCount(0, { timeout: 5_000 });
 	const count = await errorNotification.count();
 	if (count > 0) {
 		const text = await errorNotification.first().innerText();
@@ -43,8 +43,10 @@ export async function waitForCommandAck(page: Page, commandId?: string): Promise
 			{ timeout: DEFAULT_TIMEOUT }
 		);
 	} else {
-		// Generic wait — enough time for a round trip at normal game speed.
-		await page.waitForTimeout(2_000);
+		await page.waitForSelector('[data-testid="view-game"]', { timeout: DEFAULT_TIMEOUT });
+		await expect(page.locator('[data-testid="notification-error"]')).toHaveCount(0, {
+			timeout: 5_000,
+		});
 	}
 }
 
