@@ -147,7 +147,7 @@
 			class="absolute inset-0 rounded-br-[3.6px] rounded-bl-[3.6px] bg-[rgba(27,31,37,0.65)]"
 		></div>
 		<!-- Experience bar fill - continuous left to right -->
-		{#each Array.from({length: 4}, (_, i) => i) as i (i)}
+		{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
 			<div
 				class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] bg-[#23BDFF] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
 				style="left: {2.63 + i * 24.35}%; opacity: {getExperiencePercentage(ship) > (i + 1) * 25
@@ -167,7 +167,7 @@
 			<div class="relative h-full w-full">
 				<div class="absolute inset-0 bg-[rgba(27,31,37,0.65)]"></div>
 				<!-- Health bars (4 segments) -->
-				{#each Array.from({length: 4}, (_, i) => i) as i (i)}
+				{#each Array.from({ length: 4 }, (_, i) => i) as i (i)}
 					<div
 						class="absolute top-[25%] bottom-[25%] w-[20%] rounded-[1px] shadow-[0px_0px_25.2px_0px_rgba(255,255,255,0.24)]"
 						style="left: {2.63 + i * 24.35}%; background-color: {getHealthColor(

@@ -599,7 +599,7 @@
 												</Text>
 												<!-- Progress bar -->
 												<div class="mt-2 flex gap-1">
-													{#each Array.from({length: 20}, (_, i) => i) as i (i)}
+													{#each Array.from({ length: 20 }, (_, i) => i) as i (i)}
 														<div
 															class="h-2 w-2 rounded-sm"
 															style="background-color: {i <

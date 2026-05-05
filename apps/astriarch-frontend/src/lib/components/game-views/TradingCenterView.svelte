@@ -240,7 +240,6 @@
 				energy: tradingCenter.energyAmount
 			}
 		: { food: 0, ore: 0, iridium: 0, energy: 0 };
-
 </script>
 
 <div

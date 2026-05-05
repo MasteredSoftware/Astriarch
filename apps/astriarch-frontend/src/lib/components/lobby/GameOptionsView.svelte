@@ -165,7 +165,6 @@
 		const player = connectedPlayers.find((p) => p.position === position);
 		return player?.name || null;
 	}
-
 </script>
 
 <div class="game-options-container">

@@ -21,12 +21,7 @@
 	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
 
-	import {
-		TopOverview,
-		NavigationController,
-		Button,
-		Text
-	} from '$lib/components/astriarch';
+	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
 	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
 	import TaskNotificationPanel from '$lib/components/astriarch/notification/TaskNotificationPanel.svelte';
 	import { Logo } from '$lib/components/atoms';
@@ -276,7 +271,6 @@
 	onDestroy(() => {
 		console.log('Astriarch game component destroyed');
 	});
-
 </script>
 
 <svelte:head>
