@@ -1,15 +1,15 @@
 <script lang="ts">
-	import TopOverviewButtonBackgroundSvg from './TopOverviewButtonBackgroundSvg.svelte';
-
 	export let onclick: (() => void) | undefined = undefined;
 	export let disabled: boolean = false;
 	export let title: string = '';
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	type $$Props = {
 		onclick?: () => void;
 		disabled?: boolean;
 		title?: string;
 		class?: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[key: string]: any;
 	};
 

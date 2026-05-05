@@ -6,8 +6,7 @@
 		resourceData,
 		population,
 		gameTime,
-		isGameRunning,
-		gameActions
+		isGameRunning
 	} from '$lib/stores/gameStore';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import type { MultiplayerGameState } from '$lib/stores/multiplayerGameStore';
@@ -26,8 +25,7 @@
 		TopOverview,
 		NavigationController,
 		Button,
-		Text,
-		Notification
+		Text
 	} from '$lib/components/astriarch';
 	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
 	import TaskNotificationPanel from '$lib/components/astriarch/notification/TaskNotificationPanel.svelte';
@@ -52,6 +50,7 @@
 	import { webSocketService } from '$lib/services/websocket';
 
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let GalaxyCanvas: any = $state(null);
 
 	// UI state
@@ -278,68 +277,6 @@
 		console.log('Astriarch game component destroyed');
 	});
 
-	// Helper functions for notifications
-	function getNotificationColor(type: string): string {
-		switch (type) {
-			case 'research':
-				return '#3B82F6'; // Blue
-			case 'construction':
-				return '#10B981'; // Green
-			case 'battle':
-				return '#EF4444'; // Red
-			case 'planet':
-				return '#8B5CF6'; // Purple
-			case 'fleet':
-				return '#06B6D4'; // Cyan
-			case 'warning':
-				return '#F59E0B'; // Yellow
-			case 'error':
-				return '#EF4444'; // Red
-			case 'success':
-				return '#10B981'; // Green
-			case 'chat':
-				return '#EC4899'; // Pink
-			default:
-				return '#00FFFF'; // Cyan
-		}
-	}
-
-	function getNotificationTypeLabel(type: string): string {
-		switch (type) {
-			case 'research':
-				return 'RESEARCH';
-			case 'construction':
-				return 'CONSTRUCTION';
-			case 'battle':
-				return 'BATTLE';
-			case 'planet':
-				return 'PLANET';
-			case 'fleet':
-				return 'FLEET';
-			case 'warning':
-				return 'WARNING';
-			case 'error':
-				return 'ERROR';
-			case 'success':
-				return 'SUCCESS';
-			case 'chat':
-				return 'CHAT';
-			default:
-				return 'INFO';
-		}
-	}
-
-	function formatTimestamp(timestamp: number): string {
-		const now = Date.now();
-		const diff = now - timestamp;
-		const seconds = Math.floor(diff / 1000);
-
-		if (seconds < 60) return `${seconds}s`;
-		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) return `${minutes}m`;
-		const hours = Math.floor(minutes / 60);
-		return `${hours}h`;
-	}
 </script>
 
 <svelte:head>
@@ -596,7 +533,7 @@
 				? `right: calc(600px + 1rem); bottom: 1rem;`
 				: undefined}
 		>
-			{#each $notifications.slice(-5) as notification, i (notification.id)}
+			{#each $notifications.slice(-5) as notification (notification.id)}
 				<NotificationItem
 					{notification}
 					data-testid={notification.type === 'error' ? 'notification-error' : undefined}

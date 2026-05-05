@@ -149,12 +149,6 @@
 		fleetCommandStore.clearSelectedShips();
 	}
 
-	function handlePlanetChange(event: Event) {
-		const target = event.target as HTMLSelectElement;
-		const planetId = parseInt(target.value);
-		gameActions.selectPlanet(planetId);
-	}
-
 	async function setWaypoint() {
 		if (!currentSelectedPlanet || !$fleetCommandStore.destinationPlanetId) {
 			console.warn('Cannot set waypoint: no planet or destination selected');
@@ -331,7 +325,7 @@
 	<!-- Ship Type Tabs -->
 	<div class="relative mb-6 px-8">
 		<div class="flex h-[35px] items-end">
-			{#each shipTypeTabs as tab}
+			{#each shipTypeTabs as tab (tab.type)}
 				<button
 					class="relative mr-1 h-[33px] w-[200px] {selectedShipType === tab.type
 						? 'border-b-2 border-[#00FFFF] bg-gradient-to-b from-[#313E46] to-[#1B1F25]'
@@ -371,7 +365,7 @@
 		{:else}
 			<div class={$layoutMode === 'landscape' ? 'pb-6' : 'overflow-x-auto pb-6'}>
 				<div class={$layoutMode === 'landscape' ? 'flex flex-wrap gap-4' : 'flex min-w-max gap-4'}>
-					{#each ships as ship, index}
+					{#each ships as ship (ship.id)}
 						<ShipCard
 							{ship}
 							isSelected={$fleetCommandStore.selectedShipIds.has(ship.id)}

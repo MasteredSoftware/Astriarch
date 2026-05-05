@@ -8,11 +8,11 @@
 	interface Props {
 		tabs: TabControllerTab[];
 		size?: Size;
-		onclick?: () => void;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		children?: any;
 	}
 
-	let { tabs, size = 'sm', onclick, children, ...restProps }: Props = $props();
+	let { tabs, size = 'sm', children, ...restProps }: Props = $props();
 
 	let tabIndex = $state(0);
 
@@ -29,7 +29,7 @@
 <div class="relative" {...restProps}>
 	<!-- Tab headers -->
 	<div class="flex border-none">
-		{#each tabs as tab, i}
+		{#each tabs as tab, i (tab.label)}
 			<Tab
 				label={tab.label}
 				selected={i === tabIndex}

@@ -166,10 +166,6 @@
 		return player?.name || null;
 	}
 
-	function isPlayerSlotOccupied(playerIndex: number): boolean {
-		const position = playerIndex;
-		return connectedPlayers.some((p) => p.position === position && p.connected);
-	}
 </script>
 
 <div class="game-options-container">
@@ -254,7 +250,7 @@
 										on:change={handleOptionChange}
 										class="form-select"
 									>
-										{#each playerTypeOptions as option}
+										{#each playerTypeOptions as option (option.value)}
 											<option value={option.value} disabled={option.disabled}>{option.label}</option
 											>
 										{/each}
@@ -290,7 +286,7 @@
 											on:change={handleOptionChange}
 											class="form-select"
 										>
-											{#each playerTypeOptions as option}
+											{#each playerTypeOptions as option (option.value)}
 												<option value={option.value} disabled={option.disabled}
 													>{option.label}</option
 												>
@@ -328,7 +324,7 @@
 											on:change={handleOptionChange}
 											class="form-select"
 										>
-											{#each playerTypeOptions as option}
+											{#each playerTypeOptions as option (option.value)}
 												<option value={option.value} disabled={option.disabled}
 													>{option.label}</option
 												>
@@ -355,7 +351,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each gameSpeedOptions as option}
+								{#each gameSpeedOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -372,7 +368,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each galaxySizeOptions as option}
+								{#each galaxySizeOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -391,7 +387,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each systemsOptions as option}
+								{#each systemsOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -410,7 +406,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each planetsPerSystemOptions as option}
+								{#each planetsPerSystemOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>

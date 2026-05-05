@@ -15,11 +15,13 @@
 	export let population: number = 0;
 	export let onExitGame: (() => void) | undefined = undefined;
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	type $$Props = {
 		resourceData: ResourceData;
 		population: number;
 		onExitGame?: () => void;
 		class?: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[key: string]: any;
 	};
 

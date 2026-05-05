@@ -1,16 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { clientGameModel, selectedPlanet } from '$lib/stores/gameStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { GameModel } from 'astriarch-engine/src/engine/gameModel';
-	import { TradingCenter } from 'astriarch-engine/src/engine/tradingCenter';
-	import {
-		TradeType,
-		TradingCenterResourceType,
-		type TradeData
-	} from 'astriarch-engine/src/model/tradingCenter';
-	import type { ClientModelData } from 'astriarch-engine/src/model/clientModel';
+	import { TradeType, TradingCenterResourceType } from 'astriarch-engine/src/model/tradingCenter';
 	import type { PlanetData } from 'astriarch-engine/src/model/planet';
 	import { IconImage } from '$lib/components/astriarch';
 
@@ -218,6 +211,7 @@
 		}
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function retractTrade(trade: any) {
 		if (!currentPlanet || !tradingCenter) return;
 
@@ -247,29 +241,6 @@
 			}
 		: { food: 0, ore: 0, iridium: 0, energy: 0 };
 
-	// Calculate resource progress bars (amount / max for visual representation)
-	$: resourceProgress = (() => {
-		if (!tradingCenter) return { food: 0, ore: 0, iridium: 0 };
-
-		const maxFood = Math.max(
-			tradingCenter.foodResource.amount,
-			tradingCenter.foodResource.desiredAmount
-		);
-		const maxOre = Math.max(
-			tradingCenter.oreResource.amount,
-			tradingCenter.oreResource.desiredAmount
-		);
-		const maxIridium = Math.max(
-			tradingCenter.iridiumResource.amount,
-			tradingCenter.iridiumResource.desiredAmount
-		);
-
-		return {
-			food: maxFood > 0 ? (tradingCenter.foodResource.amount / maxFood) * 100 : 0,
-			ore: maxOre > 0 ? (tradingCenter.oreResource.amount / maxOre) * 100 : 0,
-			iridium: maxIridium > 0 ? (tradingCenter.iridiumResource.amount / maxIridium) * 100 : 0
-		};
-	})();
 </script>
 
 <div
@@ -466,7 +437,7 @@
 
 					<!-- Clickable Trade Amount Bars (like Research view) -->
 					<div class="mb-4 flex gap-1">
-						{#each tradeAmountBars as filled, index}
+						{#each tradeAmountBars as filled, index (index)}
 							<div
 								class="h-12 w-4 cursor-pointer rounded-sm transition-colors {filled
 									? `${getResourceColor(selectedResourceType)} shadow-sm shadow-white/25`
@@ -509,7 +480,7 @@
 						<div class="min-w-36 rounded-lg bg-slate-800/90 p-4 backdrop-blur-sm">
 							<h3 class="mb-3 font-['Orbitron'] text-sm font-bold text-white">Submitted Trades</h3>
 							<div class="max-h-32 space-y-2 overflow-y-auto">
-								{#each tradingCenter.mainPlayerTrades as trade, index}
+								{#each tradingCenter.mainPlayerTrades as trade, i (i)}
 									<div class="flex items-center justify-between rounded bg-slate-700/50 px-3 py-2">
 										<span class="font-['Orbitron'] text-xs text-white">
 											{trade.tradeType === TradeType.BUY ? 'Buy' : 'Sell'}
