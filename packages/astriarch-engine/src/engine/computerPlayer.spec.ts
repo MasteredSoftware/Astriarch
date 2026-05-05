@@ -238,7 +238,7 @@ describe('ComputerPlayer', () => {
 
   describe('AI vs AI game simulations', () => {
     test('Easy vs Normal - Normal should win eventually', () => {
-      enableAIDebug();
+      //enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Normal, {
         iterations: 1,
@@ -253,14 +253,14 @@ describe('ComputerPlayer', () => {
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
-      disableAIDebug();
+      //disableAIDebug();
 
       // Normal should win
       expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
     });
 
     test('Easy vs Hard - Hard should dominate', () => {
-      enableAIDebug();
+      //enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Hard, {
         iterations: 1,
@@ -275,14 +275,14 @@ describe('ComputerPlayer', () => {
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
-      disableAIDebug();
+      //disableAIDebug();
 
       // Hard should win
       expect(wins.player2).toBeGreaterThan(wins.player1);
     });
 
     test('Normal vs Hard - Hard should win eventually', () => {
-      enableAIDebug();
+      //enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Normal, PlayerType.Computer_Hard, {
         iterations: 1,
@@ -297,14 +297,14 @@ describe('ComputerPlayer', () => {
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
-      disableAIDebug();
+      //disableAIDebug();
 
       // Hard should win at least as often as Normal
       expect(wins.player2).toBeGreaterThanOrEqual(wins.player1);
     });
 
     test('Easy vs Expert - Expert should dominate', () => {
-      enableAIDebug();
+      //enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Easy, PlayerType.Computer_Expert, {
         iterations: 1,
@@ -319,14 +319,14 @@ describe('ComputerPlayer', () => {
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
-      disableAIDebug();
+      //disableAIDebug();
 
       // Expert should win significantly more
       expect(wins.player2).toBeGreaterThan(wins.player1);
     });
 
     test('Hard vs Expert - expert should win eventually', () => {
-      enableAIDebug();
+      //enableAIDebug();
 
       const wins = runAIvsAISimulation(PlayerType.Computer_Hard, PlayerType.Computer_Expert, {
         iterations: 5,
@@ -341,7 +341,7 @@ describe('ComputerPlayer', () => {
       fs.writeFileSync(outputPath, aiDecisionsJSON);
       console.log(`\n✅ AI decisions saved to: ${outputPath}\n`);
 
-      disableAIDebug();
+      //disableAIDebug();
 
       // Both are aggressive and advanced - these AIs are closely matched
       // Expert should win at least 1 more game than Hard to prove it's competitive
