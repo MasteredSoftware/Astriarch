@@ -1,35 +1,35 @@
-import type { Request, Response } from 'express';
+import type { Request, Response } from "express";
 
-import { healthRoutes } from './healthRoutes';
+import { healthRoutes } from "./healthRoutes";
 
 function getHealthRouteHandler() {
   const routeLayer = (healthRoutes as any).stack.find(
-    (layer: any) => layer.route?.path === '/' && layer.route?.methods?.get,
+    (layer: any) => layer.route?.path === "/" && layer.route?.methods?.get,
   );
 
   if (!routeLayer) {
-    throw new Error('Health route GET / handler not found');
+    throw new Error("Health route GET / handler not found");
   }
 
   return routeLayer.route.stack[0].handle as (req: Request, res: Response) => void;
 }
 
-describe('healthRoutes', () => {
+describe("healthRoutes", () => {
   beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('returns the expected health payload and initializes session state', () => {
+  it("returns the expected health payload and initializes session state", () => {
     const handler = getHealthRouteHandler();
     const json = jest.fn();
 
     const req = {
       session: {},
-      sessionID: 'test-session-id',
+      sessionID: "test-session-id",
     } as unknown as Request;
     const res = {
       json,
@@ -42,11 +42,11 @@ describe('healthRoutes', () => {
 
     const payload = json.mock.calls[0][0];
     expect(payload).toMatchObject({
-      status: 'OK',
-      version: '2.0.0',
+      status: "OK",
+      version: "2.0.0",
     });
-    expect(typeof payload.timestamp).toBe('string');
+    expect(typeof payload.timestamp).toBe("string");
     expect(Number.isNaN(Date.parse(payload.timestamp))).toBe(false);
-    expect(typeof payload.uptime).toBe('number');
+    expect(typeof payload.uptime).toBe("number");
   });
 });
