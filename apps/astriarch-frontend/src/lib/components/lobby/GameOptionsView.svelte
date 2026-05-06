@@ -165,11 +165,6 @@
 		const player = connectedPlayers.find((p) => p.position === position);
 		return player?.name || null;
 	}
-
-	function isPlayerSlotOccupied(playerIndex: number): boolean {
-		const position = playerIndex;
-		return connectedPlayers.some((p) => p.position === position && p.connected);
-	}
 </script>
 
 <div class="game-options-container">
@@ -192,6 +187,7 @@
 						<input
 							id="gameName"
 							type="text"
+							data-testid="game-name-input"
 							bind:value={formData.name}
 							on:blur={handleOptionChange}
 							disabled={!isHost}
@@ -207,6 +203,7 @@
 						<input
 							id="playerName"
 							type="text"
+							data-testid="player-name-input"
 							bind:value={formData.playerName}
 							on:blur={handlePlayerNameChange}
 							maxlength="20"
@@ -247,11 +244,12 @@
 								</span>
 								{#if isHost}
 									<select
+										data-testid="opponent-slot-1"
 										bind:value={formData.opponentOptions[0].type}
 										on:change={handleOptionChange}
 										class="form-select"
 									>
-										{#each playerTypeOptions as option}
+										{#each playerTypeOptions as option (option.value)}
 											<option value={option.value} disabled={option.disabled}>{option.label}</option
 											>
 										{/each}
@@ -282,11 +280,12 @@
 									</span>
 									{#if isHost}
 										<select
+											data-testid="opponent-slot-2"
 											bind:value={formData.opponentOptions[1].type}
 											on:change={handleOptionChange}
 											class="form-select"
 										>
-											{#each playerTypeOptions as option}
+											{#each playerTypeOptions as option (option.value)}
 												<option value={option.value} disabled={option.disabled}
 													>{option.label}</option
 												>
@@ -319,11 +318,12 @@
 									</span>
 									{#if isHost}
 										<select
+											data-testid="opponent-slot-3"
 											bind:value={formData.opponentOptions[2].type}
 											on:change={handleOptionChange}
 											class="form-select"
 										>
-											{#each playerTypeOptions as option}
+											{#each playerTypeOptions as option (option.value)}
 												<option value={option.value} disabled={option.disabled}
 													>{option.label}</option
 												>
@@ -350,7 +350,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each gameSpeedOptions as option}
+								{#each gameSpeedOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -367,7 +367,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each galaxySizeOptions as option}
+								{#each galaxySizeOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -386,7 +386,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each systemsOptions as option}
+								{#each systemsOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -405,7 +405,7 @@
 								disabled={!isHost}
 								class="form-select"
 							>
-								{#each planetsPerSystemOptions as option}
+								{#each planetsPerSystemOptions as option (option.value)}
 									<option value={option.value}>{option.label}</option>
 								{/each}
 							</select>
@@ -456,7 +456,13 @@
 			<div class="form-actions">
 				<Button onclick={handleBackToLobby} label="Back to Lobby" size="md" variant="outline" />
 				{#if isHost}
-					<Button onclick={handleStartGame} label="Start Game" size="md" variant="primary" />
+					<Button
+						onclick={handleStartGame}
+						label="Start Game"
+						size="md"
+						variant="primary"
+						data-testid="start-game-btn"
+					/>
 				{:else}
 					<Text style="font-size: 14px; color: #94A3B8;">Waiting for host to start the game...</Text
 					>

@@ -50,6 +50,7 @@
 			{#each games as game (game._id)}
 				<div
 					class="game-item {selectedGame?._id === game._id ? 'selected' : ''}"
+					data-testid="game-item-{game._id}"
 					on:click={() => handleGameClick(game)}
 					on:keydown={(e) => {
 						if (e.key === 'Enter' || e.key === ' ') {

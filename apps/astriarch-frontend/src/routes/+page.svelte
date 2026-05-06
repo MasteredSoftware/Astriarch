@@ -6,8 +6,7 @@
 		resourceData,
 		population,
 		gameTime,
-		isGameRunning,
-		gameActions
+		isGameRunning
 	} from '$lib/stores/gameStore';
 	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import type { MultiplayerGameState } from '$lib/stores/multiplayerGameStore';
@@ -22,13 +21,7 @@
 	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
 
-	import {
-		TopOverview,
-		NavigationController,
-		Button,
-		Text,
-		Notification
-	} from '$lib/components/astriarch';
+	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
 	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
 	import TaskNotificationPanel from '$lib/components/astriarch/notification/TaskNotificationPanel.svelte';
 	import { Logo } from '$lib/components/atoms';
@@ -52,6 +45,7 @@
 	import { webSocketService } from '$lib/services/websocket';
 
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let GalaxyCanvas: any = $state(null);
 
 	// UI state
@@ -277,69 +271,6 @@
 	onDestroy(() => {
 		console.log('Astriarch game component destroyed');
 	});
-
-	// Helper functions for notifications
-	function getNotificationColor(type: string): string {
-		switch (type) {
-			case 'research':
-				return '#3B82F6'; // Blue
-			case 'construction':
-				return '#10B981'; // Green
-			case 'battle':
-				return '#EF4444'; // Red
-			case 'planet':
-				return '#8B5CF6'; // Purple
-			case 'fleet':
-				return '#06B6D4'; // Cyan
-			case 'warning':
-				return '#F59E0B'; // Yellow
-			case 'error':
-				return '#EF4444'; // Red
-			case 'success':
-				return '#10B981'; // Green
-			case 'chat':
-				return '#EC4899'; // Pink
-			default:
-				return '#00FFFF'; // Cyan
-		}
-	}
-
-	function getNotificationTypeLabel(type: string): string {
-		switch (type) {
-			case 'research':
-				return 'RESEARCH';
-			case 'construction':
-				return 'CONSTRUCTION';
-			case 'battle':
-				return 'BATTLE';
-			case 'planet':
-				return 'PLANET';
-			case 'fleet':
-				return 'FLEET';
-			case 'warning':
-				return 'WARNING';
-			case 'error':
-				return 'ERROR';
-			case 'success':
-				return 'SUCCESS';
-			case 'chat':
-				return 'CHAT';
-			default:
-				return 'INFO';
-		}
-	}
-
-	function formatTimestamp(timestamp: number): string {
-		const now = Date.now();
-		const diff = now - timestamp;
-		const seconds = Math.floor(diff / 1000);
-
-		if (seconds < 60) return `${seconds}s`;
-		const minutes = Math.floor(seconds / 60);
-		if (minutes < 60) return `${minutes}m`;
-		const hours = Math.floor(minutes / 60);
-		return `${hours}h`;
-	}
 </script>
 
 <svelte:head>
@@ -406,7 +337,7 @@
 	<div class="relative z-10 flex-1">
 		{#if multiplayerState?.currentView === 'lobby' || multiplayerState?.currentView === 'game_options'}
 			<!-- Multiplayer Lobby -->
-			<div class="flex flex-col">
+			<div class="flex flex-col" data-testid="view-lobby">
 				<div class="flex flex-row gap-4">
 					<Logo size="lg" variant="primary" />
 					<div class="flex items-center justify-between px-4">
@@ -421,7 +352,7 @@
 			<!-- Game View -->
 			{#if $layoutMode === 'landscape'}
 				<!-- Landscape Layout: Right sidebar with navigation -->
-				<div class="flex h-[calc(100vh-80px)] flex-row">
+				<div class="flex h-[calc(100vh-80px)] flex-row" data-testid="view-game">
 					<!-- Galaxy Canvas - Full width left side -->
 					<div class="relative flex-1 overflow-hidden rounded-l-lg">
 						<div class="absolute inset-0">
@@ -470,7 +401,7 @@
 				</div>
 			{:else}
 				<!-- Portrait Layout: Bottom panels with navigation -->
-				<div class="flex h-[calc(100vh-80px)] flex-col">
+				<div class="flex h-[calc(100vh-80px)] flex-col" data-testid="view-game">
 					<!-- Central Game Content Area with Galaxy Canvas as background -->
 					<div class="relative mx-4 flex-1 overflow-hidden rounded-lg">
 						<!-- Galaxy Canvas - Always visible as background (client-side only) -->
@@ -548,7 +479,13 @@
 						fleets, and rule the stars.
 					</Text>
 					<div class="mt-4 flex justify-center">
-						<Button label="Play Now" size="lg" variant="primary" onclick={handleShowLobby} />
+						<Button
+							label="Play Now"
+							size="lg"
+							variant="primary"
+							onclick={handleShowLobby}
+							data-testid="show-lobby-btn"
+						/>
 					</div>
 					<HighScoreBoard />
 				</div>
@@ -590,9 +527,10 @@
 				? `right: calc(600px + 1rem); bottom: 1rem;`
 				: undefined}
 		>
-			{#each $notifications.slice(-5) as notification, i (notification.id)}
+			{#each $notifications.slice(-5) as notification (notification.id)}
 				<NotificationItem
 					{notification}
+					data-testid={notification.type === 'error' ? 'notification-error' : undefined}
 					onDismiss={() => multiplayerGameStore.dismissNotification(notification.id)}
 				/>
 			{/each}

@@ -23,6 +23,29 @@ Run Frontend and Backend by navigating to the proper directory and run:
 
 then visit `http://localhost:5173`
 
+## E2E Testing
+
+Playwright end-to-end tests live in the frontend workspace and run against a real frontend + backend + MongoDB stack.
+
+Prerequisites:
+
+- Node.js 18+
+- `pnpm install`
+- `npx playwright install chromium`
+- MongoDB running locally (`docker-compose up -d mongodb`)
+
+Run the suite:
+
+- `pnpm --filter astriarch-frontend test:e2e`
+- `pnpm --filter astriarch-frontend test:e2e:headed`
+- `pnpm --filter astriarch-frontend test:e2e:ui`
+
+Notes:
+
+- The Playwright config starts a dedicated test backend on port `8002` and frontend on port `4173`.
+- Test cleanup is performed via a test-only backend endpoint (`/api/test/cleanup`) that is enabled only when `NODE_ENV=test`.
+- Add new scenarios under `apps/astriarch-frontend/e2e/scenarios` and reuse fixtures/helpers from `apps/astriarch-frontend/e2e/fixtures` and `apps/astriarch-frontend/e2e/helpers`.
+
 
 ## Overview
 

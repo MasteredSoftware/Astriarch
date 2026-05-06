@@ -2,10 +2,7 @@
 	import { clientGameModel } from '$lib/stores/gameStore';
 	import { derived } from 'svelte/store';
 	import TaskItem from './TaskItem.svelte';
-	import type {
-		TaskNotification,
-		TaskNotificationIndex
-	} from 'astriarch-engine/src/model/clientModel';
+	import type { TaskNotification } from 'astriarch-engine/src/model/clientModel';
 
 	// Access task notifications directly from clientGameModel, just like FleetCommandView accesses ships
 	const taskNotifications = derived(clientGameModel, ($clientGameModel) => {
@@ -27,7 +24,7 @@
 <!-- Persistent Task Notifications Panel -->
 {#if $taskNotifications.length > 0}
 	<div class="space-y-2">
-		{#each $taskNotifications as notification}
+		{#each $taskNotifications as notification (notification.type + notification.planetId)}
 			<TaskItem {notification} />
 		{/each}
 	</div>

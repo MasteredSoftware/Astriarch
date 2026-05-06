@@ -1,11 +1,11 @@
 <script lang="ts">
 	import TopOverviewButton from './TopOverviewButton.svelte';
-	import type { GameSpeed } from 'astriarch-engine';
 	import { currentGameSpeedNumber, gameActions } from '$lib/stores/gameStore';
 
 	interface Props {
 		disabled?: boolean;
 		class?: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[key: string]: any;
 	}
 

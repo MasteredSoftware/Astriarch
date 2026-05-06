@@ -3,6 +3,7 @@
 
 	interface NavigationItem {
 		label: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		content?: any;
 		onclick?: () => void;
 	}
@@ -41,7 +42,7 @@
 		<div
 			class="relative flex h-[24px] w-full flex-row items-center justify-start border-b border-l border-cyan-300/30 bg-black/60 shadow-[4px_0px_16px_rgba(0,0,0,0.5)] backdrop-blur-[5px]"
 		>
-			{#each items as item, i}
+			{#each items as item, i (i)}
 				<NavigationTab
 					label={item.label}
 					selected={i === selectedIndex}
@@ -56,7 +57,7 @@
 		<div
 			class="relative flex h-12 w-full items-center justify-center border-t border-cyan-300/30 bg-black/60 shadow-[0px_-4px_16px_rgba(0,0,0,0.5)] backdrop-blur-[5px]"
 		>
-			{#each items as item, i}
+			{#each items as item, i (i)}
 				<NavigationTab
 					label={item.label}
 					selected={i === selectedIndex}

@@ -13,6 +13,7 @@ import { connectDatabase } from "./database/connection";
 import { WebSocketServer } from "./websocket";
 import { healthRoutes } from "./routes/healthRoutes";
 import { highScoreRoutes } from "./routes/highScoreRoutes";
+import { testRoutes } from "./routes/testRoutes";
 import { GameController } from "./controllers/GameControllerWebSocket";
 import { logger } from "./utils/logger";
 
@@ -81,6 +82,12 @@ app.use(
 // Routes
 app.use("/api/health", healthRoutes);
 app.use("/api/highscores", highScoreRoutes);
+
+// Test-only routes — only registered in test environment.
+if (process.env.NODE_ENV === "test") {
+  app.use("/api/test", testRoutes);
+  logger.info("Test routes registered (NODE_ENV=test)");
+}
 
 // 404 handler
 app.use("*", (req, res) => {

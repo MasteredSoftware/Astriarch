@@ -10,6 +10,7 @@
 		type: IconImageType;
 		color?: string;
 		onClick?: () => void;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		children?: any;
 		class?: string;
 	}
@@ -25,7 +26,9 @@
 		...restProps
 	}: Props = $props();
 
-	const amountFormatted = $derived(toShortNumberString(amount ?? 0));
+	const amountFormatted = $derived(
+		['population'].includes(type) ? (amount ?? 0) : toShortNumberString(amount ?? 0)
+	);
 	const amountPerTurnFormatted = $derived(
 		amountPerTurn ? toShortNumberString(amountPerTurn) : null
 	);
@@ -75,7 +78,7 @@
 	<div
 		style="display: inline-flex; {['food', 'ore', 'iridium'].includes(type)
 			? 'min-width: 110px;'
-			: 'min-width: 65px;'}"
+			: 'min-width: 55px;'}"
 	>
 		<Text style={baseTextStyle}>
 			{amountFormatted}

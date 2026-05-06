@@ -10,6 +10,7 @@
 		open?: boolean;
 		onCancel?: () => void;
 		onSave?: () => void;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		children?: any;
 		size?: 'small' | 'large';
 		variant?: 'info' | 'warning' | 'success' | 'error';
@@ -29,6 +30,7 @@
 		variant = 'info',
 		style = 'default',
 		showCloseButton = true,
+		// eslint-disable-next-line @typescript-eslint/no-unused-vars
 		...restProps
 	}: Props = $props();
 
