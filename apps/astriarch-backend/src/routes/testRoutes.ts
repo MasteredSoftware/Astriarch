@@ -14,7 +14,7 @@ import mongoose from "mongoose";
 import { ServerGameModel } from "../models/Game";
 import { logger } from "../utils/logger";
 
-const router = Router();
+const router: Router = Router();
 
 router.post("/cleanup", async (req: Request, res: Response) => {
   const prefix: string = (req.body?.prefix as string) || "__e2e__";
