@@ -1411,9 +1411,10 @@ export class ComputerPlayer {
             return aScore - bScore;
           }
 
-          // Secondary sort: prefer closer planets
+          // Secondary sort: prefer closer planets. PlanetDistanceComparer sorts farther planets first
+          // for callers that iterate from the end, so invert it here because exploration walks from start.
           const distanceComparer = new PlanetDistanceComparer(grid, pEnemyInbound);
-          return distanceComparer.sortFunction(a, b);
+          return -distanceComparer.sortFunction(a, b);
         });
 
         // Iterate from start of list (best candidates first) to send scouts preferentially
