@@ -89,11 +89,7 @@ function getAiDecisionDebugFilePath(fileName: string) {
   return path.join(__dirname, '../../ai-decision-debugging/data', fileName);
 }
 
-function debugAIvsAIMatchup(
-  fileName: string,
-  label: string,
-  wins: Record<string, number>,
-) {
+function debugAIvsAIMatchup(fileName: string, label: string, wins: Record<string, number>) {
   if (!shouldShowTestDebugOutput) {
     return;
   }
@@ -842,8 +838,7 @@ describe('ComputerPlayer', () => {
       );
       const explorationCommands = shipCmds2.filter(
         (cmd): cmd is SendShipsCommand =>
-          cmd.type === GameCommandType.SEND_SHIPS &&
-          (cmd as SendShipsCommand).toPlanetId === unknownPlanet.id,
+          cmd.type === GameCommandType.SEND_SHIPS && (cmd as SendShipsCommand).toPlanetId === unknownPlanet.id,
       );
 
       const distanceFromCloser = Grid.getHexDistanceForMidPoints(
