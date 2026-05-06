@@ -53,9 +53,9 @@ export default defineConfig({
 	webServer: [
 		// 1. Backend — started first so it is ready when the frontend connects.
 		{
-			command: `PORT=${BACKEND_PORT} NODE_ENV=test pnpm --filter astriarch-backend dev`,
+			command: `pnpm --filter astriarch-engine build && PORT=${BACKEND_PORT} NODE_ENV=test pnpm --filter astriarch-backend dev`,
 			url: `${BACKEND_HTTP}/api/health`,
-			timeout: 30_000,
+			timeout: 90_000,
 			reuseExistingServer: !process.env.CI,
 			env: {
 				PORT: BACKEND_PORT,
