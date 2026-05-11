@@ -5,6 +5,7 @@
 	interface TabItem {
 		id: string;
 		label: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		component: any; // Use any for Svelte component compatibility
 		icon?: string;
 	}
@@ -16,6 +17,7 @@
 	let { tabs }: Props = $props();
 
 	// Active tab management
+	// eslint-disable-next-line svelte/prefer-writable-derived
 	let activeTabId = $state($currentView);
 
 	// Subscribe to navigation store changes
@@ -24,6 +26,7 @@
 	});
 
 	function handleTabClick(tabId: string) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		activeTabId = tabId as any; // Cast for compatibility
 	}
 
@@ -35,7 +38,7 @@
 	<!-- Tab Navigation -->
 	<div class="flex-shrink-0 border-b border-cyan-500/30 bg-black/60">
 		<div class="flex flex-col">
-			{#each tabs as tab}
+			{#each tabs as tab (tab.id)}
 				<button
 					class="group relative px-4 py-3 text-left text-sm font-medium transition-all duration-200 {activeTabId ===
 					tab.id

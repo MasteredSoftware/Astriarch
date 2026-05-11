@@ -10,9 +10,11 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "lint": "eslint src/**/*.ts",
+    "lint:check": "eslint src/**/*.ts",
     "type-check": "tsc --noEmit",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "cleanup:test-data": "node scripts/cleanup-test-data.js"
   },
   "dependencies": {
     "astriarch-engine": "workspace:*",

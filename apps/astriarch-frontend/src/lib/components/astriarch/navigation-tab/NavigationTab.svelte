@@ -25,9 +25,9 @@
 		</Text>
 
 		{#if selected}
-			<NavigationTabSelectedSvg {onclick} scale={0.6} />
+			<NavigationTabSelectedSvg {onclick} scale={0.6} ariaLabel={label} />
 		{:else}
-			<NavigationTabUnselectedSvg {onclick} scale={0.6} />
+			<NavigationTabUnselectedSvg {onclick} scale={0.6} ariaLabel={label} />
 		{/if}
 	</div>
 {:else}
@@ -41,9 +41,9 @@
 		</Text>
 
 		{#if selected}
-			<NavigationTabSelectedSvg {onclick} />
+			<NavigationTabSelectedSvg {onclick} ariaLabel={label} />
 		{:else}
-			<NavigationTabUnselectedSvg {onclick} />
+			<NavigationTabUnselectedSvg {onclick} ariaLabel={label} />
 		{/if}
 	</div>
 {/if}

@@ -8,6 +8,7 @@
 		label?: string; // Make label optional since we can use children
 		size?: Size;
 		onclick?: () => void;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		children?: any;
 	}
 

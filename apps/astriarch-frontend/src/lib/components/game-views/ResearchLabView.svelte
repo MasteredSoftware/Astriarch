@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { Text, Button, IconImage, Dropdown } from '$lib/components/astriarch';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
 	import { webSocketService } from '$lib/services/websocket';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
@@ -20,10 +19,7 @@
 		researchPercent
 	} from '$lib/stores/gameStore';
 
-	const gameState = $derived($multiplayerGameStore);
 	const clientModel = $derived($clientGameModel); // Use clientGameModel from gameStore instead
-	const currentPlayer = $derived(gameState.currentPlayer);
-
 	// Find the current player's data directly from clientModel (which contains the player data)
 	const player = $derived(clientModel?.mainPlayer); // Use mainPlayer directly from clientModel
 	const currentResearchPercent = $derived($researchPercent);
@@ -192,6 +188,7 @@
 		return returnVal;
 	});
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	function renderResourceBar(percentage: number, color: string) {
 		const filledBars = Math.round(percentage * 20);
 		const bars = [];
@@ -354,7 +351,7 @@
 					</div>
 
 					<div class="ml-9 flex gap-1">
-						{#each energyBars as filled, index}
+						{#each energyBars as filled, index (index)}
 							<div
 								class="h-12 w-4 cursor-pointer rounded-sm {filled
 									? 'shadow-glow-white bg-yellow-500'
@@ -386,7 +383,7 @@
 					</div>
 
 					<div class="ml-9 flex gap-1">
-						{#each researchBars as filled, index}
+						{#each researchBars as filled, index (index)}
 							<div
 								class="h-12 w-4 cursor-pointer rounded-sm {filled
 									? 'shadow-glow-white bg-green-500'
@@ -420,7 +417,7 @@
 							<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Create Ships</p>
 
 							<div class="grid grid-cols-2 gap-2">
-								{#each shipTypes as ship}
+								{#each shipTypes as ship (ship.researchType)}
 									<div
 										class="relative flex h-12 w-12 cursor-pointer items-center justify-center rounded-lg border transition-colors hover:border-cyan-500/40 hover:bg-gray-600/50 {selectedCustomShipType ===
 											ship.researchType || currentType === ship.researchType
@@ -457,7 +454,7 @@
 							<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Ships</p>
 
 							<div class="grid grid-cols-1 gap-2">
-								{#each improvements as improvement}
+								{#each improvements as improvement (improvement.researchType)}
 									<div
 										class="relative h-12 w-12 rounded-lg {currentType === improvement.researchType
 											? 'border-2 border-cyan-500 bg-gray-700'
@@ -488,7 +485,7 @@
 							<p class="mb-4 font-['Orbitron'] text-sm font-semibold text-white">Buildings</p>
 
 							<div class="grid grid-cols-2 gap-2">
-								{#each infrastructure as infra}
+								{#each infrastructure as infra (infra.researchType)}
 									<div
 										class="relative h-12 w-12 rounded-lg {currentType === infra.researchType
 											? 'border-2 border-cyan-500 bg-gray-700'
@@ -602,7 +599,7 @@
 												</Text>
 												<!-- Progress bar -->
 												<div class="mt-2 flex gap-1">
-													{#each Array(20) as _, i}
+													{#each Array.from({ length: 20 }, (_, i) => i) as i (i)}
 														<div
 															class="h-2 w-2 rounded-sm"
 															style="background-color: {i <

@@ -2,9 +2,10 @@
 	interface Props {
 		onclick?: () => void;
 		scale?: number;
+		ariaLabel?: string;
 	}
 
-	let { onclick, scale = 1 }: Props = $props();
+	let { onclick, scale = 1, ariaLabel }: Props = $props();
 	const width = 239 * scale;
 	const height = 48 * scale;
 </script>
@@ -23,6 +24,7 @@
 		onkeydown={(e) => e.key === 'Enter' && onclick?.()}
 		role="button"
 		tabindex="0"
+		aria-label={ariaLabel}
 		opacity="0.9"
 		d="M61.0641 44.7726L4.92509 2H174.3C175.613 2 176.891 2.43121 177.936 3.22741L234.075 46H64.7004C63.3866 46 62.1091 45.5688 61.0641 44.7726ZM236.431 47.7954C236.43 47.7947 236.429 47.7939 236.428 47.7932L236.431 47.7954Z"
 		fill="#1B1F25"

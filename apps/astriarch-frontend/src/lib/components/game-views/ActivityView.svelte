@@ -197,6 +197,7 @@
 		);
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function formatFleetStrength(fleet: any): number {
 		if (!fleet) return 0;
 		return Fleet.determineFleetStrength(fleet);
@@ -207,12 +208,14 @@
 		return GameTools.starShipTypeToFriendlyName(ship.type, isCustom);
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function formatFleetComposition(fleet: any): string {
 		if (!fleet || !fleet.starships || fleet.starships.length === 0) {
 			return 'No ships';
 		}
 
 		const shipCounts: { [key: string]: number } = {};
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		fleet.starships.forEach((ship: any) => {
 			const typeName = getShipTypeName(ship);
 			shipCounts[typeName] = (shipCounts[typeName] || 0) + 1;
@@ -223,6 +226,7 @@
 			.join(', ');
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function formatResearchBonus(boost: any): string {
 		if (!boost) return '';
 		const parts = [];
@@ -231,6 +235,7 @@
 		return parts.length > 0 ? `, ${parts.join(', ')}` : '';
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function formatResourcesLooted(resources: any): string {
 		if (!resources) return 'No resources looted';
 

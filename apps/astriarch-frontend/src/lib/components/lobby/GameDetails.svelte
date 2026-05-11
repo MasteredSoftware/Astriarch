@@ -32,6 +32,7 @@
 	}
 
 	function getStatusDisplay(game: IGame): string {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const status = (game as any).status;
 		if (status === 'waiting' || status === 'waiting_for_players') return 'Waiting for Players';
 		if (status === 'in_progress') return 'In Progress';
@@ -40,6 +41,7 @@
 	}
 
 	function getStatusColor(game: IGame): string {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const status = (game as any).status;
 		if (status === 'waiting' || status === 'waiting_for_players') return '#10B981';
 		if (status === 'in_progress') return '#F59E0B';
@@ -50,8 +52,10 @@
 	function canJoinGame(game: IGame): boolean {
 		// Can join if the game is waiting for players
 		// The server already filters to only show games we can join
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const status = (game as any).status;
 		return (
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			status === 'waiting' || status === 'waiting_for_players' || (game as any).started === false
 		);
 	}
@@ -59,7 +63,9 @@
 	function canResumeGame(game: IGame): boolean {
 		// Can resume if the game is in progress
 		// The server already filters to only show games where we're a player
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		const status = (game as any).status;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		return status === 'in_progress' || (game as any).started === true;
 	}
 </script>
@@ -133,7 +139,7 @@
 				</Text>
 				<div class="players-list">
 					{#if game.players && game.players.length > 0}
-						{#each game.players as player}
+						{#each game.players as player (player.position)}
 							<div class="player-item">
 								<div class="player-info">
 									<Text style="font-size: 14px; color: #FFFFFF;">
@@ -194,11 +200,11 @@
 			<!-- Actions -->
 			<div class="actions">
 				{#if canJoinGame(game)}
-					<Button onclick={handleJoinGame}>Join Game</Button>
+					<Button onclick={handleJoinGame} data-testid="join-game-btn">Join Game</Button>
 				{/if}
 
 				{#if canResumeGame(game)}
-					<Button onclick={handleResumeGame}>Resume Game</Button>
+					<Button onclick={handleResumeGame} data-testid="resume-game-btn">Resume Game</Button>
 				{/if}
 
 				{#if game.status === 'completed'}

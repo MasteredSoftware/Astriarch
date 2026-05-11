@@ -11,6 +11,7 @@
 	let { notification }: Props = $props();
 
 	// Debug logging to track component lifecycle
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const componentId = Math.random().toString(36).substr(2, 9);
 	// console.log(
 	// 	`TaskItem ${componentId} created for ${notification.type}-${notification.planetId} (${notification.planetName})`

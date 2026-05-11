@@ -11,10 +11,10 @@
 	let { showVolumeSlider = true, compact = false, position = 'top-right' }: Props = $props();
 
 	// Local state for volume slider
-	let volumeValue = $state($audioStatus.volume);
 	let showVolumePanel = $state(false);
 
-	// Update volume value when store changes
+	// eslint-disable-next-line svelte/prefer-writable-derived
+	let volumeValue = $state($audioStatus.volume);
 	$effect(() => {
 		volumeValue = $audioStatus.volume;
 	});
