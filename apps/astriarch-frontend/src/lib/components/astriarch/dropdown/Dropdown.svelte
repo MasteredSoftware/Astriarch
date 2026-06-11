@@ -116,7 +116,7 @@
 			class="min-w-[241px] rounded border-cyan-500/30 bg-gray-900/95 shadow-lg backdrop-blur-sm"
 			sideOffset={-4}
 		>
-			{#each options as option}
+			{#each options as option (option.value)}
 				<Select.Item
 					value={option.value}
 					disabled={option.disabled}

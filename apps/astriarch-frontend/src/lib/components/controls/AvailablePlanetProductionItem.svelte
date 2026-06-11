@@ -32,7 +32,7 @@
 	// Filter out zero costs and sort for consistent display order
 	let displayCosts = $derived(
 		Object.entries(cost)
-			.filter(([_, amount]) => amount > 0)
+			.filter(([, amount]) => amount > 0)
 			.sort(([a], [b]) => {
 				const order = ['energy', 'ore', 'iridium'];
 				return order.indexOf(a) - order.indexOf(b);
@@ -101,6 +101,7 @@
                   {enabled ? '' : 'text-astriarch-ui-medium-grey'}"
 			>
 				{#if hotkey}
+					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 					{@html displayName}
 				{:else}
 					{name}
@@ -110,7 +111,7 @@
 			<!-- Resource costs -->
 			{#if displayCosts.length > 0}
 				<div class="flex items-center gap-2">
-					{#each displayCosts as [resource, amount]}
+					{#each displayCosts as [resource, amount] (resource)}
 						<div class="flex items-center gap-1">
 							<!-- Colored resource circle -->
 							<div

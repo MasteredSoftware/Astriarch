@@ -15,7 +15,7 @@
 
 	// Filter out zero costs and sort for consistent display order
 	$: displayCosts = Object.entries(cost)
-		.filter(([_, amount]) => amount > 0)
+		.filter(([, amount]) => amount > 0)
 		.sort(([a], [b]) => {
 			const order = ['energy', 'ore', 'iridium', 'food'];
 			return order.indexOf(a) - order.indexOf(b);
@@ -54,7 +54,7 @@
 		<!-- Resource costs -->
 		{#if displayCosts.length > 0}
 			<div class="flex items-center gap-3">
-				{#each displayCosts as [resource, amount]}
+				{#each displayCosts as [resource, amount] (resource)}
 					<div class="flex items-center gap-1">
 						<!-- Colored resource circle -->
 						<div

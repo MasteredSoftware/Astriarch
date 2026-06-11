@@ -15,11 +15,13 @@
 	export let population: number = 0;
 	export let onExitGame: (() => void) | undefined = undefined;
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	type $$Props = {
 		resourceData: ResourceData;
 		population: number;
 		onExitGame?: () => void;
 		class?: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[key: string]: any;
 	};
 
@@ -30,35 +32,36 @@
 	}
 </script>
 
-<div class="relative inline-flex gap-[4px] pl-[36px] {$$props.class || ''}" {...$$restProps}>
-	<TopOverviewItem type="population" amount={population} />
-	<TopOverviewItem
-		type="research"
-		amount={resourceData.total.research}
-		amountPerTurn={resourceData.perTurn.research}
-	/>
-	<TopOverviewItem
-		type="energy"
-		amount={resourceData.total.energy}
-		amountPerTurn={resourceData.perTurn.energy}
-	/>
-	<TopOverviewItem
-		type="food"
-		amount={resourceData.total.food}
-		amountPerTurn={resourceData.perTurn.food}
-		color={resourceData.colors?.food}
-	/>
-	<TopOverviewItem
-		type="ore"
-		amount={resourceData.total.ore}
-		amountPerTurn={resourceData.perTurn.ore}
-	/>
-	<TopOverviewItem
-		type="iridium"
-		amount={resourceData.total.iridium}
-		amountPerTurn={resourceData.perTurn.iridium}
-	/>
-
+<div class="relative inline-flex gap-[4px] pl-[56px] {$$props.class || ''}" {...$$restProps}>
+	<div class="inline-flex min-w-[765px]">
+		<TopOverviewItem type="population" amount={population} />
+		<TopOverviewItem
+			type="research"
+			amount={resourceData.total.research}
+			amountPerTurn={resourceData.perTurn.research}
+		/>
+		<TopOverviewItem
+			type="energy"
+			amount={resourceData.total.energy}
+			amountPerTurn={resourceData.perTurn.energy}
+		/>
+		<TopOverviewItem
+			type="food"
+			amount={resourceData.total.food}
+			amountPerTurn={resourceData.perTurn.food}
+			color={resourceData.colors?.food}
+		/>
+		<TopOverviewItem
+			type="ore"
+			amount={resourceData.total.ore}
+			amountPerTurn={resourceData.perTurn.ore}
+		/>
+		<TopOverviewItem
+			type="iridium"
+			amount={resourceData.total.iridium}
+			amountPerTurn={resourceData.perTurn.iridium}
+		/>
+	</div>
 	<!-- Volume Control Button -->
 	<VolumeButton />
 

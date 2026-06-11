@@ -86,7 +86,7 @@
 			{selectedPlanet?.name || 'Select planet'}
 		</Select.Trigger>
 		<Select.Content class="font-orbitron border-slate-600 bg-slate-800">
-			{#each planets as planet}
+			{#each planets as planet (planet.id)}
 				<Select.Item
 					value={planet.id.toString()}
 					class="text-xs text-white hover:bg-slate-700 focus:bg-slate-700"

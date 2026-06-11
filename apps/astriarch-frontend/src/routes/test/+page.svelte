@@ -2,8 +2,6 @@
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card';
 	import { Badge } from '$lib/components/ui/badge';
-	import { Input } from '$lib/components/ui/input';
-	import { Label } from '$lib/components/ui/label';
 
 	// Destructure Card components
 	const {
@@ -70,7 +68,6 @@
 		'battleship_custom'
 	];
 
-	let showDialog = $state(false);
 	let showAstriarchDialog = $state(false);
 	let showGameOverModal = $state(false);
 	let gameOverScenario = $state('victory');
@@ -537,11 +534,11 @@
 				<div class="mb-8">
 					<h4 class="mb-4 text-center text-lg font-semibold text-cyan-300">Size Variations</h4>
 					<div class="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-						{#each [16, 24, 32, 48] as size}
+						{#each [16, 24, 32, 48] as size (size)}
 							<div class="bg-astriarch-ui-dark-grey rounded-lg p-4">
 								<h5 class="mb-3 text-center text-sm font-semibold text-cyan-400">{size}px Icons</h5>
 								<div class="grid grid-cols-4 gap-2">
-									{#each allIconTypes.slice(0, 8) as iconType}
+									{#each allIconTypes.slice(0, 8) as iconType (iconType)}
 										<div class="flex flex-col items-center space-y-1">
 											<IconImage type={iconType} {size} />
 											<span
@@ -564,7 +561,7 @@
 						All Available Icons - Click to View Details
 					</h4>
 					<div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
-						{#each allIconTypes as iconType}
+						{#each allIconTypes as iconType (iconType)}
 							<button
 								class="flex flex-col items-center space-y-1 rounded-lg bg-slate-800/30 p-2 transition-all duration-200 hover:bg-cyan-600/20 hover:ring-1 hover:ring-cyan-400/50"
 								onclick={() => {
@@ -708,7 +705,7 @@
 							Size Comparison: All Ships Side by Side
 						</h4>
 						<div class="flex flex-wrap justify-center gap-6">
-							{#each ['defender', 'scout', 'destroyer', 'cruiser', 'battleship'] as shipType}
+							{#each ['defender', 'scout', 'destroyer', 'cruiser', 'battleship'] as shipType (shipType)}
 								<div class="flex flex-col items-center space-y-2">
 									<div class="flex space-x-2">
 										<div class="flex h-16 w-16 items-center justify-center rounded bg-black/30">

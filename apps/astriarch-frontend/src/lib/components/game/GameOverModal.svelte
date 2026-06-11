@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import { type GameOverState } from '$lib/stores/multiplayerGameStore';
 	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
 

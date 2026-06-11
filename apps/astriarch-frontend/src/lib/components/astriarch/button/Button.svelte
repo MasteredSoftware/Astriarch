@@ -5,6 +5,7 @@
 	import ButtonSvg from './ButtonSvg.svelte';
 
 	interface Props {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		children?: any;
 		label?: string;
 		size?: Size;
@@ -164,6 +165,7 @@
 		{#if children}
 			{@render children()}
 		{:else if hotkey && label}
+			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
 			{@html displayText}
 		{:else}
 			{label}

@@ -119,6 +119,7 @@ export function convertClientNotificationToUINotification(
 			break;
 		}
 		default:
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			console.warn('Unknown ClientNotificationType:', (notification as any).type);
 			return null;
 	}

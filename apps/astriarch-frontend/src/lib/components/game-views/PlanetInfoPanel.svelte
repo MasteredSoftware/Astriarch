@@ -5,7 +5,7 @@
 	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 	import type { PlanetData } from 'astriarch-engine/src/model/planet';
 	import type { LastKnownFleetData } from 'astriarch-engine/src/model/fleet';
-	import { Fleet, StarShipType } from 'astriarch-engine';
+	import { StarShipType } from 'astriarch-engine';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import ShipCardSummary from './ShipCardSummary.svelte';
 	import type { StarshipData } from 'astriarch-engine/src/model/fleet';
@@ -41,38 +41,8 @@
 		return gameModel.mainPlayer.lastKnownPlanetFleetStrength[planet.id] || null;
 	}
 
-	// Helper function to format fleet strength display
-	function formatFleetStrength(fleetData: any): string {
-		if (!fleetData) return 'No Fleet';
-
-		const fleet = fleetData.fleetData || fleetData;
-		const counts = Fleet.countStarshipsByType(fleet);
-
-		let parts: string[] = [];
-
-		if (counts.defenders > 0) {
-			parts.push(`${counts.defenders} Defenders`);
-		}
-		if (counts.scouts > 0) {
-			parts.push(`${counts.scouts} Scouts`);
-		}
-		if (counts.destroyers > 0) {
-			parts.push(`${counts.destroyers} Destroyers`);
-		}
-		if (counts.cruisers > 0) {
-			parts.push(`${counts.cruisers} Cruisers`);
-		}
-		if (counts.battleships > 0) {
-			parts.push(`${counts.battleships} Battleships`);
-		}
-		if (counts.spaceplatforms > 0) {
-			parts.push(`${counts.spaceplatforms} Space Platforms`);
-		}
-
-		return parts.length > 0 ? parts.join(', ') : 'No Ships';
-	}
-
 	// Helper function to group ships by type
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	function groupShipsByType(fleetData: any): Map<StarShipType, StarshipData[]> {
 		const groups = new Map<StarShipType, StarshipData[]>();
 
@@ -160,7 +130,7 @@
 					<div>
 						<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Fleet</Text>
 						<div class="flex flex-wrap gap-1">
-							{#each shipTypeOrder as shipType}
+							{#each shipTypeOrder as shipType (shipType)}
 								{#if shipGroups.has(shipType)}
 									<ShipCardSummary ships={shipGroups.get(shipType) || []} {shipType} />
 								{/if}
@@ -204,7 +174,7 @@
 				<div>
 					<Text style="font-size: 12px; color: #94A3B8; margin-bottom: 4px;">Last Known Fleet</Text>
 					<div class="flex flex-wrap gap-1">
-						{#each shipTypeOrder as shipType}
+						{#each shipTypeOrder as shipType (shipType)}
 							{#if shipGroups.has(shipType)}
 								<ShipCardSummary ships={shipGroups.get(shipType) || []} {shipType} />
 							{/if}

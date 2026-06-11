@@ -1281,6 +1281,7 @@ class WebSocketService {
 						event.type === ClientEventType.PLANET_CAPTURED ||
 						event.type === ClientEventType.FLEET_ATTACK_FAILED
 					) {
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						const attackingFleetId = (event.data as any)?.attackingFleetId;
 						if (attackingFleetId !== undefined) {
 							gameActions.clearPendingArrivalFleet(attackingFleetId);
@@ -1291,6 +1292,7 @@ class WebSocketService {
 					) {
 						// For defender events, also clear any pending fleet with matching attackingFleetId
 						// (unlikely to have one, but be thorough)
+						// eslint-disable-next-line @typescript-eslint/no-explicit-any
 						const attackingFleetId = (event.data as any)?.attackingFleetId;
 						if (attackingFleetId !== undefined) {
 							gameActions.clearPendingArrivalFleet(attackingFleetId);

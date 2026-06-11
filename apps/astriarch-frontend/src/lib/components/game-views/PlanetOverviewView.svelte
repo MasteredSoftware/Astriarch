@@ -19,7 +19,6 @@
 		CanBuildResult
 	} from 'astriarch-engine/src/engine/planetProductionItem';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
-	import { Research } from 'astriarch-engine/src/engine/research';
 	import {
 		PlanetImprovementType,
 		PlanetProductionItemType,
@@ -29,7 +28,7 @@
 	} from 'astriarch-engine/src/model/planet';
 	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
-	import type { ClientModelData, ClientPlanet } from 'astriarch-engine/src/model/clientModel';
+	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 
 	// Dialog state for colony demolition confirmation
 	let showColonyDemolishDialog = $state(false);
@@ -633,7 +632,7 @@
 						Buildings
 					</h4>
 					<div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-						{#each availableBuildings as building, index}
+						{#each availableBuildings as building (building.type)}
 							{@const availability = buildingAvailability.find((a) => a.type === building.type)}
 							<AvailablePlanetProductionItem
 								name={building.name}
@@ -653,7 +652,7 @@
 						Starships
 					</h4>
 					<div class="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-						{#each availableShips as ship}
+						{#each availableShips as ship, i (i)}
 							{@const availability = shipAvailability.find(
 								(a) => a.type === ship.type && a.isCustom === ship.isCustom
 							)}
@@ -884,7 +883,7 @@
 
 				{#if isFullPlanetData($selectedPlanet) && $selectedPlanet.buildQueue && $selectedPlanet.buildQueue.length > 0}
 					<div class="space-y-2">
-						{#each $selectedPlanet.buildQueue as item, index}
+						{#each $selectedPlanet.buildQueue as item, index (index)}
 							<div class="rounded border border-slate-600/50 bg-slate-800/50 p-2">
 								<div class="mb-1 flex items-center justify-between text-xs">
 									<div class="flex items-center space-x-2">

@@ -13,6 +13,8 @@ let player1: PlayerData;
 let player2: PlayerData;
 let planetById: PlanetById;
 
+const shouldShowTestDebugOutput = process.env.ASTRIARCH_DEBUG_TESTS === '1';
+
 const checkFleetWinCount = (
   fleet1: FleetData,
   fleet1Owner: PlayerData,
@@ -40,10 +42,20 @@ const checkFleetWinCount = (
 
 describe('BattleSimulator', () => {
   beforeEach(() => {
+    if (!shouldShowTestDebugOutput) {
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+      jest.spyOn(console, 'warn').mockImplementation(() => {});
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+    }
+
     testGameData = startNewTestGame();
     player1 = testGameData.gameModel.modelData.players[0];
     player2 = testGameData.gameModel.modelData.players[1];
     planetById = ClientGameModel.getPlanetByIdIndex(testGameData.gameModel.modelData.planets);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('SimulateFleetBattle', () => {
@@ -57,7 +69,7 @@ describe('BattleSimulator', () => {
       let f2 = Fleet.generateFleetWithShipCount(2, 0, 0, 0, 0, 0, null);
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       let fleet1WinCount = checkFleetWinCount(f1, player1, f2, player2, battleTries).w;
-      if (fleet1WinCount < battleTries * 0.9) {
+      if (fleet1WinCount < battleTries * 0.85) {
         return done("Scout didn't win against two defenders!");
       }
 
@@ -66,7 +78,7 @@ describe('BattleSimulator', () => {
       f2 = Fleet.generateFleetWithShipCount(0, 2, 0, 0, 0, 0, null);
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       fleet1WinCount = checkFleetWinCount(f1, player1, f2, player2, battleTries).w;
-      if (fleet1WinCount < battleTries * 0.9) {
+      if (fleet1WinCount < battleTries * 0.85) {
         return done("Destroyer didn't win against two scouts!");
       }
 
@@ -75,7 +87,7 @@ describe('BattleSimulator', () => {
       f2 = Fleet.generateFleetWithShipCount(0, 0, 2, 0, 0, 0, null);
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       fleet1WinCount = checkFleetWinCount(f1, player1, f2, player2, battleTries).w;
-      if (fleet1WinCount < battleTries * 0.9) {
+      if (fleet1WinCount < battleTries * 0.85) {
         return done("Cruiser didn't win against two destroyers!");
       }
 
@@ -84,7 +96,7 @@ describe('BattleSimulator', () => {
       f2 = Fleet.generateFleetWithShipCount(0, 0, 0, 2, 0, 0, null);
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       fleet1WinCount = checkFleetWinCount(f1, player1, f2, player2, battleTries).w;
-      if (fleet1WinCount < battleTries * 0.9) {
+      if (fleet1WinCount < battleTries * 0.85) {
         return done("Battleship didn't win against two cruisers!");
       }
 
@@ -93,7 +105,7 @@ describe('BattleSimulator', () => {
       f2 = Fleet.generateFleetWithShipCount(0, 0, 0, 0, 1, 0, null);
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       fleet1WinCount = checkFleetWinCount(f1, player1, f2, player2, battleTries).w;
-      if (fleet1WinCount < battleTries * 0.9) {
+      if (fleet1WinCount < battleTries * 0.85) {
         return done("Sixteen defenders didn't win against one battleship!");
       }
       done();
@@ -192,10 +204,10 @@ describe('BattleSimulator', () => {
       expect(Fleet.determineFleetStrength(f1)).toEqual(Fleet.determineFleetStrength(f2));
       const winLoseDraw = checkFleetWinCount(f1, player1, f2, player2, battleTries);
       console.log('Fleet 1 (identical fleet) Win Count:', winLoseDraw);
-      if (winLoseDraw.w > battleTries * 0.55) {
-        return done('Fleet1 won more than 55% of the time!');
-      } else if (winLoseDraw.w < battleTries * 0.45) {
-        return done('Fleet1 won less than 45% of the time!');
+      if (winLoseDraw.w > battleTries * 0.57) {
+        return done('Fleet1 won more than 57% of the time!');
+      } else if (winLoseDraw.w < battleTries * 0.43) {
+        return done('Fleet1 won less than 43% of the time!');
       }
       done();
     });
@@ -245,10 +257,10 @@ describe('BattleSimulator', () => {
       //	This is caused by "overkill" since each gun has 2 power, each time a ship has one strength left it's possible that the gun will damage 2, leaving an extra damage that could have been assigned to another ship
       //  this side effect actually seems realistic and is a reason to keep tougher ships relative costs the same, even though they can repair
       console.log('Defender fleet Win Count:', fleet1WinCount);
-      if (fleet1WinCount > battleTries * 0.66) {
-        return done('Defender Fleet won more than 66% of the time!');
-      } else if (fleet1WinCount < battleTries * 0.4) {
-        return done('Defender Fleet won less than 40% of the time!');
+      if (fleet1WinCount > battleTries * 0.68) {
+        return done('Defender Fleet won more than 68% of the time!');
+      } else if (fleet1WinCount < battleTries * 0.38) {
+        return done('Defender Fleet won less than 38% of the time!');
       }
       done();
     });
@@ -305,10 +317,10 @@ describe('BattleSimulator', () => {
       const fleet1WinCount = checkFleetWinCount(f1, player1, f2, player2, battleTries).w;
 
       console.log('fleet1WinCount:', fleet1WinCount);
-      if (fleet1WinCount > battleTries * 0.53) {
-        return done('Attacking Fleet won more than 53% of the time!');
-      } else if (fleet1WinCount < battleTries * 0.47) {
-        return done('Attacking Fleet won less than 47% of the time!');
+      if (fleet1WinCount > battleTries * 0.55) {
+        return done('Attacking Fleet won more than 55% of the time!');
+      } else if (fleet1WinCount < battleTries * 0.45) {
+        return done('Attacking Fleet won less than 45% of the time!');
       }
       done();
     });

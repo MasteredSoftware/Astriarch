@@ -3,6 +3,7 @@
 	import CardSvg from './CardSvg.svelte';
 
 	interface Props {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		children?: any;
 		label?: string;
 		size?: Size;

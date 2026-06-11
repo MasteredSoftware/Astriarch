@@ -1,15 +1,15 @@
 <script lang="ts">
-	import TopOverviewButtonBackgroundSvg from './TopOverviewButtonBackgroundSvg.svelte';
-
 	export let onclick: (() => void) | undefined = undefined;
 	export let disabled: boolean = false;
 	export let title: string = '';
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	type $$Props = {
 		onclick?: () => void;
 		disabled?: boolean;
 		title?: string;
 		class?: string;
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		[key: string]: any;
 	};
 
@@ -20,7 +20,7 @@
 	}
 </script>
 
-<div class="relative h-12 {$$props.class || ''}" {...$$restProps}>
+<div class="relative h-12 w-8 {$$props.class || ''}" {...$$restProps}>
 	<!-- Button Content -->
 	<button
 		class="relative z-10 flex h-full w-full items-center justify-center transition-colors hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-50"
