@@ -530,7 +530,7 @@
 			{#each $notifications.slice(-5) as notification (notification.id)}
 				<NotificationItem
 					{notification}
-					data-testid={notification.type === 'error' ? 'notification-error' : undefined}
+					testid={notification.type === 'error' ? 'notification-error' : undefined}
 					onDismiss={() => multiplayerGameStore.dismissNotification(notification.id)}
 				/>
 			{/each}

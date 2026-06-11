@@ -6,9 +6,10 @@
 	interface Props {
 		notification: GameNotification;
 		onDismiss: () => void;
+		testid?: string;
 	}
 
-	let { notification, onDismiss }: Props = $props();
+	let { notification, onDismiss, testid }: Props = $props();
 
 	// Animation state
 	let visible = $state(false);
@@ -99,6 +100,7 @@
 	class="notification-item transition-all duration-700 ease-in-out"
 	class:visible
 	class:fade-out={fadeOut}
+	data-testid={testid}
 >
 	<Notification size="md" onclick={handleClick}>
 		<span class="font-medium" style="color: {getNotificationColor(notification.type)};">

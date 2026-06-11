@@ -10,7 +10,7 @@ import { defineConfig, devices } from '@playwright/test';
  * when running Playwright, so you do NOT need to start them manually.
  *
  * Port assignments (deliberately non-overlapping with normal dev ports):
- *   Frontend : http://localhost:4173  (Vite preview)
+ *   Frontend : http://localhost:4173  (Vite dev server)
  *   Backend  : http://localhost:8002  (test-only instance)
  *
  * Environment variables used:
