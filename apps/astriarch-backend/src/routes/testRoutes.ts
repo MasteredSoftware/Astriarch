@@ -31,12 +31,12 @@ router.post("/cleanup", async (req: Request, res: Response) => {
       name: { $regex: `^${escapeRegex(prefix)}` },
     });
 
-    // Remove connect-mongo sessions (stored in the 'sessions' collection).
+    // Remove all sessions — safe because this route only exists in NODE_ENV=test.
     const db = mongoose.connection.db;
     let sessionCount = 0;
     if (db) {
       try {
-        const sessionResult = await db.collection("sessions").deleteMany({ "session.e2eTestMarker": prefix });
+        const sessionResult = await db.collection("sessions").deleteMany({});
         sessionCount = sessionResult.deletedCount ?? 0;
       } catch {
         // Sessions collection may not exist yet — not a fatal error.
