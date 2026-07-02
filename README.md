@@ -3,6 +3,24 @@
 Astriarch Ruler of the Stars, Space Strategy Game
 http://www.astriarch.com/
 
+
+## Overview
+
+Astriarch - Ruler of the Stars is a real-time, Multi-player Space Strategy Game.
+Build planetary improvements and star ships to capture planets and defeat your enemies.
+Your ultimate goal is to become the master of the known universe, and earn the title of Astriarch!
+
+## Background
+
+Development started in 2010 by [Mastered Software](http://www.masteredsoftware.com/), Astriarch combines aspects of other classic space strategy games such as [Master of Orion 2](http://en.wikipedia.org/wiki/Master_of_Orion_II:_Battle_at_Antares) (MOO2), [Stellar Conflict](http://hol.abime.net/3427) (1987 Amiga), and [Star Control](http://en.wikipedia.org/wiki/Star_Control).
+
+
+Currently Astriarch is realeased as a free casual web game. Planned future enhancements include the ability to research Carriers and planetary improvements like warp gates, defensive cannons, as well as galaxy special items and events.
+
+
+The name Astriarch comes from the Ancient Greek words for star ([ắstron](http://en.wiktionary.org/wiki/%E1%BC%84%CF%83%CF%84%CF%81%CE%BF%CE%BD#Ancient_Greek)) and ruler ([arkhos](http://en.wiktionary.org/wiki/%E1%BC%80%CF%81%CF%87%CF%8C%CF%82))
+
+
 ## Quickstart
 
 `docker-compose up`
@@ -47,26 +65,21 @@ Notes:
 - Add new scenarios under `apps/astriarch-frontend/e2e/scenarios` and reuse fixtures/helpers from `apps/astriarch-frontend/e2e/fixtures` and `apps/astriarch-frontend/e2e/helpers`.
 
 
-## Overview
+## DevOps Notes
 
-Astriarch - Ruler of the Stars is a real-time, Multi-player Space Strategy Game.
-Build planetary improvements and star ships to capture planets and defeat your enemies.
-Your ultimate goal is to become the master of the known universe, and earn the title of Astriarch!
+Backup and restore:
+```bash
+mongodump --uri="mongodb+srv://<full-connection-string>" --out="./production_dump"
+```
 
-## Background
-
-Developed in 2010 by <a href="http://www.masteredsoftware.com/" target="_blank">Mastered Software</a>, Astriarch combines aspects of other classic space strategy games such as <a href="http://en.wikipedia.org/wiki/Master_of_Orion_II:_Battle_at_Antares" target="_blank" rel="nofollow">Master of Orion 2</a> (MOO2), <a href="http://hol.abime.net/3427" target="_blank" rel="nofollow">Stellar Conflict</a> (1987 Amiga), and <a href="http://en.wikipedia.org/wiki/Star_Control" target="_blank" rel="nofollow">Star Control</a>.
-<br /><br />
-Currently Astriarch is realeased as a free casual web game.&nbsp; Planned future enhancements include the ability to research and develop improvements, as well as galaxy special items and events.
-<br /><br />
-The name Astriarch comes from the Ancient Greek words for star (<a href="http://en.wiktionary.org/wiki/%E1%BC%84%CF%83%CF%84%CF%81%CE%BF%CE%BD#Ancient_Greek" target="_blank" rel="nofollow">ắstron</a>) and ruler (<a href="http://en.wiktionary.org/wiki/%E1%BC%80%CF%81%CF%87%CF%8C%CF%82" target="_blank" rel="nofollow">arkhos</a>)
-
+```bash
+mongorestore --uri="mongodb://localhost:27017" ./production_dump
+```
 
 ## Credits
 
-Astriarch - Ruler of the Stars, space strategy game designed and developed by <a href="http://www.masteredsoftware.com/" target="_blank">Mastered Software</a>, music by Resonant.
+Astriarch - Ruler of the Stars, space strategy game designed and developed by [Mastered Software](http://www.masteredsoftware.com/), music by Resonant.
 
 ## License
 
 This version of Astriarch - Ruler of the Stars is released under the MIT License.
-

@@ -7,6 +7,11 @@
     "build": "tsc",
     "dev": "tsx watch src/app.ts",
     "start": "node --enable-source-maps dist/app.js",
+    "analyze:history": "node scripts/analyze-production-history.js",
+    "analyze:production-failures": "node scripts/analyze-production-failures.js",
+    "analyze:replay": "node scripts/export-replay-timeline.js",
+    "analyze:ai-human-strategy": "node scripts/analyze-ai-human-strategy.js",
+    "repair:orphaned-game-logs": "node scripts/repair-orphaned-game-logs.js",
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "lint": "eslint src/**/*.ts",
@@ -19,7 +24,6 @@
   "dependencies": {
     "astriarch-engine": "workspace:*",
     "async": "^3.2.4",
-    "config": "^3.3.9",
     "connect-mongo": "^5.1.0",
     "cookie": "^1.0.2",
     "cookie-parser": "^1.4.6",
@@ -36,7 +40,6 @@
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
-    "@types/config": "^3.3.3",
     "@types/cookie": "^1.0.0",
     "@types/cookie-parser": "^1.4.6",
     "@types/cookie-signature": "^1.1.2",

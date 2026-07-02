@@ -1,12 +1,12 @@
-import config from "config";
+import { getBackendConfig, type LogLevel } from "../config/environment";
 
-type LogLevel = "DEBUG" | "INFO" | "WARN" | "ERROR";
+const DEFAULT_LOG_LEVEL: LogLevel = "INFO";
 
 class Logger {
   private logLevel: LogLevel;
 
   constructor() {
-    this.logLevel = (config.get("loglevel") as LogLevel) || "INFO";
+    this.logLevel = getBackendConfig().loglevel || DEFAULT_LOG_LEVEL;
   }
 
   private shouldLog(level: LogLevel): boolean {

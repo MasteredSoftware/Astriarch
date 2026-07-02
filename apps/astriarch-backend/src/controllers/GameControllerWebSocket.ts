@@ -1,6 +1,9 @@
-import config from "config";
 import { ServerGameModel, IGame, IPlayer } from "../models/Game";
 import { SessionModel } from "../models/Session";
+import { GameEvent } from "../models/GameEvent";
+import { GameCommandLog } from "../models/GameCommandLog";
+import { SequenceCounter } from "../models/SequenceCounter";
+import { getBackendConfig } from "../config/environment";
 import { logger } from "../utils/logger";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { eventPersistenceService } from "../services/EventPersistenceService";
@@ -936,17 +939,39 @@ export class GameController {
 
   static async cleanupOldGames(): Promise<void> {
     try {
-      const cleanupConfig = config.get("game.cleanup") as any;
-      const maxAge = cleanupConfig?.max_age_hours || 24;
+      const cleanupConfig = getBackendConfig().game.cleanupOldGames;
+      const maxAge = cleanupConfig.maxAgeHours;
       const cutoffDate = new Date(Date.now() - maxAge * 60 * 60 * 1000);
 
-      const result = await ServerGameModel.deleteMany({
-        lastActivity: { $lt: cutoffDate },
-        status: { $ne: "in_progress" },
-      });
+      // Find stale, non-active games first so we can cascade delete related event-sourcing data.
+      const staleGames = await ServerGameModel.find(
+        {
+          lastActivity: { $lt: cutoffDate },
+          status: { $ne: "in_progress" },
+        },
+        { _id: 1 },
+      ).lean();
 
-      if (result.deletedCount > 0) {
-        logger.info(`Cleaned up ${result.deletedCount} old games`);
+      const staleGameIds = staleGames.map((g) => g._id.toString());
+
+      if (staleGameIds.length > 0) {
+        const sequenceCounterIds = staleGameIds.map((id) => `game:${id}`);
+
+        const [deleteGameResult, deleteEventResult, deleteCommandResult, deleteSequenceCounterResult] =
+          await Promise.all([
+            ServerGameModel.deleteMany({ _id: { $in: staleGameIds } }),
+            GameEvent.deleteMany({ gameId: { $in: staleGameIds } }),
+            GameCommandLog.deleteMany({ gameId: { $in: staleGameIds } }),
+            SequenceCounter.deleteMany({ _id: { $in: sequenceCounterIds } }),
+          ]);
+
+        logger.info(
+          `Cleaned up ${deleteGameResult.deletedCount} old games and related data (events=${deleteEventResult.deletedCount}, commands=${deleteCommandResult.deletedCount}, sequenceCounters=${deleteSequenceCounterResult.deletedCount})`,
+        );
+      }
+
+      if (staleGameIds.length === 0) {
+        logger.debug("No old games found for cleanup");
       }
     } catch (error) {
       logger.error("Error during game cleanup:", error);
@@ -955,15 +980,12 @@ export class GameController {
 
   static startGameCleanup(): void {
     try {
-      const cleanupConfig = config.get("game.cleanup") as any;
+      const cleanupConfig = getBackendConfig().game.cleanupOldGames;
 
-      if (cleanupConfig && cleanupConfig.enabled) {
-        setInterval(
-          async () => {
-            await GameController.cleanupOldGames();
-          },
-          (cleanupConfig.check_interval_seconds || 3600) * 1000,
-        );
+      if (cleanupConfig.enabled) {
+        setInterval(async () => {
+          await GameController.cleanupOldGames();
+        }, cleanupConfig.checkIntervalSeconds * 1000);
 
         logger.info("Game cleanup scheduler started");
       }
