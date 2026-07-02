@@ -24,7 +24,6 @@
   "dependencies": {
     "astriarch-engine": "workspace:*",
     "async": "^3.2.4",
-    "config": "^3.3.9",
     "connect-mongo": "^5.1.0",
     "cookie": "^1.0.2",
     "cookie-parser": "^1.4.6",
@@ -41,7 +40,6 @@
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
-    "@types/config": "^3.3.3",
     "@types/cookie": "^1.0.0",
     "@types/cookie-parser": "^1.4.6",
     "@types/cookie-signature": "^1.1.2",

@@ -7,9 +7,9 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import MongoStore from "connect-mongo";
-import config from "config";
 
 import { connectDatabase } from "./database/connection";
+import { getBackendConfig, validateBackendConfig } from "./config/environment";
 import { WebSocketServer } from "./websocket";
 import { healthRoutes } from "./routes/healthRoutes";
 import { highScoreRoutes } from "./routes/highScoreRoutes";
@@ -19,12 +19,14 @@ import { logger } from "./utils/logger";
 
 const app = express();
 
+const backendConfig = getBackendConfig();
+
 // Server configuration
 const serverConfig = {
-  host: process.env.HOST || config.get("server.host") || "localhost",
-  port: process.env.PORT || config.get("server.port") || 8001,
-  wsPort: process.env.WS_PORT || config.get("websocket.port") || 8001,
-  wsProtocol: process.env.WS_PROTOCOL || config.get("websocket.protocol") || "ws",
+  host: backendConfig.server.host,
+  port: backendConfig.server.port,
+  wsPort: backendConfig.websocket.port,
+  wsProtocol: backendConfig.websocket.protocol,
 };
 
 // Security middleware
@@ -35,16 +37,9 @@ app.use(
 );
 
 // CORS configuration
-const baseCorsOptions = config.get("cors") as cors.CorsOptions;
-const allowedOrigins = (process.env.CORS_ORIGIN_LIST || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter((origin) => origin);
-
-// Create a new CORS options object without mutating the config
 const corsOptions: cors.CorsOptions = {
-  ...baseCorsOptions,
-  ...(allowedOrigins.length > 0 && { origin: allowedOrigins }),
+  origin: backendConfig.cors.origin,
+  credentials: backendConfig.cors.credentials,
 };
 app.use(cors(corsOptions));
 
@@ -56,17 +51,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Cookie parsing
-const cookieSecret = process.env.COOKIE_SECRET || (config.get("cookie.secret") as string);
+const cookieSecret = backendConfig.cookie.secret;
 app.use(cookieParser(cookieSecret));
+
+function buildSessionMongoUrl(): string {
+  if (backendConfig.mongodb.connectionString) {
+    return backendConfig.mongodb.connectionString;
+  }
+
+  const auth =
+    backendConfig.mongodb.username && backendConfig.mongodb.password
+      ? `${backendConfig.mongodb.username}:${backendConfig.mongodb.password}@`
+      : "";
+
+  return `mongodb://${auth}${backendConfig.mongodb.host}:${backendConfig.mongodb.port}/${backendConfig.mongodb.sessionDbName}`;
+}
 
 // Session configuration
 app.use(
   session({
     secret: cookieSecret,
     store: MongoStore.create({
-      mongoUrl:
-        process.env.MONGODB_CONNECTION_STRING ||
-        `mongodb://${config.get("mongodb.host")}:${config.get("mongodb.port")}/${config.get("mongodb.sessiondb_name")}`,
+      mongoUrl: buildSessionMongoUrl(),
       touchAfter: 24 * 3600, // lazy session update
     }),
     resave: false,
@@ -105,6 +111,9 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 // Start server
 async function startServer() {
   try {
+    // Validate env-backed configuration before startup side-effects.
+    validateBackendConfig();
+
     // Connect to database
     await connectDatabase();
 

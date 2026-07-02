@@ -1,22 +1,20 @@
 import mongoose from "mongoose";
-import config from "config";
+import { getBackendConfig } from "../config/environment";
 import { logger } from "../utils/logger";
 
 export async function connectDatabase(): Promise<void> {
   let connectionString = "";
   try {
-    // Build connection string
-    const username = process.env.MONGODB_USERNAME || config.get("mongodb.username");
-    const password = process.env.MONGODB_PASSWORD || config.get("mongodb.password");
-    const host = process.env.MONGODB_HOST || config.get("mongodb.host");
-    const port = process.env.MONGODB_PORT || config.get("mongodb.port");
-    const database = process.env.MONGODB_DATABASE || config.get("mongodb.gamedb_name");
+    const backendConfig = getBackendConfig();
 
-    connectionString = process.env.MONGODB_CONNECTION_STRING || "";
+    // Build connection string
+    const { username, password, host, port, gameDbName } = backendConfig.mongodb;
+
+    connectionString = backendConfig.mongodb.connectionString || "";
 
     if (!connectionString) {
       const auth = username && password ? `${username}:${password}@` : "";
-      connectionString = `mongodb://${auth}${host}:${port}/${database}`;
+      connectionString = `mongodb://${auth}${host}:${port}/${gameDbName}`;
     }
 
     logger.info(
@@ -32,7 +30,7 @@ export async function connectDatabase(): Promise<void> {
 
     await mongoose.connect(connectionString, options);
 
-    logger.info(`Connected to MongoDB: ${database}`);
+    logger.info(`Connected to MongoDB: ${gameDbName}`);
 
     // Connection event handlers
     mongoose.connection.on("error", (error) => {

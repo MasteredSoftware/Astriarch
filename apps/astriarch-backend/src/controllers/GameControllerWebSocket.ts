@@ -1,9 +1,9 @@
-import config from "config";
 import { ServerGameModel, IGame, IPlayer } from "../models/Game";
 import { SessionModel } from "../models/Session";
 import { GameEvent } from "../models/GameEvent";
 import { GameCommandLog } from "../models/GameCommandLog";
 import { SequenceCounter } from "../models/SequenceCounter";
+import { getBackendConfig } from "../config/environment";
 import { logger } from "../utils/logger";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { eventPersistenceService } from "../services/EventPersistenceService";
@@ -939,8 +939,8 @@ export class GameController {
 
   static async cleanupOldGames(): Promise<void> {
     try {
-      const cleanupConfig = config.get("game.cleanup_old_games") as any;
-      const maxAge = cleanupConfig?.max_age_hours || 24;
+      const cleanupConfig = getBackendConfig().game.cleanupOldGames;
+      const maxAge = cleanupConfig.maxAgeHours;
       const cutoffDate = new Date(Date.now() - maxAge * 60 * 60 * 1000);
 
       // Find stale, non-active games first so we can cascade delete related event-sourcing data.
@@ -980,14 +980,14 @@ export class GameController {
 
   static startGameCleanup(): void {
     try {
-      const cleanupConfig = config.get("game.cleanup_old_games") as any;
+      const cleanupConfig = getBackendConfig().game.cleanupOldGames;
 
-      if (cleanupConfig && cleanupConfig.enabled) {
+      if (cleanupConfig.enabled) {
         setInterval(
           async () => {
             await GameController.cleanupOldGames();
           },
-          (cleanupConfig.check_interval_seconds || 3600) * 1000,
+          cleanupConfig.checkIntervalSeconds * 1000,
         );
 
         logger.info("Game cleanup scheduler started");

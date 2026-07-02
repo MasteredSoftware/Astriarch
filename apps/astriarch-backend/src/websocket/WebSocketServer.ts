@@ -2,7 +2,7 @@ import WebSocket from "ws";
 import { Server } from "http";
 import { parse as parseCookie } from "cookie";
 import * as signature from "cookie-signature";
-import config from "config";
+import { getBackendConfig } from "../config/environment";
 import { logger } from "../utils/logger";
 import { Session, Game, IGame } from "../models";
 import { ServerGameModel } from "../models/Game";
@@ -122,7 +122,7 @@ export class WebSocketServer {
       if (req.headers.cookie) {
         logger.info("Raw cookies received:", req.headers.cookie);
 
-        const cookieSecret = process.env.COOKIE_SECRET || (config.get("cookie.secret") as string);
+        const cookieSecret = getBackendConfig().cookie.secret;
 
         // Parse the cookies first
         const cookies = parseCookie(req.headers.cookie);
