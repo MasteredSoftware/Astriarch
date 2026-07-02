@@ -48,3 +48,4 @@ dist
 build
 .env
 **/ai-decision-debugging/data/*
+apps/astriarch-backend/analysis/*
