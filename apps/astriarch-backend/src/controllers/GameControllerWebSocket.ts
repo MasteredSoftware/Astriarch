@@ -983,12 +983,9 @@ export class GameController {
       const cleanupConfig = getBackendConfig().game.cleanupOldGames;
 
       if (cleanupConfig.enabled) {
-        setInterval(
-          async () => {
-            await GameController.cleanupOldGames();
-          },
-          cleanupConfig.checkIntervalSeconds * 1000,
-        );
+        setInterval(async () => {
+          await GameController.cleanupOldGames();
+        }, cleanupConfig.checkIntervalSeconds * 1000);
 
         logger.info("Game cleanup scheduler started");
       }

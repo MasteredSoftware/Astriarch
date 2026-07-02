@@ -143,7 +143,11 @@ function buildBackendConfig(): BackendConfig {
     game: {
       cleanupOldGames: {
         enabled: parseBoolean(process.env.GAME_CLEANUP_ENABLED, true),
-        checkIntervalSeconds: parseInteger(process.env.GAME_CLEANUP_INTERVAL_SECONDS, "GAME_CLEANUP_INTERVAL_SECONDS", 7200),
+        checkIntervalSeconds: parseInteger(
+          process.env.GAME_CLEANUP_INTERVAL_SECONDS,
+          "GAME_CLEANUP_INTERVAL_SECONDS",
+          7200,
+        ),
         maxAgeHours: parseInteger(process.env.GAME_CLEANUP_MAX_AGE_HOURS, "GAME_CLEANUP_MAX_AGE_HOURS", 24),
       },
     },
