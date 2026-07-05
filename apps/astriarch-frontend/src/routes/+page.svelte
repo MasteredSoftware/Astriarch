@@ -20,6 +20,7 @@
 	import { currentView, navigationActions } from '$lib/stores/navigationStore';
 	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
+	import type { ShortcutCallback } from '$lib/services/keyboardShortcuts';
 
 	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
 	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
@@ -63,11 +64,11 @@
 	});
 
 	let navigationItems = [
-		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
-		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet') },
-		{ label: 'Research', onclick: () => navigationActions.setView('research') },
-		{ label: 'Trading', onclick: () => navigationActions.setView('trading') },
-		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
+		{ label: 'Planets', onclick: () => navigationActions.setView('planets'), hotkey: 'q' },
+		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet'), hotkey: 'f' },
+		{ label: 'Research', onclick: () => navigationActions.setView('research'), hotkey: 'g' },
+		{ label: 'Trading', onclick: () => navigationActions.setView('trading'), hotkey: 'h' },
+		{ label: 'Activity', onclick: () => navigationActions.setView('activity'), hotkey: 'j' }
 	];
 
 	function handleShowLobby() {
@@ -127,20 +128,24 @@
 
 	onMount(() => {
 		console.log('Astriarch game component mounted');
+		if (browser) {
+			// Enable audio system to respond to user interactions
+			enableAudioOnFirstInteraction();
 
-		// Debug: Add a test notification to see if the system works
-		multiplayerGameStore.addNotification({
-			type: 'info',
-			message: 'Welcome to Astriarch! Event system is active.',
-			timestamp: Date.now()
-		});
+			// Initialize global keyboard shortcut service
+			keyboardShortcutService.initialize();
 
-		// Debug: Log notifications store changes
-		const unsubscribe = notifications.subscribe((notifs) => {
-			console.log('Notifications updated:', notifs);
-		});
-
-		return () => unsubscribe();
+			// Register navigation hotkeys
+			navigationItems.forEach((item) => {
+				if (item.hotkey) {
+					keyboardShortcutService.registerShortcut(
+						item.hotkey,
+						item.onclick as ShortcutCallback,
+						'navigation'
+					);
+				}
+			});
+		}
 	});
 
 	// Keep multiplayerState reactive by subscribing to the store
