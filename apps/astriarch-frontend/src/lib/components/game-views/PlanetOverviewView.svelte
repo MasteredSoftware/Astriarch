@@ -290,7 +290,7 @@
 		{ type: StarShipType.Destroyer, description: 'Light combat vessel', hotkey: 'D' },
 		{ type: StarShipType.Cruiser, description: 'Medium combat vessel', hotkey: 'C' },
 		{ type: StarShipType.Battleship, description: 'Heavy combat vessel', hotkey: 'a' },
-		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure', hotkey: 'P' }
+		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure', hotkey: 'X' }
 	];
 
 	// Custom ship research type mappings

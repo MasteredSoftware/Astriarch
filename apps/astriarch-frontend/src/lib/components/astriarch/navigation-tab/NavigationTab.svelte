@@ -9,9 +9,11 @@
 		zIndex?: number;
 		onclick?: () => void;
 		orientation?: 'horizontal' | 'vertical';
+		hotkey?: string;
 	}
 
-	let { label, selected, zIndex = 1, onclick, orientation = 'horizontal' }: Props = $props();
+
+	let { label, selected, zIndex = 1, onclick, orientation = 'horizontal', hotkey }: Props = $props();
 </script>
 
 {#if orientation === 'vertical'}
@@ -21,7 +23,7 @@
 			class="pointer-events-none absolute top-0 left-0 text-center text-xs leading-[29px] font-extrabold tracking-[1px] uppercase"
 			style="z-index: 100; color: {selected ? '#1B1F25' : '#FFF'}; width: 144px;"
 		>
-			{label}
+			{displayName}
 		</Text>
 
 		{#if selected}
@@ -37,7 +39,7 @@
 			class="pointer-events-none absolute top-0 left-0 w-[240px] text-center text-sm leading-12 font-extrabold tracking-[2px] uppercase"
 			style="z-index: 100; color: {selected ? '#1B1F25' : '#FFF'};"
 		>
-			{label}
+			{displayName}
 		</Text>
 
 		{#if selected}
