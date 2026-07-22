@@ -3,10 +3,13 @@
 
 	interface NavigationItem {
 		label: string;
+		view: GameView;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		content?: any;
 		onclick?: () => void;
+		hotkey?: string;
 	}
+
 
 	interface Props {
 		items: NavigationItem[];

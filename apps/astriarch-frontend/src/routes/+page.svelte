@@ -63,11 +63,11 @@
 	});
 
 	let navigationItems = [
-		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
-		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet') },
-		{ label: 'Research', onclick: () => navigationActions.setView('research') },
-		{ label: 'Trading', onclick: () => navigationActions.setView('trading') },
-		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
+		{ label: 'Planets', view: 'planets', hotkey: 'P', onclick: () => navigationActions.setView('planets') },
+		{ label: 'Fleets', view: 'fleet', hotkey: 'F', onclick: () => navigationActions.setView('fleet') },
+		{ label: 'Research', view: 'research', hotkey: 'R', onclick: () => navigationActions.setView('research') },
+		{ label: 'Trading', view: 'trading', hotkey: 'T', onclick: () => navigationActions.setView('trading') },
+		{ label: 'Activity', view: 'activity', hotkey: 'A', onclick: () => navigationActions.setView('activity') }
 	];
 
 	function handleShowLobby() {
@@ -127,19 +127,33 @@
 
 	onMount(() => {
 		console.log('Astriarch game component mounted');
-
+		
 		// Debug: Add a test notification to see if the system works
 		multiplayerGameStore.addNotification({
 			type: 'info',
 			message: 'Welcome to Astriarch! Event system is active.',
 			timestamp: Date.now()
 		});
+		
+		// Register tab hotkeys
+		navigationItems.forEach(item => {
+			if (item.hotkey) {
+				keyboardShortcutService.registerShortcut(
+					item.hotkey.toLowerCase(),
+					(event: KeyboardEvent) => {
+						event.preventDefault();
+						navigationActions.setView(item.view);
+					},
+					'navigation-tab'
+				);
+			}
+		});
 
 		// Debug: Log notifications store changes
 		const unsubscribe = notifications.subscribe((notifs) => {
 			console.log('Notifications updated:', notifs);
 		});
-
+		
 		return () => unsubscribe();
 	});
 
