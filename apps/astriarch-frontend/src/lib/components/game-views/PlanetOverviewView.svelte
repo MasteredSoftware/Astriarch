@@ -270,13 +270,13 @@
 
 	// Available building types with descriptions
 	const buildingTypes = [
-		{ type: PlanetImprovementType.Farm, description: 'Increases food production', hotkey: 'r' },
+		{ type: PlanetImprovementType.Farm, description: 'Increases food production', hotkey: 'o' },
 		{
 			type: PlanetImprovementType.Mine,
 			description: 'Increases ore and iridium production',
-			hotkey: 'i'
+			hotkey: 'm'
 		},
-		{ type: PlanetImprovementType.Factory, description: 'Increases production rate', hotkey: 't' },
+		{ type: PlanetImprovementType.Factory, description: 'Increases production rate', hotkey: 'y' },
 		{
 			type: PlanetImprovementType.Colony,
 			description: 'Increases population capacity',
@@ -290,7 +290,7 @@
 		{ type: StarShipType.Destroyer, description: 'Light combat vessel', hotkey: 'D' },
 		{ type: StarShipType.Cruiser, description: 'Medium combat vessel', hotkey: 'C' },
 		{ type: StarShipType.Battleship, description: 'Heavy combat vessel', hotkey: 'a' },
-		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure', hotkey: 'P' }
+		{ type: StarShipType.SpacePlatform, description: 'Massive defensive structure', hotkey: 'x' }
 	];
 
 	// Custom ship research type mappings
