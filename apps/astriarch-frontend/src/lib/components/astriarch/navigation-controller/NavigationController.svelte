@@ -3,6 +3,7 @@
 
 	interface NavigationItem {
 		label: string;
+		shortcutKey?: string;
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		content?: any;
 		onclick?: () => void;
@@ -11,6 +12,7 @@
 	interface Props {
 		items: NavigationItem[];
 		initialSelectedIndex?: number;
+		selectedIndex?: number;
 		onchange?: (index: number) => void;
 		orientation?: 'horizontal' | 'vertical';
 	}
@@ -18,15 +20,22 @@
 	let {
 		items,
 		initialSelectedIndex = 0,
+		selectedIndex,
 		onchange,
 		orientation = 'horizontal',
 		...restProps
 	}: Props = $props();
 
-	let selectedIndex = $state(initialSelectedIndex);
+	let selectedTabIndex = $state(selectedIndex ?? initialSelectedIndex);
+
+	$effect(() => {
+		if (selectedIndex !== undefined) {
+			selectedTabIndex = selectedIndex;
+		}
+	});
 
 	function handleTabClick(index: number) {
-		selectedIndex = index;
+		selectedTabIndex = index;
 		if (onchange) {
 			onchange(index);
 		}
@@ -45,7 +54,8 @@
 			{#each items as item, i (i)}
 				<NavigationTab
 					label={item.label}
-					selected={i === selectedIndex}
+					shortcutKey={item.shortcutKey}
+					selected={i === selectedTabIndex}
 					zIndex={items.length - i}
 					onclick={() => handleTabClick(i)}
 					orientation="vertical"
@@ -60,7 +70,8 @@
 			{#each items as item, i (i)}
 				<NavigationTab
 					label={item.label}
-					selected={i === selectedIndex}
+					shortcutKey={item.shortcutKey}
+					selected={i === selectedTabIndex}
 					zIndex={items.length - i}
 					onclick={() => handleTabClick(i)}
 				/>
@@ -70,8 +81,8 @@
 
 	<!-- Content area -->
 	<div>
-		{#if items[selectedIndex]?.content}
-			{@render items[selectedIndex].content()}
+		{#if items[selectedTabIndex]?.content}
+			{@render items[selectedTabIndex].content()}
 		{/if}
 	</div>
 </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { browser } from '$app/environment';
+	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
 	import {
 		clientGameModel,
 		resourceData,
@@ -17,7 +18,7 @@
 	// Create a reactive value for the multiplayer game state
 	let multiplayerState = $state<MultiplayerGameState | undefined>();
 
-	import { currentView, navigationActions } from '$lib/stores/navigationStore';
+	import { currentView, navigationActions, type GameView } from '$lib/stores/navigationStore';
 	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
 	import { layoutMode } from '$lib/stores/layoutStore';
 
@@ -62,13 +63,53 @@
 		}
 	});
 
-	let navigationItems = [
-		{ label: 'Planets', onclick: () => navigationActions.setView('planets') },
-		{ label: 'Fleets', onclick: () => navigationActions.setView('fleet') },
-		{ label: 'Research', onclick: () => navigationActions.setView('research') },
-		{ label: 'Trading', onclick: () => navigationActions.setView('trading') },
-		{ label: 'Activity', onclick: () => navigationActions.setView('activity') }
+	const MAIN_NAVIGATION_CONTEXT = 'main-navigation';
+	const MAIN_NAVIGATION_PRIORITY = 100;
+
+	let navigationItems: Array<{
+		label: string;
+		view: GameView;
+		shortcutKey: string;
+		onclick: () => void;
+	}> = [
+		{
+			label: 'Planets',
+			view: 'planets',
+			shortcutKey: 'p',
+			onclick: () => navigationActions.setView('planets')
+		},
+		{
+			label: 'Fleets',
+			view: 'fleet',
+			shortcutKey: 'f',
+			onclick: () => navigationActions.setView('fleet')
+		},
+		{
+			label: 'Research',
+			view: 'research',
+			shortcutKey: 'r',
+			onclick: () => navigationActions.setView('research')
+		},
+		{
+			label: 'Trading',
+			view: 'trading',
+			shortcutKey: 't',
+			onclick: () => navigationActions.setView('trading')
+		},
+		{
+			label: 'Activity',
+			view: 'activity',
+			shortcutKey: 'i',
+			onclick: () => navigationActions.setView('activity')
+		}
 	];
+
+	const selectedNavigationIndex = $derived(
+		Math.max(
+			0,
+			navigationItems.findIndex((item) => item.view === $currentView)
+		)
+	);
 
 	function handleShowLobby() {
 		// Enable audio on first user interaction
@@ -127,6 +168,21 @@
 
 	onMount(() => {
 		console.log('Astriarch game component mounted');
+
+		for (const item of navigationItems) {
+			keyboardShortcutService.registerShortcut(
+				item.shortcutKey,
+				(event: KeyboardEvent) => {
+					if (!$clientGameModel || multiplayerState?.currentView !== 'game') {
+						return;
+					}
+					event.preventDefault();
+					navigationActions.setView(item.view);
+				},
+				MAIN_NAVIGATION_CONTEXT,
+				MAIN_NAVIGATION_PRIORITY
+			);
+		}
 
 		// Debug: Add a test notification to see if the system works
 		multiplayerGameStore.addNotification({
@@ -269,6 +325,7 @@
 	});
 
 	onDestroy(() => {
+		keyboardShortcutService.unregisterContext(MAIN_NAVIGATION_CONTEXT);
 		console.log('Astriarch game component destroyed');
 	});
 </script>
@@ -378,7 +435,11 @@
 					<div class="flex w-[600px] flex-shrink-0 flex-col">
 						<!-- Navigation Controller (Vertical) -->
 						<div class="flex-shrink-0">
-							<NavigationController items={navigationItems} orientation="vertical" />
+							<NavigationController
+								items={navigationItems}
+								selectedIndex={selectedNavigationIndex}
+								orientation="vertical"
+							/>
 						</div>
 
 						<!-- Current View Panel -->
@@ -459,7 +520,7 @@
 
 					<!-- Bottom Navigation -->
 					<div class="mt-1">
-						<NavigationController items={navigationItems} />
+						<NavigationController items={navigationItems} selectedIndex={selectedNavigationIndex} />
 					</div>
 				</div>
 			{/if}
