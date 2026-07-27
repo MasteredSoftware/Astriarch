@@ -3,6 +3,7 @@
 	import { Card } from '$lib/components/astriarch';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
+	import { getLabelParts } from '$lib/utils/hotkeyLabel';
 
 	let {
 		name,
@@ -45,21 +46,7 @@
 		}
 	}
 
-	// Generate underlined text for hotkey display
-	function getUnderlinedText(text: string, hotkey: string): string {
-		const index = text.toLowerCase().indexOf(hotkey.toLowerCase());
-		if (index === -1) return text;
-
-		return (
-			text.substring(0, index) +
-			'<u class="underline decoration-2">' +
-			text.substring(index, index + 1) +
-			'</u>' +
-			text.substring(index + 1)
-		);
-	}
-
-	let displayName = $derived(hotkey ? getUnderlinedText(name, hotkey) : name);
+	const labelParts = $derived(getLabelParts(name, hotkey));
 
 	// Register hotkey on mount
 	onMount(() => {
@@ -101,8 +88,12 @@
                   {enabled ? '' : 'text-astriarch-ui-medium-grey'}"
 			>
 				{#if hotkey}
-					<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-					{@html displayName}
+					{#if labelParts.match}
+						{labelParts.before}<u class="underline decoration-2">{labelParts.match}</u
+						>{labelParts.after}
+					{:else}
+						{name}
+					{/if}
 				{:else}
 					{name}
 				{/if}
