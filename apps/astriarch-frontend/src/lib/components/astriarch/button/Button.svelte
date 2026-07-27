@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
 	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
+	import { getLabelParts } from '$lib/utils/hotkeyLabel';
 	import type { Size } from '../types.js';
 	import ButtonSvg from './ButtonSvg.svelte';
 
@@ -89,32 +90,7 @@
     pointer-events: none;
   `);
 
-	/**
-	 * Underline the first occurrence of the hotkey character in the text
-	 */
-	function getUnderlinedText(text: string, hotkeyChar: string): string {
-		const upperText = text.toUpperCase();
-		const upperHotkey = hotkeyChar.toUpperCase();
-		const index = upperText.indexOf(upperHotkey);
-
-		if (index !== -1) {
-			return (
-				text.substring(0, index) +
-				'<u class="hotkeyChar">' +
-				text.charAt(index) +
-				'</u>' +
-				text.substring(index + 1)
-			);
-		}
-
-		return text;
-	}
-
-	// Computed display text with hotkey underlined
-	let displayText = $derived.by(() => {
-		if (!hotkey || !label) return label;
-		return getUnderlinedText(label, hotkey);
-	});
+	const labelParts = $derived(getLabelParts(label, hotkey));
 
 	function handleClick() {
 		if (!disabled) {
@@ -165,8 +141,11 @@
 		{#if children}
 			{@render children()}
 		{:else if hotkey && label}
-			<!-- eslint-disable-next-line svelte/no-at-html-tags -->
-			{@html displayText}
+			{#if labelParts.match}
+				{labelParts.before}<u class="hotkeyChar">{labelParts.match}</u>{labelParts.after}
+			{:else}
+				{label}
+			{/if}
 		{:else}
 			{label}
 		{/if}
