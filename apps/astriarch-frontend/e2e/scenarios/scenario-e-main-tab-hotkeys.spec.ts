@@ -58,11 +58,11 @@ test('main tab hotkeys navigate views and preserve fleet select-all on A', async
 	await waitForGameView(page);
 
 	// Verify visual shortcut cue underlines are present on main navigation tabs.
-	await expect(getTabContainer(page, 'Planets').locator('u')).toHaveText('P');
+	await expect(getTabContainer(page, 'Planets').locator('u')).toHaveText('E');
 	await expect(getTabContainer(page, 'Fleets').locator('u')).toHaveText('F');
 	await expect(getTabContainer(page, 'Research').locator('u')).toHaveText('R');
 	await expect(getTabContainer(page, 'Trading').locator('u')).toHaveText('T');
-	await expect(getTabContainer(page, 'Activity').locator('u')).toHaveText('I');
+	await expect(getTabContainer(page, 'Activity').locator('u')).toHaveText('C');
 
 	await expectTabSelected(page, 'Planets', ['Fleets', 'Research', 'Trading', 'Activity']);
 
@@ -89,24 +89,24 @@ test('main tab hotkeys navigate views and preserve fleet select-all on A', async
 	await expect(page.getByText('Trading from', { exact: false })).toBeVisible({ timeout: 10_000 });
 	await expectTabSelected(page, 'Trading', ['Planets', 'Fleets', 'Research', 'Activity']);
 
-	await page.keyboard.press('i');
+	await page.keyboard.press('c');
 	await expect(page.getByText('Activity Center', { exact: false })).toBeVisible({
 		timeout: 10_000
 	});
 	await expectTabSelected(page, 'Activity', ['Planets', 'Fleets', 'Research', 'Trading']);
 
-	await page.keyboard.press('p');
+	await page.keyboard.press('e');
 	await expect(page.getByText('Build Items', { exact: false })).toBeVisible({ timeout: 10_000 });
 	await expectTabSelected(page, 'Planets', ['Fleets', 'Research', 'Trading', 'Activity']);
 
-	// Space Platform is remapped to X; pressing X should enqueue it in the build queue.
+	// Space Platform is back on P; pressing P should enqueue it in the build queue.
 	const buildQueueSection = page.locator('div', {
 		has: page.getByRole('heading', { name: 'Build Queue' })
 	});
 	const buildQueueRemoveButtons = buildQueueSection.locator('button', { hasText: '✕' });
 	const initialQueueCount = await buildQueueRemoveButtons.count();
 
-	await page.keyboard.press('x');
+	await page.keyboard.press('p');
 	await expect
 		.poll(async () => await buildQueueRemoveButtons.count(), { timeout: 10_000 })
 		.toBe(initialQueueCount + 1);

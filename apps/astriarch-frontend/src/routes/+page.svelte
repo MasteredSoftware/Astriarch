@@ -75,7 +75,7 @@
 		{
 			label: 'Planets',
 			view: 'planets',
-			shortcutKey: 'p',
+			shortcutKey: 'e',
 			onclick: () => navigationActions.setView('planets')
 		},
 		{
@@ -99,7 +99,7 @@
 		{
 			label: 'Activity',
 			view: 'activity',
-			shortcutKey: 'i',
+			shortcutKey: 'c',
 			onclick: () => navigationActions.setView('activity')
 		}
 	];
