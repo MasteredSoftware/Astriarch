@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Text from '../text/Text.svelte';
+	import { getLabelParts } from '$lib/utils/hotkeyLabel';
 	import NavigationTabSelectedSvg from './NavigationTabSelectedSvg.svelte';
 	import NavigationTabUnselectedSvg from './NavigationTabUnselectedSvg.svelte';
 
@@ -12,12 +13,6 @@
 		orientation?: 'horizontal' | 'vertical';
 	}
 
-	interface LabelParts {
-		before: string;
-		match: string;
-		after: string;
-	}
-
 	let {
 		label,
 		shortcutKey,
@@ -26,23 +21,6 @@
 		onclick,
 		orientation = 'horizontal'
 	}: Props = $props();
-
-	function getLabelParts(text: string, key?: string): LabelParts {
-		if (!key) {
-			return { before: text, match: '', after: '' };
-		}
-
-		const matchIndex = text.toLowerCase().indexOf(key.toLowerCase());
-		if (matchIndex === -1) {
-			return { before: text, match: '', after: '' };
-		}
-
-		return {
-			before: text.slice(0, matchIndex),
-			match: text.slice(matchIndex, matchIndex + 1),
-			after: text.slice(matchIndex + 1)
-		};
-	}
 
 	const labelParts = $derived(getLabelParts(label, shortcutKey));
 </script>
