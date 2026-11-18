@@ -36,7 +36,6 @@ The engine exports game models, controllers, and messaging types that are consum
 - `pnpm --filter astriarch-frontend build` - Build SvelteKit app
 - `pnpm --filter astriarch-frontend test` - Run Vitest unit tests
 - `pnpm --filter astriarch-frontend lint` - Lint and format check
-- `pnpm --filter astriarch-frontend storybook` - Start Storybook component development
 
 ### Engine Package Development
 - `pnpm --filter astriarch-engine build` - Build engine package  
