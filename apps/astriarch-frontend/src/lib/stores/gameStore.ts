@@ -12,12 +12,12 @@ import {
 } from 'astriarch-engine';
 import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 import type { PlanetData } from 'astriarch-engine/src/model/planet';
-import { webSocketService } from '$lib/services/websocket';
+import { webSocketService } from '#lib/services/websocket.ts';
 import {
 	convertClientNotificationToUINotification,
 	isBuildCompletionNotification
-} from '$lib/utils/notificationUtils';
-import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+} from '#lib/utils/notificationUtils.ts';
+import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
 import type { ResearchProgressByType } from 'astriarch-engine/src/model';
 
 // Game state stores

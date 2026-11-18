@@ -1,5 +1,5 @@
-import { browser } from '$app/environment';
-import { env } from '$env/dynamic/public';
+import { browser } from '$app/env';
+import * as env from '$app/env/public';
 
 // Environment configuration for the frontend application
 export interface EnvironmentConfig {

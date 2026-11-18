@@ -1,15 +1,30 @@
 import tailwindcss from '@tailwindcss/vite';
+import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
+import { defineConfig } from 'vitest/config';
 import checker from 'vite-plugin-checker';
+import { isMainThread } from 'node:worker_threads';
 
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
-		sveltekit(),
-		checker({
-			typescript: true
-		})
+		sveltekit({
+			preprocess: vitePreprocess(),
+			adapter: adapter({
+				pages: 'build',
+				assets: 'build',
+				fallback: 'index.html',
+				precompress: false,
+				strict: true
+			})
+		}),
+		// SvelteKit 3 re-loads this config in a worker thread for route analysis;
+		// vite-plugin-checker assumes any worker thread is its own and crashes there
+		isMainThread &&
+			checker({
+				typescript: true
+			})
 	],
 	test: {
 		projects: [

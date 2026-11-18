@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { clientGameModel, selectedPlanetId, gameActions } from '$lib/stores/gameStore';
-	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
-	import { layoutMode } from '$lib/stores/layoutStore';
-	import { webSocketService } from '$lib/services/websocket';
+	import { clientGameModel, selectedPlanetId, gameActions } from '#lib/stores/gameStore.ts';
+	import { fleetCommandStore } from '#lib/stores/fleetCommandStore.ts';
+	import { layoutMode } from '#lib/stores/layoutStore.ts';
+	import { webSocketService } from '#lib/services/websocket.ts';
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
-	import { PlanetSelector, Button } from '$lib/components/astriarch';
+	import { PlanetSelector, Button } from '#lib/components/astriarch/index.ts';
 	import ShipCard from './ShipCard.svelte';
 
 	let selectedShipType: StarShipType | 'all' = 'all'; // ALL SHIPS tab selected by default

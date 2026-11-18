@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TopOverviewButton from './TopOverviewButton.svelte';
-	import { currentGameSpeedNumber, gameActions } from '$lib/stores/gameStore';
+	import { currentGameSpeedNumber, gameActions } from '#lib/stores/gameStore.ts';
 
 	interface Props {
 		disabled?: boolean;

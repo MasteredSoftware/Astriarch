@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Text } from '$lib/components/astriarch';
-	import type { IGame } from '$lib/services/websocket';
+	import { Text } from '#lib/components/astriarch/index.ts';
+	import type { IGame } from '#lib/services/websocket.ts';
 
 	export let games: IGame[] = [];
 	export let selectedGame: IGame | null = null;

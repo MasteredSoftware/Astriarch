@@ -1,8 +1,13 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { clientGameModel, gameGrid, gameActions, selectedPlanetId } from '$lib/stores/gameStore';
-	import { fleetCommandStore } from '$lib/stores/fleetCommandStore';
-	import { layoutMode, layoutDimensions } from '$lib/stores/layoutStore';
+	import {
+		clientGameModel,
+		gameGrid,
+		gameActions,
+		selectedPlanetId
+	} from '#lib/stores/gameStore.ts';
+	import { fleetCommandStore } from '#lib/stores/fleetCommandStore.ts';
+	import { layoutMode, layoutDimensions } from '#lib/stores/layoutStore.ts';
 	import type { ClientModelData, Grid } from 'astriarch-engine';
 	import {
 		// eslint-disable-next-line @typescript-eslint/no-unused-vars

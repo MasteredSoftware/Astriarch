@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { audioActions, audioStatus } from '$lib/stores/audioStore';
+	import { audioActions, audioStatus } from '#lib/stores/audioStore.ts';
 
 	// Component props for customization
 	interface Props {

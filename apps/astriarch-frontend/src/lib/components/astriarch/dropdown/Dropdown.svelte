@@ -1,5 +1,5 @@
 <script lang="ts">
-	import * as Select from '$lib/components/ui/select';
+	import * as Select from '#lib/components/ui/select/index.ts';
 	import DropdownSvg from './DropdownSvg.svelte';
 
 	interface DropdownOption {

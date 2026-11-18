@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Text, Button } from '$lib/components/astriarch';
-	import { webSocketService, type IGame } from '$lib/services/websocket';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+	import { Text, Button } from '#lib/components/astriarch/index.ts';
+	import { webSocketService, type IGame } from '#lib/services/websocket.ts';
+	import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
 	import GameList from './GameList.svelte';
 	import GameDetails from './GameDetails.svelte';
 	import GameOptionsView from './GameOptionsView.svelte';

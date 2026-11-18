@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { type GameOverState } from '$lib/stores/multiplayerGameStore';
-	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
+	import { type GameOverState } from '#lib/stores/multiplayerGameStore.ts';
+	import Dialog from '#lib/components/astriarch/dialog/Dialog.svelte';
 
 	export let gameOverState: GameOverState;
 	export let onClose: () => void = () => {};

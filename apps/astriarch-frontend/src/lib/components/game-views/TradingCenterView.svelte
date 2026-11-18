@@ -1,11 +1,11 @@
 <script lang="ts">
-	import { clientGameModel, selectedPlanet } from '$lib/stores/gameStore';
-	import { layoutMode } from '$lib/stores/layoutStore';
-	import { webSocketService } from '$lib/services/websocket';
+	import { clientGameModel, selectedPlanet } from '#lib/stores/gameStore.ts';
+	import { layoutMode } from '#lib/stores/layoutStore.ts';
+	import { webSocketService } from '#lib/services/websocket.ts';
 	import { GameModel } from 'astriarch-engine/src/engine/gameModel';
 	import { TradeType, TradingCenterResourceType } from 'astriarch-engine/src/model/tradingCenter';
 	import type { PlanetData } from 'astriarch-engine/src/model/planet';
-	import { IconImage } from '$lib/components/astriarch';
+	import { IconImage } from '#lib/components/astriarch/index.ts';
 
 	// Trading state
 	let selectedTradeType: TradeType = TradeType.BUY;

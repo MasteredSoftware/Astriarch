@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
-import type { IGame } from '$lib/services/websocket';
-import { PlayerStorage } from '$lib/utils/playerStorage';
+import type { IGame } from '#lib/services/websocket.ts';
+import { PlayerStorage } from '#lib/utils/playerStorage.ts';
 import type { ClientEvent, PlanetaryConflictData } from 'astriarch-engine';
 
 // WebSocket multiplayer game state interface

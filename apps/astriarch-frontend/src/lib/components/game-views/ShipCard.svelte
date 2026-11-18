@@ -2,8 +2,8 @@
 	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
 	import { Fleet } from 'astriarch-engine/src/engine/fleet';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
-	import IconImage from '$lib/components/astriarch/icon-image/IconImage.svelte';
-	import type { IconImageType } from '$lib/components/astriarch/types.js';
+	import IconImage from '#lib/components/astriarch/icon-image/IconImage.svelte';
+	import type { IconImageType } from '#lib/components/astriarch/types.ts';
 
 	export let ship: StarshipData;
 	export let isSelected: boolean = false;

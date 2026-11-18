@@ -1,4 +1,4 @@
-import { getApiUrl } from '$lib/config/environment';
+import { getApiUrl } from '#lib/config/environment.ts';
 
 export interface HighScoreEntry {
 	playerName: string;

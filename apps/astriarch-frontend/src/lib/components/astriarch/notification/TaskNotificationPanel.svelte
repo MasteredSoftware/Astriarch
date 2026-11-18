@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { clientGameModel } from '$lib/stores/gameStore';
+	import { clientGameModel } from '#lib/stores/gameStore.ts';
 	import { derived } from 'svelte/store';
 	import TaskItem from './TaskItem.svelte';
 	import type { TaskNotification } from 'astriarch-engine/src/model/clientModel';

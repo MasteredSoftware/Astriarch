@@ -1,7 +1,7 @@
 <script lang="ts">
-	import NotificationSvgSmall from '$lib/assets/notification/NotificationSvgSmall.svelte';
-	import NotificationSvgMedium from '$lib/assets/notification/NotificationSvgMedium.svelte';
-	import NotificationSvgLarge from '$lib/assets/notification/NotificationSvgLarge.svelte';
+	import NotificationSvgSmall from '#lib/assets/notification/NotificationSvgSmall.svelte';
+	import NotificationSvgMedium from '#lib/assets/notification/NotificationSvgMedium.svelte';
+	import NotificationSvgLarge from '#lib/assets/notification/NotificationSvgLarge.svelte';
 	import type { Size } from '../types.js';
 
 	interface Props {

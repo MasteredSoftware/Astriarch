@@ -4,15 +4,15 @@
 		AvailablePlanetProductionItem,
 		Dialog,
 		PlanetSelector
-	} from '$lib/components/astriarch';
+	} from '#lib/components/astriarch/index.ts';
 	import {
 		clientGameModel,
 		gameActions,
 		selectedPlanet,
 		selectedPlanetId
-	} from '$lib/stores/gameStore';
-	import { layoutMode } from '$lib/stores/layoutStore';
-	import { webSocketService } from '$lib/services/websocket';
+	} from '#lib/stores/gameStore.ts';
+	import { layoutMode } from '#lib/stores/layoutStore.ts';
+	import { webSocketService } from '#lib/services/websocket.ts';
 	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import {
 		PlanetProductionItem,

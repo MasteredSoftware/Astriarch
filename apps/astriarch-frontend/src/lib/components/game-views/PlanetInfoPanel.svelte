@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Text } from '$lib/components/astriarch';
-	import { clientGameModel } from '$lib/stores/gameStore';
-	import { selectedPlanet } from '$lib/stores/gameStore';
+	import { Text } from '#lib/components/astriarch/index.ts';
+	import { clientGameModel } from '#lib/stores/gameStore.ts';
+	import { selectedPlanet } from '#lib/stores/gameStore.ts';
 	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
 	import type { PlanetData } from 'astriarch-engine/src/model/planet';
 	import type { LastKnownFleetData } from 'astriarch-engine/src/model/fleet';

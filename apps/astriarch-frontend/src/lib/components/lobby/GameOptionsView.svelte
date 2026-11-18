@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
-	import { Text, Button } from '$lib/components/astriarch';
-	import { webSocketService } from '$lib/services/websocket';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
+	import { Text, Button } from '#lib/components/astriarch/index.ts';
+	import { webSocketService } from '#lib/services/websocket.ts';
+	import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
 	import { getDefaultServerGameOptions } from 'astriarch-engine';
 	import type { IPlayer } from 'astriarch-engine';
 

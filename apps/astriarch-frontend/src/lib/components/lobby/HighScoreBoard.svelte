@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Text } from '$lib/components/astriarch';
-	import { fetchHighScores, type HighScoreEntry } from '$lib/services/highScoreService';
+	import { Text } from '#lib/components/astriarch/index.ts';
+	import { fetchHighScores, type HighScoreEntry } from '#lib/services/highScoreService.ts';
 
 	let allTime: HighScoreEntry[] = $state([]);
 	let recent: HighScoreEntry[] = $state([]);

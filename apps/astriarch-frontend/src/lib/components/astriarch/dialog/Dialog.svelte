@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Dialog from '$lib/components/ui/dialog';
-	import { Button as AstriarchButton } from '$lib/components/astriarch';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import * as Dialog from '#lib/components/ui/dialog/index.ts';
+	import { Button as AstriarchButton } from '#lib/components/astriarch/index.ts';
 
 	interface Props {
 		title?: string;

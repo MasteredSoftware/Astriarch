@@ -1,6 +1,6 @@
 <script lang="ts">
 	import Text from '../text/Text.svelte';
-	import { getLabelParts } from '$lib/utils/hotkeyLabel';
+	import { getLabelParts } from '#lib/utils/hotkeyLabel.ts';
 	import NavigationTabSelectedSvg from './NavigationTabSelectedSvg.svelte';
 	import NavigationTabUnselectedSvg from './NavigationTabUnselectedSvg.svelte';
 

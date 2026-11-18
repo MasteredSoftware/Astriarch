@@ -1,7 +1,7 @@
 <script lang="ts">
-	import TabControllerSvgBaselineSmall from '$lib/assets/tab-controller/TabControllerSvgBaselineSmall.svelte';
-	import TabControllerSvgBaselineMedium from '$lib/assets/tab-controller/TabControllerSvgBaselineMedium.svelte';
-	import TabControllerSvgBaselineLarge from '$lib/assets/tab-controller/TabControllerSvgBaselineLarge.svelte';
+	import TabControllerSvgBaselineSmall from '#lib/assets/tab-controller/TabControllerSvgBaselineSmall.svelte';
+	import TabControllerSvgBaselineMedium from '#lib/assets/tab-controller/TabControllerSvgBaselineMedium.svelte';
+	import TabControllerSvgBaselineLarge from '#lib/assets/tab-controller/TabControllerSvgBaselineLarge.svelte';
 	import Tab from '../tab/Tab.svelte';
 	import type { TabControllerTab, Size } from '../types.js';
 
