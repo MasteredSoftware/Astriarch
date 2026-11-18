@@ -18,7 +18,7 @@
 - Root: `pnpm build`, `pnpm test`, `pnpm lint` run across all workspaces (see [package.json](package.json)).
 - Backend: `pnpm --filter astriarch-backend dev` for hot reload (tsx watch). MongoDB expected via `docker-compose up -d mongodb` (see [docker-compose.yml](docker-compose.yml)).
 - Frontend: `pnpm --filter astriarch-frontend dev` for Vite/SvelteKit.
-- Engine: `pnpm --filter astriarch-engine test` (Jest, runInBand).
+- Engine: `pnpm --filter astriarch-engine test` (Vitest).
 
 ## Project-specific conventions
 - WebSocket message shapes and type guards are centralized; update both server handlers and frontend service together when adding message types.
