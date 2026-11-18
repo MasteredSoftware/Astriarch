@@ -1,19 +1,19 @@
 <script lang="ts">
-	import { Button } from '$lib/components/astriarch';
-	import TabController from '$lib/components/astriarch/tab-controller/TabController.svelte';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
-	import { layoutMode } from '$lib/stores/layoutStore';
+	import { Button } from '#lib/components/astriarch/index.ts';
+	import TabController from '#lib/components/astriarch/tab-controller/TabController.svelte';
+	import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
+	import { layoutMode } from '#lib/stores/layoutStore.ts';
 	import {
 		activityLog,
 		importantActivities,
 		combatActivities,
 		activityStore
-	} from '$lib/stores/activityStore';
-	import { gameActions } from '$lib/stores/gameStore';
-	import type { ActivityLogEntry } from '$lib/stores/activityStore';
+	} from '#lib/stores/activityStore.ts';
+	import { gameActions } from '#lib/stores/gameStore.ts';
+	import type { ActivityLogEntry } from '#lib/stores/activityStore.ts';
 	import { Fleet, GameTools } from 'astriarch-engine';
 	import type { StarshipData } from 'astriarch-engine';
-	import { webSocketService } from '$lib/services/websocket';
+	import { webSocketService } from '#lib/services/websocket.ts';
 
 	// State for tab selection and UI
 	let currentTabIndex = $state(0); // Track the current tab index

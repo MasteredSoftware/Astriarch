@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Button } from '$lib/components/ui/button';
-	import * as Card from '$lib/components/ui/card';
-	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '#lib/components/ui/button/index.ts';
+	import * as Card from '#lib/components/ui/card/index.ts';
+	import { Badge } from '#lib/components/ui/badge/index.ts';
 
 	// Destructure Card components
 	const {
@@ -30,12 +30,12 @@
 		Tab,
 		AvailablePlanetProductionItem,
 		Dropdown
-	} from '$lib/components/astriarch';
-	import Logo from '$lib/components/atoms/Logo.svelte';
-	import WindowFrame from '$lib/components/atoms/WindowFrame.svelte';
-	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
-	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
-	import type { IconImageType, TabControllerTab } from '$lib/components/astriarch';
+	} from '#lib/components/astriarch/index.ts';
+	import Logo from '#lib/components/atoms/Logo.svelte';
+	import WindowFrame from '#lib/components/atoms/WindowFrame.svelte';
+	import GameOverModal from '#lib/components/game/GameOverModal.svelte';
+	import Dialog from '#lib/components/astriarch/dialog/Dialog.svelte';
+	import type { IconImageType, TabControllerTab } from '#lib/components/astriarch/index.ts';
 
 	// Get all available icon types for comprehensive testing
 	const allIconTypes: IconImageType[] = [

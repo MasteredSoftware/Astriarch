@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
-	import { getLabelParts } from '$lib/utils/hotkeyLabel';
+	import { keyboardShortcutService } from '#lib/services/keyboardShortcuts.ts';
+	import { getLabelParts } from '#lib/utils/hotkeyLabel.ts';
 	import type { Size } from '../types.js';
 	import ButtonSvg from './ButtonSvg.svelte';
 

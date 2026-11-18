@@ -40,6 +40,9 @@ jobs:
       - name: Unit tests
         run: pnpm run test
 
+      - name: Frontend production build
+        run: pnpm --filter astriarch-frontend build
+
   e2e-frontend:
     name: Frontend E2E Tests
     runs-on: ubuntu-latest

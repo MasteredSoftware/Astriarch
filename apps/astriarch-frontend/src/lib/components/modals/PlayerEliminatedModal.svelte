@@ -2,8 +2,8 @@
 	import {
 		multiplayerGameStore,
 		type PlayerEliminatedModalState
-	} from '$lib/stores/multiplayerGameStore';
-	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
+	} from '#lib/stores/multiplayerGameStore.ts';
+	import Dialog from '#lib/components/astriarch/dialog/Dialog.svelte';
 
 	export let modalState: PlayerEliminatedModalState;
 	export let onClose: () => void = () => {};

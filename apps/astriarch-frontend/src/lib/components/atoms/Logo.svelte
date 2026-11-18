@@ -1,6 +1,6 @@
 <script lang="ts">
 	// Import the SVG logo directly
-	import logoSvg from '$lib/assets/logo/logo.svg';
+	import logoSvg from '#lib/assets/logo/logo.svg';
 
 	export let size: 'sm' | 'md' | 'lg' | 'xl' = 'md';
 	export let variant: 'default' | 'white' | 'primary' = 'default';

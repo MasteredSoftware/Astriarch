@@ -10,10 +10,10 @@ import { StarShipType, Fleet } from 'astriarch-engine';
 import Konva from 'konva';
 
 // Import planet images
-import planetAsteroidImage from '$lib/assets/images/planet-asteroid.png';
-import planetDeadImage from '$lib/assets/images/planet-dead.png';
-import planetAridImage from '$lib/assets/images/planet-arid.png';
-import planetTerrestrialImage from '$lib/assets/images/planet-terestrial.png';
+import planetAsteroidImage from '#lib/assets/images/planet-asteroid.png';
+import planetDeadImage from '#lib/assets/images/planet-dead.png';
+import planetAridImage from '#lib/assets/images/planet-arid.png';
+import planetTerrestrialImage from '#lib/assets/images/planet-terestrial.png';
 
 const PLANET_SIZE = 20; // Base planet size matching original
 const PLANET_IMAGE_WIDTH = 36; // Width for planet images (wider aspect ratio)

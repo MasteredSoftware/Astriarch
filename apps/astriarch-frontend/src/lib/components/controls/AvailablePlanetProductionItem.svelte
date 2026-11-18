@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { Card } from '$lib/components/astriarch';
-	import * as Tooltip from '$lib/components/ui/tooltip';
-	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
-	import { getLabelParts } from '$lib/utils/hotkeyLabel';
+	import { Card } from '#lib/components/astriarch/index.ts';
+	import * as Tooltip from '#lib/components/ui/tooltip/index.ts';
+	import { keyboardShortcutService } from '#lib/services/keyboardShortcuts.ts';
+	import { getLabelParts } from '#lib/utils/hotkeyLabel.ts';
 
 	let {
 		name,

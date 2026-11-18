@@ -1,16 +1,16 @@
 <script lang="ts">
 	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
-	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
+	import { browser } from '$app/env';
+	import { keyboardShortcutService } from '#lib/services/keyboardShortcuts.ts';
 	import {
 		clientGameModel,
 		resourceData,
 		population,
 		gameTime,
 		isGameRunning
-	} from '$lib/stores/gameStore';
-	import { multiplayerGameStore } from '$lib/stores/multiplayerGameStore';
-	import type { MultiplayerGameState } from '$lib/stores/multiplayerGameStore';
+	} from '#lib/stores/gameStore.ts';
+	import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
+	import type { MultiplayerGameState } from '#lib/stores/multiplayerGameStore.ts';
 
 	// Get the notifications store from the multiplayerGameStore
 	const { notifications } = multiplayerGameStore;
@@ -18,32 +18,37 @@
 	// Create a reactive value for the multiplayer game state
 	let multiplayerState = $state<MultiplayerGameState | undefined>();
 
-	import { currentView, navigationActions, type GameView } from '$lib/stores/navigationStore';
-	import { audioActions, currentAudioPhase } from '$lib/stores/audioStore';
-	import { layoutMode } from '$lib/stores/layoutStore';
+	import { currentView, navigationActions, type GameView } from '#lib/stores/navigationStore.ts';
+	import { audioActions, currentAudioPhase } from '#lib/stores/audioStore.ts';
+	import { layoutMode } from '#lib/stores/layoutStore.ts';
 
-	import { TopOverview, NavigationController, Button, Text } from '$lib/components/astriarch';
-	import NotificationItem from '$lib/components/astriarch/notification/NotificationItem.svelte';
-	import TaskNotificationPanel from '$lib/components/astriarch/notification/TaskNotificationPanel.svelte';
-	import { Logo } from '$lib/components/atoms';
+	import {
+		TopOverview,
+		NavigationController,
+		Button,
+		Text
+	} from '#lib/components/astriarch/index.ts';
+	import NotificationItem from '#lib/components/astriarch/notification/NotificationItem.svelte';
+	import TaskNotificationPanel from '#lib/components/astriarch/notification/TaskNotificationPanel.svelte';
+	import { Logo } from '#lib/components/atoms/index.ts';
 
 	// Import game view components
-	import FleetCommandView from '$lib/components/game-views/FleetCommandView.svelte';
-	import PlanetOverviewView from '$lib/components/game-views/PlanetOverviewView.svelte';
-	import ResearchLabView from '$lib/components/game-views/ResearchLabView.svelte';
-	import TradingCenterView from '$lib/components/game-views/TradingCenterView.svelte';
-	import ActivityView from '$lib/components/game-views/ActivityView.svelte';
-	import PlanetInfoPanel from '$lib/components/game-views/PlanetInfoPanel.svelte';
-	import GameOverModal from '$lib/components/game/GameOverModal.svelte';
-	import GamePausedModal from '$lib/components/game/GamePausedModal.svelte';
-	import PlayerEliminatedModal from '$lib/components/modals/PlayerEliminatedModal.svelte';
-	import ExitGameDialog from '$lib/components/game/ExitGameDialog.svelte';
+	import FleetCommandView from '#lib/components/game-views/FleetCommandView.svelte';
+	import PlanetOverviewView from '#lib/components/game-views/PlanetOverviewView.svelte';
+	import ResearchLabView from '#lib/components/game-views/ResearchLabView.svelte';
+	import TradingCenterView from '#lib/components/game-views/TradingCenterView.svelte';
+	import ActivityView from '#lib/components/game-views/ActivityView.svelte';
+	import PlanetInfoPanel from '#lib/components/game-views/PlanetInfoPanel.svelte';
+	import GameOverModal from '#lib/components/game/GameOverModal.svelte';
+	import GamePausedModal from '#lib/components/game/GamePausedModal.svelte';
+	import PlayerEliminatedModal from '#lib/components/modals/PlayerEliminatedModal.svelte';
+	import ExitGameDialog from '#lib/components/game/ExitGameDialog.svelte';
 
 	// Import lobby components
-	import { LobbyView, HighScoreBoard } from '$lib/components/lobby';
+	import { LobbyView, HighScoreBoard } from '#lib/components/lobby/index.ts';
 
 	// Import websocket service
-	import { webSocketService } from '$lib/services/websocket';
+	import { webSocketService } from '#lib/services/websocket.ts';
 
 	// Dynamically import GalaxyCanvas to avoid SSR issues with Konva
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -57,7 +62,7 @@
 
 	$effect(() => {
 		if (browser && !GalaxyCanvas) {
-			import('$lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
+			import('#lib/components/galaxy/GalaxyCanvas.svelte').then((module) => {
 				GalaxyCanvas = module.default;
 			});
 		}

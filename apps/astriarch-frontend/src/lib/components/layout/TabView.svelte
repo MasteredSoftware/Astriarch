@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { currentView } from '$lib/stores/navigationStore';
+	import { currentView } from '#lib/stores/navigationStore.ts';
 
 	// Props
 	interface TabItem {

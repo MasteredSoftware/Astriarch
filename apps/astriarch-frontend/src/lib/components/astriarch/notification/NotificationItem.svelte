@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Notification from './Notification.svelte';
-	import type { GameNotification } from '$lib/stores/multiplayerGameStore';
+	import type { GameNotification } from '#lib/stores/multiplayerGameStore.ts';
 
 	interface Props {
 		notification: GameNotification;

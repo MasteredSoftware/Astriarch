@@ -1,5 +1,5 @@
 import { writable, derived } from 'svelte/store';
-import { browser } from '$app/environment';
+import { browser } from '$app/env';
 
 // Layout mode types
 export type LayoutMode = 'portrait' | 'landscape';

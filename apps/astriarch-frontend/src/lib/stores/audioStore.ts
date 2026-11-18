@@ -1,5 +1,5 @@
 import { writable, readable, derived } from 'svelte/store';
-import { audioService, type GamePhase } from '$lib/services/audioService';
+import { audioService, type GamePhase } from '#lib/services/audioService.ts';
 
 // Audio service state stores - with safe defaults for SSR
 export const isAudioEnabled = writable(audioService?.isEnabled() ?? false);

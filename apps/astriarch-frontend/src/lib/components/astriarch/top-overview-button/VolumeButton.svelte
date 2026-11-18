@@ -2,7 +2,7 @@
 	import TopOverviewButton from './TopOverviewButton.svelte';
 	import IconImage from '../icon-image/IconImage.svelte';
 	import AudioControls from '../../audio/AudioControls.svelte';
-	import { audioStatus } from '$lib/stores/audioStore';
+	import { audioStatus } from '#lib/stores/audioStore.ts';
 
 	interface Props {
 		disabled?: boolean;

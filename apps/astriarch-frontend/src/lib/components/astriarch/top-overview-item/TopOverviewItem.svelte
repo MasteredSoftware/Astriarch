@@ -2,7 +2,7 @@
 	import type { IconImageType } from '../types.js';
 	import Text from '../text/Text.svelte';
 	import IconImage from '../icon-image/IconImage.svelte';
-	import { toShortNumberString } from '$lib/utils/number-helper';
+	import { toShortNumberString } from '#lib/utils/number-helper.ts';
 
 	interface Props {
 		amount: number;

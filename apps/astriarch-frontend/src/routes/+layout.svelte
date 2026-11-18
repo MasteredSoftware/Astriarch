@@ -1,9 +1,9 @@
 <script lang="ts">
 	import '../app.css';
 	import { onMount } from 'svelte';
-	import { browser } from '$app/environment';
-	import { enableAudioOnFirstInteraction } from '$lib/stores/audioStore';
-	import { keyboardShortcutService } from '$lib/services/keyboardShortcuts';
+	import { browser } from '$app/env';
+	import { enableAudioOnFirstInteraction } from '#lib/stores/audioStore.ts';
+	import { keyboardShortcutService } from '#lib/services/keyboardShortcuts.ts';
 
 	let { children } = $props();
 

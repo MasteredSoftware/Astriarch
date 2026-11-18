@@ -47,7 +47,7 @@ Playwright end-to-end tests live in the frontend workspace and run against a rea
 
 Prerequisites:
 
-- Node.js 18+
+- Node.js 22.22+ (or 24.11+), required by SvelteKit 3 and the frontend toolchain
 - `pnpm install`
 - `npx playwright install chromium`
 - MongoDB running locally (`docker-compose up -d mongodb`)

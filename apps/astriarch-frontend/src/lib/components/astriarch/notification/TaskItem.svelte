@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { TaskNotification } from 'astriarch-engine/src/model/clientModel';
 	import { TaskNotificationType } from 'astriarch-engine/src/model/clientModel';
-	import { gameActions } from '$lib/stores/gameStore';
+	import { gameActions } from '#lib/stores/gameStore.ts';
 	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {

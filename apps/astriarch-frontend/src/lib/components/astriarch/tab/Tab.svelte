@@ -1,6 +1,6 @@
 <script lang="ts">
 	import TabSvgSelected from './TabSvgSelected.svelte';
-	import TabSvgUnselected from '$lib/assets/tab/TabSvgUnselected.svelte';
+	import TabSvgUnselected from '#lib/assets/tab/TabSvgUnselected.svelte';
 
 	interface Props {
 		label: string;

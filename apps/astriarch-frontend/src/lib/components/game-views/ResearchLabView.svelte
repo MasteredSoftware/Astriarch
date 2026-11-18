@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { Text, Button, IconImage, Dropdown } from '$lib/components/astriarch';
-	import { layoutMode } from '$lib/stores/layoutStore';
-	import { webSocketService } from '$lib/services/websocket';
+	import { Text, Button, IconImage, Dropdown } from '#lib/components/astriarch/index.ts';
+	import { layoutMode } from '#lib/stores/layoutStore.ts';
+	import { webSocketService } from '#lib/services/websocket.ts';
 	import { ResearchType } from 'astriarch-engine/src/model/research';
 	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 	import { Research } from 'astriarch-engine/src/engine/research';
 	import { Planet } from 'astriarch-engine/src/engine/planet';
-	import type { IconImageType } from '$lib/components/astriarch/types';
+	import type { IconImageType } from '#lib/components/astriarch/types.ts';
 
 	// No need to import SVG icons individually anymore
 
@@ -17,7 +17,7 @@
 		researchProgress,
 		currentResearchType,
 		researchPercent
-	} from '$lib/stores/gameStore';
+	} from '#lib/stores/gameStore.ts';
 
 	const clientModel = $derived($clientGameModel); // Use clientGameModel from gameStore instead
 	// Find the current player's data directly from clientModel (which contains the player data)

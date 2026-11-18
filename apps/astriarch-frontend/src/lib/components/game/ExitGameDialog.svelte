@@ -1,5 +1,5 @@
 <script lang="ts">
-	import Dialog from '$lib/components/astriarch/dialog/Dialog.svelte';
+	import Dialog from '#lib/components/astriarch/dialog/Dialog.svelte';
 
 	export let onExitToMainMenu: () => void = () => {};
 	export let onResignCommand: () => void = () => {};

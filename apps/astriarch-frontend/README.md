@@ -36,3 +36,21 @@ npm run build
 You can preview the production build with `npm run preview`.
 
 > To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+
+## Imports and shadcn-svelte components
+
+This app does not use SvelteKit's `$lib` alias. It uses the Node subpath import `#lib`, defined in the `imports` field of `package.json`. Specifiers must name an explicit file:
+
+- `#lib/foo.ts` for a module
+- `#lib/foo/index.ts` for a directory
+
+Extensionless specifiers are not resolved. `#lib/utils` is also ambiguous, because both `src/lib/utils.ts` and `src/lib/utils/` exist.
+
+The aliases in `components.json` point at `#lib/...`. After running `npx shadcn-svelte add <component>`, rewrite the generated imports to explicit files. For example:
+
+- `#lib/utils` becomes `#lib/utils.ts`
+- `#lib/components/ui/<name>` becomes `#lib/components/ui/<name>/index.ts`
+
+Then run `pnpm --filter astriarch-frontend check` and `pnpm --filter astriarch-frontend lint`.
+
+The shadcn-svelte CLI has not been verified against this config. Without a `svelte.config.js`, it may not resolve `#lib` at all.
