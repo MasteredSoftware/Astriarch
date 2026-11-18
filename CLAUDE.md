@@ -61,9 +61,8 @@ The engine exports game models, controllers, and messaging types that are consum
 - Frontend websocket service handles connection management and message routing
 
 ### Testing
-- Backend uses Jest for unit testing
-- SvelteKit frontend uses Vitest for component and unit testing  
-- Engine package has comprehensive Jest test suite
+- All packages use Vitest (backend, engine, and SvelteKit frontend); specs import `describe`/`it`/`expect`/`vi` explicitly from `vitest`
+- Vitest does not type-check specs; run `pnpm type-check` (builds the engine, then type-checks engine + backend including spec files)
 - Run individual package tests with `pnpm --filter <package-name> test`
 
 ## Current Branch Status

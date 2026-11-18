@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { getBackendConfig, resetBackendConfigCacheForTests, validateBackendConfig } from "./environment";
 
 describe("backend environment config", () => {

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ResearchData, ResearchType } from '../model/research';
 import { PlayerData } from '../model/player';
 import { startNewTestGame, TestGameData } from '../test/testUtils';

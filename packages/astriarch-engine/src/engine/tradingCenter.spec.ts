@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ClientModelData, PlanetById } from '../model/clientModel';
 import { PlayerData } from '../model/player';
 import { TradeType, TradingCenterResourceType } from '../model/tradingCenter';

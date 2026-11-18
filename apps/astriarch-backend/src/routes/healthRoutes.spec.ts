@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response } from "express";
 
 import { healthRoutes } from "./healthRoutes";
@@ -16,16 +17,16 @@ function getHealthRouteHandler() {
 
 describe("healthRoutes", () => {
   beforeEach(() => {
-    jest.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("returns the expected health payload and initializes session state", () => {
     const handler = getHealthRouteHandler();
-    const json = jest.fn();
+    const json = vi.fn();
 
     const req = {
       session: {},

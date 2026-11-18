@@ -12,23 +12,14 @@ export default tseslint.config(
       },
       ecmaVersion: 'latest',
       globals: {
-        // Adding globals for Node and Jest environments
+        // Adding globals for Node environment
         'process': 'readonly',
         'console': 'readonly',
         'module': 'readonly',
         'require': 'readonly',
         '__dirname': 'readonly',
         '__filename': 'readonly',
-        // Jest globals
-        'describe': 'readonly',
-        'it': 'readonly',
-        'test': 'readonly',
-        'expect': 'readonly',
-        'beforeAll': 'readonly',
-        'beforeEach': 'readonly',
-        'afterAll': 'readonly',
-        'afterEach': 'readonly',
-        'jest': 'readonly',
+        // Test globals are imported explicitly from vitest
       }
     },
     plugins: {
