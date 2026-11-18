@@ -37,6 +37,9 @@ jobs:
       - name: Format check
         run: pnpm run format:check
 
+      - name: Build engine
+        run: pnpm --filter astriarch-engine build
+
       - name: Type check
         run: pnpm run type-check
 
