@@ -18,8 +18,16 @@ import { Planet } from './engine/planet';
 import { PlanetProductionItem, CanBuildResult, CanBuildValidationResult } from './engine/planetProductionItem';
 import { Research } from './engine/research';
 import { TradingCenter } from './engine/tradingCenter';
-import { ClientModelData, PlanetById, ClientPlayer, PlanetLocation } from './model/clientModel';
-import { StarShipType, FleetData, StarshipData } from './model/fleet';
+import {
+  ClientModelData,
+  PlanetById,
+  ClientPlayer,
+  PlanetLocation,
+  ClientPlanet,
+  TaskNotification,
+  TaskNotificationType,
+} from './model/clientModel';
+import { StarShipType, FleetData, StarshipData, StarshipAdvantageData, LastKnownFleetData } from './model/fleet';
 import {
   GalaxySizeOption,
   GameOptions,
@@ -31,6 +39,7 @@ import {
 } from './model/model';
 import {
   PlanetProductionItemData,
+  PlanetProductionItemType,
   PlanetImprovementType,
   CitizenWorkerType,
   PlanetType,
@@ -38,7 +47,7 @@ import {
   PlanetData,
 } from './model/planet';
 import { PlayerData, PlayerType } from './model/player';
-import { ResearchType } from './model/research';
+import { ResearchType, ResearchProgressByType } from './model/research';
 import { TradeType, TradingCenterResourceType, TradeData, TradingCenterData } from './model/tradingCenter';
 import { Grid } from './engine/grid';
 import { PlanetaryConflictData, ResearchBoost, CombatResultDiff } from './model/battle';
@@ -53,9 +62,13 @@ export * from './engine/GameCommands';
 export { CommandProcessor } from './engine/CommandProcessor';
 export { EventApplicator } from './engine/EventApplicator';
 export { calculateRollingEventChecksum } from './engine/StateChecksum';
-export { calculateFleetCompositionHash } from './utils/stateChecksum';
-// NOTE: calculateClientModelChecksum and calculateClientModelChecksumComponents are no longer exported
-// Checksums are calculated automatically in Player.advanceGameClockForPlayer and stored in ClientModelData
+export {
+  calculateFleetCompositionHash,
+  calculateClientModelChecksum,
+  calculateClientModelChecksumComponents,
+} from './utils/stateChecksum';
+// NOTE: Checksums are calculated automatically in Player.advanceGameClockForPlayer and stored in ClientModelData.
+// The client checksum functions are exported for client-side desync diagnostics.
 
 // Export engine classes
 export { Player };
@@ -77,6 +90,7 @@ export { StarShipType };
 export { GalaxySizeOption };
 export { GameSpeed };
 export { PlanetsPerSystemOption };
+export { OpponentOptionType };
 export { ResearchType };
 export { CitizenWorkerType };
 export { PlanetType };
@@ -88,6 +102,8 @@ export { GALAXY_WIDTH };
 export { GALAXY_HEIGHT };
 export { TradeType };
 export { TradingCenterResourceType };
+export { TaskNotificationType };
+export { PlanetProductionItemType };
 
 // Export interfaces
 export type { PlayerData };
@@ -111,6 +127,9 @@ export type { PlanetaryConflictData, ResearchBoost, CombatResultDiff };
 export type { PlanetData };
 export type { TradeData };
 export type { TradingCenterData };
+export type { ClientPlanet, TaskNotification };
+export type { StarshipAdvantageData, LastKnownFleetData };
+export type { ResearchProgressByType };
 
 export const MS_PER_TICK = 200; // Time for client side refreshes
 

@@ -53,7 +53,7 @@
 	<!-- Tab panels -->
 	<div>
 		{#if tabs[tabIndex]?.children}
-			{@render tabs[tabIndex].children?.()}
+			{@render tabs[tabIndex]?.children?.()}
 		{/if}
 	</div>
 

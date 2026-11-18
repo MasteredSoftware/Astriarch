@@ -2,7 +2,7 @@
 	import { clientGameModel } from '#lib/stores/gameStore.ts';
 	import { derived } from 'svelte/store';
 	import TaskItem from './TaskItem.svelte';
-	import type { TaskNotification } from 'astriarch-engine/src/model/clientModel';
+	import type { TaskNotification } from 'astriarch-engine';
 
 	// Access task notifications directly from clientGameModel, just like FleetCommandView accesses ships
 	const taskNotifications = derived(clientGameModel, ($clientGameModel) => {

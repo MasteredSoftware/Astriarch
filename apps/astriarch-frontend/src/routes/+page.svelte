@@ -299,7 +299,7 @@
 				// Get the latest message(s) for the notification
 				const latestMessage = $chatMessages[$chatMessages.length - 1];
 				const notificationMessage =
-					newMessageCount === 1
+					newMessageCount === 1 && latestMessage
 						? `${latestMessage.playerName}: ${
 								latestMessage.message.length > 30
 									? latestMessage.message.substring(0, 30) + '...'

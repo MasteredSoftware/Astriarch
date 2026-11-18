@@ -3,8 +3,7 @@
 	import { Text, Button } from '#lib/components/astriarch/index.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
 	import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
-	import { getDefaultServerGameOptions } from 'astriarch-engine';
-	import type { IPlayer } from 'astriarch-engine';
+	import { getDefaultServerGameOptions, type IPlayer } from 'astriarch-engine';
 
 	export let gameId: string;
 	export let gameOptions = getDefaultServerGameOptions({});
@@ -71,7 +70,7 @@
 		formData.playerName = storePlayerName;
 	} else {
 		// Default to 'Player' if no custom name is stored
-		formData.playerName = gameOptions.playerName || gameOptions.mainPlayerName || 'Player';
+		formData.playerName = gameOptions.mainPlayerName || 'Player';
 	}
 
 	// React to changes in gameOptions prop (from server updates)

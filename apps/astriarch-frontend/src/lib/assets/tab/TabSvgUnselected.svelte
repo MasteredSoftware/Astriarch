@@ -1,6 +1,6 @@
 <script lang="ts">
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	let { id }: { id: string } = $props();
+	let { id: _id }: { id: string } = $props();
 </script>
 
 <svg width="205" height="37" viewBox="0 0 205 37" fill="none" xmlns="http://www.w3.org/2000/svg">

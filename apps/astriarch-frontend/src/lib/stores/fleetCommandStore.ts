@@ -3,7 +3,7 @@ import { writable } from 'svelte/store';
 export interface FleetCommandState {
 	isSelectingDestination: boolean;
 	sourcePlanetId: number | null;
-	selectedShipIds: Set<number>;
+	selectedShipIds: Set<string>;
 	destinationPlanetId: number | null;
 	isViewActive: boolean; // Track if Fleet Command View is currently active
 }
@@ -11,7 +11,7 @@ export interface FleetCommandState {
 const initialState: FleetCommandState = {
 	isSelectingDestination: false,
 	sourcePlanetId: null,
-	selectedShipIds: new Set(),
+	selectedShipIds: new Set<string>(),
 	destinationPlanetId: null,
 	isViewActive: false
 };
@@ -23,7 +23,7 @@ function createFleetCommandStore() {
 		subscribe,
 
 		// Actions
-		startSelectingDestination: (sourcePlanetId: number, selectedShipIds: Set<number>) =>
+		startSelectingDestination: (sourcePlanetId: number, selectedShipIds: Set<string>) =>
 			update((state) => ({
 				...state,
 				isSelectingDestination: true,
@@ -47,7 +47,7 @@ function createFleetCommandStore() {
 			})),
 
 		// Ship selection methods
-		toggleShipSelection: (shipId: number) =>
+		toggleShipSelection: (shipId: string) =>
 			update((state) => {
 				const newSelectedShipIds = new Set(state.selectedShipIds);
 				if (newSelectedShipIds.has(shipId)) {
@@ -61,7 +61,7 @@ function createFleetCommandStore() {
 				};
 			}),
 
-		setSelectedShips: (shipIds: number[]) =>
+		setSelectedShips: (shipIds: string[]) =>
 			update((state) => {
 				return {
 					...state,
@@ -91,7 +91,7 @@ function createFleetCommandStore() {
 				...state,
 				isSelectingDestination: false,
 				sourcePlanetId: null,
-				selectedShipIds: new Set(),
+				selectedShipIds: new Set<string>(),
 				destinationPlanetId: null
 			})),
 

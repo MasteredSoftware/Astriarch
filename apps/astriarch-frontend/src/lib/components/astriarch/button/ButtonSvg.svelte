@@ -14,16 +14,6 @@
 
 	let { size = 'lg', variant = 'primary' }: Props = $props();
 
-	// Map variants to colors
-	const colorByVariant = {
-		primary: '#00FFFF',
-		outline: undefined, // Uses outline/stroke only
-		secondary: '#888888',
-		warning: '#FF6B35',
-		danger: '#DC2626'
-	};
-
-	const fillColor = $derived(colorByVariant[variant]);
 	const isOutline = $derived(variant === 'outline');
 
 	const componentBySizeFilled = {
@@ -49,6 +39,6 @@
 	class="pointer-events-none absolute top-0 left-0 flex h-full w-full items-center justify-center"
 >
 	<div style="position: relative;">
-		<Component color={fillColor} />
+		<Component />
 	</div>
 </div>

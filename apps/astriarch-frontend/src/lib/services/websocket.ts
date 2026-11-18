@@ -25,12 +25,11 @@ import {
 	TradeType,
 	Player,
 	CommandProcessor,
-	Utils
-} from 'astriarch-engine';
-import {
+	Utils,
 	calculateClientModelChecksum,
-	calculateClientModelChecksumComponents
-} from 'astriarch-engine/src/utils/stateChecksum';
+	calculateClientModelChecksumComponents,
+	type StarshipAdvantageData
+} from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '#lib/stores/gameStore.ts';
@@ -64,7 +63,6 @@ import { audioService } from '#lib/services/audioService.ts';
 
 // Import environment configuration
 import { getBackendWsUrl, getHealthCheckUrl, config } from '#lib/config/environment.ts';
-import type { StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
 
 // Re-export types from engine for convenience
 export type { IGame, ServerGameOptions };

@@ -4,7 +4,7 @@
 	import { fleetCommandStore } from '#lib/stores/fleetCommandStore.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
-	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
+	import { StarShipType, type StarshipData } from 'astriarch-engine';
 	import { PlanetSelector, Button } from '#lib/components/astriarch/index.ts';
 	import ShipCard from './ShipCard.svelte';
 
@@ -26,7 +26,7 @@
 		}
 
 		// Auto-select first ship if no valid ships are currently selected
-		if (validSelections.length === 0) {
+		if (validSelections.length === 0 && ships[0]) {
 			fleetCommandStore.toggleShipSelection(ships[0].id);
 		}
 
@@ -73,7 +73,7 @@
 		{ type: StarShipType.Battleship, label: 'BATTLESHIP' }
 	];
 
-	function toggleShipSelection(shipId: number) {
+	function toggleShipSelection(shipId: string) {
 		fleetCommandStore.toggleShipSelection(shipId);
 	}
 
@@ -106,10 +106,10 @@
 
 		// Group selected ships by type
 		const shipsByType = {
-			scouts: [] as number[],
-			destroyers: [] as number[],
-			cruisers: [] as number[],
-			battleships: [] as number[]
+			scouts: [] as string[],
+			destroyers: [] as string[],
+			cruisers: [] as string[],
+			battleships: [] as string[]
 		};
 
 		ships.forEach((ship: StarshipData) => {

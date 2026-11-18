@@ -70,7 +70,7 @@
 
 	let showAstriarchDialog = $state(false);
 	let showGameOverModal = $state(false);
-	let gameOverScenario = $state('victory');
+	let gameOverScenario = $state<'victory' | 'defeat' | 'allDestroyed'>('victory');
 	let showAstriarchDialogTest = $state(false);
 	let showSvgDialog = $state(false);
 
@@ -230,25 +230,25 @@
 				label="Show Astriarch Dialog"
 				size="md"
 				variant="primary"
-				onClick={openAstriarchDialog}
+				onclick={openAstriarchDialog}
 			/>
 			<AstriarchButton
 				label="Show SVG Figma Dialog"
 				size="md"
 				variant="outline"
-				onClick={openSvgDialog}
+				onclick={openSvgDialog}
 			/>
 			<AstriarchButton
 				label="Game Over (Victory)"
 				size="md"
 				variant="primary"
-				onClick={() => openGameOverModal('victory')}
+				onclick={() => openGameOverModal('victory')}
 			/>
 			<AstriarchButton
 				label="Game Over (Defeat)"
 				size="md"
-				variant="destructive"
-				onClick={() => openGameOverModal('defeat')}
+				variant="danger"
+				onclick={() => openGameOverModal('defeat')}
 			/>
 		</div>
 

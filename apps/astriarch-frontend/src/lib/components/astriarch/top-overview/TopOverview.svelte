@@ -32,7 +32,7 @@
 	}
 </script>
 
-<div class="relative inline-flex gap-[4px] pl-[56px] {$$props.class || ''}" {...$$restProps}>
+<div class="relative inline-flex gap-[4px] pl-[56px] {$$props['class'] || ''}" {...$$restProps}>
 	<div class="inline-flex min-w-[765px]">
 		<TopOverviewItem type="population" amount={population} />
 		<TopOverviewItem

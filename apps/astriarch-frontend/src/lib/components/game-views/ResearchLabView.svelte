@@ -2,10 +2,13 @@
 	import { Text, Button, IconImage, Dropdown } from '#lib/components/astriarch/index.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
-	import { ResearchType } from 'astriarch-engine/src/model/research';
-	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
-	import { Research } from 'astriarch-engine/src/engine/research';
-	import { Planet } from 'astriarch-engine/src/engine/planet';
+	import {
+		ResearchType,
+		StarShipType,
+		type StarshipAdvantageData,
+		Research,
+		Planet
+	} from 'astriarch-engine';
 	import type { IconImageType } from '#lib/components/astriarch/types.ts';
 
 	// No need to import SVG icons individually anymore
@@ -189,7 +192,7 @@
 	});
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	function renderResourceBar(percentage: number, color: string) {
+	function renderResourceBar(percentage: number, _color: string) {
 		const filledBars = Math.round(percentage * 20);
 		const bars = [];
 		for (let i = 0; i < 20; i++) {

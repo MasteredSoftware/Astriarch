@@ -16,6 +16,7 @@
 		class?: string;
 		hotkey?: string; // Single character hotkey (e.g., 'a', 's', 'o')
 		hotkeyContext?: string; // Optional context for the hotkey
+		'data-testid'?: string;
 	}
 
 	let {

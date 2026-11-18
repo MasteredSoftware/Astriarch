@@ -2,8 +2,7 @@
 	import { onMount, onDestroy } from 'svelte';
 	import { keyboardShortcutService } from '#lib/services/keyboardShortcuts.ts';
 	import * as Select from '#lib/components/ui/select/index.ts';
-	import type { PlanetData } from 'astriarch-engine/src/model/planet';
-	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
+	import type { PlanetData, ClientPlanet } from 'astriarch-engine';
 
 	interface Props {
 		planets: (PlanetData | ClientPlanet)[];

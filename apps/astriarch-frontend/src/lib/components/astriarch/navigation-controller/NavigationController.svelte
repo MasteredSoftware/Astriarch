@@ -39,9 +39,7 @@
 		if (onchange) {
 			onchange(index);
 		}
-		if (items[index].onclick) {
-			items[index].onclick!();
-		}
+		items[index]?.onclick?.();
 	}
 </script>
 
@@ -82,7 +80,7 @@
 	<!-- Content area -->
 	<div>
 		{#if items[selectedTabIndex]?.content}
-			{@render items[selectedTabIndex].content()}
+			{@render items[selectedTabIndex]?.content?.()}
 		{/if}
 	</div>
 </div>
