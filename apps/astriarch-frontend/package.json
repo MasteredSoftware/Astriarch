@@ -31,7 +31,7 @@
 		"@eslint/js": "^9.18.0",
 		"@internationalized/date": "^3.8.2",
 		"@lucide/svelte": "^0.515.0",
-		"@playwright/test": "^1.59.1",
+		"@playwright/test": "^1.65.1",
 		"@storybook/addon-svelte-csf": "^5.0.6",
 		"@storybook/sveltekit": "^9.0.16",
 		"@sveltejs/adapter-auto": "^6.1.1",
