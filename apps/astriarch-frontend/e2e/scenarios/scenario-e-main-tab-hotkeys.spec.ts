@@ -58,11 +58,12 @@ test('main tab hotkeys navigate views and preserve fleet select-all on A', async
 	await waitForGameView(page);
 
 	// Verify visual shortcut cue underlines are present on main navigation tabs.
-	await expect(getTabContainer(page, 'Planets').locator('u')).toHaveText('E');
-	await expect(getTabContainer(page, 'Fleets').locator('u')).toHaveText('F');
-	await expect(getTabContainer(page, 'Research').locator('u')).toHaveText('R');
-	await expect(getTabContainer(page, 'Trading').locator('u')).toHaveText('T');
-	await expect(getTabContainer(page, 'Activity').locator('u')).toHaveText('C');
+	// Case-insensitive: the DOM holds the label's own letter (e.g. lowercase 'e' in 'Planets'); CSS uppercases it.
+	await expect(getTabContainer(page, 'Planets').locator('u')).toHaveText(/^E$/i);
+	await expect(getTabContainer(page, 'Fleets').locator('u')).toHaveText(/^F$/i);
+	await expect(getTabContainer(page, 'Research').locator('u')).toHaveText(/^R$/i);
+	await expect(getTabContainer(page, 'Trading').locator('u')).toHaveText(/^T$/i);
+	await expect(getTabContainer(page, 'Activity').locator('u')).toHaveText(/^C$/i);
 
 	await expectTabSelected(page, 'Planets', ['Fleets', 'Research', 'Trading', 'Activity']);
 
@@ -99,16 +100,22 @@ test('main tab hotkeys navigate views and preserve fleet select-all on A', async
 	await expect(page.getByText('Build Items', { exact: false })).toBeVisible({ timeout: 10_000 });
 	await expectTabSelected(page, 'Planets', ['Fleets', 'Research', 'Trading', 'Activity']);
 
-	// Space Platform is back on P; pressing P should enqueue it in the build queue.
+	// P is Space Platform's build hotkey, not a tab hotkey: it must not switch tabs.
+	// (A new game can't afford a Space Platform, so we don't expect it to be queued.)
+	await page.keyboard.press('p');
+	await expectTabSelected(page, 'Planets', ['Fleets', 'Research', 'Trading', 'Activity']);
+
+	// Remapped build hotkeys still work: Farm moved from R (now Research) to M and is
+	// affordable at game start, so pressing M should enqueue it.
 	const buildQueueSection = page.locator('div', {
 		has: page.getByRole('heading', { name: 'Build Queue' })
 	});
 	const buildQueueRemoveButtons = buildQueueSection.locator('button', { hasText: '✕' });
 	const initialQueueCount = await buildQueueRemoveButtons.count();
 
-	await page.keyboard.press('p');
+	await page.keyboard.press('m');
 	await expect
 		.poll(async () => await buildQueueRemoveButtons.count(), { timeout: 10_000 })
 		.toBe(initialQueueCount + 1);
-	await expect(page.getByText('Space Platform', { exact: false })).toBeVisible({ timeout: 10_000 });
+	await expectTabSelected(page, 'Planets', ['Fleets', 'Research', 'Trading', 'Activity']);
 });
