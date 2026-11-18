@@ -23,6 +23,44 @@
 		backToLobby: void;
 	}>();
 
+	// Static option lists. Declared before formData is mutated below: Svelte's legacy-mode
+	// compiler references these inside invalidate_inner_signals() for top-level formData
+	// mutations, so they must be initialized first to avoid a TDZ ReferenceError.
+	// Galaxy size options
+	const galaxySizeOptions = [
+		{ value: 1, label: 'Tiny' },
+		{ value: 2, label: 'Small' },
+		{ value: 3, label: 'Medium' },
+		{ value: 4, label: 'Large' }
+	];
+
+	// Systems/Players options
+	const systemsOptions = [
+		{ value: 2, label: '2' },
+		{ value: 3, label: '3' },
+		{ value: 4, label: '4' }
+	];
+
+	// Game speed options
+	const gameSpeedOptions = [
+		{ value: 1, label: 'Very Slow' },
+		{ value: 2, label: 'Slow' },
+		{ value: 3, label: 'Normal' },
+		{ value: 4, label: 'Fast' },
+		{ value: 5, label: 'Very Fast' }
+	];
+
+	// Player type options
+	const playerTypeOptions = [
+		{ value: -2, label: 'Closed' },
+		{ value: -1, label: 'Open' },
+		{ value: 0, label: 'Human', disabled: true }, // Will be set dynamically for human players
+		{ value: 1, label: 'Easy Computer' },
+		{ value: 2, label: 'Normal Computer' },
+		{ value: 3, label: 'Hard Computer' },
+		{ value: 4, label: 'Expert Computer' }
+	];
+
 	// Game options with defaults matching old game
 	let formData = JSON.parse(JSON.stringify(gameOptions));
 
@@ -57,21 +95,6 @@
 		}
 	}
 
-	// Galaxy size options
-	const galaxySizeOptions = [
-		{ value: 1, label: 'Tiny' },
-		{ value: 2, label: 'Small' },
-		{ value: 3, label: 'Medium' },
-		{ value: 4, label: 'Large' }
-	];
-
-	// Systems/Players options
-	const systemsOptions = [
-		{ value: 2, label: '2' },
-		{ value: 3, label: '3' },
-		{ value: 4, label: '4' }
-	];
-
 	// Planets per system options (dynamically updated based on galaxy size)
 	$: planetsPerSystemOptions = getPlanetsPerSystemOptions(formData.galaxySize);
 
@@ -83,26 +106,6 @@
 		}
 		return options;
 	}
-
-	// Game speed options
-	const gameSpeedOptions = [
-		{ value: 1, label: 'Very Slow' },
-		{ value: 2, label: 'Slow' },
-		{ value: 3, label: 'Normal' },
-		{ value: 4, label: 'Fast' },
-		{ value: 5, label: 'Very Fast' }
-	];
-
-	// Player type options
-	const playerTypeOptions = [
-		{ value: -2, label: 'Closed' },
-		{ value: -1, label: 'Open' },
-		{ value: 0, label: 'Human', disabled: true }, // Will be set dynamically for human players
-		{ value: 1, label: 'Easy Computer' },
-		{ value: 2, label: 'Normal Computer' },
-		{ value: 3, label: 'Hard Computer' },
-		{ value: 4, label: 'Expert Computer' }
-	];
 
 	// Update planets per system when galaxy size changes
 	$: {
