@@ -1,3 +1,4 @@
+import { describe, it, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlanetById } from '../model/clientModel';
 import { PlayerData, PlayerType } from '../model/player';
 import { StarShipType } from '../model/fleet';
@@ -105,9 +106,9 @@ function debugAIvsAIMatchup(fileName: string, label: string, wins: Record<string
 describe('ComputerPlayer', () => {
   beforeEach(() => {
     if (!shouldShowTestDebugOutput) {
-      jest.spyOn(console, 'log').mockImplementation(() => {});
-      jest.spyOn(console, 'warn').mockImplementation(() => {});
-      jest.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      vi.spyOn(console, 'warn').mockImplementation(() => {});
+      vi.spyOn(console, 'error').mockImplementation(() => {});
     }
 
     testGameData = startNewTestGame();
@@ -117,7 +118,7 @@ describe('ComputerPlayer', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('computerManageResearch', () => {

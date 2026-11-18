@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach } from 'vitest';
 import { Player } from './player';
 import { PlanetData, CitizenWorkerType, Citizen, PlanetHappinessType } from '../model/planet';
 import { PlayerData } from '../model/player';

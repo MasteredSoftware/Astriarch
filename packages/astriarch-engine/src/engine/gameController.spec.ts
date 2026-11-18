@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlayerType, PlayerData } from '../model/player';
 import { startNewTestGame, startNewTestGameWithOptions } from '../test/testUtils';
 import { ClientGameModel } from './clientGameModel';
@@ -67,7 +68,7 @@ describe('GameController', () => {
 
   describe('advanceGameClockTo() AI command processing', () => {
     afterEach(() => {
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('should process AI trades on authoritative modelData', () => {
@@ -90,7 +91,7 @@ describe('GameController', () => {
         },
       };
 
-      jest.spyOn(ComputerPlayer, 'computerTakeTurn').mockReturnValue([tradeCommand]);
+      vi.spyOn(ComputerPlayer, 'computerTakeTurn').mockReturnValue([tradeCommand]);
 
       const snapshotData = {
         cyclesElapsed: 0,
@@ -121,7 +122,7 @@ describe('GameController', () => {
         researchPercent: 0.5,
       };
 
-      jest.spyOn(ComputerPlayer, 'computerTakeTurn').mockReturnValue([researchCommand]);
+      vi.spyOn(ComputerPlayer, 'computerTakeTurn').mockReturnValue([researchCommand]);
 
       const snapshotData = {
         cyclesElapsed: 0,

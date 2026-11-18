@@ -1,3 +1,4 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlanetById } from '../model/clientModel';
 import { CitizenWorkerType, PlanetData, PlanetType, PlanetProductionItemType } from '../model/planet';
 import { PlayerData } from '../model/player';
@@ -90,7 +91,7 @@ describe('Planet', function () {
     });
 
     it('should error and return early when diffs do not sum to zero', () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       // This should fail because 1 + 1 + 0 = 2 (not zero)
       Planet.updatePopulationWorkerTypesByDiff(testPlanet, player1, 1, 1, 0);
@@ -529,7 +530,7 @@ describe('Planet', function () {
 
     describe('when there are insufficient resources across all planets', () => {
       it('should spend what it can and warn about insufficient resources', () => {
-        const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+        const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
         // Try to spend more ore than available across all planets (20 + 80 = 100 available, asking for 150)
         Planet.spendResources(testGameData.gameModel.grid, player1, planetById, homePlanet, 0, 0, 150, 0);
