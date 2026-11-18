@@ -6,7 +6,7 @@
     "clean": "rm -rf node_modules && pnpm run -r clean",
     "build": "pnpm run -r build",
     "test": "pnpm run -r test",
-    "type-check": "pnpm run -r type-check",
+    "type-check": "pnpm --filter astriarch-engine build && pnpm run -r type-check",
     "format": "pnpm run -r format",
     "format:check": "pnpm run -r format:check",
     "lint": "pnpm run -r lint",

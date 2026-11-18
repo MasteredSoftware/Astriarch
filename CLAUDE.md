@@ -62,7 +62,7 @@ The engine exports game models, controllers, and messaging types that are consum
 
 ### Testing
 - All packages use Vitest (backend, engine, and SvelteKit frontend); specs import `describe`/`it`/`expect`/`vi` explicitly from `vitest`
-- Vitest does not type-check specs; run `pnpm type-check` (engine + backend, includes spec files)
+- Vitest does not type-check specs; run `pnpm type-check` (builds the engine, then type-checks engine + backend including spec files)
 - Run individual package tests with `pnpm --filter <package-name> test`
 
 ## Current Branch Status
