@@ -2,7 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text } from '#lib/components/astriarch/index.ts';
 	import type { IGame } from '#lib/services/websocket.ts';
-	import { OpponentOptionType } from 'astriarch-engine';
+	import { getMaxPlayers } from '#lib/utils/lobby.ts';
 
 	export let games: IGame[] = [];
 	export let selectedGame: IGame | null = null;
@@ -29,13 +29,6 @@
 		if (game.status === 'in_progress') return 'In Progress';
 		if (game.status === 'completed') return 'Completed';
 		return 'Unknown';
-	}
-
-	function getMaxPlayers(game: IGame): number {
-		const openSlots = game.gameOptions?.opponentOptions?.filter(
-			(o) => o.type !== OpponentOptionType.CLOSED
-		).length;
-		return 1 + (openSlots ?? 3);
 	}
 
 	function getStatusColor(game: IGame): string {
