@@ -40,6 +40,7 @@ The engine exports game models, controllers, and messaging types that are consum
 
 ### Engine Package Development
 - `pnpm --filter astriarch-engine build` - Build engine package  
+- `pnpm --filter astriarch-engine dev` - Rebuild engine `dist` on change (tsup --watch); run alongside the frontend dev server, which consumes the built engine
 - `pnpm --filter astriarch-engine test` - Run engine unit tests
 - `pnpm --filter astriarch-engine lint` - Lint engine code
 
