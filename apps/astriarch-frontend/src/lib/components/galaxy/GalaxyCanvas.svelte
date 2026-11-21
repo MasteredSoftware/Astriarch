@@ -40,6 +40,9 @@
 	// Event-driven canvas updates: store changes mark the canvas dirty and a
 	// single update is coalesced into a microtask. Nothing polls.
 	let updateScheduled = false;
+	// Set first thing in onDestroy. `stage` stays assigned after stage.destroy(),
+	// so work queued before unmount (an update microtask, a resize) checks this.
+	let canvasDestroyed = false;
 	// Runs only while some fleet can move; see updateFleetAnimation().
 	let fleetAnimation: Konva.Animation | null = null;
 	// Smallest on-screen movement (px) worth redrawing a fleet for.
@@ -136,6 +139,7 @@
 	});
 
 	onDestroy(() => {
+		canvasDestroyed = true;
 		unsubscribers.forEach((unsubscribe) => unsubscribe());
 		unsubscribers = [];
 		fleetAnimation?.stop();
@@ -148,6 +152,15 @@
 			prospectiveTravelLine.destroy();
 			prospectiveTravelLine = null;
 		}
+		// Destroying each DrawnPlanet marks it destroyed, so an image that loads
+		// after unmount is ignored instead of being added to a destroyed group.
+		for (const drawnPlanet of drawnPlanets.values()) drawnPlanet.destroy();
+		drawnPlanets.clear();
+		for (const drawnFleet of drawnFleets.values()) drawnFleet.destroyFleet();
+		drawnFleets.clear();
+		planetByHexCoords.clear();
+		planetSetKey = '';
+		backgroundGroup = null;
 		stage?.destroy();
 	});
 
@@ -330,7 +343,7 @@
 	}
 
 	function handleResize() {
-		if (stage) {
+		if (stage && !canvasDestroyed) {
 			const oldWidth = stage.width();
 			const oldHeight = stage.height();
 			const newWidth = canvasWidth;
@@ -383,11 +396,11 @@
 	 * the same task are coalesced into one update.
 	 */
 	function scheduleCanvasUpdate() {
-		if (updateScheduled || !stage) return;
+		if (updateScheduled || !stage || canvasDestroyed) return;
 		updateScheduled = true;
 		queueMicrotask(() => {
 			updateScheduled = false;
-			if (!stage) return;
+			if (!stage || canvasDestroyed) return;
 			perfCount('canvas.update');
 			const t = perfStart();
 			updateGameObjects();
@@ -893,7 +906,7 @@
 	}
 
 	function startPanToPlanet(drawnPlanet: DrawnPlanet) {
-		if (!stage) return;
+		if (!stage || canvasDestroyed) return;
 
 		const planetData = drawnPlanet.getPlanetData();
 		const planetWorldPos = {
