@@ -7,15 +7,25 @@
  *
  * Uses the same pinned galaxy as the browser benchmark (seed, Medium galaxy,
  * 4 systems, 6 planets per system, quick start) so the numbers are comparable.
+ *
+ * Each call advances the model's clock, so without a reset tinybench's many
+ * iterations would run the model through hours of game time and measure a
+ * drifting state. The benches therefore measure a steady state: before the
+ * simulated time reaches the end of the first cycle they restore a pristine
+ * copy of the client model and rewind the fake clock. The copy is made inside
+ * the timed function, so its cost is spread over the calls between restores;
+ * the "restore only" bench shows that cost per restore.
  */
 
 import { bench, describe, vi } from 'vitest';
 import { advanceClientGameModelTime, constructClientGameModel } from '../index';
 import { GameModel, playerColors } from './gameModel';
+import { GameController } from './gameController';
 import { Player } from './player';
 import { Utils } from '../utils/utils';
 import { GalaxySizeOption, GameSpeed, PlanetsPerSystemOption } from '../model/model';
 import { PlayerData, PlayerType } from '../model/player';
+import { ClientModelData } from '../model/clientModel';
 
 const GALAXY_SEED = 20261120; // keep in sync with BENCHMARK_GAME in the frontend perf harness
 
@@ -41,44 +51,74 @@ function setup() {
   return { grid: gameModel.grid, clientModel };
 }
 
+const MS_PER_CYCLE = GameController.GAME_SPEED_MS_PER_CYCLE[GameSpeed.NORMAL] || GameController.MS_PER_CYCLE_DEFAULT;
+
+/**
+ * A client model whose clock advances by `stepMs` per call and is restored to
+ * the pinned starting state before the simulated time passes one cycle.
+ */
+function steadyClock(stepMs: number) {
+  const { grid, clientModel } = setup();
+  const pristine = structuredClone(clientModel);
+  const baseTime = pristine.lastSnapshotTime;
+  const callsPerRestore = Math.max(1, Math.ceil(MS_PER_CYCLE / stepMs) - 1);
+  let model: ClientModelData = clientModel;
+  let now = baseTime;
+  let calls = 0;
+
+  const restore = () => {
+    model = structuredClone(pristine);
+    now = baseTime;
+    calls = 0;
+  };
+
+  return {
+    callsPerRestore,
+    restore,
+    step() {
+      if (calls >= callsPerRestore) restore();
+      calls++;
+      now += stepMs;
+      vi.setSystemTime(now);
+      advanceClientGameModelTime(model, grid);
+    },
+  };
+}
+
+const fakeDate = {
+  setup: () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+  },
+  teardown: () => {
+    vi.useRealTimers();
+  },
+};
+
 describe('advanceClientGameModelTime', () => {
   // Mimic the frontend's per-frame call: ~16.7ms of game time per call.
-  const frame = setup();
-  let now = frame.clientModel.lastSnapshotTime;
-  bench(
-    'one 60fps frame (16.7ms of game time)',
-    () => {
-      now += 1000 / 60;
-      vi.setSystemTime(now);
-      advanceClientGameModelTime(frame.clientModel, frame.grid);
+  const frame = steadyClock(1000 / 60);
+  bench('one 60fps frame (16.7ms of game time)', frame.step, {
+    ...fakeDate,
+    setup: () => {
+      fakeDate.setup();
+      frame.restore();
     },
-    {
-      setup: () => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-      },
-      teardown: () => {
-        vi.useRealTimers();
-      },
-    },
-  );
+  });
 
   // A fixed 200ms tick (MS_PER_TICK), the cadence Phase 2 proposes.
-  const tick = setup();
-  let tickNow = tick.clientModel.lastSnapshotTime;
+  const tick = steadyClock(200);
+  bench('one 200ms tick (MS_PER_TICK)', tick.step, {
+    ...fakeDate,
+    setup: () => {
+      fakeDate.setup();
+      tick.restore();
+    },
+  });
+
+  // The cost the two benches above pay once every callsPerRestore calls.
+  const restoreOnly = steadyClock(200);
   bench(
-    'one 200ms tick (MS_PER_TICK)',
-    () => {
-      tickNow += 200;
-      vi.setSystemTime(tickNow);
-      advanceClientGameModelTime(tick.clientModel, tick.grid);
-    },
-    {
-      setup: () => {
-        vi.useFakeTimers({ toFake: ['Date'] });
-      },
-      teardown: () => {
-        vi.useRealTimers();
-      },
-    },
+    `restore only (structuredClone of the pinned model; amortised over ${frame.callsPerRestore} frame / ${tick.callsPerRestore} tick calls)`,
+    restoreOnly.restore,
   );
 });
