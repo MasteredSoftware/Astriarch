@@ -15,6 +15,7 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const RESULTS_DIR = path.resolve(import.meta.dirname, '../../perf-results');
 
@@ -52,7 +53,7 @@ function fmt(n) {
 	return n.toFixed(2);
 }
 
-function compareMetric(name, base, head) {
+export function compareMetric(name, base, head) {
 	if (!base || !head) {
 		return { name, base, head, verdict: base ? 'removed' : 'added' };
 	}
@@ -83,15 +84,8 @@ function main() {
 	console.log(`base: ${base.file}\n      ${describe(base.data.meta)}`);
 	console.log(`head: ${head.file}\n      ${describe(head.data.meta)}`);
 
-	for (const key of ['browser', 'cpuModel', 'platform', 'galaxySeed', 'windowMs']) {
-		if (base.data.meta[key] !== head.data.meta[key]) {
-			console.warn(
-				`WARNING: ${key} differs (${base.data.meta[key]} vs ${head.data.meta[key]}); results may not be comparable`
-			);
-		}
-	}
-	if (JSON.stringify(base.data.meta.viewport) !== JSON.stringify(head.data.meta.viewport)) {
-		console.warn('WARNING: viewport differs; results may not be comparable');
+	for (const warning of metaMismatches(base.data.meta, head.data.meta)) {
+		console.warn(`WARNING: ${warning}`);
 	}
 
 	let worse = 0;
@@ -133,8 +127,28 @@ function main() {
 	);
 }
 
+/** Run settings that must match for two result files to be comparable. */
+const COMPARED_META_KEYS = ['browser', 'cpuModel', 'platform', 'galaxySeed', 'windowMs'];
+
+/** Returns one warning per run setting that differs between two result files. */
+export function metaMismatches(baseMeta, headMeta) {
+	const warnings = [];
+	for (const key of COMPARED_META_KEYS) {
+		if (baseMeta[key] !== headMeta[key]) {
+			warnings.push(
+				`${key} differs (${baseMeta[key]} vs ${headMeta[key]}); results may not be comparable`
+			);
+		}
+	}
+	if (JSON.stringify(baseMeta.viewport) !== JSON.stringify(headMeta.viewport)) {
+		warnings.push('viewport differs; results may not be comparable');
+	}
+	return warnings;
+}
+
 function describe(meta) {
 	return `${meta.browser} ${meta.browserVersion}, ${meta.gitSha}${meta.gitDirty ? ' (dirty)' : ''} on ${meta.gitBranch}, ${meta.repetitions}×${meta.windowMs / 1000}s, ${meta.date}`;
 }
 
-main();
+// Run only as a script, so the spec can import the helpers.
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) main();

@@ -36,6 +36,15 @@ export default defineConfig({
 					include: ['src/**/*.{test,spec}.{js,ts}'],
 					exclude: ['src/**/*.svelte.{test,spec}.{js,ts}']
 				}
+			},
+			{
+				// Unit tests for the Node-side perf harness helpers (e2e/perf). Playwright
+				// ignores these specs (testIgnore in playwright.config.ts).
+				test: {
+					name: 'perf-harness',
+					environment: 'node',
+					include: ['e2e/perf/**/*.spec.ts']
+				}
 			}
 		]
 	}
