@@ -76,14 +76,15 @@ Each window records three kinds of data:
 
 Metric names in the results:
 
-| Prefix                 | Meaning                                                                                                                        |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `cpu.*Pct`             | % of one core. Lower is better                                                                                                 |
-| `rate.<name>`          | Events per second, e.g. `rate.canvas.update`, `rate.store.clientGameModel.set`, `rate.konva.draw.galaxy`                       |
-| `time.<name>.msPerSec` | Milliseconds of that work per wall second: the _load_ it puts on the main thread. `meanMs`, `p95Ms` and `maxMs` are per call   |
-| `frames.*`             | Frame intervals: `fps`, `p50Ms`, `p95Ms`, `p99Ms`, and `over16_7Pct`/`over33_3Pct` (the share of frames slower than 60/30 fps) |
-| `konva.*`              | `nodesCreatedPerSec`, `nodesDestroyedPerSec`, `nodeCount`                                                                      |
-| `cdp.*`                | Chromium DevTools metrics                                                                                                      |
+| Prefix                  | Meaning                                                                                                                                                        |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cpu.*Pct`              | % of one core. Lower is better                                                                                                                                 |
+| `rate.<name>`           | Events per second, e.g. `rate.canvas.update`, `rate.store.clientGameModel.set`, `rate.konva.draw.galaxy`                                                       |
+| `time.<name>.msPerSec`  | Milliseconds of that work per wall second: the _load_ it puts on the main thread. `meanMs`, `p95Ms` and `maxMs` are per call                                   |
+| `frames.*`              | Frame intervals: `fps`, `p50Ms`, `p95Ms`, `p99Ms`, and `over16_7Pct`/`over33_3Pct` (the share of frames slower than 60/30 fps)                                 |
+| `konva.*`               | `nodesCreatedPerSec`, `nodesDestroyedPerSec`, `nodeCount`                                                                                                      |
+| `dom.runningAnimations` | CSS/Web animations running when the window ends (an infinite one keeps the browser compositing every frame). The raw snapshot's `runningAnimations` names them |
+| `cdp.*`                 | Chromium DevTools metrics                                                                                                                                      |
 
 ## Results
 

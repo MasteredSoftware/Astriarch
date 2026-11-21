@@ -18,6 +18,8 @@
  *               idle measurements honest)
  *   - konva:    nodes created/destroyed, current node count, per-layer draws
  *   - heap / longTasks: where the browser supports them (Chromium)
+ *   - running CSS/Web animations when the snapshot is taken (an infinite one
+ *     makes the browser composite every frame even when nothing else changes)
  */
 
 import type Konva from 'konva';
@@ -66,6 +68,8 @@ export interface PerfSnapshot {
 	};
 	heapUsedBytes: number | null;
 	longTasks: { count: number; totalMs: number } | null;
+	/** CSS/Web animations running at snapshot time, e.g. "CSSAnimation scan on div.scan-line" */
+	runningAnimations: string[];
 	devicePixelRatio: number;
 	userAgent: string;
 }
@@ -314,12 +318,27 @@ function snapshot(): PerfSnapshot {
 		longTasks: longTasksSupported
 			? { count: longTaskCount, totalMs: round(longTaskTotalMs) }
 			: null,
+		runningAnimations: describeRunningAnimations(),
 		devicePixelRatio: window.devicePixelRatio,
 		userAgent: navigator.userAgent
 	};
 }
 
 let longTasksSupported = false;
+
+function describeRunningAnimations(): string[] {
+	if (typeof document === 'undefined' || typeof document.getAnimations !== 'function') return [];
+	return document
+		.getAnimations()
+		.filter((a) => a.playState === 'running')
+		.map((a) => {
+			const name =
+				(a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty ?? a.id;
+			const target = (a.effect as KeyframeEffect | null)?.target;
+			const cls = target ? String(target.getAttribute('class') ?? '').split(' ')[0] : '';
+			return `${a.constructor.name} ${name} on ${target?.tagName.toLowerCase() ?? '?'}${cls ? '.' + cls : ''}`;
+		});
+}
 
 function init(): void {
 	if (!perfEnabled || window.__perf) return;

@@ -187,11 +187,36 @@ export async function sendFleet(page: Page, homePlanetId: number): Promise<numbe
 			);
 	}, homePlanetId);
 
+	const clicked: string[] = [];
 	for (const target of targets) {
-		await page.mouse.click(box.x + target.x, box.y + target.y);
+		const x = box.x + target.x;
+		const y = box.y + target.y;
+		// What the click will actually hit; a DOM overlay (e.g. a notification) can cover the canvas
+		const hit = await page.evaluate(
+			([px, py]) => {
+				const el = document.elementFromPoint(px!, py!);
+				return el
+					? `${el.tagName.toLowerCase()}.${String(el.getAttribute('class') ?? '').split(' ')[0]}`
+					: 'none';
+			},
+			[x, y]
+		);
+		clicked.push(`(${Math.round(target.x)},${Math.round(target.y)})→${hit}`);
+		await page.mouse.click(x, y);
 		if (await sendBtn.isEnabled()) break;
 	}
-	await expect(sendBtn).toBeEnabled({ timeout: 5_000 });
+	try {
+		await expect(sendBtn).toBeEnabled({ timeout: 5_000 });
+	} catch (e) {
+		const shot = `perf-results/sendFleet-failure-${Date.now()}.png`;
+		await page.screenshot({ path: shot });
+		throw new Error(
+			`Send Ships never enabled. Clicked: ${clicked.join(', ')}. Screenshot: ${shot}`,
+			{
+				cause: e
+			}
+		);
+	}
 	await sendBtn.click();
 
 	await page.waitForFunction(() => fleetLayerChildren() > 0, undefined, { timeout: 15_000 });

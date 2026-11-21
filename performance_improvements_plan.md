@@ -249,7 +249,10 @@ Results against step 1 (5 × 20s, medians):
 - All 8 idle budgets pass in both browsers.
 - Our JavaScript (Firefox content process) is now about 4% of a core at idle.
 
-### Found: an infinite CSS animation costs more than everything else left
+### Step 2b: stop the task card's looping scan-line animation (2026-11-21)
+
+Finding:
+
 
 `TaskItem.svelte` (the task notification cards, e.g. "Build Queue Empty") has a 1px `.scan-line` whose opacity pulses forever (`animation: scan 3s infinite`). It sits inside a card with `backdrop-blur`, over the canvas, so the browser composites every frame. Toggling only that animation, in the same game and window (10s windows):
 
@@ -259,6 +262,22 @@ Results against step 1 (5 × 20s, medians):
 | Chromium | 41% (GPU 32%) | **9%** (GPU 3%) | 8% |
 
 Turning the animation back on restores the cost (76% / 44%). The backdrop blurs on their own cost little once nothing animates.
+
+What changed:
+
+- `.scan-line` now rests at opacity 0 and pulses twice when a card appears. It loops only while the card is hovered.
+- `perfMonitor` records which CSS/Web animations are running when each window ends (`runningAnimations`). There is a new metric `dom.runningAnimations` and an idle budget of 0 for it.
+- `sendFleet` in the harness records what each click hit and saves a screenshot on failure. One Firefox repetition once failed with Send Ships disabled; it didn't recur in 9 later sends.
+
+Results (5 × 20s, medians):
+
+| Whole-browser CPU, % of one core | Firefox step 2 → 2b | Chromium step 2 → 2b |
+| --- | --- | --- |
+| idle | 77 → **12.3** | 45 → **7.9** |
+| panzoom | 128 → **76** | 74 → **58** |
+| fleets | 75 → **64** | 48 → 40 (within noise) |
+
+The new metric then caught another infinite animation during the fleets window: `CSSAnimation pulse on svg.h-6` (see step 2c).
 
 ## Open decisions
 

@@ -105,6 +105,8 @@ export function flattenMetrics(
 	if (perf.konva.nodeCount !== null) m['konva.nodeCount'] = perf.konva.nodeCount;
 
 	if (perf.heapUsedBytes !== null) m['heap.usedMB'] = round(perf.heapUsedBytes / 1024 / 1024, 1);
+	// Older result files predate this field
+	m['dom.runningAnimations'] = perf.runningAnimations?.length ?? 0;
 	if (perf.longTasks) {
 		m['longTasks.perSec'] = round(perf.longTasks.count / elapsedSec);
 		m['longTasks.msPerSec'] = round(perf.longTasks.totalMs / elapsedSec);

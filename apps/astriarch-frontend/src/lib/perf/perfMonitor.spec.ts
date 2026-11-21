@@ -102,6 +102,28 @@ describe('perfMonitor', () => {
 		expect(snap.timings['store.model.fanout']?.count).toBe(2);
 	});
 
+	it('reports running CSS animations in the snapshot', async () => {
+		await loadPerf('?perf=1');
+		class CSSAnimation {
+			constructor(
+				public playState: string,
+				public animationName: string
+			) {}
+			effect = {
+				target: { tagName: 'DIV', getAttribute: () => 'scan-line absolute' }
+			};
+		}
+		vi.stubGlobal('document', {
+			getAnimations: () => [
+				new CSSAnimation('running', 'scan'),
+				new CSSAnimation('finished', 'fade')
+			]
+		});
+		expect(window.__perf!.snapshot().runningAnimations).toEqual([
+			'CSSAnimation scan on div.scan-line'
+		]);
+	});
+
 	it('reset clears the previous window', async () => {
 		const perf = await loadPerf('?perf=1');
 		perf.perfCount('a');

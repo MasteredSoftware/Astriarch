@@ -119,8 +119,14 @@
 			inset 0 1px 0 rgba(255, 255, 255, 0.1);
 	}
 
+	/*
+	 * Pulse twice when the card appears, then rest (hidden). Looping forever made
+	 * the browser composite every frame behind the blurred cards: ~65% of a core
+	 * in Firefox and ~32% in Chromium at idle (see performance_improvements_plan.md).
+	 */
 	.scan-line {
-		animation: scan 3s ease-in-out infinite;
+		opacity: 0;
+		animation: scan 3s ease-in-out 2;
 	}
 
 	@keyframes scan {
@@ -133,7 +139,8 @@
 		}
 	}
 
+	/* Loop only while the card is hovered */
 	.task-item:hover .scan-line {
-		animation-duration: 1s;
+		animation: scan 1s ease-in-out infinite;
 	}
 </style>

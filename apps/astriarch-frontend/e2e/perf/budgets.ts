@@ -56,7 +56,12 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			max: 0,
 			why: 'With no fleets in transit the fleet layer should not redraw'
 		},
-		{ metric: 'rate.konva.draw.ui', max: 0, why: 'The UI layer should redraw only on interaction' }
+		{ metric: 'rate.konva.draw.ui', max: 0, why: 'The UI layer should redraw only on interaction' },
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation should loop at idle: it makes the browser composite every frame (see snapshot.runningAnimations for which)'
+		}
 	],
 	fleets: [
 		{
