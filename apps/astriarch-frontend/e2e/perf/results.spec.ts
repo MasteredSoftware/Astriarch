@@ -38,6 +38,7 @@ function snapshot(overrides: Partial<PerfSnapshot> = {}): PerfSnapshot {
 		counters: { 'raf.canvas': 120 },
 		ratesPerSec: { 'raf.canvas': 60 },
 		frames: null,
+		renderedFrames: { count: 10, fps: 5, p50Ms: 200, p95Ms: 210, maxMs: 250 },
 		konva: {
 			registered: true,
 			layers: ['konva.draw.galaxy'],
@@ -70,7 +71,46 @@ describe('flattenMetrics', () => {
 		expect(m['heap.usedMB']).toBe(10);
 		expect(m['longTasks.perSec']).toBe(1);
 		expect(m['longTasks.msPerSec']).toBe(60);
+		expect(m['rendered.fps']).toBe(5);
+		expect(m['rendered.p95Ms']).toBe(210);
 		expect(Object.keys(m).some((k) => k.startsWith('frames.'))).toBe(false);
+	});
+
+	it('flattens frame stats with dropped frames relative to the period', () => {
+		const m = flattenMetrics(
+			cpu,
+			snapshot({
+				frames: {
+					count: 90,
+					fps: 45,
+					p50Ms: 16.7,
+					p95Ms: 33.4,
+					p99Ms: 50,
+					maxMs: 60,
+					periodMs: 16.667,
+					droppedFrames: 10,
+					slowOver1_5x: 9
+				}
+			}),
+			null
+		);
+		expect(m['frames.fps']).toBe(45);
+		expect(m['frames.periodMs']).toBe(16.667);
+		expect(m['frames.droppedPct']).toBe(10);
+		expect(m['frames.slowOver1_5xPct']).toBe(10);
+		expect(m['frames.over16_7Pct']).toBeUndefined();
+	});
+
+	it('omits rendered-frame interval stats with fewer than two frames', () => {
+		const m = flattenMetrics(
+			cpu,
+			snapshot({
+				renderedFrames: { count: 0, fps: 0, p50Ms: null, p95Ms: null, maxMs: null }
+			}),
+			null
+		);
+		expect(m['rendered.fps']).toBe(0);
+		expect(m['rendered.p50Ms']).toBeUndefined();
 	});
 
 	it('omits Konva churn when no stage is registered', () => {
@@ -84,7 +124,8 @@ describe('flattenMetrics', () => {
 					nodesDestroyed: 0,
 					nodeCount: null,
 					layerCount: null
-				}
+				},
+				renderedFrames: null
 			}),
 			null
 		);
@@ -92,6 +133,7 @@ describe('flattenMetrics', () => {
 		expect(m['konva.nodesCreatedPerSec']).toBeUndefined();
 		expect(m['konva.nodesDestroyedPerSec']).toBeUndefined();
 		expect(m['konva.nodeCount']).toBeUndefined();
+		expect(m['rendered.fps']).toBeUndefined();
 	});
 
 	it('converts CDP durations to % of wall time', () => {

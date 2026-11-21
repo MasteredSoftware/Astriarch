@@ -141,7 +141,10 @@ export function environmentWarnings(env: WindowEnv, referenceHz: number | null):
  *   cpu.*        % of one core (lower is better)
  *   rate.*       events per second
  *   time.*       ms; `.msPerSec` = ms of that work per wall second (load)
- *   frames.*     frame-interval stats (fps: higher is better)
+ *   frames.*     rAF frame-interval stats while the sampler runs (fps: higher is
+ *                better); droppedPct/slowOver1_5xPct are relative to the
+ *                measured refresh interval
+ *   rendered.*   frames in which a Konva layer drew (every window, incl. idle)
  *   konva.*      node churn and node count (`konva.registered` is 1 when instrumented)
  *   cdp.*Pct     Chromium: % of wall time spent in script/layout/etc.
  */
@@ -170,8 +173,18 @@ export function flattenMetrics(
 		m['frames.p50Ms'] = perf.frames.p50Ms;
 		m['frames.p95Ms'] = perf.frames.p95Ms;
 		m['frames.p99Ms'] = perf.frames.p99Ms;
-		m['frames.over16_7Pct'] = round((perf.frames.over16_7ms / perf.frames.count) * 100, 2);
-		m['frames.over33_3Pct'] = round((perf.frames.over33_3ms / perf.frames.count) * 100, 2);
+		m['frames.periodMs'] = perf.frames.periodMs;
+		// Share of display refreshes in the window that got no frame.
+		const refreshes = perf.frames.count + perf.frames.droppedFrames;
+		m['frames.droppedPct'] = round((perf.frames.droppedFrames / refreshes) * 100, 2);
+		m['frames.slowOver1_5xPct'] = round((perf.frames.slowOver1_5x / perf.frames.count) * 100, 2);
+	}
+
+	if (perf.renderedFrames) {
+		m['rendered.fps'] = perf.renderedFrames.fps;
+		if (perf.renderedFrames.p50Ms !== null) m['rendered.p50Ms'] = perf.renderedFrames.p50Ms;
+		if (perf.renderedFrames.p95Ms !== null) m['rendered.p95Ms'] = perf.renderedFrames.p95Ms;
+		if (perf.renderedFrames.maxMs !== null) m['rendered.maxMs'] = perf.renderedFrames.maxMs;
 	}
 
 	// Without a registered stage the Konva counters are not instrumented, so

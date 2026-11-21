@@ -71,19 +71,20 @@ Each window records three kinds of data:
    - timings of the engine clock, store fan-out, canvas update and each Konva layer draw
    - counts of rAF callbacks, store sets and layer draws
    - Konva nodes created and destroyed
-   - frame intervals.
+   - frame intervals (`panzoom` and `fleets` only), and rendered frames from the Konva draw events (every window).
 3. **Chromium only:** Chrome DevTools `Performance.getMetrics`, giving the % of wall time spent in script, layout, style and tasks, and the JS heap size.
 
 Metric names in the results:
 
-| Prefix                 | Meaning                                                                                                                        |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `cpu.*Pct`             | % of one core. Lower is better                                                                                                 |
-| `rate.<name>`          | Events per second, e.g. `rate.raf.canvas`, `rate.store.clientGameModel.set`, `rate.konva.draw.galaxy`                          |
-| `time.<name>.msPerSec` | Milliseconds of that work per wall second: the _load_ it puts on the main thread. `meanMs`, `p95Ms` and `maxMs` are per call   |
-| `frames.*`             | Frame intervals: `fps`, `p50Ms`, `p95Ms`, `p99Ms`, and `over16_7Pct`/`over33_3Pct` (the share of frames slower than 60/30 fps) |
-| `konva.*`              | `nodesCreatedPerSec`, `nodesDestroyedPerSec`, `nodeCount`, and `registered` (1 when the Konva stage is instrumented)           |
-| `cdp.*`                | Chromium DevTools metrics                                                                                                      |
+| Prefix                 | Meaning                                                                                                                                                                                                                                                                                                                                            |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cpu.*Pct`             | % of one core. Lower is better                                                                                                                                                                                                                                                                                                                     |
+| `rate.<name>`          | Events per second, e.g. `rate.raf.canvas`, `rate.store.clientGameModel.set`, `rate.konva.draw.galaxy`                                                                                                                                                                                                                                              |
+| `time.<name>.msPerSec` | Milliseconds of that work per wall second: the _load_ it puts on the main thread. `meanMs`, `p95Ms` and `maxMs` are per call                                                                                                                                                                                                                       |
+| `frames.*`             | rAF frame intervals while the frame sampler runs: `fps`, `p50Ms`, `p95Ms`, `p99Ms`; `periodMs` (the display refresh interval measured by the probe); `droppedPct` (share of display refreshes that got no frame: each interval counts round(interval / period) − 1 dropped frames); `slowOver1_5xPct` (share of intervals longer than 1.5 periods) |
+| `rendered.*`           | Frames in which at least one Konva layer drew, from the layer draw events, in every window including `idle`: `fps`, `p50Ms`, `p95Ms`, `maxMs` (intervals between rendered frames). Unlike `frames.fps`, this counts only frames where something was drawn. `perf:compare` treats a lower `rendered.fps` as better                                  |
+| `konva.*`              | `nodesCreatedPerSec`, `nodesDestroyedPerSec`, `nodeCount`, and `registered` (1 when the Konva stage is instrumented)                                                                                                                                                                                                                               |
+| `cdp.*`                | Chromium DevTools metrics                                                                                                                                                                                                                                                                                                                          |
 
 ## Results
 

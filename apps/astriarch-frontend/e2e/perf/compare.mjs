@@ -26,6 +26,8 @@ const HEADLINE = [
 	'cpu.totalPct',
 	'frames.fps',
 	'frames.p95Ms',
+	'frames.droppedPct',
+	'rendered.fps',
 	'konva.nodesCreatedPerSec',
 	'rate.store.clientGameModel.set',
 	'time.canvas.updateGameObjects.msPerSec',

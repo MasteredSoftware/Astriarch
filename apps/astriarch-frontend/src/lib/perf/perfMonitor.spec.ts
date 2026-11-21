@@ -145,6 +145,68 @@ describe('perfMonitor', () => {
 		expect(snap.konva.layers).toEqual(['konva.draw.galaxy']);
 	});
 
+	it('counts draws in the same task as one rendered frame', async () => {
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, layer } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		window.__perf!.reset();
+		expect(window.__perf!.snapshot().renderedFrames).toMatchObject({ count: 0, p50Ms: null });
+
+		layer.draw();
+		layer.draw();
+		expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
+
+		await Promise.resolve();
+		layer.draw();
+		const rendered = window.__perf!.snapshot().renderedFrames!;
+		expect(rendered.count).toBe(2);
+		expect(rendered.fps).toBeGreaterThan(0);
+		expect(rendered.p50Ms).not.toBeNull();
+		expect(window.__perf!.snapshot().counters['konva.draw.galaxy']).toBe(3);
+	});
+
+	it('counts dropped frames against the given refresh interval', async () => {
+		const rafCallbacks: FrameRequestCallback[] = [];
+		vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+			rafCallbacks.push(cb);
+			return rafCallbacks.length;
+		});
+		vi.stubGlobal('cancelAnimationFrame', () => {});
+		await loadPerf('?perf=1');
+		window.__perf!.reset({ sampleFrames: true, refreshIntervalMs: 10 });
+		// Intervals: 10 (on time), 14 (jitter), 20 (1 dropped), 31 (2 dropped, slow)
+		let ts = 0;
+		for (const step of [0, 10, 14, 20, 31]) {
+			ts += step;
+			rafCallbacks.shift()!(ts);
+		}
+		const frames = window.__perf!.snapshot().frames!;
+		expect(frames.count).toBe(4);
+		expect(frames.periodMs).toBe(10);
+		expect(frames.droppedFrames).toBe(3);
+		expect(frames.slowOver1_5x).toBe(2);
+	});
+
+	it('falls back to the median interval as the frame period', async () => {
+		const rafCallbacks: FrameRequestCallback[] = [];
+		vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+			rafCallbacks.push(cb);
+			return rafCallbacks.length;
+		});
+		vi.stubGlobal('cancelAnimationFrame', () => {});
+		await loadPerf('?perf=1');
+		window.__perf!.reset({ sampleFrames: true });
+		let ts = 0;
+		for (const step of [0, 16, 17, 16, 50]) {
+			ts += step;
+			rafCallbacks.shift()!(ts);
+		}
+		const frames = window.__perf!.snapshot().frames!;
+		expect(frames.periodMs).toBe(16);
+		expect(frames.droppedFrames).toBe(2);
+		expect(frames.slowOver1_5x).toBe(1);
+	});
+
 	it('reports when no Konva stage is registered', async () => {
 		await loadPerf('?perf=1');
 		window.__perf!.reset();
@@ -152,5 +214,6 @@ describe('perfMonitor', () => {
 		expect(snap.konva.registered).toBe(false);
 		expect(snap.konva.layers).toBeNull();
 		expect(snap.konva.nodesCreated).toBeNull();
+		expect(snap.renderedFrames).toBeNull();
 	});
 });

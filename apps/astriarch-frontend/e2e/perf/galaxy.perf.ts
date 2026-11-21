@@ -174,7 +174,11 @@ async function measureWindow(
 		result.meta.devicePixelRatio = probe.devicePixelRatio;
 	}
 
-	await page.evaluate((frames) => window.__perf!.reset({ sampleFrames: frames }), sampleFrames);
+	await page.evaluate(
+		(options) => window.__perf!.reset(options),
+		// The probe's median interval is the display period dropped frames are judged against.
+		{ sampleFrames, refreshIntervalMs: probe.medianIntervalMs ?? undefined }
+	);
 	const cdpStart = await cdpMetrics();
 	const cpuStart = await sampleTree(browserPid);
 
@@ -317,6 +321,8 @@ const HEADLINE_METRICS = [
 	'cpu.totalPct',
 	'frames.fps',
 	'frames.p95Ms',
+	'frames.droppedPct',
+	'rendered.fps',
 	'konva.nodesCreatedPerSec',
 	'rate.store.clientGameModel.set',
 	'time.canvas.updateGameObjects.msPerSec',
