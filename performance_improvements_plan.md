@@ -4,6 +4,26 @@ Goal: reduce the frontend's CPU use, especially in Firefox, and judge every chan
 
 Phase 1 builds a repeatable, automated way to measure performance. Phase 2 applies fixes one at a time and A/B-tests each one against the Phase 1 baseline.
 
+## Status (2026-11-21)
+
+**Phase 1 is done** (PR #72, branch `perf/phase-1-measurement`). **Phase 2 is paused here as good enough for now** (branch `perf/phase-2-event-driven-canvas`, stacked on Phase 1). The remaining steps are deferred; see [Deferred work](#deferred-work).
+
+Whole-browser CPU, % of one core (macOS, 120Hz display, 5 × 20s windows, medians):
+
+| Window | Firefox baseline → now | Chromium baseline → now |
+| --- | --- | --- |
+| idle | 199 → **13** (−93%) | 94 → **9.6** (−90%) |
+| panzoom | 194 → **77** (−60%) | 96 → **58** (−39%) |
+| fleets | 190 → **28** (−85%) | 92 → **20.5** (−78%) |
+
+What got us there (details under [Phase 2 status](#phase-2-status)):
+
+1. The canvas updates from store events instead of a per-frame loop. It stops recreating Konva nodes: about 4,500 per second → 0.
+2. The client model advances at a fixed 200ms tick instead of every frame. A fleet animation runs only while fleets are in transit.
+3. Two decorative CSS animations that looped forever were stopped. The task-card scan-line and the Fleet Command prompt pulse made the browser composite every frame, and they turned out to be the largest single costs left.
+
+All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever.
+
 ## Findings (as of master `3d2ada9`)
 
 ### Two per-frame loops do full work whether or not anything changed
@@ -314,7 +334,20 @@ Idle and panzoom don't open Fleet Command, so nothing changed on those paths. Th
 | panzoom | 194 → **77** (−60%) | 96 → **58** (−39%) |
 | fleets | 190 → **28** (−85%) | 92 → **20.5** (−78%) |
 
+## Deferred work
+
+These remain from the Phase 2 list. Each should still be done one at a time and A/B-tested with `perf:firefox` (the lower-noise browser) and `perf:compare`.
+
+- **Static background (step 3): the best next candidate.** Pan/zoom is now the most expensive window (Firefox 77%, Chromium 58%). Every drag frame redraws the whole galaxy layer: the background rect, ~59 hex outlines, ~131 hex labels, 100 stars with `shadowBlur`, and the planets. Options:
+  - move the background to its own layer and `cache()` it, or render it once to an image
+  - replace `shadowBlur` on stars, planet rings and travel lines
+  - show hex labels only above a zoom threshold.
+- **Narrower stores (rest of step 2): low priority.** At 5 model updates per second, our JavaScript is about 4–6% of a core, so narrowing the 8 `clientGameModel` subscribers is unlikely to be measurable.
+- **Step 4 items, only if numbers call for them:** `Konva.pixelRatio`, hiding off-screen nodes, the layer count, and Firefox-specific canvas settings.
+- **Other looping CSS animations.** The paused-game modal's pulsing dots loop while the game is paused, deliberately left as a "waiting" indicator. Other screens (lobby, dialogs, research and trading views) weren't audited. The `dom.runningAnimations` metric and `__perf.snapshot().runningAnimations` (with `?perf=1`) make it quick to check any screen.
+- **Hardening the budgets.** They are counters, so they could become hard CI checks (`PERF_ENFORCE_BUDGETS=1`). This needs a CI runner with a headed browser; timing numbers should stay local.
+
 ## Open decisions
 
-- **Seeded random generator vs. saved game:** the plan above assumes a seeded generator behind a game option. Loading a saved game from Mongo via scenario C's resume flow is the alternative.
-- **What runs in CI:** the plan assumes local, headed runs for timing, with only the deterministic counters as CI checks.
+- **Seeded random generator vs. saved game:** settled in Phase 1. It is a seeded generator, set through the test-only backend route `POST /api/test/galaxy-seed`.
+- **What runs in CI:** still open. Timing runs are local and headed. The deterministic budgets are ready to become CI checks (see Deferred work).
