@@ -5,6 +5,7 @@ import { GameCommandLog } from "../models/GameCommandLog";
 import { SequenceCounter } from "../models/SequenceCounter";
 import { getBackendConfig } from "../config/environment";
 import { logger } from "../utils/logger";
+import { getTestGalaxySeed } from "../utils/testGalaxySeed";
 import { persistGame, saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { eventPersistenceService } from "../services/EventPersistenceService";
 import * as engine from "astriarch-engine";
@@ -303,7 +304,7 @@ export class GameController {
       }
 
       // Create the engine players array
-      const enginePlayers = [];
+      const enginePlayers: engine.PlayerData[] = [];
       for (const dbPlayer of allPlayers) {
         if (dbPlayer.isAI) {
           // Create computer player with appropriate AI level
@@ -331,15 +332,23 @@ export class GameController {
       }
 
       // Create the game model with all players
-      const gameModel = engine.GameModel.constructData(enginePlayers, {
-        systemsToGenerate: gameOptions?.systemsToGenerate || 4,
-        planetsPerSystem: gameOptions?.planetsPerSystem || 4,
-        galaxySize: gameOptions?.galaxySize || engine.GalaxySizeOption.SMALL,
-        distributePlanetsEvenly: gameOptions?.distributePlanetsEvenly ?? true,
-        quickStart: gameOptions?.quickStart ?? false,
-        gameSpeed: gameOptions?.gameSpeed || engine.GameSpeed.NORMAL,
-        version: "2.0",
-      });
+      const buildGameModel = () =>
+        engine.GameModel.constructData(enginePlayers, {
+          systemsToGenerate: gameOptions?.systemsToGenerate || 4,
+          planetsPerSystem: gameOptions?.planetsPerSystem || 4,
+          galaxySize: gameOptions?.galaxySize || engine.GalaxySizeOption.SMALL,
+          distributePlanetsEvenly: gameOptions?.distributePlanetsEvenly ?? true,
+          quickStart: gameOptions?.quickStart ?? false,
+          gameSpeed: gameOptions?.gameSpeed || engine.GameSpeed.NORMAL,
+          version: "2.0",
+        });
+      // In NODE_ENV=test a seed may be set so benchmarks get a reproducible galaxy.
+      const galaxySeed = getTestGalaxySeed();
+      const gameModel =
+        galaxySeed !== null ? engine.Utils.withRandomSeed(galaxySeed, buildGameModel) : buildGameModel();
+      if (galaxySeed !== null) {
+        logger.info(`Game galaxy generated with test seed ${galaxySeed}`);
+      }
 
       // Update the game with the complete player list and game state
       game.players = allPlayers;

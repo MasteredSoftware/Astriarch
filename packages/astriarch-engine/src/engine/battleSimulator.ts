@@ -158,11 +158,11 @@ export class BattleSimulator {
       maxDamage = this.STARSHIP_WEAPON_POWER;
 
       //add/remove additional max damage for research advancement
-      if (attackBonusChance && Math.random() < attackBonusChance) {
+      if (attackBonusChance && Utils.random() < attackBonusChance) {
         maxDamage += this.STARSHIP_WEAPON_POWER_HALF;
       }
 
-      if (defenseBonusChance && Math.random() < defenseBonusChance) {
+      if (defenseBonusChance && Utils.random() < defenseBonusChance) {
         maxDamage -= this.STARSHIP_WEAPON_POWER_HALF;
       }
 

@@ -13,6 +13,7 @@ import { Router, Request, Response } from "express";
 import mongoose from "mongoose";
 import { ServerGameModel } from "../models/Game";
 import { logger } from "../utils/logger";
+import { setTestGalaxySeed } from "../utils/testGalaxySeed";
 
 const router: Router = Router();
 
@@ -56,6 +57,17 @@ router.post("/cleanup", async (req: Request, res: Response) => {
     logger.error("[test/cleanup] Cleanup failed:", error);
     res.status(500).json({ error: "Cleanup failed" });
   }
+});
+
+router.post("/galaxy-seed", (req: Request, res: Response) => {
+  const seed: unknown = req.body?.seed;
+  if (seed !== null && !(typeof seed === "number" && Number.isInteger(seed))) {
+    res.status(400).json({ error: "seed must be an integer or null" });
+    return;
+  }
+  setTestGalaxySeed(seed);
+  logger.info(`[test/galaxy-seed] Galaxy seed ${seed === null ? "cleared" : `set to ${seed}`}`);
+  res.json({ ok: true, seed });
 });
 
 function escapeRegex(str: string): string {
