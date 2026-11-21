@@ -59,6 +59,10 @@ export interface PerfSnapshot {
 	ratesPerSec: Record<string, number>;
 	frames: FrameSummary | null;
 	konva: {
+		/** Whether perfRegisterKonvaStage has been called. */
+		registered: boolean;
+		/** Draw counter names (`konva.draw.<layer>`) of the registered layers. */
+		layers: string[] | null;
 		nodesCreated: number | null;
 		nodesDestroyed: number;
 		nodeCount: number | null;
@@ -103,6 +107,11 @@ let konvaStartId: number | null = null;
 /** Probe nodes created since konvaStartId was taken (they are not app work). */
 let probesSinceStart = 0;
 const layerDrawStart = new WeakMap<object, number>();
+/**
+ * Draw counters of the registered layers. reset() sets each to 0, so a layer
+ * that is never drawn reports an explicit 0 rather than a missing metric.
+ */
+const registeredLayerLabels = new Set<string>();
 
 /** Returns a start timestamp, or 0 when perf is disabled. Pair with perfEnd. */
 export function perfStart(): number {
@@ -163,6 +172,7 @@ export function instrumentStore<
  */
 export function perfRegisterKonvaStage(konva: KonvaModule, stage: Konva.Stage): void {
 	if (!perfEnabled) return;
+	if (konvaStage !== stage) registeredLayerLabels.clear();
 	konvaStage = stage;
 
 	if (konvaModule !== konva) {
@@ -181,6 +191,8 @@ export function perfRegisterKonvaStage(konva: KonvaModule, stage: Konva.Stage): 
 
 	for (const layer of stage.getLayers()) {
 		const label = `konva.draw.${layer.name() || `layer${layer.index}`}`;
+		registeredLayerLabels.add(label);
+		if (!counters.has(label)) counters.set(label, 0);
 		layer.on('beforeDraw.perf', () => {
 			layerDrawStart.set(layer, performance.now());
 		});
@@ -249,6 +261,7 @@ function reset(options: ResetOptions = {}): void {
 	windowStart = performance.now();
 	timings = new Map();
 	counters = new Map();
+	for (const label of registeredLayerLabels) counters.set(label, 0);
 	frameIntervals = [];
 	konvaNodesDestroyed = 0;
 	longTaskCount = 0;
@@ -305,6 +318,8 @@ function snapshot(): PerfSnapshot {
 		ratesPerSec: rates,
 		frames,
 		konva: {
+			registered: konvaStage !== null,
+			layers: konvaStage ? [...registeredLayerLabels] : null,
 			nodesCreated,
 			nodesDestroyed: konvaNodesDestroyed,
 			nodeCount: konvaStage ? konvaStage.find(() => true).length : null,

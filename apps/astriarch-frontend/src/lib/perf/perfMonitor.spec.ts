@@ -130,4 +130,27 @@ describe('perfMonitor', () => {
 		// A second snapshot in the same window must not count the first one's probe.
 		expect(window.__perf!.snapshot().konva.nodesCreated).toBe(3);
 	});
+
+	it('reports an explicit 0 for a registered layer that was not drawn', async () => {
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, layer } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		layer.draw();
+		window.__perf!.reset();
+
+		const snap = window.__perf!.snapshot();
+		expect(snap.counters['konva.draw.galaxy']).toBe(0);
+		expect(snap.ratesPerSec['konva.draw.galaxy']).toBe(0);
+		expect(snap.konva.registered).toBe(true);
+		expect(snap.konva.layers).toEqual(['konva.draw.galaxy']);
+	});
+
+	it('reports when no Konva stage is registered', async () => {
+		await loadPerf('?perf=1');
+		window.__perf!.reset();
+		const snap = window.__perf!.snapshot();
+		expect(snap.konva.registered).toBe(false);
+		expect(snap.konva.layers).toBeNull();
+		expect(snap.konva.nodesCreated).toBeNull();
+	});
 });

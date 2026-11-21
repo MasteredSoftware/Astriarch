@@ -82,7 +82,7 @@ Metric names in the results:
 | `rate.<name>`          | Events per second, e.g. `rate.raf.canvas`, `rate.store.clientGameModel.set`, `rate.konva.draw.galaxy`                          |
 | `time.<name>.msPerSec` | Milliseconds of that work per wall second: the _load_ it puts on the main thread. `meanMs`, `p95Ms` and `maxMs` are per call   |
 | `frames.*`             | Frame intervals: `fps`, `p50Ms`, `p95Ms`, `p99Ms`, and `over16_7Pct`/`over33_3Pct` (the share of frames slower than 60/30 fps) |
-| `konva.*`              | `nodesCreatedPerSec`, `nodesDestroyedPerSec`, `nodeCount`                                                                      |
+| `konva.*`              | `nodesCreatedPerSec`, `nodesDestroyedPerSec`, `nodeCount`, and `registered` (1 when the Konva stage is instrumented)           |
 | `cdp.*`                | Chromium DevTools metrics                                                                                                      |
 
 ## Results
@@ -106,9 +106,12 @@ A change is reported as `better` or `worse` only when the two runs' min–max ra
 
 ## Budgets
 
-`budgets.ts` holds the Phase 2 targets as counters, for example "no Konva nodes created at idle" and "the model advances at most 5 times a second". Counters don't depend on machine speed, so once Phase 2 meets them they can be hard checks, CI included.
+`budgets.ts` holds the Phase 2 targets as counters, for example "no Konva nodes created at idle" and "the model advances at most 6 times a second". Counters don't depend on machine speed, so once Phase 2 meets them they can be hard checks, CI included.
 
-For now they are report-only: the run prints PASS/FAIL for each budget, and `PERF_ENFORCE_BUDGETS=1` turns a FAIL into a failed run. Timing-based numbers are deliberately not budgets, because they are too noisy for CI.
+For now they are report-only: the run prints PASS, FAIL or MISSING for each budget, and `PERF_ENFORCE_BUDGETS=1` turns a FAIL or MISSING into a failed run. Timing-based numbers are deliberately not budgets, because they are too noisy for CI.
+
+- **Missing metrics fail.** A budget whose metric isn't in the results is MISSING and counts as a violation, so a renamed layer or a lost instrumentation hook can't turn a `max: 0` budget green. Only budgets marked `absentMeansZero: true` (a counter that legitimately disappears when its loop is removed, such as `rate.raf.canvas`) treat absence as 0. Konva layer draw counters are reported as explicit zeros for every registered layer, and `konva.registered` is 0 when the stage was never registered.
+- **`rate.store.clientGameModel.set` counts every store set**, including the server pushes that `websocket.ts` applies, not only the 200ms tick. That's why its budget is 6/s rather than 5/s.
 
 ## Getting trustworthy numbers
 

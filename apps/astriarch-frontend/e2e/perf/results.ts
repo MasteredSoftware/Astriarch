@@ -66,7 +66,7 @@ const round = (n: number, digits = 3) => {
  *   rate.*       events per second
  *   time.*       ms; `.msPerSec` = ms of that work per wall second (load)
  *   frames.*     frame-interval stats (fps: higher is better)
- *   konva.*      node churn and node count
+ *   konva.*      node churn and node count (`konva.registered` is 1 when instrumented)
  *   cdp.*Pct     Chromium: % of wall time spent in script/layout/etc.
  */
 export function flattenMetrics(
@@ -98,10 +98,15 @@ export function flattenMetrics(
 		m['frames.over33_3Pct'] = round((perf.frames.over33_3ms / perf.frames.count) * 100, 2);
 	}
 
+	// Without a registered stage the Konva counters are not instrumented, so
+	// leave them out rather than report a misleading 0 (budgets then say MISSING).
+	m['konva.registered'] = perf.konva.registered ? 1 : 0;
 	if (perf.konva.nodesCreated !== null) {
 		m['konva.nodesCreatedPerSec'] = round(perf.konva.nodesCreated / elapsedSec);
 	}
-	m['konva.nodesDestroyedPerSec'] = round(perf.konva.nodesDestroyed / elapsedSec);
+	if (perf.konva.registered) {
+		m['konva.nodesDestroyedPerSec'] = round(perf.konva.nodesDestroyed / elapsedSec);
+	}
 	if (perf.konva.nodeCount !== null) m['konva.nodeCount'] = perf.konva.nodeCount;
 
 	if (perf.heapUsedBytes !== null) m['heap.usedMB'] = round(perf.heapUsedBytes / 1024 / 1024, 1);

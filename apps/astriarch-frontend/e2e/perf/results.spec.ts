@@ -35,7 +35,14 @@ function snapshot(overrides: Partial<PerfSnapshot> = {}): PerfSnapshot {
 		counters: { 'raf.canvas': 120 },
 		ratesPerSec: { 'raf.canvas': 60 },
 		frames: null,
-		konva: { nodesCreated: 10, nodesDestroyed: 4, nodeCount: 500, layerCount: 3 },
+		konva: {
+			registered: true,
+			layers: ['konva.draw.galaxy'],
+			nodesCreated: 10,
+			nodesDestroyed: 4,
+			nodeCount: 500,
+			layerCount: 3
+		},
 		heapUsedBytes: 10 * 1024 * 1024,
 		longTasks: { count: 2, totalMs: 120 },
 		devicePixelRatio: 2,
@@ -53,12 +60,35 @@ describe('flattenMetrics', () => {
 		expect(m['rate.raf.canvas']).toBe(60);
 		expect(m['time.canvas.update.meanMs']).toBe(2.5);
 		expect(m['time.canvas.update.msPerSec']).toBe(5);
+		expect(m['konva.registered']).toBe(1);
 		expect(m['konva.nodesCreatedPerSec']).toBe(5);
+		expect(m['konva.nodesDestroyedPerSec']).toBe(2);
 		expect(m['konva.nodeCount']).toBe(500);
 		expect(m['heap.usedMB']).toBe(10);
 		expect(m['longTasks.perSec']).toBe(1);
 		expect(m['longTasks.msPerSec']).toBe(60);
 		expect(Object.keys(m).some((k) => k.startsWith('frames.'))).toBe(false);
+	});
+
+	it('omits Konva churn when no stage is registered', () => {
+		const m = flattenMetrics(
+			cpu,
+			snapshot({
+				konva: {
+					registered: false,
+					layers: null,
+					nodesCreated: null,
+					nodesDestroyed: 0,
+					nodeCount: null,
+					layerCount: null
+				}
+			}),
+			null
+		);
+		expect(m['konva.registered']).toBe(0);
+		expect(m['konva.nodesCreatedPerSec']).toBeUndefined();
+		expect(m['konva.nodesDestroyedPerSec']).toBeUndefined();
+		expect(m['konva.nodeCount']).toBeUndefined();
 	});
 
 	it('converts CDP durations to % of wall time', () => {

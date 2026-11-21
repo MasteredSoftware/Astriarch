@@ -187,6 +187,9 @@ async function measureWindow(
 	}
 
 	const cpu = cpuDelta(cpuStart, cpuEnd);
+	if (!perf.konva.registered) {
+		warnings.push('Konva stage not registered: konva.* metrics are missing');
+	}
 	if (cpu.exitedProcesses > 0) {
 		warnings.push(`${cpu.exitedProcesses} browser process(es) exited during the window`);
 	}
@@ -261,13 +264,14 @@ function printSummary(file: PerfResultFile): void {
 			if (s) console.log(`    ${metric.padEnd(50)} ${s.median}  [${s.min} – ${s.max}]`);
 		}
 		for (const b of checkBudgets(name as WindowName, data.summary)) {
-			if (!b.pass) violations++;
+			if (b.status !== 'pass') violations++;
+			const value = b.value === null ? 'not recorded' : b.value;
 			console.log(
-				`    budget ${b.pass ? 'PASS' : 'FAIL'} ${b.metric} = ${b.value} (max ${b.max}): ${b.why}`
+				`    budget ${b.status.toUpperCase()} ${b.metric} = ${value} (max ${b.max}): ${b.why}`
 			);
 		}
 	}
 	if (ENFORCE_BUDGETS && violations > 0) {
-		throw new Error(`${violations} perf budget(s) exceeded (PERF_ENFORCE_BUDGETS=1)`);
+		throw new Error(`${violations} perf budget(s) exceeded or missing (PERF_ENFORCE_BUDGETS=1)`);
 	}
 }
