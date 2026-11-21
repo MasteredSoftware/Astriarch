@@ -14,6 +14,7 @@ import {
 	type ResearchProgressByType
 } from 'astriarch-engine';
 import { webSocketService } from '#lib/services/websocket.ts';
+import { instrumentStore, perfCount, perfStart, perfEnd } from '#lib/perf/perfMonitor.ts';
 import {
 	convertClientNotificationToUINotification,
 	isBuildCompletionNotification
@@ -21,7 +22,10 @@ import {
 import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
 
 // Game state stores
-export const clientGameModel = writable<ClientModelData | null>(null);
+export const clientGameModel = instrumentStore(
+	'clientGameModel',
+	writable<ClientModelData | null>(null)
+);
 export const gameGrid = writable<Grid | null>(null);
 export const notifications = writable<string[]>([]);
 export const isGameRunning = writable<boolean>(true);
@@ -335,6 +339,8 @@ function startGameLoop() {
 	}
 
 	function gameLoop() {
+		perfCount('raf.gameLoop');
+		const loopStart = perfStart();
 		if (!get(isGameRunning)) {
 			animationFrameId = null;
 			return;
@@ -345,7 +351,9 @@ function startGameLoop() {
 
 		if (cgm && grid) {
 			// Advance the client game model time continuously
+			const advanceStart = perfStart();
 			const result = advanceClientGameModelTime(cgm, grid);
+			perfEnd('engine.advanceClientGameModelTime', advanceStart);
 			clientGameModel.set(result.clientGameModel);
 
 			// Process notifications from the engine immediately
@@ -408,6 +416,7 @@ function startGameLoop() {
 			}
 		}
 
+		perfEnd('gameLoop.total', loopStart);
 		animationFrameId = requestAnimationFrame(gameLoop);
 	}
 

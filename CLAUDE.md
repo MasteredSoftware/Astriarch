@@ -36,6 +36,8 @@ The engine exports game models, controllers, and messaging types that are consum
 - `pnpm --filter astriarch-frontend build` - Build SvelteKit app
 - `pnpm --filter astriarch-frontend test` - Run Vitest unit tests
 - `pnpm --filter astriarch-frontend lint` - Lint and format check
+- `pnpm --filter astriarch-frontend perf` - Run the Chromium + Firefox performance benchmark (headed, production build; see apps/astriarch-frontend/e2e/perf/README.md)
+- `pnpm --filter astriarch-frontend perf:compare <base> <head>` - Compare two perf result files
 - `pnpm --filter astriarch-frontend check` - Run svelte-check (type-checks .svelte and .ts; import engine types from `astriarch-engine`, not `astriarch-engine/src/...`)
 
 ### Engine Package Development
@@ -43,6 +45,7 @@ The engine exports game models, controllers, and messaging types that are consum
 - `pnpm --filter astriarch-engine dev` - Rebuild engine `dist` on change (tsup --watch); run alongside the frontend dev server, which consumes the built engine
 - `pnpm --filter astriarch-engine test` - Run engine unit tests
 - `pnpm --filter astriarch-engine lint` - Lint engine code
+- `pnpm --filter astriarch-engine bench` - Run engine micro-benchmarks
 
 ## Key Technical Details
 

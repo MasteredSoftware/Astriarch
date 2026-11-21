@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "test": "vitest run",
+    "bench": "vitest bench --run",
     "test:debug": "vitest run --inspect-brk --no-file-parallelism",
     "clean": "rm -rf dist && rm -rf node_modules",
     "build": "tsup",
