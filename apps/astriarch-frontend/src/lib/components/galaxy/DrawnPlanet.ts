@@ -302,6 +302,10 @@ export class DrawnPlanet {
 
 		imageObj.onerror = (error) => {
 			console.error(`Failed to load planet image for ${this.planetData.name}:`, error, imageUrl);
+			// Let the next update() retry, unless a newer type was requested since
+			if (!this.destroyed && this.requestedImageType === planetType) {
+				this.requestedImageType = null;
+			}
 		};
 
 		imageObj.src = imageUrl;
@@ -834,7 +838,17 @@ export class DrawnPlanet {
 				listening: false // Disable events
 			});
 			this.group.add(this.selectionRingInner);
+
+			// The rings are created lazily, after the indicators exist; keep the
+			// indicators drawn above them (rebuilds add indicators at the top).
+			this.raiseStrengthIndicators();
 		}
+	}
+
+	private raiseStrengthIndicators(): void {
+		this.fleetStrengthIndicator?.moveToTop();
+		this.spacePlatformIndicators?.moveToTop();
+		this.defenderStrengthIndicator?.moveToTop();
 	}
 
 	private updateSelectionState(): void {
