@@ -21,6 +21,29 @@ const SHIP_PATHS = {
 		'M23.5772 16.9008L28 11L28 40.6446L24.9594 45L11 39.9421L11 35.7273L21.0894 17.7438L21.0894 28.9835L23.5772 28.9835L23.5772 16.9008Z M32.4228 16.9008L28 11L28 40.6446L31.0407 45L45 39.9421L45 35.7273L34.9106 17.7438L34.9106 28.9835L32.4228 28.9835L32.4228 16.9008Z'
 };
 
+/**
+ * True while a fleet is still traveling. A fleet that reached an unowned planet
+ * stays in fleetsInTransit (with parsecsToDestination <= 0 and
+ * awaitingConflictResolution set) until the server resolves the conflict; it
+ * has arrived, so it must not be drawn as in transit.
+ */
+export function isFleetInTransit(f: FleetData): boolean {
+	return (
+		!!f.totalTravelDistance &&
+		f.totalTravelDistance > 0 &&
+		f.parsecsToDestination !== null &&
+		f.parsecsToDestination > 0 &&
+		!f.awaitingConflictResolution &&
+		!!f.destinationHexMidPoint &&
+		!!f.travelingFromHexMidPoint
+	);
+}
+
+/** Whole turns ("years") left; at least 1 while the fleet is in transit. */
+export function turnsToDestination(parsecsToDestination: number, parsecsPerTurn = 1): number {
+	return Math.max(1, Math.ceil(parsecsToDestination / parsecsPerTurn));
+}
+
 export function createDrawnFleet(fleetData: FleetData, gameModel: ClientModelData) {
 	return new DrawnFleet(fleetData, gameModel);
 }
@@ -203,14 +226,15 @@ export class DrawnFleet {
 		this.fleetIcon.scaleY(scale);
 	}
 
+	private isInTransit(): boolean {
+		return isFleetInTransit(this.fleetData);
+	}
+
 	public updateTravelLine() {
 		// Only show travel elements if fleet is actually traveling
-		if (!this.fleetData.totalTravelDistance || this.fleetData.totalTravelDistance <= 0) {
-			this.hideAllElements();
-			return;
-		}
-
 		if (
+			!this.isInTransit() ||
+			!this.fleetData.totalTravelDistance ||
 			!this.fleetData.parsecsToDestination ||
 			!this.fleetData.destinationHexMidPoint ||
 			!this.fleetData.travelingFromHexMidPoint
@@ -339,6 +363,7 @@ export class DrawnFleet {
 			destinationHexMidPoint: to
 		} = this.fleetData;
 		if (
+			!this.isInTransit() ||
 			this.tickParsecs === null ||
 			this.parsecsPerMs <= 0 ||
 			!totalTravelDistance ||
@@ -368,7 +393,7 @@ export class DrawnFleet {
 		// TODO: Get actual fleet speed from game engine
 		// For now, assume base speed of 1 parsec per turn
 		const fleetSpeed = 1;
-		return Math.ceil(this.fleetData.parsecsToDestination / fleetSpeed);
+		return turnsToDestination(this.fleetData.parsecsToDestination, fleetSpeed);
 	}
 
 	private updateVisualElements() {
@@ -383,13 +408,7 @@ export class DrawnFleet {
 		this.etaText.fill(color);
 
 		// Show fleet icon and ETA text if fleet is traveling (travel line visibility handled in updateTravelLine)
-		if (
-			this.fleetData.totalTravelDistance &&
-			this.fleetData.totalTravelDistance > 0 &&
-			this.fleetData.parsecsToDestination &&
-			this.fleetData.destinationHexMidPoint &&
-			this.fleetData.travelingFromHexMidPoint
-		) {
+		if (this.isInTransit()) {
 			this.fleetIcon.visible(true);
 			this.etaText.visible(true);
 		} else {
