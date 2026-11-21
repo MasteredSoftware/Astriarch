@@ -254,7 +254,7 @@
 							</p>
 						</div>
 						<div class="text-cyan-400">
-							<svg class="h-6 w-6 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
+							<svg class="destination-prompt-pulse h-6 w-6" fill="currentColor" viewBox="0 0 20 20">
 								<path
 									fill-rule="evenodd"
 									d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
@@ -377,3 +377,20 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	/*
+	 * Tailwind's animate-pulse, but 3 times instead of forever. An infinite pulse
+	 * here made the browser composite every frame while Fleet Command was open:
+	 * ~47% of a core in Firefox, ~28% in Chromium (see performance_improvements_plan.md).
+	 */
+	.destination-prompt-pulse {
+		animation: destination-prompt-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) 3;
+	}
+
+	@keyframes destination-prompt-pulse {
+		50% {
+			opacity: 0.5;
+		}
+	}
+</style>

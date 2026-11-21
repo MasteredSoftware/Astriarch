@@ -63,11 +63,23 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			why: 'No CSS/Web animation should loop at idle: it makes the browser composite every frame (see snapshot.runningAnimations for which)'
 		}
 	],
+	panzoom: [
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation should loop forever (see snapshot.runningAnimations for which)'
+		}
+	],
 	fleets: [
 		{
 			metric: 'konva.nodesCreatedPerSec',
 			max: 1,
 			why: 'Moving fleets should be updated in place, not recreated'
+		},
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation should loop forever, e.g. on the open Fleet Command view (see snapshot.runningAnimations)'
 		}
 	]
 };

@@ -279,6 +279,41 @@ Results (5 × 20s, medians):
 
 The new metric then caught another infinite animation during the fleets window: `CSSAnimation pulse on svg.h-6` (see step 2c).
 
+### Step 2c: stop the Fleet Command prompt's looping pulse (2026-11-21)
+
+Finding: while Fleet Command is open with no destination chosen (as after sending a fleet), the "Select a destination planet" icon used Tailwind's `animate-pulse`, which loops forever. In one live game (10s windows), fleets-window CPU was:
+
+| Fleets window, % of one core | as-is | pulse off | pulse off and fleet animation stopped |
+| --- | --- | --- | --- |
+| Firefox | 64 | **17** | 17 |
+| Chromium | 41 (GPU 29) | **12** (GPU 3) | 11 |
+
+This also confirms that step 2's fleet animation costs about 1 point or less.
+
+What changed:
+
+- The icon pulses 3 times when the prompt appears, then rests (a scoped `destination-prompt-pulse` animation).
+- The `dom.runningAnimations` = 0 budget now also applies to the panzoom and fleets windows.
+- Not changed: the paused-game modal's pulsing dots. They are a "waiting" indicator and only run while the game is paused.
+
+Results (5 × 20s, medians):
+
+| Whole-browser CPU, % of one core | Firefox 2b → 2c | Chromium 2b → 2c |
+| --- | --- | --- |
+| idle | 12.3 → 13.2 | 7.9 → 9.6 |
+| panzoom | 76 → 77 | 58 → 58 |
+| fleets | 64 → **28** | 40 → **20.5** |
+
+Idle and panzoom don't open Fleet Command, so nothing changed on those paths. Their 1–2 point moves are run-to-run drift between sessions, even though the ranges just miss overlapping. All budgets pass in every window in both browsers.
+
+### Phase 2 so far: baseline → step 2c
+
+| Whole-browser CPU, % of one core | Firefox | Chromium |
+| --- | --- | --- |
+| idle | 199 → **13** (−93%) | 94 → **9.6** (−90%) |
+| panzoom | 194 → **77** (−60%) | 96 → **58** (−39%) |
+| fleets | 190 → **28** (−85%) | 92 → **20.5** (−78%) |
+
 ## Open decisions
 
 - **Seeded random generator vs. saved game:** the plan above assumes a seeded generator behind a game option. Loading a saved game from Mongo via scenario C's resume flow is the alternative.
