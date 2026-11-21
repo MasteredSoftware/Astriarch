@@ -21,6 +21,7 @@ import {
 	isBuildCompletionNotification
 } from '#lib/utils/notificationUtils.ts';
 import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
+import { createFixedTickLoop } from '#lib/stores/fixedTickLoop.ts';
 
 // Game state stores
 export const clientGameModel = instrumentStore(
@@ -272,12 +273,12 @@ export const gameActions = {
 
 	pauseGame() {
 		isGameRunning.set(false);
-		stopGameLoop();
+		gameLoop.stop();
 	},
 
 	resumeGame() {
 		isGameRunning.set(true);
-		startGameLoop();
+		gameLoop.start();
 	},
 
 	// Game speed adjustment with optimistic update
@@ -323,7 +324,6 @@ function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T
 // Game clock: advances the client model at a fixed tick (MS_PER_TICK), not every
 // frame. Each tick publishes one clientGameModel update; the canvas and UI react
 // to that. Smooth fleet motion between ticks is the canvas's job (see GalaxyCanvas).
-let gameLoopTimerId: ReturnType<typeof setInterval> | null = null;
 let awaitingServerTimeAdvancement = false;
 
 // Track fleets that have arrived at unowned planets and are awaiting server conflict resolution.
@@ -333,99 +333,89 @@ const pendingArrivalFleets = new Map<number, number>();
 // How long to wait for server confirmation before requesting a full state sync (ms)
 const PENDING_ARRIVAL_TIMEOUT_MS = 15000;
 
-function stopGameLoop() {
-	if (gameLoopTimerId !== null) {
-		clearInterval(gameLoopTimerId);
-		gameLoopTimerId = null;
+/** One game clock tick. Returns false to stop the loop. */
+function gameTick(): boolean {
+	perfCount('gameLoop.tick');
+	const loopStart = perfStart();
+	if (!get(isGameRunning)) {
+		return false;
 	}
-}
 
-function startGameLoop() {
-	stopGameLoop();
+	const cgm = get(clientGameModel);
+	const grid = get(gameGrid);
 
-	function gameLoop() {
-		perfCount('gameLoop.tick');
-		const loopStart = perfStart();
-		if (!get(isGameRunning)) {
-			stopGameLoop();
-			return;
-		}
+	if (cgm && grid) {
+		// Advance the client game model time continuously
+		const advanceStart = perfStart();
+		const result = advanceClientGameModelTime(cgm, grid);
+		perfEnd('engine.advanceClientGameModelTime', advanceStart);
+		clientGameModel.set(result.clientGameModel);
 
-		const cgm = get(clientGameModel);
-		const grid = get(gameGrid);
+		// Process notifications from the engine immediately
+		if (result.notifications.length > 0) {
+			let shouldCheckAutoQueue = false;
 
-		if (cgm && grid) {
-			// Advance the client game model time continuously
-			const advanceStart = perfStart();
-			const result = advanceClientGameModelTime(cgm, grid);
-			perfEnd('engine.advanceClientGameModelTime', advanceStart);
-			clientGameModel.set(result.clientGameModel);
-
-			// Process notifications from the engine immediately
-			if (result.notifications.length > 0) {
-				let shouldCheckAutoQueue = false;
-
-				for (const notification of result.notifications) {
-					// Convert engine notification to UI notification
-					const uiNotification = convertClientNotificationToUINotification(notification);
-					if (uiNotification) {
-						multiplayerGameStore.addNotification(uiNotification);
-					}
-
-					// Check if this is a build completion notification
-					if (isBuildCompletionNotification(notification)) {
-						shouldCheckAutoQueue = true;
-					}
+			for (const notification of result.notifications) {
+				// Convert engine notification to UI notification
+				const uiNotification = convertClientNotificationToUINotification(notification);
+				if (uiNotification) {
+					multiplayerGameStore.addNotification(uiNotification);
 				}
 
-				// Trigger auto-queue check if builds completed
-				if (shouldCheckAutoQueue) {
-					console.log('Build completion detected in game loop - requesting auto-queue check');
-					webSocketService.requestAutoQueueCheck();
+				// Check if this is a build completion notification
+				if (isBuildCompletionNotification(notification)) {
+					shouldCheckAutoQueue = true;
 				}
 			}
 
-			if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
-				// Track newly arriving fleets and request server time advancement only for new ones
-				let hasNewArrivals = false;
-				const now = Date.now();
-				for (const fleet of result.fleetsArrivingOnUnownedPlanets) {
-					if (!pendingArrivalFleets.has(fleet.id)) {
-						pendingArrivalFleets.set(fleet.id, now);
-						hasNewArrivals = true;
-					}
-				}
-				if (hasNewArrivals) {
-					console.log('Fleets arriving on unowned planets, requesting state synchronization');
-					webSocketService.requestGameTimeAdvancement();
-				}
-			}
-
-			// Check for pending arrival fleets that have been waiting too long
-			// This handles edge cases where the server event was lost or never sent
-			if (pendingArrivalFleets.size > 0) {
-				const now = Date.now();
-				let hasTimedOut = false;
-				for (const [fleetId, timestamp] of pendingArrivalFleets) {
-					if (now - timestamp > PENDING_ARRIVAL_TIMEOUT_MS) {
-						console.warn(
-							`Fleet ${fleetId} pending arrival timed out after ${PENDING_ARRIVAL_TIMEOUT_MS}ms - requesting full state sync`
-						);
-						pendingArrivalFleets.delete(fleetId);
-						hasTimedOut = true;
-					}
-				}
-				if (hasTimedOut) {
-					webSocketService.requestStateSync();
-				}
+			// Trigger auto-queue check if builds completed
+			if (shouldCheckAutoQueue) {
+				console.log('Build completion detected in game loop - requesting auto-queue check');
+				webSocketService.requestAutoQueueCheck();
 			}
 		}
 
-		perfEnd('gameLoop.total', loopStart);
+		if (result.fleetsArrivingOnUnownedPlanets.length > 0) {
+			// Track newly arriving fleets and request server time advancement only for new ones
+			let hasNewArrivals = false;
+			const now = Date.now();
+			for (const fleet of result.fleetsArrivingOnUnownedPlanets) {
+				if (!pendingArrivalFleets.has(fleet.id)) {
+					pendingArrivalFleets.set(fleet.id, now);
+					hasNewArrivals = true;
+				}
+			}
+			if (hasNewArrivals) {
+				console.log('Fleets arriving on unowned planets, requesting state synchronization');
+				webSocketService.requestGameTimeAdvancement();
+			}
+		}
+
+		// Check for pending arrival fleets that have been waiting too long
+		// This handles edge cases where the server event was lost or never sent
+		if (pendingArrivalFleets.size > 0) {
+			const now = Date.now();
+			let hasTimedOut = false;
+			for (const [fleetId, timestamp] of pendingArrivalFleets) {
+				if (now - timestamp > PENDING_ARRIVAL_TIMEOUT_MS) {
+					console.warn(
+						`Fleet ${fleetId} pending arrival timed out after ${PENDING_ARRIVAL_TIMEOUT_MS}ms - requesting full state sync`
+					);
+					pendingArrivalFleets.delete(fleetId);
+					hasTimedOut = true;
+				}
+			}
+			if (hasTimedOut) {
+				webSocketService.requestStateSync();
+			}
+		}
 	}
 
-	gameLoopTimerId = setInterval(gameLoop, MS_PER_TICK);
+	perfEnd('gameLoop.total', loopStart);
+	return true;
 }
+
+const gameLoop = createFixedTickLoop(gameTick, MS_PER_TICK);
 
 // Construct the grid once when a game is started/resumed
 clientGameModel.subscribe((cgm) => {
@@ -449,14 +439,14 @@ clientGameModel.subscribe((cgm) => {
 // Start the game loop when both client game model and grid are loaded
 clientGameModel.subscribe((cgm) => {
 	const grid = get(gameGrid);
-	if (cgm && grid && get(isGameRunning) && gameLoopTimerId === null) {
-		startGameLoop();
+	if (cgm && grid && get(isGameRunning)) {
+		gameLoop.ensureRunning();
 	}
 });
 
 gameGrid.subscribe((grid) => {
 	const cgm = get(clientGameModel);
-	if (cgm && grid && get(isGameRunning) && gameLoopTimerId === null) {
-		startGameLoop();
+	if (cgm && grid && get(isGameRunning)) {
+		gameLoop.ensureRunning();
 	}
 });
