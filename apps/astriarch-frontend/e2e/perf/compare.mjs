@@ -128,16 +128,44 @@ function main() {
 }
 
 /** Run settings that must match for two result files to be comparable. */
-const COMPARED_META_KEYS = ['browser', 'cpuModel', 'platform', 'galaxySeed', 'windowMs'];
+const COMPARED_META_KEYS = [
+	'browser',
+	'cpuModel',
+	'platform',
+	'galaxySeed',
+	'windowMs',
+	'warmupMs',
+	'repetitions',
+	'devicePixelRatio',
+	'refreshHz'
+];
 
-/** Returns one warning per run setting that differs between two result files. */
+/** Measured values that only differ meaningfully beyond this relative tolerance. */
+const META_TOLERANCE = { refreshHz: 0.1 };
+
+/**
+ * Returns one warning per run setting that differs between two result files.
+ * Schema v1 files lack devicePixelRatio and refreshHz; a field missing on one
+ * side is reported as "not recorded" rather than as a difference.
+ */
 export function metaMismatches(baseMeta, headMeta) {
 	const warnings = [];
 	for (const key of COMPARED_META_KEYS) {
-		if (baseMeta[key] !== headMeta[key]) {
+		const b = baseMeta[key];
+		const h = headMeta[key];
+		const bMissing = b === undefined || b === null;
+		const hMissing = h === undefined || h === null;
+		if (bMissing || hMissing) {
+			if (bMissing && hMissing) continue;
 			warnings.push(
-				`${key} differs (${baseMeta[key]} vs ${headMeta[key]}); results may not be comparable`
+				`${key} not recorded in ${bMissing ? 'base' : 'head'} (${bMissing ? h : b} in ${bMissing ? 'head' : 'base'}); cannot check it is comparable`
 			);
+			continue;
+		}
+		const tolerance = META_TOLERANCE[key];
+		const differs = tolerance !== undefined ? Math.abs(h - b) > Math.abs(b) * tolerance : b !== h;
+		if (differs) {
+			warnings.push(`${key} differs (${b} vs ${h}); results may not be comparable`);
 		}
 	}
 	if (JSON.stringify(baseMeta.viewport) !== JSON.stringify(headMeta.viewport)) {
@@ -147,7 +175,11 @@ export function metaMismatches(baseMeta, headMeta) {
 }
 
 function describe(meta) {
-	return `${meta.browser} ${meta.browserVersion}, ${meta.gitSha}${meta.gitDirty ? ' (dirty)' : ''} on ${meta.gitBranch}, ${meta.repetitions}×${meta.windowMs / 1000}s, ${meta.date}`;
+	const display =
+		meta.refreshHz != null
+			? `, ${meta.refreshHz}Hz @${meta.devicePixelRatio}x`
+			: ', refresh rate not recorded';
+	return `${meta.browser} ${meta.browserVersion}, ${meta.gitSha}${meta.gitDirty ? ' (dirty)' : ''} on ${meta.gitBranch}, ${meta.repetitions}×${meta.windowMs / 1000}s${display}, ${meta.date}`;
 }
 
 // Run only as a script, so the spec can import the helpers.

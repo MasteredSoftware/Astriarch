@@ -12,12 +12,39 @@ import type { PerfSnapshot } from '../../src/lib/perf/perfMonitor';
 
 export type WindowName = 'idle' | 'panzoom' | 'fleets';
 
+/**
+ * A short harness-side rAF probe taken just before a window is measured
+ * (outside the measured interval). It does not depend on app behaviour, so it
+ * detects throttling and the display refresh rate the same way before and
+ * after event-driven rendering lands.
+ */
+export interface EnvProbe {
+	durationMs: number;
+	/** rAF callbacks during the probe. */
+	frames: number;
+	rafPerSec: number;
+	medianIntervalMs: number | null;
+	/** 1000 / medianIntervalMs: the cadence rAF ran at. */
+	refreshHz: number | null;
+	visibilityState: string;
+	hasFocus: boolean;
+	devicePixelRatio: number;
+}
+
+export interface WindowEnv {
+	/** Probe taken before the window started. */
+	start: EnvProbe;
+	/** Visibility and focus right after the window's action finished. */
+	end: { visibilityState: string; hasFocus: boolean };
+}
+
 export interface WindowRun {
 	repetition: number;
 	cpu: CpuDelta;
 	perf: PerfSnapshot;
 	/** Chromium only: deltas of Performance.getMetrics durations, in seconds. */
 	cdp: Record<string, number> | null;
+	env: WindowEnv;
 	/** Problems that make this run less trustworthy (e.g. rAF throttled). */
 	warnings: string[];
 	metrics: Record<string, number>;
@@ -31,7 +58,11 @@ export interface MetricSummary {
 }
 
 export interface PerfResultFile {
-	schemaVersion: 1;
+	/**
+	 * 2: adds meta.refreshHz/devicePixelRatio, per-run env, rendered.* and
+	 * frames.dropped* metrics; removes frames.over16_7Pct/over33_3Pct.
+	 */
+	schemaVersion: 2;
 	meta: {
 		label: string | null;
 		gitSha: string;
@@ -49,6 +80,9 @@ export interface PerfResultFile {
 		warmupMs: number;
 		repetitions: number;
 		galaxySeed: number;
+		/** Measured by the first window's probe in repetition 1. */
+		refreshHz: number | null;
+		devicePixelRatio: number | null;
 	};
 	windows: Partial<
 		Record<WindowName, { runs: WindowRun[]; summary: Record<string, MetricSummary> }>
@@ -59,6 +93,48 @@ const round = (n: number, digits = 3) => {
 	const f = 10 ** digits;
 	return Math.round(n * f) / f;
 };
+
+/** Below this probe rate the browser is almost certainly throttling the page. */
+const MIN_RAF_PER_SEC = 20;
+/** Refresh rates further apart than this are treated as a different display mode. */
+export const REFRESH_TOLERANCE = 0.1;
+
+/**
+ * Warnings derived from a window's environment probe. `referenceHz` is the
+ * refresh rate recorded in meta (null for the very first probe).
+ */
+export function environmentWarnings(env: WindowEnv, referenceHz: number | null): string[] {
+	const warnings: string[] = [];
+	const { start, end } = env;
+	if (
+		start.rafPerSec < MIN_RAF_PER_SEC ||
+		(referenceHz !== null && start.rafPerSec < referenceHz / 2)
+	) {
+		warnings.push(
+			`rAF probe ran at ${start.rafPerSec}/s before the window: the browser may be throttling the page`
+		);
+	}
+	if (start.visibilityState !== 'visible' || end.visibilityState !== 'visible') {
+		warnings.push(
+			`page was not visible (start: ${start.visibilityState}, end: ${end.visibilityState})`
+		);
+	}
+	if (!start.hasFocus || !end.hasFocus) {
+		warnings.push(
+			`browser window lost focus (start: ${start.hasFocus}, end: ${end.hasFocus}); it may be occluded`
+		);
+	}
+	if (
+		referenceHz !== null &&
+		start.refreshHz !== null &&
+		Math.abs(start.refreshHz - referenceHz) > referenceHz * REFRESH_TOLERANCE
+	) {
+		warnings.push(
+			`refresh rate ${start.refreshHz}Hz differs from the ${referenceHz}Hz recorded for this run`
+		);
+	}
+	return warnings;
+}
 
 /**
  * Flattens one window run into `name -> number`. Naming:

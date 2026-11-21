@@ -3,7 +3,10 @@
  * (see e2e/perf/README.md). Not part of the normal e2e suite.
  *
  * Each repetition launches a fresh browser, starts the pinned benchmark game,
- * warms up, then measures three windows:
+ * warms up, then measures three windows. Before each window (outside the
+ * measured interval) a 500ms rAF probe records the refresh rate, visibility
+ * and focus, so throttling is detected without relying on app counters.
+ * The windows:
  *   idle     no input (frame sampler off, so the harness adds no rAF loop)
  *   panzoom  scripted drags and wheel zooms (frame sampler on)
  *   fleets   after sending a fleet, no input while it is in transit (frame sampler on)
@@ -21,6 +24,8 @@ import {
 	writeResults,
 	gitInfo,
 	machineInfo,
+	environmentWarnings,
+	type EnvProbe,
 	type PerfResultFile,
 	type WindowName,
 	type WindowRun
@@ -40,6 +45,7 @@ const REPETITIONS = Number(process.env.PERF_REPEATS ?? 5);
 const WINDOW_MS = Number(process.env.PERF_WINDOW_MS ?? 20_000);
 const WARMUP_MS = Number(process.env.PERF_WARMUP_MS ?? 10_000);
 const SETTLE_MS = 2_000;
+const PROBE_MS = 500;
 const VIEWPORT = { width: 1440, height: 900 };
 const ENFORCE_BUDGETS = process.env.PERF_ENFORCE_BUDGETS === '1';
 
@@ -162,6 +168,12 @@ async function measureWindow(
 		return Object.fromEntries(metrics.map((m) => [m.name, m.value]));
 	};
 
+	const probe = await probeEnvironment(page, PROBE_MS);
+	if (result && result.meta.refreshHz === null) {
+		result.meta.refreshHz = probe.refreshHz;
+		result.meta.devicePixelRatio = probe.devicePixelRatio;
+	}
+
 	await page.evaluate((frames) => window.__perf!.reset({ sampleFrames: frames }), sampleFrames);
 	const cdpStart = await cdpMetrics();
 	const cpuStart = await sampleTree(browserPid);
@@ -170,10 +182,16 @@ async function measureWindow(
 
 	const cpuEnd = await sampleTree(browserPid);
 	const cdpEnd = await cdpMetrics();
-	const perf: PerfSnapshot = await page.evaluate(() => {
-		const snap = window.__perf!.snapshot();
+	const { perf, endState } = await page.evaluate(() => {
+		const snap: PerfSnapshot = window.__perf!.snapshot();
 		window.__perf!.reset();
-		return snap;
+		return {
+			perf: snap,
+			endState: {
+				visibilityState: document.visibilityState as string,
+				hasFocus: document.hasFocus()
+			}
+		};
 	});
 	await cdp?.detach().catch(() => {});
 
@@ -193,18 +211,15 @@ async function measureWindow(
 	if (cpu.exitedProcesses > 0) {
 		warnings.push(`${cpu.exitedProcesses} browser process(es) exited during the window`);
 	}
-	// The game loop runs every frame today; a very low rate on master-like code
-	// means the browser throttled the page (window hidden/occluded).
-	const gameLoopRate = perf.ratesPerSec['raf.gameLoop'];
-	if (gameLoopRate !== undefined && gameLoopRate > 0 && gameLoopRate < 20) {
-		warnings.push(`rAF ran at ${gameLoopRate}/s: the browser may be throttling a hidden window`);
-	}
+	const env = { start: probe, end: endState };
+	warnings.push(...environmentWarnings(env, result?.meta.refreshHz ?? null));
 
 	const run: WindowRun = {
 		repetition,
 		cpu,
 		perf,
 		cdp: cdpDelta,
+		env,
 		warnings,
 		metrics: flattenMetrics(cpu, perf, cdpDelta)
 	};
@@ -218,13 +233,67 @@ async function measureWindow(
 	);
 }
 
+/**
+ * Runs a short rAF loop in the page (and cancels it) to measure the cadence
+ * rAF actually runs at, plus visibility, focus and devicePixelRatio. A timer
+ * fallback ends the probe if rAF is fully suspended.
+ */
+async function probeEnvironment(page: Page, durationMs: number): Promise<EnvProbe> {
+	return page.evaluate(
+		(ms) =>
+			new Promise<EnvProbe>((resolve) => {
+				const stamps: number[] = [];
+				const start = performance.now();
+				let rafId = 0;
+				let done = false;
+				const finish = () => {
+					if (done) return;
+					done = true;
+					cancelAnimationFrame(rafId);
+					clearTimeout(timer);
+					const elapsed = performance.now() - start;
+					const intervals = stamps
+						.slice(1)
+						.map((t, i) => t - stamps[i])
+						.sort((a, b) => a - b);
+					const mid = Math.floor(intervals.length / 2);
+					const median =
+						intervals.length === 0
+							? null
+							: intervals.length % 2
+								? intervals[mid]
+								: (intervals[mid - 1] + intervals[mid]) / 2;
+					const r = (n: number) => Math.round(n * 10) / 10;
+					resolve({
+						durationMs: r(elapsed),
+						frames: stamps.length,
+						rafPerSec: r(stamps.length / (elapsed / 1000)),
+						medianIntervalMs: median === null ? null : Math.round(median * 1000) / 1000,
+						refreshHz: median ? r(1000 / median) : null,
+						visibilityState: document.visibilityState,
+						hasFocus: document.hasFocus(),
+						devicePixelRatio: window.devicePixelRatio
+					});
+				};
+				const tick = (ts: number) => {
+					stamps.push(ts);
+					if (performance.now() - start < ms) rafId = requestAnimationFrame(tick);
+					else finish();
+				};
+				rafId = requestAnimationFrame(tick);
+				const timer = setTimeout(finish, ms + 250);
+			}),
+		durationMs
+	);
+}
+
 function createResultFile(
 	browserName: string,
 	browserVersion: string,
 	headless: boolean
 ): PerfResultFile {
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		meta: {
 			label: process.env.PERF_LABEL || null,
 			...gitInfo(),
@@ -236,7 +305,9 @@ function createResultFile(
 			windowMs: WINDOW_MS,
 			warmupMs: WARMUP_MS,
 			repetitions: REPETITIONS,
-			galaxySeed: BENCHMARK_GAME.galaxySeed
+			galaxySeed: BENCHMARK_GAME.galaxySeed,
+			refreshHz: null,
+			devicePixelRatio: null
 		},
 		windows: {}
 	};

@@ -56,4 +56,36 @@ describe('metaMismatches', () => {
 		expect(warnings[0]).toMatch(/^browser differs \(chromium vs firefox\)/);
 		expect(warnings[1]).toMatch(/^viewport differs/);
 	});
+
+	const v2 = { ...meta, warmupMs: 10000, repetitions: 5, devicePixelRatio: 2, refreshHz: 120 };
+
+	it('compares warmup, repetitions, devicePixelRatio and refresh rate', () => {
+		const warnings = metaMismatches(v2, {
+			...v2,
+			warmupMs: 3000,
+			repetitions: 1,
+			devicePixelRatio: 1,
+			refreshHz: 60
+		});
+		expect(warnings).toEqual([
+			'warmupMs differs (10000 vs 3000); results may not be comparable',
+			'repetitions differs (5 vs 1); results may not be comparable',
+			'devicePixelRatio differs (2 vs 1); results may not be comparable',
+			'refreshHz differs (120 vs 60); results may not be comparable'
+		]);
+	});
+
+	it('tolerates small refresh rate measurement differences', () => {
+		expect(metaMismatches(v2, { ...v2, refreshHz: 119.2 })).toEqual([]);
+	});
+
+	it('reports fields missing from a schema v1 file as not recorded', () => {
+		const v1 = { ...meta, warmupMs: 10000, repetitions: 5 };
+		const warnings = metaMismatches(v1, v2);
+		expect(warnings).toEqual([
+			'devicePixelRatio not recorded in base (2 in head); cannot check it is comparable',
+			'refreshHz not recorded in base (120 in head); cannot check it is comparable'
+		]);
+		expect(metaMismatches(v1, { ...v1 })).toEqual([]);
+	});
 });

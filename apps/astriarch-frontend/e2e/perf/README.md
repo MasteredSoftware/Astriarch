@@ -89,8 +89,8 @@ Metric names in the results:
 
 Each run writes `perf-results/<label or sha>[-dirty]-<browser>.json`. The file is rewritten after every repetition, so an interrupted run still leaves data behind. It contains:
 
-- run metadata: git sha, branch, dirty flag, browser version, CPU model, viewport, settings
-- every raw window run
+- run metadata: git sha, branch, dirty flag, browser version, CPU model, viewport, settings, measured refresh rate and device pixel ratio
+- every raw window run, including its environment probe (`env`)
 - a per-metric summary (median, min, max) across repetitions.
 
 `perf-results/` is git-ignored, because results are only comparable on the same machine.
@@ -102,7 +102,7 @@ pnpm --filter astriarch-frontend perf:compare baseline-firefox fix-fleets-firefo
 pnpm --filter astriarch-frontend perf:compare baseline-firefox fix-fleets-firefox --all
 ```
 
-A change is reported as `better` or `worse` only when the two runs' min–max ranges **do not overlap**, meaning the change is larger than the run-to-run noise either side measured. Everything else shows `~` (within noise). The script warns when the browser, machine, seed or settings differ between the two files.
+A change is reported as `better` or `worse` only when the two runs' min–max ranges **do not overlap**, meaning the change is larger than the run-to-run noise either side measured. Everything else shows `~` (within noise). The script warns when the browser, machine, seed, settings, refresh rate or device pixel ratio differ between the two files.
 
 ## Budgets
 
@@ -116,9 +116,9 @@ For now they are report-only: the run prints PASS, FAIL or MISSING for each budg
 ## Getting trustworthy numbers
 
 - Use the same machine for both sides of a comparison, on AC power, with other heavy apps closed.
-- Keep the benchmark browser window visible. Hidden windows get throttled. The harness turns off the browsers' occlusion throttling where it can, and adds a warning to a run if the game loop ran below 20 rAF/s.
+- Keep the benchmark browser window visible. Hidden windows get throttled. The harness turns off the browsers' occlusion throttling where it can. Before each window (outside the measured interval) it runs a 500ms rAF probe of its own, and adds a warning to the run if the probe ran below 20 rAF/s or below half the run's refresh rate, if the page wasn't visible at the start or end of the window, or if the browser window lost focus. These checks don't depend on what the app does each frame, so they work the same before and after event-driven rendering.
 - Check the `warnings` array in the results, for example "fleet arrived before the window ended" or "stage did not move during pan/zoom".
-- Note the display refresh rate. The current code does work on every frame, so a 120Hz display does twice the work of a 60Hz one. `frames.fps` in the `panzoom`/`fleets` windows shows the rate the run saw.
+- The display refresh rate matters: code that does work on every frame does twice the work on a 120Hz display as on a 60Hz one. The first probe's rate is recorded as `meta.refreshHz`, together with `meta.devicePixelRatio`. Each run's probe is kept in its `env` field, and a run warns if its rate differs from `meta.refreshHz` by more than 10%. `perf:compare` warns when the refresh rate, device pixel ratio, warm-up or repetitions differ between the two files. Files written before schema version 2 don't record the refresh rate or pixel ratio; the compare script says "not recorded" for them.
 - Timer precision: Chromium coarsens `performance.now()` to about 0.1ms, with jitter; the per-call means are still sound over thousands of samples. The harness disables Firefox's default 1ms clamping (`privacy.reduceTimerPrecision`).
 - Limitations of the CPU sampler: work done outside the browser's process tree (e.g. the macOS WindowServer compositor) isn't counted. The CPU time of a process that exits mid-window is lost; this is flagged in the warnings.
 

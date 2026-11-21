@@ -1,9 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
+	environmentWarnings,
 	flattenMetrics,
 	summarizeRuns,
 	resultFileName,
+	type EnvProbe,
 	type PerfResultFile,
+	type WindowEnv,
 	type WindowRun
 } from './results';
 import type { CpuDelta } from './cpuSampler';
@@ -101,12 +104,62 @@ describe('flattenMetrics', () => {
 	});
 });
 
+const probe: EnvProbe = {
+	durationMs: 500,
+	frames: 60,
+	rafPerSec: 120,
+	medianIntervalMs: 8.333,
+	refreshHz: 120,
+	visibilityState: 'visible',
+	hasFocus: true,
+	devicePixelRatio: 2
+};
+const env: WindowEnv = { start: probe, end: { visibilityState: 'visible', hasFocus: true } };
+
+describe('environmentWarnings', () => {
+	it('is quiet for a visible, focused page at the reference rate', () => {
+		expect(environmentWarnings(env, null)).toEqual([]);
+		expect(environmentWarnings(env, 120)).toEqual([]);
+	});
+
+	it('warns when the probe rate is below 20/s', () => {
+		const w = environmentWarnings({ ...env, start: { ...probe, rafPerSec: 4 } }, null);
+		expect(w).toHaveLength(1);
+		expect(w[0]).toMatch(/throttling/);
+	});
+
+	it('warns when the probe rate is below half the reference rate', () => {
+		const w = environmentWarnings({ ...env, start: { ...probe, rafPerSec: 50 } }, 120);
+		expect(w.some((x) => /throttling/.test(x))).toBe(true);
+	});
+
+	it('warns when the page is hidden or unfocused at start or end', () => {
+		const w = environmentWarnings(
+			{ start: { ...probe, hasFocus: false }, end: { visibilityState: 'hidden', hasFocus: true } },
+			null
+		);
+		expect(w).toHaveLength(2);
+		expect(w[0]).toMatch(/not visible \(start: visible, end: hidden\)/);
+		expect(w[1]).toMatch(/lost focus/);
+	});
+
+	it('warns when the refresh rate differs from the reference by more than 10%', () => {
+		expect(environmentWarnings({ ...env, start: { ...probe, refreshHz: 110 } }, 120)).toEqual([]);
+		const w = environmentWarnings(
+			{ ...env, start: { ...probe, refreshHz: 60, rafPerSec: 60 } },
+			120
+		);
+		expect(w).toEqual(['refresh rate 60Hz differs from the 120Hz recorded for this run']);
+	});
+});
+
 function run(metrics: Record<string, number>): WindowRun {
 	return {
 		repetition: 1,
 		cpu,
 		perf: snapshot(),
 		cdp: null,
+		env,
 		warnings: [],
 		metrics
 	};
