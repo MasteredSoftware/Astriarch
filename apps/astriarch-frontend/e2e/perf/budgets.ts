@@ -32,9 +32,9 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			why: 'No Konva nodes should be destroyed when nothing changes'
 		},
 		{
-			metric: 'rate.raf.canvas',
-			max: 0,
-			why: 'The canvas should not poll every frame; updates are event-driven'
+			metric: 'rate.canvas.update',
+			max: 5,
+			why: 'The canvas updates only when the model changes (at most the model tick rate), never per frame'
 		},
 		{
 			metric: 'rate.store.clientGameModel.set',

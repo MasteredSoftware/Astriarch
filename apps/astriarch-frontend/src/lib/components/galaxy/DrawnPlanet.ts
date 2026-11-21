@@ -52,6 +52,14 @@ export class DrawnPlanet {
 	private statusIndicator: Konva.Circle | null = null;
 	private waypointLine: Konva.Line | null = null;
 
+	// Inputs the current visuals were built from. update() runs on every model
+	// change; these let it skip work (and Konva redraws) when nothing visible changed.
+	private requestedImageType: PlanetType | null = null;
+	private ringOwnerColor: string | null = null;
+	private strengthIndicatorsKey = '';
+	private waypointDelta: { dx: number; dy: number } | null = null;
+	private destroyed = false;
+
 	// Selection state and elements
 	private isSelected: boolean = false;
 	private selectionRingOuter: Konva.Circle | null = null;
@@ -246,229 +254,106 @@ export class DrawnPlanet {
 
 	private updatePlanetImage(): void {
 		// Only show planet image if we know the planet type (explored)
-		if (this.knownPlanetType) {
-			if (!this.planetImage) {
-				// Create new image
-				const imageObj = new Image();
-				const imageUrl = this.getPlanetImageUrl(this.knownPlanetType);
-
-				imageObj.onload = () => {
-					this.planetImage = new Konva.Image({
-						x: -PLANET_IMAGE_WIDTH / 2,
-						y: -PLANET_IMAGE_HEIGHT / 2,
-						width: PLANET_IMAGE_WIDTH,
-						height: PLANET_IMAGE_HEIGHT,
-						image: imageObj,
-						visible: true,
-						perfectDrawEnabled: false,
-						listening: false // Disable events
-					});
-
-					// Add image to the group
-					this.group.add(this.planetImage);
-
-					// Proper layering: planet image at bottom, then ring on top, then UI elements
-					this.planetImage.moveToBottom();
-					if (this.planetRing) {
-						this.planetRing.moveUp(); // Move ring above planet image
-					}
-				};
-
-				imageObj.onerror = (error) => {
-					console.error(
-						`Failed to load planet image for ${this.planetData.name}:`,
-						error,
-						imageUrl
-					);
-				};
-
-				imageObj.src = imageUrl;
-			} else {
-				// Update existing image if planet type changed
-				const newImageUrl = this.getPlanetImageUrl(this.knownPlanetType);
-
-				const imageObj = new Image();
-				imageObj.onload = () => {
-					if (this.planetImage) {
-						this.planetImage.image(imageObj);
-						this.planetImage.visible(true);
-					}
-				};
-
-				imageObj.onerror = (error) => {
-					console.error(
-						`Failed to update planet image for ${this.planetData.name}:`,
-						error,
-						newImageUrl
-					);
-				};
-
-				imageObj.src = newImageUrl;
-			}
-		} else {
-			// Hide planet image and show fallback circle for unexplored planets
-			if (this.planetImage) {
-				this.planetImage.visible(false);
-			}
+		if (!this.knownPlanetType) {
+			this.planetImage?.visible(false);
+			return;
 		}
+		if (this.knownPlanetType === this.requestedImageType) {
+			// Already loaded (or loading) the right image
+			this.planetImage?.visible(true);
+			return;
+		}
+
+		const planetType = this.knownPlanetType;
+		this.requestedImageType = planetType;
+		const imageUrl = this.getPlanetImageUrl(planetType);
+		const imageObj = new Image();
+
+		imageObj.onload = () => {
+			// Ignore a load that was superseded by a newer type, or a destroyed planet
+			if (this.destroyed || this.requestedImageType !== planetType) return;
+
+			if (this.planetImage) {
+				this.planetImage.image(imageObj);
+				this.planetImage.visible(true);
+				return;
+			}
+
+			this.planetImage = new Konva.Image({
+				x: -PLANET_IMAGE_WIDTH / 2,
+				y: -PLANET_IMAGE_HEIGHT / 2,
+				width: PLANET_IMAGE_WIDTH,
+				height: PLANET_IMAGE_HEIGHT,
+				image: imageObj,
+				visible: true,
+				perfectDrawEnabled: false,
+				listening: false // Disable events
+			});
+
+			// Add image to the group
+			this.group.add(this.planetImage);
+
+			// Proper layering: planet image at bottom, then ring on top, then UI elements
+			this.planetImage.moveToBottom();
+			if (this.planetRing) {
+				this.planetRing.moveUp(); // Move ring above planet image
+			}
+		};
+
+		imageObj.onerror = (error) => {
+			console.error(`Failed to load planet image for ${this.planetData.name}:`, error, imageUrl);
+		};
+
+		imageObj.src = imageUrl;
 	}
 
 	private updatePlanetRing(): void {
-		// Create persistent ring for all planets
+		// Persistent ring for all planets; its gradient reflects the owner color
+		const ownerColor = this.owner ? this.getOwnerColor() : null;
+		if (this.planetRing && ownerColor === this.ringOwnerColor) return;
+		this.ringOwnerColor = ownerColor;
+
+		// Metallic gradient matching the Figma design, tinted with the owner color if owned
+		const colorStops = ownerColor
+			? [0, '#313E46', 0.31, ownerColor + '88', 0.51, '#FFFFFF', 1, ownerColor + 'D4']
+			: [0, '#313E46', 0.31, '#A0B0BA88', 0.51, '#FFFFFF', 1, '#69747BD4'];
+		const opacity = ownerColor ? 0.8 : 0.7;
+
+		if (this.planetRing) {
+			// Konva rebuilds stroke gradients on every draw, so update in place
+			this.planetRing.strokeLinearGradientColorStops(colorStops);
+			this.planetRing.opacity(opacity);
+			return;
+		}
+
 		const ringRadius = PLANET_SIZE / 2 + 4; // 4px larger than planet radius
+		this.planetRing = new Konva.Circle({
+			x: 0,
+			y: 0,
+			radius: ringRadius,
+			fill: 'transparent',
+			strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
+			strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
+			strokeLinearGradientColorStops: colorStops,
+			strokeWidth: 2,
+			opacity,
+			shadowColor: 'black',
+			shadowBlur: 2,
+			shadowOffset: { x: 0, y: 2 },
+			shadowOpacity: 0.25,
+			visible: true,
+			perfectDrawEnabled: false,
+			shadowForStrokeEnabled: false,
+			listening: false // Disable events
+		});
 
-		if (!this.planetRing) {
-			// Create sophisticated metallic ring with gradient matching Figma design
-			const ownerColor = this.owner ? this.getOwnerColor() : null;
+		// Add ring and position it above planet image
+		this.group.add(this.planetRing);
 
-			if (ownerColor) {
-				// For owned planets, create a gradient that incorporates the owner color
-				this.planetRing = new Konva.Circle({
-					x: 0,
-					y: 0,
-					radius: ringRadius,
-					fill: 'transparent',
-					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
-					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
-					strokeLinearGradientColorStops: [
-						0,
-						'#313E46', // Dark metallic start
-						0.31,
-						ownerColor + '88', // Owner color with transparency
-						0.51,
-						'#FFFFFF', // White highlight
-						1,
-						ownerColor + 'D4' // Owner color with more transparency
-					],
-					strokeWidth: 2,
-					opacity: 0.8,
-					shadowColor: 'black',
-					shadowBlur: 2,
-					shadowOffset: { x: 0, y: 2 },
-					shadowOpacity: 0.25,
-					visible: true,
-					perfectDrawEnabled: false,
-					shadowForStrokeEnabled: false,
-					listening: false // Disable events
-				});
-			} else {
-				// For unowned planets, use the original metallic gradient from Figma
-				this.planetRing = new Konva.Circle({
-					x: 0,
-					y: 0,
-					radius: ringRadius,
-					fill: 'transparent',
-					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
-					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
-					strokeLinearGradientColorStops: [
-						0,
-						'#313E46', // Dark metallic start
-						0.31,
-						'#A0B0BA88', // Semi-transparent light metallic
-						0.51,
-						'#FFFFFF', // White highlight
-						1,
-						'#69747BD4' // Semi-transparent dark metallic end
-					],
-					strokeWidth: 2,
-					opacity: 0.7,
-					shadowColor: 'black',
-					shadowBlur: 2,
-					shadowOffset: { x: 0, y: 2 },
-					shadowOpacity: 0.25,
-					visible: true,
-					perfectDrawEnabled: false,
-					shadowForStrokeEnabled: false,
-					listening: false // Disable events
-				});
-			}
-
-			// Add ring and position it above planet image
-			this.group.add(this.planetRing);
-
-			// Proper layering: planet image at bottom, then ring on top, then UI elements on top
-			if (this.planetImage) {
-				this.planetImage.moveToBottom();
-				this.planetRing.moveUp(); // Move ring above planet image
-			}
-		} else {
-			// Update existing ring - need to recreate for gradient changes
-			this.planetRing.destroy();
-			this.planetRing = null;
-
-			// Recreate with new gradient
-			const ownerColor = this.owner ? this.getOwnerColor() : null;
-
-			if (ownerColor) {
-				// For owned planets, create a gradient that incorporates the owner color
-				this.planetRing = new Konva.Circle({
-					x: 0,
-					y: 0,
-					radius: ringRadius,
-					fill: 'transparent',
-					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
-					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
-					strokeLinearGradientColorStops: [
-						0,
-						'#313E46', // Dark metallic start
-						0.31,
-						ownerColor + '88', // Owner color with transparency
-						0.51,
-						'#FFFFFF', // White highlight
-						1,
-						ownerColor + 'D4' // Owner color with more transparency
-					],
-					strokeWidth: 2,
-					opacity: 0.8,
-					shadowColor: 'black',
-					shadowBlur: 2,
-					shadowOffset: { x: 0, y: 2 },
-					shadowOpacity: 0.25,
-					visible: true,
-					perfectDrawEnabled: false,
-					shadowForStrokeEnabled: false,
-					listening: false // Disable events
-				});
-			} else {
-				// For unowned planets, use the original metallic gradient from Figma
-				this.planetRing = new Konva.Circle({
-					x: 0,
-					y: 0,
-					radius: ringRadius,
-					fill: 'transparent',
-					strokeLinearGradientStartPoint: { x: -ringRadius * 2, y: -ringRadius * 2 },
-					strokeLinearGradientEndPoint: { x: ringRadius * 2, y: ringRadius * 2 },
-					strokeLinearGradientColorStops: [
-						0,
-						'#313E46', // Dark metallic start
-						0.31,
-						'#A0B0BA88', // Semi-transparent light metallic
-						0.51,
-						'#FFFFFF', // White highlight
-						1,
-						'#69747BD4' // Semi-transparent dark metallic end
-					],
-					strokeWidth: 2,
-					opacity: 0.7,
-					shadowColor: 'black',
-					shadowBlur: 2,
-					shadowOffset: { x: 0, y: 2 },
-					shadowOpacity: 0.25,
-					visible: true,
-					perfectDrawEnabled: false,
-					shadowForStrokeEnabled: false,
-					listening: false // Disable events
-				});
-			}
-
-			// Add to group and position properly
-			this.group.add(this.planetRing);
-
-			// Proper layering: planet image at bottom, then ring on top, then UI elements on top
-			if (this.planetImage) {
-				this.planetImage.moveToBottom();
-				this.planetRing.moveUp(); // Move ring above planet image
-			}
+		// Proper layering: planet image at bottom, then ring on top, then UI elements on top
+		if (this.planetImage) {
+			this.planetImage.moveToBottom();
+			this.planetRing.moveUp(); // Move ring above planet image
 		}
 	}
 
@@ -589,6 +474,30 @@ export class DrawnPlanet {
 		const defenderStrength = this.calculateDefenderStrength();
 		const platformCount = this.getPlatformCount();
 
+		// Rebuild the dot/platform indicators only when what they show changes
+		const mobileDots = mobileStrength > 0 ? this.calculateRelativeStrength(mobileStrength) : 0;
+		const defenderDots =
+			defenderStrength > 0 ? this.calculateRelativeStrength(defenderStrength) : 0;
+		const ownerColor = this.owner ? this.getOwnerColor() : null;
+		const key = `${mobileDots}|${defenderDots}|${platformCount}|${ownerColor}`;
+		if (key !== this.strengthIndicatorsKey) {
+			this.strengthIndicatorsKey = key;
+			this.rebuildStrengthIndicators(mobileDots, defenderDots, platformCount);
+		}
+
+		// Update text-based strength displays (no-op in Konva when unchanged)
+		const mobileText = mobileStrength > 0 ? Math.round(mobileStrength).toString() : '';
+		this.strengthTextMobile.text(mobileText);
+
+		const defenseText = defenderStrength > 0 ? Math.round(defenderStrength).toString() : '';
+		this.strengthTextDefense.text(defenseText);
+	}
+
+	private rebuildStrengthIndicators(
+		mobileDots: number,
+		defenderDots: number,
+		platformCount: number
+	): void {
 		// Remove existing indicators
 		if (this.fleetStrengthIndicator) {
 			this.fleetStrengthIndicator.destroy();
@@ -604,8 +513,8 @@ export class DrawnPlanet {
 		}
 
 		// Show mobile ship strength indicator (left side)
-		if (mobileStrength > 0) {
-			this.createFleetStrengthIndicator(mobileStrength);
+		if (mobileDots > 0) {
+			this.createFleetStrengthIndicator(mobileDots);
 		}
 
 		// Show space platform indicators (right side)
@@ -614,16 +523,9 @@ export class DrawnPlanet {
 		}
 
 		// Show defender strength indicator (far right)
-		if (defenderStrength > 0) {
-			this.createDefenderStrengthIndicator(defenderStrength);
+		if (defenderDots > 0) {
+			this.createDefenderStrengthIndicator(defenderDots);
 		}
-
-		// Update text-based strength displays
-		const mobileText = mobileStrength > 0 ? Math.round(mobileStrength).toString() : '';
-		this.strengthTextMobile.text(mobileText);
-
-		const defenseText = defenderStrength > 0 ? Math.round(defenderStrength).toString() : '';
-		this.strengthTextDefense.text(defenseText);
 	}
 
 	private createSpacePlatformIndicators(platformCount: number): void {
@@ -680,10 +582,7 @@ export class DrawnPlanet {
 		this.group.add(this.spacePlatformIndicators);
 	}
 
-	private createDefenderStrengthIndicator(defenderStrength: number): void {
-		// Calculate relative strength based on all known fleet strengths
-		const relativeStrength = this.calculateRelativeStrength(defenderStrength);
-
+	private createDefenderStrengthIndicator(relativeStrength: number): void {
 		// Get owner color for the dots
 		const ownerColor = this.owner ? this.getOwnerColor() : '#FFFFFF';
 
@@ -728,10 +627,7 @@ export class DrawnPlanet {
 		this.group.add(this.defenderStrengthIndicator);
 	}
 
-	private createFleetStrengthIndicator(fleetStrength: number): void {
-		// Calculate relative strength based on all known fleet strengths
-		const relativeStrength = this.calculateRelativeStrength(fleetStrength);
-
+	private createFleetStrengthIndicator(relativeStrength: number): void {
 		// Get owner color for the dots
 		const ownerColor = this.owner ? this.getOwnerColor() : '#FFFFFF';
 
@@ -856,7 +752,9 @@ export class DrawnPlanet {
 	}
 
 	private showProductionIndicator(): void {
-		if (!this.statusIndicator) {
+		if (this.statusIndicator) {
+			this.statusIndicator.fill(this.productionItemStatusColor || 'yellow');
+		} else {
 			this.statusIndicator = new Konva.Circle({
 				x: PLANET_SIZE / 2 - 3,
 				y: -PLANET_SIZE / 2 + 3,
@@ -984,6 +882,11 @@ export class DrawnPlanet {
 				this.planetData.waypointBoundingHexMidPoint.y - this.planetData.boundingHexMidPoint.y;
 
 			// Create or update waypoint line with gradient transparency
+			if (this.waypointLine && this.waypointDelta?.dx === dx && this.waypointDelta.dy === dy) {
+				this.waypointLine.visible(true);
+				return;
+			}
+			this.waypointDelta = { dx, dy };
 			if (!this.waypointLine) {
 				this.waypointLine = new Konva.Line({
 					points: [
@@ -1038,6 +941,7 @@ export class DrawnPlanet {
 	}
 
 	destroy(): void {
+		this.destroyed = true;
 		if (this.planetImage) {
 			this.planetImage.destroy();
 			this.planetImage = null;

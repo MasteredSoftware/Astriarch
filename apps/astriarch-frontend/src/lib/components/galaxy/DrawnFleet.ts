@@ -133,7 +133,13 @@ export class DrawnFleet {
 
 		// Travel line will be created when needed in updateTravelLine
 	}
-	public update(clientGameModel: ClientModelData) {
+	/**
+	 * Updates the fleet in place. Pass the latest FleetData when the model was
+	 * replaced (e.g. a server state sync), so the same Konva nodes are reused.
+	 */
+	public update(clientGameModel: ClientModelData, fleetData: FleetData = this.fleetData) {
+		this.fleetData = fleetData;
+
 		// Find the owner of this fleet by looking through fleetsInTransit
 		this.owner = null;
 

@@ -181,7 +181,7 @@ When `f8a54daa` was first written, the review feedback was "should be more event
    - Keep `DrawnFleet` instances alive, keyed by a stable fleet ID instead of the array index. Update their positions in place and create or destroy one only when that fleet appears or disappears.
    - Rebuild `planetByHexCoords` only when the set of planets changes.
    - Remove the redundant `batchDraw()` calls and let Konva's automatic redraw work.
-   - For smooth fleet motion between model updates, use a `Konva.Animation` bound to `fleetLayer` that runs only while fleets are in transit.
+   - For smooth fleet motion between model updates, use a `Konva.Animation` bound to `fleetLayer` that runs only while fleets are in transit. (Moved to step 2: while the model still advances every frame, fleets already move every frame.)
 
 2. **Slow the store's fan-out**
    - Advance the engine at a fixed tick. CLAUDE.md gives `MS_PER_TICK` = 200ms for client updates. Check how this interacts with fleet animation smoothness, which step 1's per-frame interpolation should cover.
@@ -197,6 +197,37 @@ When `f8a54daa` was first written, the review feedback was "should be more event
    - Hide nodes outside the viewport.
    - Re-check the layer count.
    - Look at Firefox-specific canvas settings.
+
+## Phase 2 status
+
+### Step 1: event-driven canvas (2026-11-20, branch `perf/phase-2-event-driven-canvas`)
+
+What changed:
+
+- `GalaxyCanvas.svelte` has no rAF loop. Subscriptions to `clientGameModel` and `gameGrid` mark the canvas dirty, and one update per task is coalesced with `queueMicrotask`.
+- `DrawnPlanet.update` only touches Konva when something visible changed:
+  - The ring is recolored in place instead of being destroyed and recreated.
+  - Strength and platform indicators are rebuilt only when their dot counts, platform count or owner color change.
+  - Each planet image is loaded once. This fixed a bug: every frame started a new image load until one finished, which left 16 stacked `Konva.Image` nodes for 4 explored planets.
+  - The waypoint line is updated only when it moves. The production dot now keeps its color current.
+- `DrawnFleet`s are kept by fleet id and updated in place. `DrawnTravelLine.updateEndpoints` skips no-op updates, because setting points always redraws.
+- The background (stars, hex grid, labels) is in its own group. A grid change rebuilds only that group; it no longer destroys the planets too.
+- The `batchDraw()` calls are removed.
+- The `rate.raf.canvas` budget became `rate.canvas.update` ≤ 5/s.
+
+Results (5 × 20s, medians; every change below is outside both runs' min–max ranges):
+
+| Whole-browser CPU, % of one core | Firefox before → after | Chromium before → after |
+| --- | --- | --- |
+| idle | 199 → **87** (−56%) | 94 → **53** (−43%) |
+| panzoom | 194 → **133** (−32%) | 96 → **76** (−21%) |
+| fleets | 190 → **108** (−43%) | 92 → **56** (−40%) |
+
+- Konva nodes created and destroyed per second went from about 4,500 to 0 in every window. The galaxy layer no longer redraws at idle or while fleets move.
+- `updateGameObjects` fell from 67 to 7 ms per second in Firefox.
+- A node-count and screenshot comparison shows the same galaxy. The only differences are the 12 duplicate planet images (gone) and one extra background group.
+- **Read the "worse" timings with care.** The per-call times of unchanged code (the engine clock, game loop and store fan-out) rose 30–100%. Most likely macOS lowers the clock or uses efficiency cores once the browser no longer keeps a core busy. The fleet layer's per-draw time rose from 0.08 to 0.36 ms in the benchmark. Yet it holds the same 5 nodes as before, and drawn back to back it costs the same in both versions (0.115 vs 0.105 ms). Whole-browser CPU is the measure that counts.
+- Idle budgets: 5 of 7 pass. `rate.store.clientGameModel.set` and `rate.canvas.update` (~120/s) are step 2.
 
 ## Open decisions
 
