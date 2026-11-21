@@ -12,6 +12,7 @@
 	import Konva from 'konva';
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
+	import { keyFleets } from './fleetKeys';
 	import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
 	import { perfCount, perfStart, perfEnd, perfRegisterKonvaStage } from '#lib/perf/perfMonitor.ts';
 
@@ -22,7 +23,10 @@
 	let uiLayer: Konva.Layer;
 
 	let drawnPlanets: Map<number, DrawnPlanet> = new Map();
-	let drawnFleets: Map<number, DrawnFleet> = new Map();
+	// Keyed by keyFleets(): the fleet id, or `${id}#${n}` for a repeated id.
+	let drawnFleets: Map<string, DrawnFleet> = new Map();
+	// Duplicate fleet ids already reported, so the warning isn't logged every tick.
+	const warnedDuplicateFleetIds = new Set<number>();
 	let currentGrid: Grid | null = null;
 	// Stars, hex grid and hex labels; rebuilt only when the grid changes.
 	let backgroundGroup: Konva.Group | null = null;
@@ -520,27 +524,34 @@
 	}
 
 	function updateFleets(gameModel: ClientModelData) {
-		// Keep one DrawnFleet per fleet id and update it in place. Fleet ids are
-		// player-scoped, and only the main player's fleets are drawn.
-		const seen = new Set<number>();
-		for (const fleet of gameModel.mainPlayer.fleetsInTransit) {
-			if (seen.has(fleet.id)) continue;
-			seen.add(fleet.id);
+		// Keep one DrawnFleet per fleet and update it in place. Fleet ids are
+		// player-scoped, and only the main player's fleets are drawn. Ids can
+		// collide (the client and server fleet id counters can diverge), so a
+		// repeated id gets a derived key instead of hiding a fleet.
+		const { keyed, duplicateIds } = keyFleets(gameModel.mainPlayer.fleetsInTransit);
+		for (const id of duplicateIds) {
+			if (warnedDuplicateFleetIds.has(id)) continue;
+			warnedDuplicateFleetIds.add(id);
+			console.warn(`GalaxyCanvas: duplicate fleet id ${id}; drawing each fleet with its own key`);
+		}
 
-			const drawnFleet = drawnFleets.get(fleet.id);
+		const seen = new Set<string>();
+		for (const [key, fleet] of keyed) {
+			seen.add(key);
+			const drawnFleet = drawnFleets.get(key);
 			if (drawnFleet) {
 				drawnFleet.update(gameModel, fleet);
 			} else {
 				const created = new DrawnFleet(fleet, gameModel);
-				drawnFleets.set(fleet.id, created);
+				drawnFleets.set(key, created);
 				fleetLayer.add(created.group);
 			}
 		}
 
-		for (const [fleetId, drawnFleet] of drawnFleets) {
-			if (!seen.has(fleetId)) {
+		for (const [key, drawnFleet] of drawnFleets) {
+			if (!seen.has(key)) {
 				drawnFleet.destroyFleet();
-				drawnFleets.delete(fleetId);
+				drawnFleets.delete(key);
 			}
 		}
 
