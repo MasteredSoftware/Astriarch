@@ -199,8 +199,13 @@ export function flattenMetrics(
 	if (perf.konva.nodeCount !== null) m['konva.nodeCount'] = perf.konva.nodeCount;
 
 	if (perf.heapUsedBytes !== null) m['heap.usedMB'] = round(perf.heapUsedBytes / 1024 / 1024, 1);
-	// Older result files predate this field
-	m['dom.runningAnimations'] = perf.runningAnimations?.length ?? 0;
+	// Looping animations only (infinite, running for the whole window); finite
+	// ones are in perf.runningAnimations for diagnosis. Left out where
+	// getAnimations is unsupported, and in older result files, so a budget on
+	// it reports MISSING rather than a 0 that was never measured.
+	if (perf.loopingAnimations != null) {
+		m['dom.runningAnimations'] = perf.loopingAnimations.length;
+	}
 	if (perf.longTasks) {
 		m['longTasks.perSec'] = round(perf.longTasks.count / elapsedSec);
 		m['longTasks.msPerSec'] = round(perf.longTasks.totalMs / elapsedSec);

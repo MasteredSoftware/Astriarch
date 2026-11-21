@@ -124,6 +124,61 @@ describe('perfMonitor', () => {
 		]);
 	});
 
+	describe('looping animations', () => {
+		class CSSAnimation {
+			constructor(
+				public animationName: string,
+				public iterations: number,
+				public playState = 'running'
+			) {}
+			effect = {
+				target: { tagName: 'DIV', getAttribute: () => 'scan-line absolute' },
+				getComputedTiming: () => ({ iterations: this.iterations })
+			};
+		}
+
+		it('counts only infinite animations running at both window start and snapshot', async () => {
+			await loadPerf('?perf=1');
+			const loop = new CSSAnimation('dots', Infinity);
+			const finite = new CSSAnimation('pulse', 2);
+			const ended = new CSSAnimation('fade', Infinity);
+			let animations = [loop, finite, ended];
+			vi.stubGlobal('document', { getAnimations: () => animations });
+			window.__perf!.reset();
+
+			// An infinite hover loop starts mid-window; the infinite fade finishes
+			const lateLoop = new CSSAnimation('hover-scan', Infinity);
+			ended.playState = 'finished';
+			animations = [loop, finite, ended, lateLoop];
+
+			const snap = window.__perf!.snapshot();
+			expect(snap.loopingAnimations).toEqual(['CSSAnimation dots on div.scan-line']);
+			// The raw list keeps every running animation, for diagnosis
+			expect(snap.runningAnimations).toEqual([
+				'CSSAnimation dots on div.scan-line',
+				'CSSAnimation pulse on div.scan-line',
+				'CSSAnimation hover-scan on div.scan-line'
+			]);
+		});
+
+		it('does not count an animation without computed timing as looping', async () => {
+			await loadPerf('?perf=1');
+			const noTiming = { ...new CSSAnimation('x', Infinity), effect: null };
+			vi.stubGlobal('document', { getAnimations: () => [noTiming] });
+			window.__perf!.reset();
+			expect(window.__perf!.snapshot().loopingAnimations).toEqual([]);
+		});
+
+		it('reports null for both lists where getAnimations is unsupported', async () => {
+			await loadPerf('?perf=1');
+			vi.stubGlobal('document', {});
+			window.__perf!.reset();
+			const snap = window.__perf!.snapshot();
+			expect(snap.runningAnimations).toBeNull();
+			expect(snap.loopingAnimations).toBeNull();
+		});
+	});
+
 	it('reset clears the previous window', async () => {
 		const perf = await loadPerf('?perf=1');
 		perf.perfCount('a');

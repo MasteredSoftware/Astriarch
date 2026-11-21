@@ -67,14 +67,14 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 		{
 			metric: 'dom.runningAnimations',
 			max: 0,
-			why: 'No CSS/Web animation should loop at idle: it makes the browser composite every frame (see snapshot.runningAnimations for which)'
+			why: 'No CSS/Web animation with infinite iterations should run for the whole idle window: it makes the browser composite every frame (see snapshot.loopingAnimations for which)'
 		}
 	],
 	panzoom: [
 		{
 			metric: 'dom.runningAnimations',
 			max: 0,
-			why: 'No CSS/Web animation should loop forever (see snapshot.runningAnimations for which)'
+			why: 'No CSS/Web animation with infinite iterations should run for the whole window (see snapshot.loopingAnimations for which)'
 		}
 	],
 	fleets: [
@@ -86,7 +86,7 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 		{
 			metric: 'dom.runningAnimations',
 			max: 0,
-			why: 'No CSS/Web animation should loop forever, e.g. on the open Fleet Command view (see snapshot.runningAnimations)'
+			why: 'No CSS/Web animation with infinite iterations should run for the whole window, e.g. on the open Fleet Command view (see snapshot.loopingAnimations)'
 		}
 	]
 };

@@ -49,6 +49,8 @@ function snapshot(overrides: Partial<PerfSnapshot> = {}): PerfSnapshot {
 		},
 		heapUsedBytes: 10 * 1024 * 1024,
 		longTasks: { count: 2, totalMs: 120 },
+		runningAnimations: [],
+		loopingAnimations: [],
 		devicePixelRatio: 2,
 		userAgent: 'test',
 		...overrides
@@ -111,6 +113,28 @@ describe('flattenMetrics', () => {
 		);
 		expect(m['rendered.fps']).toBe(0);
 		expect(m['rendered.p50Ms']).toBeUndefined();
+	});
+
+	it('budgets only looping animations as dom.runningAnimations', () => {
+		const m = flattenMetrics(
+			cpu,
+			snapshot({
+				runningAnimations: ['CSSAnimation dots on div.dot', 'CSSTransition opacity on div.card'],
+				loopingAnimations: ['CSSAnimation dots on div.dot']
+			}),
+			null
+		);
+		expect(m['dom.runningAnimations']).toBe(1);
+		expect(flattenMetrics(cpu, snapshot(), null)['dom.runningAnimations']).toBe(0);
+	});
+
+	it('omits dom.runningAnimations when getAnimations is unsupported or the file predates it', () => {
+		const unsupported = snapshot({ runningAnimations: null, loopingAnimations: null });
+		expect(flattenMetrics(cpu, unsupported, null)['dom.runningAnimations']).toBeUndefined();
+
+		const older = snapshot({ runningAnimations: ['CSSAnimation dots on div.dot'] });
+		delete (older as Partial<PerfSnapshot>).loopingAnimations;
+		expect(flattenMetrics(cpu, older, null)['dom.runningAnimations']).toBeUndefined();
 	});
 
 	it('omits Konva churn when no stage is registered', () => {
