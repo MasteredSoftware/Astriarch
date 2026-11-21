@@ -136,6 +136,8 @@
 		unsubscribers = [];
 		fleetAnimation?.stop();
 		fleetAnimation = null;
+		cancelPendingPan();
+		stopPan();
 		window.removeEventListener('resize', handleResize);
 		// Clean up prospective travel line
 		if (prospectiveTravelLine) {
@@ -210,6 +212,11 @@
 
 		// Add zoom and pan event listeners
 		stage.on('wheel', handleZoom);
+		// A drag or zoom takes over from an in-progress auto-pan
+		stage.on('dragstart wheel', () => {
+			cancelPendingPan();
+			stopPan();
+		});
 		stage.on('mousemove', handleMouseMove);
 		stage.on('mouseout', handleMouseOut);
 
@@ -830,7 +837,36 @@
 		});
 	}
 
+	/** rAF id of a pan waiting for the selection's re-render to paint. */
+	let pendingPanFrame: number | null = null;
+
+	function cancelPendingPan() {
+		if (pendingPanFrame !== null) {
+			cancelAnimationFrame(pendingPanFrame);
+			pendingPanFrame = null;
+		}
+	}
+
+	/**
+	 * Pan to a planet once the selection's re-render has painted.
+	 *
+	 * Selecting a planet re-renders the side views (Fleet Command redraws every
+	 * ShipCard), which can block the main thread for a few hundred ms. The pan is
+	 * a time-based tween, so starting it in the same frame made it freeze and then
+	 * jump ahead mid-motion. Waiting two frames lets that work land before the
+	 * galaxy starts moving. A newer selection replaces a pan still waiting.
+	 */
 	function zoomToPlanet(drawnPlanet: DrawnPlanet) {
+		cancelPendingPan();
+		pendingPanFrame = requestAnimationFrame(() => {
+			pendingPanFrame = requestAnimationFrame(() => {
+				pendingPanFrame = null;
+				startPanToPlanet(drawnPlanet);
+			});
+		});
+	}
+
+	function startPanToPlanet(drawnPlanet: DrawnPlanet) {
 		if (!stage) return;
 
 		const planetData = drawnPlanet.getPlanetData();
@@ -861,14 +897,46 @@
 		if (Math.abs(deltaX) > 50 || Math.abs(deltaY) > 50) {
 			console.log('Zooming to planet:', planetData.name, 'at position:', planetWorldPos);
 
-			// Use Konva's built-in animation
-			stage.to({
-				x: targetStageX,
-				y: targetStageY,
-				duration: 0.8, // 800ms animation
-				easing: Konva.Easings.EaseOut
-			});
+			animatePan(currentPos, { x: targetStageX, y: targetStageY });
 		}
+	}
+
+	const PAN_DURATION_MS = 800;
+	/** Most a single frame may advance the pan; a longer stall pauses it instead. */
+	const PAN_MAX_STEP_MS = 1000 / 30;
+	let panAnimation: Konva.Animation | null = null;
+
+	function stopPan() {
+		panAnimation?.stop();
+		panAnimation = null;
+	}
+
+	/**
+	 * Ease the stage from `from` to `to`, advancing by frame rather than by
+	 * wall-clock time. Konva's tween (stage.to) is time-based, so a busy main
+	 * thread made the galaxy freeze and then jump partway across the screen.
+	 */
+	function animatePan(from: { x: number; y: number }, to: { x: number; y: number }) {
+		stopPan();
+		let elapsed = 0;
+		const anim = new Konva.Animation((frame) => {
+			elapsed = Math.min(
+				PAN_DURATION_MS,
+				elapsed + Math.min(frame?.timeDiff ?? 0, PAN_MAX_STEP_MS)
+			);
+			const t = elapsed / PAN_DURATION_MS;
+			const eased = 1 - (1 - t) * (1 - t); // ease-out
+			stage.position({
+				x: from.x + (to.x - from.x) * eased,
+				y: from.y + (to.y - from.y) * eased
+			});
+			if (t >= 1) {
+				anim.stop();
+				if (panAnimation === anim) panAnimation = null;
+			}
+		}, stage.getLayers());
+		panAnimation = anim;
+		anim.start();
 	}
 </script>
 
