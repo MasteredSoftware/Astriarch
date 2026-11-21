@@ -13,13 +13,21 @@ import { defineConfig } from '@playwright/test';
  *     the dev server, which adds Svelte dev-mode and HMR overhead.
  *   - Browsers run headed (set PERF_HEADLESS=1 to override) because headless
  *     rendering paths differ, especially for Firefox and GPU canvas.
- *   - The frontend server is never reused, so results always reflect the
- *     current working tree.
+ *   - Neither server is reused, so results always reflect the current working
+ *     tree (frontend, backend and engine). The backend runs on its own default
+ *     port (8022, override with TEST_BACKEND_PORT); if something already
+ *     listens there the run fails fast instead of measuring a stale backend.
+ *     The backend process ends with the run, so a killed run cannot leave the
+ *     test galaxy seed set for later games.
  *
  * See e2e/perf/README.md for usage.
  */
 
-const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8002';
+// Set before anything reads it: the e2e helpers (e2e/helpers/cleanup.ts) and
+// perfScenario.ts read TEST_BACKEND_PORT at import time, and Playwright loads
+// this config in each worker before the spec, so they inherit this default.
+process.env.TEST_BACKEND_PORT ??= '8022';
+const BACKEND_PORT = process.env.TEST_BACKEND_PORT;
 const BACKEND_HTTP = `http://localhost:${BACKEND_PORT}`;
 const BACKEND_WS = `ws://localhost:${BACKEND_PORT}`;
 const FRONTEND_PORT = process.env.PERF_FRONTEND_PORT ?? '4174';
@@ -47,7 +55,7 @@ export default defineConfig({
 			command: `pnpm --filter astriarch-engine build && PORT=${BACKEND_PORT} NODE_ENV=test pnpm --filter astriarch-backend dev`,
 			url: `${BACKEND_HTTP}/api/health`,
 			timeout: 90_000,
-			reuseExistingServer: true,
+			reuseExistingServer: false,
 			env: {
 				PORT: BACKEND_PORT,
 				WS_PORT: BACKEND_PORT,

@@ -21,7 +21,7 @@ pnpm --filter astriarch-frontend perf:chromium
 pnpm --filter astriarch-frontend perf:firefox
 ```
 
-The config builds the frontend for production, serves it with `vite preview` on port 4174, and starts a test backend (`NODE_ENV=test`) on port 8002. If port 8002 is in use, pick another port with `TEST_BACKEND_PORT=8022`.
+The config builds the frontend for production, serves it with `vite preview` on port 4174, and starts its own test backend (`NODE_ENV=test`) on port 8022. Neither server is reused, so the numbers always come from the current working tree, including the backend and engine. If something already listens on port 8022 (for example an e2e backend), the run fails at start-up; stop it or pick another port with `TEST_BACKEND_PORT`.
 
 A full run is 5 repetitions × 3 windows of 20s each, about 10 minutes per browser. **A browser window opens on screen. Leave it visible and leave the machine alone while it runs.** For a quick check that the harness works:
 
@@ -39,7 +39,7 @@ PERF_REPEATS=1 PERF_WINDOW_MS=5000 PERF_WARMUP_MS=3000 PERF_LABEL=smoke pnpm --f
 | `PERF_LABEL`           | (git sha) | Name for the result file, e.g. `baseline` or `fix-fleets`         |
 | `PERF_HEADLESS`        | unset     | `1` runs headless. The numbers aren't comparable with headed runs |
 | `PERF_ENFORCE_BUDGETS` | unset     | `1` fails the run when a budget is exceeded (see below)           |
-| `TEST_BACKEND_PORT`    | `8002`    | Test backend port                                                 |
+| `TEST_BACKEND_PORT`    | `8022`    | Test backend port. Must be free: the backend is never reused      |
 | `PERF_FRONTEND_PORT`   | `4174`    | `vite preview` port                                               |
 
 ## What it measures

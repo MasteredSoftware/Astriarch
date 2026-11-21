@@ -13,7 +13,8 @@ import { setOpponentSlot, startGame, OpponentType } from '../helpers/gameOptions
 import { waitForGameView, openFleetCommandView } from '../helpers/inGame';
 import { testGameName } from '../helpers/cleanup';
 
-const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8002';
+// playwright.perf.config.ts sets the default (8022) before this is imported.
+const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8022';
 const BACKEND_HTTP = `http://localhost:${BACKEND_PORT}`;
 
 /** Pinned benchmark game. Change only deliberately: it resets comparability. */
@@ -43,8 +44,9 @@ export async function setGalaxySeed(seed: number | null): Promise<void> {
 	if (!res.ok) {
 		throw new Error(
 			`POST /api/test/galaxy-seed failed (HTTP ${res.status}). ` +
-				'The perf harness needs a backend running with NODE_ENV=test on port ' +
-				`${BACKEND_PORT}; stop any other backend on that port and rerun.`
+				'The perf harness starts its own backend (NODE_ENV=test) on port ' +
+				`${BACKEND_PORT}. If another process holds that port, stop it or pick a free ` +
+				'one with TEST_BACKEND_PORT and rerun.'
 		);
 	}
 }
