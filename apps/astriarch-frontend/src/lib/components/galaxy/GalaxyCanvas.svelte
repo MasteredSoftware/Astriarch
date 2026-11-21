@@ -36,6 +36,10 @@
 	// Event-driven canvas updates: store changes mark the canvas dirty and a
 	// single update is coalesced into a microtask. Nothing polls.
 	let updateScheduled = false;
+	// Runs only while fleets are in transit; see updateFleetAnimation().
+	let fleetAnimation: Konva.Animation | null = null;
+	// Smallest on-screen movement (px) worth redrawing a fleet for.
+	const FLEET_MIN_MOVE_SCREEN_PX = 0.5;
 	let unsubscribers: Array<() => void> = [];
 	let isInitialized = false;
 
@@ -130,6 +134,8 @@
 	onDestroy(() => {
 		unsubscribers.forEach((unsubscribe) => unsubscribe());
 		unsubscribers = [];
+		fleetAnimation?.stop();
+		fleetAnimation = null;
 		window.removeEventListener('resize', handleResize);
 		// Clean up prospective travel line
 		if (prospectiveTravelLine) {
@@ -530,6 +536,33 @@
 				drawnFleets.delete(fleetId);
 			}
 		}
+
+		updateFleetAnimation();
+	}
+
+	/**
+	 * The model advances every MS_PER_TICK. While fleets are in transit, a
+	 * Konva.Animation moves them smoothly between ticks; it starts with the first
+	 * fleet and stops when the last one arrives. Each frame it only computes
+	 * positions; a fleet's nodes change (and the fleet layer redraws) only when
+	 * it moved at least FLEET_MIN_MOVE_SCREEN_PX on screen.
+	 */
+	function updateFleetAnimation() {
+		if (drawnFleets.size === 0) {
+			fleetAnimation?.stop();
+			return;
+		}
+		fleetAnimation ??= new Konva.Animation(() => {
+			perfCount('fleetAnimation.frame');
+			const now = performance.now();
+			const minLayerPx = FLEET_MIN_MOVE_SCREEN_PX / stage.scaleX();
+			for (const drawnFleet of drawnFleets.values()) {
+				drawnFleet.animate(now, minLayerPx);
+			}
+			// Moved fleets already requested a redraw via Konva's auto-draw
+			return false;
+		});
+		if (!fleetAnimation.isRunning()) fleetAnimation.start();
 	}
 
 	// Handle mouse movement for prospective travel line preview during destination selection

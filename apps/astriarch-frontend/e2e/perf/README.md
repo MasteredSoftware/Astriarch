@@ -113,7 +113,7 @@ For now they are report-only: the run prints PASS/FAIL for each budget, and `PER
 ## Getting trustworthy numbers
 
 - Use the same machine for both sides of a comparison, on AC power, with other heavy apps closed.
-- Keep the benchmark browser window visible. Hidden windows get throttled. The harness turns off the browsers' occlusion throttling where it can, and adds a warning to a run if the game loop ran below 20 rAF/s.
+- Keep the benchmark browser window visible. Hidden windows get throttled. The harness turns off the browsers' occlusion throttling where it can, and adds a warning to a run if the game loop ticked below 4/s (it ticks at 5/s) or frames ran below 20/s.
 - Check the `warnings` array in the results, for example "fleet arrived before the window ended" or "stage did not move during pan/zoom".
 - Note the display refresh rate. The current code does work on every frame, so a 120Hz display does twice the work of a 60Hz one. `frames.fps` in the `panzoom`/`fleets` windows shows the rate the run saw.
 - Timer precision: Chromium coarsens `performance.now()` to about 0.1ms, with jitter; the per-call means are still sound over thousands of samples. The harness disables Firefox's default 1ms clamping (`privacy.reduceTimerPrecision`).

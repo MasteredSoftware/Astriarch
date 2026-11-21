@@ -190,11 +190,23 @@ async function measureWindow(
 	if (cpu.exitedProcesses > 0) {
 		warnings.push(`${cpu.exitedProcesses} browser process(es) exited during the window`);
 	}
-	// The game loop runs every frame today; a very low rate on master-like code
-	// means the browser throttled the page (window hidden/occluded).
-	const gameLoopRate = perf.ratesPerSec['raf.gameLoop'];
-	if (gameLoopRate !== undefined && gameLoopRate > 0 && gameLoopRate < 20) {
-		warnings.push(`rAF ran at ${gameLoopRate}/s: the browser may be throttling a hidden window`);
+	// A browser that throttles a hidden/occluded window slows rAF and timers.
+	// The game loop ticks at 5/s (MS_PER_TICK); before Phase 2 step 2 it ran every
+	// frame (raf.gameLoop), which is still checked so older commits can be rerun.
+	const tickRate = perf.ratesPerSec['gameLoop.tick'];
+	if (tickRate !== undefined && tickRate > 0 && tickRate < 4) {
+		warnings.push(
+			`game loop ticked ${tickRate}/s (expected 5): the browser may be throttling a hidden window`
+		);
+	}
+	const rafGameLoopRate = perf.ratesPerSec['raf.gameLoop'];
+	if (rafGameLoopRate !== undefined && rafGameLoopRate > 0 && rafGameLoopRate < 20) {
+		warnings.push(`rAF ran at ${rafGameLoopRate}/s: the browser may be throttling a hidden window`);
+	}
+	if (perf.frames && perf.frames.fps < 20) {
+		warnings.push(
+			`frames ran at ${perf.frames.fps}/s: the browser may be throttling a hidden window`
+		);
 	}
 
 	const run: WindowRun = {

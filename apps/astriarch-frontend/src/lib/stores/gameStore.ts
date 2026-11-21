@@ -9,6 +9,7 @@ import {
 	ResearchType,
 	GALAXY_WIDTH,
 	GALAXY_HEIGHT,
+	MS_PER_TICK,
 	type ClientPlanet,
 	type PlanetData,
 	type ResearchProgressByType
@@ -271,10 +272,7 @@ export const gameActions = {
 
 	pauseGame() {
 		isGameRunning.set(false);
-		if (animationFrameId !== null) {
-			cancelAnimationFrame(animationFrameId);
-			animationFrameId = null;
-		}
+		stopGameLoop();
 	},
 
 	resumeGame() {
@@ -322,8 +320,10 @@ function get<T>(store: { subscribe: (fn: (value: T) => void) => () => void }): T
 	return value!;
 }
 
-// Animation frame loop for continuous game time advancement
-let animationFrameId: number | null = null;
+// Game clock: advances the client model at a fixed tick (MS_PER_TICK), not every
+// frame. Each tick publishes one clientGameModel update; the canvas and UI react
+// to that. Smooth fleet motion between ticks is the canvas's job (see GalaxyCanvas).
+let gameLoopTimerId: ReturnType<typeof setInterval> | null = null;
 let awaitingServerTimeAdvancement = false;
 
 // Track fleets that have arrived at unowned planets and are awaiting server conflict resolution.
@@ -333,16 +333,21 @@ const pendingArrivalFleets = new Map<number, number>();
 // How long to wait for server confirmation before requesting a full state sync (ms)
 const PENDING_ARRIVAL_TIMEOUT_MS = 15000;
 
-function startGameLoop() {
-	if (animationFrameId !== null) {
-		cancelAnimationFrame(animationFrameId);
+function stopGameLoop() {
+	if (gameLoopTimerId !== null) {
+		clearInterval(gameLoopTimerId);
+		gameLoopTimerId = null;
 	}
+}
+
+function startGameLoop() {
+	stopGameLoop();
 
 	function gameLoop() {
-		perfCount('raf.gameLoop');
+		perfCount('gameLoop.tick');
 		const loopStart = perfStart();
 		if (!get(isGameRunning)) {
-			animationFrameId = null;
+			stopGameLoop();
 			return;
 		}
 
@@ -417,10 +422,9 @@ function startGameLoop() {
 		}
 
 		perfEnd('gameLoop.total', loopStart);
-		animationFrameId = requestAnimationFrame(gameLoop);
 	}
 
-	animationFrameId = requestAnimationFrame(gameLoop);
+	gameLoopTimerId = setInterval(gameLoop, MS_PER_TICK);
 }
 
 // Construct the grid once when a game is started/resumed
@@ -445,14 +449,14 @@ clientGameModel.subscribe((cgm) => {
 // Start the game loop when both client game model and grid are loaded
 clientGameModel.subscribe((cgm) => {
 	const grid = get(gameGrid);
-	if (cgm && grid && get(isGameRunning) && animationFrameId === null) {
+	if (cgm && grid && get(isGameRunning) && gameLoopTimerId === null) {
 		startGameLoop();
 	}
 });
 
 gameGrid.subscribe((grid) => {
 	const cgm = get(clientGameModel);
-	if (cgm && grid && get(isGameRunning) && animationFrameId === null) {
+	if (cgm && grid && get(isGameRunning) && gameLoopTimerId === null) {
 		startGameLoop();
 	}
 });

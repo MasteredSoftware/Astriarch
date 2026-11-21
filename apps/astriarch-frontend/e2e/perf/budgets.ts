@@ -33,13 +33,18 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 		},
 		{
 			metric: 'rate.canvas.update',
-			max: 5,
-			why: 'The canvas updates only when the model changes (at most the model tick rate), never per frame'
+			max: 6,
+			why: 'The canvas updates only when the model changes (the 5/s model tick plus the odd server update), never per frame'
 		},
 		{
 			metric: 'rate.store.clientGameModel.set',
-			max: 5,
-			why: 'The model should advance at the fixed tick (MS_PER_TICK = 200ms), not every frame'
+			max: 6,
+			why: 'The model should advance at the fixed tick (MS_PER_TICK = 200ms, 5/s) plus the odd server update, not every frame'
+		},
+		{
+			metric: 'rate.fleetAnimation.frame',
+			max: 0,
+			why: 'The fleet animation runs only while fleets are in transit'
 		},
 		{
 			metric: 'rate.konva.draw.galaxy',

@@ -229,6 +229,37 @@ Results (5 × 20s, medians; every change below is outside both runs' min–max r
 - **Read the "worse" timings with care.** The per-call times of unchanged code (the engine clock, game loop and store fan-out) rose 30–100%. Most likely macOS lowers the clock or uses efficiency cores once the browser no longer keeps a core busy. The fleet layer's per-draw time rose from 0.08 to 0.36 ms in the benchmark. Yet it holds the same 5 nodes as before, and drawn back to back it costs the same in both versions (0.115 vs 0.105 ms). Whole-browser CPU is the measure that counts.
 - Idle budgets: 5 of 7 pass. `rate.store.clientGameModel.set` and `rate.canvas.update` (~120/s) are step 2.
 
+### Step 2: fixed model tick (2026-11-20)
+
+What changed:
+
+- `gameStore.ts` advances the client model with `setInterval(…, MS_PER_TICK)` (200ms), not every animation frame. There is one `clientGameModel` update per tick.
+- Fleets move smoothly between ticks. A `Konva.Animation` starts with the first fleet in transit and stops when the last one arrives. `DrawnFleet.animate()` extrapolates each fleet along its line at the speed measured across ticks (fleets move at a constant speed). Nodes change only when a fleet moves at least 0.5 screen px, so at normal game speed the fleet layer redraws only at ticks.
+- Harness: the store and canvas budgets are now ≤ 6/s, there is a new idle budget `rate.fleetAnimation.frame` = 0, and the throttle warnings use the 5/s tick and the frame rate.
+
+Results against step 1 (5 × 20s, medians):
+
+| Whole-browser CPU, % of one core | Firefox step 1 → step 2 | Chromium step 1 → step 2 |
+| --- | --- | --- |
+| idle | 87 → **77** (better) | 53 → 45 (within noise; renderer 18 → 8) |
+| panzoom | 133 → 128 (within noise) | 76 → 74 (within noise) |
+| fleets | 108 → **75** (better) | 56 → 48 (within noise; renderer 20 → 13) |
+
+- Model and canvas updates fell from about 120/s to 5/s, and fleet layer draws from 60/s to 5/s.
+- All 8 idle budgets pass in both browsers.
+- Our JavaScript (Firefox content process) is now about 4% of a core at idle.
+
+### Found: an infinite CSS animation costs more than everything else left
+
+`TaskItem.svelte` (the task notification cards, e.g. "Build Queue Empty") has a 1px `.scan-line` whose opacity pulses forever (`animation: scan 3s infinite`). It sits inside a card with `backdrop-blur`, over the canvas, so the browser composites every frame. Toggling only that animation, in the same game and window (10s windows):
+
+| Idle CPU | as-is | scan-line animation off | animation and all backdrop blurs off |
+| --- | --- | --- | --- |
+| Firefox | 78% (parent 73%) | **12%** (parent 7%) | 10% |
+| Chromium | 41% (GPU 32%) | **9%** (GPU 3%) | 8% |
+
+Turning the animation back on restores the cost (76% / 44%). The backdrop blurs on their own cost little once nothing animates.
+
 ## Open decisions
 
 - **Seeded random generator vs. saved game:** the plan above assumes a seeded generator behind a game option. Loading a saved game from Mongo via scenario C's resume flow is the alternative.
