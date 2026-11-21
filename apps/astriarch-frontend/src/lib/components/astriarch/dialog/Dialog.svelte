@@ -29,9 +29,7 @@
 		size = 'small',
 		variant = 'info',
 		style = 'default',
-		showCloseButton = true,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		...restProps
+		showCloseButton = true
 	}: Props = $props();
 
 	// Determine modal dimensions based on size and style

@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text } from '#lib/components/astriarch/index.ts';
 	import type { IGame } from '#lib/services/websocket.ts';
+	import { getMaxPlayers } from '#lib/utils/lobby.ts';
 
 	export let games: IGame[] = [];
 	export let selectedGame: IGame | null = null;
@@ -73,7 +74,7 @@
 							Status: <span style="color: {getStatusColor(game)};">{getStatusDisplay(game)}</span>
 						</Text>
 						<Text style="font-size: 12px; color: #94A3B8;">
-							Players: {game.players?.length || 0}/{game.gameOptions?.maxPlayers || 4}
+							Players: {game.players?.length || 0}/{getMaxPlayers(game)}
 						</Text>
 						<Text style="font-size: 12px; color: #94A3B8;">
 							Galaxy: {game.gameOptions?.galaxySize || 'Medium'}

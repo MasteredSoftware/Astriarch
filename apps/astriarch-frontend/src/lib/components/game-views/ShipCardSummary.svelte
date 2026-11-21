@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { StarShipType, type StarshipData } from 'astriarch-engine/src/model/fleet';
-	import { Fleet } from 'astriarch-engine/src/engine/fleet';
+	import { StarShipType, type StarshipData, Fleet } from 'astriarch-engine';
 	import IconImage from '#lib/components/astriarch/icon-image/IconImage.svelte';
 	import type { IconImageType } from '#lib/components/astriarch/types.ts';
 

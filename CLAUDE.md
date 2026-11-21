@@ -36,9 +36,11 @@ The engine exports game models, controllers, and messaging types that are consum
 - `pnpm --filter astriarch-frontend build` - Build SvelteKit app
 - `pnpm --filter astriarch-frontend test` - Run Vitest unit tests
 - `pnpm --filter astriarch-frontend lint` - Lint and format check
+- `pnpm --filter astriarch-frontend check` - Run svelte-check (type-checks .svelte and .ts; import engine types from `astriarch-engine`, not `astriarch-engine/src/...`)
 
 ### Engine Package Development
 - `pnpm --filter astriarch-engine build` - Build engine package  
+- `pnpm --filter astriarch-engine dev` - Rebuild engine `dist` on change (tsup --watch); run alongside the frontend dev server, which consumes the built engine
 - `pnpm --filter astriarch-engine test` - Run engine unit tests
 - `pnpm --filter astriarch-engine lint` - Lint engine code
 
@@ -62,7 +64,7 @@ The engine exports game models, controllers, and messaging types that are consum
 
 ### Testing
 - All packages use Vitest (backend, engine, and SvelteKit frontend); specs import `describe`/`it`/`expect`/`vi` explicitly from `vitest`
-- Vitest does not type-check specs; run `pnpm type-check` (builds the engine, then type-checks engine + backend including spec files)
+- Vitest does not type-check specs; run `pnpm type-check` (builds the engine, then type-checks engine + backend including spec files, and runs `svelte-check` on the frontend)
 - Run individual package tests with `pnpm --filter <package-name> test`
 
 ## Current Branch Status

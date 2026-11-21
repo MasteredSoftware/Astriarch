@@ -2,9 +2,12 @@
 	import { clientGameModel, selectedPlanet } from '#lib/stores/gameStore.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
-	import { GameModel } from 'astriarch-engine/src/engine/gameModel';
-	import { TradeType, TradingCenterResourceType } from 'astriarch-engine/src/model/tradingCenter';
-	import type { PlanetData } from 'astriarch-engine/src/model/planet';
+	import {
+		GameModel,
+		TradeType,
+		TradingCenterResourceType,
+		type PlanetData
+	} from 'astriarch-engine';
 	import { IconImage } from '#lib/components/astriarch/index.ts';
 
 	// Trading state

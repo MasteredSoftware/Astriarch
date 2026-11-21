@@ -27,12 +27,11 @@
 
 	// Add/remove click outside listener
 	$effect(() => {
-		if (showSpeedPanel) {
-			document.addEventListener('click', handleClickOutside);
-			return () => {
-				document.removeEventListener('click', handleClickOutside);
-			};
-		}
+		if (!showSpeedPanel) return undefined;
+		document.addEventListener('click', handleClickOutside);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+		};
 	});
 
 	function handleSpeedChange(event: Event) {

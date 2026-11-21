@@ -1,33 +1,12 @@
 <script lang="ts">
-	import type { TaskNotification } from 'astriarch-engine/src/model/clientModel';
-	import { TaskNotificationType } from 'astriarch-engine/src/model/clientModel';
+	import { type TaskNotification, TaskNotificationType } from 'astriarch-engine';
 	import { gameActions } from '#lib/stores/gameStore.ts';
-	import { onMount, onDestroy } from 'svelte';
 
 	interface Props {
 		notification: TaskNotification;
 	}
 
 	let { notification }: Props = $props();
-
-	// Debug logging to track component lifecycle
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const componentId = Math.random().toString(36).substr(2, 9);
-	// console.log(
-	// 	`TaskItem ${componentId} created for ${notification.type}-${notification.planetId} (${notification.planetName})`
-	// );
-
-	onMount(() => {
-		// console.log(
-		// 	`TaskItem ${componentId} mounted for ${notification.type}-${notification.planetId}`
-		// );
-	});
-
-	onDestroy(() => {
-		// console.log(
-		// 	`TaskItem ${componentId} destroyed for ${notification.type}-${notification.planetId}`
-		// );
-	});
 
 	// Click handler to select the planet
 	function handleClick() {

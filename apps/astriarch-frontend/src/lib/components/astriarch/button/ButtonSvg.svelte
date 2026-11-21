@@ -40,15 +40,18 @@
 		xs: ButtonSvgSmallSecondary
 	};
 
-	const Component = $derived(
-		isOutline ? componentBySizeOutline[size] : componentBySizeFilled[size]
-	);
+	const FilledComponent = $derived(componentBySizeFilled[size]);
+	const OutlineComponent = $derived(componentBySizeOutline[size]);
 </script>
 
 <div
 	class="pointer-events-none absolute top-0 left-0 flex h-full w-full items-center justify-center"
 >
 	<div style="position: relative;">
-		<Component color={fillColor} />
+		{#if isOutline}
+			<OutlineComponent />
+		{:else}
+			<FilledComponent color={fillColor} />
+		{/if}
 	</div>
 </div>

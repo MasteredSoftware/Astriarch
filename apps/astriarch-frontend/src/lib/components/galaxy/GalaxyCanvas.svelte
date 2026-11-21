@@ -8,15 +8,7 @@
 	} from '#lib/stores/gameStore.ts';
 	import { fleetCommandStore } from '#lib/stores/fleetCommandStore.ts';
 	import { layoutMode, layoutDimensions } from '#lib/stores/layoutStore.ts';
-	import type { ClientModelData, Grid } from 'astriarch-engine';
-	import {
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		PlanetHappinessType,
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-		PlanetImprovementType,
-		GALAXY_WIDTH,
-		GALAXY_HEIGHT
-	} from 'astriarch-engine';
+	import { type ClientModelData, type Grid, GALAXY_WIDTH, GALAXY_HEIGHT } from 'astriarch-engine';
 	import Konva from 'konva';
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
@@ -47,10 +39,6 @@
 
 	// Pan and zoom state
 	let zoomLevel = 1;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	let panX = 0;
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	let panY = 0;
 	const MIN_ZOOM = 0.3;
 	const MAX_ZOOM = 3.0;
 	const ZOOM_SPEED = 1.1;
@@ -196,14 +184,12 @@
 
 		// Initialize zoom state
 		zoomLevel = scale;
-		updatePanPosition();
 
 		// Handle window resize
 		window.addEventListener('resize', handleResize);
 
 		// Add zoom and pan event listeners
 		stage.on('wheel', handleZoom);
-		stage.on('dragmove', updatePanPosition);
 		stage.on('mousemove', handleMouseMove);
 		stage.on('mouseout', handleMouseOut);
 
@@ -326,8 +312,6 @@
 				x: pos.x * widthRatio,
 				y: pos.y * heightRatio
 			});
-
-			updatePanPosition();
 		}
 	}
 
@@ -356,13 +340,6 @@
 		stage.position(newPos);
 
 		zoomLevel = newScale;
-		updatePanPosition();
-	}
-
-	function updatePanPosition() {
-		const pos = stage.position();
-		panX = pos.x;
-		panY = pos.y;
 	}
 
 	function startRenderLoop() {
@@ -465,6 +442,7 @@
 					},
 					maxImprovements: 5,
 					planetaryFleet: {
+						id: 0,
 						starships: [],
 						locationHexMidPoint: null,
 						travelingFromHexMidPoint: null,
@@ -477,7 +455,8 @@
 					starshipTypeLastBuilt: null,
 					starshipCustomShipLastBuilt: false,
 					buildLastStarship: false,
-					waypointBoundingHexMidPoint: null
+					waypointBoundingHexMidPoint: null,
+					nextShipId: 1
 				};
 
 				drawnPlanet = new DrawnPlanet(planetData, gameModel);
@@ -535,7 +514,7 @@
 
 	// Handle mouse movement for prospective travel line preview during destination selection
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-	function handleMouseMove(e: any) {
+	function handleMouseMove(_e: any) {
 		// Only handle mouse moves when Fleet Command View is active AND actively selecting destination
 		// If we already have a confirmed destination, don't show hover previews
 		if (
@@ -710,7 +689,7 @@
 
 	// Handle galaxy interaction with hex-based planet selection
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any
-	function handleStageClick(e: any) {
+	function handleStageClick(_e: any) {
 		const stagePos = stage.getPointerPosition();
 		if (!stagePos || !currentGrid) return;
 
@@ -842,11 +821,6 @@
 				duration: 0.8, // 800ms animation
 				easing: Konva.Easings.EaseOut
 			});
-
-			// Update our internal pan tracking
-			setTimeout(() => {
-				updatePanPosition();
-			}, 800);
 		}
 	}
 </script>

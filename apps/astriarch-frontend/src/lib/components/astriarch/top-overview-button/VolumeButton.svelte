@@ -29,12 +29,11 @@
 
 	// Add/remove click outside listener
 	$effect(() => {
-		if (showAudioControls) {
-			document.addEventListener('click', handleClickOutside);
-			return () => {
-				document.removeEventListener('click', handleClickOutside);
-			};
-		}
+		if (!showAudioControls) return undefined;
+		document.addEventListener('click', handleClickOutside);
+		return () => {
+			document.removeEventListener('click', handleClickOutside);
+		};
 	});
 </script>
 

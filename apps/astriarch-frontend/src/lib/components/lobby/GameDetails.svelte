@@ -2,6 +2,7 @@
 	import { createEventDispatcher } from 'svelte';
 	import { Text, Button } from '#lib/components/astriarch/index.ts';
 	import type { IGame } from '#lib/services/websocket.ts';
+	import { getMaxPlayers } from '#lib/utils/lobby.ts';
 
 	export let game: IGame | null = null;
 
@@ -91,12 +92,6 @@
 						</Text>
 					</div>
 				</div>
-
-				{#if game.description}
-					<Text style="font-size: 14px; color: #94A3B8; margin-top: 0.5rem;">
-						{game.description}
-					</Text>
-				{/if}
 			</div>
 
 			<!-- Game Options -->
@@ -120,14 +115,12 @@
 					<div class="setting-item">
 						<Text style="font-size: 12px; color: #6B7280;">Max Players</Text>
 						<Text style="font-size: 14px; color: #FFFFFF;">
-							{game.gameOptions?.maxPlayers || 4}
+							{getMaxPlayers(game)}
 						</Text>
 					</div>
 					<div class="setting-item">
 						<Text style="font-size: 12px; color: #6B7280;">Victory Condition</Text>
-						<Text style="font-size: 14px; color: #FFFFFF;">
-							{game.gameOptions?.victoryCondition || 'Conquest'}
-						</Text>
+						<Text style="font-size: 14px; color: #FFFFFF;">Conquest</Text>
 					</div>
 				</div>
 			</div>
@@ -135,7 +128,7 @@
 			<!-- Players -->
 			<div class="section">
 				<Text style="font-size: 16px; color: #FFFFFF; font-weight: 600; margin-bottom: 0.75rem;">
-					Players ({game.players?.length || 0}/{game.gameOptions?.maxPlayers || 4})
+					Players ({game.players?.length || 0}/{getMaxPlayers(game)})
 				</Text>
 				<div class="players-list">
 					{#if game.players && game.players.length > 0}
@@ -143,21 +136,9 @@
 							<div class="player-item">
 								<div class="player-info">
 									<Text style="font-size: 14px; color: #FFFFFF;">
-										{player.username || player.name || 'Unknown Player'}
+										{player.name || 'Unknown Player'}
 									</Text>
-									{#if player.isHost}
-										<div class="host-badge">
-											<Text style="font-size: 10px; color: #000000; font-weight: 600;">HOST</Text>
-										</div>
-									{/if}
 								</div>
-								{#if player.isReady !== undefined}
-									<div class="ready-status {player.isReady ? 'ready' : 'not-ready'}">
-										<Text style="font-size: 12px; color: #FFFFFF;">
-											{player.isReady ? 'Ready' : 'Not Ready'}
-										</Text>
-									</div>
-								{/if}
 							</div>
 						{/each}
 					{:else}
@@ -183,14 +164,6 @@
 							<Text style="font-size: 12px; color: #6B7280;">Last Activity</Text>
 							<Text style="font-size: 14px; color: #FFFFFF;">
 								{formatDate(game.lastActivity)}
-							</Text>
-						</div>
-					{/if}
-					{#if game.turn !== undefined}
-						<div class="info-item">
-							<Text style="font-size: 12px; color: #6B7280;">Turn</Text>
-							<Text style="font-size: 14px; color: #FFFFFF;">
-								{game.turn}
 							</Text>
 						</div>
 					{/if}
@@ -302,28 +275,6 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-	}
-
-	.host-badge {
-		padding: 0.125rem 0.375rem;
-		background: #00ffff;
-		border-radius: 8px;
-		font-size: 10px;
-		font-weight: 600;
-	}
-
-	.ready-status {
-		padding: 0.25rem 0.5rem;
-		border-radius: 12px;
-		font-size: 12px;
-	}
-
-	.ready-status.ready {
-		background: #10b981;
-	}
-
-	.ready-status.not-ready {
-		background: #6b7280;
 	}
 
 	.info-grid {

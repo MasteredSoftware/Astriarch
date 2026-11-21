@@ -2,13 +2,15 @@
 	import { Text } from '#lib/components/astriarch/index.ts';
 	import { clientGameModel } from '#lib/stores/gameStore.ts';
 	import { selectedPlanet } from '#lib/stores/gameStore.ts';
-	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
-	import type { PlanetData } from 'astriarch-engine/src/model/planet';
-	import type { LastKnownFleetData } from 'astriarch-engine/src/model/fleet';
-	import { StarShipType } from 'astriarch-engine';
-	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
+	import {
+		type ClientPlanet,
+		type PlanetData,
+		type LastKnownFleetData,
+		StarShipType,
+		GameTools,
+		type StarshipData
+	} from 'astriarch-engine';
 	import ShipCardSummary from './ShipCardSummary.svelte';
-	import type { StarshipData } from 'astriarch-engine/src/model/fleet';
 
 	// Reactive values from the store
 	$: currentSelectedPlanet = $selectedPlanet;

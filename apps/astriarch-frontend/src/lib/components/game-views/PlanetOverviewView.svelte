@@ -13,22 +13,21 @@
 	} from '#lib/stores/gameStore.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
-	import { GameTools } from 'astriarch-engine/src/utils/gameTools';
 	import {
+		GameTools,
 		PlanetProductionItem,
-		CanBuildResult
-	} from 'astriarch-engine/src/engine/planetProductionItem';
-	import { Planet } from 'astriarch-engine/src/engine/planet';
-	import {
+		CanBuildResult,
+		Planet,
 		PlanetImprovementType,
 		PlanetProductionItemType,
 		CitizenWorkerType,
 		type PlanetData,
-		type PlanetProductionItemData
-	} from 'astriarch-engine/src/model/planet';
-	import { StarShipType, type StarshipAdvantageData } from 'astriarch-engine/src/model/fleet';
-	import { ResearchType } from 'astriarch-engine/src/model/research';
-	import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
+		type PlanetProductionItemData,
+		StarShipType,
+		type StarshipAdvantageData,
+		ResearchType,
+		type ClientPlanet
+	} from 'astriarch-engine';
 
 	// Dialog state for colony demolition confirmation
 	let showColonyDemolishDialog = $state(false);
@@ -111,7 +110,7 @@
 	}
 
 	function addBuildingToQueue(buildingType: PlanetImprovementType) {
-		if (!$selectedPlanet || !$clientGameModel) return;
+		if (!$selectedPlanet || !$clientGameModel || !isFullPlanetData($selectedPlanet)) return;
 
 		const item = PlanetProductionItem.constructPlanetImprovement(buildingType);
 
@@ -137,7 +136,7 @@
 	}
 
 	function addShipToQueue(shipType: StarShipType, customShipData?: StarshipAdvantageData) {
-		if (!$selectedPlanet || !$clientGameModel) return;
+		if (!$selectedPlanet || !$clientGameModel || !isFullPlanetData($selectedPlanet)) return;
 
 		const item = PlanetProductionItem.constructStarShipInProduction(shipType, customShipData);
 
@@ -163,7 +162,7 @@
 	}
 
 	function removeFromBuildQueue(itemIndex: number) {
-		if (!$selectedPlanet || !$clientGameModel) return;
+		if (!$selectedPlanet || !$clientGameModel || !isFullPlanetData($selectedPlanet)) return;
 
 		// Validate index is valid
 		if (itemIndex < 0 || itemIndex >= $selectedPlanet.buildQueue.length) {

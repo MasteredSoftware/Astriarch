@@ -8,17 +8,17 @@ import {
 	type ClientModelData,
 	ResearchType,
 	GALAXY_WIDTH,
-	GALAXY_HEIGHT
+	GALAXY_HEIGHT,
+	type ClientPlanet,
+	type PlanetData,
+	type ResearchProgressByType
 } from 'astriarch-engine';
-import type { ClientPlanet } from 'astriarch-engine/src/model/clientModel';
-import type { PlanetData } from 'astriarch-engine/src/model/planet';
 import { webSocketService } from '#lib/services/websocket.ts';
 import {
 	convertClientNotificationToUINotification,
 	isBuildCompletionNotification
 } from '#lib/utils/notificationUtils.ts';
 import { multiplayerGameStore } from '#lib/stores/multiplayerGameStore.ts';
-import type { ResearchProgressByType } from 'astriarch-engine/src/model';
 
 // Game state stores
 export const clientGameModel = writable<ClientModelData | null>(null);

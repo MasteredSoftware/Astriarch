@@ -8,6 +8,6 @@
 	};
 </script>
 
-<div class={$$props.class || ''} style={$$props.style || ''} {...$$restProps}>
+<div class={$$props['class'] || ''} style={$$props['style'] || ''} {...$$restProps}>
 	<slot />
 </div>
