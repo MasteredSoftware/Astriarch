@@ -40,7 +40,7 @@
 	// Event-driven canvas updates: store changes mark the canvas dirty and a
 	// single update is coalesced into a microtask. Nothing polls.
 	let updateScheduled = false;
-	// Runs only while fleets are in transit; see updateFleetAnimation().
+	// Runs only while some fleet can move; see updateFleetAnimation().
 	let fleetAnimation: Konva.Animation | null = null;
 	// Smallest on-screen movement (px) worth redrawing a fleet for.
 	const FLEET_MIN_MOVE_SCREEN_PX = 0.5;
@@ -558,15 +558,26 @@
 		updateFleetAnimation();
 	}
 
+	/** True if any drawn fleet can still move by extrapolation at `now`. */
+	function anyFleetCanMove(now: number): boolean {
+		for (const drawnFleet of drawnFleets.values()) {
+			if (drawnFleet.canMove(now)) return true;
+		}
+		return false;
+	}
+
 	/**
-	 * The model advances every MS_PER_TICK. While fleets are in transit, a
-	 * Konva.Animation moves them smoothly between ticks; it starts with the first
-	 * fleet and stops when the last one arrives. Each frame it only computes
-	 * positions; a fleet's nodes change (and the fleet layer redraws) only when
-	 * it moved at least FLEET_MIN_MOVE_SCREEN_PX on screen.
+	 * The model advances every MS_PER_TICK. While some fleet can move, a
+	 * Konva.Animation moves fleets smoothly between ticks. It stops itself once
+	 * no fleet can move: none in transit, all awaiting conflict resolution, or no
+	 * model update for MAX_EXTRAPOLATION_MS (game paused, server late). The next
+	 * model update calls this again and restarts it, so nothing runs per frame
+	 * while fleets are idle. Each frame it only computes positions; a fleet's
+	 * nodes change (and the fleet layer redraws) only when it moved at least
+	 * FLEET_MIN_MOVE_SCREEN_PX on screen.
 	 */
 	function updateFleetAnimation() {
-		if (drawnFleets.size === 0) {
+		if (!anyFleetCanMove(performance.now())) {
 			fleetAnimation?.stop();
 			return;
 		}
@@ -574,9 +585,13 @@
 			perfCount('fleetAnimation.frame');
 			const now = performance.now();
 			const minLayerPx = FLEET_MIN_MOVE_SCREEN_PX / stage.scaleX();
+			let canMove = false;
 			for (const drawnFleet of drawnFleets.values()) {
 				drawnFleet.animate(now, minLayerPx);
+				if (drawnFleet.canMove(now)) canMove = true;
 			}
+			// animate() has drawn the capped final position, so stopping loses nothing
+			if (!canMove) fleetAnimation?.stop();
 			// Moved fleets already requested a redraw via Konva's auto-draw
 			return false;
 		});

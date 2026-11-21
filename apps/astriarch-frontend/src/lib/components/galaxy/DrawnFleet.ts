@@ -1,13 +1,10 @@
 import type { FleetData, PlayerData, ClientModelData, StarShipType } from 'astriarch-engine';
-import { MS_PER_TICK } from 'astriarch-engine';
 import Konva from 'konva';
 import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
+import { FleetMotion, fleetParsecsPerMs } from './fleetMotion';
 
 const FLEET_ICON_SIZE = 16;
 const ETA_TEXT_SIZE = 8;
-// Extrapolate at most this far past the last model tick, so a late or missed
-// tick never carries a fleet much beyond where the model last put it.
-const MAX_EXTRAPOLATION_MS = MS_PER_TICK * 1.5;
 
 // SVG path data for different ship types
 const SHIP_PATHS = {
@@ -61,12 +58,9 @@ export class DrawnFleet {
 	// Calculated position properties
 	private travelDistancePoint = { x: 0, y: 0 };
 
-	// Motion between model ticks. The model advances every MS_PER_TICK; between
-	// ticks the fleet is extrapolated along its line at the speed measured across
-	// ticks (fleets move at constant speed, so this lands where the next tick does).
-	private tickParsecs: number | null = null;
-	private tickTime = 0;
-	private parsecsPerMs = 0;
+	// Motion between model ticks: the fleet is extrapolated along its line at the
+	// engine's speed for its owner, so it lands where the next tick puts it.
+	private motion = new FleetMotion();
 	private drawnParsecs: number | null = null;
 
 	constructor(fleetData: FleetData, gameModel: ClientModelData) {
@@ -174,7 +168,16 @@ export class DrawnFleet {
 	 */
 	public update(clientGameModel: ClientModelData, fleetData: FleetData = this.fleetData) {
 		this.fleetData = fleetData;
-		this.recordTick(performance.now());
+		// Only the main player's fleets are drawn, so the main player sets the speed.
+		const now = performance.now();
+		this.motion.record(
+			fleetData.parsecsToDestination,
+			fleetParsecsPerMs(clientGameModel.mainPlayer, clientGameModel.gameOptions.gameSpeed),
+			now
+		);
+		// The model position after a tick or sync; the current extrapolated
+		// position when this update didn't move the fleet.
+		this.drawnParsecs = this.motion.parsecsAt(now);
 
 		// Find the owner of this fleet by looking through fleetsInTransit
 		this.owner = null;
@@ -334,25 +337,18 @@ export class DrawnFleet {
 		// Don't show elements here - let updateVisualElements handle visibility after color updates
 	}
 
-	/** Records the model's position for this fleet and measures its speed. */
-	private recordTick(now: number) {
-		const parsecs = this.fleetData.parsecsToDestination;
-		if (parsecs === null || parsecs === this.tickParsecs) return;
-
-		// Measure speed only across a full tick, so an extra model update right
-		// after a tick (e.g. a server sync) can't produce a wild estimate.
-		const elapsed = now - this.tickTime;
-		if (this.tickParsecs !== null && parsecs < this.tickParsecs && elapsed >= MS_PER_TICK / 2) {
-			this.parsecsPerMs = (this.tickParsecs - parsecs) / elapsed;
-		}
-		this.tickParsecs = parsecs;
-		this.tickTime = now;
-		this.drawnParsecs = parsecs;
+	/**
+	 * True while animate() can still move this fleet: it is in transit and its
+	 * last model update is recent enough to extrapolate from. False while it
+	 * awaits conflict resolution, while the game is paused, or when ticks stop.
+	 */
+	public canMove(now: number): boolean {
+		return this.isInTransit() && this.motion.isMoving(now);
 	}
 
 	/**
 	 * Moves the fleet to its extrapolated position for `now`. Called every frame
-	 * while fleets are in transit; only touches Konva (and so only causes a redraw)
+	 * while some fleet can move (see canMove()); only touches Konva (and so only causes a redraw)
 	 * when the fleet has moved at least `minLayerPx` along its line.
 	 * Returns true if the fleet was moved.
 	 */
@@ -362,19 +358,10 @@ export class DrawnFleet {
 			travelingFromHexMidPoint: from,
 			destinationHexMidPoint: to
 		} = this.fleetData;
-		if (
-			!this.isInTransit() ||
-			this.tickParsecs === null ||
-			this.parsecsPerMs <= 0 ||
-			!totalTravelDistance ||
-			!from ||
-			!to
-		) {
+		const parsecs = this.motion.parsecsAt(now);
+		if (!this.isInTransit() || parsecs === null || !totalTravelDistance || !from || !to) {
 			return false;
 		}
-
-		const elapsed = Math.min(now - this.tickTime, MAX_EXTRAPOLATION_MS);
-		const parsecs = Math.max(0, this.tickParsecs - this.parsecsPerMs * elapsed);
 
 		const pxPerParsec = Math.hypot(to.x - from.x, to.y - from.y) / totalTravelDistance;
 		const movedPx = Math.abs((this.drawnParsecs ?? parsecs) - parsecs) * pxPerParsec;
