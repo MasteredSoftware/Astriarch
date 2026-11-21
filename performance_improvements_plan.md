@@ -141,6 +141,8 @@ From <https://konvajs.org/docs/performance/All_Performance_Tips.html>:
 
 The harness is implemented; see [apps/astriarch-frontend/e2e/perf/README.md](apps/astriarch-frontend/e2e/perf/README.md).
 
+> **Pending re-run with the updated harness.** The baselines below were recorded with the first version of the harness (result schema version 1). Review of PR #72 changed the harness: budgets fail on missing metrics, a harness-side rAF probe records the refresh rate and device pixel ratio and detects throttling, and `rendered.*` and `frames.droppedPct`/`frames.slowOver1_5xPct` replace `frames.over16_7Pct`/`frames.over33_3Pct` (schema version 2). Re-record both baselines with the updated harness before using them to judge Phase 2. The numbers below remain as a rough reference only.
+
 **Chromium baseline:** master `b1a7791` plus the Phase 1 instrumentation, Chromium 159, 120Hz display, 5 × 20s windows. Medians, with [min–max]:
 
 | Metric | idle | panzoom | fleets |

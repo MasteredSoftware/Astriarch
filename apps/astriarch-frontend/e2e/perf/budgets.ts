@@ -7,8 +7,12 @@
  * then they are report-only; set PERF_ENFORCE_BUDGETS=1 to fail the run on a
  * violation.
  *
- * A metric that was never recorded counts as 0 (e.g. once a loop is removed
- * its counter disappears, which satisfies a `max: 0` budget).
+ * A metric that is absent from the results is MISSING, which counts as a
+ * violation: a renamed layer or a lost perfRegisterKonvaStage call must not
+ * turn a `max: 0` budget green. A budget whose counter legitimately disappears
+ * when its work stops (e.g. a rAF loop that is removed) opts in with
+ * `absentMeansZero: true`. Konva layer draw counters are reported as explicit
+ * zeros for every registered layer, so they need no opt-in.
  */
 
 import type { WindowName } from './results';
@@ -17,6 +21,8 @@ export interface Budget {
 	metric: string;
 	max: number;
 	why: string;
+	/** Treat an absent metric as 0 instead of MISSING. */
+	absentMeansZero?: boolean;
 }
 
 export const budgets: Partial<Record<WindowName, Budget[]>> = {
@@ -44,7 +50,8 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 		{
 			metric: 'rate.fleetAnimation.frame',
 			max: 0,
-			why: 'The fleet animation runs only while fleets are in transit'
+			why: 'The fleet animation runs only while fleets are in transit',
+			absentMeansZero: true
 		},
 		{
 			metric: 'rate.konva.draw.galaxy',
@@ -84,17 +91,25 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 	]
 };
 
+export type BudgetStatus = 'pass' | 'fail' | 'missing';
+
 export interface BudgetResult extends Budget {
-	value: number;
+	/** The median, or null when the metric is MISSING. */
+	value: number | null;
+	status: BudgetStatus;
+	/** status === 'pass'. */
 	pass: boolean;
 }
 
 export function checkBudgets(
 	window: WindowName,
-	summary: Record<string, { median: number }>
+	summary: Record<string, { median: number }>,
+	list: Budget[] = budgets[window] ?? []
 ): BudgetResult[] {
-	return (budgets[window] ?? []).map((b) => {
-		const value = summary[b.metric]?.median ?? 0;
-		return { ...b, value, pass: value <= b.max };
+	return list.map((b) => {
+		const median = summary[b.metric]?.median;
+		const value = median ?? (b.absentMeansZero ? 0 : null);
+		const status: BudgetStatus = value === null ? 'missing' : value <= b.max ? 'pass' : 'fail';
+		return { ...b, value, status, pass: status === 'pass' };
 	});
 }

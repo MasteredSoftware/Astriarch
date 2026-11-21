@@ -13,9 +13,17 @@
  * Metrics:
  *   - timings:  named durations (count, total, mean, p50/p95/p99, max) in ms
  *   - counters: named event counts, plus per-second rates
- *   - frames:   rAF frame-interval distribution (only while sampleFrames is on;
- *               the sampler is its own rAF loop, so it is off by default to keep
- *               idle measurements honest)
+ *   - frames:   rAF frame-interval distribution and dropped frames relative to
+ *               the display refresh interval (only while sampleFrames is on).
+ *               The sampler is its own rAF loop, so it is off by default to keep
+ *               idle measurements honest. Once rendering is event-driven it is
+ *               the only steady rAF loop in a window that enables it: it keeps
+ *               the browser's refresh driver ticking (adding CPU, notably in
+ *               Firefox) and `fps` reads the display rate whether or not
+ *               anything was drawn. Use `renderedFrames` for what was drawn.
+ *   - renderedFrames: frames in which at least one Konva layer drew, built from
+ *               the layer draw events (event-driven, no rAF loop of its own),
+ *               so it is available in every window including idle
  *   - konva:    nodes created/destroyed, current node count, per-layer draws
  *   - heap / longTasks: where the browser supports them (Chromium)
  *   - running CSS/Web animations when the snapshot is taken (an infinite one
@@ -50,8 +58,25 @@ export interface FrameSummary {
 	p95Ms: number;
 	p99Ms: number;
 	maxMs: number;
-	over16_7ms: number;
-	over33_3ms: number;
+	/**
+	 * Display refresh interval the intervals are judged against: the
+	 * refreshIntervalMs passed to reset(), else the median sampled interval.
+	 */
+	periodMs: number;
+	/** Display refreshes with no frame: sum of max(0, round(interval / period) - 1). */
+	droppedFrames: number;
+	/** Intervals longer than 1.5 periods. */
+	slowOver1_5x: number;
+}
+
+/** Frames in which at least one registered Konva layer drew. */
+export interface RenderedFrameSummary {
+	count: number;
+	fps: number;
+	/** Interval stats between rendered frames; null with fewer than two frames. */
+	p50Ms: number | null;
+	p95Ms: number | null;
+	maxMs: number | null;
 }
 
 export interface PerfSnapshot {
@@ -60,7 +85,13 @@ export interface PerfSnapshot {
 	counters: Record<string, number>;
 	ratesPerSec: Record<string, number>;
 	frames: FrameSummary | null;
+	/** Null when no Konva stage is registered. */
+	renderedFrames: RenderedFrameSummary | null;
 	konva: {
+		/** Whether perfRegisterKonvaStage has been called. */
+		registered: boolean;
+		/** Draw counter names (`konva.draw.<layer>`) of the registered layers. */
+		layers: string[] | null;
 		nodesCreated: number | null;
 		nodesDestroyed: number;
 		nodeCount: number | null;
@@ -77,6 +108,11 @@ export interface PerfSnapshot {
 export interface ResetOptions {
 	/** Run a rAF loop to record frame intervals during this window. */
 	sampleFrames?: boolean;
+	/**
+	 * Measured display refresh interval (ms), used to count dropped frames.
+	 * Defaults to the median sampled frame interval.
+	 */
+	refreshIntervalMs?: number;
 }
 
 export interface PerfApi {
@@ -97,6 +133,12 @@ let counters = new Map<string, number>();
 let frameIntervals: number[] = [];
 let frameRafId: number | null = null;
 let lastFrameTs: number | null = null;
+let refreshIntervalMs: number | null = null;
+let renderedFrameCount = 0;
+let renderedFrameIntervals: number[] = [];
+let lastRenderedFrameTs: number | null = null;
+/** Set by the first layer draw in a task; cleared in a microtask after it. */
+let renderedFrameOpen = false;
 let konvaNodesDestroyed = 0;
 let longTaskCount = 0;
 let longTaskTotalMs = 0;
@@ -107,6 +149,11 @@ let konvaStartId: number | null = null;
 /** Probe nodes created since konvaStartId was taken (they are not app work). */
 let probesSinceStart = 0;
 const layerDrawStart = new WeakMap<object, number>();
+/**
+ * Draw counters of the registered layers. reset() sets each to 0, so a layer
+ * that is never drawn reports an explicit 0 rather than a missing metric.
+ */
+const registeredLayerLabels = new Set<string>();
 
 /** Returns a start timestamp, or 0 when perf is disabled. Pair with perfEnd. */
 export function perfStart(): number {
@@ -167,6 +214,7 @@ export function instrumentStore<
  */
 export function perfRegisterKonvaStage(konva: KonvaModule, stage: Konva.Stage): void {
 	if (!perfEnabled) return;
+	if (konvaStage !== stage) registeredLayerLabels.clear();
 	konvaStage = stage;
 
 	if (konvaModule !== konva) {
@@ -185,11 +233,14 @@ export function perfRegisterKonvaStage(konva: KonvaModule, stage: Konva.Stage): 
 
 	for (const layer of stage.getLayers()) {
 		const label = `konva.draw.${layer.name() || `layer${layer.index}`}`;
+		registeredLayerLabels.add(label);
+		if (!counters.has(label)) counters.set(label, 0);
 		layer.on('beforeDraw.perf', () => {
 			layerDrawStart.set(layer, performance.now());
 		});
 		layer.on('draw.perf', () => {
 			const start = layerDrawStart.get(layer);
+			markRenderedFrame();
 			perfCount(label);
 			if (start !== undefined) recordTiming(label, performance.now() - start);
 		});
@@ -209,6 +260,25 @@ function probeKonvaId(): number | null {
 	konvaNodesDestroyed--; // the probe's own destroy is not app work
 	probe.destroy();
 	return id;
+}
+
+/**
+ * Counts one rendered frame per task that draws any layer. Konva draws every
+ * batched layer inside a single rAF callback, so all draws of one frame fall
+ * in the same task, and a microtask runs only after that task finishes.
+ */
+function markRenderedFrame(): void {
+	if (renderedFrameOpen) return;
+	renderedFrameOpen = true;
+	queueMicrotask(() => {
+		renderedFrameOpen = false;
+	});
+	const now = performance.now();
+	if (lastRenderedFrameTs !== null && renderedFrameIntervals.length < MAX_SAMPLES) {
+		renderedFrameIntervals.push(now - lastRenderedFrameTs);
+	}
+	lastRenderedFrameTs = now;
+	renderedFrameCount++;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -253,7 +323,13 @@ function reset(options: ResetOptions = {}): void {
 	windowStart = performance.now();
 	timings = new Map();
 	counters = new Map();
+	for (const label of registeredLayerLabels) counters.set(label, 0);
 	frameIntervals = [];
+	refreshIntervalMs =
+		options.refreshIntervalMs && options.refreshIntervalMs > 0 ? options.refreshIntervalMs : null;
+	renderedFrameCount = 0;
+	renderedFrameIntervals = [];
+	lastRenderedFrameTs = null;
 	konvaNodesDestroyed = 0;
 	longTaskCount = 0;
 	longTaskTotalMs = 0;
@@ -282,6 +358,15 @@ function snapshot(): PerfSnapshot {
 	let frames: FrameSummary | null = null;
 	if (frameIntervals.length > 0) {
 		const s = summarize(frameIntervals);
+		const periodMs = refreshIntervalMs ?? s.p50Ms;
+		let droppedFrames = 0;
+		let slowOver1_5x = 0;
+		if (periodMs > 0) {
+			for (const d of frameIntervals) {
+				droppedFrames += Math.max(0, Math.round(d / periodMs) - 1);
+				if (d > periodMs * 1.5) slowOver1_5x++;
+			}
+		}
 		frames = {
 			count: s.count,
 			fps: round(s.count / elapsedSec),
@@ -289,8 +374,21 @@ function snapshot(): PerfSnapshot {
 			p95Ms: s.p95Ms,
 			p99Ms: s.p99Ms,
 			maxMs: s.maxMs,
-			over16_7ms: frameIntervals.filter((d) => d > 16.7).length,
-			over33_3ms: frameIntervals.filter((d) => d > 33.3).length
+			periodMs: round(periodMs),
+			droppedFrames,
+			slowOver1_5x
+		};
+	}
+
+	let renderedFrames: RenderedFrameSummary | null = null;
+	if (konvaStage) {
+		const r = renderedFrameIntervals.length > 0 ? summarize(renderedFrameIntervals) : null;
+		renderedFrames = {
+			count: renderedFrameCount,
+			fps: round(elapsedSec > 0 ? renderedFrameCount / elapsedSec : 0),
+			p50Ms: r ? r.p50Ms : null,
+			p95Ms: r ? r.p95Ms : null,
+			maxMs: r ? r.maxMs : null
 		};
 	}
 
@@ -308,7 +406,10 @@ function snapshot(): PerfSnapshot {
 		counters: counterObj,
 		ratesPerSec: rates,
 		frames,
+		renderedFrames,
 		konva: {
+			registered: konvaStage !== null,
+			layers: konvaStage ? [...registeredLayerLabels] : null,
 			nodesCreated,
 			nodesDestroyed: konvaNodesDestroyed,
 			nodeCount: konvaStage ? konvaStage.find(() => true).length : null,

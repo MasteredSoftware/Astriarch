@@ -27,6 +27,9 @@ const FRONTEND_URL = `http://localhost:${FRONTEND_PORT}`;
 
 export default defineConfig({
 	testDir: './e2e',
+	// e2e/perf has its own config (playwright.perf.config.ts) and Vitest unit
+	// specs (*.spec.ts) that Playwright must not collect.
+	testIgnore: ['perf/**'],
 	globalSetup: './e2e/global-setup.ts',
 	globalTeardown: './e2e/global-teardown.ts',
 	// Run scenario files in parallel; tests within a file run serially by default.

@@ -3,7 +3,10 @@
  * (see e2e/perf/README.md). Not part of the normal e2e suite.
  *
  * Each repetition launches a fresh browser, starts the pinned benchmark game,
- * warms up, then measures three windows:
+ * warms up, then measures three windows. Before each window (outside the
+ * measured interval) a 500ms rAF probe records the refresh rate, visibility
+ * and focus, so throttling is detected without relying on app counters.
+ * The windows:
  *   idle     no input (frame sampler off, so the harness adds no rAF loop)
  *   panzoom  scripted drags and wheel zooms (frame sampler on)
  *   fleets   after sending a fleet, no input while it is in transit (frame sampler on)
@@ -21,6 +24,8 @@ import {
 	writeResults,
 	gitInfo,
 	machineInfo,
+	environmentWarnings,
+	type EnvProbe,
 	type PerfResultFile,
 	type WindowName,
 	type WindowRun
@@ -40,6 +45,7 @@ const REPETITIONS = Number(process.env.PERF_REPEATS ?? 5);
 const WINDOW_MS = Number(process.env.PERF_WINDOW_MS ?? 20_000);
 const WARMUP_MS = Number(process.env.PERF_WARMUP_MS ?? 10_000);
 const SETTLE_MS = 2_000;
+const PROBE_MS = 500;
 const VIEWPORT = { width: 1440, height: 900 };
 const ENFORCE_BUDGETS = process.env.PERF_ENFORCE_BUDGETS === '1';
 
@@ -162,7 +168,17 @@ async function measureWindow(
 		return Object.fromEntries(metrics.map((m) => [m.name, m.value]));
 	};
 
-	await page.evaluate((frames) => window.__perf!.reset({ sampleFrames: frames }), sampleFrames);
+	const probe = await probeEnvironment(page, PROBE_MS);
+	if (result && result.meta.refreshHz === null) {
+		result.meta.refreshHz = probe.refreshHz;
+		result.meta.devicePixelRatio = probe.devicePixelRatio;
+	}
+
+	await page.evaluate(
+		(options) => window.__perf!.reset(options),
+		// The probe's median interval is the display period dropped frames are judged against.
+		{ sampleFrames, refreshIntervalMs: probe.medianIntervalMs ?? undefined }
+	);
 	const cdpStart = await cdpMetrics();
 	const cpuStart = await sampleTree(browserPid);
 
@@ -170,10 +186,16 @@ async function measureWindow(
 
 	const cpuEnd = await sampleTree(browserPid);
 	const cdpEnd = await cdpMetrics();
-	const perf: PerfSnapshot = await page.evaluate(() => {
-		const snap = window.__perf!.snapshot();
+	const { perf, endState } = await page.evaluate(() => {
+		const snap: PerfSnapshot = window.__perf!.snapshot();
 		window.__perf!.reset();
-		return snap;
+		return {
+			perf: snap,
+			endState: {
+				visibilityState: document.visibilityState as string,
+				hasFocus: document.hasFocus()
+			}
+		};
 	});
 	await cdp?.detach().catch(() => {});
 
@@ -187,25 +209,20 @@ async function measureWindow(
 	}
 
 	const cpu = cpuDelta(cpuStart, cpuEnd);
+	if (!perf.konva.registered) {
+		warnings.push('Konva stage not registered: konva.* metrics are missing');
+	}
 	if (cpu.exitedProcesses > 0) {
 		warnings.push(`${cpu.exitedProcesses} browser process(es) exited during the window`);
 	}
-	// A browser that throttles a hidden/occluded window slows rAF and timers.
-	// The game loop ticks at 5/s (MS_PER_TICK); before Phase 2 step 2 it ran every
-	// frame (raf.gameLoop), which is still checked so older commits can be rerun.
+	const env = { start: probe, end: endState };
+	warnings.push(...environmentWarnings(env, result?.meta.refreshHz ?? null));
+	// The game loop ticks at 5/s (MS_PER_TICK); a much lower rate means the
+	// browser is throttling timers too.
 	const tickRate = perf.ratesPerSec['gameLoop.tick'];
 	if (tickRate !== undefined && tickRate > 0 && tickRate < 4) {
 		warnings.push(
 			`game loop ticked ${tickRate}/s (expected 5): the browser may be throttling a hidden window`
-		);
-	}
-	const rafGameLoopRate = perf.ratesPerSec['raf.gameLoop'];
-	if (rafGameLoopRate !== undefined && rafGameLoopRate > 0 && rafGameLoopRate < 20) {
-		warnings.push(`rAF ran at ${rafGameLoopRate}/s: the browser may be throttling a hidden window`);
-	}
-	if (perf.frames && perf.frames.fps < 20) {
-		warnings.push(
-			`frames ran at ${perf.frames.fps}/s: the browser may be throttling a hidden window`
 		);
 	}
 
@@ -214,6 +231,7 @@ async function measureWindow(
 		cpu,
 		perf,
 		cdp: cdpDelta,
+		env,
 		warnings,
 		metrics: flattenMetrics(cpu, perf, cdpDelta)
 	};
@@ -227,13 +245,67 @@ async function measureWindow(
 	);
 }
 
+/**
+ * Runs a short rAF loop in the page (and cancels it) to measure the cadence
+ * rAF actually runs at, plus visibility, focus and devicePixelRatio. A timer
+ * fallback ends the probe if rAF is fully suspended.
+ */
+async function probeEnvironment(page: Page, durationMs: number): Promise<EnvProbe> {
+	return page.evaluate(
+		(ms) =>
+			new Promise<EnvProbe>((resolve) => {
+				const stamps: number[] = [];
+				const start = performance.now();
+				let rafId = 0;
+				let done = false;
+				const finish = () => {
+					if (done) return;
+					done = true;
+					cancelAnimationFrame(rafId);
+					clearTimeout(timer);
+					const elapsed = performance.now() - start;
+					const intervals = stamps
+						.slice(1)
+						.map((t, i) => t - stamps[i])
+						.sort((a, b) => a - b);
+					const mid = Math.floor(intervals.length / 2);
+					const median =
+						intervals.length === 0
+							? null
+							: intervals.length % 2
+								? intervals[mid]
+								: (intervals[mid - 1] + intervals[mid]) / 2;
+					const r = (n: number) => Math.round(n * 10) / 10;
+					resolve({
+						durationMs: r(elapsed),
+						frames: stamps.length,
+						rafPerSec: r(stamps.length / (elapsed / 1000)),
+						medianIntervalMs: median === null ? null : Math.round(median * 1000) / 1000,
+						refreshHz: median ? r(1000 / median) : null,
+						visibilityState: document.visibilityState,
+						hasFocus: document.hasFocus(),
+						devicePixelRatio: window.devicePixelRatio
+					});
+				};
+				const tick = (ts: number) => {
+					stamps.push(ts);
+					if (performance.now() - start < ms) rafId = requestAnimationFrame(tick);
+					else finish();
+				};
+				rafId = requestAnimationFrame(tick);
+				const timer = setTimeout(finish, ms + 250);
+			}),
+		durationMs
+	);
+}
+
 function createResultFile(
 	browserName: string,
 	browserVersion: string,
 	headless: boolean
 ): PerfResultFile {
 	return {
-		schemaVersion: 1,
+		schemaVersion: 2,
 		meta: {
 			label: process.env.PERF_LABEL || null,
 			...gitInfo(),
@@ -245,7 +317,9 @@ function createResultFile(
 			windowMs: WINDOW_MS,
 			warmupMs: WARMUP_MS,
 			repetitions: REPETITIONS,
-			galaxySeed: BENCHMARK_GAME.galaxySeed
+			galaxySeed: BENCHMARK_GAME.galaxySeed,
+			refreshHz: null,
+			devicePixelRatio: null
 		},
 		windows: {}
 	};
@@ -255,6 +329,8 @@ const HEADLINE_METRICS = [
 	'cpu.totalPct',
 	'frames.fps',
 	'frames.p95Ms',
+	'frames.droppedPct',
+	'rendered.fps',
 	'konva.nodesCreatedPerSec',
 	'rate.store.clientGameModel.set',
 	'time.canvas.updateGameObjects.msPerSec',
@@ -273,13 +349,14 @@ function printSummary(file: PerfResultFile): void {
 			if (s) console.log(`    ${metric.padEnd(50)} ${s.median}  [${s.min} – ${s.max}]`);
 		}
 		for (const b of checkBudgets(name as WindowName, data.summary)) {
-			if (!b.pass) violations++;
+			if (b.status !== 'pass') violations++;
+			const value = b.value === null ? 'not recorded' : b.value;
 			console.log(
-				`    budget ${b.pass ? 'PASS' : 'FAIL'} ${b.metric} = ${b.value} (max ${b.max}): ${b.why}`
+				`    budget ${b.status.toUpperCase()} ${b.metric} = ${value} (max ${b.max}): ${b.why}`
 			);
 		}
 	}
 	if (ENFORCE_BUDGETS && violations > 0) {
-		throw new Error(`${violations} perf budget(s) exceeded (PERF_ENFORCE_BUDGETS=1)`);
+		throw new Error(`${violations} perf budget(s) exceeded or missing (PERF_ENFORCE_BUDGETS=1)`);
 	}
 }
