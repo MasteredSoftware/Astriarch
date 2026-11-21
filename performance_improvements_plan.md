@@ -256,7 +256,8 @@ Results (5 × 20s, medians; every change below is outside both runs' min–max r
 What changed:
 
 - `gameStore.ts` advances the client model with `setInterval(…, MS_PER_TICK)` (200ms), not every animation frame. There is one `clientGameModel` update per tick.
-- Fleets move smoothly between ticks. A `Konva.Animation` starts with the first fleet in transit and stops when the last one arrives. `DrawnFleet.animate()` extrapolates each fleet along its line at the speed measured across ticks (fleets move at a constant speed). Nodes change only when a fleet moves at least 0.5 screen px, so at normal game speed the fleet layer redraws only at ticks.
+- Fleets move smoothly between ticks. `DrawnFleet.animate()` extrapolates each fleet along its line at the engine's speed for its owner (`Fleet.getSpeed` divided by the game speed's ms per cycle), so it lands where the next tick puts it. A `Konva.Animation` runs only while some fleet can still move. It stops itself when none can: no fleet in transit, every fleet awaiting conflict resolution, or no model update for 1.5 ticks (the game is paused or the server is late). The next model update restarts it. Nodes change only when a fleet moves at least 0.5 screen px, so at normal game speed the fleet layer redraws only at ticks.
+- In a background tab the game loop now keeps ticking at the browser's throttled timer rate (at least 1s, and about once a minute under Chrome's intensive throttling), where the rAF loop used to stop. Notifications, auto-queue checks and arrival requests therefore stay current while the tab is hidden. The engine clock is wall-time based, so the game state is the same either way.
 - Harness: the store and canvas budgets are now ≤ 6/s, there is a new idle budget `rate.fleetAnimation.frame` = 0, and the throttle warnings use the 5/s tick and the frame rate.
 
 Results against step 1 (5 × 20s, medians):
@@ -310,7 +311,7 @@ Finding: while Fleet Command is open with no destination chosen (as after sendin
 | Firefox | 64 | **17** | 17 |
 | Chromium | 41 (GPU 29) | **12** (GPU 3) | 11 |
 
-This also confirms that step 2's fleet animation costs about 1 point or less.
+This suggested that step 2's fleet animation costs about 1 point or less. That figure was measured with the harness's frame sampler keeping rAF running, so it can't show the cost of the fleet animation's own rAF loop. The point is now moot: the animation stops whenever no fleet can move (see step 2).
 
 What changed:
 
@@ -347,6 +348,7 @@ These remain from the Phase 2 list. Each should still be done one at a time and 
 - **Narrower stores (rest of step 2): low priority.** At 5 model updates per second, our JavaScript is about 4–6% of a core, so narrowing the 8 `clientGameModel` subscribers is unlikely to be measurable.
 - **Step 4 items, only if numbers call for them:** `Konva.pixelRatio`, hiding off-screen nodes, the layer count, and Firefox-specific canvas settings.
 - **Other looping CSS animations.** The paused-game modal's pulsing dots loop while the game is paused, deliberately left as a "waiting" indicator. Other screens (lobby, dialogs, research and trading views) weren't audited. The `dom.runningAnimations` metric and `__perf.snapshot().runningAnimations` (with `?perf=1`) make it quick to check any screen.
+- **A paused-game perf window.** Only the server pauses a game (when a player disconnects); there is no user pause action. A paused window would need a second client or a test-only pause hook, and its own budget for the paused modal's pulsing dots, which loop by design. For now a unit test covers the fleet animation stopping once no fleet can move.
 - **Hardening the budgets.** They are counters, so they could become hard CI checks (`PERF_ENFORCE_BUDGETS=1`). This needs a CI runner with a headed browser; timing numbers should stay local.
 
 ## Open decisions
