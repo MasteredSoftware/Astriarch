@@ -12,6 +12,7 @@
 		selectedPlanetId
 	} from '#lib/stores/gameStore.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
+	import { MS_PER_TICK } from 'astriarch-engine';
 	import { webSocketService } from '#lib/services/websocket.ts';
 	import {
 		GameTools,
@@ -922,7 +923,9 @@
 								</div>
 
 								{#if index === 0}
-									<!-- Progress bar for current item -->
+									<!-- Progress bar for current item. The model advances at the
+									     fixed tick (MS_PER_TICK), so a linear transition of the same
+									     length slides the bar continuously between updates. -->
 									<div class="mb-2">
 										<div class="h-1.5 w-full rounded-full bg-slate-700">
 											<div
@@ -934,7 +937,7 @@
 													100,
 													((item.productionCostComplete || 0) / (item.baseProductionCost || 1)) *
 														100
-												)}%"
+												)}%; transition: width {MS_PER_TICK}ms linear"
 											></div>
 										</div>
 									</div>
