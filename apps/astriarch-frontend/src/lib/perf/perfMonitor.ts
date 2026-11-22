@@ -21,10 +21,13 @@
  *               the browser's refresh driver ticking (adding CPU, notably in
  *               Firefox) and `fps` reads the display rate whether or not
  *               anything was drawn. Use `renderedFrames` for what was drawn.
- *   - renderedFrames: frames in which at least one Konva layer drew, built from
- *               the layer draw events (event-driven, no rAF loop of its own),
- *               so it is available in every window including idle. Null
- *               unless the stage is live and every layer is hooked (see konva.registered).
+ *   - renderedFrames: display frames in which at least one Konva layer drew.
+ *               A layer draw arms a one-shot rAF; when it fires, every draw
+ *               since the previous one counts as one frame at that rAF's
+ *               timestamp. Nothing is scheduled while nothing draws, so it is
+ *               available in every window including idle, and it can never
+ *               exceed the display refresh rate. Null unless the stage is live
+ *               and every layer is hooked (see konva.registered).
  *   - konva:    nodes created/destroyed, current node count, per-layer draws.
  *               `registered` is true only while the registered stage is still
  *               attached to the document and every layer on it is hooked, so a
@@ -146,8 +149,8 @@ let refreshIntervalMs: number | null = null;
 let renderedFrameCount = 0;
 let renderedFrameIntervals: number[] = [];
 let lastRenderedFrameTs: number | null = null;
-/** Set by the first layer draw in a task; cleared in a microtask after it. */
-let renderedFrameOpen = false;
+/** One-shot rAF armed by the first layer draw since the last rendered frame. */
+let renderedFrameRafId: number | null = null;
 let konvaNodesDestroyed = 0;
 let longTaskCount = 0;
 let longTaskTotalMs = 0;
@@ -297,22 +300,33 @@ function probeKonvaId(): number | null {
 }
 
 /**
- * Counts one rendered frame per task that draws any layer. Konva draws every
- * batched layer inside a single rAF callback, so all draws of one frame fall
- * in the same task, and a microtask runs only after that task finishes.
+ * Arms a one-shot rAF on the first layer draw since the last rendered frame.
+ * Later draws before it fires (in other tasks or other rAF callbacks) belong
+ * to the same display frame, so the count is at most one per display refresh.
+ *
+ * The frame is counted when the rAF fires, not at the draw: a draw inside a
+ * rAF callback (Konva's batchDraw) cannot tell which frame it is in, and a
+ * one-shot requested from it fires in the next frame. Konva's next draw
+ * callback is queued after that one-shot, so in steady state each one-shot
+ * sees exactly one frame's draws. Nothing is scheduled while nothing draws.
  */
 function markRenderedFrame(): void {
-	if (renderedFrameOpen) return;
-	renderedFrameOpen = true;
-	queueMicrotask(() => {
-		renderedFrameOpen = false;
-	});
-	const now = performance.now();
+	if (renderedFrameRafId !== null) return;
+	renderedFrameRafId = requestAnimationFrame(countRenderedFrame);
+}
+
+function countRenderedFrame(ts: number): void {
+	renderedFrameRafId = null;
 	if (lastRenderedFrameTs !== null && renderedFrameIntervals.length < MAX_SAMPLES) {
-		renderedFrameIntervals.push(now - lastRenderedFrameTs);
+		renderedFrameIntervals.push(ts - lastRenderedFrameTs);
 	}
-	lastRenderedFrameTs = now;
+	lastRenderedFrameTs = ts;
 	renderedFrameCount++;
+}
+
+function cancelRenderedFrame(): void {
+	if (renderedFrameRafId !== null) cancelAnimationFrame(renderedFrameRafId);
+	renderedFrameRafId = null;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -366,6 +380,7 @@ function reset(options: ResetOptions = {}): void {
 	renderedFrameCount = 0;
 	renderedFrameIntervals = [];
 	lastRenderedFrameTs = null;
+	cancelRenderedFrame();
 	konvaNodesDestroyed = 0;
 	longTaskCount = 0;
 	longTaskTotalMs = 0;

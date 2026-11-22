@@ -72,6 +72,17 @@ export function compareMetric(name, base, head) {
 	return { name, base, head, delta, pct, verdict };
 }
 
+/**
+ * Warning when the two files use different result schema versions: metric
+ * definitions can change between versions (v3 redefined rendered.*).
+ */
+export function schemaMismatch(baseData, headData) {
+	const b = baseData.schemaVersion;
+	const h = headData.schemaVersion;
+	if (b === h) return null;
+	return `schemaVersion differs (${b ?? 'unknown'} vs ${h ?? 'unknown'}); metric definitions may differ (v3 redefined rendered.*)`;
+}
+
 function main() {
 	const args = process.argv.slice(2);
 	const showAll = args.includes('--all');
@@ -86,6 +97,8 @@ function main() {
 	console.log(`base: ${base.file}\n      ${describe(base.data.meta)}`);
 	console.log(`head: ${head.file}\n      ${describe(head.data.meta)}`);
 
+	const schemaWarning = schemaMismatch(base.data, head.data);
+	if (schemaWarning) console.warn(`WARNING: ${schemaWarning}`);
 	for (const warning of metaMismatches(base.data.meta, head.data.meta)) {
 		console.warn(`WARNING: ${warning}`);
 	}

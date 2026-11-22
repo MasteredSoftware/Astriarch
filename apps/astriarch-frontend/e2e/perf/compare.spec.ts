@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { compareMetric, metaMismatches } from './compare.mjs';
+import { compareMetric, metaMismatches, schemaMismatch } from './compare.mjs';
 
 const s = (median: number, min = median, max = median) => ({ median, min, max, n: 3 });
 
@@ -29,6 +29,19 @@ describe('compareMetric', () => {
 	it('reports a change from zero as infinite pct', () => {
 		expect(compareMetric('x', s(0), s(2)).pct).toBe(Infinity);
 		expect(compareMetric('x', s(0), s(0)).pct).toBe(0);
+	});
+});
+
+describe('schemaMismatch', () => {
+	it('is quiet for matching schema versions', () => {
+		expect(schemaMismatch({ schemaVersion: 3 }, { schemaVersion: 3 })).toBeNull();
+	});
+
+	it('warns when the schema versions differ', () => {
+		expect(schemaMismatch({ schemaVersion: 2 }, { schemaVersion: 3 })).toMatch(
+			/^schemaVersion differs \(2 vs 3\)/
+		);
+		expect(schemaMismatch({}, { schemaVersion: 3 })).toMatch(/\(unknown vs 3\)/);
 	});
 });
 

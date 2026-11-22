@@ -3,6 +3,32 @@ import { writable, get } from 'svelte/store';
 
 type PerfModule = typeof import('./perfMonitor');
 
+/**
+ * Stand-in for requestAnimationFrame: runFrame(ts) runs the callbacks requested
+ * before it, in request order; callbacks requested during a frame run in the
+ * next one, as in the browser.
+ */
+function fakeFrames() {
+	let nextId = 1;
+	let queue: { id: number; cb: FrameRequestCallback }[] = [];
+	vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+		const id = nextId++;
+		queue.push({ id, cb });
+		return id;
+	});
+	vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+		queue = queue.filter((entry) => entry.id !== id);
+	});
+	return {
+		pending: () => queue.length,
+		runFrame(ts: number) {
+			const current = queue;
+			queue = [];
+			for (const { cb } of current) cb(ts);
+		}
+	};
+}
+
 async function loadPerf(search: string): Promise<PerfModule> {
 	vi.resetModules();
 	vi.stubGlobal('window', {
@@ -133,6 +159,7 @@ describe('perfMonitor', () => {
 	});
 
 	it('counts Konva nodes created and destroyed, excluding its own probes', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, layer, Group } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
@@ -155,6 +182,7 @@ describe('perfMonitor', () => {
 	});
 
 	it('reports an explicit 0 for a registered layer that was not drawn', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, layer } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
@@ -168,27 +196,89 @@ describe('perfMonitor', () => {
 		expect(snap.konva.layers).toEqual(['konva.draw.galaxy']);
 	});
 
-	it('counts draws in the same task as one rendered frame', async () => {
-		const perf = await loadPerf('?perf=1');
-		const { konva, stage, layer } = fakeKonva();
-		perf.perfRegisterKonvaStage(konva, stage);
-		window.__perf!.reset();
-		expect(window.__perf!.snapshot().renderedFrames).toMatchObject({ count: 0, p50Ms: null });
+	describe('rendered frames', () => {
+		async function setup(extraLayers: string[] = []) {
+			const frames = fakeFrames();
+			const perf = await loadPerf('?perf=1');
+			const k = fakeKonva();
+			const extra = extraLayers.map((name) => k.addLayer(name));
+			perf.perfRegisterKonvaStage(k.konva, k.stage);
+			window.__perf!.reset();
+			return { frames, extra, ...k };
+		}
 
-		layer.draw();
-		layer.draw();
-		expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
+		it('schedules nothing while nothing draws', async () => {
+			const { frames } = await setup();
+			expect(frames.pending()).toBe(0);
+			frames.runFrame(10);
+			expect(window.__perf!.snapshot().renderedFrames).toMatchObject({ count: 0, p50Ms: null });
+		});
 
-		await Promise.resolve();
-		layer.draw();
-		const rendered = window.__perf!.snapshot().renderedFrames!;
-		expect(rendered.count).toBe(2);
-		expect(rendered.fps).toBeGreaterThan(0);
-		expect(rendered.p50Ms).not.toBeNull();
-		expect(window.__perf!.snapshot().counters['konva.draw.galaxy']).toBe(3);
+		it('counts draws in separate tasks before one frame as one frame', async () => {
+			const { frames, layer } = await setup();
+			layer.draw();
+			layer.draw();
+			expect(frames.pending()).toBe(1);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(0);
+			frames.runFrame(10);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
+			expect(frames.pending()).toBe(0);
+		});
+
+		it('counts draws in different rAF callbacks of the same frame as one frame', async () => {
+			const { frames, layer, extra } = await setup(['ui']);
+			const ui = extra[0]!;
+			requestAnimationFrame(() => layer.draw());
+			requestAnimationFrame(() => ui.draw());
+			frames.runFrame(10);
+			frames.runFrame(20);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
+		});
+
+		it('counts one frame per display frame when Konva draws in every frame', async () => {
+			const { frames, layer } = await setup();
+			// GalaxyCanvas: each frame Konva's batchDraw callback draws, then the
+			// render loop requests the next batchDraw and then itself.
+			const konvaDraw = () => layer.draw();
+			const render = () => {
+				requestAnimationFrame(konvaDraw);
+				requestAnimationFrame(render);
+			};
+			requestAnimationFrame(konvaDraw);
+			requestAnimationFrame(render);
+			for (let frame = 1; frame <= 11; frame++) frames.runFrame(frame * 10);
+
+			const snap = window.__perf!.snapshot();
+			expect(snap.counters['konva.draw.galaxy']).toBe(11);
+			// The last frame's draws are counted by the next frame's one-shot.
+			expect(snap.renderedFrames).toMatchObject({ count: 10, p50Ms: 10, maxMs: 10 });
+		});
+
+		it('counts draws in different frames as separate frames', async () => {
+			const { frames, layer } = await setup();
+			layer.draw();
+			frames.runFrame(10);
+			frames.runFrame(20);
+			layer.draw();
+			frames.runFrame(30);
+			const rendered = window.__perf!.snapshot().renderedFrames!;
+			expect(rendered.count).toBe(2);
+			expect(rendered.p50Ms).toBe(20);
+			expect(rendered.fps).toBeGreaterThan(0);
+		});
+
+		it('reset cancels a pending frame', async () => {
+			const { frames, layer } = await setup();
+			layer.draw();
+			window.__perf!.reset();
+			expect(frames.pending()).toBe(0);
+			frames.runFrame(10);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(0);
+		});
 	});
 
 	it('reports a detached stage as unregistered and drops its zero counters', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, content } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
@@ -203,6 +293,7 @@ describe('perfMonitor', () => {
 	});
 
 	it('reports a layer added after registration as unhooked', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, addLayer } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
@@ -223,6 +314,7 @@ describe('perfMonitor', () => {
 	});
 
 	it('does not double-count draws when a stage is registered twice', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, layer } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);

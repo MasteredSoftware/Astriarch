@@ -61,8 +61,10 @@ export interface PerfResultFile {
 	/**
 	 * 2: adds meta.refreshHz/devicePixelRatio, per-run env, rendered.* and
 	 * frames.dropped* metrics; removes frames.over16_7Pct/over33_3Pct.
+	 * 3: rendered.* counts display frames with a draw (one-shot rAF), not draw
+	 * tasks, so v2 rendered.* values are not comparable.
 	 */
-	schemaVersion: 2;
+	schemaVersion: 3;
 	meta: {
 		label: string | null;
 		gitSha: string;
@@ -144,7 +146,8 @@ export function environmentWarnings(env: WindowEnv, referenceHz: number | null):
  *   frames.*     rAF frame-interval stats while the sampler runs (fps: higher is
  *                better); droppedPct/slowOver1_5xPct are relative to the
  *                measured refresh interval
- *   rendered.*   frames in which a Konva layer drew (every window, incl. idle)
+ *   rendered.*   display frames in which a Konva layer drew (every window, incl.
+ *                idle); at most the display refresh rate
  *   konva.*      node churn and node count (`konva.registered` is 1 when the stage
  *                is live and every layer is hooked; `konva.unhookedLayers` counts
  *                layers added after registration)

@@ -304,7 +304,7 @@ function createResultFile(
 	headless: boolean
 ): PerfResultFile {
 	return {
-		schemaVersion: 2,
+		schemaVersion: 3,
 		meta: {
 			label: process.env.PERF_LABEL || null,
 			...gitInfo(),
