@@ -8,21 +8,21 @@ Phase 1 builds a repeatable, automated way to measure performance. Phase 2 appli
 
 **Phase 1 is done** (PR #72, branch `perf/phase-1-measurement`). **Phase 2 is paused here as good enough for now** (branch `perf/phase-2-event-driven-canvas`, stacked on Phase 1). The remaining steps are deferred; see [Deferred work](#deferred-work).
 
-Whole-browser CPU, % of one core (macOS, 120Hz display, 5 × 20s windows, medians):
+Whole-browser CPU, % of one core (macOS, 120Hz display, 5 × 20s windows, medians; baseline and Phase 2 re-measured the same day, see [After the PR #73 review fixes](#after-the-pr-73-review-fixes-2026-11-22)):
 
 | Window | Firefox baseline → now | Chromium baseline → now |
 | --- | --- | --- |
-| idle | 199 → **13** (−93%) | 94 → **9.6** (−90%) |
-| panzoom | 194 → **77** (−60%) | 96 → **58** (−39%) |
-| fleets | 190 → **28** (−85%) | 92 → **20.5** (−78%) |
+| idle | 201 → **13.8** (−93%) | 91.7 → **10.6** (−88%) |
+| panzoom | 195 → **77.4** (−60%) | 95.3 → **58.1** (−39%) |
+| fleets | 192 → **28.9** (−85%) | 90.6 → **20.2** (−78%) |
 
 What got us there (details under [Phase 2 status](#phase-2-status)):
 
 1. The canvas updates from store events instead of a per-frame loop. It stops recreating Konva nodes: about 4,500 per second → 0.
-2. The client model advances at a fixed 200ms tick instead of every frame. A fleet animation runs only while fleets are in transit.
+2. The client model advances at a fixed 200ms tick instead of every frame. A fleet animation runs only while some fleet in transit can move a visible distance between ticks.
 3. Two decorative CSS animations that looped forever were stopped. The task-card scan-line and the Fleet Command prompt pulse made the browser composite every frame, and they turned out to be the largest single costs left.
 
-All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever.
+All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever. The budgets and the `build` window added in the second round of review (see below) haven't been measured yet.
 
 ## Findings (as of master `3d2ada9`)
 
@@ -238,7 +238,7 @@ What changed:
 - `DrawnFleet`s are kept by fleet id and updated in place. `DrawnTravelLine.updateEndpoints` skips no-op updates, because setting points always redraws.
 - The background (stars, hex grid, labels) is in its own group. A grid change rebuilds only that group; it no longer destroys the planets too.
 - The `batchDraw()` calls are removed.
-- The `rate.raf.canvas` budget became `rate.canvas.update` ≤ 5/s.
+- The `rate.raf.canvas` budget became `rate.canvas.update` ≤ 6/s (the 5/s tick plus the odd server update).
 
 Results (5 × 20s, medians; every change below is outside both runs' min–max ranges):
 
@@ -346,10 +346,10 @@ These step-by-step numbers were measured against the first baseline (harness sch
 
 The review of PR #73 changed behaviour in a few places:
 - Fleet speed now comes from the engine instead of being measured between ticks.
-- The fleet animation stops once no fleet can move.
+- The fleet animation stops once no fleet can move. Since the second review round it also doesn't run while no fleet can move a visible distance (at least 0.5 screen px) before the next update, e.g. at Normal speed and the default zoom; zooming in re-checks.
 - Duplicate fleet ids are drawn instead of dropped.
 - The canvas is torn down fully.
-- The build progress bar slides between ticks with a one-tick CSS transition.
+- The build progress bar slides between ticks with a one-tick CSS transition. In the second review round it became a `transform: scaleX()` transition (compositor-only, no layout or paint per frame) that snaps instead of sliding backwards when an item finishes or the planet changes. The previous `width` transition and a 5/s step remain selectable for the benchmark (`PERF_BUILD_BAR`), to measure the three against each other in the new `build` window.
 
 Both the baseline (`e1ecf7e`) and Phase 2 (`7902272`) were re-measured with the updated harness on the same day. Result files: `perf-results/baseline-v2-*.json` and `perf-results/phase2-review-*.json`.
 
@@ -359,12 +359,12 @@ Both the baseline (`e1ecf7e`) and Phase 2 (`7902272`) were re-measured with the 
 | panzoom | 195 → **77.4** (−60%) | 95.3 → **58.1** (−39%) |
 | fleets | 192 → **28.9** (−85%) | 90.6 → **20.2** (−78%) |
 
-- The review fixes cost nothing measurable: every window is within noise of step 2c.
+- The review fixes cost nothing measurable: every window is within noise of step 2c. None of these three windows shows a build in progress, so this doesn't cover the build progress bar. The `build` window (Planet Overview with a build queued) was added for that; its numbers, per progress bar variant, are still to be recorded.
 - All budgets pass in every window in both browsers, and no run had a harness warning.
 - The new frame metrics add two things:
   - Firefox now drops 0.1% of display refreshes while panning, against 4.6% before.
   - The canvas draws on 0 frames per second at idle, against about 120.
-- In the fleets window the canvas redraws at the 5/s tick. At this zoom a fleet moves less than the 0.5px redraw threshold between ticks, so the extrapolated frames are skipped.
+- In the fleets window the canvas redraws at the 5/s tick. At this zoom a fleet moves less than the 0.5px redraw threshold between ticks, so the extrapolated frames are skipped. Since the second review round the fleet animation doesn't run at all then.
 - **Worth watching:** in Firefox pan/zoom the canvas draws about 43 frames per second, with 95th-percentile gaps of 68ms between drawn frames (Chromium: about 64 per second). The scripted pan pauses between moves, which accounts for part of this. If dragging feels less smooth in Firefox, start here.
 - **Not a regression:** the game loop's per-call timings (`meanMs`, `p95Ms`) are higher because each call now covers 200ms of game time instead of one frame. Their total per second fell by 66–81%.
 
@@ -379,7 +379,7 @@ These remain from the Phase 2 list. Each should still be done one at a time and 
 - **Narrower stores (rest of step 2): low priority.** At 5 model updates per second, our JavaScript is about 4–6% of a core, so narrowing the 8 `clientGameModel` subscribers is unlikely to be measurable.
 - **Step 4 items, only if numbers call for them:** `Konva.pixelRatio`, hiding off-screen nodes, the layer count, and Firefox-specific canvas settings.
 - **Other looping CSS animations.** The paused-game modal's pulsing dots loop while the game is paused, deliberately left as a "waiting" indicator. Other screens (lobby, dialogs, research and trading views) weren't audited. The `dom.runningAnimations` metric and `__perf.snapshot().runningAnimations` (with `?perf=1`) make it quick to check any screen.
-- **A paused-game perf window.** Only the server pauses a game (when a player disconnects); there is no user pause action. A paused window would need a second client or a test-only pause hook, and its own budget for the paused modal's pulsing dots, which loop by design. For now a unit test covers the fleet animation stopping once no fleet can move.
+- **A paused-game perf window.** Only the server pauses a game (when a player disconnects); there is no user pause action. A paused window would need a second client or a test-only pause hook, and its own budget for the paused modal's pulsing dots, which loop by design. For now the decision to start or stop the fleet animation is unit-tested (`shouldRunFleetAnimation` and `DrawnFleet.canMoveVisibly`); its wiring in `GalaxyCanvas.svelte` is covered only by the idle `rate.fleetAnimation.frame` budget.
 - **Hardening the budgets.** They are counters, so they could become hard CI checks (`PERF_ENFORCE_BUDGETS=1`). This needs a CI runner with a headed browser; timing numbers should stay local.
 
 ## Open decisions
