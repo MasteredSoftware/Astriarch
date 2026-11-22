@@ -3,6 +3,7 @@ import {
 	environmentWarnings,
 	flattenMetrics,
 	isCleanProbe,
+	parseWindowFilter,
 	summarizeRuns,
 	resultFileName,
 	tickRateWarning,
@@ -306,6 +307,24 @@ function run(metrics: Record<string, number>): WindowRun {
 		metrics
 	};
 }
+
+describe('parseWindowFilter', () => {
+	it('selects every window when unset or empty', () => {
+		const all = ['idle', 'panzoom', 'fleets', 'build'];
+		expect([...parseWindowFilter(undefined)]).toEqual(all);
+		expect([...parseWindowFilter('')]).toEqual(all);
+		expect([...parseWindowFilter(' , ')]).toEqual(all);
+	});
+
+	it('selects the listed windows', () => {
+		expect([...parseWindowFilter('build')]).toEqual(['build']);
+		expect([...parseWindowFilter(' idle, build ')]).toEqual(['idle', 'build']);
+	});
+
+	it('rejects an unknown window', () => {
+		expect(() => parseWindowFilter('idle,bild')).toThrow(/unknown window\(s\) bild/);
+	});
+});
 
 describe('tickRateWarning', () => {
 	it('warns that the loop did not tick when the counter is absent or 0', () => {

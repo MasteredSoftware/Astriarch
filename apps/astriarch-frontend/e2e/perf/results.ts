@@ -10,7 +10,29 @@ import path from 'node:path';
 import type { CpuDelta } from './cpuSampler';
 import type { PerfSnapshot } from '../../src/lib/perf/perfMonitor';
 
-export type WindowName = 'idle' | 'panzoom' | 'fleets';
+/** The measured windows, in the order a repetition runs them. */
+export const WINDOW_NAMES = ['idle', 'panzoom', 'fleets', 'build'] as const;
+export type WindowName = (typeof WINDOW_NAMES)[number];
+
+/**
+ * The windows to measure, from PERF_WINDOWS: a comma-separated list of window
+ * names (e.g. `build` or `idle,build`). Unset or empty means all of them.
+ * Throws on an unknown name, so a typo can't silently measure nothing.
+ */
+export function parseWindowFilter(value: string | undefined): Set<WindowName> {
+	const names = (value ?? '')
+		.split(',')
+		.map((n) => n.trim())
+		.filter(Boolean);
+	if (names.length === 0) return new Set(WINDOW_NAMES);
+	const unknown = names.filter((n) => !(WINDOW_NAMES as readonly string[]).includes(n));
+	if (unknown.length > 0) {
+		throw new Error(
+			`PERF_WINDOWS: unknown window(s) ${unknown.join(', ')}; expected a comma list of ${WINDOW_NAMES.join(', ')}`
+		);
+	}
+	return new Set(names as WindowName[]);
+}
 
 /**
  * A short harness-side rAF probe taken just before and just after a window is

@@ -3,7 +3,7 @@
  * (see e2e/perf/README.md). Not part of the normal e2e suite.
  *
  * Each repetition launches a fresh browser, starts the pinned benchmark game,
- * warms up, then measures three windows. Before and after each window (outside
+ * warms up, then measures four windows. Before and after each window (outside
  * the measured interval) a 500ms rAF probe records the rAF rate, refresh rate
  * and visibility, so throttling on either side is detected without relying on
  * app counters. Focus is recorded but not checked: Playwright emulates focus,
@@ -13,6 +13,14 @@
  *   idle     no input (frame sampler off, so the harness adds no rAF loop)
  *   panzoom  scripted drags and wheel zooms (frame sampler on)
  *   fleets   after sending a fleet, no input while it is in transit (frame sampler on)
+ *   build    after queueing a build on the home planet in Planet Overview, no
+ *            input while it builds (frame sampler off, like idle). Last, so the
+ *            build can't change what the other windows measure. The fleet from
+ *            `fleets` is still in transit.
+ *
+ * PERF_WINDOWS (comma list, default all) measures only some windows. A skipped
+ * window's measurement is skipped, but the fleet is still sent when `build`
+ * runs, so a `build`-only run sees the same game state as a full run.
  *
  * Results are written to perf-results/<sha>[-dirty]-<browser>.json after every
  * repetition, so a partial run still leaves data behind.
@@ -29,6 +37,7 @@ import {
 	machineInfo,
 	environmentWarnings,
 	isCleanProbe,
+	parseWindowFilter,
 	tickRateWarning,
 	type EnvProbe,
 	type PerfResultFile,
@@ -40,6 +49,8 @@ import {
 	startBenchmarkGame,
 	panAndZoom,
 	sendFleet,
+	queueBuild,
+	buildStillInProgress,
 	setGalaxySeed,
 	BENCHMARK_GAME,
 	PAGE_HELPERS_SCRIPT
@@ -53,6 +64,7 @@ const SETTLE_MS = 2_000;
 const PROBE_MS = 500;
 const VIEWPORT = { width: 1440, height: 900 };
 const ENFORCE_BUDGETS = process.env.PERF_ENFORCE_BUDGETS === '1';
+const WINDOWS = parseWindowFilter(process.env.PERF_WINDOWS);
 
 /** Keep a headed browser from throttling rAF/timers when its window is covered. */
 const CHROMIUM_ARGS = [
@@ -69,10 +81,10 @@ const FIREFOX_PREFS = {
 };
 
 test.describe.configure({ mode: 'serial' });
-test.setTimeout(WARMUP_MS + WINDOW_MS * 3 + 180_000);
+test.setTimeout(WARMUP_MS + WINDOW_MS * 4 + 180_000);
 
 let result: PerfResultFile | null = null;
-const runs: Record<WindowName, WindowRun[]> = { idle: [], panzoom: [], fleets: [] };
+const runs: Record<WindowName, WindowRun[]> = { idle: [], panzoom: [], fleets: [], build: [] };
 
 test.beforeAll(async () => {
 	await cleanupTestData();
@@ -115,34 +127,55 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 			const measure = (name: WindowName, sampleFrames: boolean, action: () => Promise<string[]>) =>
 				measureWindow(page, browserName, browserPid, rep, name, sampleFrames, action);
 
-			await measure('idle', false, async () => {
-				await page.waitForTimeout(WINDOW_MS);
-				return [];
-			});
+			if (WINDOWS.has('idle')) {
+				await measure('idle', false, async () => {
+					await page.waitForTimeout(WINDOW_MS);
+					return [];
+				});
+			}
 
-			await page.waitForTimeout(SETTLE_MS);
-			await measure('panzoom', true, async () => {
-				const { moved } = await panAndZoom(page, WINDOW_MS);
-				return moved ? [] : ['stage did not move during pan/zoom'];
-			});
+			if (WINDOWS.has('panzoom')) {
+				await page.waitForTimeout(SETTLE_MS);
+				await measure('panzoom', true, async () => {
+					const { moved } = await panAndZoom(page, WINDOW_MS);
+					return moved ? [] : ['stage did not move during pan/zoom'];
+				});
+			}
 
-			await page.waitForTimeout(SETTLE_MS);
-			const fleetCount = await sendFleet(page, homePlanetId);
-			await page.waitForTimeout(SETTLE_MS);
-			await measure('fleets', true, async () => {
-				await page.waitForTimeout(WINDOW_MS);
-				const remaining = await page.evaluate(() => fleetLayerChildren());
-				const warnings = [];
-				if (fleetCount === 0) warnings.push('no fleet was sent');
-				if (remaining === 0) warnings.push('fleet arrived before the window ended');
-				return warnings;
-			});
+			if (WINDOWS.has('fleets') || WINDOWS.has('build')) {
+				await page.waitForTimeout(SETTLE_MS);
+				const fleetCount = await sendFleet(page, homePlanetId);
+				await page.waitForTimeout(SETTLE_MS);
+				if (WINDOWS.has('fleets')) {
+					await measure('fleets', true, async () => {
+						await page.waitForTimeout(WINDOW_MS);
+						const remaining = await page.evaluate(() => fleetLayerChildren());
+						const warnings = [];
+						if (fleetCount === 0) warnings.push('no fleet was sent');
+						if (remaining === 0) warnings.push('fleet arrived before the window ended');
+						return warnings;
+					});
+				}
+			}
+
+			if (WINDOWS.has('build')) {
+				const queued = await queueBuild(page, homePlanetId);
+				await page.waitForTimeout(SETTLE_MS);
+				await measure('build', false, async () => {
+					await page.waitForTimeout(WINDOW_MS);
+					if (!queued) return ['no build was queued'];
+					return (await buildStillInProgress(page))
+						? []
+						: ['the build finished before the window ended'];
+				});
+			}
 		} finally {
 			await browser?.close().catch(() => {});
 			await server.close();
 		}
 
 		for (const name of Object.keys(runs) as WindowName[]) {
+			if (!WINDOWS.has(name)) continue;
 			result!.windows[name] = { runs: runs[name], summary: summarizeRuns(runs[name]) };
 		}
 		const file = writeResults(result!);

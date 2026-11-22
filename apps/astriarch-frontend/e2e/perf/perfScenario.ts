@@ -140,16 +140,13 @@ export async function panAndZoom(page: Page, durationMs: number): Promise<{ move
 }
 
 /**
- * Sends every mobile ship from the home planet to another planet, so fleets
- * are in transit. Returns the number of fleets on the fleet layer afterwards.
+ * Clicks the home planet on the canvas and waits until it is selected.
+ * Releasing a pan drag fires a DOM click on the canvas, which may have selected
+ * whatever planet was under the cursor, so callers re-select it first.
  */
-export async function sendFleet(page: Page, homePlanetId: number): Promise<number> {
-	const sendBtn = page.locator('[data-testid="send-ships-btn"]');
+async function selectHomePlanet(page: Page, homePlanetId: number): Promise<void> {
 	const box = await page.locator('canvas').first().boundingBox();
 	if (!box) throw new Error('Galaxy canvas not found');
-
-	// Re-select the home planet: releasing a pan drag fires a DOM click on the
-	// canvas, which may have selected whatever planet was under the cursor.
 	const homePos = await page.evaluate((id) => {
 		const home = planetNodes().find((n) => n.getAttr('planetId') === id);
 		return home ? home.getAbsolutePosition() : null;
@@ -167,6 +164,18 @@ export async function sendFleet(page: Page, homePlanetId: number): Promise<numbe
 		homePlanetId,
 		{ timeout: 5_000 }
 	);
+}
+
+/**
+ * Sends every mobile ship from the home planet to another planet, so fleets
+ * are in transit. Returns the number of fleets on the fleet layer afterwards.
+ */
+export async function sendFleet(page: Page, homePlanetId: number): Promise<number> {
+	const sendBtn = page.locator('[data-testid="send-ships-btn"]');
+	const box = await page.locator('canvas').first().boundingBox();
+	if (!box) throw new Error('Galaxy canvas not found');
+
+	await selectHomePlanet(page, homePlanetId);
 
 	await openFleetCommandView(page);
 	await page.getByRole('button', { name: /Select All/ }).click();
@@ -223,6 +232,44 @@ export async function sendFleet(page: Page, homePlanetId: number): Promise<numbe
 
 	await page.waitForFunction(() => fleetLayerChildren() > 0, undefined, { timeout: 15_000 });
 	return page.evaluate(() => fleetLayerChildren());
+}
+
+/**
+ * The building the `build` window queues. A Factory costs 32 production, so at
+ * Normal speed the home planet is still building it long after the window
+ * (settle + PERF_WINDOW_MS) ends. Change only deliberately, like BENCHMARK_GAME.
+ */
+export const BENCHMARK_BUILD = 'Factory';
+
+/** The build queue's in-progress item; only the first item shows this label. */
+const buildInProgress = (page: Page) => page.getByText('Building...', { exact: true });
+
+/**
+ * Opens the Planets (Planet Overview) view, selects the home planet and queues
+ * BENCHMARK_BUILD, so the selected planet shows a build in progress with its
+ * progress bar. Returns whether a build is in progress afterwards.
+ */
+export async function queueBuild(page: Page, homePlanetId: number): Promise<boolean> {
+	// Leave the Fleet Command view first, so the planet click below only selects
+	// (the nav tabs are role="button" with the tab label as aria-label).
+	await page.getByRole('button', { name: 'Planets', exact: true }).first().click();
+	await selectHomePlanet(page, homePlanetId);
+
+	// The card is a div[role=button]; its tooltip trigger wraps it in a <button>.
+	const card = page.locator('div[role="button"]').filter({ hasText: BENCHMARK_BUILD }).first();
+	await card.waitFor({ timeout: 5_000 });
+	await card.click();
+	try {
+		await expect(buildInProgress(page)).toBeVisible({ timeout: 5_000 });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/** Whether the selected planet still shows a build in progress. */
+export async function buildStillInProgress(page: Page): Promise<boolean> {
+	return buildInProgress(page).isVisible();
 }
 
 async function stageTransform(page: Page) {
