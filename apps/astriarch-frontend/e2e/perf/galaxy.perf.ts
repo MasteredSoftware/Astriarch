@@ -210,7 +210,14 @@ async function measureWindow(
 
 	const cpu = cpuDelta(cpuStart, cpuEnd);
 	if (!perf.konva.registered) {
-		warnings.push('Konva stage not registered: konva.* metrics are missing');
+		const unhooked = perf.konva.unhookedLayers;
+		const reason =
+			unhooked === null
+				? 'never registered'
+				: unhooked.length > 0
+					? `layers not hooked: ${unhooked.join(', ')}`
+					: 'stage no longer attached to the document';
+		warnings.push(`Konva stage not registered (${reason}): konva.* metrics are missing`);
 	}
 	if (cpu.exitedProcesses > 0) {
 		warnings.push(`${cpu.exitedProcesses} browser process(es) exited during the window`);

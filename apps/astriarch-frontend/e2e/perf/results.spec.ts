@@ -36,12 +36,13 @@ function snapshot(overrides: Partial<PerfSnapshot> = {}): PerfSnapshot {
 			}
 		},
 		counters: { 'raf.canvas': 120 },
-		ratesPerSec: { 'raf.canvas': 60 },
+		ratesPerSec: { 'raf.canvas': 60, 'konva.draw.galaxy': 60 },
 		frames: null,
 		renderedFrames: { count: 10, fps: 5, p50Ms: 200, p95Ms: 210, maxMs: 250 },
 		konva: {
 			registered: true,
 			layers: ['konva.draw.galaxy'],
+			unhookedLayers: [],
 			nodesCreated: 10,
 			nodesDestroyed: 4,
 			nodeCount: 500,
@@ -65,6 +66,8 @@ describe('flattenMetrics', () => {
 		expect(m['time.canvas.update.meanMs']).toBe(2.5);
 		expect(m['time.canvas.update.msPerSec']).toBe(5);
 		expect(m['konva.registered']).toBe(1);
+		expect(m['konva.unhookedLayers']).toBe(0);
+		expect(m['rate.konva.draw.galaxy']).toBe(60);
 		expect(m['konva.nodesCreatedPerSec']).toBe(5);
 		expect(m['konva.nodesDestroyedPerSec']).toBe(2);
 		expect(m['konva.nodeCount']).toBe(500);
@@ -120,6 +123,7 @@ describe('flattenMetrics', () => {
 				konva: {
 					registered: false,
 					layers: null,
+					unhookedLayers: null,
 					nodesCreated: null,
 					nodesDestroyed: 0,
 					nodeCount: null,
@@ -133,6 +137,33 @@ describe('flattenMetrics', () => {
 		expect(m['konva.nodesCreatedPerSec']).toBeUndefined();
 		expect(m['konva.nodesDestroyedPerSec']).toBeUndefined();
 		expect(m['konva.nodeCount']).toBeUndefined();
+		expect(m['konva.unhookedLayers']).toBeUndefined();
+		expect(m['rendered.fps']).toBeUndefined();
+	});
+
+	it('omits layer draws and node churn for a stale or partly hooked stage', () => {
+		const m = flattenMetrics(
+			cpu,
+			snapshot({
+				konva: {
+					registered: false,
+					layers: ['konva.draw.galaxy'],
+					unhookedLayers: ['konva.draw.ui'],
+					nodesCreated: 10,
+					nodesDestroyed: 4,
+					nodeCount: 500,
+					layerCount: 2
+				},
+				renderedFrames: null
+			}),
+			null
+		);
+		expect(m['konva.registered']).toBe(0);
+		expect(m['konva.unhookedLayers']).toBe(1);
+		expect(m['rate.konva.draw.galaxy']).toBeUndefined();
+		expect(m['rate.raf.canvas']).toBe(60);
+		expect(m['konva.nodesCreatedPerSec']).toBeUndefined();
+		expect(m['konva.nodesDestroyedPerSec']).toBeUndefined();
 		expect(m['rendered.fps']).toBeUndefined();
 	});
 

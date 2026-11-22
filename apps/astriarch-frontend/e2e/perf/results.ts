@@ -145,7 +145,9 @@ export function environmentWarnings(env: WindowEnv, referenceHz: number | null):
  *                better); droppedPct/slowOver1_5xPct are relative to the
  *                measured refresh interval
  *   rendered.*   frames in which a Konva layer drew (every window, incl. idle)
- *   konva.*      node churn and node count (`konva.registered` is 1 when instrumented)
+ *   konva.*      node churn and node count (`konva.registered` is 1 when the stage
+ *                is live and every layer is hooked; `konva.unhookedLayers` counts
+ *                layers added after registration)
  *   cdp.*Pct     Chromium: % of wall time spent in script/layout/etc.
  */
 export function flattenMetrics(
@@ -159,7 +161,12 @@ export function flattenMetrics(
 	m['cpu.totalPct'] = cpu.totalPct;
 	for (const [role, pct] of Object.entries(cpu.byRolePct)) m[`cpu.${role}Pct`] = pct;
 
-	for (const [name, rate] of Object.entries(perf.ratesPerSec)) m[`rate.${name}`] = rate;
+	for (const [name, rate] of Object.entries(perf.ratesPerSec)) {
+		// Layer draw counters of an unregistered (stale or partly hooked) stage
+		// are not trustworthy; leave them out so budgets say MISSING.
+		if (!perf.konva.registered && name.startsWith('konva.draw.')) continue;
+		m[`rate.${name}`] = rate;
+	}
 
 	for (const [name, t] of Object.entries(perf.timings)) {
 		m[`time.${name}.meanMs`] = t.meanMs;
@@ -187,10 +194,12 @@ export function flattenMetrics(
 		if (perf.renderedFrames.maxMs !== null) m['rendered.maxMs'] = perf.renderedFrames.maxMs;
 	}
 
-	// Without a registered stage the Konva counters are not instrumented, so
-	// leave them out rather than report a misleading 0 (budgets then say MISSING).
+	// Without a registered stage (never registered, detached, or with unhooked
+	// layers) the Konva counters are not trustworthy, so leave them out rather
+	// than report a misleading 0 (budgets then say MISSING).
 	m['konva.registered'] = perf.konva.registered ? 1 : 0;
-	if (perf.konva.nodesCreated !== null) {
+	if (perf.konva.unhookedLayers) m['konva.unhookedLayers'] = perf.konva.unhookedLayers.length;
+	if (perf.konva.registered && perf.konva.nodesCreated !== null) {
 		m['konva.nodesCreatedPerSec'] = round(perf.konva.nodesCreated / elapsedSec);
 	}
 	if (perf.konva.registered) {

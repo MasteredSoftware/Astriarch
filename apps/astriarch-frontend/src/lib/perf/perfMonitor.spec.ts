@@ -26,29 +26,52 @@ function fakeKonva() {
 	class Group extends Node {}
 	type Handler = () => void;
 	class Layer extends Node {
-		index = 0;
-		handlers: Record<string, Handler> = {};
+		index: number;
+		handlers: Record<string, Handler[]> = {};
+		constructor(
+			private layerName: string,
+			index = 0
+		) {
+			super();
+			this.index = index;
+		}
 		name() {
-			return 'galaxy';
+			return this.layerName;
 		}
 		on(evt: string, fn: Handler) {
-			this.handlers[evt] = fn;
+			(this.handlers[evt] ??= []).push(fn);
 		}
 		draw() {
-			this.handlers['beforeDraw.perf']?.();
-			this.handlers['draw.perf']?.();
+			for (const fn of this.handlers['beforeDraw.perf'] ?? []) fn();
+			for (const fn of this.handlers['draw.perf'] ?? []) fn();
 		}
 	}
-	const layer = new Layer();
+	const layer = new Layer('galaxy');
+	const layers: Layer[] = [layer];
+	// Konva's Stage.destroy() detaches `content`; tests flip isConnected instead.
+	const content = { isConnected: true };
 	const stage = {
-		getLayers: () => [layer],
+		content,
+		getLayers: () => layers,
 		// Mirrors Konva: a predicate selector is applied to every descendant.
 		find: (selector: unknown) => {
 			if (typeof selector !== 'function') throw new Error('expected a predicate selector');
 			return [1, 2, 3].filter(() => selector());
 		}
 	};
-	return { konva: { Node, Group } as never, stage: stage as never, layer, Group };
+	const addLayer = (name: string) => {
+		const added = new Layer(name, layers.length);
+		layers.push(added);
+		return added;
+	};
+	return {
+		konva: { Node, Group } as never,
+		stage: stage as never,
+		layer,
+		addLayer,
+		content,
+		Group
+	};
 }
 
 describe('perfMonitor', () => {
@@ -163,6 +186,52 @@ describe('perfMonitor', () => {
 		expect(rendered.fps).toBeGreaterThan(0);
 		expect(rendered.p50Ms).not.toBeNull();
 		expect(window.__perf!.snapshot().counters['konva.draw.galaxy']).toBe(3);
+	});
+
+	it('reports a detached stage as unregistered and drops its zero counters', async () => {
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, content } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		content.isConnected = false;
+		window.__perf!.reset();
+
+		const snap = window.__perf!.snapshot();
+		expect(snap.konva.registered).toBe(false);
+		expect(snap.konva.unhookedLayers).toEqual([]);
+		expect(snap.counters['konva.draw.galaxy']).toBeUndefined();
+		expect(snap.renderedFrames).toBeNull();
+	});
+
+	it('reports a layer added after registration as unhooked', async () => {
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, addLayer } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		addLayer('ui');
+		window.__perf!.reset();
+
+		const snap = window.__perf!.snapshot();
+		expect(snap.konva.registered).toBe(false);
+		expect(snap.konva.unhookedLayers).toEqual(['konva.draw.ui']);
+		expect(snap.renderedFrames).toBeNull();
+
+		// Registering again hooks it.
+		perf.perfRegisterKonvaStage(konva, stage);
+		expect(window.__perf!.snapshot().konva).toMatchObject({
+			registered: true,
+			unhookedLayers: []
+		});
+	});
+
+	it('does not double-count draws when a stage is registered twice', async () => {
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, layer } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		perf.perfRegisterKonvaStage(konva, stage);
+		window.__perf!.reset();
+		layer.draw();
+		const snap = window.__perf!.snapshot();
+		expect(snap.counters['konva.draw.galaxy']).toBe(1);
+		expect(snap.timings['konva.draw.galaxy']?.count).toBe(1);
 	});
 
 	it('counts dropped frames against the given refresh interval', async () => {
