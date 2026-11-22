@@ -13,10 +13,12 @@
  *   idle     no input (frame sampler off, so the harness adds no rAF loop)
  *   panzoom  scripted drags and wheel zooms (frame sampler on)
  *   fleets   after sending a fleet, no input while it is in transit (frame sampler on)
- *   build    after queueing a build on the home planet in Planet Overview, no
- *            input while it builds (frame sampler off, like idle). Last, so the
+ *   build    after assigning a Builder and queueing a build on the home planet
+ *            in Planet Overview, no input while it builds, so the progress bar
+ *            advances every tick (frame sampler off, like idle). Last, so the
  *            build can't change what the other windows measure. The fleet from
- *            `fleets` is still in transit.
+ *            `fleets` is still in transit. It warns if the bar did not advance
+ *            or (for a transitioning bar) no transitions ran.
  *
  * PERF_BUILD_BAR (scalex | width | none) picks the build progress bar variant
  * the app uses, to compare them in the `build` window; unset is the default.
@@ -42,6 +44,7 @@ import {
 	isCleanProbe,
 	parseWindowFilter,
 	tickRateWarning,
+	buildProgressWarnings,
 	type EnvProbe,
 	type PerfResultFile,
 	type WindowName,
@@ -55,11 +58,14 @@ import {
 	queueBuild,
 	buildStillInProgress,
 	buildBarVariantShown,
+	buildProgress,
 	setGalaxySeed,
 	BENCHMARK_GAME,
 	PAGE_HELPERS_SCRIPT
 } from './perfScenario';
 import type { PerfSnapshot } from '../../src/lib/perf/perfMonitor';
+
+type BuildProgress = Awaited<ReturnType<typeof buildProgress>>;
 
 const REPETITIONS = Number(process.env.PERF_REPEATS ?? 5);
 const WINDOW_MS = Number(process.env.PERF_WINDOW_MS ?? 20_000);
@@ -145,8 +151,12 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 
 			result ??= createResultFile(browserName, browser.version(), headless);
 
-			const measure = (name: WindowName, sampleFrames: boolean, action: () => Promise<string[]>) =>
-				measureWindow(page, browserName, browserPid, rep, name, sampleFrames, action);
+			const measure = (
+				name: WindowName,
+				sampleFrames: boolean,
+				action: () => Promise<string[]>,
+				checkPerf?: (perf: PerfSnapshot) => string[]
+			) => measureWindow(page, browserName, browserPid, rep, name, sampleFrames, action, checkPerf);
 
 			if (WINDOWS.has('idle')) {
 				await measure('idle', false, async () => {
@@ -182,21 +192,45 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 			if (WINDOWS.has('build')) {
 				const queued = await queueBuild(page, homePlanetId);
 				await page.waitForTimeout(SETTLE_MS);
-				await measure('build', false, async () => {
-					await page.waitForTimeout(WINDOW_MS);
-					if (!queued) return ['no build was queued'];
-					const warnings = [];
-					if (!(await buildStillInProgress(page))) {
-						warnings.push('the build finished before the window ended');
-					}
-					const variant = await buildBarVariantShown(page);
-					if (variant !== (BUILD_BAR ?? 'scalex')) {
-						warnings.push(
-							`build bar variant is ${variant ?? 'not shown'}, expected ${BUILD_BAR ?? 'scalex'}`
+				let start: BuildProgress | null = null;
+				let end: BuildProgress | null = null;
+				let variant: string | null = null;
+				await measure(
+					'build',
+					false,
+					async () => {
+						start = await buildProgress(page);
+						await page.waitForTimeout(WINDOW_MS);
+						if (!queued) return ['no build was queued'];
+						end = await buildProgress(page);
+						variant = await buildBarVariantShown(page);
+						const warnings = [];
+						if (!(await buildStillInProgress(page))) {
+							warnings.push('the build finished before the window ended');
+						}
+						if (variant !== (BUILD_BAR ?? 'scalex')) {
+							warnings.push(
+								`build bar variant is ${variant ?? 'not shown'}, expected ${BUILD_BAR ?? 'scalex'}`
+							);
+						}
+						return warnings;
+					},
+					(perf) => {
+						if (!queued || !start || !end) return [];
+						const transitionRunRate = perf.ratesPerSec['dom.transitionrun'];
+						console.log(
+							`[perf] rep ${rep} build progress: bar ${start.fraction} → ${end.fraction}, ` +
+								`${start.done} → ${end.done}, ${start.years} → ${end.years}, ` +
+								`rate.dom.transitionrun ${transitionRunRate ?? 0}/s`
 						);
+						return buildProgressWarnings({
+							startFraction: start.fraction,
+							endFraction: end.fraction,
+							variant,
+							transitionRunRate
+						});
 					}
-					return warnings;
-				});
+				);
 			}
 		} finally {
 			await browser?.close().catch(() => {});
@@ -219,7 +253,9 @@ async function measureWindow(
 	repetition: number,
 	name: WindowName,
 	sampleFrames: boolean,
-	action: () => Promise<string[]>
+	action: () => Promise<string[]>,
+	/** Extra warnings from the window's perf snapshot (e.g. its event rates). */
+	checkPerf?: (perf: PerfSnapshot) => string[]
 ): Promise<void> {
 	const cdp =
 		browserName === 'chromium'
@@ -304,6 +340,7 @@ async function measureWindow(
 	// browser is throttling timers too, and none at all that the loop stopped.
 	const tickWarning = tickRateWarning(perf.ratesPerSec['gameLoop.tick']);
 	if (tickWarning) warnings.push(tickWarning);
+	if (checkPerf) warnings.push(...checkPerf(perf));
 
 	const run: WindowRun = {
 		repetition,

@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+	buildBarFraction,
+	buildProgressWarnings,
 	environmentWarnings,
 	flattenMetrics,
 	isCleanProbe,
@@ -340,6 +342,56 @@ describe('tickRateWarning', () => {
 	it('does not warn at the expected rate', () => {
 		expect(tickRateWarning(4)).toBeNull();
 		expect(tickRateWarning(5)).toBeNull();
+	});
+});
+
+describe('buildBarFraction', () => {
+	it('reads scaleX() from the transform', () => {
+		expect(buildBarFraction({ transform: 'scaleX(0.0123)', width: '100%' })).toBe(0.0123);
+		expect(buildBarFraction({ transform: 'scaleX(0)', width: '100%' })).toBe(0);
+		expect(buildBarFraction({ transform: 'scaleX(1e-7)', width: '100%' })).toBe(1e-7);
+	});
+
+	it('reads a percentage width without a transform', () => {
+		expect(buildBarFraction({ transform: '', width: '12.5%' })).toBe(0.125);
+	});
+
+	it('is null when neither is set', () => {
+		expect(buildBarFraction({ transform: '', width: '' })).toBeNull();
+		expect(buildBarFraction({ transform: 'none', width: '40px' })).toBeNull();
+	});
+});
+
+describe('buildProgressWarnings', () => {
+	const ok = { startFraction: 0.01, endFraction: 0.02, variant: 'scalex', transitionRunRate: 5 };
+
+	it('does not warn when the bar advanced and transitions ran', () => {
+		expect(buildProgressWarnings(ok)).toEqual([]);
+		expect(buildProgressWarnings({ ...ok, variant: 'width' })).toEqual([]);
+	});
+
+	it('warns when progress did not advance', () => {
+		const w = buildProgressWarnings({ ...ok, startFraction: 0, endFraction: 0 });
+		expect(w).toHaveLength(1);
+		expect(w[0]).toMatch(/build progress did not advance during the window \(0 → 0\)/);
+		expect(buildProgressWarnings({ ...ok, endFraction: 0.005 })[0]).toMatch(/did not advance/);
+	});
+
+	it('warns when the bar could not be read', () => {
+		expect(buildProgressWarnings({ ...ok, startFraction: null })[0]).toMatch(/at window start/);
+		expect(buildProgressWarnings({ ...ok, endFraction: null })[0]).toMatch(/at window end/);
+	});
+
+	it('warns when a transitioning variant ran no transitions', () => {
+		for (const variant of ['scalex', 'width']) {
+			const w = buildProgressWarnings({ ...ok, variant, transitionRunRate: undefined });
+			expect(w).toEqual([expect.stringMatching(/rate\.dom\.transitionrun is 0\/s/)]);
+			expect(buildProgressWarnings({ ...ok, variant, transitionRunRate: 0.5 })).toHaveLength(1);
+		}
+	});
+
+	it('expects no transitions for the none variant', () => {
+		expect(buildProgressWarnings({ ...ok, variant: 'none', transitionRunRate: 0 })).toEqual([]);
 	});
 });
 

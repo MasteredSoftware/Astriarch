@@ -208,6 +208,58 @@ export function tickRateWarning(rate: number | undefined): string | null {
 }
 
 /**
+ * The build progress bar's target fraction (0..1) from its inline style, as
+ * set by the tickProgress action: `transform: scaleX(f)` (scalex) or
+ * `width: p%` (width, none). The inline value is where the bar is heading, not
+ * the mid-transition position. Null when neither can be read.
+ */
+export function buildBarFraction(style: { transform: string; width: string }): number | null {
+	const scale = /scaleX\(\s*([-\d.e+]+)\s*\)/.exec(style.transform);
+	if (scale) return Number(scale[1]);
+	const pct = /^\s*([-\d.e+]+)%\s*$/.exec(style.width);
+	if (pct) return Number(pct[1]) / 100;
+	return null;
+}
+
+/** Below this `rate.dom.transitionrun` a transitioning bar measured no transitions. */
+const MIN_BUILD_BAR_TRANSITIONS_PER_SEC = 1;
+
+/**
+ * Checks that the `build` window measured a bar that moved: the progress
+ * fraction rose between the window's start and end, and for a variant with a
+ * transition (scalex, width) transitions actually ran. A planet with no
+ * production per turn shows a static bar, so every variant would measure the
+ * same idle bar.
+ */
+export function buildProgressWarnings(opts: {
+	startFraction: number | null;
+	endFraction: number | null;
+	variant: string | null;
+	transitionRunRate: number | undefined;
+}): string[] {
+	const { startFraction, endFraction, variant, transitionRunRate } = opts;
+	const warnings: string[] = [];
+	if (startFraction === null || endFraction === null) {
+		warnings.push(
+			`build progress bar not readable at window ${startFraction === null ? 'start' : 'end'}`
+		);
+	} else if (!(endFraction > startFraction)) {
+		warnings.push(
+			`build progress did not advance during the window (${startFraction} → ${endFraction}): ` +
+				'the bar was static (does the planet make any production?)'
+		);
+	}
+	const rate = transitionRunRate ?? 0;
+	if ((variant === 'scalex' || variant === 'width') && rate < MIN_BUILD_BAR_TRANSITIONS_PER_SEC) {
+		warnings.push(
+			`rate.dom.transitionrun is ${rate}/s for the ${variant} bar ` +
+				`(expected about ${EXPECTED_TICK_RATE}/s): no per-tick bar transition was measured`
+		);
+	}
+	return warnings;
+}
+
+/**
  * Flattens one window run into `name -> number`. Naming:
  *   cpu.*        % of one core (lower is better)
  *   rate.*       events per second

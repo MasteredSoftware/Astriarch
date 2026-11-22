@@ -12,6 +12,7 @@ import { openLobby, waitForConnected, createGame } from '../helpers/lobby';
 import { setOpponentSlot, startGame, OpponentType } from '../helpers/gameOptions';
 import { waitForGameView, openFleetCommandView } from '../helpers/inGame';
 import { testGameName } from '../helpers/cleanup';
+import { buildBarFraction } from './results';
 
 // playwright.perf.config.ts sets the default (8032) before this is imported.
 const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8032';
@@ -235,25 +236,56 @@ export async function sendFleet(page: Page, homePlanetId: number): Promise<numbe
 }
 
 /**
- * The building the `build` window queues. A Factory costs 32 production, so at
- * Normal speed the home planet is still building it long after the window
- * (settle + PERF_WINDOW_MS) ends. Change only deliberately, like BENCHMARK_GAME.
+ * The building the `build` window queues. A Factory costs 32 production; with
+ * BENCHMARK_BUILDERS builders on the quick-start home planet (1 Factory) it
+ * takes several minutes at Normal speed, so it is still building long after
+ * the window (settle + PERF_WINDOW_MS) ends. Change only deliberately, like
+ * BENCHMARK_GAME.
  */
 export const BENCHMARK_BUILD = 'Factory';
+
+/**
+ * Builders the `build` window assigns on the home planet before queueing. Its
+ * citizens all start as Farmers, and with no Builder the planet makes no
+ * production, so the build never advances ("999 years") and the bar is static.
+ * One Builder (of the two starting citizens) leaves one Farmer for food.
+ */
+export const BENCHMARK_BUILDERS = 1;
 
 /** The build queue's in-progress item; only the first item shows this label. */
 const buildInProgress = (page: Page) => page.getByText('Building...', { exact: true });
 
+/** The Builders row of Planet Overview's Worker Assignment (label, -, count, +). */
+const buildersRow = (page: Page) =>
+	page.getByText('Builders:', { exact: true }).locator('xpath=..');
+
 /**
- * Opens the Planets (Planet Overview) view, selects the home planet and queues
- * BENCHMARK_BUILD, so the selected planet shows a build in progress with its
- * progress bar. Returns whether a build is in progress afterwards.
+ * Moves citizens to Builders on the selected planet (Planet Overview open)
+ * with the Builders "+" button until it has `builders`, so it makes production.
+ */
+async function assignBuilders(page: Page, builders: number): Promise<void> {
+	const row = buildersRow(page);
+	const count = row.locator('span.w-6');
+	await count.waitFor({ timeout: 5_000 });
+	for (let i = Number(await count.textContent()); i < builders; i++) {
+		await row.getByRole('button', { name: '+', exact: true }).click();
+		// The server applies it and syncs the planet back
+		await expect(count).toHaveText(String(i + 1), { timeout: 5_000 });
+	}
+}
+
+/**
+ * Opens the Planets (Planet Overview) view, selects the home planet, assigns
+ * BENCHMARK_BUILDERS builders and queues BENCHMARK_BUILD, so the selected
+ * planet shows a build that advances every tick, with its progress bar.
+ * Returns whether a build is in progress afterwards.
  */
 export async function queueBuild(page: Page, homePlanetId: number): Promise<boolean> {
 	// Leave the Fleet Command view first, so the planet click below only selects
 	// (the nav tabs are role="button" with the tab label as aria-label).
 	await page.getByRole('button', { name: 'Planets', exact: true }).first().click();
 	await selectHomePlanet(page, homePlanetId);
+	await assignBuilders(page, BENCHMARK_BUILDERS);
 
 	// The card is a div[role=button]; its tooltip trigger wraps it in a <button>.
 	const card = page.locator('div[role="button"]').filter({ hasText: BENCHMARK_BUILD }).first();
@@ -265,6 +297,36 @@ export async function queueBuild(page: Page, homePlanetId: number): Promise<bool
 	} catch {
 		return false;
 	}
+}
+
+/**
+ * The in-progress build as shown: the bar's target fraction (from its inline
+ * style; see buildBarFraction()) and the "done/cost" and "N years" texts.
+ * Fields are null when the bar or text is not shown.
+ */
+export async function buildProgress(
+	page: Page
+): Promise<{ fraction: number | null; done: string | null; years: string | null }> {
+	const shown = await page.evaluate(() => {
+		const bar = document.querySelector<HTMLElement>('[data-build-bar]');
+		// Bar wrapper -> item card; its last row holds "done/cost" and "N years"
+		const card = bar?.closest('.rounded.border');
+		const texts = card
+			? Array.from(card.querySelectorAll(':scope > div:last-child > span')).map(
+					(s) => s.textContent?.trim() ?? ''
+				)
+			: [];
+		return {
+			style: bar ? { transform: bar.style.transform, width: bar.style.width } : null,
+			done: texts[0] ?? null,
+			years: texts[1] ?? null
+		};
+	});
+	return {
+		fraction: shown.style ? buildBarFraction(shown.style) : null,
+		done: shown.done,
+		years: shown.years
+	};
 }
 
 /** Whether the selected planet still shows a build in progress. */
