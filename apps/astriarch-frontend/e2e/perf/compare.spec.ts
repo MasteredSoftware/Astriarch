@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { compareMetric, metaMismatches, schemaMismatch } from './compare.mjs';
+import { mkdtempSync, symlinkSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { compareMetric, isMainModule, metaMismatches, schemaMismatch } from './compare.mjs';
 
 const s = (median: number, min = median, max = median) => ({ median, min, max, n: 3 });
 
@@ -21,6 +25,30 @@ describe('compareMetric', () => {
 		expect(compareMetric('frames.fps', s(60, 59, 61), s(30, 29, 31)).verdict).toBe('worse');
 	});
 
+	it('reports rendered.fps in panzoom as changed, with no direction', () => {
+		expect(compareMetric('rendered.fps', s(120, 119, 121), s(60, 59, 61), 'panzoom').verdict).toBe(
+			'changed'
+		);
+		expect(compareMetric('rendered.fps', s(60, 59, 61), s(120, 119, 121), 'panzoom').verdict).toBe(
+			'changed'
+		);
+		expect(
+			compareMetric('rendered.fps', s(120, 110, 125), s(118, 112, 121), 'panzoom').verdict
+		).toBe('~');
+	});
+
+	it('keeps rendered.fps lower-is-better outside panzoom', () => {
+		expect(compareMetric('rendered.fps', s(120, 119, 121), s(5, 4, 6), 'idle').verdict).toBe(
+			'better'
+		);
+		expect(compareMetric('rendered.fps', s(5, 4, 6), s(120, 119, 121), 'fleets').verdict).toBe(
+			'worse'
+		);
+		expect(compareMetric('cpu.totalPct', s(10, 9, 11), s(5, 4, 6), 'panzoom').verdict).toBe(
+			'better'
+		);
+	});
+
 	it('reports added and removed metrics', () => {
 		expect(compareMetric('x', undefined, s(1)).verdict).toBe('added');
 		expect(compareMetric('x', s(1), undefined).verdict).toBe('removed');
@@ -29,6 +57,34 @@ describe('compareMetric', () => {
 	it('reports a change from zero as infinite pct', () => {
 		expect(compareMetric('x', s(0), s(2)).pct).toBe(Infinity);
 		expect(compareMetric('x', s(0), s(0)).pct).toBe(0);
+	});
+});
+
+describe('isMainModule', () => {
+	const self = fileURLToPath(new URL('./compare.mjs', import.meta.url));
+	const selfUrl = new URL('./compare.mjs', import.meta.url).href;
+
+	it('matches the script run through a symlinked directory', () => {
+		const dir = mkdtempSync(path.join(os.tmpdir(), 'perf-compare-'));
+		try {
+			const link = path.join(dir, 'perf');
+			symlinkSync(path.dirname(self), link, 'dir');
+			expect(isMainModule(selfUrl, path.join(link, 'compare.mjs'))).toBe(true);
+		} finally {
+			rmSync(dir, { recursive: true, force: true });
+		}
+	});
+
+	it('matches the script run directly', () => {
+		expect(isMainModule(selfUrl, self)).toBe(true);
+	});
+
+	it('does not match another script, a missing path or no argv[1]', () => {
+		expect(isMainModule(selfUrl, fileURLToPath(new URL('./results.ts', import.meta.url)))).toBe(
+			false
+		);
+		expect(isMainModule(selfUrl, path.join(os.tmpdir(), 'does-not-exist.mjs'))).toBe(false);
+		expect(isMainModule(selfUrl, undefined)).toBe(false);
 	});
 });
 
