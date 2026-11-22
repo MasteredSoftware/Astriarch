@@ -5,6 +5,7 @@ import {
 	isCleanProbe,
 	summarizeRuns,
 	resultFileName,
+	tickRateWarning,
 	type EnvProbe,
 	type PerfResultFile,
 	type WindowEnv,
@@ -305,6 +306,23 @@ function run(metrics: Record<string, number>): WindowRun {
 		metrics
 	};
 }
+
+describe('tickRateWarning', () => {
+	it('warns that the loop did not tick when the counter is absent or 0', () => {
+		expect(tickRateWarning(undefined)).toMatch(/did not tick/);
+		expect(tickRateWarning(0)).toMatch(/did not tick/);
+	});
+
+	it('warns about throttling below 4/s', () => {
+		expect(tickRateWarning(3)).toMatch(/ticked 3\/s .*throttling/);
+		expect(tickRateWarning(3.99)).not.toBeNull();
+	});
+
+	it('does not warn at the expected rate', () => {
+		expect(tickRateWarning(4)).toBeNull();
+		expect(tickRateWarning(5)).toBeNull();
+	});
+});
 
 describe('summarizeRuns', () => {
 	it('takes the middle value of an odd number of runs', () => {

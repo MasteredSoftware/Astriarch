@@ -38,6 +38,13 @@
  *     ones among them: infinite iterations and already running when the window
  *     started (one makes the browser composite every frame even when nothing
  *     else changes). Both are null where document.getAnimations is unsupported.
+ *   - counters `dom.transitionrun` / `dom.animationstart`: CSS transitions and
+ *     CSS animations (including Svelte transitions, which are CSS keyframes)
+ *     started anywhere in the document, counted from capture listeners. They
+ *     catch a finite animation that restarts on every update (e.g. a transition
+ *     re-triggered by each 5/s tick), which the snapshot-time lists above miss.
+ *     Web Animations started with element.animate() fire neither event, so
+ *     they are not counted.
  */
 
 import type Konva from 'konva';
@@ -537,6 +544,18 @@ function describeAnimations(): Pick<PerfSnapshot, 'runningAnimations' | 'looping
 	};
 }
 
+/**
+ * Counts every CSS transition and CSS animation start in the document. Both
+ * events bubble, so capture listeners on the document see them all, and they
+ * fire only when something starts: nothing runs while nothing animates.
+ */
+function listenForAnimationStarts(): void {
+	if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+	const options = { capture: true, passive: true };
+	document.addEventListener('transitionrun', () => perfCount('dom.transitionrun'), options);
+	document.addEventListener('animationstart', () => perfCount('dom.animationstart'), options);
+}
+
 function init(): void {
 	if (!perfEnabled || window.__perf) return;
 	try {
@@ -552,6 +571,7 @@ function init(): void {
 	} catch {
 		longTasksSupported = false;
 	}
+	listenForAnimationStarts();
 	windowStart = performance.now();
 	animationsAtStart = recordAnimationsAtStart();
 	window.__perf = { enabled: true, reset, snapshot };

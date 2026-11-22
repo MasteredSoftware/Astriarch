@@ -228,6 +228,54 @@ describe('perfMonitor', () => {
 		});
 	});
 
+	describe('animation starts', () => {
+		function fakeDocument() {
+			const listeners: Record<string, { fn: () => void; options: unknown }[]> = {};
+			const addEventListener = vi.fn((type: string, fn: () => void, options: unknown) => {
+				(listeners[type] ??= []).push({ fn, options });
+			});
+			vi.stubGlobal('document', { addEventListener });
+			const fire = (type: string) => {
+				for (const { fn } of listeners[type] ?? []) fn();
+			};
+			return { listeners, addEventListener, fire };
+		}
+
+		it('counts transitionrun and animationstart events as counters', async () => {
+			const doc = fakeDocument();
+			await loadPerf('?perf=1');
+			window.__perf!.reset();
+			doc.fire('transitionrun');
+			doc.fire('transitionrun');
+			doc.fire('animationstart');
+
+			const snap = window.__perf!.snapshot();
+			expect(snap.counters['dom.transitionrun']).toBe(2);
+			expect(snap.counters['dom.animationstart']).toBe(1);
+			expect(snap.ratesPerSec['dom.transitionrun']).toBeGreaterThan(0);
+			// Capture listeners on the document, so starts anywhere are seen
+			for (const type of ['transitionrun', 'animationstart']) {
+				expect(doc.listeners[type]).toHaveLength(1);
+				expect(doc.listeners[type]![0]!.options).toMatchObject({ capture: true });
+			}
+		});
+
+		it('leaves the counters absent while nothing starts', async () => {
+			fakeDocument();
+			await loadPerf('?perf=1');
+			window.__perf!.reset();
+			const snap = window.__perf!.snapshot();
+			expect(snap.counters['dom.transitionrun']).toBeUndefined();
+			expect(snap.counters['dom.animationstart']).toBeUndefined();
+		});
+
+		it('adds no listeners without ?perf=1', async () => {
+			const doc = fakeDocument();
+			await loadPerf('');
+			expect(doc.addEventListener).not.toHaveBeenCalled();
+		});
+	});
+
 	it('reset clears the previous window', async () => {
 		const perf = await loadPerf('?perf=1');
 		perf.perfCount('a');

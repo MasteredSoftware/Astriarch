@@ -163,6 +163,23 @@ export function environmentWarnings(env: WindowEnv, referenceHz: number | null):
 	return warnings;
 }
 
+/** The game loop's fixed tick rate (1000 / MS_PER_TICK). */
+export const EXPECTED_TICK_RATE = 5;
+
+/**
+ * A warning when the game loop ticked well below EXPECTED_TICK_RATE during a
+ * window, else null. `rate` is ratesPerSec['gameLoop.tick'], which is absent
+ * when the loop never ticked, so absent counts as 0 (the worst case).
+ */
+export function tickRateWarning(rate: number | undefined): string | null {
+	const ticks = rate ?? 0;
+	if (ticks >= 4) return null;
+	if (ticks === 0) {
+		return `game loop did not tick (expected ${EXPECTED_TICK_RATE}/s): it stalled or stopped, or the browser is suspending timers`;
+	}
+	return `game loop ticked ${ticks}/s (expected ${EXPECTED_TICK_RATE}): the browser may be throttling a hidden window`;
+}
+
 /**
  * Flattens one window run into `name -> number`. Naming:
  *   cpu.*        % of one core (lower is better)

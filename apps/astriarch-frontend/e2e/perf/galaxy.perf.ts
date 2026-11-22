@@ -29,6 +29,7 @@ import {
 	machineInfo,
 	environmentWarnings,
 	isCleanProbe,
+	tickRateWarning,
 	type EnvProbe,
 	type PerfResultFile,
 	type WindowName,
@@ -238,13 +239,9 @@ async function measureWindow(
 		);
 	}
 	// The game loop ticks at 5/s (MS_PER_TICK); a much lower rate means the
-	// browser is throttling timers too.
-	const tickRate = perf.ratesPerSec['gameLoop.tick'];
-	if (tickRate !== undefined && tickRate > 0 && tickRate < 4) {
-		warnings.push(
-			`game loop ticked ${tickRate}/s (expected 5): the browser may be throttling a hidden window`
-		);
-	}
+	// browser is throttling timers too, and none at all that the loop stopped.
+	const tickWarning = tickRateWarning(perf.ratesPerSec['gameLoop.tick']);
+	if (tickWarning) warnings.push(tickWarning);
 
 	const run: WindowRun = {
 		repetition,

@@ -68,6 +68,18 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			metric: 'dom.runningAnimations',
 			max: 0,
 			why: 'No CSS/Web animation with infinite iterations should run for the whole idle window: it makes the browser composite every frame (see snapshot.loopingAnimations for which)'
+		},
+		{
+			metric: 'rate.dom.transitionrun',
+			max: 1,
+			why: 'No CSS transition should restart on every update (e.g. per 5/s tick) when nothing changes; that animates every frame without looping',
+			absentMeansZero: true
+		},
+		{
+			metric: 'rate.dom.animationstart',
+			max: 1,
+			why: 'No CSS animation (including Svelte transitions) should restart on every update when nothing changes; that animates every frame without looping',
+			absentMeansZero: true
 		}
 	],
 	panzoom: [
