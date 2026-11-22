@@ -13,6 +13,7 @@
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
 	import { keyFleets } from './fleetKeys';
+	import { shouldRunFleetAnimation } from './fleetMotion';
 	import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
 	import { perfCount, perfStart, perfEnd, perfRegisterKonvaStage } from '#lib/perf/perfMonitor.ts';
 
@@ -389,6 +390,9 @@
 		stage.position(newPos);
 
 		zoomLevel = newScale;
+		// Zooming in can make a slow fleet move visibly (start the animation);
+		// zooming out is handled by the frame callback, which stops it.
+		updateFleetAnimation();
 	}
 
 	/**
@@ -571,40 +575,42 @@
 		updateFleetAnimation();
 	}
 
-	/** True if any drawn fleet can still move by extrapolation at `now`. */
-	function anyFleetCanMove(now: number): boolean {
-		for (const drawnFleet of drawnFleets.values()) {
-			if (drawnFleet.canMove(now)) return true;
-		}
-		return false;
+	/** FLEET_MIN_MOVE_SCREEN_PX in fleet-layer pixels at the current zoom. */
+	function fleetMinLayerPx(): number {
+		return FLEET_MIN_MOVE_SCREEN_PX / stage.scaleX();
 	}
 
 	/**
-	 * The model advances every MS_PER_TICK. While some fleet can move, a
-	 * Konva.Animation moves fleets smoothly between ticks. It stops itself once
-	 * no fleet can move: none in transit, all awaiting conflict resolution, or no
-	 * model update for MAX_EXTRAPOLATION_MS (game paused, server late). The next
-	 * model update calls this again and restarts it, so nothing runs per frame
-	 * while fleets are idle. Each frame it only computes positions; a fleet's
-	 * nodes change (and the fleet layer redraws) only when it moved at least
-	 * FLEET_MIN_MOVE_SCREEN_PX on screen.
+	 * The model advances every MS_PER_TICK. While some fleet can move a visible
+	 * distance, a Konva.Animation moves fleets smoothly between ticks. "Visible"
+	 * means its largest possible extrapolated move before the next update is at
+	 * least FLEET_MIN_MOVE_SCREEN_PX on screen (speed x px per parsec x zoom;
+	 * see shouldRunFleetAnimation()). So it doesn't run when no fleet is in
+	 * transit, all await conflict resolution, no model update came for
+	 * MAX_EXTRAPOLATION_MS (game paused, server late), or every fleet is too slow
+	 * at this zoom to move on screen (Normal speed, zoomed out). It stops itself
+	 * from the frame callback; the next model update or wheel zoom calls this
+	 * again and restarts it, so nothing runs per frame that can't draw. Each frame
+	 * it only computes positions; a fleet's nodes change (and the fleet layer
+	 * redraws) only when it moved at least FLEET_MIN_MOVE_SCREEN_PX on screen.
 	 */
 	function updateFleetAnimation() {
-		if (!anyFleetCanMove(performance.now())) {
+		if (!stage) return;
+		if (!shouldRunFleetAnimation(drawnFleets.values(), performance.now(), fleetMinLayerPx())) {
 			fleetAnimation?.stop();
 			return;
 		}
 		fleetAnimation ??= new Konva.Animation(() => {
 			perfCount('fleetAnimation.frame');
 			const now = performance.now();
-			const minLayerPx = FLEET_MIN_MOVE_SCREEN_PX / stage.scaleX();
-			let canMove = false;
+			const minLayerPx = fleetMinLayerPx();
 			for (const drawnFleet of drawnFleets.values()) {
 				drawnFleet.animate(now, minLayerPx);
-				if (drawnFleet.canMove(now)) canMove = true;
 			}
 			// animate() has drawn the capped final position, so stopping loses nothing
-			if (!canMove) fleetAnimation?.stop();
+			if (!shouldRunFleetAnimation(drawnFleets.values(), now, minLayerPx)) {
+				fleetAnimation?.stop();
+			}
 			// Moved fleets already requested a redraw via Konva's auto-draw
 			return false;
 		});

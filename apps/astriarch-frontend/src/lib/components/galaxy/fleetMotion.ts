@@ -64,4 +64,36 @@ export class FleetMotion {
 			now - this.anchorTime < MAX_EXTRAPOLATION_MS
 		);
 	}
+
+	/**
+	 * The furthest parsecsAt() can ever get from the last model position before
+	 * the next update: the speed over MAX_EXTRAPOLATION_MS, or the distance left
+	 * if that is shorter. 0 when the position is unknown.
+	 */
+	maxExtrapolatedParsecs(): number {
+		if (this.anchorParsecs === null) return 0;
+		return Math.max(0, Math.min(this.anchorParsecs, this.parsecsPerMs * MAX_EXTRAPOLATION_MS));
+	}
+}
+
+/** What shouldRunFleetAnimation() needs to know about each drawn fleet. */
+export interface VisiblyMovable {
+	canMoveVisibly(now: number, minLayerPx: number): boolean;
+}
+
+/**
+ * True if the fleet animation should run at `now`: some fleet can still move
+ * by extrapolation, and far enough (at least `minLayerPx` in layer pixels) to
+ * draw. When this is false every frame would compute positions and draw
+ * nothing, so the animation stops until the next model update or zoom.
+ */
+export function shouldRunFleetAnimation(
+	fleets: Iterable<VisiblyMovable>,
+	now: number,
+	minLayerPx: number
+): boolean {
+	for (const fleet of fleets) {
+		if (fleet.canMoveVisibly(now, minLayerPx)) return true;
+	}
+	return false;
 }

@@ -347,23 +347,40 @@ export class DrawnFleet {
 	}
 
 	/**
-	 * Moves the fleet to its extrapolated position for `now`. Called every frame
-	 * while some fleet can move (see canMove()); only touches Konva (and so only causes a redraw)
-	 * when the fleet has moved at least `minLayerPx` along its line.
-	 * Returns true if the fleet was moved.
+	 * True while animate() could still draw this fleet in a new place: it can
+	 * move (see canMove()), and its largest possible extrapolated move before
+	 * the next model update is at least `minLayerPx` along its line. False at a
+	 * slow game speed and a zoomed-out view, where it would never draw.
 	 */
-	public animate(now: number, minLayerPx: number): boolean {
+	public canMoveVisibly(now: number, minLayerPx: number): boolean {
+		if (!this.canMove(now)) return false;
+		return this.motion.maxExtrapolatedParsecs() * this.pxPerParsec() >= minLayerPx;
+	}
+
+	/** Layer pixels per parsec along this fleet's line; 0 without a route. */
+	private pxPerParsec(): number {
 		const {
 			totalTravelDistance,
 			travelingFromHexMidPoint: from,
 			destinationHexMidPoint: to
 		} = this.fleetData;
+		if (!totalTravelDistance || !from || !to) return 0;
+		return Math.hypot(to.x - from.x, to.y - from.y) / totalTravelDistance;
+	}
+
+	/**
+	 * Moves the fleet to its extrapolated position for `now`. Called every frame
+	 * while some fleet can move visibly (see canMoveVisibly()); only touches
+	 * Konva (and so only causes a redraw) when the fleet has moved at least
+	 * `minLayerPx` along its line. Returns true if the fleet was moved.
+	 */
+	public animate(now: number, minLayerPx: number): boolean {
 		const parsecs = this.motion.parsecsAt(now);
-		if (!this.isInTransit() || parsecs === null || !totalTravelDistance || !from || !to) {
+		const pxPerParsec = this.pxPerParsec();
+		if (!this.isInTransit() || parsecs === null || pxPerParsec === 0) {
 			return false;
 		}
 
-		const pxPerParsec = Math.hypot(to.x - from.x, to.y - from.y) / totalTravelDistance;
 		const movedPx = Math.abs((this.drawnParsecs ?? parsecs) - parsecs) * pxPerParsec;
 		if (movedPx < minLayerPx) return false;
 

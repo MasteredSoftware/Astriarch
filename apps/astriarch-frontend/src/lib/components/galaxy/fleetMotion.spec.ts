@@ -10,7 +10,12 @@ import {
 	ResearchType,
 	playerColors
 } from 'astriarch-engine';
-import { FleetMotion, MAX_EXTRAPOLATION_MS, fleetParsecsPerMs } from './fleetMotion';
+import {
+	FleetMotion,
+	MAX_EXTRAPOLATION_MS,
+	fleetParsecsPerMs,
+	shouldRunFleetAnimation
+} from './fleetMotion';
 
 // 0.001 parsecs per ms = 0.2 parsecs per tick, easy to reason about
 const SPEED = 0.001;
@@ -97,6 +102,62 @@ describe('FleetMotion', () => {
 		motion.record(null, SPEED, 50);
 		expect(motion.parsecsAt(50)).toBeNull();
 		expect(motion.isMoving(50)).toBe(false);
+	});
+});
+
+describe('FleetMotion.maxExtrapolatedParsecs', () => {
+	it('is the speed over MAX_EXTRAPOLATION_MS', () => {
+		const motion = new FleetMotion();
+		motion.record(5, SPEED, 0);
+		expect(motion.maxExtrapolatedParsecs()).toBeCloseTo(SPEED * MAX_EXTRAPOLATION_MS);
+		// It matches how far parsecsAt() can actually get
+		expect(5 - (motion.parsecsAt(MAX_EXTRAPOLATION_MS * 10) ?? 0)).toBeCloseTo(
+			motion.maxExtrapolatedParsecs()
+		);
+	});
+
+	it('is the distance left when that is shorter', () => {
+		const motion = new FleetMotion();
+		motion.record(0.05, SPEED, 0);
+		expect(motion.maxExtrapolatedParsecs()).toBe(0.05);
+	});
+
+	it('is 0 when the position is unknown', () => {
+		const motion = new FleetMotion();
+		expect(motion.maxExtrapolatedParsecs()).toBe(0);
+		motion.record(5, SPEED, 0);
+		motion.record(null, SPEED, 50);
+		expect(motion.maxExtrapolatedParsecs()).toBe(0);
+	});
+});
+
+describe('shouldRunFleetAnimation', () => {
+	const fleet = (visible: boolean) => ({
+		calls: [] as [number, number][],
+		canMoveVisibly(now: number, minLayerPx: number) {
+			this.calls.push([now, minLayerPx]);
+			return visible;
+		}
+	});
+
+	it('is false without fleets', () => {
+		expect(shouldRunFleetAnimation([], 0, 0.5)).toBe(false);
+	});
+
+	it('is true only if some fleet can move visibly', () => {
+		expect(shouldRunFleetAnimation([fleet(false), fleet(false)], 0, 0.5)).toBe(false);
+		expect(shouldRunFleetAnimation([fleet(false), fleet(true)], 0, 0.5)).toBe(true);
+	});
+
+	it('asks each fleet with the given time and threshold', () => {
+		const a = fleet(false);
+		shouldRunFleetAnimation([a], 123, 0.25);
+		expect(a.calls).toEqual([[123, 0.25]]);
+	});
+
+	it('accepts a Map iterator', () => {
+		const fleets = new Map([[1, fleet(true)]]);
+		expect(shouldRunFleetAnimation(fleets.values(), 0, 0.5)).toBe(true);
 	});
 });
 
