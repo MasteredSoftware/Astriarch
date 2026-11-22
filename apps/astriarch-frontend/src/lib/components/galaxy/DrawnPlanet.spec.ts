@@ -6,7 +6,7 @@ import { FakeNode } from './testing/fakeKonva';
 // Konva's Node build needs the native `canvas` package; the fake models the
 // node tree and child (z) order, which is all these tests look at.
 vi.mock('konva', async () => ({ default: (await import('./testing/fakeKonva')).FakeKonva }));
-const { DrawnPlanet } = await import('./DrawnPlanet');
+const { DrawnPlanet, imageRetryDelayMs, resetImageFailureLog } = await import('./DrawnPlanet');
 
 /** Records every image the planet requests, so a test can fire its load or error. */
 class FakeImage {
@@ -68,6 +68,7 @@ describe('DrawnPlanet', () => {
 	beforeEach(() => {
 		FakeNode.resetCounts();
 		FakeImage.instances = [];
+		resetImageFailureLog();
 		vi.stubGlobal('Image', FakeImage);
 		vi.spyOn(console, 'log').mockImplementation(() => {});
 		vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -134,7 +135,14 @@ describe('DrawnPlanet', () => {
 	});
 
 	describe('planet image', () => {
-		it('retries on the next update after a failed load', () => {
+		let now = 0;
+		beforeEach(() => {
+			now = 10_000;
+			vi.spyOn(performance, 'now').mockImplementation(() => now);
+		});
+		const fail = (i: number) => FakeImage.instances[i]!.onerror!(new Error('offline'));
+
+		it('retries after a delay once a load failed', () => {
 			const p = planet();
 			const m = model(p);
 			const drawn = new DrawnPlanet(p, m);
@@ -143,12 +151,96 @@ describe('DrawnPlanet', () => {
 			drawn.update(m);
 			expect(FakeImage.instances).toHaveLength(1); // still loading
 
-			FakeImage.instances[0]!.onerror!(new Error('offline'));
+			fail(0);
+			drawn.update(m);
+			expect(FakeImage.instances).toHaveLength(1); // backing off
+
+			now += 1000;
 			drawn.update(m);
 			expect(FakeImage.instances).toHaveLength(2);
 
 			FakeImage.instances[1]!.onload!();
 			expect(internals(drawn).planetImage).not.toBeNull();
+		});
+
+		it('creates no image before the retry time, however often it updates', () => {
+			const p = planet();
+			const m = model(p);
+			const drawn = new DrawnPlanet(p, m);
+			fail(0);
+			for (let t = 0; t < 999; t += 200) {
+				now = 10_000 + t;
+				drawn.update(m);
+			}
+			expect(FakeImage.instances).toHaveLength(1);
+		});
+
+		it('doubles the delay after each failure, up to 30s', () => {
+			expect([1, 2, 3, 4, 5, 6, 7, 20].map(imageRetryDelayMs)).toEqual([
+				1000, 2000, 4000, 8000, 16_000, 30_000, 30_000, 30_000
+			]);
+
+			const p = planet();
+			const m = model(p);
+			const drawn = new DrawnPlanet(p, m);
+			for (const delay of [1000, 2000, 4000, 8000, 16_000, 30_000, 30_000]) {
+				const images = FakeImage.instances.length;
+				fail(images - 1);
+				now += delay - 1;
+				drawn.update(m);
+				expect(FakeImage.instances).toHaveLength(images);
+				now += 1;
+				drawn.update(m);
+				expect(FakeImage.instances).toHaveLength(images + 1);
+			}
+		});
+
+		it('loads a new planet type at once, even while backing off', () => {
+			const p = planet();
+			const m = model(p);
+			const drawn = new DrawnPlanet(p, m);
+			fail(0);
+			p.type = 4;
+			drawn.update(m);
+			expect(FakeImage.instances).toHaveLength(2);
+		});
+
+		it('logs only the first failure of an image', () => {
+			const p = planet();
+			const m = model(p);
+			const drawn = new DrawnPlanet(p, m);
+			for (let i = 0; i < 4; i++) {
+				fail(i);
+				now += 30_000;
+				drawn.update(m);
+			}
+			expect(FakeImage.instances).toHaveLength(5);
+			expect(console.error).toHaveBeenCalledTimes(1);
+
+			// Another planet with the same image doesn't log it again
+			const other = planet();
+			new DrawnPlanet(other, model(other));
+			fail(5);
+			expect(console.error).toHaveBeenCalledTimes(1);
+		});
+
+		it('forgets the backoff after a successful load', () => {
+			const p = planet();
+			const m = model(p);
+			const drawn = new DrawnPlanet(p, m);
+			fail(0);
+			now += 1000;
+			drawn.update(m);
+			fail(1); // type 3 now backs off for 2s
+
+			p.type = 4;
+			drawn.update(m);
+			FakeImage.instances[2]!.onload!();
+
+			// Back to type 3 within those 2s: it loads at once
+			p.type = 3;
+			drawn.update(m);
+			expect(FakeImage.instances).toHaveLength(4);
 		});
 
 		it('ignores a load superseded by a newer planet type', () => {

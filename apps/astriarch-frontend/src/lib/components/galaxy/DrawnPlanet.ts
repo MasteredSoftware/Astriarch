@@ -26,6 +26,24 @@ const SPACE_PLATFORM_PATH =
 const SPACE_PLATFORM_SIZE = 10; // Size for space platform icons
 const SPACE_PLATFORM_ORIGINAL_SIZE = 8.467; // Original SVG viewBox size
 
+/** First and longest delay before retrying a planet image that failed to load. */
+export const IMAGE_RETRY_MIN_MS = 1000;
+export const IMAGE_RETRY_MAX_MS = 30_000;
+
+/** The delay before retry number `failures` (1-based): 1s, 2s, 4s, ... up to 30s. */
+export function imageRetryDelayMs(failures: number): number {
+	return Math.min(IMAGE_RETRY_MIN_MS * 2 ** Math.max(0, failures - 1), IMAGE_RETRY_MAX_MS);
+}
+
+// Image URLs whose load failure was already logged, so a load that keeps
+// failing (offline, or a stale hashed asset after a redeploy) logs once.
+const loggedImageFailures = new Set<string>();
+
+/** Forgets which image failures were logged. For tests. */
+export function resetImageFailureLog(): void {
+	loggedImageFailures.clear();
+}
+
 export function createDrawnPlanet(planetData: PlanetData, gameModel: ClientModelData) {
 	return new DrawnPlanet(planetData, gameModel);
 }
@@ -55,6 +73,11 @@ export class DrawnPlanet {
 	// Inputs the current visuals were built from. update() runs on every model
 	// change; these let it skip work (and Konva redraws) when nothing visible changed.
 	private requestedImageType: PlanetType | null = null;
+	// Retry backoff for a planet image that failed to load. update() runs every
+	// tick, so it just skips the load until imageRetryAt; no timer is needed.
+	private failedImageType: PlanetType | null = null;
+	private imageFailures = 0;
+	private imageRetryAt = 0;
 	private ringOwnerColor: string | null = null;
 	private strengthIndicatorsKey = '';
 	private waypointDelta: { dx: number; dy: number } | null = null;
@@ -264,6 +287,11 @@ export class DrawnPlanet {
 			return;
 		}
 
+		if (this.knownPlanetType === this.failedImageType && performance.now() < this.imageRetryAt) {
+			// Backing off after a failed load of this type
+			return;
+		}
+
 		const planetType = this.knownPlanetType;
 		this.requestedImageType = planetType;
 		const imageUrl = this.getPlanetImageUrl(planetType);
@@ -272,6 +300,8 @@ export class DrawnPlanet {
 		imageObj.onload = () => {
 			// Ignore a load that was superseded by a newer type, or a destroyed planet
 			if (this.destroyed || this.requestedImageType !== planetType) return;
+			this.failedImageType = null;
+			this.imageFailures = 0;
 
 			if (this.planetImage) {
 				this.planetImage.image(imageObj);
@@ -301,10 +331,19 @@ export class DrawnPlanet {
 		};
 
 		imageObj.onerror = (error) => {
-			console.error(`Failed to load planet image for ${this.planetData.name}:`, error, imageUrl);
-			// Let the next update() retry, unless a newer type was requested since
+			if (!loggedImageFailures.has(imageUrl)) {
+				loggedImageFailures.add(imageUrl);
+				console.error(`Failed to load planet image for ${this.planetData.name}:`, error, imageUrl);
+			}
+			// Let a later update() retry with backoff, unless a newer type was requested since
 			if (!this.destroyed && this.requestedImageType === planetType) {
 				this.requestedImageType = null;
+				if (this.failedImageType !== planetType) {
+					this.failedImageType = planetType;
+					this.imageFailures = 0;
+				}
+				this.imageFailures++;
+				this.imageRetryAt = performance.now() + imageRetryDelayMs(this.imageFailures);
 			}
 		};
 
