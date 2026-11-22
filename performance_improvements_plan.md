@@ -4,7 +4,7 @@ Goal: reduce the frontend's CPU use, especially in Firefox, and judge every chan
 
 Phase 1 builds a repeatable, automated way to measure performance. Phase 2 applies fixes one at a time and A/B-tests each one against the Phase 1 baseline.
 
-## Status (2026-11-21)
+## Status (2026-11-22)
 
 **Phase 1 is done** (PR #72, branch `perf/phase-1-measurement`). **Phase 2 is paused here as good enough for now** (branch `perf/phase-2-event-driven-canvas`, stacked on Phase 1). The remaining steps are deferred; see [Deferred work](#deferred-work).
 
@@ -340,9 +340,37 @@ Idle and panzoom don't open Fleet Command, so nothing changed on those paths. Th
 | panzoom | 194 → **77** (−60%) | 96 → **58** (−39%) |
 | fleets | 190 → **28** (−85%) | 92 → **20.5** (−78%) |
 
+These step-by-step numbers were measured against the first baseline (harness schema version 1).
+
+### After the PR #73 review fixes (2026-11-22)
+
+The review of PR #73 changed behaviour in a few places:
+- Fleet speed now comes from the engine instead of being measured between ticks.
+- The fleet animation stops once no fleet can move.
+- Duplicate fleet ids are drawn instead of dropped.
+- The canvas is torn down fully.
+- The build progress bar slides between ticks with a one-tick CSS transition.
+
+Both the baseline (`e1ecf7e`) and Phase 2 (`7902272`) were re-measured with the updated harness on the same day. Result files: `perf-results/baseline-v2-*.json` and `perf-results/phase2-review-*.json`.
+
+| Whole-browser CPU, % of one core | Firefox | Chromium |
+| --- | --- | --- |
+| idle | 201 → **13.8** (−93%) | 91.7 → **10.6** (−88%) |
+| panzoom | 195 → **77.4** (−60%) | 95.3 → **58.1** (−39%) |
+| fleets | 192 → **28.9** (−85%) | 90.6 → **20.2** (−78%) |
+
+- The review fixes cost nothing measurable: every window is within noise of step 2c.
+- All budgets pass in every window in both browsers, and no run had a harness warning.
+- The new frame metrics add two things:
+  - Firefox now drops 0.1% of display refreshes while panning, against 4.6% before.
+  - The canvas draws on 0 frames per second at idle, against about 120.
+- In the fleets window the canvas redraws at the 5/s tick. At this zoom a fleet moves less than the 0.5px redraw threshold between ticks, so the extrapolated frames are skipped.
+- **Worth watching:** in Firefox pan/zoom the canvas draws about 43 frames per second, with 95th-percentile gaps of 68ms between drawn frames (Chromium: about 64 per second). The scripted pan pauses between moves, which accounts for part of this. If dragging feels less smooth in Firefox, start here.
+- **Not a regression:** the game loop's per-call timings (`meanMs`, `p95Ms`) are higher because each call now covers 200ms of game time instead of one frame. Their total per second fell by 66–81%.
+
 ## Deferred work
 
-These remain from the Phase 2 list. Each should still be done one at a time and A/B-tested with `perf:firefox` (the lower-noise browser) and `perf:compare`.
+These remain from the Phase 2 list. Each should still be done one at a time and A/B-tested in both browsers with `perf` and `perf:compare`.
 
 - **Static background (step 3): the best next candidate.** Pan/zoom is now the most expensive window (Firefox 77%, Chromium 58%). Every drag frame redraws the whole galaxy layer: the background rect, ~59 hex outlines, ~131 hex labels, 100 stars with `shadowBlur`, and the planets. Options:
   - move the background to its own layer and `cache()` it, or render it once to an image
