@@ -5,27 +5,23 @@
  * gameplay hotkeys remain available (A in Fleet Command).
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { openLobby, waitForConnected, createGame } from '../helpers/lobby';
 import { setOpponentSlot, startGame, OpponentType } from '../helpers/gameOptions';
 import { waitForGameView } from '../helpers/inGame';
 import { cleanupTestData, testGameName } from '../helpers/cleanup';
 
-function getTabButton(page: Parameters<typeof test>[0]['page'], label: string) {
+function getTabButton(page: Page, label: string) {
 	return page.getByRole('button', { name: label }).first();
 }
 
-function getTabContainer(page: Parameters<typeof test>[0]['page'], label: string) {
+function getTabContainer(page: Page, label: string) {
 	return getTabButton(page, label).locator(
 		'xpath=ancestor::div[contains(@class,"pointer-events-none relative")][1]'
 	);
 }
 
-async function expectTabSelected(
-	page: Parameters<typeof test>[0]['page'],
-	selectedLabel: string,
-	unselectedLabels: string[]
-) {
+async function expectTabSelected(page: Page, selectedLabel: string, unselectedLabels: string[]) {
 	await expect(getTabButton(page, selectedLabel)).toHaveAttribute('fill', '#00FFFF');
 	for (const label of unselectedLabels) {
 		await expect(getTabButton(page, label)).toHaveAttribute('fill', '#1B1F25');
