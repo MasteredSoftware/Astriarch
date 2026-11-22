@@ -137,51 +137,54 @@ From <https://konvajs.org/docs/performance/All_Performance_Tips.html>:
 - A baseline JSON for current master exists for both browsers.
 - The run-to-run noise for each metric is known, so later changes can be judged against it.
 
-### Phase 1 status (2026-11-20)
+### Phase 1 status (2026-11-22)
 
 The harness is implemented; see [apps/astriarch-frontend/e2e/perf/README.md](apps/astriarch-frontend/e2e/perf/README.md).
 
-> **Pending re-run with the updated harness.** The baselines below were recorded with the first version of the harness (result schema version 1). Review of PR #72 changed the harness: budgets fail on missing metrics, a harness-side rAF probe records the refresh rate and device pixel ratio and detects throttling, and `rendered.*` and `frames.droppedPct`/`frames.slowOver1_5xPct` replace `frames.over16_7Pct`/`frames.over33_3Pct` (schema version 2). Re-record both baselines with the updated harness before using them to judge Phase 2. The numbers below remain as a rough reference only.
+The baselines below were re-recorded on 2026-11-22 with the harness as updated by the review of PR #72 (result schema version 2): budgets fail on missing metrics, a harness-side rAF probe records the refresh rate and device pixel ratio and detects throttling, and `rendered.*` and `frames.droppedPct` replace the fixed 16.7/33.3ms frame thresholds. Result files: `perf-results/baseline-v2-{chromium,firefox}.json`. Both runs had no harness warnings (throttling, visibility or focus). The first baselines (schema version 1, 2026-11-20) agreed with these within noise.
 
-**Chromium baseline:** master `b1a7791` plus the Phase 1 instrumentation, Chromium 159, 120Hz display, 5 × 20s windows. Medians, with [min–max]:
+**Chromium baseline:** `perf/phase-1-measurement` at `e1ecf7e` (master plus the Phase 1 instrumentation; no app changes), Chromium 159, Apple M1 Max on AC power, 120.5Hz display at 1× pixel ratio, 5 × 20s windows after a 10s warm-up. Medians, with [min–max]:
 
 | Metric | idle | panzoom | fleets |
 | --- | --- | --- | --- |
-| CPU, whole browser (% of one core) | 93.8 [89.3–97.4] | 96.2 [94.5–99.4] | 92.0 [88.3–96.7] |
-| … renderer / GPU process | ~41 / ~51 | ~42 / ~49 | ~41 / ~51 |
+| CPU, whole browser (% of one core) | 91.7 [88.8–94.2] | 95.3 [92.9–97.7] | 90.6 [88.4–92.1] |
+| … renderer / GPU process | ~40 / ~51 | ~42 / ~49 | ~40 / ~50 |
 | Konva nodes created per second (and destroyed) | 4,560 | 4,560 | 4,920 |
 | `clientGameModel.set` per second | 120 | 120 | 120 |
-| Galaxy layer draw, ms per second | 123 | 124 | 130 |
-| `updateGameObjects`, ms per second | 47 | 48 | 58 |
-| Engine clock advance, ms per second | 2.4 | 2.3 | 2.2 |
-| Store fan-out, ms per second | 5.3 | 3.6 | 3.1 |
+| Frames in which the canvas drew (`rendered.fps`) | 120 | 122 | 120 |
+| Galaxy layer draw, ms per second | 123 | 125 | 128 |
+| `updateGameObjects`, ms per second | 47 | 47 | 57 |
+| Engine clock advance, ms per second | 2.3 | 2.2 | 2.3 |
+| Store fan-out, ms per second | 5.5 | 3.5 | 2.8 |
 
 What this shows:
 
 - **Idle costs as much as interaction.** The browser uses about one full core whether or not anything happens. This confirms that the per-frame loops, not the drawing itself, set the cost.
 - **About 38 Konva nodes are created and destroyed per frame,** even at idle with no fleets. That is more than the fleet recreation alone accounts for, so the planet indicators recreated in `DrawnPlanet.update` are likely contributors.
-- **The engine is not the problem:** about 2ms per second in the browser, and about 3µs per call in the engine micro-benchmark.
+- **The engine is not the problem:** about 2ms per second in the browser, and about 4µs per call in the engine micro-benchmark.
 - **Over half the CPU is in the GPU process,** from redrawing and compositing the galaxy layer 120 times a second.
-- **Noise:** whole-browser CPU varies by about 8 points between repetitions, so a single change needs to beat that to show as significant. The counters vary by less than 0.1%.
+- **Noise:** whole-browser CPU varies by about 5 points between repetitions, so a single change needs to beat that to show as significant. The counters vary by less than 0.1%.
 
-**Firefox baseline:** same commit and settings, Playwright Firefox 159 on macOS. Medians, with [min–max]:
+**Firefox baseline:** same commit and settings, Playwright Firefox 159 on macOS, 119.9Hz at 1×. Medians, with [min–max]:
 
 | Metric | idle | panzoom | fleets |
 | --- | --- | --- | --- |
-| CPU, whole browser (% of one core) | 199.5 [198.3–200.1] | 194.0 [193.1–194.5] | 190.2 [187.6–190.6] |
-| … parent (main) / content process | ~152 / ~47 | ~150 / ~43 | ~141 / ~49 |
-| Konva nodes created per second (and destroyed) | 4,497 | 4,326 | 4,850 |
-| `clientGameModel.set` per second | 118 | 114 | 118 |
-| Galaxy layer draw, ms per second | 159 | 157 | 177 |
-| `updateGameObjects`, ms per second | 67 | 67 | 95 |
-| Engine clock advance, ms per second | 4.0 | 3.3 | 3.6 |
-| Store fan-out, ms per second | 9.9 | 6.8 | 6.8 |
+| CPU, whole browser (% of one core) | 200.9 [196.7–203.3] | 195.4 [193.3–196.6] | 191.5 [188.3–194.0] |
+| … parent (main) / content process | ~154 / ~46 | ~152 / ~43 | ~142 / ~49 |
+| Konva nodes created per second (and destroyed) | 4,524 | 4,349 | 4,882 |
+| `clientGameModel.set` per second | 119 | 114 | 119 |
+| Frames in which the canvas drew (`rendered.fps`) | 119 | 116 | 119 |
+| Display refreshes with no frame (`frames.droppedPct`) | – | 4.6% | 0.8% |
+| Galaxy layer draw, ms per second | 163 | 160 | 178 |
+| `updateGameObjects`, ms per second | 65 | 65 | 94 |
+| Engine clock advance, ms per second | 3.9 | 3.3 | 3.7 |
+| Store fan-out, ms per second | 9.7 | 6.6 | 6.5 |
 
 What this adds:
 
-- **Firefox uses about twice Chromium's CPU for the same work:** about 2 cores against 1, at the same ~118 frames per second and the same node churn.
-- **Three quarters of Firefox's CPU is in the parent process.** On macOS, Playwright's Firefox has no separate GPU process, so WebRender's compositing and canvas uploads run in the parent. The content process, where our JavaScript and Konva's drawing run, is about 47%. So the biggest cost in Firefox is presenting a freshly redrawn canvas 118 times a second, not our JavaScript. Steps 1 and 2 below (stop redrawing when nothing changed) should therefore help Firefox even more than Chromium.
-- **Firefox is the more sensitive benchmark:** whole-browser CPU varies by under 2 points between repetitions, against Chromium's ~8. Use `perf:firefox` as the main A/B check in Phase 2.
+- **Firefox uses about twice Chromium's CPU for the same work:** about 2 cores against 1, at the same ~118 frames per second and the same node churn. It also drops about 5% of display refreshes while panning; Chromium drops none.
+- **Three quarters of Firefox's CPU is in the parent process.** On macOS, Playwright's Firefox has no separate GPU process, so WebRender's compositing and canvas uploads run in the parent. The content process, where our JavaScript and Konva's drawing run, is about 46%. So the biggest cost in Firefox is presenting a freshly redrawn canvas 118 times a second, not our JavaScript. Steps 1 and 2 below (stop redrawing when nothing changed) should therefore help Firefox even more than Chromium.
+- **Firefox is the more sensitive benchmark:** whole-browser CPU varies by about 3–6 points between repetitions, similar to Chromium's ~5 in this run (the first baseline showed under 2 against ~8). Either browser works as the main A/B check in Phase 2; run both.
 - Process roles in Firefox: on macOS the child processes are `plugin-container` (not `firefox -contentproc`). The first Firefox run counted every process as `main` until `cpuSampler.ts` was fixed to recognise them. The totals were unaffected.
 
 ## Phase 2: Fixes (one at a time, each A/B-tested against the baseline)
