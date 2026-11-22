@@ -346,7 +346,7 @@ These step-by-step numbers were measured against the first baseline (harness sch
 
 The review of PR #73 changed behaviour in a few places:
 - Fleet speed now comes from the engine instead of being measured between ticks.
-- The fleet animation stops once no fleet can move. Since the second review round it also doesn't run while no fleet can move a visible distance (at least 0.5 screen px) before the next update, e.g. at Normal speed and the default zoom; zooming in re-checks.
+- The fleet animation stops once no fleet can move. Since the second review round it also doesn't run while no fleet can move a visible distance (at least 0.5 screen px) before the next tick, e.g. at Normal speed and the default zoom; zooming in re-checks. The distance is one tick's worth (200ms), not the 1.5-tick extrapolation cap, because every tick resets the drawn position to the model one: a fleet that needs more than one tick to move 0.5px never draws between ticks.
 - Duplicate fleet ids are drawn instead of dropped.
 - The canvas is torn down fully.
 - The build progress bar slides between ticks with a one-tick CSS transition. In the second review round it became a `transform: scaleX()` transition (compositor-only, no layout or paint per frame) that snaps instead of sliding backwards when an item finishes or the planet changes. The previous `width` transition and a 5/s step remain selectable for the benchmark (`PERF_BUILD_BAR`), to measure the three against each other in the new `build` window.
