@@ -66,13 +66,17 @@ export class FleetMotion {
 	}
 
 	/**
-	 * The furthest parsecsAt() can ever get from the last model position before
-	 * the next update: the speed over MAX_EXTRAPOLATION_MS, or the distance left
-	 * if that is shorter. 0 when the position is unknown.
+	 * How far the fleet can still move from `fromParsecs` (where it is drawn)
+	 * before the next model tick is due, MS_PER_TICK after the last re-anchor.
+	 * Each tick re-anchors the motion and resets the drawn position to the model
+	 * one, so this is the most a frame can move it from its drawn position before
+	 * that happens. Capped by the distance left; 0 when the position is unknown
+	 * or the drawn position already reached the next-tick position.
 	 */
-	maxExtrapolatedParsecs(): number {
+	parsecsBeforeNextTick(fromParsecs: number): number {
 		if (this.anchorParsecs === null) return 0;
-		return Math.max(0, Math.min(this.anchorParsecs, this.parsecsPerMs * MAX_EXTRAPOLATION_MS));
+		const atNextTick = Math.max(0, this.anchorParsecs - this.parsecsPerMs * MS_PER_TICK);
+		return Math.max(0, fromParsecs - atNextTick);
 	}
 }
 
@@ -83,9 +87,10 @@ export interface VisiblyMovable {
 
 /**
  * True if the fleet animation should run at `now`: some fleet can still move
- * by extrapolation, and far enough (at least `minLayerPx` in layer pixels) to
- * draw. When this is false every frame would compute positions and draw
- * nothing, so the animation stops until the next model update or zoom.
+ * by extrapolation, and far enough (at least `minLayerPx` in layer pixels)
+ * before the next model tick that a frame will draw it. When this is false
+ * every frame until that tick would compute positions and draw nothing, so the
+ * animation stops until the next model update or zoom.
  */
 export function shouldRunFleetAnimation(
 	fleets: Iterable<VisiblyMovable>,

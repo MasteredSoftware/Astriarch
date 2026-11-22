@@ -347,14 +347,19 @@ export class DrawnFleet {
 	}
 
 	/**
-	 * True while animate() could still draw this fleet in a new place: it can
-	 * move (see canMove()), and its largest possible extrapolated move before
-	 * the next model update is at least `minLayerPx` along its line. False at a
-	 * slow game speed and a zoomed-out view, where it would never draw.
+	 * True while animate() would still draw this fleet in a new place before the
+	 * next model tick: it can move (see canMove()), and the distance it can
+	 * still move from where it is drawn until that tick (MS_PER_TICK after the
+	 * last re-anchor, when update() resets the drawn position) is at least
+	 * `minLayerPx` along its line. False at a slow game speed and a zoomed-out
+	 * view, where it would never draw, and for the rest of a tick once animate()
+	 * can't move it far enough again before the tick.
 	 */
 	public canMoveVisibly(now: number, minLayerPx: number): boolean {
 		if (!this.canMove(now)) return false;
-		return this.motion.maxExtrapolatedParsecs() * this.pxPerParsec() >= minLayerPx;
+		const from = this.drawnParsecs ?? this.motion.parsecsAt(now);
+		if (from === null) return false;
+		return this.motion.parsecsBeforeNextTick(from) * this.pxPerParsec() >= minLayerPx;
 	}
 
 	/** Layer pixels per parsec along this fleet's line; 0 without a route. */

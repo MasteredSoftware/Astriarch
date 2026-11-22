@@ -105,29 +105,49 @@ describe('FleetMotion', () => {
 	});
 });
 
-describe('FleetMotion.maxExtrapolatedParsecs', () => {
-	it('is the speed over MAX_EXTRAPOLATION_MS', () => {
+describe('FleetMotion.parsecsBeforeNextTick', () => {
+	it('is the speed over MS_PER_TICK from the model position', () => {
 		const motion = new FleetMotion();
 		motion.record(5, SPEED, 0);
-		expect(motion.maxExtrapolatedParsecs()).toBeCloseTo(SPEED * MAX_EXTRAPOLATION_MS);
-		// It matches how far parsecsAt() can actually get
-		expect(5 - (motion.parsecsAt(MAX_EXTRAPOLATION_MS * 10) ?? 0)).toBeCloseTo(
-			motion.maxExtrapolatedParsecs()
-		);
+		expect(motion.parsecsBeforeNextTick(5)).toBeCloseTo(SPEED * MS_PER_TICK);
+		// It matches how far parsecsAt() gets when the next tick is due
+		expect(5 - (motion.parsecsAt(MS_PER_TICK) ?? 0)).toBeCloseTo(motion.parsecsBeforeNextTick(5));
+	});
+
+	it('is one tick, not MAX_EXTRAPOLATION_MS: the next tick resets the drawn position', () => {
+		const motion = new FleetMotion();
+		motion.record(5, SPEED, 0);
+		expect(MAX_EXTRAPOLATION_MS).toBeGreaterThan(MS_PER_TICK);
+		expect(motion.parsecsBeforeNextTick(5)).toBeLessThan(SPEED * MAX_EXTRAPOLATION_MS);
+	});
+
+	it('shrinks by what was already drawn this tick', () => {
+		const motion = new FleetMotion();
+		motion.record(5, SPEED, 0);
+		const drawnAt120 = motion.parsecsAt(120) ?? 0;
+		expect(motion.parsecsBeforeNextTick(drawnAt120)).toBeCloseTo(SPEED * (MS_PER_TICK - 120));
+	});
+
+	it('is 0 once the drawn position reached or passed the next-tick position', () => {
+		const motion = new FleetMotion();
+		motion.record(5, SPEED, 0);
+		expect(motion.parsecsBeforeNextTick(motion.parsecsAt(MS_PER_TICK) ?? 0)).toBeCloseTo(0);
+		// A late tick: extrapolation went on past MS_PER_TICK
+		expect(motion.parsecsBeforeNextTick(motion.parsecsAt(MAX_EXTRAPOLATION_MS) ?? 0)).toBe(0);
 	});
 
 	it('is the distance left when that is shorter', () => {
 		const motion = new FleetMotion();
 		motion.record(0.05, SPEED, 0);
-		expect(motion.maxExtrapolatedParsecs()).toBe(0.05);
+		expect(motion.parsecsBeforeNextTick(0.05)).toBe(0.05);
 	});
 
 	it('is 0 when the position is unknown', () => {
 		const motion = new FleetMotion();
-		expect(motion.maxExtrapolatedParsecs()).toBe(0);
+		expect(motion.parsecsBeforeNextTick(5)).toBe(0);
 		motion.record(5, SPEED, 0);
 		motion.record(null, SPEED, 50);
-		expect(motion.maxExtrapolatedParsecs()).toBe(0);
+		expect(motion.parsecsBeforeNextTick(5)).toBe(0);
 	});
 });
 

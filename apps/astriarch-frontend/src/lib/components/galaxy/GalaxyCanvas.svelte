@@ -44,7 +44,8 @@
 	// Set first thing in onDestroy. `stage` stays assigned after stage.destroy(),
 	// so work queued before unmount (an update microtask, a resize) checks this.
 	let canvasDestroyed = false;
-	// Runs only while some fleet can move; see updateFleetAnimation().
+	// Runs only while some fleet can move a visible distance before the next
+	// tick; see updateFleetAnimation().
 	let fleetAnimation: Konva.Animation | null = null;
 	// Smallest on-screen movement (px) worth redrawing a fleet for.
 	const FLEET_MIN_MOVE_SCREEN_PX = 0.5;
@@ -583,16 +584,20 @@
 	/**
 	 * The model advances every MS_PER_TICK. While some fleet can move a visible
 	 * distance, a Konva.Animation moves fleets smoothly between ticks. "Visible"
-	 * means its largest possible extrapolated move before the next update is at
-	 * least FLEET_MIN_MOVE_SCREEN_PX on screen (speed x px per parsec x zoom;
-	 * see shouldRunFleetAnimation()). So it doesn't run when no fleet is in
-	 * transit, all await conflict resolution, no model update came for
-	 * MAX_EXTRAPOLATION_MS (game paused, server late), or every fleet is too slow
-	 * at this zoom to move on screen (Normal speed, zoomed out). It stops itself
-	 * from the frame callback; the next model update or wheel zoom calls this
-	 * again and restarts it, so nothing runs per frame that can't draw. Each frame
-	 * it only computes positions; a fleet's nodes change (and the fleet layer
-	 * redraws) only when it moved at least FLEET_MIN_MOVE_SCREEN_PX on screen.
+	 * means the distance it can still move from where it is drawn before the
+	 * next tick (speed x MS_PER_TICK, less what it already moved this tick, x px
+	 * per parsec x zoom) is at least FLEET_MIN_MOVE_SCREEN_PX on screen; each
+	 * tick resets the drawn position, so a fleet that can't get that far within
+	 * one tick would never draw (see shouldRunFleetAnimation()). So it doesn't
+	 * run when no fleet is in transit, all await conflict resolution, no model
+	 * update came for MAX_EXTRAPOLATION_MS (game paused, server late), or every
+	 * fleet is too slow at this zoom to move on screen within a tick (Normal
+	 * speed, zoomed out). It stops itself from the frame callback, including for
+	 * the rest of a tick once no fleet can draw again before it; the next model
+	 * update or wheel zoom calls this again and restarts it, so nothing runs per
+	 * frame that can't draw. Each frame it only computes positions; a fleet's
+	 * nodes change (and the fleet layer redraws) only when it moved at least
+	 * FLEET_MIN_MOVE_SCREEN_PX on screen.
 	 */
 	function updateFleetAnimation() {
 		if (!stage) return;
@@ -607,7 +612,8 @@
 			for (const drawnFleet of drawnFleets.values()) {
 				drawnFleet.animate(now, minLayerPx);
 			}
-			// animate() has drawn the capped final position, so stopping loses nothing
+			// No fleet can move a visible distance again before the next tick,
+			// which redraws every fleet at its model position, so stopping loses nothing
 			if (!shouldRunFleetAnimation(drawnFleets.values(), now, minLayerPx)) {
 				fleetAnimation?.stop();
 			}
