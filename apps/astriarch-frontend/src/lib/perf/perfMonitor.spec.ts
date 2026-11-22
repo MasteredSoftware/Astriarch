@@ -3,6 +3,32 @@ import { writable, get } from 'svelte/store';
 
 type PerfModule = typeof import('./perfMonitor');
 
+/**
+ * Stand-in for requestAnimationFrame: runFrame(ts) runs the callbacks requested
+ * before it, in request order; callbacks requested during a frame run in the
+ * next one, as in the browser.
+ */
+function fakeFrames() {
+	let nextId = 1;
+	let queue: { id: number; cb: FrameRequestCallback }[] = [];
+	vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+		const id = nextId++;
+		queue.push({ id, cb });
+		return id;
+	});
+	vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+		queue = queue.filter((entry) => entry.id !== id);
+	});
+	return {
+		pending: () => queue.length,
+		runFrame(ts: number) {
+			const current = queue;
+			queue = [];
+			for (const { cb } of current) cb(ts);
+		}
+	};
+}
+
 async function loadPerf(search: string): Promise<PerfModule> {
 	vi.resetModules();
 	vi.stubGlobal('window', {
@@ -26,29 +52,52 @@ function fakeKonva() {
 	class Group extends Node {}
 	type Handler = () => void;
 	class Layer extends Node {
-		index = 0;
-		handlers: Record<string, Handler> = {};
+		index: number;
+		handlers: Record<string, Handler[]> = {};
+		constructor(
+			private layerName: string,
+			index = 0
+		) {
+			super();
+			this.index = index;
+		}
 		name() {
-			return 'galaxy';
+			return this.layerName;
 		}
 		on(evt: string, fn: Handler) {
-			this.handlers[evt] = fn;
+			(this.handlers[evt] ??= []).push(fn);
 		}
 		draw() {
-			this.handlers['beforeDraw.perf']?.();
-			this.handlers['draw.perf']?.();
+			for (const fn of this.handlers['beforeDraw.perf'] ?? []) fn();
+			for (const fn of this.handlers['draw.perf'] ?? []) fn();
 		}
 	}
-	const layer = new Layer();
+	const layer = new Layer('galaxy');
+	const layers: Layer[] = [layer];
+	// Konva's Stage.destroy() detaches `content`; tests flip isConnected instead.
+	const content = { isConnected: true };
 	const stage = {
-		getLayers: () => [layer],
+		content,
+		getLayers: () => layers,
 		// Mirrors Konva: a predicate selector is applied to every descendant.
 		find: (selector: unknown) => {
 			if (typeof selector !== 'function') throw new Error('expected a predicate selector');
 			return [1, 2, 3].filter(() => selector());
 		}
 	};
-	return { konva: { Node, Group } as never, stage: stage as never, layer, Group };
+	const addLayer = (name: string) => {
+		const added = new Layer(name, layers.length);
+		layers.push(added);
+		return added;
+	};
+	return {
+		konva: { Node, Group } as never,
+		stage: stage as never,
+		layer,
+		addLayer,
+		content,
+		Group
+	};
 }
 
 describe('perfMonitor', () => {
@@ -187,6 +236,7 @@ describe('perfMonitor', () => {
 	});
 
 	it('counts Konva nodes created and destroyed, excluding its own probes', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, layer, Group } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
@@ -209,6 +259,7 @@ describe('perfMonitor', () => {
 	});
 
 	it('reports an explicit 0 for a registered layer that was not drawn', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, layer } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
@@ -222,24 +273,134 @@ describe('perfMonitor', () => {
 		expect(snap.konva.layers).toEqual(['konva.draw.galaxy']);
 	});
 
-	it('counts draws in the same task as one rendered frame', async () => {
+	describe('rendered frames', () => {
+		async function setup(extraLayers: string[] = []) {
+			const frames = fakeFrames();
+			const perf = await loadPerf('?perf=1');
+			const k = fakeKonva();
+			const extra = extraLayers.map((name) => k.addLayer(name));
+			perf.perfRegisterKonvaStage(k.konva, k.stage);
+			window.__perf!.reset();
+			return { frames, extra, ...k };
+		}
+
+		it('schedules nothing while nothing draws', async () => {
+			const { frames } = await setup();
+			expect(frames.pending()).toBe(0);
+			frames.runFrame(10);
+			expect(window.__perf!.snapshot().renderedFrames).toMatchObject({ count: 0, p50Ms: null });
+		});
+
+		it('counts draws in separate tasks before one frame as one frame', async () => {
+			const { frames, layer } = await setup();
+			layer.draw();
+			layer.draw();
+			expect(frames.pending()).toBe(1);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(0);
+			frames.runFrame(10);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
+			expect(frames.pending()).toBe(0);
+		});
+
+		it('counts draws in different rAF callbacks of the same frame as one frame', async () => {
+			const { frames, layer, extra } = await setup(['ui']);
+			const ui = extra[0]!;
+			requestAnimationFrame(() => layer.draw());
+			requestAnimationFrame(() => ui.draw());
+			frames.runFrame(10);
+			frames.runFrame(20);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
+		});
+
+		it('counts one frame per display frame when Konva draws in every frame', async () => {
+			const { frames, layer } = await setup();
+			// GalaxyCanvas: each frame Konva's batchDraw callback draws, then the
+			// render loop requests the next batchDraw and then itself.
+			const konvaDraw = () => layer.draw();
+			const render = () => {
+				requestAnimationFrame(konvaDraw);
+				requestAnimationFrame(render);
+			};
+			requestAnimationFrame(konvaDraw);
+			requestAnimationFrame(render);
+			for (let frame = 1; frame <= 11; frame++) frames.runFrame(frame * 10);
+
+			const snap = window.__perf!.snapshot();
+			expect(snap.counters['konva.draw.galaxy']).toBe(11);
+			// The last frame's draws are counted by the next frame's one-shot.
+			expect(snap.renderedFrames).toMatchObject({ count: 10, p50Ms: 10, maxMs: 10 });
+		});
+
+		it('counts draws in different frames as separate frames', async () => {
+			const { frames, layer } = await setup();
+			layer.draw();
+			frames.runFrame(10);
+			frames.runFrame(20);
+			layer.draw();
+			frames.runFrame(30);
+			const rendered = window.__perf!.snapshot().renderedFrames!;
+			expect(rendered.count).toBe(2);
+			expect(rendered.p50Ms).toBe(20);
+			expect(rendered.fps).toBeGreaterThan(0);
+		});
+
+		it('reset cancels a pending frame', async () => {
+			const { frames, layer } = await setup();
+			layer.draw();
+			window.__perf!.reset();
+			expect(frames.pending()).toBe(0);
+			frames.runFrame(10);
+			expect(window.__perf!.snapshot().renderedFrames?.count).toBe(0);
+		});
+	});
+
+	it('reports a detached stage as unregistered and drops its zero counters', async () => {
+		fakeFrames();
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, content } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		content.isConnected = false;
+		window.__perf!.reset();
+
+		const snap = window.__perf!.snapshot();
+		expect(snap.konva.registered).toBe(false);
+		expect(snap.konva.unhookedLayers).toEqual([]);
+		expect(snap.counters['konva.draw.galaxy']).toBeUndefined();
+		expect(snap.renderedFrames).toBeNull();
+	});
+
+	it('reports a layer added after registration as unhooked', async () => {
+		fakeFrames();
+		const perf = await loadPerf('?perf=1');
+		const { konva, stage, addLayer } = fakeKonva();
+		perf.perfRegisterKonvaStage(konva, stage);
+		addLayer('ui');
+		window.__perf!.reset();
+
+		const snap = window.__perf!.snapshot();
+		expect(snap.konva.registered).toBe(false);
+		expect(snap.konva.unhookedLayers).toEqual(['konva.draw.ui']);
+		expect(snap.renderedFrames).toBeNull();
+
+		// Registering again hooks it.
+		perf.perfRegisterKonvaStage(konva, stage);
+		expect(window.__perf!.snapshot().konva).toMatchObject({
+			registered: true,
+			unhookedLayers: []
+		});
+	});
+
+	it('does not double-count draws when a stage is registered twice', async () => {
+		fakeFrames();
 		const perf = await loadPerf('?perf=1');
 		const { konva, stage, layer } = fakeKonva();
 		perf.perfRegisterKonvaStage(konva, stage);
+		perf.perfRegisterKonvaStage(konva, stage);
 		window.__perf!.reset();
-		expect(window.__perf!.snapshot().renderedFrames).toMatchObject({ count: 0, p50Ms: null });
-
 		layer.draw();
-		layer.draw();
-		expect(window.__perf!.snapshot().renderedFrames?.count).toBe(1);
-
-		await Promise.resolve();
-		layer.draw();
-		const rendered = window.__perf!.snapshot().renderedFrames!;
-		expect(rendered.count).toBe(2);
-		expect(rendered.fps).toBeGreaterThan(0);
-		expect(rendered.p50Ms).not.toBeNull();
-		expect(window.__perf!.snapshot().counters['konva.draw.galaxy']).toBe(3);
+		const snap = window.__perf!.snapshot();
+		expect(snap.counters['konva.draw.galaxy']).toBe(1);
+		expect(snap.timings['konva.draw.galaxy']?.count).toBe(1);
 	});
 
 	it('counts dropped frames against the given refresh interval', async () => {

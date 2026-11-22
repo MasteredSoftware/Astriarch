@@ -21,10 +21,18 @@
  *               the browser's refresh driver ticking (adding CPU, notably in
  *               Firefox) and `fps` reads the display rate whether or not
  *               anything was drawn. Use `renderedFrames` for what was drawn.
- *   - renderedFrames: frames in which at least one Konva layer drew, built from
- *               the layer draw events (event-driven, no rAF loop of its own),
- *               so it is available in every window including idle
- *   - konva:    nodes created/destroyed, current node count, per-layer draws
+ *   - renderedFrames: display frames in which at least one Konva layer drew.
+ *               A layer draw arms a one-shot rAF; when it fires, every draw
+ *               since the previous one counts as one frame at that rAF's
+ *               timestamp. Nothing is scheduled while nothing draws, so it is
+ *               available in every window including idle, and it can never
+ *               exceed the display refresh rate. Null unless the stage is live
+ *               and every layer is hooked (see konva.registered).
+ *   - konva:    nodes created/destroyed, current node count, per-layer draws.
+ *               `registered` is true only while the registered stage is still
+ *               attached to the document and every layer on it is hooked, so a
+ *               stale or partly hooked stage reads as unregistered (budgets
+ *               then report MISSING rather than a false 0).
  *   - heap / longTasks: where the browser supports them (Chromium)
  *   - running CSS/Web animations when the snapshot is taken, and the looping
  *     ones among them: infinite iterations and already running when the window
@@ -90,10 +98,18 @@ export interface PerfSnapshot {
 	/** Null when no Konva stage is registered. */
 	renderedFrames: RenderedFrameSummary | null;
 	konva: {
-		/** Whether perfRegisterKonvaStage has been called. */
+		/**
+		 * True when perfRegisterKonvaStage was called for a stage that is still
+		 * attached to the document and every layer on it is hooked.
+		 */
 		registered: boolean;
 		/** Draw counter names (`konva.draw.<layer>`) of the registered layers. */
 		layers: string[] | null;
+		/**
+		 * Draw counter names of layers on the stage that are not hooked (added
+		 * after registration); null when no stage was registered.
+		 */
+		unhookedLayers: string[] | null;
 		nodesCreated: number | null;
 		nodesDestroyed: number;
 		nodeCount: number | null;
@@ -150,8 +166,8 @@ let refreshIntervalMs: number | null = null;
 let renderedFrameCount = 0;
 let renderedFrameIntervals: number[] = [];
 let lastRenderedFrameTs: number | null = null;
-/** Set by the first layer draw in a task; cleared in a microtask after it. */
-let renderedFrameOpen = false;
+/** One-shot rAF armed by the first layer draw since the last rendered frame. */
+let renderedFrameRafId: number | null = null;
 let konvaNodesDestroyed = 0;
 let longTaskCount = 0;
 let longTaskTotalMs = 0;
@@ -164,6 +180,8 @@ let konvaStartId: number | null = null;
 /** Probe nodes created since konvaStartId was taken (they are not app work). */
 let probesSinceStart = 0;
 const layerDrawStart = new WeakMap<object, number>();
+/** Layers that already have the perf draw handlers, so they are hooked once. */
+const hookedLayers = new WeakSet<object>();
 /**
  * Draw counters of the registered layers. reset() sets each to 0, so a layer
  * that is never drawn reports an explicit 0 rather than a missing metric.
@@ -247,9 +265,12 @@ export function perfRegisterKonvaStage(konva: KonvaModule, stage: Konva.Stage): 
 	}
 
 	for (const layer of stage.getLayers()) {
-		const label = `konva.draw.${layer.name() || `layer${layer.index}`}`;
+		const label = layerLabel(layer);
 		registeredLayerLabels.add(label);
 		if (!counters.has(label)) counters.set(label, 0);
+		// Registering again (same or new stage) must not add a second handler.
+		if (hookedLayers.has(layer)) continue;
+		hookedLayers.add(layer);
 		layer.on('beforeDraw.perf', () => {
 			layerDrawStart.set(layer, performance.now());
 		});
@@ -260,6 +281,26 @@ export function perfRegisterKonvaStage(konva: KonvaModule, stage: Konva.Stage): 
 			if (start !== undefined) recordTiming(label, performance.now() - start);
 		});
 	}
+}
+
+function layerLabel(layer: Konva.Layer): string {
+	return `konva.draw.${layer.name() || `layer${layer.index}`}`;
+}
+
+/**
+ * True while the registered stage is still in the document. Stage.destroy()
+ * detaches its content element, while the host container may outlive it.
+ */
+function stageIsLive(): boolean {
+	return konvaStage !== null && konvaStage.content?.isConnected === true;
+}
+
+/** Labels of layers currently on the registered stage that have no perf handlers. */
+function unhookedLayerLabels(stage: Konva.Stage): string[] {
+	return stage
+		.getLayers()
+		.filter((layer) => !hookedLayers.has(layer))
+		.map(layerLabel);
 }
 
 /**
@@ -278,22 +319,33 @@ function probeKonvaId(): number | null {
 }
 
 /**
- * Counts one rendered frame per task that draws any layer. Konva draws every
- * batched layer inside a single rAF callback, so all draws of one frame fall
- * in the same task, and a microtask runs only after that task finishes.
+ * Arms a one-shot rAF on the first layer draw since the last rendered frame.
+ * Later draws before it fires (in other tasks or other rAF callbacks) belong
+ * to the same display frame, so the count is at most one per display refresh.
+ *
+ * The frame is counted when the rAF fires, not at the draw: a draw inside a
+ * rAF callback (Konva's batchDraw) cannot tell which frame it is in, and a
+ * one-shot requested from it fires in the next frame. Konva's next draw
+ * callback is queued after that one-shot, so in steady state each one-shot
+ * sees exactly one frame's draws. Nothing is scheduled while nothing draws.
  */
 function markRenderedFrame(): void {
-	if (renderedFrameOpen) return;
-	renderedFrameOpen = true;
-	queueMicrotask(() => {
-		renderedFrameOpen = false;
-	});
-	const now = performance.now();
+	if (renderedFrameRafId !== null) return;
+	renderedFrameRafId = requestAnimationFrame(countRenderedFrame);
+}
+
+function countRenderedFrame(ts: number): void {
+	renderedFrameRafId = null;
 	if (lastRenderedFrameTs !== null && renderedFrameIntervals.length < MAX_SAMPLES) {
-		renderedFrameIntervals.push(now - lastRenderedFrameTs);
+		renderedFrameIntervals.push(ts - lastRenderedFrameTs);
 	}
-	lastRenderedFrameTs = now;
+	lastRenderedFrameTs = ts;
 	renderedFrameCount++;
+}
+
+function cancelRenderedFrame(): void {
+	if (renderedFrameRafId !== null) cancelAnimationFrame(renderedFrameRafId);
+	renderedFrameRafId = null;
 }
 
 function percentile(sorted: number[], p: number): number {
@@ -338,13 +390,16 @@ function reset(options: ResetOptions = {}): void {
 	windowStart = performance.now();
 	timings = new Map();
 	counters = new Map();
-	for (const label of registeredLayerLabels) counters.set(label, 0);
+	// Explicit zeros only for a live stage; otherwise the draw counters stay
+	// missing, so budgets fail rather than read a stale stage as idle.
+	if (stageIsLive()) for (const label of registeredLayerLabels) counters.set(label, 0);
 	frameIntervals = [];
 	refreshIntervalMs =
 		options.refreshIntervalMs && options.refreshIntervalMs > 0 ? options.refreshIntervalMs : null;
 	renderedFrameCount = 0;
 	renderedFrameIntervals = [];
 	lastRenderedFrameTs = null;
+	cancelRenderedFrame();
 	konvaNodesDestroyed = 0;
 	longTaskCount = 0;
 	longTaskTotalMs = 0;
@@ -396,8 +451,11 @@ function snapshot(): PerfSnapshot {
 		};
 	}
 
+	const unhookedLayers = konvaStage ? unhookedLayerLabels(konvaStage) : null;
+	const registered = stageIsLive() && unhookedLayers?.length === 0;
+
 	let renderedFrames: RenderedFrameSummary | null = null;
-	if (konvaStage) {
+	if (registered) {
 		const r = renderedFrameIntervals.length > 0 ? summarize(renderedFrameIntervals) : null;
 		renderedFrames = {
 			count: renderedFrameCount,
@@ -424,8 +482,9 @@ function snapshot(): PerfSnapshot {
 		frames,
 		renderedFrames,
 		konva: {
-			registered: konvaStage !== null,
+			registered,
 			layers: konvaStage ? [...registeredLayerLabels] : null,
+			unhookedLayers,
 			nodesCreated,
 			nodesDestroyed: konvaNodesDestroyed,
 			nodeCount: konvaStage ? konvaStage.find(() => true).length : null,

@@ -141,7 +141,7 @@ From <https://konvajs.org/docs/performance/All_Performance_Tips.html>:
 
 The harness is implemented; see [apps/astriarch-frontend/e2e/perf/README.md](apps/astriarch-frontend/e2e/perf/README.md).
 
-The baselines below were re-recorded on 2026-11-22 with the harness as updated by the review of PR #72 (result schema version 2): budgets fail on missing metrics, a harness-side rAF probe records the refresh rate and device pixel ratio and detects throttling, and `rendered.*` and `frames.droppedPct` replace the fixed 16.7/33.3ms frame thresholds. Result files: `perf-results/baseline-v2-{chromium,firefox}.json`. Both runs had no harness warnings (throttling, visibility or focus). The first baselines (schema version 1, 2026-11-20) agreed with these within noise.
+The baselines below were re-recorded on 2026-11-22 with the harness as updated by the review of PR #72 (result schema version 2): budgets fail on missing metrics, a harness-side rAF probe records the refresh rate and device pixel ratio and detects throttling, and `rendered.*` and `frames.droppedPct` replace the fixed 16.7/33.3ms frame thresholds. Result files: `perf-results/baseline-v2-{chromium,firefox}.json`. Schema version 3 later redefined `rendered.*` to count display frames rather than draw tasks; the `rendered.fps` rows below use the v2 definition and will be re-recorded. The other rows are unaffected. Both runs had no harness warnings (throttling, visibility or focus). The first baselines (schema version 1, 2026-11-20) agreed with these within noise.
 
 **Chromium baseline:** `perf/phase-1-measurement` at `e1ecf7e` (master plus the Phase 1 instrumentation; no app changes), Chromium 159, Apple M1 Max on AC power, 120.5Hz display at 1× pixel ratio, 5 × 20s windows after a 10s warm-up. Medians, with [min–max]:
 
@@ -151,7 +151,7 @@ The baselines below were re-recorded on 2026-11-22 with the harness as updated b
 | … renderer / GPU process | ~40 / ~51 | ~42 / ~49 | ~40 / ~50 |
 | Konva nodes created per second (and destroyed) | 4,560 | 4,560 | 4,920 |
 | `clientGameModel.set` per second | 120 | 120 | 120 |
-| Frames in which the canvas drew (`rendered.fps`) | 120 | 122 | 120 |
+| Frames in which the canvas drew (`rendered.fps`, schema v2: counted draw tasks; superseded, to be re-recorded) | 120 | 122 | 120 |
 | Galaxy layer draw, ms per second | 123 | 125 | 128 |
 | `updateGameObjects`, ms per second | 47 | 47 | 57 |
 | Engine clock advance, ms per second | 2.3 | 2.2 | 2.3 |
@@ -173,7 +173,7 @@ What this shows:
 | … parent (main) / content process | ~154 / ~46 | ~152 / ~43 | ~142 / ~49 |
 | Konva nodes created per second (and destroyed) | 4,524 | 4,349 | 4,882 |
 | `clientGameModel.set` per second | 119 | 114 | 119 |
-| Frames in which the canvas drew (`rendered.fps`) | 119 | 116 | 119 |
+| Frames in which the canvas drew (`rendered.fps`, schema v2: counted draw tasks; superseded, to be re-recorded) | 119 | 116 | 119 |
 | Display refreshes with no frame (`frames.droppedPct`) | – | 4.6% | 0.8% |
 | Galaxy layer draw, ms per second | 163 | 160 | 178 |
 | `updateGameObjects`, ms per second | 65 | 65 | 94 |

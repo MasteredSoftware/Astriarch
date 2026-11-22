@@ -15,10 +15,15 @@ import { defineConfig } from '@playwright/test';
  *     rendering paths differ, especially for Firefox and GPU canvas.
  *   - Neither server is reused, so results always reflect the current working
  *     tree (frontend, backend and engine). The backend runs on its own default
- *     port (8022, override with TEST_BACKEND_PORT); if something already
- *     listens there the run fails fast instead of measuring a stale backend.
- *     The backend process ends with the run, so a killed run cannot leave the
- *     test galaxy seed set for later games.
+ *     port (8032, override with TEST_BACKEND_PORT), one e2e never uses, so an
+ *     orphaned perf backend (e.g. after the runner is SIGKILLed) can't be
+ *     reused by e2e; if something already listens there the run fails fast
+ *     instead of measuring a stale backend. The galaxy seed lives only in the
+ *     backend's memory, so it never outlives that process.
+ *   - The backend uses its own database (PERF_MONGODB_CONNECTION_STRING,
+ *     default astriarch_v2_perf), so the perf cleanup, which deletes all
+ *     sessions and every `__e2e__` game, can't touch a concurrent e2e run's
+ *     data. MONGODB_CONNECTION_STRING is deliberately not inherited.
  *
  * See e2e/perf/README.md for usage.
  */
@@ -26,7 +31,7 @@ import { defineConfig } from '@playwright/test';
 // Set before anything reads it: the e2e helpers (e2e/helpers/cleanup.ts) and
 // perfScenario.ts read TEST_BACKEND_PORT at import time, and Playwright loads
 // this config in each worker before the spec, so they inherit this default.
-process.env.TEST_BACKEND_PORT ??= '8022';
+process.env.TEST_BACKEND_PORT ??= '8032';
 const BACKEND_PORT = process.env.TEST_BACKEND_PORT;
 const BACKEND_HTTP = `http://localhost:${BACKEND_PORT}`;
 const BACKEND_WS = `ws://localhost:${BACKEND_PORT}`;
@@ -61,7 +66,8 @@ export default defineConfig({
 				WS_PORT: BACKEND_PORT,
 				NODE_ENV: 'test',
 				MONGODB_CONNECTION_STRING:
-					process.env.MONGODB_CONNECTION_STRING ?? 'mongodb://localhost:27017/astriarch_v2_test'
+					process.env.PERF_MONGODB_CONNECTION_STRING ??
+					'mongodb://localhost:27017/astriarch_v2_perf'
 			}
 		},
 		{

@@ -13,10 +13,12 @@ import type { PerfSnapshot } from '../../src/lib/perf/perfMonitor';
 export type WindowName = 'idle' | 'panzoom' | 'fleets';
 
 /**
- * A short harness-side rAF probe taken just before a window is measured
- * (outside the measured interval). It does not depend on app behaviour, so it
- * detects throttling and the display refresh rate the same way before and
- * after event-driven rendering lands.
+ * A short harness-side rAF probe taken just before and just after a window is
+ * measured (outside the measured interval). It does not depend on app
+ * behaviour, so it detects throttling and the display refresh rate the same way
+ * before and after event-driven rendering lands. Focus is recorded for
+ * diagnosis only: Playwright emulates focus, and a visible unfocused window is
+ * not throttled, so the rAF rate is the signal that matters.
  */
 export interface EnvProbe {
 	durationMs: number;
@@ -34,8 +36,8 @@ export interface EnvProbe {
 export interface WindowEnv {
 	/** Probe taken before the window started. */
 	start: EnvProbe;
-	/** Visibility and focus right after the window's action finished. */
-	end: { visibilityState: string; hasFocus: boolean };
+	/** Probe taken after the window's snapshot. */
+	end: EnvProbe;
 }
 
 export interface WindowRun {
@@ -61,8 +63,10 @@ export interface PerfResultFile {
 	/**
 	 * 2: adds meta.refreshHz/devicePixelRatio, per-run env, rendered.* and
 	 * frames.dropped* metrics; removes frames.over16_7Pct/over33_3Pct.
+	 * 3: rendered.* counts display frames with a draw (one-shot rAF), not draw
+	 * tasks, so v2 rendered.* values are not comparable.
 	 */
-	schemaVersion: 2;
+	schemaVersion: 3;
 	meta: {
 		label: string | null;
 		gitSha: string;
@@ -80,7 +84,7 @@ export interface PerfResultFile {
 		warmupMs: number;
 		repetitions: number;
 		galaxySeed: number;
-		/** Measured by the first window's probe in repetition 1. */
+		/** Measured by the first probe that passes the throttle checks (isCleanProbe). */
 		refreshHz: number | null;
 		devicePixelRatio: number | null;
 	};
@@ -99,39 +103,62 @@ const MIN_RAF_PER_SEC = 20;
 /** Refresh rates further apart than this are treated as a different display mode. */
 export const REFRESH_TOLERANCE = 0.1;
 
+/** A probe whose rAF ran this close to its own median cadence ran unthrottled. */
+const CLEAN_PROBE_STEADINESS = 0.9;
+
 /**
- * Warnings derived from a window's environment probe. `referenceHz` is the
- * refresh rate recorded in meta (null for the very first probe).
+ * Whether a probe is trustworthy enough to take the display refresh rate from:
+ * the page was visible, rAF ran at least MIN_RAF_PER_SEC, and it ran at (nearly)
+ * its own median cadence for the whole probe, so the median is the display's
+ * interval rather than a throttled one.
+ */
+export function isCleanProbe(probe: EnvProbe): boolean {
+	return (
+		probe.visibilityState === 'visible' &&
+		probe.refreshHz !== null &&
+		probe.rafPerSec >= MIN_RAF_PER_SEC &&
+		probe.rafPerSec >= probe.refreshHz * CLEAN_PROBE_STEADINESS
+	);
+}
+
+/**
+ * Warnings derived from a window's environment probes (before and after it).
+ * `referenceHz` is the refresh rate recorded in meta (null until a clean probe).
  */
 export function environmentWarnings(env: WindowEnv, referenceHz: number | null): string[] {
 	const warnings: string[] = [];
 	const { start, end } = env;
-	if (
-		start.rafPerSec < MIN_RAF_PER_SEC ||
-		(referenceHz !== null && start.rafPerSec < referenceHz / 2)
-	) {
-		warnings.push(
-			`rAF probe ran at ${start.rafPerSec}/s before the window: the browser may be throttling the page`
-		);
+	for (const [when, probe] of [
+		['before', start],
+		['after', end]
+	] as const) {
+		if (
+			probe.rafPerSec < MIN_RAF_PER_SEC ||
+			(referenceHz !== null && probe.rafPerSec < referenceHz / 2)
+		) {
+			warnings.push(
+				`rAF probe ran at ${probe.rafPerSec}/s ${when} the window: the browser may be throttling the page`
+			);
+		}
 	}
 	if (start.visibilityState !== 'visible' || end.visibilityState !== 'visible') {
 		warnings.push(
 			`page was not visible (start: ${start.visibilityState}, end: ${end.visibilityState})`
 		);
 	}
-	if (!start.hasFocus || !end.hasFocus) {
-		warnings.push(
-			`browser window lost focus (start: ${start.hasFocus}, end: ${end.hasFocus}); it may be occluded`
-		);
-	}
-	if (
-		referenceHz !== null &&
-		start.refreshHz !== null &&
-		Math.abs(start.refreshHz - referenceHz) > referenceHz * REFRESH_TOLERANCE
-	) {
-		warnings.push(
-			`refresh rate ${start.refreshHz}Hz differs from the ${referenceHz}Hz recorded for this run`
-		);
+	for (const [when, probe] of [
+		['before', start],
+		['after', end]
+	] as const) {
+		if (
+			referenceHz !== null &&
+			probe.refreshHz !== null &&
+			Math.abs(probe.refreshHz - referenceHz) > referenceHz * REFRESH_TOLERANCE
+		) {
+			warnings.push(
+				`refresh rate ${probe.refreshHz}Hz ${when} the window differs from the ${referenceHz}Hz recorded for this run`
+			);
+		}
 	}
 	return warnings;
 }
@@ -144,8 +171,11 @@ export function environmentWarnings(env: WindowEnv, referenceHz: number | null):
  *   frames.*     rAF frame-interval stats while the sampler runs (fps: higher is
  *                better); droppedPct/slowOver1_5xPct are relative to the
  *                measured refresh interval
- *   rendered.*   frames in which a Konva layer drew (every window, incl. idle)
- *   konva.*      node churn and node count (`konva.registered` is 1 when instrumented)
+ *   rendered.*   display frames in which a Konva layer drew (every window, incl.
+ *                idle); at most the display refresh rate
+ *   konva.*      node churn and node count (`konva.registered` is 1 when the stage
+ *                is live and every layer is hooked; `konva.unhookedLayers` counts
+ *                layers added after registration)
  *   cdp.*Pct     Chromium: % of wall time spent in script/layout/etc.
  */
 export function flattenMetrics(
@@ -159,7 +189,12 @@ export function flattenMetrics(
 	m['cpu.totalPct'] = cpu.totalPct;
 	for (const [role, pct] of Object.entries(cpu.byRolePct)) m[`cpu.${role}Pct`] = pct;
 
-	for (const [name, rate] of Object.entries(perf.ratesPerSec)) m[`rate.${name}`] = rate;
+	for (const [name, rate] of Object.entries(perf.ratesPerSec)) {
+		// Layer draw counters of an unregistered (stale or partly hooked) stage
+		// are not trustworthy; leave them out so budgets say MISSING.
+		if (!perf.konva.registered && name.startsWith('konva.draw.')) continue;
+		m[`rate.${name}`] = rate;
+	}
 
 	for (const [name, t] of Object.entries(perf.timings)) {
 		m[`time.${name}.meanMs`] = t.meanMs;
@@ -187,10 +222,12 @@ export function flattenMetrics(
 		if (perf.renderedFrames.maxMs !== null) m['rendered.maxMs'] = perf.renderedFrames.maxMs;
 	}
 
-	// Without a registered stage the Konva counters are not instrumented, so
-	// leave them out rather than report a misleading 0 (budgets then say MISSING).
+	// Without a registered stage (never registered, detached, or with unhooked
+	// layers) the Konva counters are not trustworthy, so leave them out rather
+	// than report a misleading 0 (budgets then say MISSING).
 	m['konva.registered'] = perf.konva.registered ? 1 : 0;
-	if (perf.konva.nodesCreated !== null) {
+	if (perf.konva.unhookedLayers) m['konva.unhookedLayers'] = perf.konva.unhookedLayers.length;
+	if (perf.konva.registered && perf.konva.nodesCreated !== null) {
 		m['konva.nodesCreatedPerSec'] = round(perf.konva.nodesCreated / elapsedSec);
 	}
 	if (perf.konva.registered) {

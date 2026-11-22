@@ -13,8 +13,8 @@ import { setOpponentSlot, startGame, OpponentType } from '../helpers/gameOptions
 import { waitForGameView, openFleetCommandView } from '../helpers/inGame';
 import { testGameName } from '../helpers/cleanup';
 
-// playwright.perf.config.ts sets the default (8022) before this is imported.
-const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8022';
+// playwright.perf.config.ts sets the default (8032) before this is imported.
+const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8032';
 const BACKEND_HTTP = `http://localhost:${BACKEND_PORT}`;
 
 /** Pinned benchmark game. Change only deliberately: it resets comparability. */
