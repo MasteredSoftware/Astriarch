@@ -3,9 +3,12 @@
  * (see e2e/perf/README.md). Not part of the normal e2e suite.
  *
  * Each repetition launches a fresh browser, starts the pinned benchmark game,
- * warms up, then measures three windows. Before each window (outside the
- * measured interval) a 500ms rAF probe records the refresh rate, visibility
- * and focus, so throttling is detected without relying on app counters.
+ * warms up, then measures three windows. Before and after each window (outside
+ * the measured interval) a 500ms rAF probe records the rAF rate, refresh rate
+ * and visibility, so throttling on either side is detected without relying on
+ * app counters. Focus is recorded but not checked: Playwright emulates focus,
+ * and a visible unfocused window is not throttled. The refresh rate recorded in
+ * meta comes only from a probe that passes the throttle checks.
  * The windows:
  *   idle     no input (frame sampler off, so the harness adds no rAF loop)
  *   panzoom  scripted drags and wheel zooms (frame sampler on)
@@ -25,6 +28,7 @@ import {
 	gitInfo,
 	machineInfo,
 	environmentWarnings,
+	isCleanProbe,
 	type EnvProbe,
 	type PerfResultFile,
 	type WindowName,
@@ -168,17 +172,23 @@ async function measureWindow(
 		return Object.fromEntries(metrics.map((m) => [m.name, m.value]));
 	};
 
-	const probe = await probeEnvironment(page, PROBE_MS);
-	if (result && result.meta.refreshHz === null) {
-		result.meta.refreshHz = probe.refreshHz;
-		result.meta.devicePixelRatio = probe.devicePixelRatio;
-	}
+	const startProbe = await probeEnvironment(page, PROBE_MS);
+	recordReferenceDisplay(startProbe);
+	// Dropped frames are judged against the display period: the run's reference
+	// once a clean probe set it, else this probe's median if it is clean, else
+	// (no refreshIntervalMs) the sampled median.
+	const referenceHz = result?.meta.refreshHz ?? null;
+	const refreshIntervalMs =
+		referenceHz !== null
+			? 1000 / referenceHz
+			: isCleanProbe(startProbe)
+				? (startProbe.medianIntervalMs ?? undefined)
+				: undefined;
 
-	await page.evaluate(
-		(options) => window.__perf!.reset(options),
-		// The probe's median interval is the display period dropped frames are judged against.
-		{ sampleFrames, refreshIntervalMs: probe.medianIntervalMs ?? undefined }
-	);
+	await page.evaluate((options) => window.__perf!.reset(options), {
+		sampleFrames,
+		refreshIntervalMs
+	});
 	const cdpStart = await cdpMetrics();
 	const cpuStart = await sampleTree(browserPid);
 
@@ -186,18 +196,16 @@ async function measureWindow(
 
 	const cpuEnd = await sampleTree(browserPid);
 	const cdpEnd = await cdpMetrics();
-	const { perf, endState } = await page.evaluate(() => {
+	const perf = await page.evaluate(() => {
 		const snap: PerfSnapshot = window.__perf!.snapshot();
 		window.__perf!.reset();
-		return {
-			perf: snap,
-			endState: {
-				visibilityState: document.visibilityState as string,
-				hasFocus: document.hasFocus()
-			}
-		};
+		return snap;
 	});
 	await cdp?.detach().catch(() => {});
+	// Still outside the measured interval: catches throttling that began during
+	// the window, which visibility and (emulated) focus cannot show.
+	const endProbe = await probeEnvironment(page, PROBE_MS);
+	recordReferenceDisplay(endProbe);
 
 	let cdpDelta: Record<string, number> | null = null;
 	if (cdpStart && cdpEnd) {
@@ -222,8 +230,13 @@ async function measureWindow(
 	if (cpu.exitedProcesses > 0) {
 		warnings.push(`${cpu.exitedProcesses} browser process(es) exited during the window`);
 	}
-	const env = { start: probe, end: endState };
+	const env = { start: startProbe, end: endProbe };
 	warnings.push(...environmentWarnings(env, result?.meta.refreshHz ?? null));
+	if (result?.meta.refreshHz === null) {
+		warnings.push(
+			'no clean rAF probe yet: refresh rate not recorded, dropped frames judged against the sampled median'
+		);
+	}
 
 	const run: WindowRun = {
 		repetition,
@@ -242,6 +255,13 @@ async function measureWindow(
 				.join(', ')})` +
 			(warnings.length ? ` WARN: ${warnings.join('; ')}` : '')
 	);
+}
+
+/** Records the display refresh rate and pixel ratio once, from a clean probe only. */
+function recordReferenceDisplay(probe: EnvProbe): void {
+	if (!result || result.meta.refreshHz !== null || !isCleanProbe(probe)) return;
+	result.meta.refreshHz = probe.refreshHz;
+	result.meta.devicePixelRatio = probe.devicePixelRatio;
 }
 
 /**

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
 	environmentWarnings,
 	flattenMetrics,
+	isCleanProbe,
 	summarizeRuns,
 	resultFileName,
 	type EnvProbe,
@@ -187,10 +188,10 @@ const probe: EnvProbe = {
 	hasFocus: true,
 	devicePixelRatio: 2
 };
-const env: WindowEnv = { start: probe, end: { visibilityState: 'visible', hasFocus: true } };
+const env: WindowEnv = { start: probe, end: probe };
 
 describe('environmentWarnings', () => {
-	it('is quiet for a visible, focused page at the reference rate', () => {
+	it('is quiet for a visible page at the reference rate', () => {
 		expect(environmentWarnings(env, null)).toEqual([]);
 		expect(environmentWarnings(env, 120)).toEqual([]);
 	});
@@ -198,7 +199,7 @@ describe('environmentWarnings', () => {
 	it('warns when the probe rate is below 20/s', () => {
 		const w = environmentWarnings({ ...env, start: { ...probe, rafPerSec: 4 } }, null);
 		expect(w).toHaveLength(1);
-		expect(w[0]).toMatch(/throttling/);
+		expect(w[0]).toMatch(/4\/s before the window: .*throttling/);
 	});
 
 	it('warns when the probe rate is below half the reference rate', () => {
@@ -206,23 +207,66 @@ describe('environmentWarnings', () => {
 		expect(w.some((x) => /throttling/.test(x))).toBe(true);
 	});
 
-	it('warns when the page is hidden or unfocused at start or end', () => {
+	it('warns when the probe after the window is throttled', () => {
+		const w = environmentWarnings({ ...env, end: { ...probe, rafPerSec: 1 } }, 120);
+		expect(w).toEqual([
+			'rAF probe ran at 1/s after the window: the browser may be throttling the page'
+		]);
+	});
+
+	it('warns when the page is hidden at start or end', () => {
 		const w = environmentWarnings(
-			{ start: { ...probe, hasFocus: false }, end: { visibilityState: 'hidden', hasFocus: true } },
+			{ start: probe, end: { ...probe, visibilityState: 'hidden' } },
 			null
 		);
-		expect(w).toHaveLength(2);
-		expect(w[0]).toMatch(/not visible \(start: visible, end: hidden\)/);
-		expect(w[1]).toMatch(/lost focus/);
+		expect(w).toEqual(['page was not visible (start: visible, end: hidden)']);
+	});
+
+	it('does not warn about focus, which Playwright emulates', () => {
+		const unfocused = { ...probe, hasFocus: false };
+		expect(environmentWarnings({ start: unfocused, end: unfocused }, 120)).toEqual([]);
 	});
 
 	it('warns when the refresh rate differs from the reference by more than 10%', () => {
 		expect(environmentWarnings({ ...env, start: { ...probe, refreshHz: 110 } }, 120)).toEqual([]);
 		const w = environmentWarnings(
-			{ ...env, start: { ...probe, refreshHz: 60, rafPerSec: 60 } },
+			{
+				start: { ...probe, refreshHz: 60, rafPerSec: 60 },
+				end: { ...probe, refreshHz: 60, rafPerSec: 60 }
+			},
 			120
 		);
-		expect(w).toEqual(['refresh rate 60Hz differs from the 120Hz recorded for this run']);
+		expect(w).toEqual([
+			'refresh rate 60Hz before the window differs from the 120Hz recorded for this run',
+			'refresh rate 60Hz after the window differs from the 120Hz recorded for this run'
+		]);
+	});
+});
+
+describe('isCleanProbe', () => {
+	it('accepts a visible probe that ran at its own cadence', () => {
+		expect(isCleanProbe(probe)).toBe(true);
+		expect(isCleanProbe({ ...probe, rafPerSec: 110 })).toBe(true);
+	});
+
+	it('rejects a hidden probe', () => {
+		expect(isCleanProbe({ ...probe, visibilityState: 'hidden' })).toBe(false);
+	});
+
+	it('rejects a probe below 20 rAF/s or without a median', () => {
+		expect(isCleanProbe({ ...probe, rafPerSec: 10, refreshHz: 10, medianIntervalMs: 100 })).toBe(
+			false
+		);
+		expect(isCleanProbe({ ...probe, refreshHz: null, medianIntervalMs: null })).toBe(false);
+	});
+
+	it('rejects a probe that stalled part of the time', () => {
+		// Median says 120Hz, but only 60 callbacks per second ran: throttled for part of it.
+		expect(isCleanProbe({ ...probe, rafPerSec: 60 })).toBe(false);
+	});
+
+	it('ignores focus', () => {
+		expect(isCleanProbe({ ...probe, hasFocus: false })).toBe(true);
 	});
 });
 

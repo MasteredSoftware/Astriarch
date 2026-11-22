@@ -13,10 +13,12 @@ import type { PerfSnapshot } from '../../src/lib/perf/perfMonitor';
 export type WindowName = 'idle' | 'panzoom' | 'fleets';
 
 /**
- * A short harness-side rAF probe taken just before a window is measured
- * (outside the measured interval). It does not depend on app behaviour, so it
- * detects throttling and the display refresh rate the same way before and
- * after event-driven rendering lands.
+ * A short harness-side rAF probe taken just before and just after a window is
+ * measured (outside the measured interval). It does not depend on app
+ * behaviour, so it detects throttling and the display refresh rate the same way
+ * before and after event-driven rendering lands. Focus is recorded for
+ * diagnosis only: Playwright emulates focus, and a visible unfocused window is
+ * not throttled, so the rAF rate is the signal that matters.
  */
 export interface EnvProbe {
 	durationMs: number;
@@ -34,8 +36,8 @@ export interface EnvProbe {
 export interface WindowEnv {
 	/** Probe taken before the window started. */
 	start: EnvProbe;
-	/** Visibility and focus right after the window's action finished. */
-	end: { visibilityState: string; hasFocus: boolean };
+	/** Probe taken after the window's snapshot. */
+	end: EnvProbe;
 }
 
 export interface WindowRun {
@@ -82,7 +84,7 @@ export interface PerfResultFile {
 		warmupMs: number;
 		repetitions: number;
 		galaxySeed: number;
-		/** Measured by the first window's probe in repetition 1. */
+		/** Measured by the first probe that passes the throttle checks (isCleanProbe). */
 		refreshHz: number | null;
 		devicePixelRatio: number | null;
 	};
@@ -101,39 +103,62 @@ const MIN_RAF_PER_SEC = 20;
 /** Refresh rates further apart than this are treated as a different display mode. */
 export const REFRESH_TOLERANCE = 0.1;
 
+/** A probe whose rAF ran this close to its own median cadence ran unthrottled. */
+const CLEAN_PROBE_STEADINESS = 0.9;
+
 /**
- * Warnings derived from a window's environment probe. `referenceHz` is the
- * refresh rate recorded in meta (null for the very first probe).
+ * Whether a probe is trustworthy enough to take the display refresh rate from:
+ * the page was visible, rAF ran at least MIN_RAF_PER_SEC, and it ran at (nearly)
+ * its own median cadence for the whole probe, so the median is the display's
+ * interval rather than a throttled one.
+ */
+export function isCleanProbe(probe: EnvProbe): boolean {
+	return (
+		probe.visibilityState === 'visible' &&
+		probe.refreshHz !== null &&
+		probe.rafPerSec >= MIN_RAF_PER_SEC &&
+		probe.rafPerSec >= probe.refreshHz * CLEAN_PROBE_STEADINESS
+	);
+}
+
+/**
+ * Warnings derived from a window's environment probes (before and after it).
+ * `referenceHz` is the refresh rate recorded in meta (null until a clean probe).
  */
 export function environmentWarnings(env: WindowEnv, referenceHz: number | null): string[] {
 	const warnings: string[] = [];
 	const { start, end } = env;
-	if (
-		start.rafPerSec < MIN_RAF_PER_SEC ||
-		(referenceHz !== null && start.rafPerSec < referenceHz / 2)
-	) {
-		warnings.push(
-			`rAF probe ran at ${start.rafPerSec}/s before the window: the browser may be throttling the page`
-		);
+	for (const [when, probe] of [
+		['before', start],
+		['after', end]
+	] as const) {
+		if (
+			probe.rafPerSec < MIN_RAF_PER_SEC ||
+			(referenceHz !== null && probe.rafPerSec < referenceHz / 2)
+		) {
+			warnings.push(
+				`rAF probe ran at ${probe.rafPerSec}/s ${when} the window: the browser may be throttling the page`
+			);
+		}
 	}
 	if (start.visibilityState !== 'visible' || end.visibilityState !== 'visible') {
 		warnings.push(
 			`page was not visible (start: ${start.visibilityState}, end: ${end.visibilityState})`
 		);
 	}
-	if (!start.hasFocus || !end.hasFocus) {
-		warnings.push(
-			`browser window lost focus (start: ${start.hasFocus}, end: ${end.hasFocus}); it may be occluded`
-		);
-	}
-	if (
-		referenceHz !== null &&
-		start.refreshHz !== null &&
-		Math.abs(start.refreshHz - referenceHz) > referenceHz * REFRESH_TOLERANCE
-	) {
-		warnings.push(
-			`refresh rate ${start.refreshHz}Hz differs from the ${referenceHz}Hz recorded for this run`
-		);
+	for (const [when, probe] of [
+		['before', start],
+		['after', end]
+	] as const) {
+		if (
+			referenceHz !== null &&
+			probe.refreshHz !== null &&
+			Math.abs(probe.refreshHz - referenceHz) > referenceHz * REFRESH_TOLERANCE
+		) {
+			warnings.push(
+				`refresh rate ${probe.refreshHz}Hz ${when} the window differs from the ${referenceHz}Hz recorded for this run`
+			);
+		}
 	}
 	return warnings;
 }
