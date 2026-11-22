@@ -272,6 +272,16 @@ export async function buildStillInProgress(page: Page): Promise<boolean> {
 	return buildInProgress(page).isVisible();
 }
 
+/**
+ * The build progress bar variant the app is using (its data-build-bar
+ * attribute, set by the tickProgress action), or null when no bar is shown.
+ */
+export async function buildBarVariantShown(page: Page): Promise<string | null> {
+	return page.evaluate(
+		() => document.querySelector('[data-build-bar]')?.getAttribute('data-build-bar') ?? null
+	);
+}
+
 async function stageTransform(page: Page) {
 	return page.evaluate(() => {
 		const stage = planetNodes()[0]?.getStage();

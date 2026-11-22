@@ -39,6 +39,26 @@ PERF_WINDOWS=build PERF_LABEL=build-check pnpm --filter astriarch-frontend perf
 
 Skipped windows are left out of the result file; when you compare it with a full run, `perf:compare` lists the other windows with one side empty, so compare filtered runs with filtered runs. The fleet is still sent whenever `build` runs, so a `build`-only run sees the same game as a full run; the pan/zoom window restores its starting view, so skipping it changes nothing for later windows.
 
+### Comparing build progress bar variants
+
+The build progress bar in Planet Overview can animate three ways (`src/lib/components/game-views/tickProgress.ts`):
+
+- `scalex` (the app's default): a `transform: scaleX()` transition of one tick (200ms), compositor-only
+- `width`: the previous `width` transition, which needs layout and paint every frame
+- `none`: steps at the 5/s tick with no transition
+
+Only with perf instrumentation on can another variant be chosen: the harness sets `window.__ASTRIARCH_PERF_BUILD_BAR__` from `PERF_BUILD_BAR` before the app loads, and by hand you can add `&perfBuildBar=width` to a `?perf=1` URL. The variant is read once at load. Measure each one in the `build` window, with a label per variant so the result files don't overwrite each other:
+
+```sh
+PERF_WINDOWS=build PERF_BUILD_BAR=scalex PERF_LABEL=bar-scalex pnpm --filter astriarch-frontend perf
+PERF_WINDOWS=build PERF_BUILD_BAR=width  PERF_LABEL=bar-width  pnpm --filter astriarch-frontend perf
+PERF_WINDOWS=build PERF_BUILD_BAR=none   PERF_LABEL=bar-none   pnpm --filter astriarch-frontend perf
+pnpm --filter astriarch-frontend perf:compare bar-none-chromium bar-scalex-chromium
+pnpm --filter astriarch-frontend perf:compare bar-none-firefox bar-scalex-firefox
+```
+
+The result file records the variant as `meta.buildBar`, and the `build` window warns if the bar on screen (its `data-build-bar` attribute) isn't the requested variant. Expect `rate.dom.transitionrun` around 5/s for `scalex` and `width` and about 0 for `none`.
+
 ### Options (environment variables)
 
 | Variable                         | Default                                       | Meaning                                                                                             |
@@ -50,6 +70,7 @@ Skipped windows are left out of the result file; when you compare it with a full
 | `PERF_HEADLESS`                  | unset                                         | `1` runs headless. The numbers aren't comparable with headed runs                                   |
 | `PERF_ENFORCE_BUDGETS`           | unset                                         | `1` fails the run when a budget is exceeded (see below)                                             |
 | `PERF_WINDOWS`                   | (all)                                         | Comma list of windows to measure, e.g. `build` or `idle,build`. An unknown name fails the run       |
+| `PERF_BUILD_BAR`                 | (app default, `scalex`)                       | Build progress bar variant for the `build` window: `scalex`, `width` or `none` (see below)          |
 | `TEST_BACKEND_PORT`              | `8032`                                        | Test backend port. Must be free: the backend is never reused                                        |
 | `PERF_MONGODB_CONNECTION_STRING` | `mongodb://localhost:27017/astriarch_v2_perf` | Perf backend database. `MONGODB_CONNECTION_STRING` is not used, so the e2e database is never shared |
 | `PERF_FRONTEND_PORT`             | `4174`                                        | `vite preview` port                                                                                 |

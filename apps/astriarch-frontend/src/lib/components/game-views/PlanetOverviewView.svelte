@@ -12,7 +12,7 @@
 		selectedPlanetId
 	} from '#lib/stores/gameStore.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
-	import { MS_PER_TICK } from 'astriarch-engine';
+	import { buildBarKey, tickProgress } from './tickProgress.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
 	import {
 		GameTools,
@@ -924,20 +924,24 @@
 
 								{#if index === 0}
 									<!-- Progress bar for current item. The model advances at the
-									     fixed tick (MS_PER_TICK), so a linear transition of the same
-									     length slides the bar continuously between updates. -->
+									     fixed tick (MS_PER_TICK); tickProgress scales the bar with a
+									     transform transition of the same length, so it slides
+									     continuously between updates without layout or paint per
+									     frame. It snaps (no slide) when the planet or item changes or
+									     progress goes down, e.g. when this item finishes and the
+									     next one moves up. -->
 									<div class="mb-2">
-										<div class="h-1.5 w-full rounded-full bg-slate-700">
+										<div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
 											<div
-												class="h-1.5 rounded-full {item.itemType ===
+												class="h-1.5 origin-left {item.itemType ===
 												PlanetProductionItemType.PlanetImprovementToDestroy
 													? 'bg-red-500'
 													: 'bg-cyan-500'}"
-												style="width: {Math.min(
-													100,
-													((item.productionCostComplete || 0) / (item.baseProductionCost || 1)) *
-														100
-												)}%; transition: width {MS_PER_TICK}ms linear"
+												use:tickProgress={{
+													fraction:
+														(item.productionCostComplete || 0) / (item.baseProductionCost || 1),
+													key: buildBarKey($selectedPlanet.id, item)
+												}}
 											></div>
 										</div>
 									</div>

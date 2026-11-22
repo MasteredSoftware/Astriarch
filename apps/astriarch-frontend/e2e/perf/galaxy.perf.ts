@@ -18,6 +18,9 @@
  *            build can't change what the other windows measure. The fleet from
  *            `fleets` is still in transit.
  *
+ * PERF_BUILD_BAR (scalex | width | none) picks the build progress bar variant
+ * the app uses, to compare them in the `build` window; unset is the default.
+ *
  * PERF_WINDOWS (comma list, default all) measures only some windows. A skipped
  * window's measurement is skipped, but the fleet is still sent when `build`
  * runs, so a `build`-only run sees the same game state as a full run.
@@ -51,6 +54,7 @@ import {
 	sendFleet,
 	queueBuild,
 	buildStillInProgress,
+	buildBarVariantShown,
 	setGalaxySeed,
 	BENCHMARK_GAME,
 	PAGE_HELPERS_SCRIPT
@@ -65,6 +69,18 @@ const PROBE_MS = 500;
 const VIEWPORT = { width: 1440, height: 900 };
 const ENFORCE_BUDGETS = process.env.PERF_ENFORCE_BUDGETS === '1';
 const WINDOWS = parseWindowFilter(process.env.PERF_WINDOWS);
+/**
+ * Build progress bar variant to measure in the `build` window: scalex (the
+ * app's default), width or none (see src/lib/components/game-views/tickProgress.ts).
+ * Unset leaves the app's default.
+ */
+const BUILD_BAR = process.env.PERF_BUILD_BAR || null;
+const BUILD_BAR_VARIANTS = ['scalex', 'width', 'none'];
+if (BUILD_BAR !== null && !BUILD_BAR_VARIANTS.includes(BUILD_BAR)) {
+	throw new Error(
+		`PERF_BUILD_BAR: expected one of ${BUILD_BAR_VARIANTS.join(', ')}, got ${BUILD_BAR}`
+	);
+}
 
 /** Keep a headed browser from throttling rAF/timers when its window is covered. */
 const CHROMIUM_ARGS = [
@@ -116,7 +132,12 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 				viewport: VIEWPORT,
 				baseURL: test.info().project.use.baseURL
 			});
-			await context.addInitScript(`window.__ASTRIARCH_PERF__ = true;\n${PAGE_HELPERS_SCRIPT}`);
+			const buildBarFlag = BUILD_BAR
+				? `window.__ASTRIARCH_PERF_BUILD_BAR__ = ${JSON.stringify(BUILD_BAR)};\n`
+				: '';
+			await context.addInitScript(
+				`window.__ASTRIARCH_PERF__ = true;\n${buildBarFlag}${PAGE_HELPERS_SCRIPT}`
+			);
 			const page = await context.newPage();
 
 			const homePlanetId = await startBenchmarkGame(page);
@@ -164,9 +185,17 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 				await measure('build', false, async () => {
 					await page.waitForTimeout(WINDOW_MS);
 					if (!queued) return ['no build was queued'];
-					return (await buildStillInProgress(page))
-						? []
-						: ['the build finished before the window ended'];
+					const warnings = [];
+					if (!(await buildStillInProgress(page))) {
+						warnings.push('the build finished before the window ended');
+					}
+					const variant = await buildBarVariantShown(page);
+					if (variant !== (BUILD_BAR ?? 'scalex')) {
+						warnings.push(
+							`build bar variant is ${variant ?? 'not shown'}, expected ${BUILD_BAR ?? 'scalex'}`
+						);
+					}
+					return warnings;
 				});
 			}
 		} finally {
@@ -375,6 +404,7 @@ function createResultFile(
 			warmupMs: WARMUP_MS,
 			repetitions: REPETITIONS,
 			galaxySeed: BENCHMARK_GAME.galaxySeed,
+			buildBar: BUILD_BAR,
 			refreshHz: null,
 			devicePixelRatio: null
 		},

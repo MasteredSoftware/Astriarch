@@ -106,6 +106,11 @@ export interface PerfResultFile {
 		warmupMs: number;
 		repetitions: number;
 		galaxySeed: number;
+		/**
+		 * PERF_BUILD_BAR: the build progress bar variant forced for this run, or
+		 * null for the app's default (scalex). Absent in older files.
+		 */
+		buildBar?: string | null;
 		/** Measured by the first probe that passes the throttle checks (isCleanProbe). */
 		refreshHz: number | null;
 		devicePixelRatio: number | null;
