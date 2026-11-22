@@ -21,7 +21,9 @@ pnpm --filter astriarch-frontend perf:chromium
 pnpm --filter astriarch-frontend perf:firefox
 ```
 
-The config builds the frontend for production, serves it with `vite preview` on port 4174, and starts its own test backend (`NODE_ENV=test`) on port 8022. Neither server is reused, so the numbers always come from the current working tree, including the backend and engine. If something already listens on port 8022 (for example an e2e backend), the run fails at start-up; stop it or pick another port with `TEST_BACKEND_PORT`.
+The config builds the frontend for production, serves it with `vite preview` on port 4174, and starts its own test backend (`NODE_ENV=test`) on port 8032, a port e2e never uses, so an orphaned perf backend can't be reused by e2e. Neither server is reused, so the numbers always come from the current working tree, including the backend and engine. If something already listens on port 8032 (for example an orphaned perf backend), the run fails at start-up; stop it or pick another port with `TEST_BACKEND_PORT`.
+
+The backend uses its own database, `astriarch_v2_perf` (override with `PERF_MONGODB_CONNECTION_STRING`), so perf and e2e can run at the same time: the cleanup before and after a perf run deletes all sessions and the test games, but only in the perf database.
 
 A full run is 5 repetitions × 3 windows of 20s each, about 10 minutes per browser. **A browser window opens on screen. Leave it visible and leave the machine alone while it runs.** For a quick check that the harness works:
 
@@ -31,16 +33,17 @@ PERF_REPEATS=1 PERF_WINDOW_MS=5000 PERF_WARMUP_MS=3000 PERF_LABEL=smoke pnpm --f
 
 ### Options (environment variables)
 
-| Variable               | Default   | Meaning                                                           |
-| ---------------------- | --------- | ----------------------------------------------------------------- |
-| `PERF_REPEATS`         | `5`       | Repetitions. Each starts a fresh browser and a fresh game         |
-| `PERF_WINDOW_MS`       | `20000`   | Length of each measurement window                                 |
-| `PERF_WARMUP_MS`       | `10000`   | Wait after the galaxy renders, before measuring                   |
-| `PERF_LABEL`           | (git sha) | Name for the result file, e.g. `baseline` or `fix-fleets`         |
-| `PERF_HEADLESS`        | unset     | `1` runs headless. The numbers aren't comparable with headed runs |
-| `PERF_ENFORCE_BUDGETS` | unset     | `1` fails the run when a budget is exceeded (see below)           |
-| `TEST_BACKEND_PORT`    | `8022`    | Test backend port. Must be free: the backend is never reused      |
-| `PERF_FRONTEND_PORT`   | `4174`    | `vite preview` port                                               |
+| Variable                         | Default                                       | Meaning                                                                                             |
+| -------------------------------- | --------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `PERF_REPEATS`                   | `5`                                           | Repetitions. Each starts a fresh browser and a fresh game                                           |
+| `PERF_WINDOW_MS`                 | `20000`                                       | Length of each measurement window                                                                   |
+| `PERF_WARMUP_MS`                 | `10000`                                       | Wait after the galaxy renders, before measuring                                                     |
+| `PERF_LABEL`                     | (git sha)                                     | Name for the result file, e.g. `baseline` or `fix-fleets`                                           |
+| `PERF_HEADLESS`                  | unset                                         | `1` runs headless. The numbers aren't comparable with headed runs                                   |
+| `PERF_ENFORCE_BUDGETS`           | unset                                         | `1` fails the run when a budget is exceeded (see below)                                             |
+| `TEST_BACKEND_PORT`              | `8032`                                        | Test backend port. Must be free: the backend is never reused                                        |
+| `PERF_MONGODB_CONNECTION_STRING` | `mongodb://localhost:27017/astriarch_v2_perf` | Perf backend database. `MONGODB_CONNECTION_STRING` is not used, so the e2e database is never shared |
+| `PERF_FRONTEND_PORT`             | `4174`                                        | `vite preview` port                                                                                 |
 
 ## What it measures
 
