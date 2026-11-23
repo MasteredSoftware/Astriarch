@@ -3,19 +3,23 @@ import { perfEnabled } from '#lib/perf/perfMonitor.ts';
 
 /**
  * How the build progress bar animates between model ticks:
- *   scalex  (default) `transform: scaleX()` with a MS_PER_TICK linear
- *           transition: compositor-only, no layout or paint per frame
- *   width   a `width` transition (the previous behaviour): layout and paint
+ *   none    (default) steps at the 5/s tick, no transition
+ *   scalex  `transform: scaleX()` with a MS_PER_TICK linear transition: no
+ *           layout or paint per frame, but still composited every frame
+ *   width   a `width` transition (the earlier behaviour): layout and paint
  *           every frame while it runs
- *   none    steps at the 5/s tick, no transition
- * Only the perf benchmark picks another variant (see buildBarVariant).
+ * Measured in the perf benchmark's `build` window, any transition keeps the
+ * browser compositing every frame while a build is visible: over `none`, scaleX
+ * cost +31.5 CPU points in Chromium and +16.9 in Firefox, width +44.6 / +72.5
+ * (performance_improvements_plan.md, Phase 2). So the app steps; scalex and
+ * width stay selectable for the benchmark only (see buildBarVariant).
  */
 export type BuildBarVariant = 'scalex' | 'width' | 'none';
 
 const VARIANTS: readonly BuildBarVariant[] = ['scalex', 'width', 'none'];
 
 export function parseBuildBarVariant(value: unknown): BuildBarVariant {
-	return VARIANTS.includes(value as BuildBarVariant) ? (value as BuildBarVariant) : 'scalex';
+	return VARIANTS.includes(value as BuildBarVariant) ? (value as BuildBarVariant) : 'none';
 }
 
 declare global {
@@ -35,7 +39,7 @@ export const buildBarVariant: BuildBarVariant = perfEnabled
 			window.__ASTRIARCH_PERF_BUILD_BAR__ ??
 				new URLSearchParams(window.location.search).get('perfBuildBar')
 		)
-	: 'scalex';
+	: 'none';
 
 export interface TickProgress {
 	/** Completed share, 0..1 (clamped). */
@@ -69,15 +73,17 @@ function clamp01(n: number): number {
 
 /**
  * The bar's inline style when it moves from `prev` (null on first render) to
- * `next`. The scalex variant slides only forward on the same key; a first
- * render, a decrease (the item finished and the next one started) or a key
- * change (another planet or item) snaps with no transition, so the bar never
- * slides backwards. The width variant keeps the old behaviour (always slides).
+ * `next`. The none variant (the default) sets the width with no transition, so
+ * it steps at each tick and never slides backwards. The benchmark-only scalex
+ * variant slides only forward on the same key; a first render, a decrease (the
+ * item finished and the next one started) or a key change (another planet or
+ * item) snaps with no transition. The width variant keeps the old behaviour
+ * (always slides).
  */
 export function progressBarStyle(
 	prev: TickProgress | null,
 	next: TickProgress,
-	variant: BuildBarVariant = 'scalex'
+	variant: BuildBarVariant = 'none'
 ): ProgressBarStyle {
 	const fraction = clamp01(next.fraction);
 	if (variant === 'width' || variant === 'none') {
@@ -100,7 +106,7 @@ export function progressBarStyle(
 /**
  * Svelte action for the build progress bar: applies progressBarStyle() on
  * every update. Runs only when Svelte passes new progress (each model tick);
- * the browser animates in between.
+ * with the default none variant the bar steps then, with no animation between.
  */
 export function tickProgress(
 	node: HTMLElement,

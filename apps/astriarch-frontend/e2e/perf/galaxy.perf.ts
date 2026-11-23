@@ -20,8 +20,9 @@
  *            `fleets` is still in transit. It warns if the bar did not advance
  *            or (for a transitioning bar) no transitions ran.
  *
- * PERF_BUILD_BAR (scalex | width | none) picks the build progress bar variant
- * the app uses, to compare them in the `build` window; unset is the default.
+ * PERF_BUILD_BAR (none | scalex | width) picks the build progress bar variant
+ * the app uses, to compare them in the `build` window; unset is the app's
+ * default (none).
  *
  * PERF_WINDOWS (comma list, default all) measures only some windows. A skipped
  * window's measurement is skipped, but the fleet is still sent when `build`
@@ -76,12 +77,14 @@ const VIEWPORT = { width: 1440, height: 900 };
 const ENFORCE_BUDGETS = process.env.PERF_ENFORCE_BUDGETS === '1';
 const WINDOWS = parseWindowFilter(process.env.PERF_WINDOWS);
 /**
- * Build progress bar variant to measure in the `build` window: scalex (the
- * app's default), width or none (see src/lib/components/game-views/tickProgress.ts).
+ * Build progress bar variant to measure in the `build` window: none (the
+ * app's default), scalex or width (see src/lib/components/game-views/tickProgress.ts).
  * Unset leaves the app's default.
  */
 const BUILD_BAR = process.env.PERF_BUILD_BAR || null;
-const BUILD_BAR_VARIANTS = ['scalex', 'width', 'none'];
+const BUILD_BAR_VARIANTS = ['none', 'scalex', 'width'];
+/** The app's default build bar variant (parseBuildBarVariant in tickProgress.ts). */
+const DEFAULT_BUILD_BAR = 'none';
 if (BUILD_BAR !== null && !BUILD_BAR_VARIANTS.includes(BUILD_BAR)) {
 	throw new Error(
 		`PERF_BUILD_BAR: expected one of ${BUILD_BAR_VARIANTS.join(', ')}, got ${BUILD_BAR}`
@@ -208,9 +211,9 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 						if (!(await buildStillInProgress(page))) {
 							warnings.push('the build finished before the window ended');
 						}
-						if (variant !== (BUILD_BAR ?? 'scalex')) {
+						if (variant !== (BUILD_BAR ?? DEFAULT_BUILD_BAR)) {
 							warnings.push(
-								`build bar variant is ${variant ?? 'not shown'}, expected ${BUILD_BAR ?? 'scalex'}`
+								`build bar variant is ${variant ?? 'not shown'}, expected ${BUILD_BAR ?? DEFAULT_BUILD_BAR}`
 							);
 						}
 						return warnings;

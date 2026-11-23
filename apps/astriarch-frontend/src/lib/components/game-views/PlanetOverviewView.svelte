@@ -924,12 +924,12 @@
 
 								{#if index === 0}
 									<!-- Progress bar for current item. The model advances at the
-									     fixed tick (MS_PER_TICK); tickProgress scales the bar with a
-									     transform transition of the same length, so it slides
-									     continuously between updates without layout or paint per
-									     frame. It snaps (no slide) when the planet or item changes or
-									     progress goes down, e.g. when this item finishes and the
-									     next one moves up. -->
+									     fixed tick (MS_PER_TICK); tickProgress sets the bar's width
+									     at each tick with no transition, so it steps 5 times a second
+									     and never slides backwards. A CSS transition kept the browser
+									     compositing every frame while a build was visible (measured
+									     in the perf benchmark's build window), so it is only a
+									     benchmark variant; see tickProgress.ts. -->
 									<div class="mb-2">
 										<div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
 											<div

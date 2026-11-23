@@ -43,16 +43,18 @@ Skipped windows are left out of the result file; when you compare it with a full
 
 The build progress bar in Planet Overview can animate three ways (`src/lib/components/game-views/tickProgress.ts`):
 
-- `scalex` (the app's default): a `transform: scaleX()` transition of one tick (200ms), compositor-only
-- `width`: the previous `width` transition, which needs layout and paint every frame
-- `none`: steps at the 5/s tick with no transition
+- `none` (the app's default): steps at the 5/s tick with no transition
+- `scalex`: a `transform: scaleX()` transition of one tick (200ms); no layout or paint, but the browser still composites every frame
+- `width`: the earlier `width` transition, which needs layout and paint every frame
+
+The app uses `none` because any transition kept the browser compositing every frame while a build was visible: in the `build` window, `scalex` cost +31.5 CPU points in Chromium and +16.9 in Firefox over `none`, and `width` +44.6 / +72.5 (see the Phase 2 section of `performance_improvements_plan.md`). The other two stay for the benchmark only.
 
 Only with perf instrumentation on can another variant be chosen: the harness sets `window.__ASTRIARCH_PERF_BUILD_BAR__` from `PERF_BUILD_BAR` before the app loads, and by hand you can add `&perfBuildBar=width` to a `?perf=1` URL. The variant is read once at load. Measure each one in the `build` window, with a label per variant so the result files don't overwrite each other:
 
 ```sh
+PERF_WINDOWS=build PERF_BUILD_BAR=none   PERF_LABEL=bar-none   pnpm --filter astriarch-frontend perf
 PERF_WINDOWS=build PERF_BUILD_BAR=scalex PERF_LABEL=bar-scalex pnpm --filter astriarch-frontend perf
 PERF_WINDOWS=build PERF_BUILD_BAR=width  PERF_LABEL=bar-width  pnpm --filter astriarch-frontend perf
-PERF_WINDOWS=build PERF_BUILD_BAR=none   PERF_LABEL=bar-none   pnpm --filter astriarch-frontend perf
 pnpm --filter astriarch-frontend perf:compare bar-none-chromium bar-scalex-chromium
 pnpm --filter astriarch-frontend perf:compare bar-none-firefox bar-scalex-firefox
 ```
@@ -70,7 +72,7 @@ The result file records the variant as `meta.buildBar`, and the `build` window w
 | `PERF_HEADLESS`                  | unset                                         | `1` runs headless. The numbers aren't comparable with headed runs                                   |
 | `PERF_ENFORCE_BUDGETS`           | unset                                         | `1` fails the run when a budget is exceeded (see below)                                             |
 | `PERF_WINDOWS`                   | (all)                                         | Comma list of windows to measure, e.g. `build` or `idle,build`. An unknown name fails the run       |
-| `PERF_BUILD_BAR`                 | (app default, `scalex`)                       | Build progress bar variant for the `build` window: `scalex`, `width` or `none` (see below)          |
+| `PERF_BUILD_BAR`                 | (app default, `none`)                         | Build progress bar variant for the `build` window: `none`, `scalex` or `width` (see below)          |
 | `TEST_BACKEND_PORT`              | `8032`                                        | Test backend port. Must be free: the backend is never reused                                        |
 | `PERF_MONGODB_CONNECTION_STRING` | `mongodb://localhost:27017/astriarch_v2_perf` | Perf backend database. `MONGODB_CONNECTION_STRING` is not used, so the e2e database is never shared |
 | `PERF_FRONTEND_PORT`             | `4174`                                        | `vite preview` port                                                                                 |
@@ -152,7 +154,7 @@ A change is reported as `better` or `worse` only when the two runs' min–max ra
 For now they are report-only: the run prints PASS, FAIL or MISSING for each budget, and `PERF_ENFORCE_BUDGETS=1` turns a FAIL or MISSING into a failed run. Timing-based numbers are deliberately not budgets, because they are too noisy for CI.
 
 - **Missing metrics fail.** A budget whose metric isn't in the results is MISSING and counts as a violation, so a renamed layer or a lost instrumentation hook can't turn a `max: 0` budget green. Only budgets marked `absentMeansZero: true` (a counter that legitimately disappears when its loop is removed, such as `rate.raf.canvas`) treat absence as 0. Konva layer draw counters are reported as explicit zeros for every registered layer. `konva.registered` is 0 when the stage was never registered, is no longer attached to the document, or has layers added after registration (`konva.unhookedLayers` counts those); the layer draw rates, node churn and `rendered.*` are then left out, so their budgets say MISSING.
-- **`rate.dom.transitionrun` and `rate.dom.animationstart` are budgeted at ≤ 1/s in `idle`.** At idle nothing should restart an animation; the odd one-off (e.g. a notification appearing) stays well under 1/s over a 20s window, while a transition restarted every tick reads about 5/s. The limit is an estimate until a recorded run confirms it. In `build` the progress bar's transition is expected, so the rate is recorded but not budgeted.
+- **`rate.dom.transitionrun` and `rate.dom.animationstart` are budgeted at ≤ 1/s in `idle`.** At idle nothing should restart an animation; the odd one-off (e.g. a notification appearing) stays well under 1/s over a 20s window, while a transition restarted every tick reads about 5/s. The limit is an estimate until a recorded run confirms it. In `build` the default `none` bar starts no transitions, but the benchmark-only `scalex` and `width` bars start one every tick, so the rate is recorded but not budgeted.
 - **`rate.store.clientGameModel.set` counts every store set**, including the server pushes that `websocket.ts` applies, not only the 200ms tick. That's why its budget is 6/s rather than 5/s.
 
 ## Getting trustworthy numbers
