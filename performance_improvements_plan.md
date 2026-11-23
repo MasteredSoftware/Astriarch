@@ -8,13 +8,13 @@ Phase 1 builds a repeatable, automated way to measure performance. Phase 2 appli
 
 **Phase 1 is done** (PR #72, branch `perf/phase-1-measurement`). **Phase 2 is paused here as good enough for now** (branch `perf/phase-2-event-driven-canvas`, stacked on Phase 1). The remaining steps are deferred; see [Deferred work](#deferred-work).
 
-Whole-browser CPU, % of one core (macOS, 120Hz display, 5 × 20s windows, medians; baseline and Phase 2 re-measured the same day, see [After the PR #73 review fixes](#after-the-pr-73-review-fixes-2026-11-22)):
+Whole-browser CPU, % of one core (macOS, 120Hz display, 5 × 20s windows, medians; baseline-v3 at `ae7fafd` against Phase 2 at `c641c44`, both recorded on 2026-11-22, see [After the PR #73 review fixes](#after-the-pr-73-review-fixes-2026-11-22)):
 
 | Window | Firefox baseline → now | Chromium baseline → now |
 | --- | --- | --- |
-| idle | 201 → **13.8** (−93%) | 91.7 → **10.6** (−88%) |
-| panzoom | 195 → **77.4** (−60%) | 95.3 → **58.1** (−39%) |
-| fleets | 192 → **28.9** (−85%) | 90.6 → **20.2** (−78%) |
+| idle | 201.8 → **14.2** (−93%) | 97.6 → **11.0** (−89%) |
+| panzoom | 196.2 → **77.4** (−61%) | 102.3 → **61.1** (−40%) |
+| fleets | 192.7 → **28.1** (−85%) | 96.3 → **20.2** (−79%) |
 
 What got us there (details under [Phase 2 status](#phase-2-status)):
 
@@ -22,7 +22,7 @@ What got us there (details under [Phase 2 status](#phase-2-status)):
 2. The client model advances at a fixed 200ms tick instead of every frame. A fleet animation runs only while some fleet in transit can move a visible distance between ticks.
 3. Two decorative CSS animations that looped forever were stopped. The task-card scan-line and the Fleet Command prompt pulse made the browser composite every frame, and they turned out to be the largest single costs left.
 
-All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever. The budgets and the `build` window added in the second round of review (see below) haven't been measured yet.
+All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever. The `build` window added in the second round of review (Planet Overview with a build in progress) settled the build progress bar: it steps at the 5/s tick, because any CSS transition kept the browser compositing every frame (see [The build progress bar](#the-build-progress-bar-2026-11-22)).
 
 ## Findings (as of master `3d2ada9`)
 
@@ -349,22 +349,47 @@ The review of PR #73 changed behaviour in a few places:
 - The fleet animation stops once no fleet can move. Since the second review round it also doesn't run while no fleet can move a visible distance (at least 0.5 screen px) before the next tick, e.g. at Normal speed and the default zoom; zooming in re-checks. The distance is one tick's worth (200ms), not the 1.5-tick extrapolation cap, because every tick resets the drawn position to the model one: a fleet that needs more than one tick to move 0.5px never draws between ticks.
 - Duplicate fleet ids are drawn instead of dropped.
 - The canvas is torn down fully.
-- The build progress bar slides between ticks with a one-tick CSS transition. In the second review round it became a `transform: scaleX()` transition (compositor-only, no layout or paint per frame) that snaps instead of sliding backwards when an item finishes or the planet changes. The previous `width` transition and a 5/s step remain selectable for the benchmark (`PERF_BUILD_BAR`), to measure the three against each other in the new `build` window.
+- The build progress bar steps at the 5/s tick with no CSS transition. The review tried a `transform: scaleX()` transition (no layout or paint per frame) that snapped instead of sliding backwards, and measured it against the earlier `width` transition and the plain step; see [The build progress bar](#the-build-progress-bar-2026-11-22). Both transitions stay selectable for the benchmark only (`PERF_BUILD_BAR`).
 
-Both the baseline (`e1ecf7e`) and Phase 2 (`7902272`) were re-measured with the updated harness on the same day. Result files: `perf-results/baseline-v2-*.json` and `perf-results/phase2-review-*.json`.
+The baseline was re-recorded with harness schema v3 at `ae7fafd` (`perf-results/baseline-v3-*.json`, the PR #72 re-recording) and Phase 2 at `c641c44` (`perf-results/phase2-r2b-*.json`), on the same day, headed, on AC power, with no harness warnings. Medians, with [min–max]:
 
 | Whole-browser CPU, % of one core | Firefox | Chromium |
 | --- | --- | --- |
-| idle | 201 → **13.8** (−93%) | 91.7 → **10.6** (−88%) |
-| panzoom | 195 → **77.4** (−60%) | 95.3 → **58.1** (−39%) |
-| fleets | 192 → **28.9** (−85%) | 90.6 → **20.2** (−78%) |
+| idle | 201.8 → **14.2** [14.1–14.7] (−93%) | 97.6 → **11.0** [10.1–11.1] (−89%) |
+| panzoom | 196.2 → **77.4** [76.8–77.6] (−61%) | 102.3 → **61.1** [59.8–63.4] (−40%) |
+| fleets | 192.7 → **28.1** [27.5–28.8] (−85%) | 96.3 → **20.2** [19.2–21.6] (−79%) |
+| build | **35.5** [34.9–35.6] with the `scaleX` bar; **17.0** [16.5–17.4] with the step | **44.7** [43.8–49.5] with the `scaleX` bar; **12.4** [11.9–12.8] with the step |
 
-- The review fixes cost nothing measurable: every window is within noise of step 2c. None of these three windows shows a build in progress, so this doesn't cover the build progress bar. The `build` window (Planet Overview with a build queued) was added for that; its numbers, per progress bar variant, are still to be recorded.
+The baseline has no `build` window. The `build` row in `phase2-r2b` was recorded with the app's default bar at `c641c44`, which was still the `scaleX` transition, so its CPU reflects `scaleX`. The step's number is from `perf-results/bar2-none-*.json`.
+
+| Phase 2 at `c641c44` (baseline-v3 in brackets) | idle | panzoom | fleets | build |
+| --- | --- | --- | --- | --- |
+| Firefox `rendered.fps` | 0 (119) | 42.7 (114) | 5.0 (118) | 5.0 |
+| Firefox `frames.droppedPct` | – | 0.12% (4.8%) | 0.08% (1.2%) | – |
+| Chromium `rendered.fps` | 0 (120) | 61.5 (120) | 5.0 (120) | 5.0 |
+| Chromium `frames.droppedPct` | – | 0% (0%) | 0% (0%) | – |
+| `rate.konva.draw.fleet`, Firefox / Chromium | 0 / 0 (119 / 120) | 42.4 / 63.9 (116 / 122) | 5.0 / 5.0 (119 / 120) | 5.0 / 5.0 |
+| `rate.fleetAnimation.frame`, both browsers | 0 | 0 | 0 | 0 |
+
+- Chromium pan/zoom reads 61.1 against 58.1 in the first review round (`phase2-review`, `7902272`). The review fixes don't touch that path, so treat it as session drift until a re-run says otherwise.
 - All budgets pass in every window in both browsers, and no run had a harness warning.
-- The new frame metrics add two things:
-  - Firefox now drops 0.1% of display refreshes while panning, against 4.6% before.
+- The frame metrics add two things:
+  - Firefox now drops 0.1% of display refreshes while panning, against 4.8% before.
   - The canvas draws on 0 frames per second at idle, against about 120.
-- In the fleets window the canvas redraws at the 5/s tick. At this zoom a fleet moves less than the 0.5px redraw threshold between ticks, so the extrapolated frames are skipped. Since the second review round the fleet animation doesn't run at all then.
+- In the fleets and build windows the canvas redraws at the 5/s tick and the fleet animation doesn't run: `rate.fleetAnimation.frame` is 0 (the counter is absent) in all windows at `c641c44`. At this zoom and speed a fleet moves less than the 0.5px redraw threshold in one tick, so the one-tick gate never starts the animation. Before that gate fix, at `339eda2` (`perf-results/phase2-r2-*.json`), it ran at about 120 frames per second in the fleets and build windows of both browsers, even though it drew nothing.
+
+### The build progress bar (2026-11-22)
+
+The `build` window opens Planet Overview on the home planet, assigns a Builder, queues a Factory, and measures 20s with no input while the bar advances every tick. The three bar variants were measured at `c641c44` with `PERF_WINDOWS=build` and `PERF_BUILD_BAR` (headed, AC power, 5 × 20s, no harness warnings, the bar advanced in every run). Result files: `perf-results/bar2-{none,scalex,width}-{chromium,firefox}.json`. Whole-browser CPU, % of one core, medians, with [min–max]:
+
+| Bar variant | Firefox | Chromium |
+| --- | --- | --- |
+| `none`: steps at the 5/s tick | **17.0** [16.5–17.4] | **12.4** [11.9–12.8] |
+| `scalex`: one-tick `transform: scaleX()` transition | 33.9 [33.2–34.2] (+16.9) | 43.9 [43.4–50.3] (+31.5) |
+| `width`: one-tick `width` transition | 89.5 [88.8–89.8] (+72.5) | 57.0 [53.4–63.8] (+44.6) |
+
+- **Decision: the bar steps at 5/s (`none`).** Any CSS transition keeps the browser compositing every frame while a build is visible. `scaleX` avoids layout and paint but is still far outside noise of the step in both browsers, so under the review's rule (keep `scaleX` only if its CPU is within noise of no transition in both browsers) the app uses the step. `scalex` and `width` stay selectable with `PERF_BUILD_BAR` (or `&perfBuildBar=` with `?perf=1`) for the benchmark only.
+- The first run of the three variants (`perf-results/bar-{none,scalex,width}-*.json`) was discarded: the benchmark planet had no Builders, so it made no production and every variant measured the same static bar. The scenario now assigns a Builder first, and the window warns if the bar didn't advance or a transitioning bar started no transitions.
 - **Worth watching:** in Firefox pan/zoom the canvas draws about 43 frames per second, with 95th-percentile gaps of 68ms between drawn frames (Chromium: about 64 per second). The scripted pan pauses between moves, which accounts for part of this. If dragging feels less smooth in Firefox, start here.
 - **Not a regression:** the game loop's per-call timings (`meanMs`, `p95Ms`) are higher because each call now covers 200ms of game time instead of one frame. Their total per second fell by 66–81%.
 
@@ -372,7 +397,7 @@ Both the baseline (`e1ecf7e`) and Phase 2 (`7902272`) were re-measured with the 
 
 These remain from the Phase 2 list. Each should still be done one at a time and A/B-tested in both browsers with `perf` and `perf:compare`.
 
-- **Static background (step 3): the best next candidate.** Pan/zoom is now the most expensive window (Firefox 77%, Chromium 58%). Every drag frame redraws the whole galaxy layer: the background rect, ~59 hex outlines, ~131 hex labels, 100 stars with `shadowBlur`, and the planets. Options:
+- **Static background (step 3): the best next candidate.** Pan/zoom is now the most expensive window (Firefox 77%, Chromium 61%). Every drag frame redraws the whole galaxy layer: the background rect, ~59 hex outlines, ~131 hex labels, 100 stars with `shadowBlur`, and the planets. Options:
   - move the background to its own layer and `cache()` it, or render it once to an image
   - replace `shadowBlur` on stars, planet rings and travel lines
   - show hex labels only above a zoom threshold.
