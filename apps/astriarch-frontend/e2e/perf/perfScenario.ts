@@ -12,6 +12,7 @@ import { openLobby, waitForConnected, createGame } from '../helpers/lobby';
 import { setOpponentSlot, startGame, OpponentType } from '../helpers/gameOptions';
 import { waitForGameView, openFleetCommandView } from '../helpers/inGame';
 import { testGameName } from '../helpers/cleanup';
+import { buildBarFraction } from './results';
 
 // playwright.perf.config.ts sets the default (8032) before this is imported.
 const BACKEND_PORT = process.env.TEST_BACKEND_PORT ?? '8032';
@@ -140,16 +141,13 @@ export async function panAndZoom(page: Page, durationMs: number): Promise<{ move
 }
 
 /**
- * Sends every mobile ship from the home planet to another planet, so fleets
- * are in transit. Returns the number of fleets on the fleet layer afterwards.
+ * Clicks the home planet on the canvas and waits until it is selected.
+ * Releasing a pan drag fires a DOM click on the canvas, which may have selected
+ * whatever planet was under the cursor, so callers re-select it first.
  */
-export async function sendFleet(page: Page, homePlanetId: number): Promise<number> {
-	const sendBtn = page.locator('[data-testid="send-ships-btn"]');
+async function selectHomePlanet(page: Page, homePlanetId: number): Promise<void> {
 	const box = await page.locator('canvas').first().boundingBox();
 	if (!box) throw new Error('Galaxy canvas not found');
-
-	// Re-select the home planet: releasing a pan drag fires a DOM click on the
-	// canvas, which may have selected whatever planet was under the cursor.
 	const homePos = await page.evaluate((id) => {
 		const home = planetNodes().find((n) => n.getAttr('planetId') === id);
 		return home ? home.getAbsolutePosition() : null;
@@ -167,6 +165,18 @@ export async function sendFleet(page: Page, homePlanetId: number): Promise<numbe
 		homePlanetId,
 		{ timeout: 5_000 }
 	);
+}
+
+/**
+ * Sends every mobile ship from the home planet to another planet, so fleets
+ * are in transit. Returns the number of fleets on the fleet layer afterwards.
+ */
+export async function sendFleet(page: Page, homePlanetId: number): Promise<number> {
+	const sendBtn = page.locator('[data-testid="send-ships-btn"]');
+	const box = await page.locator('canvas').first().boundingBox();
+	if (!box) throw new Error('Galaxy canvas not found');
+
+	await selectHomePlanet(page, homePlanetId);
 
 	await openFleetCommandView(page);
 	await page.getByRole('button', { name: /Select All/ }).click();
@@ -189,15 +199,139 @@ export async function sendFleet(page: Page, homePlanetId: number): Promise<numbe
 			);
 	}, homePlanetId);
 
+	const clicked: string[] = [];
 	for (const target of targets) {
-		await page.mouse.click(box.x + target.x, box.y + target.y);
+		const x = box.x + target.x;
+		const y = box.y + target.y;
+		// What the click will actually hit; a DOM overlay (e.g. a notification) can cover the canvas
+		const hit = await page.evaluate(
+			([px, py]) => {
+				const el = document.elementFromPoint(px!, py!);
+				return el
+					? `${el.tagName.toLowerCase()}.${String(el.getAttribute('class') ?? '').split(' ')[0]}`
+					: 'none';
+			},
+			[x, y]
+		);
+		clicked.push(`(${Math.round(target.x)},${Math.round(target.y)})→${hit}`);
+		await page.mouse.click(x, y);
 		if (await sendBtn.isEnabled()) break;
 	}
-	await expect(sendBtn).toBeEnabled({ timeout: 5_000 });
+	try {
+		await expect(sendBtn).toBeEnabled({ timeout: 5_000 });
+	} catch (e) {
+		const shot = `perf-results/sendFleet-failure-${Date.now()}.png`;
+		await page.screenshot({ path: shot });
+		throw new Error(
+			`Send Ships never enabled. Clicked: ${clicked.join(', ')}. Screenshot: ${shot}`,
+			{
+				cause: e
+			}
+		);
+	}
 	await sendBtn.click();
 
 	await page.waitForFunction(() => fleetLayerChildren() > 0, undefined, { timeout: 15_000 });
 	return page.evaluate(() => fleetLayerChildren());
+}
+
+/**
+ * The building the `build` window queues. A Factory costs 32 production; with
+ * BENCHMARK_BUILDERS builders on the quick-start home planet (1 Factory) it
+ * takes several minutes at Normal speed, so it is still building long after
+ * the window (settle + PERF_WINDOW_MS) ends. Change only deliberately, like
+ * BENCHMARK_GAME.
+ */
+export const BENCHMARK_BUILD = 'Factory';
+
+/**
+ * Builders the `build` window assigns on the home planet before queueing. Its
+ * citizens all start as Farmers, and with no Builder the planet makes no
+ * production, so the build never advances ("999 years") and the bar is static.
+ * One Builder (of the two starting citizens) leaves one Farmer for food.
+ */
+export const BENCHMARK_BUILDERS = 1;
+
+/** The build queue's in-progress item; only the first item shows this label. */
+const buildInProgress = (page: Page) => page.getByText('Building...', { exact: true });
+
+/** The Builders row of Planet Overview's Worker Assignment (label, -, count, +). */
+const buildersRow = (page: Page) =>
+	page.getByText('Builders:', { exact: true }).locator('xpath=..');
+
+/**
+ * Moves citizens to Builders on the selected planet (Planet Overview open)
+ * with the Builders "+" button until it has `builders`, so it makes production.
+ */
+async function assignBuilders(page: Page, builders: number): Promise<void> {
+	const row = buildersRow(page);
+	const count = row.locator('span.w-6');
+	await count.waitFor({ timeout: 5_000 });
+	for (let i = Number(await count.textContent()); i < builders; i++) {
+		await row.getByRole('button', { name: '+', exact: true }).click();
+		// The server applies it and syncs the planet back
+		await expect(count).toHaveText(String(i + 1), { timeout: 5_000 });
+	}
+}
+
+/**
+ * Opens the Planets (Planet Overview) view, selects the home planet, assigns
+ * BENCHMARK_BUILDERS builders and queues BENCHMARK_BUILD, so the selected
+ * planet shows a build that advances every tick, with its progress bar.
+ * Returns whether a build is in progress afterwards.
+ */
+export async function queueBuild(page: Page, homePlanetId: number): Promise<boolean> {
+	// Leave the Fleet Command view first, so the planet click below only selects
+	// (the nav tabs are role="button" with the tab label as aria-label).
+	await page.getByRole('button', { name: 'Planets', exact: true }).first().click();
+	await selectHomePlanet(page, homePlanetId);
+	await assignBuilders(page, BENCHMARK_BUILDERS);
+
+	// The card is a div[role=button]; its tooltip trigger wraps it in a <button>.
+	const card = page.locator('div[role="button"]').filter({ hasText: BENCHMARK_BUILD }).first();
+	await card.waitFor({ timeout: 5_000 });
+	await card.click();
+	try {
+		await expect(buildInProgress(page)).toBeVisible({ timeout: 5_000 });
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * The in-progress build as shown: the bar's target fraction (from its inline
+ * style; see buildBarFraction()) and the "done/cost" and "N years" texts.
+ * Fields are null when the bar or text is not shown.
+ */
+export async function buildProgress(
+	page: Page
+): Promise<{ fraction: number | null; done: string | null; years: string | null }> {
+	const shown = await page.evaluate(() => {
+		const bar = document.querySelector<HTMLElement>('[data-build-bar]');
+		// Bar wrapper -> item card; its last row holds "done/cost" and "N years"
+		const card = bar?.closest('.rounded.border');
+		const texts = card
+			? Array.from(card.querySelectorAll(':scope > div:last-child > span')).map(
+					(s) => s.textContent?.trim() ?? ''
+				)
+			: [];
+		return {
+			transform: bar ? bar.style.transform : null,
+			done: texts[0] ?? null,
+			years: texts[1] ?? null
+		};
+	});
+	return {
+		fraction: shown.transform !== null ? buildBarFraction(shown.transform) : null,
+		done: shown.done,
+		years: shown.years
+	};
+}
+
+/** Whether the selected planet still shows a build in progress. */
+export async function buildStillInProgress(page: Page): Promise<boolean> {
+	return buildInProgress(page).isVisible();
 }
 
 async function stageTransform(page: Page) {

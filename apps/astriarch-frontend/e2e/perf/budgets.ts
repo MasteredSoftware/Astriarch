@@ -38,15 +38,20 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			why: 'No Konva nodes should be destroyed when nothing changes'
 		},
 		{
-			metric: 'rate.raf.canvas',
-			max: 0,
-			why: 'The canvas should not poll every frame; updates are event-driven',
-			absentMeansZero: true
+			metric: 'rate.canvas.update',
+			max: 6,
+			why: 'The canvas updates only when the model changes (the 5/s model tick plus the odd server update), never per frame'
 		},
 		{
 			metric: 'rate.store.clientGameModel.set',
 			max: 6,
 			why: 'The model should advance at the fixed tick (MS_PER_TICK = 200ms, 5/s) plus the odd server update, not every frame'
+		},
+		{
+			metric: 'rate.fleetAnimation.frame',
+			max: 0,
+			why: 'The fleet animation runs only while fleets are in transit',
+			absentMeansZero: true
 		},
 		{
 			metric: 'rate.konva.draw.galaxy',
@@ -58,13 +63,51 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			max: 0,
 			why: 'With no fleets in transit the fleet layer should not redraw'
 		},
-		{ metric: 'rate.konva.draw.ui', max: 0, why: 'The UI layer should redraw only on interaction' }
+		{ metric: 'rate.konva.draw.ui', max: 0, why: 'The UI layer should redraw only on interaction' },
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation with infinite iterations should run for the whole idle window: it makes the browser composite every frame (see snapshot.loopingAnimations for which)'
+		},
+		{
+			metric: 'rate.dom.transitionrun',
+			max: 1,
+			why: 'No CSS transition should restart on every update (e.g. per 5/s tick) when nothing changes; that animates every frame without looping',
+			absentMeansZero: true
+		},
+		{
+			metric: 'rate.dom.animationstart',
+			max: 1,
+			why: 'No CSS animation (including Svelte transitions) should restart on every update when nothing changes; that animates every frame without looping',
+			absentMeansZero: true
+		}
+	],
+	panzoom: [
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation with infinite iterations should run for the whole window (see snapshot.loopingAnimations for which)'
+		}
 	],
 	fleets: [
 		{
 			metric: 'konva.nodesCreatedPerSec',
 			max: 1,
 			why: 'Moving fleets should be updated in place, not recreated'
+		},
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation with infinite iterations should run for the whole window, e.g. on the open Fleet Command view (see snapshot.loopingAnimations)'
+		}
+	],
+	// The build bar transitions on every tick here, so rate.dom.transitionrun
+	// is recorded (and checked by buildProgressWarnings) but not budgeted.
+	build: [
+		{
+			metric: 'dom.runningAnimations',
+			max: 0,
+			why: 'No CSS/Web animation with infinite iterations should run for the whole window, e.g. on the Planet Overview with a build in progress (see snapshot.loopingAnimations)'
 		}
 	]
 };

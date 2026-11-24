@@ -31,7 +31,7 @@ describe('checkBudgets', () => {
 
 	it('uses the window budgets by default', () => {
 		expect(checkBudgets('idle', {})).toHaveLength(budgets.idle!.length);
-		expect(checkBudgets('panzoom', {})).toEqual([]);
+		expect(checkBudgets('panzoom', {})).toHaveLength(budgets.panzoom?.length ?? 0);
 	});
 
 	it('gives the model-set budget headroom for server pushes', () => {
@@ -39,5 +39,19 @@ describe('checkBudgets', () => {
 		expect(set?.max).toBe(6);
 		const [r] = checkBudgets('idle', { 'rate.store.clientGameModel.set': { median: 5.1 } }, [set!]);
 		expect(r!.status).toBe('pass');
+	});
+
+	it('fails a transition or animation restarted every tick at idle, and passes none', () => {
+		const list = budgets.idle!.filter((b) =>
+			['rate.dom.transitionrun', 'rate.dom.animationstart'].includes(b.metric)
+		);
+		expect(list).toHaveLength(2);
+		// The counters are absent when nothing started
+		expect(checkBudgets('idle', {}, list).map((r) => r.status)).toEqual(['pass', 'pass']);
+		const perTick = {
+			'rate.dom.transitionrun': { median: 5 },
+			'rate.dom.animationstart': { median: 5 }
+		};
+		expect(checkBudgets('idle', perTick, list).map((r) => r.status)).toEqual(['fail', 'fail']);
 	});
 });

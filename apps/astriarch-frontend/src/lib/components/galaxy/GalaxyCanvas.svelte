@@ -12,6 +12,8 @@
 	import Konva from 'konva';
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
+	import { keyFleets } from './fleetKeys';
+	import { shouldRunFleetAnimation } from './fleetMotion';
 	import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
 	import { perfCount, perfStart, perfEnd, perfRegisterKonvaStage } from '#lib/perf/perfMonitor.ts';
 
@@ -22,14 +24,32 @@
 	let uiLayer: Konva.Layer;
 
 	let drawnPlanets: Map<number, DrawnPlanet> = new Map();
+	// Keyed by keyFleets(): the fleet id, or `${id}#${n}` for a repeated id.
 	let drawnFleets: Map<string, DrawnFleet> = new Map();
+	// Duplicate fleet ids already reported, so the warning isn't logged every tick.
+	const warnedDuplicateFleetIds = new Set<number>();
 	let currentGrid: Grid | null = null;
+	// Stars, hex grid and hex labels; rebuilt only when the grid changes.
+	let backgroundGroup: Konva.Group | null = null;
 
-	// Spatial index for fast planet lookups by hex coordinates
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	let planetByHexCoords: Map<string, any> = new Map();
+	// Spatial index for fast planet lookups by hex coordinates.
+	// Rebuilt only when the set of planets changes (see planetSetKey).
+	type PlanetLocation = { id: number; boundingHexMidPoint: { x: number; y: number } };
+	let planetByHexCoords: Map<string, PlanetLocation> = new Map();
+	let planetSetKey = '';
 
-	let animationFrameId: number;
+	// Event-driven canvas updates: store changes mark the canvas dirty and a
+	// single update is coalesced into a microtask. Nothing polls.
+	let updateScheduled = false;
+	// Set first thing in onDestroy. `stage` stays assigned after stage.destroy(),
+	// so work queued before unmount (an update microtask, a resize) checks this.
+	let canvasDestroyed = false;
+	// Runs only while some fleet can move a visible distance before the next
+	// tick; see updateFleetAnimation().
+	let fleetAnimation: Konva.Animation | null = null;
+	// Smallest on-screen movement (px) worth redrawing a fleet for.
+	const FLEET_MIN_MOVE_SCREEN_PX = 0.5;
+	let unsubscribers: Array<() => void> = [];
 	let isInitialized = false;
 
 	// Track pending selection to retry if planet not ready
@@ -107,7 +127,10 @@
 
 	onMount(() => {
 		initializeCanvas();
-		startRenderLoop();
+		unsubscribers = [
+			clientGameModel.subscribe(scheduleCanvasUpdate),
+			gameGrid.subscribe(scheduleCanvasUpdate)
+		];
 		isInitialized = true;
 
 		// Handle any pending selection that came in before initialization
@@ -118,14 +141,28 @@
 	});
 
 	onDestroy(() => {
-		if (animationFrameId) {
-			cancelAnimationFrame(animationFrameId);
-		}
+		canvasDestroyed = true;
+		unsubscribers.forEach((unsubscribe) => unsubscribe());
+		unsubscribers = [];
+		fleetAnimation?.stop();
+		fleetAnimation = null;
+		cancelPendingPan();
+		stopPan();
+		window.removeEventListener('resize', handleResize);
 		// Clean up prospective travel line
 		if (prospectiveTravelLine) {
 			prospectiveTravelLine.destroy();
 			prospectiveTravelLine = null;
 		}
+		// Destroying each DrawnPlanet marks it destroyed, so an image that loads
+		// after unmount is ignored instead of being added to a destroyed group.
+		for (const drawnPlanet of drawnPlanets.values()) drawnPlanet.destroy();
+		drawnPlanets.clear();
+		for (const drawnFleet of drawnFleets.values()) drawnFleet.destroyFleet();
+		drawnFleets.clear();
+		planetByHexCoords.clear();
+		planetSetKey = '';
+		backgroundGroup = null;
 		stage?.destroy();
 	});
 
@@ -194,6 +231,11 @@
 
 		// Add zoom and pan event listeners
 		stage.on('wheel', handleZoom);
+		// A drag or zoom takes over from an in-progress auto-pan
+		stage.on('dragstart wheel', () => {
+			cancelPendingPan();
+			stopPan();
+		});
 		stage.on('mousemove', handleMouseMove);
 		stage.on('mouseout', handleMouseOut);
 
@@ -201,6 +243,11 @@
 	}
 
 	function createSpaceBackground(galaxyWidth = 1000, galaxyHeight = 800) {
+		backgroundGroup?.destroy();
+		backgroundGroup = new Konva.Group({ name: 'background', listening: false });
+		galaxyLayer.add(backgroundGroup);
+		backgroundGroup.moveToBottom();
+
 		// Create background that covers the entire galaxy area
 		const background = new Konva.Rect({
 			x: 0,
@@ -211,7 +258,7 @@
 			perfectDrawEnabled: false,
 			listening: false // Disable events
 		});
-		galaxyLayer.add(background);
+		backgroundGroup.add(background);
 
 		// Add hex grid if we have the grid data
 		if (currentGrid) {
@@ -231,12 +278,12 @@
 				shadowForStrokeEnabled: false,
 				listening: false // Disable events
 			});
-			galaxyLayer.add(star);
+			backgroundGroup.add(star);
 		}
 	}
 
 	function createHexGrid() {
-		if (!currentGrid) return;
+		if (!currentGrid || !backgroundGroup) return;
 
 		// Draw hex grid using the original hexagon point calculation
 
@@ -279,7 +326,7 @@
 				shadowForStrokeEnabled: false,
 				listening: false // Disable events
 			});
-			galaxyLayer.add(hexShape);
+			backgroundGroup.add(hexShape);
 
 			// Add hex labels for debugging (smaller and more subtle)
 			const label = new Konva.Text({
@@ -293,12 +340,12 @@
 				perfectDrawEnabled: false,
 				listening: false // Disable events
 			});
-			galaxyLayer.add(label);
+			backgroundGroup.add(label);
 		}
 	}
 
 	function handleResize() {
-		if (stage) {
+		if (stage && !canvasDestroyed) {
 			const oldWidth = stage.width();
 			const oldHeight = stage.height();
 			const newWidth = canvasWidth;
@@ -344,52 +391,51 @@
 		stage.position(newPos);
 
 		zoomLevel = newScale;
+		// Zooming in can make a slow fleet move visibly (start the animation);
+		// zooming out is handled by the frame callback, which stops it.
+		updateFleetAnimation();
 	}
 
-	function startRenderLoop() {
-		function render() {
-			perfCount('raf.canvas');
+	/**
+	 * Marks the canvas dirty. Called by store subscriptions; several changes in
+	 * the same task are coalesced into one update.
+	 */
+	function scheduleCanvasUpdate() {
+		if (updateScheduled || !stage || canvasDestroyed) return;
+		updateScheduled = true;
+		queueMicrotask(() => {
+			updateScheduled = false;
+			if (!stage || canvasDestroyed) return;
+			perfCount('canvas.update');
 			const t = perfStart();
 			updateGameObjects();
 			perfEnd('canvas.updateGameObjects', t);
-			animationFrameId = requestAnimationFrame(render);
-		}
-		render();
+		});
 	}
 
 	function updateGameObjects() {
+		// Rebuild the background only when the grid changes. It lives in its own
+		// group, so planets on the galaxy layer are kept.
+		const grid = $gameGrid;
+		if (grid && currentGrid !== grid) {
+			currentGrid = grid;
+			createSpaceBackground(GALAXY_WIDTH, GALAXY_HEIGHT);
+		}
+
 		if (!$clientGameModel) {
 			return;
 		}
 
-		// Update grid reference if changed
-		const grid = $gameGrid;
-		if (grid && currentGrid !== grid) {
-			currentGrid = grid;
-			console.log('Grid updated, recreating background');
-			// Recreate background with hex grid
-			galaxyLayer.destroyChildren();
-			const galaxyWidth = GALAXY_WIDTH;
-			const galaxyHeight = GALAXY_HEIGHT;
-			createSpaceBackground(galaxyWidth, galaxyHeight);
-		}
-
-		// Update planets
+		// Konva redraws a layer automatically when a node attribute changes, and
+		// the Drawn* classes only touch attributes whose values changed, so no
+		// explicit batchDraw() is needed (or wanted) here.
 		updatePlanets($clientGameModel);
-
-		// Update fleets
 		updateFleets($clientGameModel);
-
-		// Redraw layers if needed
-		galaxyLayer.batchDraw();
-		fleetLayer.batchDraw();
 	}
 
 	function updatePlanets(gameModel: ClientModelData) {
 		const allPlanetsToRender = new Set<number>();
-
-		// Clear and rebuild the spatial index
-		planetByHexCoords.clear();
+		const planetLocations: PlanetLocation[] = [];
 
 		// Track if any new planets were created
 		let newPlanetsCreated = false;
@@ -397,10 +443,7 @@
 		// First, render all owned planets (these have full PlanetData)
 		for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
 			allPlanetsToRender.add(planet.id);
-
-			// Add to spatial index
-			const hexKey = `${planet.boundingHexMidPoint.x},${planet.boundingHexMidPoint.y}`;
-			planetByHexCoords.set(hexKey, planet);
+			planetLocations.push(planet);
 
 			let drawnPlanet = drawnPlanets.get(planet.id);
 
@@ -421,10 +464,7 @@
 			if (allPlanetsToRender.has(clientPlanet.id)) continue;
 
 			allPlanetsToRender.add(clientPlanet.id);
-
-			// Add to spatial index
-			const hexKey = `${clientPlanet.boundingHexMidPoint.x},${clientPlanet.boundingHexMidPoint.y}`;
-			planetByHexCoords.set(hexKey, clientPlanet);
+			planetLocations.push(clientPlanet);
 
 			let drawnPlanet = drawnPlanets.get(clientPlanet.id);
 
@@ -478,10 +518,21 @@
 		// Clean up planets that are no longer visible
 		for (const [planetId, drawnPlanet] of drawnPlanets.entries()) {
 			if (!allPlanetsToRender.has(planetId)) {
-				drawnPlanet.group.remove();
-				drawnPlanet.group.destroy();
+				drawnPlanet.destroy();
 				drawnPlanets.delete(planetId);
 			}
+		}
+
+		// Rebuild the spatial index only when the set of planets changes
+		const setKey = planetLocations.map((p) => p.id).join(',');
+		if (setKey !== planetSetKey) {
+			planetSetKey = setKey;
+			planetByHexCoords = new Map(
+				planetLocations.map((p) => [
+					`${p.boundingHexMidPoint.x},${p.boundingHexMidPoint.y}`,
+					{ id: p.id, boundingHexMidPoint: { ...p.boundingHexMidPoint } }
+				])
+			);
 		}
 
 		// If new planets were created and we have a selected planet, make sure it's visually selected
@@ -491,32 +542,85 @@
 	}
 
 	function updateFleets(gameModel: ClientModelData) {
-		// Clear all existing fleets and remake them from current game state
-		// This matches the approach used in the old system and ensures animations
-		// continue properly after game state refreshes
-		for (const drawnFleet of drawnFleets.values()) {
-			drawnFleet.group.remove();
-			drawnFleet.destroyFleet();
+		// Keep one DrawnFleet per fleet and update it in place. Fleet ids are
+		// player-scoped, and only the main player's fleets are drawn. Ids can
+		// collide (the client and server fleet id counters can diverge), so a
+		// repeated id gets a derived key instead of hiding a fleet.
+		const { keyed, duplicateIds } = keyFleets(gameModel.mainPlayer.fleetsInTransit);
+		for (const id of duplicateIds) {
+			if (warnedDuplicateFleetIds.has(id)) continue;
+			warnedDuplicateFleetIds.add(id);
+			console.warn(`GalaxyCanvas: duplicate fleet id ${id}; drawing each fleet with its own key`);
 		}
-		drawnFleets.clear();
 
-		// Create drawn fleets for all fleets in transit
-		gameModel.mainPlayer.fleetsInTransit.forEach((fleet, index) => {
-			const fleetId = index.toString(); // Simple index-based ID
-			const drawnFleet = new DrawnFleet(fleet, gameModel);
-			drawnFleets.set(fleetId, drawnFleet);
-			fleetLayer.add(drawnFleet.group);
+		const seen = new Set<string>();
+		for (const [key, fleet] of keyed) {
+			seen.add(key);
+			const drawnFleet = drawnFleets.get(key);
+			if (drawnFleet) {
+				drawnFleet.update(gameModel, fleet);
+			} else {
+				const created = new DrawnFleet(fleet, gameModel);
+				drawnFleets.set(key, created);
+				fleetLayer.add(created.group);
+			}
+		}
+
+		for (const [key, drawnFleet] of drawnFleets) {
+			if (!seen.has(key)) {
+				drawnFleet.destroyFleet();
+				drawnFleets.delete(key);
+			}
+		}
+
+		updateFleetAnimation();
+	}
+
+	/** FLEET_MIN_MOVE_SCREEN_PX in fleet-layer pixels at the current zoom. */
+	function fleetMinLayerPx(): number {
+		return FLEET_MIN_MOVE_SCREEN_PX / stage.scaleX();
+	}
+
+	/**
+	 * The model advances every MS_PER_TICK. While some fleet can move a visible
+	 * distance, a Konva.Animation moves fleets smoothly between ticks. "Visible"
+	 * means the distance it can still move from where it is drawn before the
+	 * next tick (speed x MS_PER_TICK, less what it already moved this tick, x px
+	 * per parsec x zoom) is at least FLEET_MIN_MOVE_SCREEN_PX on screen; each
+	 * tick resets the drawn position, so a fleet that can't get that far within
+	 * one tick would never draw (see shouldRunFleetAnimation()). So it doesn't
+	 * run when no fleet is in transit, all await conflict resolution, no model
+	 * update came for MAX_EXTRAPOLATION_MS (game paused, server late), or every
+	 * fleet is too slow at this zoom to move on screen within a tick (Normal
+	 * speed, zoomed out). It stops itself from the frame callback, including for
+	 * the rest of a tick once no fleet can draw again before it; the next model
+	 * update or wheel zoom calls this again and restarts it, so nothing runs per
+	 * frame that can't draw. Each frame it only computes positions; a fleet's
+	 * nodes change (and the fleet layer redraws) only when it moved at least
+	 * FLEET_MIN_MOVE_SCREEN_PX on screen.
+	 */
+	function updateFleetAnimation() {
+		if (!stage) return;
+		if (!shouldRunFleetAnimation(drawnFleets.values(), performance.now(), fleetMinLayerPx())) {
+			fleetAnimation?.stop();
+			return;
+		}
+		fleetAnimation ??= new Konva.Animation(() => {
+			perfCount('fleetAnimation.frame');
+			const now = performance.now();
+			const minLayerPx = fleetMinLayerPx();
+			for (const drawnFleet of drawnFleets.values()) {
+				drawnFleet.animate(now, minLayerPx);
+			}
+			// No fleet can move a visible distance again before the next tick,
+			// which redraws every fleet at its model position, so stopping loses nothing
+			if (!shouldRunFleetAnimation(drawnFleets.values(), now, minLayerPx)) {
+				fleetAnimation?.stop();
+			}
+			// Moved fleets already requested a redraw via Konva's auto-draw
+			return false;
 		});
-
-		// TODO: Add support for outgoing fleets from owned planets
-		// for (const planet of Object.values(gameModel.mainPlayerOwnedPlanets)) {
-		//     planet.outgoingFleets.forEach((fleet, index) => {
-		//         const fleetId = `outgoing_${planet.id}_${index}`;
-		//         const drawnFleet = new DrawnFleet(fleet, gameModel);
-		//         drawnFleets.set(fleetId, drawnFleet);
-		//         fleetLayer.add(drawnFleet.group);
-		//     });
-		// }
+		if (!fleetAnimation.isRunning()) fleetAnimation.start();
 	}
 
 	// Handle mouse movement for prospective travel line preview during destination selection
@@ -540,7 +644,7 @@
 		if (!layerPos) return;
 
 		// Find the closest planet to the mouse position
-		let closestPlanet = null;
+		let closestPlanet: PlanetLocation | null = null;
 		let closestDistance = Infinity;
 
 		// Check all planets in the spatial index
@@ -623,9 +727,6 @@
 				prospectiveTravelLine.animateIn(0.2);
 			}
 		}
-
-		// Redraw the layer to show the line
-		uiLayer.batchDraw();
 	}
 
 	// Show prospective travel line for confirmed destination selection
@@ -689,9 +790,6 @@
 
 		// Reset hover state since this is showing confirmed destination
 		hoveredDestinationPlanetId = null;
-
-		// Redraw the layer to show the line
-		uiLayer.batchDraw();
 	}
 
 	// Handle galaxy interaction with hex-based planet selection
@@ -790,8 +888,37 @@
 		});
 	}
 
+	/** rAF id of a pan waiting for the selection's re-render to paint. */
+	let pendingPanFrame: number | null = null;
+
+	function cancelPendingPan() {
+		if (pendingPanFrame !== null) {
+			cancelAnimationFrame(pendingPanFrame);
+			pendingPanFrame = null;
+		}
+	}
+
+	/**
+	 * Pan to a planet once the selection's re-render has painted.
+	 *
+	 * Selecting a planet re-renders the side views (Fleet Command redraws every
+	 * ShipCard), which can block the main thread for a few hundred ms. The pan is
+	 * a time-based tween, so starting it in the same frame made it freeze and then
+	 * jump ahead mid-motion. Waiting two frames lets that work land before the
+	 * galaxy starts moving. A newer selection replaces a pan still waiting.
+	 */
 	function zoomToPlanet(drawnPlanet: DrawnPlanet) {
-		if (!stage) return;
+		cancelPendingPan();
+		pendingPanFrame = requestAnimationFrame(() => {
+			pendingPanFrame = requestAnimationFrame(() => {
+				pendingPanFrame = null;
+				startPanToPlanet(drawnPlanet);
+			});
+		});
+	}
+
+	function startPanToPlanet(drawnPlanet: DrawnPlanet) {
+		if (!stage || canvasDestroyed) return;
 
 		const planetData = drawnPlanet.getPlanetData();
 		const planetWorldPos = {
@@ -821,14 +948,46 @@
 		if (Math.abs(deltaX) > 50 || Math.abs(deltaY) > 50) {
 			console.log('Zooming to planet:', planetData.name, 'at position:', planetWorldPos);
 
-			// Use Konva's built-in animation
-			stage.to({
-				x: targetStageX,
-				y: targetStageY,
-				duration: 0.8, // 800ms animation
-				easing: Konva.Easings.EaseOut
-			});
+			animatePan(currentPos, { x: targetStageX, y: targetStageY });
 		}
+	}
+
+	const PAN_DURATION_MS = 800;
+	/** Most a single frame may advance the pan; a longer stall pauses it instead. */
+	const PAN_MAX_STEP_MS = 1000 / 30;
+	let panAnimation: Konva.Animation | null = null;
+
+	function stopPan() {
+		panAnimation?.stop();
+		panAnimation = null;
+	}
+
+	/**
+	 * Ease the stage from `from` to `to`, advancing by frame rather than by
+	 * wall-clock time. Konva's tween (stage.to) is time-based, so a busy main
+	 * thread made the galaxy freeze and then jump partway across the screen.
+	 */
+	function animatePan(from: { x: number; y: number }, to: { x: number; y: number }) {
+		stopPan();
+		let elapsed = 0;
+		const anim = new Konva.Animation((frame) => {
+			elapsed = Math.min(
+				PAN_DURATION_MS,
+				elapsed + Math.min(frame?.timeDiff ?? 0, PAN_MAX_STEP_MS)
+			);
+			const t = elapsed / PAN_DURATION_MS;
+			const eased = 1 - (1 - t) * (1 - t); // ease-out
+			stage.position({
+				x: from.x + (to.x - from.x) * eased,
+				y: from.y + (to.y - from.y) * eased
+			});
+			if (t >= 1) {
+				anim.stop();
+				if (panAnimation === anim) panAnimation = null;
+			}
+		}, stage.getLayers());
+		panAnimation = anim;
+		anim.start();
 	}
 </script>
 

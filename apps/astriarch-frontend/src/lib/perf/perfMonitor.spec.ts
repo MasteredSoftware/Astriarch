@@ -151,6 +151,131 @@ describe('perfMonitor', () => {
 		expect(snap.timings['store.model.fanout']?.count).toBe(2);
 	});
 
+	it('reports running CSS animations in the snapshot', async () => {
+		await loadPerf('?perf=1');
+		class CSSAnimation {
+			constructor(
+				public playState: string,
+				public animationName: string
+			) {}
+			effect = {
+				target: { tagName: 'DIV', getAttribute: () => 'scan-line absolute' }
+			};
+		}
+		vi.stubGlobal('document', {
+			getAnimations: () => [
+				new CSSAnimation('running', 'scan'),
+				new CSSAnimation('finished', 'fade')
+			]
+		});
+		expect(window.__perf!.snapshot().runningAnimations).toEqual([
+			'CSSAnimation scan on div.scan-line'
+		]);
+	});
+
+	describe('looping animations', () => {
+		class CSSAnimation {
+			constructor(
+				public animationName: string,
+				public iterations: number,
+				public playState = 'running'
+			) {}
+			effect = {
+				target: { tagName: 'DIV', getAttribute: () => 'scan-line absolute' },
+				getComputedTiming: () => ({ iterations: this.iterations })
+			};
+		}
+
+		it('counts only infinite animations running at both window start and snapshot', async () => {
+			await loadPerf('?perf=1');
+			const loop = new CSSAnimation('dots', Infinity);
+			const finite = new CSSAnimation('pulse', 2);
+			const ended = new CSSAnimation('fade', Infinity);
+			let animations = [loop, finite, ended];
+			vi.stubGlobal('document', { getAnimations: () => animations });
+			window.__perf!.reset();
+
+			// An infinite hover loop starts mid-window; the infinite fade finishes
+			const lateLoop = new CSSAnimation('hover-scan', Infinity);
+			ended.playState = 'finished';
+			animations = [loop, finite, ended, lateLoop];
+
+			const snap = window.__perf!.snapshot();
+			expect(snap.loopingAnimations).toEqual(['CSSAnimation dots on div.scan-line']);
+			// The raw list keeps every running animation, for diagnosis
+			expect(snap.runningAnimations).toEqual([
+				'CSSAnimation dots on div.scan-line',
+				'CSSAnimation pulse on div.scan-line',
+				'CSSAnimation hover-scan on div.scan-line'
+			]);
+		});
+
+		it('does not count an animation without computed timing as looping', async () => {
+			await loadPerf('?perf=1');
+			const noTiming = { ...new CSSAnimation('x', Infinity), effect: null };
+			vi.stubGlobal('document', { getAnimations: () => [noTiming] });
+			window.__perf!.reset();
+			expect(window.__perf!.snapshot().loopingAnimations).toEqual([]);
+		});
+
+		it('reports null for both lists where getAnimations is unsupported', async () => {
+			await loadPerf('?perf=1');
+			vi.stubGlobal('document', {});
+			window.__perf!.reset();
+			const snap = window.__perf!.snapshot();
+			expect(snap.runningAnimations).toBeNull();
+			expect(snap.loopingAnimations).toBeNull();
+		});
+	});
+
+	describe('animation starts', () => {
+		function fakeDocument() {
+			const listeners: Record<string, { fn: () => void; options: unknown }[]> = {};
+			const addEventListener = vi.fn((type: string, fn: () => void, options: unknown) => {
+				(listeners[type] ??= []).push({ fn, options });
+			});
+			vi.stubGlobal('document', { addEventListener });
+			const fire = (type: string) => {
+				for (const { fn } of listeners[type] ?? []) fn();
+			};
+			return { listeners, addEventListener, fire };
+		}
+
+		it('counts transitionrun and animationstart events as counters', async () => {
+			const doc = fakeDocument();
+			await loadPerf('?perf=1');
+			window.__perf!.reset();
+			doc.fire('transitionrun');
+			doc.fire('transitionrun');
+			doc.fire('animationstart');
+
+			const snap = window.__perf!.snapshot();
+			expect(snap.counters['dom.transitionrun']).toBe(2);
+			expect(snap.counters['dom.animationstart']).toBe(1);
+			expect(snap.ratesPerSec['dom.transitionrun']).toBeGreaterThan(0);
+			// Capture listeners on the document, so starts anywhere are seen
+			for (const type of ['transitionrun', 'animationstart']) {
+				expect(doc.listeners[type]).toHaveLength(1);
+				expect(doc.listeners[type]![0]!.options).toMatchObject({ capture: true });
+			}
+		});
+
+		it('leaves the counters absent while nothing starts', async () => {
+			fakeDocument();
+			await loadPerf('?perf=1');
+			window.__perf!.reset();
+			const snap = window.__perf!.snapshot();
+			expect(snap.counters['dom.transitionrun']).toBeUndefined();
+			expect(snap.counters['dom.animationstart']).toBeUndefined();
+		});
+
+		it('adds no listeners without ?perf=1', async () => {
+			const doc = fakeDocument();
+			await loadPerf('');
+			expect(doc.addEventListener).not.toHaveBeenCalled();
+		});
+	});
+
 	it('reset clears the previous window', async () => {
 		const perf = await loadPerf('?perf=1');
 		perf.perfCount('a');

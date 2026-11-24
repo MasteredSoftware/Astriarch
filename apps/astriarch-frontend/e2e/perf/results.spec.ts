@@ -1,10 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
+	buildBarFraction,
+	buildProgressWarnings,
 	environmentWarnings,
 	flattenMetrics,
 	isCleanProbe,
+	parseWindowFilter,
 	summarizeRuns,
 	resultFileName,
+	tickRateWarning,
 	type EnvProbe,
 	type PerfResultFile,
 	type WindowEnv,
@@ -51,6 +55,8 @@ function snapshot(overrides: Partial<PerfSnapshot> = {}): PerfSnapshot {
 		},
 		heapUsedBytes: 10 * 1024 * 1024,
 		longTasks: { count: 2, totalMs: 120 },
+		runningAnimations: [],
+		loopingAnimations: [],
 		devicePixelRatio: 2,
 		userAgent: 'test',
 		...overrides
@@ -115,6 +121,28 @@ describe('flattenMetrics', () => {
 		);
 		expect(m['rendered.fps']).toBe(0);
 		expect(m['rendered.p50Ms']).toBeUndefined();
+	});
+
+	it('budgets only looping animations as dom.runningAnimations', () => {
+		const m = flattenMetrics(
+			cpu,
+			snapshot({
+				runningAnimations: ['CSSAnimation dots on div.dot', 'CSSTransition opacity on div.card'],
+				loopingAnimations: ['CSSAnimation dots on div.dot']
+			}),
+			null
+		);
+		expect(m['dom.runningAnimations']).toBe(1);
+		expect(flattenMetrics(cpu, snapshot(), null)['dom.runningAnimations']).toBe(0);
+	});
+
+	it('omits dom.runningAnimations when getAnimations is unsupported or the file predates it', () => {
+		const unsupported = snapshot({ runningAnimations: null, loopingAnimations: null });
+		expect(flattenMetrics(cpu, unsupported, null)['dom.runningAnimations']).toBeUndefined();
+
+		const older = snapshot({ runningAnimations: ['CSSAnimation dots on div.dot'] });
+		delete (older as Partial<PerfSnapshot>).loopingAnimations;
+		expect(flattenMetrics(cpu, older, null)['dom.runningAnimations']).toBeUndefined();
 	});
 
 	it('omits Konva churn when no stage is registered', () => {
@@ -281,6 +309,80 @@ function run(metrics: Record<string, number>): WindowRun {
 		metrics
 	};
 }
+
+describe('parseWindowFilter', () => {
+	it('selects every window when unset or empty', () => {
+		const all = ['idle', 'panzoom', 'fleets', 'build'];
+		expect([...parseWindowFilter(undefined)]).toEqual(all);
+		expect([...parseWindowFilter('')]).toEqual(all);
+		expect([...parseWindowFilter(' , ')]).toEqual(all);
+	});
+
+	it('selects the listed windows', () => {
+		expect([...parseWindowFilter('build')]).toEqual(['build']);
+		expect([...parseWindowFilter(' idle, build ')]).toEqual(['idle', 'build']);
+	});
+
+	it('rejects an unknown window', () => {
+		expect(() => parseWindowFilter('idle,bild')).toThrow(/unknown window\(s\) bild/);
+	});
+});
+
+describe('tickRateWarning', () => {
+	it('warns that the loop did not tick when the counter is absent or 0', () => {
+		expect(tickRateWarning(undefined)).toMatch(/did not tick/);
+		expect(tickRateWarning(0)).toMatch(/did not tick/);
+	});
+
+	it('warns about throttling below 4/s', () => {
+		expect(tickRateWarning(3)).toMatch(/ticked 3\/s .*throttling/);
+		expect(tickRateWarning(3.99)).not.toBeNull();
+	});
+
+	it('does not warn at the expected rate', () => {
+		expect(tickRateWarning(4)).toBeNull();
+		expect(tickRateWarning(5)).toBeNull();
+	});
+});
+
+describe('buildBarFraction', () => {
+	it('reads scaleX() from the transform', () => {
+		expect(buildBarFraction('scaleX(0.0123)')).toBe(0.0123);
+		expect(buildBarFraction('scaleX(0)')).toBe(0);
+		expect(buildBarFraction('scaleX(1e-7)')).toBe(1e-7);
+	});
+
+	it('is null without a scaleX()', () => {
+		expect(buildBarFraction('')).toBeNull();
+		expect(buildBarFraction('none')).toBeNull();
+	});
+});
+
+describe('buildProgressWarnings', () => {
+	const ok = { startFraction: 0.01, endFraction: 0.02, transitionRunRate: 5 };
+
+	it('does not warn when the bar advanced and transitions ran', () => {
+		expect(buildProgressWarnings(ok)).toEqual([]);
+	});
+
+	it('warns when progress did not advance', () => {
+		const w = buildProgressWarnings({ ...ok, startFraction: 0, endFraction: 0 });
+		expect(w).toHaveLength(1);
+		expect(w[0]).toMatch(/build progress did not advance during the window \(0 → 0\)/);
+		expect(buildProgressWarnings({ ...ok, endFraction: 0.005 })[0]).toMatch(/did not advance/);
+	});
+
+	it('warns when the bar could not be read', () => {
+		expect(buildProgressWarnings({ ...ok, startFraction: null })[0]).toMatch(/at window start/);
+		expect(buildProgressWarnings({ ...ok, endFraction: null })[0]).toMatch(/at window end/);
+	});
+
+	it('warns when no bar transitions ran', () => {
+		const w = buildProgressWarnings({ ...ok, transitionRunRate: undefined });
+		expect(w).toEqual([expect.stringMatching(/rate\.dom\.transitionrun is 0\/s/)]);
+		expect(buildProgressWarnings({ ...ok, transitionRunRate: 0.5 })).toHaveLength(1);
+	});
+});
 
 describe('summarizeRuns', () => {
 	it('takes the middle value of an odd number of runs', () => {

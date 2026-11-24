@@ -112,6 +112,15 @@ export class DrawnTravelLine {
 	 * Update the travel line endpoints
 	 */
 	public updateEndpoints(fromX: number, fromY: number, toX: number, toY: number) {
+		// Setting points always triggers a redraw (arrays aren't compared), so skip no-ops
+		if (
+			this.fromPoint.x === fromX &&
+			this.fromPoint.y === fromY &&
+			this.toPoint.x === toX &&
+			this.toPoint.y === toY
+		) {
+			return;
+		}
 		this.fromPoint = { x: fromX, y: fromY };
 		this.toPoint = { x: toX, y: toY };
 		this.updatePoints();

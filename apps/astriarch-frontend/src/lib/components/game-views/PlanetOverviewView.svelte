@@ -12,6 +12,7 @@
 		selectedPlanetId
 	} from '#lib/stores/gameStore.ts';
 	import { layoutMode } from '#lib/stores/layoutStore.ts';
+	import { buildBarKey, tickProgress } from './tickProgress.ts';
 	import { webSocketService } from '#lib/services/websocket.ts';
 	import {
 		GameTools,
@@ -922,19 +923,25 @@
 								</div>
 
 								{#if index === 0}
-									<!-- Progress bar for current item -->
+									<!-- Progress bar for current item. The model advances at the
+									     fixed tick (MS_PER_TICK); tickProgress slides the bar to each
+									     tick's value with a one-tick scaleX transition, so it moves at
+									     a constant rate and never slides backwards. The transition
+									     costs CPU while a build is on screen (measured in the perf
+									     benchmark's build window); see tickProgress.ts. -->
 									<div class="mb-2">
-										<div class="h-1.5 w-full rounded-full bg-slate-700">
+										<div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
 											<div
-												class="h-1.5 rounded-full {item.itemType ===
+												class="h-1.5 w-full origin-left {item.itemType ===
 												PlanetProductionItemType.PlanetImprovementToDestroy
 													? 'bg-red-500'
 													: 'bg-cyan-500'}"
-												style="width: {Math.min(
-													100,
-													((item.productionCostComplete || 0) / (item.baseProductionCost || 1)) *
-														100
-												)}%"
+												data-build-bar
+												use:tickProgress={{
+													fraction:
+														(item.productionCostComplete || 0) / (item.baseProductionCost || 1),
+													key: buildBarKey($selectedPlanet.id, item)
+												}}
 											></div>
 										</div>
 									</div>

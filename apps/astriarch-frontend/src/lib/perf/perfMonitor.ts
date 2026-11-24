@@ -34,6 +34,17 @@
  *               stale or partly hooked stage reads as unregistered (budgets
  *               then report MISSING rather than a false 0).
  *   - heap / longTasks: where the browser supports them (Chromium)
+ *   - running CSS/Web animations when the snapshot is taken, and the looping
+ *     ones among them: infinite iterations and already running when the window
+ *     started (one makes the browser composite every frame even when nothing
+ *     else changes). Both are null where document.getAnimations is unsupported.
+ *   - counters `dom.transitionrun` / `dom.animationstart`: CSS transitions and
+ *     CSS animations (including Svelte transitions, which are CSS keyframes)
+ *     started anywhere in the document, counted from capture listeners. They
+ *     catch a finite animation that restarts on every update (e.g. a transition
+ *     re-triggered by each 5/s tick), which the snapshot-time lists above miss.
+ *     Web Animations started with element.animate() fire neither event, so
+ *     they are not counted.
  */
 
 import type Konva from 'konva';
@@ -113,6 +124,19 @@ export interface PerfSnapshot {
 	};
 	heapUsedBytes: number | null;
 	longTasks: { count: number; totalMs: number } | null;
+	/**
+	 * CSS/Web animations running at snapshot time, e.g. "CSSAnimation scan on
+	 * div.scan-line", including finite ones such as a transition. For diagnosis.
+	 * Null where document.getAnimations is unsupported.
+	 */
+	runningAnimations: string[] | null;
+	/**
+	 * The running animations that loop: infinite iterations, and running both
+	 * when the window started (reset) and at snapshot time, so a finite pulse or
+	 * a hover loop that began mid-window is not counted. This is what the
+	 * `dom.runningAnimations` budget checks. Null where unsupported.
+	 */
+	loopingAnimations: string[] | null;
 	devicePixelRatio: number;
 	userAgent: string;
 }
@@ -154,6 +178,8 @@ let renderedFrameRafId: number | null = null;
 let konvaNodesDestroyed = 0;
 let longTaskCount = 0;
 let longTaskTotalMs = 0;
+/** Animations running at window start; null where getAnimations is unsupported. */
+let animationsAtStart: WeakSet<Animation> | null = null;
 
 let konvaModule: KonvaModule | null = null;
 let konvaStage: Konva.Stage | null = null;
@@ -386,6 +412,7 @@ function reset(options: ResetOptions = {}): void {
 	longTaskTotalMs = 0;
 	konvaStartId = probeKonvaId();
 	probesSinceStart = 0;
+	animationsAtStart = recordAnimationsAtStart();
 	stopFrameSampling();
 	if (options.sampleFrames) {
 		frameRafId = requestAnimationFrame(frameTick);
@@ -474,12 +501,60 @@ function snapshot(): PerfSnapshot {
 		longTasks: longTasksSupported
 			? { count: longTaskCount, totalMs: round(longTaskTotalMs) }
 			: null,
+		...describeAnimations(),
 		devicePixelRatio: window.devicePixelRatio,
 		userAgent: navigator.userAgent
 	};
 }
 
 let longTasksSupported = false;
+
+/** Running document animations, or null where getAnimations is unsupported. */
+function runningAnimations(): Animation[] | null {
+	if (typeof document === 'undefined' || typeof document.getAnimations !== 'function') return null;
+	return document.getAnimations().filter((a) => a.playState === 'running');
+}
+
+function recordAnimationsAtStart(): WeakSet<Animation> | null {
+	const running = runningAnimations();
+	return running ? new WeakSet(running) : null;
+}
+
+function isInfinite(a: Animation): boolean {
+	const effect = a.effect as { getComputedTiming?: () => ComputedEffectTiming } | null;
+	return effect?.getComputedTiming?.().iterations === Infinity;
+}
+
+function describeAnimation(a: Animation): string {
+	const name = (a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty ?? a.id;
+	const target = (a.effect as KeyframeEffect | null)?.target;
+	const cls = target ? String(target.getAttribute('class') ?? '').split(' ')[0] : '';
+	return `${a.constructor.name} ${name} on ${target?.tagName.toLowerCase() ?? '?'}${cls ? '.' + cls : ''}`;
+}
+
+function describeAnimations(): Pick<PerfSnapshot, 'runningAnimations' | 'loopingAnimations'> {
+	const running = runningAnimations();
+	if (!running) return { runningAnimations: null, loopingAnimations: null };
+	const atStart = animationsAtStart;
+	return {
+		runningAnimations: running.map(describeAnimation),
+		loopingAnimations: running
+			.filter((a) => isInfinite(a) && (atStart?.has(a) ?? false))
+			.map(describeAnimation)
+	};
+}
+
+/**
+ * Counts every CSS transition and CSS animation start in the document. Both
+ * events bubble, so capture listeners on the document see them all, and they
+ * fire only when something starts: nothing runs while nothing animates.
+ */
+function listenForAnimationStarts(): void {
+	if (typeof document === 'undefined' || typeof document.addEventListener !== 'function') return;
+	const options = { capture: true, passive: true };
+	document.addEventListener('transitionrun', () => perfCount('dom.transitionrun'), options);
+	document.addEventListener('animationstart', () => perfCount('dom.animationstart'), options);
+}
 
 function init(): void {
 	if (!perfEnabled || window.__perf) return;
@@ -496,7 +571,9 @@ function init(): void {
 	} catch {
 		longTasksSupported = false;
 	}
+	listenForAnimationStarts();
 	windowStart = performance.now();
+	animationsAtStart = recordAnimationsAtStart();
 	window.__perf = { enabled: true, reset, snapshot };
 	console.info('[perf] instrumentation enabled; use window.__perf.reset()/snapshot()');
 }

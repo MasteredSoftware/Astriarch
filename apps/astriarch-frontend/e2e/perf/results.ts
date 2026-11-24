@@ -10,7 +10,29 @@ import path from 'node:path';
 import type { CpuDelta } from './cpuSampler';
 import type { PerfSnapshot } from '../../src/lib/perf/perfMonitor';
 
-export type WindowName = 'idle' | 'panzoom' | 'fleets';
+/** The measured windows, in the order a repetition runs them. */
+export const WINDOW_NAMES = ['idle', 'panzoom', 'fleets', 'build'] as const;
+export type WindowName = (typeof WINDOW_NAMES)[number];
+
+/**
+ * The windows to measure, from PERF_WINDOWS: a comma-separated list of window
+ * names (e.g. `build` or `idle,build`). Unset or empty means all of them.
+ * Throws on an unknown name, so a typo can't silently measure nothing.
+ */
+export function parseWindowFilter(value: string | undefined): Set<WindowName> {
+	const names = (value ?? '')
+		.split(',')
+		.map((n) => n.trim())
+		.filter(Boolean);
+	if (names.length === 0) return new Set(WINDOW_NAMES);
+	const unknown = names.filter((n) => !(WINDOW_NAMES as readonly string[]).includes(n));
+	if (unknown.length > 0) {
+		throw new Error(
+			`PERF_WINDOWS: unknown window(s) ${unknown.join(', ')}; expected a comma list of ${WINDOW_NAMES.join(', ')}`
+		);
+	}
+	return new Set(names as WindowName[]);
+}
 
 /**
  * A short harness-side rAF probe taken just before and just after a window is
@@ -163,6 +185,70 @@ export function environmentWarnings(env: WindowEnv, referenceHz: number | null):
 	return warnings;
 }
 
+/** The game loop's fixed tick rate (1000 / MS_PER_TICK). */
+export const EXPECTED_TICK_RATE = 5;
+
+/**
+ * A warning when the game loop ticked well below EXPECTED_TICK_RATE during a
+ * window, else null. `rate` is ratesPerSec['gameLoop.tick'], which is absent
+ * when the loop never ticked, so absent counts as 0 (the worst case).
+ */
+export function tickRateWarning(rate: number | undefined): string | null {
+	const ticks = rate ?? 0;
+	if (ticks >= 4) return null;
+	if (ticks === 0) {
+		return `game loop did not tick (expected ${EXPECTED_TICK_RATE}/s): it stalled or stopped, or the browser is suspending timers`;
+	}
+	return `game loop ticked ${ticks}/s (expected ${EXPECTED_TICK_RATE}): the browser may be throttling a hidden window`;
+}
+
+/**
+ * The build progress bar's target fraction (0..1) from its inline style, as
+ * set by the tickProgress action: `transform: scaleX(f)`. The inline value is
+ * where the bar is heading, not the mid-transition position. Null when it
+ * can't be read.
+ */
+export function buildBarFraction(transform: string): number | null {
+	const scale = /scaleX\(\s*([-\d.e+]+)\s*\)/.exec(transform);
+	return scale ? Number(scale[1]) : null;
+}
+
+/** Below this `rate.dom.transitionrun` the bar measured no transitions. */
+const MIN_BUILD_BAR_TRANSITIONS_PER_SEC = 1;
+
+/**
+ * Checks that the `build` window measured a bar that moved: the progress
+ * fraction rose between the window's start and end, and its per-tick
+ * transitions actually ran. A planet with no production per turn shows a
+ * static bar, which would measure nothing.
+ */
+export function buildProgressWarnings(opts: {
+	startFraction: number | null;
+	endFraction: number | null;
+	transitionRunRate: number | undefined;
+}): string[] {
+	const { startFraction, endFraction, transitionRunRate } = opts;
+	const warnings: string[] = [];
+	if (startFraction === null || endFraction === null) {
+		warnings.push(
+			`build progress bar not readable at window ${startFraction === null ? 'start' : 'end'}`
+		);
+	} else if (!(endFraction > startFraction)) {
+		warnings.push(
+			`build progress did not advance during the window (${startFraction} → ${endFraction}): ` +
+				'the bar was static (does the planet make any production?)'
+		);
+	}
+	const rate = transitionRunRate ?? 0;
+	if (rate < MIN_BUILD_BAR_TRANSITIONS_PER_SEC) {
+		warnings.push(
+			`rate.dom.transitionrun is ${rate}/s for the build bar ` +
+				`(expected about ${EXPECTED_TICK_RATE}/s): no per-tick bar transition was measured`
+		);
+	}
+	return warnings;
+}
+
 /**
  * Flattens one window run into `name -> number`. Naming:
  *   cpu.*        % of one core (lower is better)
@@ -236,6 +322,13 @@ export function flattenMetrics(
 	if (perf.konva.nodeCount !== null) m['konva.nodeCount'] = perf.konva.nodeCount;
 
 	if (perf.heapUsedBytes !== null) m['heap.usedMB'] = round(perf.heapUsedBytes / 1024 / 1024, 1);
+	// Looping animations only (infinite, running for the whole window); finite
+	// ones are in perf.runningAnimations for diagnosis. Left out where
+	// getAnimations is unsupported, and in older result files, so a budget on
+	// it reports MISSING rather than a 0 that was never measured.
+	if (perf.loopingAnimations != null) {
+		m['dom.runningAnimations'] = perf.loopingAnimations.length;
+	}
 	if (perf.longTasks) {
 		m['longTasks.perSec'] = round(perf.longTasks.count / elapsedSec);
 		m['longTasks.msPerSec'] = round(perf.longTasks.totalMs / elapsedSec);
