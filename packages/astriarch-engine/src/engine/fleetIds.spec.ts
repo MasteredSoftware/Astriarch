@@ -106,19 +106,33 @@ describe('Fleet ids', () => {
     });
   });
 
-  it('launchFleetToPlanet() with a supplied fleetId leaves the counter at fleetId + 1', () => {
-    const [shipId] = addScouts(homePlanet, 1);
-    serverPlayer.nextFleetId = 7;
-    const fleet = Fleet.launchFleetToPlanet(
-      homePlanet,
-      destPlanet,
-      grid,
-      { scouts: [shipId], destroyers: [], cruisers: [], battleships: [] },
-      serverPlayer,
-      7,
-    );
-    expect(fleet.id).toBe(7);
-    expect(serverPlayer.nextFleetId).toBe(8);
+  describe('launchFleetToPlanet() with a supplied fleetId', () => {
+    function launch(fleetId: number) {
+      const [shipId] = addScouts(homePlanet, 1);
+      return Fleet.launchFleetToPlanet(
+        homePlanet,
+        destPlanet,
+        grid,
+        { scouts: [shipId], destroyers: [], cruisers: [], battleships: [] },
+        serverPlayer,
+        fleetId,
+      );
+    }
+
+    it('moves the counter to fleetId + 1 when the id is above the counter', () => {
+      // A supplied id above the counter catches an extra increment: it would leave the counter at 4
+      serverPlayer.nextFleetId = 3;
+      const fleet = launch(7);
+      expect(fleet.id).toBe(7);
+      expect(serverPlayer.nextFleetId).toBe(8);
+    });
+
+    it('leaves the counter unchanged when the id is below the counter', () => {
+      serverPlayer.nextFleetId = 9;
+      const fleet = launch(4);
+      expect(fleet.id).toBe(4);
+      expect(serverPlayer.nextFleetId).toBe(9);
+    });
   });
 
   it('cloneFleet() changes neither the counter nor the id', () => {
