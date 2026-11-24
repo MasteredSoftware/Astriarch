@@ -28,14 +28,14 @@ import {
 	Utils,
 	calculateClientModelChecksum,
 	calculateClientModelChecksumComponents,
-	type StarshipAdvantageData,
-	Fleet
+	type StarshipAdvantageData
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '#lib/stores/gameStore.ts';
 import { PlayerStorage } from '#lib/utils/playerStorage.ts';
 import { preserveNextFleetId } from '#lib/utils/fleetIdCounter.ts';
+import { buildSendShipsCommand } from '#lib/utils/sendShipsCommand.ts';
 import type {
 	AdjustResearchPercentCommand,
 	CancelResearchItemCommand,
@@ -50,7 +50,6 @@ import type {
 	ProductionItemQueuedEvent,
 	QueueProductionItemCommand,
 	RemoveProductionItemCommand,
-	SendShipsCommand,
 	SetWaypointCommand,
 	SubmitResearchItemCommand,
 	SubmitTradeCommand,
@@ -2031,27 +2030,7 @@ class WebSocketService {
 			if (!cgm) {
 				throw new Error('No game model available');
 			}
-			const playerId = cgm.mainPlayer.id;
-
-			// Pick the next unused fleet ID; the optimistic SEND_SHIPS command reserves it on the counter
-			const fleetId = Fleet.allocateFleetId(cgm.mainPlayer, cgm.mainPlayerOwnedPlanets);
-
-			// Send command with ship IDs (user selected specific ships) and fleet ID
-			const command: SendShipsCommand = {
-				type: GameCommandType.SEND_SHIPS,
-				playerId,
-				timestamp: Date.now(),
-				fromPlanetId: planetIdSource,
-				toPlanetId: planetIdDest,
-				fleetId,
-				shipIds: {
-					scouts: shipsByType.scouts,
-					destroyers: shipsByType.destroyers,
-					cruisers: shipsByType.cruisers,
-					battleships: shipsByType.battleships
-				},
-				commandId: '' // Will be set by sendCommand
-			};
+			const command = buildSendShipsCommand(cgm, planetIdSource, planetIdDest, shipsByType);
 
 			this.sendCommand(command);
 		} catch (error) {
