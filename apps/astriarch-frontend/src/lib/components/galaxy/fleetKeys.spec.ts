@@ -37,6 +37,15 @@ describe('keyFleets', () => {
 		expect(duplicateIds).toEqual([3]);
 	});
 
+	it('gives unique keys to negative waypoint ids mixed with positive send ids', () => {
+		const waypointId = -(7 * 2 ** 21 + 3);
+		const { keyed, duplicateIds } = keyFleets([fleet(1), fleet(waypointId), fleet(-5), fleet(5)]);
+		const keys = keyed.map(([key]) => key);
+		expect(keys).toEqual(['1', `${waypointId}`, '-5', '5']);
+		expect(new Set(keys).size).toBe(keys.length);
+		expect(duplicateIds).toEqual([]);
+	});
+
 	it('lists each duplicated id once', () => {
 		const { duplicateIds } = keyFleets([fleet(3), fleet(4), fleet(3), fleet(4), fleet(3)]);
 		expect(duplicateIds).toEqual([3, 4]);

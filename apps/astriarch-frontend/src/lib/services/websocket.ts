@@ -28,12 +28,14 @@ import {
 	Utils,
 	calculateClientModelChecksum,
 	calculateClientModelChecksumComponents,
-	type StarshipAdvantageData
+	type StarshipAdvantageData,
+	Fleet
 } from 'astriarch-engine';
 
 // Import the main game stores to update them when receiving multiplayer game state
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '#lib/stores/gameStore.ts';
 import { PlayerStorage } from '#lib/utils/playerStorage.ts';
+import { preserveNextFleetId } from '#lib/utils/fleetIdCounter.ts';
 import type {
 	AdjustResearchPercentCommand,
 	CancelResearchItemCommand,
@@ -724,6 +726,9 @@ class WebSocketService {
 					if (message.payload.clientGameModel) {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
+
+						// Don't let the fleet id counter go backwards for sends the server hasn't processed yet
+						preserveNextFleetId(get(clientGameModel), updatedClientGameModel);
 
 						clientGameModel.set(updatedClientGameModel);
 
@@ -2028,8 +2033,8 @@ class WebSocketService {
 			}
 			const playerId = cgm.mainPlayer.id;
 
-			// Get next fleet ID from player's counter
-			const fleetId = cgm.mainPlayer.nextFleetId++;
+			// Pick the next unused fleet ID; the optimistic SEND_SHIPS command reserves it on the counter
+			const fleetId = Fleet.allocateFleetId(cgm.mainPlayer, cgm.mainPlayerOwnedPlanets);
 
 			// Send command with ship IDs (user selected specific ships) and fleet ID
 			const command: SendShipsCommand = {
