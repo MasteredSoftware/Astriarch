@@ -15,7 +15,7 @@
 		"build": "pnpm --filter astriarch-engine build && vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc -p e2e --noEmit",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"type-check": "pnpm run check",
 		"format": "prettier --write .",
@@ -26,7 +26,11 @@
 		"test": "npm run test:unit -- --run",
 		"test:e2e": "playwright test",
 		"test:e2e:headed": "playwright test --headed",
-		"test:e2e:ui": "playwright test --ui"
+		"test:e2e:ui": "playwright test --ui",
+		"perf": "playwright test -c playwright.perf.config.ts",
+		"perf:chromium": "playwright test -c playwright.perf.config.ts --project=chromium-perf",
+		"perf:firefox": "playwright test -c playwright.perf.config.ts --project=firefox-perf",
+		"perf:compare": "node e2e/perf/compare.mjs"
 	},
 	"dependencies": {
 		"astriarch-engine": "workspace:*",

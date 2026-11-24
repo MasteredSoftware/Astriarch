@@ -7,6 +7,7 @@ This directory contains end-to-end tests that run the real frontend in a browser
 - `fixtures/` shared Playwright fixtures (player contexts/pages)
 - `helpers/` reusable domain helpers (lobby setup, game options, in-game assertions)
 - `scenarios/` top-level test scenarios
+- `perf/` performance benchmark, separate from the e2e suite with its own config (see [perf/README.md](perf/README.md))
 - `global-setup.ts` suite-level cleanup before tests
 - `global-teardown.ts` suite-level cleanup after tests
 

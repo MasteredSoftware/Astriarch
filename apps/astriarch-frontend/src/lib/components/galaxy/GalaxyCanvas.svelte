@@ -13,6 +13,7 @@
 	import { DrawnPlanet } from './DrawnPlanet';
 	import { DrawnFleet } from './DrawnFleet';
 	import { DrawnTravelLine, TravelLineType } from './DrawnTravelLine';
+	import { perfCount, perfStart, perfEnd, perfRegisterKonvaStage } from '#lib/perf/perfMonitor.ts';
 
 	let canvasContainer: HTMLDivElement;
 	let stage: Konva.Stage;
@@ -157,9 +158,9 @@
 		});
 
 		// Create layers (back to front rendering order)
-		galaxyLayer = new Konva.Layer();
-		fleetLayer = new Konva.Layer();
-		uiLayer = new Konva.Layer();
+		galaxyLayer = new Konva.Layer({ name: 'galaxy' });
+		fleetLayer = new Konva.Layer({ name: 'fleet' });
+		uiLayer = new Konva.Layer({ name: 'ui' });
 
 		// Performance optimization: disable listening for layers that don't need events
 		galaxyLayer.listening(false);
@@ -169,6 +170,9 @@
 		stage.add(galaxyLayer);
 		stage.add(fleetLayer);
 		stage.add(uiLayer);
+
+		// No-op unless perf instrumentation is enabled (?perf=1).
+		perfRegisterKonvaStage(Konva, stage);
 
 		// Add space background with proper galaxy bounds
 		createSpaceBackground(galaxyWidth, galaxyHeight);
@@ -344,7 +348,10 @@
 
 	function startRenderLoop() {
 		function render() {
+			perfCount('raf.canvas');
+			const t = perfStart();
 			updateGameObjects();
+			perfEnd('canvas.updateGameObjects', t);
 			animationFrameId = requestAnimationFrame(render);
 		}
 		render();

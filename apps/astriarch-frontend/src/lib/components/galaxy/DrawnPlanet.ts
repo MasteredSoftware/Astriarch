@@ -59,7 +59,8 @@ export class DrawnPlanet {
 	private selectionRingInner: Konva.Circle | null = null;
 
 	constructor(planetData: PlanetData, gameModel: ClientModelData) {
-		this.group = new Konva.Group();
+		// name/planetId/selected let tests (e.g. the perf harness) find planets on the canvas.
+		this.group = new Konva.Group({ name: 'planet', planetId: planetData.id, selected: false });
 		this.planetData = planetData;
 		this.gameModel = gameModel;
 
@@ -966,6 +967,7 @@ export class DrawnPlanet {
 
 	setSelected(selected: boolean): void {
 		this.isSelected = selected;
+		this.group.setAttr('selected', selected);
 		this.updateSelectionState();
 	}
 
