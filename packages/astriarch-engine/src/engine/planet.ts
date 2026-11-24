@@ -829,6 +829,7 @@ export class Planet {
           ) {
             // Waypoint fleet ids are negative and derived from the starship id so client and server agree
             // regardless of the order in which they process this build and any SEND_SHIPS commands
+            // (when the queue item has an assignedShipId)
             const newFleet = Fleet.generateFleet(
               [ship],
               planet.boundingHexMidPoint,

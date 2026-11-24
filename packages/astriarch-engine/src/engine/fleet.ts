@@ -78,7 +78,12 @@ export class Fleet {
   /**
    * Derives a deterministic negative fleet id for a fleet created at a waypoint from its single starship.
    * Well-formed starship ids (`${planetId}_${seq}`) encode to -(planetId * 2^21 + seq), magnitude >= 2^21.
-   * Anything else (legacy ids) falls back to a hash in magnitudes [1, 2^21), below the encoded range.
+   * Only ship ids that are not of that form or are out of range (for example `fallback_N` from
+   * generateStarship with no planet, which the waypoint build never produces) fall back to a hash in
+   * magnitudes [1, 2^21), below the encoded range.
+   * Legacy queue items without an assignedShipId get a well-formed id when built, so they use the encoded
+   * range; but their seq is taken at build time and can race QUEUE_PRODUCTION_ITEM's nextShipId++, so their
+   * waypoint ids are only as order-independent as that build.
    */
   public static waypointFleetIdForStarship(planetId: number, starshipId: string): number {
     const range = Fleet.WAYPOINT_FLEET_ID_SEQ_RANGE;
