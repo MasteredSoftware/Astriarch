@@ -346,13 +346,28 @@ describe('Fleet ids', () => {
       expect(homePlanet.planetaryFleet.starships.some((s) => s.id === shipId)).toBe(true);
     });
 
-    it('rejects an id below zero that matches a waypoint fleet id', () => {
+    it('rejects an id already used by an outgoing fleet on the server as a possible desync', () => {
       const [shipId] = addScouts(homePlanet, 1);
+      serverPlayer.nextFleetId = 2;
+      homePlanet.outgoingFleets.push(Fleet.generateFleet([], null, undefined, 6));
+      const result = CommandProcessor.processCommand(serverModel, grid, sendCommand(6, [shipId]));
+      expect(result.success).toBe(false);
+      expect(result.error?.code).toBe(CommandResultErrorCode.INVALID_PARAMETER);
+      expect(result.error?.possibleDesync).toBe(true);
+      expect(serverPlayer.nextFleetId).toBe(7);
+      expect(homePlanet.planetaryFleet.starships.some((s) => s.id === shipId)).toBe(true);
+    });
+
+    it('rejects a waypoint-range (negative) id at the sign check, not as a desync', () => {
+      const [shipId] = addScouts(homePlanet, 1);
+      serverPlayer.nextFleetId = 2;
       const waypointId = Fleet.waypointFleetIdForStarship(homePlanet.id, `${homePlanet.id}_999`);
       serverPlayer.fleetsInTransit.push(Fleet.generateFleet([], null, undefined, waypointId));
       const result = CommandProcessor.processCommand(serverModel, grid, sendCommand(waypointId, [shipId]));
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(CommandResultErrorCode.INVALID_PARAMETER);
+      expect(result.error?.possibleDesync).toBe(false);
+      expect(serverPlayer.nextFleetId).toBe(2);
     });
   });
 
