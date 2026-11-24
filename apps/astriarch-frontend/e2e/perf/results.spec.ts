@@ -347,27 +347,22 @@ describe('tickRateWarning', () => {
 
 describe('buildBarFraction', () => {
 	it('reads scaleX() from the transform', () => {
-		expect(buildBarFraction({ transform: 'scaleX(0.0123)', width: '100%' })).toBe(0.0123);
-		expect(buildBarFraction({ transform: 'scaleX(0)', width: '100%' })).toBe(0);
-		expect(buildBarFraction({ transform: 'scaleX(1e-7)', width: '100%' })).toBe(1e-7);
+		expect(buildBarFraction('scaleX(0.0123)')).toBe(0.0123);
+		expect(buildBarFraction('scaleX(0)')).toBe(0);
+		expect(buildBarFraction('scaleX(1e-7)')).toBe(1e-7);
 	});
 
-	it('reads a percentage width without a transform', () => {
-		expect(buildBarFraction({ transform: '', width: '12.5%' })).toBe(0.125);
-	});
-
-	it('is null when neither is set', () => {
-		expect(buildBarFraction({ transform: '', width: '' })).toBeNull();
-		expect(buildBarFraction({ transform: 'none', width: '40px' })).toBeNull();
+	it('is null without a scaleX()', () => {
+		expect(buildBarFraction('')).toBeNull();
+		expect(buildBarFraction('none')).toBeNull();
 	});
 });
 
 describe('buildProgressWarnings', () => {
-	const ok = { startFraction: 0.01, endFraction: 0.02, variant: 'scalex', transitionRunRate: 5 };
+	const ok = { startFraction: 0.01, endFraction: 0.02, transitionRunRate: 5 };
 
 	it('does not warn when the bar advanced and transitions ran', () => {
 		expect(buildProgressWarnings(ok)).toEqual([]);
-		expect(buildProgressWarnings({ ...ok, variant: 'width' })).toEqual([]);
 	});
 
 	it('warns when progress did not advance', () => {
@@ -382,16 +377,10 @@ describe('buildProgressWarnings', () => {
 		expect(buildProgressWarnings({ ...ok, endFraction: null })[0]).toMatch(/at window end/);
 	});
 
-	it('warns when a transitioning variant ran no transitions', () => {
-		for (const variant of ['scalex', 'width']) {
-			const w = buildProgressWarnings({ ...ok, variant, transitionRunRate: undefined });
-			expect(w).toEqual([expect.stringMatching(/rate\.dom\.transitionrun is 0\/s/)]);
-			expect(buildProgressWarnings({ ...ok, variant, transitionRunRate: 0.5 })).toHaveLength(1);
-		}
-	});
-
-	it('expects no transitions for the none variant', () => {
-		expect(buildProgressWarnings({ ...ok, variant: 'none', transitionRunRate: 0 })).toEqual([]);
+	it('warns when no bar transitions ran', () => {
+		const w = buildProgressWarnings({ ...ok, transitionRunRate: undefined });
+		expect(w).toEqual([expect.stringMatching(/rate\.dom\.transitionrun is 0\/s/)]);
+		expect(buildProgressWarnings({ ...ok, transitionRunRate: 0.5 })).toHaveLength(1);
 	});
 });
 

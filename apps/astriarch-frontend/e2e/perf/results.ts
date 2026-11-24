@@ -106,11 +106,6 @@ export interface PerfResultFile {
 		warmupMs: number;
 		repetitions: number;
 		galaxySeed: number;
-		/**
-		 * PERF_BUILD_BAR: the build progress bar variant forced for this run, or
-		 * null for the app's default (none). Absent in older files.
-		 */
-		buildBar?: string | null;
 		/** Measured by the first probe that passes the throttle checks (isCleanProbe). */
 		refreshHz: number | null;
 		devicePixelRatio: number | null;
@@ -209,35 +204,30 @@ export function tickRateWarning(rate: number | undefined): string | null {
 
 /**
  * The build progress bar's target fraction (0..1) from its inline style, as
- * set by the tickProgress action: `transform: scaleX(f)` (scalex) or
- * `width: p%` (width, none). The inline value is where the bar is heading, not
- * the mid-transition position. Null when neither can be read.
+ * set by the tickProgress action: `transform: scaleX(f)`. The inline value is
+ * where the bar is heading, not the mid-transition position. Null when it
+ * can't be read.
  */
-export function buildBarFraction(style: { transform: string; width: string }): number | null {
-	const scale = /scaleX\(\s*([-\d.e+]+)\s*\)/.exec(style.transform);
-	if (scale) return Number(scale[1]);
-	const pct = /^\s*([-\d.e+]+)%\s*$/.exec(style.width);
-	if (pct) return Number(pct[1]) / 100;
-	return null;
+export function buildBarFraction(transform: string): number | null {
+	const scale = /scaleX\(\s*([-\d.e+]+)\s*\)/.exec(transform);
+	return scale ? Number(scale[1]) : null;
 }
 
-/** Below this `rate.dom.transitionrun` a transitioning bar measured no transitions. */
+/** Below this `rate.dom.transitionrun` the bar measured no transitions. */
 const MIN_BUILD_BAR_TRANSITIONS_PER_SEC = 1;
 
 /**
  * Checks that the `build` window measured a bar that moved: the progress
- * fraction rose between the window's start and end, and for a variant with a
- * transition (scalex, width) transitions actually ran. A planet with no
- * production per turn shows a static bar, so every variant would measure the
- * same idle bar.
+ * fraction rose between the window's start and end, and its per-tick
+ * transitions actually ran. A planet with no production per turn shows a
+ * static bar, which would measure nothing.
  */
 export function buildProgressWarnings(opts: {
 	startFraction: number | null;
 	endFraction: number | null;
-	variant: string | null;
 	transitionRunRate: number | undefined;
 }): string[] {
-	const { startFraction, endFraction, variant, transitionRunRate } = opts;
+	const { startFraction, endFraction, transitionRunRate } = opts;
 	const warnings: string[] = [];
 	if (startFraction === null || endFraction === null) {
 		warnings.push(
@@ -250,9 +240,9 @@ export function buildProgressWarnings(opts: {
 		);
 	}
 	const rate = transitionRunRate ?? 0;
-	if ((variant === 'scalex' || variant === 'width') && rate < MIN_BUILD_BAR_TRANSITIONS_PER_SEC) {
+	if (rate < MIN_BUILD_BAR_TRANSITIONS_PER_SEC) {
 		warnings.push(
-			`rate.dom.transitionrun is ${rate}/s for the ${variant} bar ` +
+			`rate.dom.transitionrun is ${rate}/s for the build bar ` +
 				`(expected about ${EXPECTED_TICK_RATE}/s): no per-tick bar transition was measured`
 		);
 	}

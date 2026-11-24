@@ -18,11 +18,7 @@
  *            advances every tick (frame sampler off, like idle). Last, so the
  *            build can't change what the other windows measure. The fleet from
  *            `fleets` is still in transit. It warns if the bar did not advance
- *            or (for a transitioning bar) no transitions ran.
- *
- * PERF_BUILD_BAR (none | scalex | width) picks the build progress bar variant
- * the app uses, to compare them in the `build` window; unset is the app's
- * default (none).
+ *            or no bar transitions ran.
  *
  * PERF_WINDOWS (comma list, default all) measures only some windows. A skipped
  * window's measurement is skipped, but the fleet is still sent when `build`
@@ -58,7 +54,6 @@ import {
 	sendFleet,
 	queueBuild,
 	buildStillInProgress,
-	buildBarVariantShown,
 	buildProgress,
 	setGalaxySeed,
 	BENCHMARK_GAME,
@@ -76,20 +71,6 @@ const PROBE_MS = 500;
 const VIEWPORT = { width: 1440, height: 900 };
 const ENFORCE_BUDGETS = process.env.PERF_ENFORCE_BUDGETS === '1';
 const WINDOWS = parseWindowFilter(process.env.PERF_WINDOWS);
-/**
- * Build progress bar variant to measure in the `build` window: none (the
- * app's default), scalex or width (see src/lib/components/game-views/tickProgress.ts).
- * Unset leaves the app's default.
- */
-const BUILD_BAR = process.env.PERF_BUILD_BAR || null;
-const BUILD_BAR_VARIANTS = ['none', 'scalex', 'width'];
-/** The app's default build bar variant (parseBuildBarVariant in tickProgress.ts). */
-const DEFAULT_BUILD_BAR = 'none';
-if (BUILD_BAR !== null && !BUILD_BAR_VARIANTS.includes(BUILD_BAR)) {
-	throw new Error(
-		`PERF_BUILD_BAR: expected one of ${BUILD_BAR_VARIANTS.join(', ')}, got ${BUILD_BAR}`
-	);
-}
 
 /** Keep a headed browser from throttling rAF/timers when its window is covered. */
 const CHROMIUM_ARGS = [
@@ -141,12 +122,7 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 				viewport: VIEWPORT,
 				baseURL: test.info().project.use.baseURL
 			});
-			const buildBarFlag = BUILD_BAR
-				? `window.__ASTRIARCH_PERF_BUILD_BAR__ = ${JSON.stringify(BUILD_BAR)};\n`
-				: '';
-			await context.addInitScript(
-				`window.__ASTRIARCH_PERF__ = true;\n${buildBarFlag}${PAGE_HELPERS_SCRIPT}`
-			);
+			await context.addInitScript(`window.__ASTRIARCH_PERF__ = true;\n${PAGE_HELPERS_SCRIPT}`);
 			const page = await context.newPage();
 
 			const homePlanetId = await startBenchmarkGame(page);
@@ -197,7 +173,6 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 				await page.waitForTimeout(SETTLE_MS);
 				let start: BuildProgress | null = null;
 				let end: BuildProgress | null = null;
-				let variant: string | null = null;
 				await measure(
 					'build',
 					false,
@@ -206,15 +181,9 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 						await page.waitForTimeout(WINDOW_MS);
 						if (!queued) return ['no build was queued'];
 						end = await buildProgress(page);
-						variant = await buildBarVariantShown(page);
 						const warnings = [];
 						if (!(await buildStillInProgress(page))) {
 							warnings.push('the build finished before the window ended');
-						}
-						if (variant !== (BUILD_BAR ?? DEFAULT_BUILD_BAR)) {
-							warnings.push(
-								`build bar variant is ${variant ?? 'not shown'}, expected ${BUILD_BAR ?? DEFAULT_BUILD_BAR}`
-							);
 						}
 						return warnings;
 					},
@@ -229,7 +198,6 @@ for (let rep = 1; rep <= REPETITIONS; rep++) {
 						return buildProgressWarnings({
 							startFraction: start.fraction,
 							endFraction: end.fraction,
-							variant,
 							transitionRunRate
 						});
 					}
@@ -444,7 +412,6 @@ function createResultFile(
 			warmupMs: WARMUP_MS,
 			repetitions: REPETITIONS,
 			galaxySeed: BENCHMARK_GAME.galaxySeed,
-			buildBar: BUILD_BAR,
 			refreshHz: null,
 			devicePixelRatio: null
 		},

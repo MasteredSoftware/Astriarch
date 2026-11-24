@@ -317,13 +317,13 @@ export async function buildProgress(
 				)
 			: [];
 		return {
-			style: bar ? { transform: bar.style.transform, width: bar.style.width } : null,
+			transform: bar ? bar.style.transform : null,
 			done: texts[0] ?? null,
 			years: texts[1] ?? null
 		};
 	});
 	return {
-		fraction: shown.style ? buildBarFraction(shown.style) : null,
+		fraction: shown.transform !== null ? buildBarFraction(shown.transform) : null,
 		done: shown.done,
 		years: shown.years
 	};
@@ -332,16 +332,6 @@ export async function buildProgress(
 /** Whether the selected planet still shows a build in progress. */
 export async function buildStillInProgress(page: Page): Promise<boolean> {
 	return buildInProgress(page).isVisible();
-}
-
-/**
- * The build progress bar variant the app is using (its data-build-bar
- * attribute, set by the tickProgress action), or null when no bar is shown.
- */
-export async function buildBarVariantShown(page: Page): Promise<string | null> {
-	return page.evaluate(
-		() => document.querySelector('[data-build-bar]')?.getAttribute('data-build-bar') ?? null
-	);
 }
 
 async function stageTransform(page: Page) {

@@ -22,7 +22,7 @@ What got us there (details under [Phase 2 status](#phase-2-status)):
 2. The client model advances at a fixed 200ms tick instead of every frame. A fleet animation runs only while some fleet in transit can move a visible distance between ticks.
 3. Two decorative CSS animations that looped forever were stopped. The task-card scan-line and the Fleet Command prompt pulse made the browser composite every frame, and they turned out to be the largest single costs left.
 
-All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever. The `build` window added in the second round of review (Planet Overview with a build in progress) settled the build progress bar: it steps at the 5/s tick, because any CSS transition kept the browser compositing every frame (see [The build progress bar](#the-build-progress-bar-2026-11-22)).
+All deterministic budgets pass in every window in both browsers, including a new check that no CSS/Web animation loops forever. The `build` window added in the second round of review (Planet Overview with a build in progress) settled the build progress bar: it keeps a one-tick `scaleX` CSS transition, which is smooth but keeps the browser compositing every frame while a build is on screen (+34 CPU points in Chromium, +17 in Firefox over stepping). Cheaper bars were measured and judged not smooth enough (see [The build progress bar](#the-build-progress-bar-2026-11-22)).
 
 ## Findings (as of master `3d2ada9`)
 
@@ -349,7 +349,7 @@ The review of PR #73 changed behaviour in a few places:
 - The fleet animation stops once no fleet can move. Since the second review round it also doesn't run while no fleet can move a visible distance (at least 0.5 screen px) before the next tick, e.g. at Normal speed and the default zoom; zooming in re-checks. The distance is one tick's worth (200ms), not the 1.5-tick extrapolation cap, because every tick resets the drawn position to the model one: a fleet that needs more than one tick to move 0.5px never draws between ticks.
 - Duplicate fleet ids are drawn instead of dropped.
 - The canvas is torn down fully.
-- The build progress bar steps at the 5/s tick with no CSS transition. The review tried a `transform: scaleX()` transition (no layout or paint per frame) that snapped instead of sliding backwards, and measured it against the earlier `width` transition and the plain step; see [The build progress bar](#the-build-progress-bar-2026-11-22). Both transitions stay selectable for the benchmark only (`PERF_BUILD_BAR`).
+- The build progress bar slides with a one-tick `transform: scaleX()` transition (no layout or paint per frame, unlike the earlier `width` transition) and snaps instead of sliding backwards. The review measured it against the `width` transition, a plain step at the tick and a script-driven bar redrawn 30 times a second; see [The build progress bar](#the-build-progress-bar-2026-11-22). The other variants were removed.
 
 The baseline was re-recorded with harness schema v3 at `ae7fafd` (`perf-results/baseline-v3-*.json`, the PR #72 re-recording) and Phase 2 at `c641c44` (`perf-results/phase2-r2b-*.json`), on the same day, headed, on AC power, with no harness warnings. Medians, with [min–max]:
 
@@ -360,7 +360,7 @@ The baseline was re-recorded with harness schema v3 at `ae7fafd` (`perf-results/
 | fleets | 192.7 → **28.1** [27.5–28.8] (−85%) | 96.3 → **20.2** [19.2–21.6] (−79%) |
 | build | **35.5** [34.9–35.6] with the `scaleX` bar; **17.0** [16.5–17.4] with the step | **44.7** [43.8–49.5] with the `scaleX` bar; **12.4** [11.9–12.8] with the step |
 
-The baseline has no `build` window. The `build` row in `phase2-r2b` was recorded with the app's default bar at `c641c44`, which was still the `scaleX` transition, so its CPU reflects `scaleX`. The step's number is from `perf-results/bar2-none-*.json`.
+The baseline has no `build` window. The `build` row in `phase2-r2b` was recorded with the app's default bar at `c641c44`, which was still the `scaleX` transition, so its CPU reflects `scaleX`. The step's number is from `perf-results/bar2-none-*.json`. The app keeps the `scaleX` bar (see [The build progress bar](#the-build-progress-bar-2026-11-22)).
 
 | Phase 2 at `c641c44` (baseline-v3 in brackets) | idle | panzoom | fleets | build |
 | --- | --- | --- | --- | --- |
@@ -388,7 +388,23 @@ The `build` window opens Planet Overview on the home planet, assigns a Builder, 
 | `scalex`: one-tick `transform: scaleX()` transition | 33.9 [33.2–34.2] (+16.9) | 43.9 [43.4–50.3] (+31.5) |
 | `width`: one-tick `width` transition | 89.5 [88.8–89.8] (+72.5) | 57.0 [53.4–63.8] (+44.6) |
 
-- **Decision: the bar steps at 5/s (`none`).** Any CSS transition keeps the browser compositing every frame while a build is visible. `scaleX` avoids layout and paint but is still far outside noise of the step in both browsers, so under the review's rule (keep `scaleX` only if its CPU is within noise of no transition in both browsers) the app uses the step. `scalex` and `width` stay selectable with `PERF_BUILD_BAR` (or `&perfBuildBar=` with `?perf=1`) for the benchmark only.
+- **First decision: step at 5/s (`none`).** Any CSS transition keeps the browser compositing every frame while a build is visible. `scaleX` avoids layout and paint but is still far outside noise of the step in both browsers, so under the review's rule (keep `scaleX` only if its CPU is within noise of no transition in both browsers) the app stepped (`3d0fffe`). In play, the step looked visibly jumpy, so cheaper ways to slide were measured next.
+
+#### Follow-up: blur and a capped frame rate (2026-11-23)
+
+Measured on the working tree after `452fe67`, same settings. Result files: `perf-results/bar3-*.json` and `perf-results/bar4-frames30-*.json`. Whole-browser CPU, % of one core, medians, with [min–max]:
+
+| Bar variant | Firefox | Chromium |
+| --- | --- | --- |
+| `none`: steps at the 5/s tick (`bar3-none`) | **16.3** [15.0–16.9] | **11.7** [11.3–12.9] |
+| `scalex`, Planet Overview panel without `backdrop-blur` (`bar3-scalex-nopanelblur`) | 33.0 [32.6–33.3] (+16.7) | 45.8 [42.0–48.2] (+34.1) |
+| `scalex`, every `backdrop-filter` off (`bar3-scalex-noblur`, diagnostic) | 27.5 [27.5–27.7] (+11.2) | 31.6 [31.4–31.8] (+19.9) |
+| `frames30`: script-driven slide, written every 4th display frame (`bar4-frames30`) | 31.6 [30.2–32.7] (+15.4) | 27.5 [26.7–27.8] (+15.8) |
+
+- The `none` rows match `bar2-none` within about 1 point, so the machine hadn't drifted.
+- Removing the panel's blur changed nothing, so the panel keeps it. Turning off every blur saved only part of the transition's cost: the cost is compositing every frame, and blur only makes each composite dearer.
+- `frames30` (requestAnimationFrame, writing `scaleX()` about 30 times a second on whole display frames, sliding over 1.25 ticks so it doesn't pause at late ticks) cost about half of `scalex` in Chromium and nearly all of it in Firefox, and still looked less smooth. The experiment was dropped.
+- **Decision: the bar keeps the `scalex` transition.** Smoothness was judged worth +34 CPU points in Chromium and +17 in Firefox while a build is on screen; nothing cheaper looked smooth. `none`, `width`, `frames30` and the `PERF_BUILD_BAR` and `PERF_NO_BLUR` switches were removed, leaving one bar. The `build` window still warns if the bar didn't advance or started no transitions.
 - The first run of the three variants (`perf-results/bar-{none,scalex,width}-*.json`) was discarded: the benchmark planet had no Builders, so it made no production and every variant measured the same static bar. The scenario now assigns a Builder first, and the window warns if the bar didn't advance or a transitioning bar started no transitions.
 - **Worth watching:** in Firefox pan/zoom the canvas draws about 43 frames per second, with 95th-percentile gaps of 68ms between drawn frames (Chromium: about 64 per second). The scripted pan pauses between moves, which accounts for part of this. If dragging feels less smooth in Firefox, start here.
 - **Not a regression:** the game loop's per-call timings (`meanMs`, `p95Ms`) are higher because each call now covers 200ms of game time instead of one frame. Their total per second fell by 66–81%.

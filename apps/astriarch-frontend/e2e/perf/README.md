@@ -39,27 +39,17 @@ PERF_WINDOWS=build PERF_LABEL=build-check pnpm --filter astriarch-frontend perf
 
 Skipped windows are left out of the result file; when you compare it with a full run, `perf:compare` lists the other windows with one side empty, so compare filtered runs with filtered runs. The fleet is still sent whenever `build` runs, so a `build`-only run sees the same game as a full run; the pan/zoom window restores its starting view, so skipping it changes nothing for later windows.
 
-### Comparing build progress bar variants
+### The build progress bar
 
-The build progress bar in Planet Overview can animate three ways (`src/lib/components/game-views/tickProgress.ts`):
+The build progress bar in Planet Overview slides to each tick's value with a one-tick (200ms) `transform: scaleX()` CSS transition (`src/lib/components/game-views/tickProgress.ts`), so it moves at a constant rate. That keeps the browser compositing every display frame while a build is on screen, and the `build` window measures that cost. Measured in the `build` window (total CPU, median of 5; see the Phase 2 section of `performance_improvements_plan.md`):
 
-- `none` (the app's default): steps at the 5/s tick with no transition
-- `scalex`: a `transform: scaleX()` transition of one tick (200ms); no layout or paint, but the browser still composites every frame
-- `width`: the earlier `width` transition, which needs layout and paint every frame
+| Bar                                      | Chromium | Firefox |
+| ---------------------------------------- | -------- | ------- |
+| Steps at the 5/s tick, no transition     | 11.7%    | 16.3%   |
+| Script-driven, redrawn 30 times a second | 27.5%    | 31.6%   |
+| `scaleX` transition (the app's)          | 45.8%    | 33.0%   |
 
-The app uses `none` because any transition kept the browser compositing every frame while a build was visible: in the `build` window, `scalex` cost +31.5 CPU points in Chromium and +16.9 in Firefox over `none`, and `width` +44.6 / +72.5 (see the Phase 2 section of `performance_improvements_plan.md`). The other two stay for the benchmark only.
-
-Only with perf instrumentation on can another variant be chosen: the harness sets `window.__ASTRIARCH_PERF_BUILD_BAR__` from `PERF_BUILD_BAR` before the app loads, and by hand you can add `&perfBuildBar=width` to a `?perf=1` URL. The variant is read once at load. Measure each one in the `build` window, with a label per variant so the result files don't overwrite each other:
-
-```sh
-PERF_WINDOWS=build PERF_BUILD_BAR=none   PERF_LABEL=bar-none   pnpm --filter astriarch-frontend perf
-PERF_WINDOWS=build PERF_BUILD_BAR=scalex PERF_LABEL=bar-scalex pnpm --filter astriarch-frontend perf
-PERF_WINDOWS=build PERF_BUILD_BAR=width  PERF_LABEL=bar-width  pnpm --filter astriarch-frontend perf
-pnpm --filter astriarch-frontend perf:compare bar-none-chromium bar-scalex-chromium
-pnpm --filter astriarch-frontend perf:compare bar-none-firefox bar-scalex-firefox
-```
-
-The result file records the variant as `meta.buildBar`, and the `build` window warns if the bar on screen (its `data-build-bar` attribute) isn't the requested variant. Expect `rate.dom.transitionrun` around 5/s for `scalex` and `width` and about 0 for `none`.
+A `width` transition cost more still (it lays out and paints every frame), and turning off every `backdrop-filter` saved only part of the transition's cost. Smoothness was judged worth the cost, and the other variants were removed. Expect `rate.dom.transitionrun` around 5/s in `build`.
 
 ### Options (environment variables)
 
@@ -72,7 +62,6 @@ The result file records the variant as `meta.buildBar`, and the `build` window w
 | `PERF_HEADLESS`                  | unset                                         | `1` runs headless. The numbers aren't comparable with headed runs                                   |
 | `PERF_ENFORCE_BUDGETS`           | unset                                         | `1` fails the run when a budget is exceeded (see below)                                             |
 | `PERF_WINDOWS`                   | (all)                                         | Comma list of windows to measure, e.g. `build` or `idle,build`. An unknown name fails the run       |
-| `PERF_BUILD_BAR`                 | (app default, `none`)                         | Build progress bar variant for the `build` window: `none`, `scalex` or `width` (see below)          |
 | `TEST_BACKEND_PORT`              | `8032`                                        | Test backend port. Must be free: the backend is never reused                                        |
 | `PERF_MONGODB_CONNECTION_STRING` | `mongodb://localhost:27017/astriarch_v2_perf` | Perf backend database. `MONGODB_CONNECTION_STRING` is not used, so the e2e database is never shared |
 | `PERF_FRONTEND_PORT`             | `4174`                                        | `vite preview` port                                                                                 |
@@ -97,7 +86,7 @@ After a warm-up, each repetition measures four windows, in this order:
 
 The `build` window runs last, so the queued build can't change what the other windows measure. It warns if no build was queued or the build finished before the window ended. None of the other windows shows a build in progress.
 
-The home planet's citizens all start as Farmers, and a planet with no Builders makes no production: the build would stay at 0 ("999 years") and every bar variant would measure the same static bar. So the scenario assigns a Builder first. The client engine advances `productionCostComplete` every tick, so the bar's target moves every tick (about 0.1% of a Factory per tick). As a guard, the window reads the bar's target fraction (from its inline `scaleX()` or `width`) at its start and end and warns `build progress did not advance during the window` if it didn't rise, and warns when `rate.dom.transitionrun` is under 1/s for the `scalex` or `width` bar. The console prints the bar fraction, the `done/cost` text and the ETA at both ends of the window.
+The home planet's citizens all start as Farmers, and a planet with no Builders makes no production: the build would stay at 0 ("999 years") and the window would measure a static bar. So the scenario assigns a Builder first. The client engine advances `productionCostComplete` every tick, so the bar's target moves every tick (about 0.1% of a Factory per tick). As a guard, the window reads the bar's target fraction (from its inline `scaleX()`) at its start and end and warns `build progress did not advance during the window` if it didn't rise, and warns when `rate.dom.transitionrun` is under 1/s. The console prints the bar fraction, the `done/cost` text and the ETA at both ends of the window.
 
 Each window records three kinds of data:
 
@@ -154,7 +143,7 @@ A change is reported as `better` or `worse` only when the two runs' min–max ra
 For now they are report-only: the run prints PASS, FAIL or MISSING for each budget, and `PERF_ENFORCE_BUDGETS=1` turns a FAIL or MISSING into a failed run. Timing-based numbers are deliberately not budgets, because they are too noisy for CI.
 
 - **Missing metrics fail.** A budget whose metric isn't in the results is MISSING and counts as a violation, so a renamed layer or a lost instrumentation hook can't turn a `max: 0` budget green. Only budgets marked `absentMeansZero: true` (a counter that legitimately disappears when its loop is removed, such as `rate.raf.canvas`) treat absence as 0. Konva layer draw counters are reported as explicit zeros for every registered layer. `konva.registered` is 0 when the stage was never registered, is no longer attached to the document, or has layers added after registration (`konva.unhookedLayers` counts those); the layer draw rates, node churn and `rendered.*` are then left out, so their budgets say MISSING.
-- **`rate.dom.transitionrun` and `rate.dom.animationstart` are budgeted at ≤ 1/s in `idle`.** At idle nothing should restart an animation; the odd one-off (e.g. a notification appearing) stays well under 1/s over a 20s window, while a transition restarted every tick reads about 5/s. The limit is an estimate until a recorded run confirms it. In `build` the default `none` bar starts no transitions, but the benchmark-only `scalex` and `width` bars start one every tick, so the rate is recorded but not budgeted.
+- **`rate.dom.transitionrun` and `rate.dom.animationstart` are budgeted at ≤ 1/s in `idle`.** At idle nothing should restart an animation; the odd one-off (e.g. a notification appearing) stays well under 1/s over a 20s window, while a transition restarted every tick reads about 5/s. The limit is an estimate until a recorded run confirms it. In `build` the progress bar starts one transition every tick, so the rate is recorded but not budgeted.
 - **`rate.store.clientGameModel.set` counts every store set**, including the server pushes that `websocket.ts` applies, not only the 200ms tick. That's why its budget is 6/s rather than 5/s.
 
 ## Getting trustworthy numbers

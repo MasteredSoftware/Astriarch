@@ -101,9 +101,8 @@ export const budgets: Partial<Record<WindowName, Budget[]>> = {
 			why: 'No CSS/Web animation with infinite iterations should run for the whole window, e.g. on the open Fleet Command view (see snapshot.loopingAnimations)'
 		}
 	],
-	// The benchmark-only build bar variants (PERF_BUILD_BAR=scalex|width)
-	// transition on every tick here, so rate.dom.transitionrun is recorded
-	// for comparison but not budgeted.
+	// The build bar transitions on every tick here, so rate.dom.transitionrun
+	// is recorded (and checked by buildProgressWarnings) but not budgeted.
 	build: [
 		{
 			metric: 'dom.runningAnimations',

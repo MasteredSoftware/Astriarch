@@ -924,19 +924,19 @@
 
 								{#if index === 0}
 									<!-- Progress bar for current item. The model advances at the
-									     fixed tick (MS_PER_TICK); tickProgress sets the bar's width
-									     at each tick with no transition, so it steps 5 times a second
-									     and never slides backwards. A CSS transition kept the browser
-									     compositing every frame while a build was visible (measured
-									     in the perf benchmark's build window), so it is only a
-									     benchmark variant; see tickProgress.ts. -->
+									     fixed tick (MS_PER_TICK); tickProgress slides the bar to each
+									     tick's value with a one-tick scaleX transition, so it moves at
+									     a constant rate and never slides backwards. The transition
+									     costs CPU while a build is on screen (measured in the perf
+									     benchmark's build window); see tickProgress.ts. -->
 									<div class="mb-2">
 										<div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-700">
 											<div
-												class="h-1.5 origin-left {item.itemType ===
+												class="h-1.5 w-full origin-left {item.itemType ===
 												PlanetProductionItemType.PlanetImprovementToDestroy
 													? 'bg-red-500'
 													: 'bg-cyan-500'}"
+												data-build-bar
 												use:tickProgress={{
 													fraction:
 														(item.productionCostComplete || 0) / (item.baseProductionCost || 1),
