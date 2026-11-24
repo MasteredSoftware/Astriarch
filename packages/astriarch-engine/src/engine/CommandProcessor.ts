@@ -529,6 +529,15 @@ export class CommandProcessor {
         events: [],
       };
     }
+    // Reject ids far above the counter: reserving one would push the counter towards MAX_SAFE_INTEGER
+    const counter = Number.isFinite(player.nextFleetId) ? player.nextFleetId : 1;
+    if (fleetId > counter + Fleet.MAX_FLEET_ID_JUMP) {
+      return {
+        success: false,
+        error: this.createError(`Invalid fleet id: ${fleetId}`, CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
+    }
 
     const ownedPlanets = this.isClientModel(model)
       ? model.mainPlayerOwnedPlanets

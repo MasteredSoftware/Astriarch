@@ -334,6 +334,43 @@ describe('Fleet ids', () => {
       expect(homePlanet.planetaryFleet.starships.some((s) => s.id === shipId)).toBe(true);
     });
 
+    it('accepts an id exactly MAX_FLEET_ID_JUMP above the counter', () => {
+      const [shipId] = addScouts(homePlanet, 1);
+      serverPlayer.nextFleetId = 3;
+      const fleetId = 3 + Fleet.MAX_FLEET_ID_JUMP;
+      const result = CommandProcessor.processCommand(serverModel, grid, sendCommand(fleetId, [shipId]));
+      expect(result.success).toBe(true);
+      expect(serverPlayer.nextFleetId).toBe(4 + Fleet.MAX_FLEET_ID_JUMP);
+    });
+
+    it.each([4 + Fleet.MAX_FLEET_ID_JUMP, Number.MAX_SAFE_INTEGER - 1])(
+      'rejects id %s, more than MAX_FLEET_ID_JUMP above the counter, without moving it',
+      (farId) => {
+        const [shipId] = addScouts(homePlanet, 1);
+        serverPlayer.nextFleetId = 3;
+        const result = CommandProcessor.processCommand(serverModel, grid, sendCommand(farId, [shipId]));
+        expect(result.success).toBe(false);
+        expect(result.error?.code).toBe(CommandResultErrorCode.INVALID_PARAMETER);
+        expect(result.error?.possibleDesync).toBe(false);
+        expect(serverPlayer.nextFleetId).toBe(3);
+        expect(homePlanet.planetaryFleet.starships.some((s) => s.id === shipId)).toBe(true);
+      },
+    );
+
+    it('measures the jump from 1 when nextFleetId is missing', () => {
+      const [shipId] = addScouts(homePlanet, 1);
+      (serverPlayer as { nextFleetId?: number }).nextFleetId = undefined;
+      const tooFar = CommandProcessor.processCommand(
+        serverModel,
+        grid,
+        sendCommand(2 + Fleet.MAX_FLEET_ID_JUMP, [shipId]),
+      );
+      expect(tooFar.success).toBe(false);
+      expect(tooFar.error?.possibleDesync).toBe(false);
+      const result = CommandProcessor.processCommand(serverModel, grid, sendCommand(2, [shipId]));
+      expect(result.success).toBe(true);
+    });
+
     it('rejects an id already in transit as a possible desync and bumps the counter', () => {
       const [shipId] = addScouts(homePlanet, 1);
       serverPlayer.nextFleetId = 2;

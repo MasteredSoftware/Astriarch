@@ -29,6 +29,11 @@ export class Fleet {
   private static NEXT_STARSHIP_ID = 1;
   /** Multiplier used to encode a waypoint fleet id from a `${planetId}_${seq}` starship id. */
   public static readonly WAYPOINT_FLEET_ID_SEQ_RANGE = 2 ** 21;
+  /**
+   * How far a supplied SEND_SHIPS fleet id may run ahead of the player's counter. Bounds the jump so a
+   * buggy or hostile client cannot push the counter to the end of the safe-integer range.
+   */
+  public static readonly MAX_FLEET_ID_JUMP = 2 ** 20;
 
   /**
    * Ensures the player's fleet id counter is past the given player-allocated (positive) fleet id,
