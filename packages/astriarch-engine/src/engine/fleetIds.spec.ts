@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { PlanetaryConflictData } from '../model/battle';
 import { ClientModelData } from '../model/clientModel';
 import { StarShipType } from '../model/fleet';
 import { ModelData } from '../model/model';
@@ -13,8 +14,11 @@ import { Fleet } from './fleet';
 import {
   ClientEventType,
   CommandResultErrorCode,
+  FleetDefenseSuccessEvent,
   FleetLaunchedEvent,
   GameCommandType,
+  PlanetCapturedEvent,
+  PlanetLostEvent,
   QueueProductionItemCommand,
   SendShipsCommand,
 } from './GameCommands';
@@ -349,6 +353,71 @@ describe('Fleet ids', () => {
       const result = CommandProcessor.processCommand(serverModel, grid, sendCommand(waypointId, [shipId]));
       expect(result.success).toBe(false);
       expect(result.error?.code).toBe(CommandResultErrorCode.INVALID_PARAMETER);
+    });
+  });
+
+  describe('conflict events and player-scoped fleet ids', () => {
+    function conflictData(): PlanetaryConflictData {
+      return { winningFleet: Fleet.generateFleet([], null, undefined, 99) } as PlanetaryConflictData;
+    }
+
+    it("PLANET_LOST does not remove the defender's own fleet with the attacker's id", () => {
+      const client = makeClient();
+      client.mainPlayer.fleetsInTransit.push(Fleet.generateFleet([], null, undefined, 3));
+      const event: PlanetLostEvent = {
+        type: ClientEventType.PLANET_LOST,
+        affectedPlayerIds: [PLAYER_ID],
+        data: {
+          planetId: homePlanet.id,
+          planetName: homePlanet.name,
+          planetType: homePlanet.type,
+          newOwnerId: 'c1',
+          newOwnerName: 'Attacker',
+          conflictData: conflictData(),
+          attackingFleetId: 3,
+        },
+      };
+      EventApplicator.applyEvent(client, event, grid);
+      expect(client.mainPlayer.fleetsInTransit.some((f) => f.id === 3)).toBe(true);
+      expect(client.mainPlayerOwnedPlanets[homePlanet.id]).toBeUndefined();
+    });
+
+    it("FLEET_DEFENSE_SUCCESS does not remove the defender's own fleet with the attacker's id", () => {
+      const client = makeClient();
+      client.mainPlayer.fleetsInTransit.push(Fleet.generateFleet([], null, undefined, 3));
+      const event: FleetDefenseSuccessEvent = {
+        type: ClientEventType.FLEET_DEFENSE_SUCCESS,
+        affectedPlayerIds: [PLAYER_ID],
+        data: {
+          planetId: homePlanet.id,
+          planetName: homePlanet.name,
+          attackerName: 'Attacker',
+          attackerId: 'c1',
+          conflictData: conflictData(),
+          attackingFleetId: 3,
+        },
+      };
+      EventApplicator.applyEvent(client, event, grid);
+      expect(client.mainPlayer.fleetsInTransit.some((f) => f.id === 3)).toBe(true);
+    });
+
+    it("PLANET_CAPTURED still removes the attacker's own fleet", () => {
+      const client = makeClient();
+      client.mainPlayer.fleetsInTransit.push(Fleet.generateFleet([], null, undefined, 5));
+      const event: PlanetCapturedEvent = {
+        type: ClientEventType.PLANET_CAPTURED,
+        affectedPlayerIds: [PLAYER_ID],
+        data: {
+          planetId: destPlanet.id,
+          planetName: destPlanet.name,
+          conflictData: conflictData(),
+          planetData: structuredClone(destPlanet),
+          attackingFleetId: 5,
+        },
+      };
+      EventApplicator.applyEvent(client, event, grid);
+      expect(client.mainPlayer.fleetsInTransit.some((f) => f.id === 5)).toBe(false);
+      expect(client.mainPlayerOwnedPlanets[destPlanet.id]).toBeDefined();
     });
   });
 

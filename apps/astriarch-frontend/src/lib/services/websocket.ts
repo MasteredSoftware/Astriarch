@@ -36,6 +36,7 @@ import { clientGameModel, isGameRunning, gameActions, gameGrid } from '#lib/stor
 import { PlayerStorage } from '#lib/utils/playerStorage.ts';
 import { preserveNextFleetId } from '#lib/utils/fleetIdCounter.ts';
 import { buildSendShipsCommand } from '#lib/utils/sendShipsCommand.ts';
+import { resolvedOwnFleetId } from '#lib/utils/conflictFleetCleanup.ts';
 import type {
 	AdjustResearchPercentCommand,
 	CancelResearchItemCommand,
@@ -1276,29 +1277,13 @@ class WebSocketService {
 					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
 				}
 
-				// Clear pending arrival fleet tracking for conflict resolution events
-				// (EventApplicator already removed the fleet from fleetsInTransit)
+				// Clear pending arrival fleet tracking for the attacker's own conflict resolution events
+				// (EventApplicator already removed the fleet from fleetsInTransit). Fleet ids are
+				// player-scoped, so defender events never name one of our fleets.
 				for (const event of payload.events) {
-					if (
-						event.type === ClientEventType.PLANET_CAPTURED ||
-						event.type === ClientEventType.FLEET_ATTACK_FAILED
-					) {
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const attackingFleetId = (event.data as any)?.attackingFleetId;
-						if (attackingFleetId !== undefined) {
-							gameActions.clearPendingArrivalFleet(attackingFleetId);
-						}
-					} else if (
-						event.type === ClientEventType.PLANET_LOST ||
-						event.type === ClientEventType.FLEET_DEFENSE_SUCCESS
-					) {
-						// For defender events, also clear any pending fleet with matching attackingFleetId
-						// (unlikely to have one, but be thorough)
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const attackingFleetId = (event.data as any)?.attackingFleetId;
-						if (attackingFleetId !== undefined) {
-							gameActions.clearPendingArrivalFleet(attackingFleetId);
-						}
+					const ownFleetId = resolvedOwnFleetId(event);
+					if (ownFleetId !== undefined) {
+						gameActions.clearPendingArrivalFleet(ownFleetId);
 					}
 				}
 
