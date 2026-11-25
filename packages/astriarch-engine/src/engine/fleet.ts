@@ -1,4 +1,5 @@
 import { ClientPlanet } from '../model';
+import { PlanetById } from '../model/clientModel';
 import { EarnedPointsType } from '../model/earnedPoints';
 import { FleetData, LastKnownFleetData, StarshipAdvantageData, StarshipData, StarShipType } from '../model/fleet';
 import { PlanetData, PlanetImprovementType } from '../model/planet';
@@ -6,6 +7,7 @@ import { PlayerData } from '../model/player';
 import { ResearchType } from '../model/research';
 import { PointData } from '../shapes/shapes';
 import { GameTools } from '../utils/gameTools';
+import { simpleHash } from '../utils/simpleHash';
 import { calculateFleetCompositionHash } from '../utils/stateChecksum';
 import { Grid } from './grid';
 import { Player } from './player';
@@ -25,11 +27,102 @@ export interface StarshipTypeCounts {
 export class Fleet {
   private static NEXT_FLEET_ID = 1;
   private static NEXT_STARSHIP_ID = 1;
-  public static generateFleet(starships: StarshipData[], locationHexMidPoint: PointData | null, player?: PlayerData) {
+  /** Multiplier used to encode a waypoint fleet id from a `${planetId}_${seq}` starship id. */
+  public static readonly WAYPOINT_FLEET_ID_SEQ_RANGE = 2 ** 21;
+  /**
+   * How far a supplied SEND_SHIPS fleet id may run ahead of the player's counter. Bounds the jump so a
+   * buggy or hostile client cannot push the counter to the end of the safe-integer range.
+   */
+  public static readonly MAX_FLEET_ID_JUMP = 2 ** 20;
+
+  /**
+   * Ensures the player's fleet id counter is past the given player-allocated (positive) fleet id,
+   * so neither client nor server will hand that id out again. Ids at or below zero are ignored.
+   */
+  public static reserveFleetId(player: PlayerData, fleetId: number) {
+    if (!(fleetId > 0)) return;
+    const current = Number.isFinite(player.nextFleetId) ? player.nextFleetId : 1;
+    player.nextFleetId = Math.max(current, fleetId + 1);
+  }
+
+  private static getOwnedPlanetList(ownedPlanets: PlanetData[] | PlanetById): PlanetData[] {
+    return Array.isArray(ownedPlanets) ? ownedPlanets : Object.values(ownedPlanets);
+  }
+
+  /**
+   * Returns true if a fleet with this id is in transit for the player or outgoing from one of their planets
+   */
+  public static isFleetIdInUse(player: PlayerData, ownedPlanets: PlanetData[] | PlanetById, fleetId: number): boolean {
+    if (player.fleetsInTransit.some((f) => f.id === fleetId)) return true;
+    return this.getOwnedPlanetList(ownedPlanets).some((p) => p.outgoingFleets.some((f) => f.id === fleetId));
+  }
+
+  /**
+   * Returns the smallest player-allocated fleet id >= player.nextFleetId that is not already in use.
+   * Does not increment the counter: the SEND_SHIPS command reserves the id when processed.
+   */
+  public static allocateFleetId(player: PlayerData, ownedPlanets: PlanetData[] | PlanetById): number {
+    const used = new Set<number>(player.fleetsInTransit.map((f) => f.id));
+    for (const p of this.getOwnedPlanetList(ownedPlanets)) {
+      for (const f of p.outgoingFleets) {
+        used.add(f.id);
+      }
+    }
+    let id = Number.isFinite(player.nextFleetId) && player.nextFleetId > 0 ? player.nextFleetId : 1;
+    while (used.has(id)) {
+      id++;
+    }
+    return id;
+  }
+
+  /**
+   * Derives a deterministic negative fleet id for a fleet created at a waypoint from its single starship.
+   * Well-formed starship ids (`${planetId}_${seq}`) encode to -(planetId * 2^21 + seq), magnitude >= 2^21.
+   * Only ship ids that are not of that form or are out of range (for example `fallback_N` from
+   * generateStarship with no planet, which the waypoint build never produces) fall back to a hash in
+   * magnitudes [1, 2^21), below the encoded range.
+   * Legacy queue items without an assignedShipId get a well-formed id when built, so they use the encoded
+   * range; but their seq is taken at build time and can race QUEUE_PRODUCTION_ITEM's nextShipId++, so their
+   * waypoint ids are only as order-independent as that build.
+   */
+  public static waypointFleetIdForStarship(planetId: number, starshipId: string): number {
+    const range = Fleet.WAYPOINT_FLEET_ID_SEQ_RANGE;
+    const match = /^(\d+)_(\d+)$/.exec(starshipId);
+    if (match) {
+      const shipPlanetId = Number(match[1]);
+      const seq = Number(match[2]);
+      const encoded = shipPlanetId * range + seq;
+      if (shipPlanetId >= 1 && seq < range && Number.isSafeInteger(encoded)) {
+        return -encoded;
+      }
+    }
+    const hash = parseInt(simpleHash('WAYPOINT:' + planetId + ':' + starshipId), 16);
+    return -(1 + (hash % (range - 1)));
+  }
+
+  /**
+   * Creates a fleet. If fleetId is supplied it is used as-is (and reserved on the player's counter);
+   * otherwise the id comes from the player's counter, or the static counter when no player is given.
+   */
+  public static generateFleet(
+    starships: StarshipData[],
+    locationHexMidPoint: PointData | null,
+    player?: PlayerData,
+    fleetId?: number,
+  ): FleetData {
     const shipIds = starships.map((s) => s.id);
     const hash = calculateFleetCompositionHash(shipIds);
+    let id: number;
+    if (fleetId !== undefined) {
+      id = fleetId;
+      if (player) {
+        this.reserveFleetId(player, fleetId);
+      }
+    } else {
+      id = player ? player.nextFleetId++ : Fleet.NEXT_FLEET_ID++;
+    }
     return {
-      id: player ? player.nextFleetId++ : Fleet.NEXT_FLEET_ID++,
+      id,
       starships,
       locationHexMidPoint,
       travelingFromHexMidPoint: null,
@@ -283,8 +376,9 @@ export class Fleet {
       battleships: string[];
     },
     player?: PlayerData,
+    fleetId?: number,
   ): FleetData {
-    const newFleet = this.generateFleet([], fleet.locationHexMidPoint, player);
+    const newFleet = this.generateFleet([], fleet.locationHexMidPoint, player, fleetId);
 
     const moveShipsToFleet = (ids: string[], targetType: StarShipType) => {
       for (const shipId of ids) {
@@ -330,12 +424,8 @@ export class Fleet {
     fleetId?: number,
   ): FleetData {
     // Split the fleet by specific ship IDs
-    const newFleet = this.splitFleetByShipIds(sourcePlanet.planetaryFleet, shipIds, player);
-
-    // Use provided fleet ID if available (from client-generated command)
-    if (fleetId !== undefined) {
-      newFleet.id = fleetId;
-    }
+    // Use provided fleet ID if available (from client-generated command); it is reserved on the player's counter
+    const newFleet = this.splitFleetByShipIds(sourcePlanet.planetaryFleet, shipIds, player, fleetId);
 
     // Set the destination for the new fleet
     this.setDestination(newFleet, grid, sourcePlanet.boundingHexMidPoint, destPlanet.boundingHexMidPoint);
@@ -536,9 +626,9 @@ export class Fleet {
   /**
    * Copies this fleet
    */
-  public static cloneFleet(fleet: FleetData, player?: PlayerData): FleetData {
-    const f = this.generateFleet([], fleet.locationHexMidPoint, player);
-    f.id = fleet.id; // Preserve original ID for clones
+  public static cloneFleet(fleet: FleetData): FleetData {
+    // Preserve original ID for clones; never consumes a fleet id from any counter
+    const f = this.generateFleet([], fleet.locationHexMidPoint, undefined, fleet.id);
     for (const s of fleet.starships) {
       f.starships.push(this.cloneStarship(s));
     }

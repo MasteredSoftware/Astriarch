@@ -9,8 +9,9 @@ export interface KeyedFleets {
 
 /**
  * Gives every fleet a canvas key. The first fleet with an id keys as `${id}`;
- * the nth repeat of that id keys as `${id}#${n}`. Fleet ids should be unique
- * per player, but they can collide today, and a collision must not hide a fleet.
+ * the nth repeat of that id keys as `${id}#${n}`. Fleet ids are expected to be
+ * unique per player (positive send ids, negative waypoint ids), but corrupted or
+ * old saved state could still repeat one, and a collision must not hide a fleet.
  */
 export function keyFleets(fleets: Iterable<FleetData>): KeyedFleets {
 	const keyed: Array<[string, FleetData]> = [];

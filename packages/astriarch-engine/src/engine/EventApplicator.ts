@@ -382,12 +382,10 @@ export class EventApplicator {
   }
 
   private static applyPlanetLost(clientModel: ClientModelData, event: PlanetLostEvent): void {
-    const { planetId, newOwnerId, conflictData, attackingFleetId } = event.data;
+    const { planetId, newOwnerId, conflictData } = event.data;
 
-    // Remove the attacking fleet from fleetsInTransit if present (shouldn't be for defender, but be safe)
-    if (attackingFleetId !== undefined) {
-      this.removeFleetFromTransit(clientModel, attackingFleetId);
-    }
+    // Fleet ids are player-scoped: attackingFleetId is the attacker's id and says nothing about our fleets.
+    // The attacker's own client cleans up its fleet on PLANET_CAPTURED.
 
     // Remove planet from our owned planets immediately
     if (clientModel.mainPlayerOwnedPlanets[planetId]) {

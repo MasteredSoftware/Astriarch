@@ -34,6 +34,9 @@ import {
 // Import the main game stores to update them when receiving multiplayer game state
 import { clientGameModel, isGameRunning, gameActions, gameGrid } from '#lib/stores/gameStore.ts';
 import { PlayerStorage } from '#lib/utils/playerStorage.ts';
+import { preserveNextFleetId } from '#lib/utils/fleetIdCounter.ts';
+import { buildSendShipsCommand } from '#lib/utils/sendShipsCommand.ts';
+import { resolvedOwnFleetId } from '#lib/utils/conflictFleetCleanup.ts';
 import type {
 	AdjustResearchPercentCommand,
 	CancelResearchItemCommand,
@@ -48,7 +51,6 @@ import type {
 	ProductionItemQueuedEvent,
 	QueueProductionItemCommand,
 	RemoveProductionItemCommand,
-	SendShipsCommand,
 	SetWaypointCommand,
 	SubmitResearchItemCommand,
 	SubmitTradeCommand,
@@ -725,6 +727,9 @@ class WebSocketService {
 						// Update the client game model with the real-time data from server
 						const updatedClientGameModel = message.payload.clientGameModel as ClientModelData;
 
+						// Don't let the fleet id counter go backwards for sends the server hasn't processed yet
+						preserveNextFleetId(get(clientGameModel), updatedClientGameModel);
+
 						clientGameModel.set(updatedClientGameModel);
 
 						// Clear the flag to allow future time advancement requests
@@ -1272,29 +1277,13 @@ class WebSocketService {
 					console.log(`   Owned planets AFTER:  [${ownedPlanetsAfter.join(', ')}]`);
 				}
 
-				// Clear pending arrival fleet tracking for conflict resolution events
-				// (EventApplicator already removed the fleet from fleetsInTransit)
+				// Clear pending arrival fleet tracking for the attacker's own conflict resolution events
+				// (EventApplicator already removed the fleet from fleetsInTransit). Fleet ids are
+				// player-scoped, so defender events never name one of our fleets.
 				for (const event of payload.events) {
-					if (
-						event.type === ClientEventType.PLANET_CAPTURED ||
-						event.type === ClientEventType.FLEET_ATTACK_FAILED
-					) {
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const attackingFleetId = (event.data as any)?.attackingFleetId;
-						if (attackingFleetId !== undefined) {
-							gameActions.clearPendingArrivalFleet(attackingFleetId);
-						}
-					} else if (
-						event.type === ClientEventType.PLANET_LOST ||
-						event.type === ClientEventType.FLEET_DEFENSE_SUCCESS
-					) {
-						// For defender events, also clear any pending fleet with matching attackingFleetId
-						// (unlikely to have one, but be thorough)
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						const attackingFleetId = (event.data as any)?.attackingFleetId;
-						if (attackingFleetId !== undefined) {
-							gameActions.clearPendingArrivalFleet(attackingFleetId);
-						}
+					const ownFleetId = resolvedOwnFleetId(event);
+					if (ownFleetId !== undefined) {
+						gameActions.clearPendingArrivalFleet(ownFleetId);
 					}
 				}
 
@@ -2026,27 +2015,7 @@ class WebSocketService {
 			if (!cgm) {
 				throw new Error('No game model available');
 			}
-			const playerId = cgm.mainPlayer.id;
-
-			// Get next fleet ID from player's counter
-			const fleetId = cgm.mainPlayer.nextFleetId++;
-
-			// Send command with ship IDs (user selected specific ships) and fleet ID
-			const command: SendShipsCommand = {
-				type: GameCommandType.SEND_SHIPS,
-				playerId,
-				timestamp: Date.now(),
-				fromPlanetId: planetIdSource,
-				toPlanetId: planetIdDest,
-				fleetId,
-				shipIds: {
-					scouts: shipsByType.scouts,
-					destroyers: shipsByType.destroyers,
-					cruisers: shipsByType.cruisers,
-					battleships: shipsByType.battleships
-				},
-				commandId: '' // Will be set by sendCommand
-			};
+			const command = buildSendShipsCommand(cgm, planetIdSource, planetIdDest, shipsByType);
 
 			this.sendCommand(command);
 		} catch (error) {

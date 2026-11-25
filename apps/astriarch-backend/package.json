@@ -34,9 +34,9 @@
     "express-session": "^1.17.3",
     "helmet": "^7.1.0",
     "mongoose": "^8.24.7",
-    "morgan": "^1.10.0",
-    "uuid": "^11.1.0",
-    "ws": "^8.14.2"
+    "morgan": "^1.12.1",
+    "uuid": "^14.0.0",
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",

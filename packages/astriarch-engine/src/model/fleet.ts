@@ -23,6 +23,11 @@ export interface StarshipData {
 }
 
 export interface FleetData {
+  /**
+   * Fleet id, unique within the owning player.
+   * Ids above zero are allocated by players (SEND_SHIPS, from player.nextFleetId).
+   * Ids below zero are derived by the engine for waypoint fleets (see Fleet.waypointFleetIdForStarship).
+   */
   id: number;
   starships: StarshipData[];
   locationHexMidPoint: PointData | null;

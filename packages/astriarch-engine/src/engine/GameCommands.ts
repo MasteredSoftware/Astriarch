@@ -438,7 +438,7 @@ export interface PlanetLostEvent extends ClientEvent {
     newOwnerId: string;
     newOwnerName: string;
     conflictData: PlanetaryConflictData;
-    attackingFleetId?: number; // Fleet ID of the attacking fleet (for client-side cleanup)
+    attackingFleetId?: number; // Attacker's player-scoped fleet ID: informational only, not one of the receiver's fleets
   };
 }
 
@@ -463,7 +463,7 @@ export interface FleetDefenseSuccessEvent extends ClientEvent {
     attackerName: string;
     attackerId: string;
     conflictData: PlanetaryConflictData;
-    attackingFleetId?: number; // Fleet ID of the attacking fleet (for client-side cleanup)
+    attackingFleetId?: number; // Attacker's player-scoped fleet ID: informational only, not one of the receiver's fleets
   };
 }
 
