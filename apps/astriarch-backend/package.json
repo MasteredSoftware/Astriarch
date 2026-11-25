@@ -36,7 +36,7 @@
     "mongoose": "^8.0.3",
     "morgan": "^1.12.1",
     "uuid": "^14.0.0",
-    "ws": "^8.14.2"
+    "ws": "^8.21.0"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
