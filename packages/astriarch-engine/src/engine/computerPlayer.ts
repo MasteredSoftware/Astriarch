@@ -1466,7 +1466,9 @@ export class ComputerPlayer {
               cruisers: [] as string[],
               battleships: [] as string[],
             };
-            const fleetId = player.nextFleetId++;
+            // Reserve immediately: several sends are planned before any is processed
+            const fleetId = Fleet.allocateFleetId(player, ownedPlanets);
+            Fleet.reserveFleetId(player, fleetId);
 
             const sendCmd = this.createAICommand<SendShipsCommand>(player, {
               type: GameCommandType.SEND_SHIPS,
@@ -1660,7 +1662,9 @@ export class ComputerPlayer {
               cruisers: shipsByType[StarShipType.Cruiser].map((s) => s.id),
               battleships: shipsByType[StarShipType.Battleship].map((s) => s.id),
             };
-            const fleetId = player.nextFleetId++;
+            // Reserve immediately: several sends are planned before any is processed
+            const fleetId = Fleet.allocateFleetId(player, ownedPlanets);
+            Fleet.reserveFleetId(player, fleetId);
 
             const sendCmd = this.createAICommand<SendShipsCommand>(player, {
               type: GameCommandType.SEND_SHIPS,
@@ -1794,7 +1798,9 @@ export class ComputerPlayer {
                 .slice(0, starshipCounts.battleships)
                 .map((s) => s.id),
             };
-            const fleetId = player.nextFleetId++;
+            // Reserve immediately: several sends are planned before any is processed
+            const fleetId = Fleet.allocateFleetId(player, ownedPlanets);
+            Fleet.reserveFleetId(player, fleetId);
 
             const sendCmd = this.createAICommand<SendShipsCommand>(player, {
               type: GameCommandType.SEND_SHIPS,
@@ -1897,7 +1903,9 @@ export class ComputerPlayer {
               .slice(0, starshipCounts.battleships)
               .map((s) => s.id),
           };
-          const fleetId = player.nextFleetId++;
+          // Reserve immediately: several sends are planned before any is processed
+          const fleetId = Fleet.allocateFleetId(player, ownedPlanets);
+          Fleet.reserveFleetId(player, fleetId);
 
           const sendCmd = this.createAICommand<SendShipsCommand>(player, {
             type: GameCommandType.SEND_SHIPS,
@@ -2591,7 +2599,9 @@ export class ComputerPlayer {
           cruisers: ships.filter((s) => s.type === StarShipType.Cruiser).map((s) => s.id),
           battleships: ships.filter((s) => s.type === StarShipType.Battleship).map((s) => s.id),
         };
-        const fleetId = player.nextFleetId++;
+        // Reserve immediately: several sends are planned before any is processed
+        const fleetId = Fleet.allocateFleetId(player, ownedPlanetsSorted);
+        Fleet.reserveFleetId(player, fleetId);
 
         const sendCmd = this.createAICommand<SendShipsCommand>(player, {
           type: GameCommandType.SEND_SHIPS,

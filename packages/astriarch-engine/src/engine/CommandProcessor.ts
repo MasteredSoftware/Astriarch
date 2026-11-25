@@ -520,6 +520,42 @@ export class CommandProcessor {
         events: [],
       };
     }
+    // Validate the client-provided fleet ID: player-allocated ids must be positive safe integers
+    const fleetId = command.fleetId;
+    if (!(Number.isSafeInteger(fleetId) && fleetId > 0 && fleetId < Number.MAX_SAFE_INTEGER)) {
+      return {
+        success: false,
+        error: this.createError(`Invalid fleet id: ${fleetId}`, CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
+    }
+    // Reject ids far above the counter: reserving one would push the counter towards MAX_SAFE_INTEGER
+    const counter = Number.isFinite(player.nextFleetId) ? player.nextFleetId : 1;
+    if (fleetId > counter + Fleet.MAX_FLEET_ID_JUMP) {
+      return {
+        success: false,
+        error: this.createError(`Invalid fleet id: ${fleetId}`, CommandResultErrorCode.INVALID_PARAMETER),
+        events: [],
+      };
+    }
+
+    const ownedPlanets = this.isClientModel(model)
+      ? model.mainPlayerOwnedPlanets
+      : model.planets.filter((p) => player.ownedPlanetIds.includes(p.id));
+    if (Fleet.isFleetIdInUse(player, ownedPlanets, fleetId)) {
+      // Move the counter past the collision so the next allocation does not reuse it
+      Fleet.reserveFleetId(player, fleetId);
+      return {
+        success: false,
+        error: this.createError(
+          `Fleet id already in use: ${fleetId}`,
+          CommandResultErrorCode.INVALID_PARAMETER,
+          true, // Possible desync - client allocated an id the server already has
+        ),
+        events: [],
+      };
+    }
+
     // Launch the fleet using the engine method with client-provided fleet ID
     Fleet.launchFleetToPlanet(sourcePlanet, destPlanet, grid, command.shipIds, player, command.fleetId);
 

@@ -543,9 +543,11 @@
 
 	function updateFleets(gameModel: ClientModelData) {
 		// Keep one DrawnFleet per fleet and update it in place. Fleet ids are
-		// player-scoped, and only the main player's fleets are drawn. Ids can
-		// collide (the client and server fleet id counters can diverge), so a
-		// repeated id gets a derived key instead of hiding a fleet.
+		// player-scoped, and only the main player's fleets are drawn. Ids are
+		// expected to be unique: send ids are above zero and come from the
+		// player's counter, waypoint ids are below zero and are derived from the
+		// starship id. Derived keys and the one-time warning remain only as a
+		// fallback for corrupted or old saved state, so a repeat never hides a fleet.
 		const { keyed, duplicateIds } = keyFleets(gameModel.mainPlayer.fleetsInTransit);
 		for (const id of duplicateIds) {
 			if (warnedDuplicateFleetIds.has(id)) continue;

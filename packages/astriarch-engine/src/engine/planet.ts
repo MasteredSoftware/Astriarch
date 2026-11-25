@@ -827,10 +827,15 @@ export class Planet {
             planet.waypointBoundingHexMidPoint &&
             ![StarShipType.SystemDefense, StarShipType.SpacePlatform].includes(type)
           ) {
-            const newFleet = Fleet.generateFleet([], planet.boundingHexMidPoint, owner);
-            newFleet.starships.push(ship);
-            // Update hash for the newly created fleet with the added ship
-            Fleet.recalculateFleetCompositionHash(newFleet);
+            // Waypoint fleet ids are negative and derived from the starship id so client and server agree
+            // regardless of the order in which they process this build and any SEND_SHIPS commands
+            // (when the queue item has an assignedShipId)
+            const newFleet = Fleet.generateFleet(
+              [ship],
+              planet.boundingHexMidPoint,
+              undefined,
+              Fleet.waypointFleetIdForStarship(planet.id, ship.id),
+            );
             Fleet.setDestination(newFleet, gameGrid, planet.boundingHexMidPoint, planet.waypointBoundingHexMidPoint);
 
             planet.outgoingFleets.push(newFleet);
