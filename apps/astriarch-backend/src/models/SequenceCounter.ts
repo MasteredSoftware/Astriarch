@@ -9,7 +9,7 @@ import { Schema, model, Document } from "mongoose";
  *
  * The _id field is the counter key (e.g., "game:<gameId>").
  */
-export interface ISequenceCounter extends Document {
+export interface ISequenceCounter extends Document<string> {
   _id: string;
   seq: number;
 }
