@@ -50,7 +50,7 @@ Outside CI, `reuseExistingServer` is true, so Playwright reuses any backend alre
 
 ## Test Page Hook
 
-Setting `window.__ASTRIARCH_TEST__ = true` in an init script (before the app loads) makes `+layout.svelte` lazily load `src/lib/testing/testHooks.ts`, which installs `window.__astriarchTest` (types in `src/lib/testing/testHooksTypes.ts`). The chunk is built only when `import.meta.env.DEV` is true (`vite dev`, which the e2e config uses) or the build runs with `VITE_ASTRIARCH_TEST_HOOKS=true`; production builds leave it out entirely. It exposes owned planets, the selected planet, mobile ship ids, fleets in transit, `requestStateSync()`, `startRecording()` / `stopRecording()`, and `waitForMobileShipCount(planetId, count, timeoutMs)`. While recording, it subscribes to `clientGameModel` (no timers) and records each publish as a model sample paired with the Fleet Command DOM after Svelte flushed. `waitForMobileShipCount()` resolves from a `clientGameModel` subscription (no polling) and rejects after a single timeout.
+Setting `window.__ASTRIARCH_TEST__ = true` in an init script (before the app loads) makes `+layout.svelte` lazily load `src/lib/testing/testHooks.ts`, which installs `window.__astriarchTest` (types in `src/lib/testing/testHooksTypes.ts`). The chunk is built only when `import.meta.env.DEV` is true (`vite dev`, which the e2e config uses) or the build runs with `VITE_ASTRIARCH_TEST_HOOKS=true`; production builds leave it out entirely. It exposes owned planets, the selected planet, mobile ship ids, fleets in transit, task notifications, all starship ids, `requestStateSync()`, `startRecording()` / `stopRecording()`, and `waitForMobileShipCount(planetId, count, timeoutMs)`. While recording, it subscribes to `clientGameModel` (no timers) and records each publish as a model sample paired with the Fleet Command DOM after Svelte flushed. `waitForMobileShipCount()` resolves from a `clientGameModel` subscription (no polling) and rejects after a single timeout.
 
 Port 4173 is also Vite's default `vite preview` port. Outside CI, Playwright reuses a server already listening there, so a stray `vite preview` of a production build has no hook and scenario F fails at the hook wait. Stop it and rerun.
 
@@ -83,6 +83,34 @@ Failure messages start with `[variant <name> seed=... minHex=... hex=... targetO
 - `SYNC BUG: model dropped ... after <frame>` means the model had the landed ship and then lost it. The last server frame before the drop is named.
 - Checksum mismatches, "Fleet data refreshed" resyncs, page errors, `each_key_duplicate` and any console error also fail the test. The console-error allowlist is empty on purpose.
 
+## Scenario G (issue #83): Capturing an Enemy Planet
+
+`scenarios/scenario-g-capture-large-fleet.spec.ts` sends a large mixed fleet (47 ships: 10 Scouts, 10 Destroyers, 15 Cruisers, 12 Battleships; strength 744) to the Easy AI's home planet T and captures it. Issue #83 was a Svelte `each_key_duplicate` thrown at that point. SvelteKit's route error boundary caught it and replaced the whole game with its default error page ("500 / Internal Error").
+
+The cause was the task notification key. `TaskNotificationPanel` keyed tasks by `type + planetId`, and `TaskNotificationType` is a numeric enum, so the key was a sum. A captured planet always gets an empty build queue, so (BuildQueueEmpty = 0, T) has key `T`. That collides with (CitizensProtesting = 2, T-2), (InsufficientFood = 1, T-1), and so on. The key is now the string `` `${type}:${planetId}` `` (`src/lib/components/astriarch/notification/taskNotificationList.ts`).
+
+The scenario sets the game up through the test-only route `POST /api/test/setup-fleet-attack { gameName, scouts?, destroyers?, cruisers?, battleships? }`. Each count is an integer from 0 to 200; anything else gets a 400. Use `setupFleetAttack()` in `helpers/testBackend.ts`. With seed 20261125 (2 systems x 4 planets), the route:
+
+- gives the human the staging planet S = T+2, holding the fleet
+- gives the AI planet R = T+1, so capturing T does not destroy the AI and end the game
+- gives the human planet C = T-2 and sets every citizen there protesting (with a food buffer)
+
+The route edits the stored game directly, so the client must resync afterwards. The layout (T = H+4, and the S to T distance) is pinned in `apps/astriarch-backend/src/utils/testFleetAttackScenario.spec.ts`.
+
+C is seeded with protest because the protest on a freshly captured planet is random (each citizen has a 1 in 3 chance of being content), and gameplay randomness is not seeded. With protest on C, its task (CitizensProtesting, C) has the old key (T-2)+2 = T. So the collision with T's BuildQueueEmpty task is certain. It does not depend on chance.
+
+The test fails immediately with `ISSUE #83: each_key_duplicate after capturing planet T: <error>`. The message continues with `PAGE CRASHED: ...` if the game UI was replaced by the error page; a screenshot is saved as `issue-83-crash.png`. After a capture without errors, it checks:
+
+- the game UI (`view-game`) is still rendered
+- a `PLANET_CAPTURED` event arrived and no fleet is left in transit
+- ship ids are unique, and Fleet Command on T shows exactly the model's ships
+- the task panel renders each (type, planet) once and matches the model
+- there are no page errors, console errors (empty allowlist) or fleet resyncs
+
+It attaches `scenario-g-timeline.json`, which holds the setup result, websocket frames and client events, console output, task snapshots before and after, and Fleet Command samples recorded from Send onwards. If `each_key_duplicate` fired, it also adds an `issue-80-observation` annotation. That annotation says what the Fleet Command view did after the error.
+
+The test page hook also exposes `taskNotifications()`, which lists (type, planetId) pairs in panel order, and `allStarshipIds()`, which covers every owned planet's ships plus fleets in transit. Task items carry `data-testid="task-item"`, `data-task-type` and `data-planet-id`.
+
 ## data-testid Contract
 
 The scenarios rely on these stable selectors:
@@ -106,5 +134,6 @@ The scenarios rely on these stable selectors:
 - `notification-error`
 - `view-fleet-command` (with `data-selected-planet-id`, the planet Fleet Command is showing)
 - `ship-card` (with `data-ship-id`, one per rendered ship in Fleet Command)
+- `task-item` (with `data-task-type` and `data-planet-id`, one per rendered task notification)
 
 When changing UI components, preserve these ids or update helpers/scenarios in the same change.

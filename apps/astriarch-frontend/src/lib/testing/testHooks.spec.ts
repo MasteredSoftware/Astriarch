@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { writable } from 'svelte/store';
-import { StarShipType, type ClientModelData } from 'astriarch-engine';
+import { StarShipType, TaskNotificationType, type ClientModelData } from 'astriarch-engine';
 
 // testHooks wires the real app stores in installTestHooks(); the recorder under
 // test takes its stores as arguments, so stub the app modules out.
@@ -11,8 +11,10 @@ vi.mock('#lib/stores/gameStore.ts', () => ({
 vi.mock('#lib/services/websocket.ts', () => ({ webSocketService: { requestStateSync: vi.fn() } }));
 
 import {
+	allStarshipIdsOf,
 	createFleetViewRecorder,
 	mobileShipIdsOf,
+	taskNotificationsOf,
 	waitForMobileShipCount,
 	type FleetViewState
 } from './testHooks';
@@ -83,6 +85,49 @@ describe('mobileShipIdsOf', () => {
 		} as never;
 		expect(mobileShipIdsOf(planet)).toEqual(['b', 'd']);
 		expect(mobileShipIdsOf(undefined)).toEqual([]);
+	});
+});
+
+describe('taskNotificationsOf', () => {
+	it('lists every (type, planetId) pair in the index', () => {
+		const t = (type: TaskNotificationType, planetId: number) => ({
+			type,
+			planetId,
+			planetName: 'p',
+			message: 'm'
+		});
+		const cgm = {
+			taskNotifications: {
+				[TaskNotificationType.BuildQueueEmpty]: { 11: t(TaskNotificationType.BuildQueueEmpty, 11) },
+				[TaskNotificationType.InsufficientFood]: {},
+				[TaskNotificationType.CitizensProtesting]: {
+					9: t(TaskNotificationType.CitizensProtesting, 9)
+				}
+			}
+		} as unknown as ClientModelData;
+		expect(taskNotificationsOf(cgm)).toEqual([
+			{ type: TaskNotificationType.BuildQueueEmpty, planetId: 11 },
+			{ type: TaskNotificationType.CitizensProtesting, planetId: 9 }
+		]);
+		expect(taskNotificationsOf(null)).toEqual([]);
+	});
+});
+
+describe('allStarshipIdsOf', () => {
+	it('includes every ship type on owned planets and ships in transit', () => {
+		const cgm = {
+			mainPlayerOwnedPlanets: {
+				1: {
+					planetaryFleet: {
+						starships: [ship('1_1', StarShipType.SystemDefense), ship('1_2', StarShipType.Scout)]
+					}
+				},
+				2: { planetaryFleet: { starships: [ship('2_1', StarShipType.SpacePlatform)] } }
+			},
+			mainPlayer: { fleetsInTransit: [{ starships: [ship('3_1', StarShipType.Cruiser)] }] }
+		} as unknown as ClientModelData;
+		expect(allStarshipIdsOf(cgm).sort()).toEqual(['1_1', '1_2', '2_1', '3_1']);
+		expect(allStarshipIdsOf(null)).toEqual([]);
 	});
 });
 

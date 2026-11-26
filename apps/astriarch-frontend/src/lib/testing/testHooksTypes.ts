@@ -31,11 +31,21 @@ export interface FleetViewSample {
 	viewWallMs: number;
 }
 
+/** One task notification, as the Task Notifications panel lists it. */
+export interface TaskNotificationSample {
+	type: number;
+	planetId: number;
+}
+
 export interface AstriarchTestApi {
 	ownedPlanetIds(): number[];
 	selectedPlanetId(): number | null;
 	mobileShipIds(planetId: number): string[];
 	fleetsInTransit(): FleetInTransitSample[];
+	/** The task notifications in the order the Task Notifications panel renders them. */
+	taskNotifications(): TaskNotificationSample[];
+	/** Every starship id on the main player's planets (all types) and in its fleets in transit. */
+	allStarshipIds(): string[];
 	requestStateSync(): void;
 	/** Subscribes to clientGameModel and records a FleetViewSample per emission. */
 	startRecording(): void;

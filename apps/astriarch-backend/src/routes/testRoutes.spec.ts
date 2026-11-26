@@ -4,12 +4,14 @@ import type { Request, Response } from "express";
 vi.mock("../models/Game", () => ({ ServerGameModel: { findOne: vi.fn(), deleteMany: vi.fn() } }));
 vi.mock("../database/DocumentPersistence", () => ({ saveGameWithConcurrencyProtection: vi.fn() }));
 vi.mock("../utils/testScenarios", () => ({ grantNearestPlanetWithScout: vi.fn() }));
+vi.mock("../utils/testFleetAttackScenario", () => ({ setupFleetAttack: vi.fn() }));
 
 import { testRoutes } from "./testRoutes";
 import { getTestGalaxySeed, setTestGalaxySeed } from "../utils/testGalaxySeed";
 import { ServerGameModel } from "../models/Game";
 import { saveGameWithConcurrencyProtection } from "../database/DocumentPersistence";
 import { grantNearestPlanetWithScout } from "../utils/testScenarios";
+import { setupFleetAttack } from "../utils/testFleetAttackScenario";
 import { logger } from "../utils/logger";
 
 function getPostHandler(path: string) {
@@ -162,5 +164,103 @@ describe("testRoutes /grant-planet", () => {
     await getPostHandler("/grant-planet")({ body: { gameName: "__e2e__err" } } as Request, res);
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({ error: "Grant planet failed", detail: "no unowned planet" });
+  });
+});
+
+describe("testRoutes /setup-fleet-attack", () => {
+  const findOne = vi.mocked(ServerGameModel.findOne);
+  const save = vi.mocked(saveGameWithConcurrencyProtection);
+  const setup = vi.mocked(setupFleetAttack);
+  const helperResult = {
+    playerId: "p1",
+    aiPlayerId: "p2",
+    homePlanetId: 1,
+    targetPlanetId: 5,
+    stagingPlanetId: 7,
+    aiSparePlanetId: 6,
+    collisionPlanetId: 3,
+    hexDistance: 1,
+    fleetStrength: 744,
+    shipIds: ["7_1"],
+  };
+
+  beforeEach(() => {
+    vi.spyOn(logger, "info").mockImplementation(() => logger);
+    vi.spyOn(logger, "error").mockImplementation(() => logger);
+  });
+
+  afterEach(() => {
+    findOne.mockReset();
+    save.mockReset();
+    setup.mockReset();
+    vi.restoreAllMocks();
+  });
+
+  it.each([["my-game"], [undefined], [42]])("rejects game name %s without the __e2e__ prefix", async (gameName) => {
+    const res = mockResponse();
+    await getPostHandler("/setup-fleet-attack")({ body: { gameName } } as Request, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(findOne).not.toHaveBeenCalled();
+  });
+
+  it.each([[{ scouts: -1 }], [{ destroyers: 1.5 }], [{ cruisers: "3" }], [{ battleships: 201 }], [{ scouts: null }]])(
+    "rejects bad counts %o with 400",
+    async (counts) => {
+      const res = mockResponse();
+      await getPostHandler("/setup-fleet-attack")({ body: { gameName: "__e2e__bad", ...counts } } as Request, res);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(findOne).not.toHaveBeenCalled();
+    },
+  );
+
+  it("returns 404 when the in-progress game is missing", async () => {
+    findOne.mockResolvedValue(null as never);
+    const res = mockResponse();
+    await getPostHandler("/setup-fleet-attack")({ body: { gameName: "__e2e__missing" } } as Request, res);
+    expect(findOne).toHaveBeenCalledWith({ name: "__e2e__missing", status: "in_progress" });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  it("runs the helper through the concurrency-protected save, passing the counts through", async () => {
+    const gameState = { players: [], planets: [] };
+    findOne.mockResolvedValue({ _id: "game-1" } as never);
+    setup.mockReturnValue(helperResult);
+    let update: unknown;
+    save.mockImplementation((async (_model: unknown, id: string, transform: (doc: unknown) => Promise<unknown>) => {
+      expect(id).toBe("game-1");
+      update = await transform({ gameState });
+      return {};
+    }) as never);
+
+    const res = mockResponse();
+    await getPostHandler("/setup-fleet-attack")(
+      {
+        body: { gameName: "__e2e__ok", scouts: 0, battleships: 200 },
+      } as Request,
+      res,
+    );
+
+    expect(setup).toHaveBeenCalledWith(gameState, { scouts: 0, battleships: 200 });
+    expect(update).toEqual({ gameState });
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({ ok: true, ...helperResult });
+  });
+
+  it("returns 500 with detail when the helper throws", async () => {
+    findOne.mockResolvedValue({ _id: "game-1" } as never);
+    setup.mockImplementation(() => {
+      throw new Error("staging planet 7 is already owned");
+    });
+    save.mockImplementation((async (_m: unknown, _id: string, transform: (doc: unknown) => Promise<unknown>) =>
+      transform({ gameState: {} })) as never);
+
+    const res = mockResponse();
+    await getPostHandler("/setup-fleet-attack")({ body: { gameName: "__e2e__err" } } as Request, res);
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      error: "Setup fleet attack failed",
+      detail: "staging planet 7 is already owned",
+    });
   });
 });

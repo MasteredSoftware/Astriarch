@@ -25,6 +25,15 @@
  *   starting with "__e2e__" are accepted; an invalid minHexDistance gets a 400.
  *   If no planet qualifies, responds 500 with { error, detail } where detail is
  *   the helper's error message.
+ *
+ * POST /api/test/setup-fleet-attack  { "gameName": "__e2e__...", "scouts"?, "destroyers"?, "cruisers"?, "battleships"? }
+ *   Issue #83 scenario: with the first AI's home planet T, gives the human planets
+ *   T+2 (staging, holding a large mixed fleet; default 10/10/15/12 ships, strength 744)
+ *   and T-2 (every citizen protesting), and gives the AI planet T+1, by editing the stored
+ *   game state directly (no events). Each count must be an integer from 0 to 200 when
+ *   given, otherwise 400. Responds with { ok, ...FleetAttackSetupResult }. Connected
+ *   clients only see the change after SYNC_STATE. Only "__e2e__" game names are
+ *   accepted. If the helper throws, responds 500 with { error, detail }.
  */
 
 import { Router, Request, Response } from "express";
@@ -35,6 +44,7 @@ import { saveGameWithConcurrencyProtection } from "../database/DocumentPersisten
 import { logger } from "../utils/logger";
 import { setTestGalaxySeed } from "../utils/testGalaxySeed";
 import { grantNearestPlanetWithScout, GrantPlanetResult } from "../utils/testScenarios";
+import { setupFleetAttack, FleetAttackCounts, FleetAttackSetupResult } from "../utils/testFleetAttackScenario";
 
 const router: Router = Router();
 
@@ -138,6 +148,54 @@ router.post("/grant-planet", async (req: Request, res: Response) => {
     res
       .status(500)
       .json({ error: "Grant planet failed", detail: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+const FLEET_ATTACK_COUNT_KEYS = ["scouts", "destroyers", "cruisers", "battleships"] as const;
+
+router.post("/setup-fleet-attack", async (req: Request, res: Response) => {
+  const gameName: unknown = req.body?.gameName;
+  if (typeof gameName !== "string" || !gameName.startsWith("__e2e__")) {
+    res.status(400).json({ error: "Invalid gameName: must start with '__e2e__'" });
+    return;
+  }
+  const counts: FleetAttackCounts = {};
+  for (const key of FLEET_ATTACK_COUNT_KEYS) {
+    const value: unknown = req.body?.[key];
+    if (value === undefined) continue;
+    if (!(typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 200)) {
+      res.status(400).json({ error: `${key} must be an integer from 0 to 200 when given` });
+      return;
+    }
+    counts[key] = value;
+  }
+
+  try {
+    const game = await ServerGameModel.findOne({ name: gameName, status: "in_progress" });
+    if (!game) {
+      res.status(404).json({ error: `In-progress game not found: ${gameName}` });
+      return;
+    }
+
+    let result: FleetAttackSetupResult | null = null;
+    await saveGameWithConcurrencyProtection(ServerGameModel, String(game._id), async (doc) => {
+      result = setupFleetAttack(doc.gameState as engine.ModelData, counts);
+      return { gameState: doc.gameState };
+    });
+    if (!result) {
+      throw new Error("setup-fleet-attack transform did not run");
+    }
+    const setup: FleetAttackSetupResult = result;
+
+    logger.info(
+      `[test/setup-fleet-attack] Game "${gameName}": ${setup.shipIds.length} ships (strength ${setup.fleetStrength}) on planet ${setup.stagingPlanetId}, target ${setup.targetPlanetId}, AI spare ${setup.aiSparePlanetId}, protesting planet ${setup.collisionPlanetId}`,
+    );
+    res.json({ ok: true, ...setup });
+  } catch (error) {
+    logger.error("[test/setup-fleet-attack] Setup failed:", error);
+    res
+      .status(500)
+      .json({ error: "Setup fleet attack failed", detail: error instanceof Error ? error.message : String(error) });
   }
 });
 

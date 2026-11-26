@@ -55,3 +55,42 @@ export async function grantPlanet(
 ): Promise<GrantPlanetResult> {
 	return postTestRoute<GrantPlanetResult>('grant-planet', { gameName, ...opts });
 }
+
+export interface FleetAttackCounts {
+	scouts?: number;
+	destroyers?: number;
+	cruisers?: number;
+	battleships?: number;
+}
+
+export interface FleetAttackSetup {
+	ok: true;
+	playerId: string;
+	aiPlayerId: string;
+	/** Human home planet H. */
+	homePlanetId: number;
+	/** AI home planet T, the attack target. */
+	targetPlanetId: number;
+	/** S = T+2, owned by the human, holding the attack fleet. */
+	stagingPlanetId: number;
+	/** R = T+1, owned by the AI so capturing T does not end the game. */
+	aiSparePlanetId: number;
+	/** C = T-2, owned by the human, every citizen protesting. */
+	collisionPlanetId: number;
+	/** Hex distance from S to T. */
+	hexDistance: number;
+	fleetStrength: number;
+	shipIds: string[];
+}
+
+/**
+ * Issue #83 scenario: next to the AI home planet T, gives the human T+2 (with a large
+ * mixed fleet; default 10/10/15/12 ships, strength 744) and T-2 (citizens protesting),
+ * and gives the AI T+1. Clients see it after a SYNC_STATE. Counts are integers 0-200.
+ */
+export async function setupFleetAttack(
+	gameName: string,
+	counts: FleetAttackCounts = {}
+): Promise<FleetAttackSetup> {
+	return postTestRoute<FleetAttackSetup>('setup-fleet-attack', { gameName, ...counts });
+}

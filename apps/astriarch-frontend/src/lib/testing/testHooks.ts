@@ -15,10 +15,12 @@ import { tick } from 'svelte';
 import { StarShipType, type ClientModelData, type PlanetData } from 'astriarch-engine';
 import { clientGameModel, selectedPlanetId } from '#lib/stores/gameStore.ts';
 import { webSocketService } from '#lib/services/websocket.ts';
+import { flattenTaskNotifications } from '#lib/components/astriarch/notification/taskNotificationList.ts';
 import type {
 	AstriarchTestApi,
 	FleetInTransitSample,
-	FleetViewSample
+	FleetViewSample,
+	TaskNotificationSample
 } from '#lib/testing/testHooksTypes.ts';
 
 /** Same filter as FleetCommandView's `ships` ("ALL" tab). */
@@ -34,6 +36,25 @@ export function fleetsInTransitOf(cgm: ClientModelData | null): FleetInTransitSa
 		id: f.id,
 		parsecsToDestination: f.parsecsToDestination
 	}));
+}
+
+/** The task notifications as (type, planetId) pairs, in panel order. */
+export function taskNotificationsOf(cgm: ClientModelData | null): TaskNotificationSample[] {
+	return flattenTaskNotifications(cgm?.taskNotifications).map((n) => ({
+		type: n.type,
+		planetId: n.planetId
+	}));
+}
+
+/** Every starship id on the main player's owned planets and in its fleets in transit. */
+export function allStarshipIdsOf(cgm: ClientModelData | null): string[] {
+	if (!cgm) return [];
+	return [
+		...Object.values(cgm.mainPlayerOwnedPlanets).flatMap((p) =>
+			p.planetaryFleet.starships.map((s) => s.id)
+		),
+		...cgm.mainPlayer.fleetsInTransit.flatMap((f) => f.starships.map((s) => s.id))
+	];
 }
 
 export interface FleetViewState {
@@ -181,6 +202,8 @@ export function installTestHooks(): void {
 		mobileShipIds: (planetId) =>
 			mobileShipIdsOf(get(clientGameModel)?.mainPlayerOwnedPlanets[planetId]),
 		fleetsInTransit: () => fleetsInTransitOf(get(clientGameModel)),
+		taskNotifications: () => taskNotificationsOf(get(clientGameModel)),
+		allStarshipIds: () => allStarshipIdsOf(get(clientGameModel)),
 		requestStateSync: () => webSocketService.requestStateSync(),
 		startRecording: () => recorder.start(),
 		stopRecording: () => recorder.stop(),
