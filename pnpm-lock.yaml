@@ -23,7 +23,7 @@ importers:
         version: 3.2.6
       connect-mongo:
         specifier: ^5.1.0
-        version: 5.1.0(express-session@1.18.1)(mongodb@6.17.0)
+        version: 5.1.0(express-session@1.18.1)(mongodb@6.20.0)
       cookie:
         specifier: ^1.0.2
         version: 1.0.2
@@ -49,8 +49,8 @@ importers:
         specifier: ^7.1.0
         version: 7.2.0
       mongoose:
-        specifier: ^8.0.3
-        version: 8.16.3
+        specifier: ^8.24.7
+        version: 8.24.7
       morgan:
         specifier: ^1.12.1
         version: 1.12.1
@@ -596,8 +596,8 @@ packages:
     peerDependencies:
       svelte: ^5
 
-  '@mongodb-js/saslprep@1.3.0':
-    resolution: {integrity: sha512-zlayKCsIjYb7/IdfqxorK5+xUMyi4vOKcFy10wKJYc63NSdKI8mNME+uJqfatkPmOSMMUiojrL58IePKBm3gvQ==}
+  '@mongodb-js/saslprep@1.6.3':
+    resolution: {integrity: sha512-aHGFvT95c82CoQ7hb6qXpz8Hcc5PJb3ZtQ+P01QDBbyQday0mjcrJPeNJOHCgWe0pGX0zKmKP+1mWi/I/BCX9Q==}
 
   '@napi-rs/wasm-runtime@1.2.6':
     resolution: {integrity: sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw==}
@@ -2303,8 +2303,8 @@ packages:
   mongodb-connection-string-url@3.0.2:
     resolution: {integrity: sha512-rMO7CGo/9BFwyZABcKAWL8UJwH/Kc2x0g72uhDWzG48URRax5TCIcJ7Rc3RZqffZzO/Gwff/jyKwCU9TN8gehA==}
 
-  mongodb@6.17.0:
-    resolution: {integrity: sha512-neerUzg/8U26cgruLysKEjJvoNSXhyID3RvzvdcpsIi2COYM3FS3o9nlH7fxFtefTb942dX3W9i37oPfCVj4wA==}
+  mongodb@6.20.0:
+    resolution: {integrity: sha512-Tl6MEIU3K4Rq3TSHd+sZQqRBoGlFsOgNrH5ltAcFBV62Re3Fd+FcaVf8uSEQFOJ51SDowDVttBTONMfoYWrWlQ==}
     engines: {node: '>=16.20.1'}
     peerDependencies:
       '@aws-sdk/credential-providers': ^3.188.0
@@ -2312,7 +2312,7 @@ packages:
       gcp-metadata: ^5.2.0
       kerberos: ^2.0.1
       mongodb-client-encryption: '>=6.0.0 <7'
-      snappy: ^7.2.2
+      snappy: ^7.3.2
       socks: ^2.7.1
     peerDependenciesMeta:
       '@aws-sdk/credential-providers':
@@ -2330,8 +2330,8 @@ packages:
       socks:
         optional: true
 
-  mongoose@8.16.3:
-    resolution: {integrity: sha512-p2JOsRQG7j0vXhLpsWw5Slm2VnDeJK8sRyqSyegk5jQujuP9BTOZ1Di9VX/0lYfBhZ2DpAExi51QTd4pIqSgig==}
+  mongoose@8.24.7:
+    resolution: {integrity: sha512-+hrEOLpLGPgOt7S/UrcBAKZ4gvB6+5qf16jspWH5xQ8WtQu9lRTzcqy04ZNQrlIox4Pl6Nh2RzlNDPSOFw9rng==}
     engines: {node: '>=16.20.1'}
 
   morgan@1.12.1:
@@ -2342,8 +2342,8 @@ packages:
     resolution: {integrity: sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==}
     engines: {node: '>=4.0.0'}
 
-  mquery@5.0.0:
-    resolution: {integrity: sha512-iQMncpmEK8R8ncT8HJGsGc9Dsp8xcgYMVSbs5jgnm1lFHTZqMJTUWTDx1LBO8+mK3tPNZWFLBghQEIOULSTHZg==}
+  mquery@5.0.1:
+    resolution: {integrity: sha512-C99lWV0TFI34pS008jBsi3JrE2xZPnTgUw5yApQR71nRP0hxLy8D5m1Lbbk83c8AQWJwdJ0329HzFtZ1MRTUIw==}
     engines: {node: '>=14.0.0'}
 
   mri@1.2.0:
@@ -3577,7 +3577,7 @@ snapshots:
     dependencies:
       svelte: 5.57.3(@typescript-eslint/types@8.73.0)
 
-  '@mongodb-js/saslprep@1.3.0':
+  '@mongodb-js/saslprep@1.6.3':
     dependencies:
       sparse-bitfield: 3.0.3
 
@@ -4525,12 +4525,12 @@ snapshots:
 
   confbox@0.1.8: {}
 
-  connect-mongo@5.1.0(express-session@1.18.1)(mongodb@6.17.0):
+  connect-mongo@5.1.0(express-session@1.18.1)(mongodb@6.20.0):
     dependencies:
       debug: 4.4.1
       express-session: 1.18.1
       kruptein: 3.0.8
-      mongodb: 6.17.0
+      mongodb: 6.20.0
     transitivePeerDependencies:
       - supports-color
 
@@ -5339,19 +5339,19 @@ snapshots:
       '@types/whatwg-url': 11.0.5
       whatwg-url: 14.2.0
 
-  mongodb@6.17.0:
+  mongodb@6.20.0:
     dependencies:
-      '@mongodb-js/saslprep': 1.3.0
+      '@mongodb-js/saslprep': 1.6.3
       bson: 6.10.4
       mongodb-connection-string-url: 3.0.2
 
-  mongoose@8.16.3:
+  mongoose@8.24.7:
     dependencies:
       bson: 6.10.4
       kareem: 2.6.3
-      mongodb: 6.17.0
+      mongodb: 6.20.0
       mpath: 0.9.0
-      mquery: 5.0.0
+      mquery: 5.0.1
       ms: 2.1.3
       sift: 17.1.3
     transitivePeerDependencies:
@@ -5376,7 +5376,7 @@ snapshots:
 
   mpath@0.9.0: {}
 
-  mquery@5.0.0:
+  mquery@5.0.1:
     dependencies:
       debug: 4.4.3
     transitivePeerDependencies:
