@@ -98,4 +98,79 @@ describe("grantNearestPlanetWithScout", () => {
     for (const p of modelData.planets) if (!owned.has(p.id)) human.ownedPlanetIds.push(p.id);
     expect(() => grantNearestPlanetWithScout(modelData)).toThrow(/no unowned planet/);
   });
+
+  function unownedDistances(modelData: engine.ModelData, grid: engine.Grid, fromPlanetId: number) {
+    const from = modelData.planets.find((p) => p.id === fromPlanetId)!;
+    const owned = new Set(modelData.players.flatMap((p) => p.ownedPlanetIds));
+    return modelData.planets
+      .filter((p) => !owned.has(p.id))
+      .map((p) => ({
+        p,
+        d: engine.Grid.getHexDistanceForMidPoints(grid, from.boundingHexMidPoint, p.boundingHexMidPoint),
+      }));
+  }
+
+  it("with minHexDistance grants the nearest unowned planet at least that far away", () => {
+    const { modelData, grid } = buildStartingGameModel(players(), options);
+    const human = modelData.players.find((p) => p.type === engine.PlayerType.Human)!;
+    const distances = unownedDistances(modelData, grid, human.homePlanetId!);
+    const minHexDistance = Math.min(...distances.map((x) => x.d)) + 1;
+    const eligible = distances.filter((x) => x.d >= minHexDistance);
+    const nearest = Math.min(...eligible.map((x) => x.d));
+    const expected = eligible.filter((x) => x.d === nearest).sort((a, b) => a.p.id - b.p.id)[0]!.p;
+    const shipsBefore = expected.planetaryFleet.starships.map((s) => s.id);
+
+    const result = grantNearestPlanetWithScout(modelData, { minHexDistance });
+
+    expect(result.grantedPlanetId).toBe(expected.id);
+    expect(result.hexDistance).toBe(nearest);
+    expect(result.hexDistance).toBeGreaterThanOrEqual(minHexDistance);
+    expect(human.ownedPlanetIds).toContain(expected.id);
+    const newShips = expected.planetaryFleet.starships.filter((s) => !shipsBefore.includes(s.id));
+    expect(newShips).toHaveLength(1);
+    expect(newShips[0]!.type).toBe(engine.StarShipType.Scout);
+  });
+
+  it("throws when minHexDistance is beyond the farthest unowned planet", () => {
+    const { modelData, grid } = buildStartingGameModel(players(), options);
+    const human = modelData.players.find((p) => p.type === engine.PlayerType.Human)!;
+    const farthest = Math.max(...unownedDistances(modelData, grid, human.homePlanetId!).map((x) => x.d));
+    const ownedBefore = [...human.ownedPlanetIds];
+    expect(() => grantNearestPlanetWithScout(modelData, { minHexDistance: farthest + 1 })).toThrow(
+      new RegExp(`at least ${farthest + 1} hexes from home \\(farthest is ${farthest}\\)`),
+    );
+    expect(human.ownedPlanetIds).toEqual(ownedBefore);
+  });
+
+  // Pinned seeds: one row per scenario F variant seed/minHexDistance pair in
+  // apps/astriarch-frontend/e2e/scenarios/scenario-f-fleet-landing-view.spec.ts
+  // (DEFAULT_VARIANTS and SOAK_VARIANTS). If galaxy generation drifts, this fails here
+  // instead of as an e2e flake. Keep both lists in step.
+  it.each([
+    { seed: 20261125, minHexDistance: 1, hexDistance: 1 },
+    { seed: 20261125, minHexDistance: 3, hexDistance: 3 },
+    { seed: 20260101, minHexDistance: 1, hexDistance: 1 },
+    { seed: 20260101, minHexDistance: 3, hexDistance: 3 },
+    { seed: 20261201, minHexDistance: 1, hexDistance: 1 },
+    { seed: 20261201, minHexDistance: 3, hexDistance: 3 },
+  ])(
+    "seed $seed with minHexDistance $minHexDistance grants a planet $hexDistance hex(es) away, no nearer the AI home",
+    ({ seed, minHexDistance, hexDistance }) => {
+      setTestGalaxySeed(seed);
+      const { modelData, grid } = buildStartingGameModel(players(), options);
+      const ai = modelData.players.find((p) => p.type !== engine.PlayerType.Human)!;
+
+      const result = grantNearestPlanetWithScout(modelData, { minHexDistance });
+
+      expect(result.hexDistance).toBe(hexDistance);
+      const granted = modelData.planets.find((p) => p.id === result.grantedPlanetId)!;
+      const aiHome = modelData.planets.find((p) => p.id === ai.homePlanetId)!;
+      const fromAi = engine.Grid.getHexDistanceForMidPoints(
+        grid,
+        aiHome.boundingHexMidPoint,
+        granted.boundingHexMidPoint,
+      );
+      expect(fromAi).toBeGreaterThanOrEqual(result.hexDistance);
+    },
+  );
 });

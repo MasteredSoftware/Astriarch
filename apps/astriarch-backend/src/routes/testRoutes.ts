@@ -15,13 +15,16 @@
  *   is cleared or the process exits. Only galaxy generation is seeded; gameplay
  *   randomness after that is unaffected.
  *
- * POST /api/test/grant-planet  { "gameName": "__e2e__..." }
+ * POST /api/test/grant-planet  { "gameName": "__e2e__...", "minHexDistance"?: <integer 1-50> }
  *   Gives the human player of the named in-progress game the unowned planet
- *   nearest its home planet, plus one Scout on that planet, by editing the
- *   stored game state directly (no events, no event-checksum update). Responds
- *   with { ok, playerId, homePlanetId, grantedPlanetId, hexDistance }. Connected
+ *   nearest its home planet (with minHexDistance: the nearest one at least that
+ *   many hexes away), plus one Scout on that planet, by editing the stored game
+ *   state directly (no events, no event-checksum update). Responds with
+ *   { ok, playerId, homePlanetId, grantedPlanetId, hexDistance }. Connected
  *   clients only see the change after they send SYNC_STATE. Only game names
- *   starting with "__e2e__" are accepted.
+ *   starting with "__e2e__" are accepted; an invalid minHexDistance gets a 400.
+ *   If no planet qualifies, responds 500 with { error, detail } where detail is
+ *   the helper's error message.
  */
 
 import { Router, Request, Response } from "express";
@@ -94,6 +97,19 @@ router.post("/grant-planet", async (req: Request, res: Response) => {
     res.status(400).json({ error: "Invalid gameName: must start with '__e2e__'" });
     return;
   }
+  const minHexDistance: unknown = req.body?.minHexDistance;
+  if (
+    minHexDistance !== undefined &&
+    !(
+      typeof minHexDistance === "number" &&
+      Number.isInteger(minHexDistance) &&
+      minHexDistance >= 1 &&
+      minHexDistance <= 50
+    )
+  ) {
+    res.status(400).json({ error: "minHexDistance must be an integer from 1 to 50 when given" });
+    return;
+  }
 
   try {
     const game = await ServerGameModel.findOne({ name: gameName, status: "in_progress" });
@@ -104,7 +120,7 @@ router.post("/grant-planet", async (req: Request, res: Response) => {
 
     let result: GrantPlanetResult | null = null;
     await saveGameWithConcurrencyProtection(ServerGameModel, String(game._id), async (doc) => {
-      result = grantNearestPlanetWithScout(doc.gameState as engine.ModelData);
+      result = grantNearestPlanetWithScout(doc.gameState as engine.ModelData, { minHexDistance });
       return { gameState: doc.gameState };
     });
     if (!result) {
@@ -118,7 +134,10 @@ router.post("/grant-planet", async (req: Request, res: Response) => {
     res.json({ ok: true, ...granted });
   } catch (error) {
     logger.error("[test/grant-planet] Grant failed:", error);
-    res.status(500).json({ error: "Grant planet failed" });
+    // Test-only route: include the cause so the e2e failure names it.
+    res
+      .status(500)
+      .json({ error: "Grant planet failed", detail: error instanceof Error ? error.message : String(error) });
   }
 });
 

@@ -38,10 +38,20 @@ export interface GrantPlanetResult {
 	hexDistance: number;
 }
 
+export interface GrantPlanetOptions {
+	/** Only grant a planet at least this many hexes from home (integer 1-50). */
+	minHexDistance?: number;
+}
+
 /**
  * Gives the human player of an in-progress `__e2e__` game the unowned planet
- * nearest its home, plus one Scout there. Clients see it after a SYNC_STATE.
+ * nearest its home (with `minHexDistance`: the nearest one at least that far),
+ * plus one Scout there. Clients see it after a SYNC_STATE. If no planet
+ * qualifies, the thrown error includes the route's `detail`.
  */
-export async function grantPlanet(gameName: string): Promise<GrantPlanetResult> {
-	return postTestRoute<GrantPlanetResult>('grant-planet', { gameName });
+export async function grantPlanet(
+	gameName: string,
+	opts: GrantPlanetOptions = {}
+): Promise<GrantPlanetResult> {
+	return postTestRoute<GrantPlanetResult>('grant-planet', { gameName, ...opts });
 }

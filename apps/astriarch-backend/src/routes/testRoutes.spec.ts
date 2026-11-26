@@ -122,10 +122,32 @@ describe("testRoutes /grant-planet", () => {
     const res = mockResponse();
     await getPostHandler("/grant-planet")({ body: { gameName: "__e2e__ok" } } as Request, res);
 
-    expect(grant).toHaveBeenCalledWith(gameState);
+    expect(grant).toHaveBeenCalledWith(gameState, { minHexDistance: undefined });
     expect(update).toEqual({ gameState });
     expect(res.status).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({ ok: true, ...helperResult });
+  });
+
+  it("passes minHexDistance 3 through to the helper", async () => {
+    const gameState = { players: [], planets: [] };
+    findOne.mockResolvedValue({ _id: "game-1" } as never);
+    const helperResult = { playerId: "p1", homePlanetId: 1, grantedPlanetId: 2, hexDistance: 3 };
+    grant.mockReturnValue(helperResult);
+    save.mockImplementation((async (_m: unknown, _id: string, transform: (doc: unknown) => Promise<unknown>) =>
+      transform({ gameState })) as never);
+
+    const res = mockResponse();
+    await getPostHandler("/grant-planet")({ body: { gameName: "__e2e__far", minHexDistance: 3 } } as Request, res);
+
+    expect(grant).toHaveBeenCalledWith(gameState, { minHexDistance: 3 });
+    expect(res.json).toHaveBeenCalledWith({ ok: true, ...helperResult });
+  });
+
+  it.each([[0], [-1], [1.5], ["3"], [51]])("rejects minHexDistance %s with 400", async (minHexDistance) => {
+    const res = mockResponse();
+    await getPostHandler("/grant-planet")({ body: { gameName: "__e2e__bad", minHexDistance } } as Request, res);
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(findOne).not.toHaveBeenCalled();
   });
 
   it("returns 500 when the helper throws", async () => {
@@ -139,5 +161,6 @@ describe("testRoutes /grant-planet", () => {
     const res = mockResponse();
     await getPostHandler("/grant-planet")({ body: { gameName: "__e2e__err" } } as Request, res);
     expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: "Grant planet failed", detail: "no unowned planet" });
   });
 });

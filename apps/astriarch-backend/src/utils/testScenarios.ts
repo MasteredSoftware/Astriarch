@@ -16,11 +16,24 @@ export interface GrantPlanetResult {
   hexDistance: number;
 }
 
+export interface GrantPlanetOptions {
+  /**
+   * Only consider unowned planets at least this many hexes from the home planet
+   * (default 0, i.e. any unowned planet).
+   */
+  minHexDistance?: number;
+}
+
 /**
  * Gives the first human player the unowned planet nearest its home planet (ties broken by
- * lowest planet id) and adds one Scout to that planet's fleet.
+ * lowest planet id) and adds one Scout to that planet's fleet. With `minHexDistance`, only
+ * unowned planets at least that many hexes from home qualify; the nearest of those is chosen.
+ * Throws if no unowned planet qualifies.
  */
-export function grantNearestPlanetWithScout(modelData: engine.ModelData): GrantPlanetResult {
+export function grantNearestPlanetWithScout(
+  modelData: engine.ModelData,
+  options: GrantPlanetOptions = {},
+): GrantPlanetResult {
   const human = modelData.players.find((p) => p.type === engine.PlayerType.Human);
   if (!human) {
     throw new Error("grantNearestPlanetWithScout: no human player in game");
@@ -33,16 +46,25 @@ export function grantNearestPlanetWithScout(modelData: engine.ModelData): GrantP
   const ownedIds = new Set<number>(modelData.players.flatMap((p) => p.ownedPlanetIds));
   const { grid } = engine.GameModel.constructGridWithModelData(modelData);
 
+  const minHexDistance = options.minHexDistance ?? 0;
   let best: { planet: engine.PlanetData; distance: number } | null = null;
+  let farthest: number | null = null;
   for (const planet of modelData.planets) {
     if (ownedIds.has(planet.id)) continue;
     const distance = engine.Grid.getHexDistanceForMidPoints(grid, home.boundingHexMidPoint, planet.boundingHexMidPoint);
+    farthest = farthest === null ? distance : Math.max(farthest, distance);
+    if (distance < minHexDistance) continue;
     if (!best || distance < best.distance || (distance === best.distance && planet.id < best.planet.id)) {
       best = { planet, distance };
     }
   }
-  if (!best) {
+  if (farthest === null) {
     throw new Error("grantNearestPlanetWithScout: no unowned planet available");
+  }
+  if (!best) {
+    throw new Error(
+      `grantNearestPlanetWithScout: no unowned planet at least ${minHexDistance} hexes from home (farthest is ${farthest})`,
+    );
   }
 
   const planet = best.planet;
