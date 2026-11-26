@@ -14,6 +14,14 @@
 
 			// Initialize global keyboard shortcut service
 			keyboardShortcutService.initialize();
+
+			// Test-only page hook for Playwright; the chunk is only fetched when an
+			// init script sets this flag before the app loads.
+			if (window.__ASTRIARCH_TEST__ === true) {
+				import('#lib/testing/testHooks.ts')
+					.then((m) => m.installTestHooks())
+					.catch((e) => console.error('[test] hook load failed', e));
+			}
 		}
 	});
 </script>

@@ -201,6 +201,8 @@
 
 <!-- Fleet Command Interface -->
 <div
+	data-testid="view-fleet-command"
+	data-selected-planet-id={currentSelectedPlanet?.id ?? ''}
 	class="relative h-full w-full bg-gradient-to-b from-[#1B1F25] to-[#0a0d12] font-['Orbitron'] text-white"
 >
 	<!-- Header -->

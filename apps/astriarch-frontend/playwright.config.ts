@@ -64,6 +64,9 @@ export default defineConfig({
 				PORT: BACKEND_PORT,
 				WS_PORT: BACKEND_PORT,
 				NODE_ENV: 'test',
+				// Allow the e2e frontend origin; the backend's default/.env list only has the
+				// normal dev ports, so the lobby's HTTP fetches would fail CORS and log errors.
+				CORS_ORIGIN_LIST: FRONTEND_URL,
 				// Inherit Mongo connection from environment or fall back to local dev DB.
 				MONGODB_CONNECTION_STRING:
 					process.env.MONGODB_CONNECTION_STRING ?? 'mongodb://localhost:27017/astriarch_v2_test'
