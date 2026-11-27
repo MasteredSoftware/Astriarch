@@ -8,6 +8,11 @@ declare global {
 		// interface PageState {}
 		// interface Platform {}
 	}
+
+	interface ImportMetaEnv {
+		/** 'true' builds the Playwright test hook (src/lib/testing/testHooks.ts) into a non-dev build. */
+		readonly VITE_ASTRIARCH_TEST_HOOKS?: string;
+	}
 }
 
 export {};

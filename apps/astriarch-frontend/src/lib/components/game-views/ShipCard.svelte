@@ -96,6 +96,8 @@
 
 <button
 	type="button"
+	data-testid="ship-card"
+	data-ship-id={ship.id}
 	class="relative h-[72px] w-[90px] cursor-pointer transition-all hover:scale-105 focus:ring-2 focus:ring-cyan-400 focus:outline-none"
 	onclick={onToggleSelection}
 	aria-label="Toggle selection of {GameTools.starShipTypeToFriendlyName(
