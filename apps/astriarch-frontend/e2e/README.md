@@ -97,6 +97,8 @@ The scenario sets the game up through the test-only route `POST /api/test/setup-
 - gives the AI planet R = T+1, so capturing T does not destroy the AI and end the game
 - gives the human planet C = T-2 and sets every citizen there protesting (with a food buffer)
 
+S and R are in T's system only because T is the first planet of its system for this seed; C is in the human's home system.
+
 The route edits the stored game directly, so the client must resync afterwards. The layout (T = H+4, and the S to T distance) is pinned in `apps/astriarch-backend/src/utils/testFleetAttackScenario.spec.ts`.
 
 C is seeded with protest because the protest on a freshly captured planet is random (each citizen has a 1 in 3 chance of being content), and gameplay randomness is not seeded. With protest on C, its task (CitizensProtesting, C) has the old key (T-2)+2 = T. So the collision with T's BuildQueueEmpty task is certain. It does not depend on chance.

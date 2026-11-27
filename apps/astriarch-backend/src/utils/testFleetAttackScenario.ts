@@ -41,7 +41,7 @@ export interface FleetAttackSetupResult {
   stagingPlanetId: number;
   /** R = T+1: given to the AI so capturing T does not destroy it and end the game. */
   aiSparePlanetId: number;
-  /** C = T-2: given to the human with protesting citizens (task key (T-2)+2 = T). */
+  /** C = T-2: given to the human with protesting citizens (old task key (T-2)+2 = T); not necessarily in T's system. */
   collisionPlanetId: number;
   /** Hex distance from S to T. */
   hexDistance: number;
@@ -55,7 +55,14 @@ export interface FleetAttackSetupResult {
  * - S = T+2 and C = T-2 go to the human, R = T+1 goes to the AI (all must be unowned);
  * - S gets the fleet (default 10 Scouts, 10 Destroyers, 15 Cruisers, 12 Battleships: strength 744);
  * - every citizen on C protests (SEEDED_PROTEST_LEVEL) and C gets COLLISION_PLANET_FOOD food.
- * Planet ids are consecutive within a system, so these are T's system neighbours.
+ * S, R and C are picked by id offset from T (for their old task keys), not by location.
+ * Planet ids are consecutive within a system, so S = T+2 and R = T+1 are in T's system
+ * only when T is the first planet of its system (and the system has at least 3 planets).
+ * That holds for the scenario G seed (20261125, 4 planets per system: H=17, T=21, R=22,
+ * S=23). C = T-2 = 19 is in the human's home system, not T's. With another seed or
+ * planetsPerSystem, S or R can fall in another system or past the planet list (then this
+ * throws), and the S-to-T hexDistance that scenario G's capture timeout uses changes. The
+ * layout for the scenario G seed is pinned in testFleetAttackScenario.spec.ts.
  * Throws (naming the planet id) if a planet is missing or already owned.
  */
 export function setupFleetAttack(modelData: engine.ModelData, counts: FleetAttackCounts = {}): FleetAttackSetupResult {
