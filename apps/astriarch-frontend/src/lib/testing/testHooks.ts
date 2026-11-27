@@ -118,6 +118,55 @@ export function createFleetViewRecorder(deps: FleetViewRecorderDeps): FleetViewR
 	};
 }
 
+/**
+ * Resolves on the first `model` emission (including the current value) where `planetId`
+ * has `count` mobile ships; rejects after `timeoutMs`. Event-driven: one subscription
+ * and one deadline timer, no polling. Always unsubscribes and clears the timer.
+ */
+export function waitForMobileShipCount(
+	model: Readable<ClientModelData | null>,
+	planetId: number,
+	count: number,
+	timeoutMs: number
+): Promise<void> {
+	return new Promise<void>((resolve, reject) => {
+		let done = false;
+		let last = 0;
+		let unsubscribe: (() => void) | null = null;
+		let timer: ReturnType<typeof setTimeout> | null = null;
+		const finish = () => {
+			done = true;
+			if (timer !== null) clearTimeout(timer);
+			timer = null;
+			unsubscribe?.();
+			unsubscribe = null;
+		};
+		unsubscribe = model.subscribe((cgm) => {
+			if (done) return;
+			last = mobileShipIdsOf(cgm?.mainPlayerOwnedPlanets[planetId]).length;
+			if (last === count) {
+				finish();
+				resolve();
+			}
+		});
+		// Svelte calls the subscriber synchronously, so it may have finished before
+		// subscribe() returned.
+		if (done) {
+			unsubscribe();
+			unsubscribe = null;
+			return;
+		}
+		timer = setTimeout(() => {
+			finish();
+			reject(
+				new Error(
+					`mobile ship count on planet ${planetId} did not reach ${count} within ${timeoutMs}ms (last ${last})`
+				)
+			);
+		}, timeoutMs);
+	});
+}
+
 export function installTestHooks(): void {
 	if (window.__astriarchTest) return;
 	const recorder = createFleetViewRecorder({
@@ -134,7 +183,9 @@ export function installTestHooks(): void {
 		fleetsInTransit: () => fleetsInTransitOf(get(clientGameModel)),
 		requestStateSync: () => webSocketService.requestStateSync(),
 		startRecording: () => recorder.start(),
-		stopRecording: () => recorder.stop()
+		stopRecording: () => recorder.stop(),
+		waitForMobileShipCount: (planetId, count, timeoutMs) =>
+			waitForMobileShipCount(clientGameModel, planetId, count, timeoutMs)
 	};
 	window.__astriarchTest = api;
 	console.info('[test] window.__astriarchTest installed');

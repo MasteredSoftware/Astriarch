@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { writable } from 'svelte/store';
 import { StarShipType, type ClientModelData } from 'astriarch-engine';
 
@@ -10,7 +10,12 @@ vi.mock('#lib/stores/gameStore.ts', () => ({
 }));
 vi.mock('#lib/services/websocket.ts', () => ({ webSocketService: { requestStateSync: vi.fn() } }));
 
-import { createFleetViewRecorder, mobileShipIdsOf, type FleetViewState } from './testHooks';
+import {
+	createFleetViewRecorder,
+	mobileShipIdsOf,
+	waitForMobileShipCount,
+	type FleetViewState
+} from './testHooks';
 
 function ship(id: string, type: StarShipType) {
 	return { id, type, health: 1, experienceAmount: 0 };
@@ -139,5 +144,68 @@ describe('createFleetViewRecorder', () => {
 		const samples = await t.recorder.stop();
 		expect(samples).toHaveLength(1);
 		expect(samples[0]!.cycle).toBe(5);
+	});
+});
+
+describe('waitForMobileShipCount', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('resolves immediately when the count already matches and unsubscribes', async () => {
+		const t = setup();
+		t.cgm.set(model(1, { 1: [ship('1_1', StarShipType.Scout)] }));
+		await expect(waitForMobileShipCount(t.cgm, 1, 1, 1_000)).resolves.toBeUndefined();
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('resolves on a later emission', async () => {
+		const t = setup();
+		t.cgm.set(model(1, { 1: [ship('1_1', StarShipType.Scout)] }));
+		let resolved = false;
+		const p = waitForMobileShipCount(t.cgm, 1, 2, 1_000).then(() => {
+			resolved = true;
+		});
+		await Promise.resolve();
+		expect(resolved).toBe(false);
+		expect(t.subscribers()).toBe(1);
+		t.cgm.set(model(2, { 1: [ship('1_1', StarShipType.Scout), ship('2_1', StarShipType.Scout)] }));
+		await p;
+		expect(resolved).toBe(true);
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('ignores System Defense and Space Platform ships', async () => {
+		vi.useFakeTimers();
+		const t = setup();
+		t.cgm.set(
+			model(1, {
+				1: [
+					ship('1_1', StarShipType.Scout),
+					ship('d', StarShipType.SystemDefense),
+					ship('p', StarShipType.SpacePlatform)
+				]
+			})
+		);
+		const p = waitForMobileShipCount(t.cgm, 1, 2, 1_000);
+		const assertion = expect(p).rejects.toThrow(/did not reach 2 within 1000ms \(last 1\)/);
+		vi.advanceTimersByTime(1_000);
+		await assertion;
+	});
+
+	it('rejects after the timeout and unsubscribes', async () => {
+		vi.useFakeTimers();
+		const t = setup();
+		t.cgm.set(model(1, {}));
+		const p = waitForMobileShipCount(t.cgm, 1, 1, 500);
+		const assertion = expect(p).rejects.toThrow(
+			'mobile ship count on planet 1 did not reach 1 within 500ms (last 0)'
+		);
+		expect(t.subscribers()).toBe(1);
+		vi.advanceTimersByTime(499);
+		expect(t.subscribers()).toBe(1);
+		vi.advanceTimersByTime(1);
+		await assertion;
+		expect(t.subscribers()).toBe(0);
 	});
 });

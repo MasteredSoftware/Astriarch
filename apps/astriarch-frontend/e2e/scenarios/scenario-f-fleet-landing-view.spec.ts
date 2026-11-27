@@ -504,10 +504,10 @@ async function runScenarioF(
 	let landedMs: number | null = null;
 	let landingTimeout: string | null = null;
 	try {
-		await page.waitForFunction(
-			([a, n]) => window.__astriarchTest!.mobileShipIds(a).length === n + 1,
-			[A, N] as const,
-			{ timeout: landingTimeoutMs }
+		// Resolved from the hook's clientGameModel subscription (no per-frame polling).
+		await page.evaluate(
+			([a, n, t]) => window.__astriarchTest!.waitForMobileShipCount(a, n + 1, t),
+			[A, N, landingTimeoutMs] as const
 		);
 		landedMs = Date.now();
 		await page.waitForTimeout(POST_ARRIVAL_MS);

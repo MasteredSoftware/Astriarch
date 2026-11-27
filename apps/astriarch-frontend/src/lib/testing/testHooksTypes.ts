@@ -41,6 +41,11 @@ export interface AstriarchTestApi {
 	startRecording(): void;
 	/** Unsubscribes, waits for pending DOM reads, and returns the samples. */
 	stopRecording(): Promise<FleetViewSample[]>;
+	/**
+	 * Resolves once the planet has `count` mobile ships in clientGameModel. Event-driven
+	 * (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForMobileShipCount(planetId: number, count: number, timeoutMs: number): Promise<void>;
 }
 
 declare global {
