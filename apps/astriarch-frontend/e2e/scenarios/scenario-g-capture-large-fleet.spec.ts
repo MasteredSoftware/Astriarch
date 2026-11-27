@@ -283,24 +283,23 @@ test.describe('Scenario G — large fleet captures the AI home planet (#83)', ()
 			expect(setup.fleetStrength, 'staged fleet strength').toBeGreaterThanOrEqual(700);
 			const captureTimeoutMs = setup.hexDistance * MS_PER_CYCLE * 2 + 20_000;
 			await page.evaluate(() => window.__astriarchTest!.requestStateSync());
-			await page.waitForFunction(
-				([s, c, n]) => {
-					const api = window.__astriarchTest!;
-					const owned = api.ownedPlanetIds();
-					return owned.includes(s) && owned.includes(c) && api.mobileShipIds(s).length === n;
+			// Resolved from the hook's clientGameModel subscription (no per-frame polling).
+			await page.evaluate(
+				([s, c, n, ms]) => {
+					const a = window.__astriarchTest!;
+					return Promise.all([
+						a.waitForOwnedPlanet(s, ms),
+						a.waitForOwnedPlanet(c, ms),
+						a.waitForMobileShipCount(s, n, ms)
+					]).then(() => {});
 				},
-				[S, C, FLEET_SIZE] as const,
-				{ timeout: 15_000 }
+				[S, C, FLEET_SIZE, 15_000] as const
 			);
 
 			// --- Precondition: the colliding task exists and nothing has crashed yet ----
-			await page.waitForFunction(
-				([c, protesting]) =>
-					window
-						.__astriarchTest!.taskNotifications()
-						.some((t) => t.type === protesting && t.planetId === c),
-				[C, CITIZENS_PROTESTING] as const,
-				{ timeout: 15_000 }
+			await page.evaluate(
+				([c, protesting, ms]) => window.__astriarchTest!.waitForTaskNotification(protesting, c, ms),
+				[C, CITIZENS_PROTESTING, 15_000] as const
 			);
 			tasksBefore = await page.evaluate(() => window.__astriarchTest!.taskNotifications());
 			expect(keyDuplicate, 'no each_key_duplicate before the attack').toBeNull();
@@ -315,21 +314,30 @@ test.describe('Scenario G — large fleet captures the AI home planet (#83)', ()
 			recording = true;
 			sendClickMs = Date.now();
 			await page.locator('[data-testid="send-ships-btn"]').click();
-			await page.waitForFunction(
-				(s) =>
-					window.__astriarchTest!.fleetsInTransit().length === 1 &&
-					window.__astriarchTest!.mobileShipIds(s).length === 0,
-				S,
-				{ timeout: 15_000 }
+			await page.evaluate(
+				([s, ms]) => {
+					const a = window.__astriarchTest!;
+					return Promise.all([
+						a.waitForFleetsInTransitCount(1, ms),
+						a.waitForMobileShipCount(s, 0, ms)
+					]).then(() => {});
+				},
+				[S, 15_000] as const
 			);
 			await expectFleetHeadedTo(page, T);
 
 			// --- Wait for the capture, an each_key_duplicate, or a timeout --------------
+			// The rejection is handled here so the losing branch of the race cannot become an
+			// unhandled rejection when the key-duplicate path throws and the page closes.
 			const captured = page
-				.waitForFunction((t) => window.__astriarchTest!.ownedPlanetIds().includes(t), T, {
-					timeout: captureTimeoutMs
-				})
-				.then(() => 'captured' as const);
+				.evaluate(([t, ms]) => window.__astriarchTest!.waitForOwnedPlanet(t, ms), [
+					T,
+					captureTimeoutMs
+				] as const)
+				.then(
+					() => 'captured' as const,
+					(e: Error) => `timeout: ${e.message}` as const
+				);
 			const outcome = await Promise.race([
 				captured,
 				keyDuplicateSeen().then(() => 'key-duplicate' as const)
