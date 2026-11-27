@@ -57,7 +57,8 @@ import {
 	selectById,
 	setCheckbox,
 	selectPlanetInFleetCommand,
-	clickDestinationPlanet
+	clickDestinationPlanet,
+	expectFleetHeadedTo
 } from '../helpers/fleetScenario';
 import type { FleetViewSample } from '../../src/lib/testing/testHooksTypes';
 
@@ -321,6 +322,7 @@ async function runScenarioF(
 			timeout: 15_000
 		}
 	);
+	await expectFleetHeadedTo(page, A, `[variant ${v.name}] `);
 
 	// --- Watch A while the Scout lands ------------------------------------------------
 	await selectPlanetInFleetCommand(page, A);

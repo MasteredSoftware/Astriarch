@@ -13,6 +13,7 @@ vi.mock('#lib/services/websocket.ts', () => ({ webSocketService: { requestStateS
 import {
 	allStarshipIdsOf,
 	createFleetViewRecorder,
+	fleetsInTransitOf,
 	mobileShipIdsOf,
 	taskNotificationsOf,
 	waitForMobileShipCount,
@@ -252,5 +253,42 @@ describe('waitForMobileShipCount', () => {
 		vi.advanceTimersByTime(1);
 		await assertion;
 		expect(t.subscribers()).toBe(0);
+	});
+});
+
+describe('fleetsInTransitOf', () => {
+	function withFleets(fleets: unknown[]) {
+		return {
+			mainPlayer: { fleetsInTransit: fleets },
+			clientPlanets: [
+				{ id: 4, boundingHexMidPoint: { x: 10, y: 20 } },
+				{ id: 5, boundingHexMidPoint: { x: 110.25, y: 220.5 } }
+			]
+		} as unknown as ClientModelData;
+	}
+
+	it('resolves the destination planet from the destination hex midpoint', () => {
+		const cgm = withFleets([
+			{ id: 1, parsecsToDestination: 2, destinationHexMidPoint: { x: 110.25, y: 220.5 } }
+		]);
+		expect(fleetsInTransitOf(cgm)).toEqual([
+			{ id: 1, parsecsToDestination: 2, destinationPlanetId: 5 }
+		]);
+	});
+
+	it('gives null for a fleet with no destination', () => {
+		const cgm = withFleets([{ id: 1, parsecsToDestination: null, destinationHexMidPoint: null }]);
+		expect(fleetsInTransitOf(cgm)[0]!.destinationPlanetId).toBeNull();
+	});
+
+	it('gives null when no planet matches the destination', () => {
+		const cgm = withFleets([
+			{ id: 1, parsecsToDestination: 2, destinationHexMidPoint: { x: 300, y: 300 } }
+		]);
+		expect(fleetsInTransitOf(cgm)[0]!.destinationPlanetId).toBeNull();
+	});
+
+	it('gives an empty list with no model', () => {
+		expect(fleetsInTransitOf(null)).toEqual([]);
 	});
 });

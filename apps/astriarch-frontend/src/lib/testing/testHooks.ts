@@ -14,6 +14,7 @@ import { get, type Readable } from 'svelte/store';
 import { tick } from 'svelte';
 import { StarShipType, type ClientModelData, type PlanetData } from 'astriarch-engine';
 import { clientGameModel, selectedPlanetId } from '#lib/stores/gameStore.ts';
+import { fleetCommandStore } from '#lib/stores/fleetCommandStore.ts';
 import { webSocketService } from '#lib/services/websocket.ts';
 import { flattenTaskNotifications } from '#lib/components/astriarch/notification/taskNotificationList.ts';
 import type {
@@ -31,11 +32,27 @@ export function mobileShipIdsOf(planet: PlanetData | undefined | null): string[]
 		.map((s) => s.id);
 }
 
+/** Matches a hex midpoint with a small tolerance (hexes are far larger than 0.5px). */
+const MIDPOINT_TOLERANCE = 0.5;
+
 export function fleetsInTransitOf(cgm: ClientModelData | null): FleetInTransitSample[] {
-	return (cgm?.mainPlayer.fleetsInTransit ?? []).map((f) => ({
-		id: f.id,
-		parsecsToDestination: f.parsecsToDestination
-	}));
+	const planets = cgm?.clientPlanets ?? [];
+	return (cgm?.mainPlayer.fleetsInTransit ?? []).map((f) => {
+		const dest = f.destinationHexMidPoint;
+		const planet = dest
+			? planets.find(
+					(p) =>
+						!!p.boundingHexMidPoint &&
+						Math.abs(p.boundingHexMidPoint.x - dest.x) < MIDPOINT_TOLERANCE &&
+						Math.abs(p.boundingHexMidPoint.y - dest.y) < MIDPOINT_TOLERANCE
+				)
+			: undefined;
+		return {
+			id: f.id,
+			parsecsToDestination: f.parsecsToDestination,
+			destinationPlanetId: planet?.id ?? null
+		};
+	});
 }
 
 /** The task notifications as (type, planetId) pairs, in panel order. */
@@ -202,6 +219,7 @@ export function installTestHooks(): void {
 		mobileShipIds: (planetId) =>
 			mobileShipIdsOf(get(clientGameModel)?.mainPlayerOwnedPlanets[planetId]),
 		fleetsInTransit: () => fleetsInTransitOf(get(clientGameModel)),
+		fleetCommandDestinationPlanetId: () => get(fleetCommandStore).destinationPlanetId,
 		taskNotifications: () => taskNotificationsOf(get(clientGameModel)),
 		allStarshipIds: () => allStarshipIdsOf(get(clientGameModel)),
 		requestStateSync: () => webSocketService.requestStateSync(),

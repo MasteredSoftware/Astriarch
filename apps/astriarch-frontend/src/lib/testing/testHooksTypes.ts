@@ -8,6 +8,11 @@
 export interface FleetInTransitSample {
 	id: number;
 	parsecsToDestination: number | null;
+	/**
+	 * The client planet whose boundingHexMidPoint matches the fleet's
+	 * destinationHexMidPoint, or null if the fleet has no destination or no planet matches.
+	 */
+	destinationPlanetId: number | null;
 }
 
 /** One clientGameModel publish, paired with the Fleet Command DOM after it rendered. */
@@ -42,6 +47,8 @@ export interface AstriarchTestApi {
 	selectedPlanetId(): number | null;
 	mobileShipIds(planetId: number): string[];
 	fleetsInTransit(): FleetInTransitSample[];
+	/** fleetCommandStore.destinationPlanetId: the destination chosen in Fleet Command, or null. */
+	fleetCommandDestinationPlanetId(): number | null;
 	/** The task notifications in the order the Task Notifications panel renders them. */
 	taskNotifications(): TaskNotificationSample[];
 	/** Every starship id on the main player's planets (all types) and in its fleets in transit. */

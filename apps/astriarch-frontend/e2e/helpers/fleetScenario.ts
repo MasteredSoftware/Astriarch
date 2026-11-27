@@ -121,15 +121,37 @@ export function canvasIsTopmostAt(page: Page, x: number, y: number) {
 }
 
 /**
+ * Drag start points for the pan fallback, as fractions of the canvas box, in the order
+ * they are tried. The first one whose topmost element is the canvas (no overlay panel
+ * over it) is used.
+ */
+const DRAG_START_FRACTIONS: readonly (readonly [number, number])[] = [
+	[0.5, 0.5],
+	[0.35, 0.5],
+	[0.65, 0.5],
+	[0.5, 0.35],
+	[0.5, 0.65],
+	[0.25, 0.25],
+	[0.75, 0.25],
+	[0.25, 0.75],
+	[0.75, 0.75]
+];
+
+/**
  * Clicks planet `planetId` on the galaxy canvas as the Fleet Command destination and
  * waits until Send Ships is enabled. Changing the selected planet pans the canvas
  * (an ~800ms animation), so this waits for the planet to stop moving before each
  * click, and retries with a fresh position. A far destination can be off screen or
  * under an overlay panel (the planet info card) while B is selected; then the stage
- * is dragged once (GalaxyCanvas stage is draggable) to bring the planet to the canvas
- * centre. Fails with a screenshot if the planet still can't be clicked or the click
- * never sets a destination. This all happens before recording starts, so a setup
- * failure here can never be reported as a VIEW or SYNC BUG.
+ * is dragged once (GalaxyCanvas stage is draggable) to bring the planet toward the
+ * canvas centre. The drag starts at the first sampled canvas point no overlay covers
+ * (DRAG_START_FRACTIONS); if every sample is covered it fails with a screenshot.
+ * Once Send Ships is enabled, the Fleet Command destination must be `planetId`;
+ * otherwise it fails at once with `wrong destination: ...` and a screenshot (a second
+ * click cannot change a destination once chosen). Also fails with a screenshot if the
+ * planet still can't be clicked or the click never sets a destination. This all
+ * happens before recording starts, so a setup failure here can never be reported as
+ * a VIEW or SYNC BUG.
  */
 export async function clickDestinationPlanet(page: Page, planetId: number): Promise<void> {
 	const box = await page.locator('canvas').first().boundingBox();
@@ -150,18 +172,37 @@ export async function clickDestinationPlanet(page: Page, planetId: number): Prom
 		const onScreen = !!pos && pos.x >= 0 && pos.y >= 0 && pos.x <= box.width && pos.y <= box.height;
 		const clickable = onScreen && (await canvasIsTopmostAt(page, box.x + pos!.x, box.y + pos!.y));
 		if (!clickable && pos && !panned) {
-			// Drag from the canvas centre by (centre - pos), clamped to the canvas, then
-			// re-read the position (the drag also cancels any in-progress auto-pan).
+			// Drag from an uncovered canvas point by (centre - pos), clamped to the canvas,
+			// then re-read the position (the drag also cancels any in-progress auto-pan).
 			panned = true;
+			const tried: string[] = [];
+			let start: { x: number; y: number } | null = null;
+			for (const [fx, fy] of DRAG_START_FRACTIONS) {
+				const p = { x: box.width * fx, y: box.height * fy };
+				tried.push(`(${Math.round(p.x)},${Math.round(p.y)})`);
+				if (await canvasIsTopmostAt(page, box.x + p.x, box.y + p.y)) {
+					start = p;
+					break;
+				}
+			}
+			if (!start) {
+				const shot = test.info().outputPath(`planet-${planetId}-no-drag-start.png`);
+				await page.screenshot({ path: shot });
+				throw new Error(
+					`Planet ${planetId} needs a drag-pan but every sampled canvas start point is covered by an overlay` +
+						` (tried ${tried.join(', ')}). Screenshot: ${shot}`
+				);
+			}
 			const clamp = (n: number, max: number) => Math.min(Math.max(n, 5), max - 5);
 			const to = {
-				x: clamp(centre.x + (centre.x - pos.x), box.width),
-				y: clamp(centre.y + (centre.y - pos.y), box.height)
+				x: clamp(start.x + (centre.x - pos.x), box.width),
+				y: clamp(start.y + (centre.y - pos.y), box.height)
 			};
 			attempts.push(
-				`panned (${Math.round(pos.x)},${Math.round(pos.y)})${onScreen ? ' covered' : ' off screen'}`
+				`panned (${Math.round(pos.x)},${Math.round(pos.y)})${onScreen ? ' covered' : ' off screen'}` +
+					` from (${Math.round(start.x)},${Math.round(start.y)})`
 			);
-			await page.mouse.move(box.x + centre.x, box.y + centre.y);
+			await page.mouse.move(box.x + start.x, box.y + start.y);
 			await page.mouse.down();
 			await page.mouse.move(box.x + to.x, box.y + to.y, { steps: 10 });
 			await page.mouse.up();
@@ -178,16 +219,49 @@ export async function clickDestinationPlanet(page: Page, planetId: number): Prom
 		}
 		attempts.push(`(${Math.round(pos.x)},${Math.round(pos.y)})`);
 		await page.mouse.click(box.x + pos.x, box.y + pos.y);
+		let enabled = false;
 		try {
 			await expect(sendBtn).toBeEnabled({ timeout: 2_000 });
-			return;
+			enabled = true;
 		} catch {
 			// Retry with a fresh position.
 		}
+		if (!enabled) continue;
+		const got = await page.evaluate(() =>
+			window.__astriarchTest!.fleetCommandDestinationPlanetId()
+		);
+		if (got !== planetId) {
+			const shot = test.info().outputPath(`wrong-destination-${planetId}.png`);
+			await page.screenshot({ path: shot });
+			throw new Error(
+				`wrong destination: expected planet ${planetId}, got ${got ?? 'none'}` +
+					` (clicked at: ${attempts.join(', ')}). Screenshot: ${shot}`
+			);
+		}
+		return;
 	}
 	const shot = test.info().outputPath(`destination-${planetId}-not-set.png`);
 	await page.screenshot({ path: shot });
 	throw new Error(
 		`Clicking planet ${planetId} never enabled Send Ships. Clicked at: ${attempts.join(', ')}. Screenshot: ${shot}`
 	);
+}
+
+/**
+ * Checks what the engine received after Send: there is at least one fleet in transit
+ * and every one is headed to planet `planetId` (destinationPlanetId from the page
+ * hook). Throws `wrong destination: ...` listing the fleets otherwise. `prefix` is
+ * prepended to the message (e.g. `[variant baseline] `).
+ */
+export async function expectFleetHeadedTo(
+	page: Page,
+	planetId: number,
+	prefix = ''
+): Promise<void> {
+	const fleets = await page.evaluate(() => window.__astriarchTest!.fleetsInTransit());
+	if (fleets.length > 0 && fleets.every((f) => f.destinationPlanetId === planetId)) return;
+	const ids = fleets.length
+		? fleets.map((f) => `fleet ${f.id} -> ${f.destinationPlanetId ?? 'unknown'}`).join(', ')
+		: 'no fleet in transit';
+	throw new Error(`${prefix}wrong destination: expected planet ${planetId}, got ${ids}`);
 }

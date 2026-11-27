@@ -47,7 +47,8 @@ import {
 	selectById,
 	setCheckbox,
 	selectPlanetInFleetCommand,
-	clickDestinationPlanet
+	clickDestinationPlanet,
+	expectFleetHeadedTo
 } from '../helpers/fleetScenario';
 import type { FleetViewSample, TaskNotificationSample } from '../../src/lib/testing/testHooksTypes';
 
@@ -321,6 +322,7 @@ test.describe('Scenario G — large fleet captures the AI home planet (#83)', ()
 				S,
 				{ timeout: 15_000 }
 			);
+			await expectFleetHeadedTo(page, T);
 
 			// --- Wait for the capture, an each_key_duplicate, or a timeout --------------
 			const captured = page
