@@ -24,7 +24,10 @@
  * 1s adds a `phase-miss` annotation.
  *
  * Failure messages (prefixed with `[variant ...]`):
- *   VIEW BUG — the model shows the landed ship but the ship cards do not.
+ *   SELECTION BUG — the selected planet, or the planet Fleet Command showed, moved off
+ *                   the watched planet during recording.
+ *   VIEW BUG — the model shows the landed ship but the ship cards do not (the view must
+ *              match the model on every sample; there is no lag tolerance).
  *   SYNC BUG — the model showed the landed ship, then lost it after a server message.
  * The full timeline is attached as `fleet-landing-timeline-<variant>.json`.
  */
@@ -534,8 +537,7 @@ async function runScenarioF(
 				f.wallMs >= sendClickMs &&
 				((f.summary as { events?: string[] } | undefined)?.events ?? []).includes('FLEET_LAUNCHED')
 		)?.wallMs ?? null;
-	const onA = samples.filter((s) => s.selectedPlanetId === A);
-	const landedSampleMs = onA.find((s) => s.modelShipIds.length === N + 1)?.wallMs ?? null;
+	const landedSampleMs = samples.find((s) => s.modelShipIds.length === N + 1)?.wallMs ?? null;
 	let nearestAdvanceSentMs: number | null = null;
 	for (const ms of advanceSentMs()) {
 		if (
@@ -611,11 +613,21 @@ async function runScenarioF(
 			.map((f) => `${f.dir} ${f.type}@${f.wallMs - ms}ms ${JSON.stringify(f.summary ?? '')}`)
 			.join('; ') || 'none';
 
-	if (onA.length === 0) failures.push(`No samples recorded with planet ${A} selected`);
+	if (samples.length === 0) failures.push('No samples recorded');
+
+	// Nothing selects a planet during recording, so the selection must stay on A.
+	const offA = samples.find((s) => s.selectedPlanetId !== A || s.viewPlanetId !== A);
+	if (offA) {
+		failures.push(
+			`SELECTION BUG at seq ${offA.seq} (cycle ${offA.cycle}): selected planet changed to ` +
+				`${offA.selectedPlanetId}, view showed planet ${offA.viewPlanetId} (expected ${A}); ` +
+				`frames ±1s: ${framesNear(offA.wallMs)}`
+		);
+	}
 
 	// (a) The view matches the model on every sample.
-	for (const s of onA) {
-		if (s.viewPlanetId !== A || !sameIds(s.viewShipIds, s.modelShipIds)) {
+	for (const s of samples) {
+		if (!sameIds(s.viewShipIds, s.modelShipIds)) {
 			failures.push(
 				`VIEW BUG at seq ${s.seq} (cycle ${s.cycle}): model [${sorted(s.modelShipIds)}] ` +
 					`view planet ${s.viewPlanetId} [${sorted(s.viewShipIds)}]; frames ±1s: ${framesNear(s.wallMs)}`
@@ -624,21 +636,20 @@ async function runScenarioF(
 		}
 	}
 
-	// (b) The view shows the landing within 2 samples of the model.
-	const firstModel = onA.findIndex((s) => s.modelShipIds.length === N + 1);
-	const firstView = onA.findIndex((s) => s.viewShipIds.length === N + 1);
+	// (b) The landing reaches both the model and the view.
+	const firstModel = samples.findIndex((s) => s.modelShipIds.length === N + 1);
+	const firstView = samples.findIndex((s) => s.viewShipIds.length === N + 1);
 	if (!landingTimeout && firstModel < 0) {
 		failures.push(`Model never showed ${N + 1} ships on planet ${A} in the recorded samples`);
-	} else if (firstModel >= 0 && (firstView < 0 || firstView - firstModel > 2)) {
+	} else if (firstModel >= 0 && firstView < 0) {
 		failures.push(
-			`VIEW BUG: model reached ${N + 1} ships at seq ${onA[firstModel]!.seq} but the view ` +
-				(firstView < 0 ? 'never did' : `only at seq ${onA[firstView]!.seq}`)
+			`VIEW BUG: model reached ${N + 1} ships at seq ${samples[firstModel]!.seq} but the view never did`
 		);
 	}
 
 	// (c) Once landed, the model never loses the ship again.
 	if (firstModel >= 0) {
-		const drop = onA.slice(firstModel).find((s) => s.modelShipIds.length < N + 1);
+		const drop = samples.slice(firstModel).find((s) => s.modelShipIds.length < N + 1);
 		if (drop) {
 			const before = frames.filter((f) => f.dir === 'recv' && f.wallMs <= drop.wallMs).pop();
 			failures.push(

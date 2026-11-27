@@ -77,8 +77,9 @@ Each test attaches `fleet-landing-timeline-<variant>.json` (samples, websocket f
 
 Failure messages start with `[variant <name> seed=... minHex=... hex=... targetOffset=... achievedOffset=...]`:
 
+- `SELECTION BUG at seq k ...` means Fleet Command's selected planet, or the planet it showed, moved off the watched planet during recording. It is listed first because it can cause follow-on VIEW or SYNC lines.
 - `VIEW BUG at seq k: model [...] view [...]` means the store had the ships but the rendered ship cards did not. Nearby websocket frames are listed.
-- `VIEW BUG: model reached N ships at seq k but the view ...` means the cards lagged more than 2 ticks behind the model.
+- `VIEW BUG: model reached N ships at seq k but the view never did` means the model showed the landed ship but no ship card for it ever rendered (the view must match the model on every sample; there is no lag tolerance).
 - `SYNC BUG: model dropped ... after <frame>` means the model had the landed ship and then lost it. The last server frame before the drop is named.
 - Checksum mismatches, "Fleet data refreshed" resyncs, page errors, `each_key_duplicate` and any console error also fail the test. The console-error allowlist is empty on purpose.
 
