@@ -50,7 +50,9 @@ Outside CI, `reuseExistingServer` is true, so Playwright reuses any backend alre
 
 ## Test Page Hook
 
-Setting `window.__ASTRIARCH_TEST__ = true` in an init script (before the app loads) makes `+layout.svelte` lazily load `src/lib/testing/testHooks.ts`, which installs `window.__astriarchTest` (types in `src/lib/testing/testHooksTypes.ts`). Production never fetches that chunk. It exposes owned planets, the selected planet, mobile ship ids, fleets in transit, `requestStateSync()`, and `startRecording()` / `stopRecording()`. While recording, it subscribes to `clientGameModel` (no timers) and records each publish as a model sample paired with the Fleet Command DOM after Svelte flushed.
+Setting `window.__ASTRIARCH_TEST__ = true` in an init script (before the app loads) makes `+layout.svelte` lazily load `src/lib/testing/testHooks.ts`, which installs `window.__astriarchTest` (types in `src/lib/testing/testHooksTypes.ts`). The chunk is built only when `import.meta.env.DEV` is true (`vite dev`, which the e2e config uses) or the build runs with `VITE_ASTRIARCH_TEST_HOOKS=true`; production builds leave it out entirely. It exposes owned planets, the selected planet, mobile ship ids, fleets in transit, `requestStateSync()`, `startRecording()` / `stopRecording()`, and `waitForMobileShipCount(planetId, count, timeoutMs)`. While recording, it subscribes to `clientGameModel` (no timers) and records each publish as a model sample paired with the Fleet Command DOM after Svelte flushed. `waitForMobileShipCount()` resolves from a `clientGameModel` subscription (no polling) and rejects after a single timeout.
+
+Port 4173 is also Vite's default `vite preview` port. Outside CI, Playwright reuses a server already listening there, so a stray `vite preview` of a production build has no hook and scenario F fails at the hook wait. Stop it and rerun.
 
 ## Scenario F (issue #80) Variants and Failure Messages
 

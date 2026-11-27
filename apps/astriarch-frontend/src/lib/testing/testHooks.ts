@@ -2,7 +2,9 @@
  * Test-only page hook for Playwright scenarios.
  *
  * Loaded lazily from +layout.svelte only when `window.__ASTRIARCH_TEST__ === true`
- * (set by a Playwright init script), so production never fetches this chunk.
+ * (set by a Playwright init script). Production builds do not include this module
+ * unless built with VITE_ASTRIARCH_TEST_HOOKS=true (it is always built under
+ * `vite dev`), and even then it is fetched only when that flag is set.
  *
  * Event-driven: recording subscribes to clientGameModel only between
  * startRecording() and stopRecording(); there is no timer or rAF polling.

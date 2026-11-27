@@ -398,7 +398,16 @@ async function runScenarioF(
 	await startGame(page);
 	await waitForGameView(page);
 
-	await page.waitForFunction(() => !!window.__astriarchTest, undefined, { timeout: 15_000 });
+	try {
+		await page.waitForFunction(() => !!window.__astriarchTest, undefined, { timeout: 15_000 });
+	} catch (e) {
+		throw new Error(
+			'window.__astriarchTest was not installed within 15s. The hook is only built under ' +
+				'`vite dev` or with VITE_ASTRIARCH_TEST_HOOKS=true. If Playwright reused a server ' +
+				'already on :4173 (for example a `vite preview` of a production build), stop it and ' +
+				`rerun. (${(e as Error).message})`
+		);
+	}
 	const homeHandle = await page.waitForFunction(
 		() =>
 			planetNodes()
