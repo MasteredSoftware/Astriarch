@@ -63,6 +63,21 @@ export interface AstriarchTestApi {
 	 * (resolved from a store subscription, no polling); rejects after `timeoutMs`.
 	 */
 	waitForMobileShipCount(planetId: number, count: number, timeoutMs: number): Promise<void>;
+	/**
+	 * Resolves once the main player owns the planet in clientGameModel. Event-driven
+	 * (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForOwnedPlanet(planetId: number, timeoutMs: number): Promise<void>;
+	/**
+	 * Resolves once the main player has `count` fleets in transit in clientGameModel.
+	 * Event-driven (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForFleetsInTransitCount(count: number, timeoutMs: number): Promise<void>;
+	/**
+	 * Resolves once clientGameModel has a task notification of `type` for the planet.
+	 * Event-driven (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForTaskNotification(type: number, planetId: number, timeoutMs: number): Promise<void>;
 }
 
 declare global {

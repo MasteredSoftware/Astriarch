@@ -7,7 +7,9 @@
  * `vite dev`), and even then it is fetched only when that flag is set.
  *
  * Event-driven: recording subscribes to clientGameModel only between
- * startRecording() and stopRecording(); there is no timer or rAF polling.
+ * startRecording() and stopRecording(), and each waitFor*() call holds one
+ * clientGameModel subscription (plus one deadline timer) until it settles;
+ * there is no timer or rAF polling.
  */
 
 import { get, type Readable } from 'svelte/store';
@@ -157,19 +159,21 @@ export function createFleetViewRecorder(deps: FleetViewRecorderDeps): FleetViewR
 }
 
 /**
- * Resolves on the first `model` emission (including the current value) where `planetId`
- * has `count` mobile ships; rejects after `timeoutMs`. Event-driven: one subscription
- * and one deadline timer, no polling. Always unsubscribes and clears the timer.
+ * Resolves on the first `model` emission (including the current value) for which
+ * `matches` holds; rejects after `timeoutMs` with `failMessage(timeoutMs, last)`, where
+ * `last` is `summarize` of the latest emission. Event-driven: one subscription and one
+ * deadline timer, no polling. Always unsubscribes and clears the timer.
  */
-export function waitForMobileShipCount(
+function waitForModel(
 	model: Readable<ClientModelData | null>,
-	planetId: number,
-	count: number,
+	matches: (cgm: ClientModelData | null) => boolean,
+	summarize: (cgm: ClientModelData | null) => string,
+	failMessage: (timeoutMs: number, last: string) => string,
 	timeoutMs: number
 ): Promise<void> {
 	return new Promise<void>((resolve, reject) => {
 		let done = false;
-		let last = 0;
+		let last = '';
 		let unsubscribe: (() => void) | null = null;
 		let timer: ReturnType<typeof setTimeout> | null = null;
 		const finish = () => {
@@ -181,8 +185,9 @@ export function waitForMobileShipCount(
 		};
 		unsubscribe = model.subscribe((cgm) => {
 			if (done) return;
-			last = mobileShipIdsOf(cgm?.mainPlayerOwnedPlanets[planetId]).length;
-			if (last === count) {
+			// Summarize now: the store publishes a mutable object.
+			last = summarize(cgm);
+			if (matches(cgm)) {
 				finish();
 				resolve();
 			}
@@ -196,13 +201,96 @@ export function waitForMobileShipCount(
 		}
 		timer = setTimeout(() => {
 			finish();
-			reject(
-				new Error(
-					`mobile ship count on planet ${planetId} did not reach ${count} within ${timeoutMs}ms (last ${last})`
-				)
-			);
+			reject(new Error(failMessage(timeoutMs, last)));
 		}, timeoutMs);
 	});
+}
+
+/**
+ * Resolves on the first `model` emission (including the current value) where `planetId`
+ * has `count` mobile ships; rejects after `timeoutMs`. Event-driven: one subscription
+ * and one deadline timer, no polling. Always unsubscribes and clears the timer.
+ */
+export function waitForMobileShipCount(
+	model: Readable<ClientModelData | null>,
+	planetId: number,
+	count: number,
+	timeoutMs: number
+): Promise<void> {
+	const shipCount = (cgm: ClientModelData | null) =>
+		mobileShipIdsOf(cgm?.mainPlayerOwnedPlanets[planetId]).length;
+	return waitForModel(
+		model,
+		(cgm) => shipCount(cgm) === count,
+		(cgm) => String(shipCount(cgm)),
+		(ms, last) =>
+			`mobile ship count on planet ${planetId} did not reach ${count} within ${ms}ms (last ${last})`,
+		timeoutMs
+	);
+}
+
+/**
+ * Resolves on the first `model` emission (including the current value) where the main
+ * player owns `planetId`; rejects after `timeoutMs`. Event-driven, like
+ * waitForMobileShipCount.
+ */
+export function waitForOwnedPlanet(
+	model: Readable<ClientModelData | null>,
+	planetId: number,
+	timeoutMs: number
+): Promise<void> {
+	return waitForModel(
+		model,
+		(cgm) => !!cgm?.mainPlayer.ownedPlanetIds.includes(planetId),
+		(cgm) => (cgm?.mainPlayer.ownedPlanetIds ?? []).join(', '),
+		(ms, last) => `planet ${planetId} was not owned within ${ms}ms (owned [${last}])`,
+		timeoutMs
+	);
+}
+
+/**
+ * Resolves on the first `model` emission (including the current value) where the main
+ * player has `count` fleets in transit; rejects after `timeoutMs`. Event-driven, like
+ * waitForMobileShipCount.
+ */
+export function waitForFleetsInTransitCount(
+	model: Readable<ClientModelData | null>,
+	count: number,
+	timeoutMs: number
+): Promise<void> {
+	const fleetCount = (cgm: ClientModelData | null) =>
+		(cgm?.mainPlayer.fleetsInTransit ?? []).length;
+	return waitForModel(
+		model,
+		(cgm) => fleetCount(cgm) === count,
+		(cgm) => String(fleetCount(cgm)),
+		(ms, last) => `fleets in transit did not reach ${count} within ${ms}ms (last ${last})`,
+		timeoutMs
+	);
+}
+
+/**
+ * Resolves on the first `model` emission (including the current value) that has a task
+ * notification of `type` for `planetId`; rejects after `timeoutMs`. Event-driven, like
+ * waitForMobileShipCount.
+ */
+export function waitForTaskNotification(
+	model: Readable<ClientModelData | null>,
+	type: number,
+	planetId: number,
+	timeoutMs: number
+): Promise<void> {
+	return waitForModel(
+		model,
+		(cgm) => taskNotificationsOf(cgm).some((t) => t.type === type && t.planetId === planetId),
+		(cgm) =>
+			taskNotificationsOf(cgm)
+				.map((t) => `${t.type}:${t.planetId}`)
+				.join(', '),
+		(ms, last) =>
+			`task (type ${type}, planet ${planetId}) did not appear within ${ms}ms (tasks [${last}])`,
+		timeoutMs
+	);
 }
 
 export function installTestHooks(): void {
@@ -226,7 +314,13 @@ export function installTestHooks(): void {
 		startRecording: () => recorder.start(),
 		stopRecording: () => recorder.stop(),
 		waitForMobileShipCount: (planetId, count, timeoutMs) =>
-			waitForMobileShipCount(clientGameModel, planetId, count, timeoutMs)
+			waitForMobileShipCount(clientGameModel, planetId, count, timeoutMs),
+		waitForOwnedPlanet: (planetId, timeoutMs) =>
+			waitForOwnedPlanet(clientGameModel, planetId, timeoutMs),
+		waitForFleetsInTransitCount: (count, timeoutMs) =>
+			waitForFleetsInTransitCount(clientGameModel, count, timeoutMs),
+		waitForTaskNotification: (type, planetId, timeoutMs) =>
+			waitForTaskNotification(clientGameModel, type, planetId, timeoutMs)
 	};
 	window.__astriarchTest = api;
 	console.info('[test] window.__astriarchTest installed');

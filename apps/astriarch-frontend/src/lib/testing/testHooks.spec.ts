@@ -16,7 +16,10 @@ import {
 	fleetsInTransitOf,
 	mobileShipIdsOf,
 	taskNotificationsOf,
+	waitForFleetsInTransitCount,
 	waitForMobileShipCount,
+	waitForOwnedPlanet,
+	waitForTaskNotification,
 	type FleetViewState
 } from './testHooks';
 
@@ -251,6 +254,166 @@ describe('waitForMobileShipCount', () => {
 		vi.advanceTimersByTime(499);
 		expect(t.subscribers()).toBe(1);
 		vi.advanceTimersByTime(1);
+		await assertion;
+		expect(t.subscribers()).toBe(0);
+	});
+});
+
+function owning(ownedPlanetIds: number[]) {
+	return { mainPlayer: { ownedPlanetIds, fleetsInTransit: [] } } as unknown as ClientModelData;
+}
+
+describe('waitForOwnedPlanet', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('resolves immediately when the planet is already owned and unsubscribes', async () => {
+		const t = setup();
+		t.cgm.set(owning([3, 21]));
+		await expect(waitForOwnedPlanet(t.cgm, 21, 1_000)).resolves.toBeUndefined();
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('resolves on a later emission', async () => {
+		const t = setup();
+		t.cgm.set(owning([3]));
+		let resolved = false;
+		const p = waitForOwnedPlanet(t.cgm, 21, 1_000).then(() => {
+			resolved = true;
+		});
+		await Promise.resolve();
+		expect(resolved).toBe(false);
+		expect(t.subscribers()).toBe(1);
+		t.cgm.set(owning([3, 21]));
+		await p;
+		expect(resolved).toBe(true);
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('rejects after the timeout and unsubscribes', async () => {
+		vi.useFakeTimers();
+		const t = setup();
+		t.cgm.set(owning([3, 17]));
+		const p = waitForOwnedPlanet(t.cgm, 21, 500);
+		const assertion = expect(p).rejects.toThrow(
+			'planet 21 was not owned within 500ms (owned [3, 17])'
+		);
+		expect(t.subscribers()).toBe(1);
+		vi.advanceTimersByTime(500);
+		await assertion;
+		expect(t.subscribers()).toBe(0);
+	});
+});
+
+describe('waitForFleetsInTransitCount', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	function inTransit(n: number) {
+		return {
+			mainPlayer: {
+				ownedPlanetIds: [],
+				fleetsInTransit: Array.from({ length: n }, (_, i) => ({ id: i }))
+			}
+		} as unknown as ClientModelData;
+	}
+
+	it('resolves immediately when the count already matches and unsubscribes', async () => {
+		const t = setup();
+		t.cgm.set(inTransit(1));
+		await expect(waitForFleetsInTransitCount(t.cgm, 1, 1_000)).resolves.toBeUndefined();
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('resolves on a later emission', async () => {
+		const t = setup();
+		t.cgm.set(inTransit(0));
+		let resolved = false;
+		const p = waitForFleetsInTransitCount(t.cgm, 1, 1_000).then(() => {
+			resolved = true;
+		});
+		await Promise.resolve();
+		expect(resolved).toBe(false);
+		expect(t.subscribers()).toBe(1);
+		t.cgm.set(inTransit(1));
+		await p;
+		expect(resolved).toBe(true);
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('rejects after the timeout and unsubscribes', async () => {
+		vi.useFakeTimers();
+		const t = setup();
+		t.cgm.set(inTransit(2));
+		const p = waitForFleetsInTransitCount(t.cgm, 1, 500);
+		const assertion = expect(p).rejects.toThrow(
+			'fleets in transit did not reach 1 within 500ms (last 2)'
+		);
+		expect(t.subscribers()).toBe(1);
+		vi.advanceTimersByTime(500);
+		await assertion;
+		expect(t.subscribers()).toBe(0);
+	});
+});
+
+describe('waitForTaskNotification', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	function withTasks(pairs: [TaskNotificationType, number][]) {
+		const taskNotifications: Record<number, Record<number, unknown>> = {};
+		for (const [type, planetId] of pairs) {
+			taskNotifications[type] ??= {};
+			taskNotifications[type]![planetId] = { type, planetId, planetName: 'p', message: 'm' };
+		}
+		return { taskNotifications } as unknown as ClientModelData;
+	}
+
+	const PROTEST = TaskNotificationType.CitizensProtesting;
+	const EMPTY = TaskNotificationType.BuildQueueEmpty;
+
+	it('resolves immediately when the task is already listed and unsubscribes', async () => {
+		const t = setup();
+		t.cgm.set(withTasks([[PROTEST, 19]]));
+		await expect(waitForTaskNotification(t.cgm, PROTEST, 19, 1_000)).resolves.toBeUndefined();
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('resolves on a later emission and matches type and planet together', async () => {
+		const t = setup();
+		// Same planet with another type, and same type on another planet: neither matches.
+		t.cgm.set(
+			withTasks([
+				[EMPTY, 19],
+				[PROTEST, 17]
+			])
+		);
+		let resolved = false;
+		const p = waitForTaskNotification(t.cgm, PROTEST, 19, 1_000).then(() => {
+			resolved = true;
+		});
+		await Promise.resolve();
+		expect(resolved).toBe(false);
+		expect(t.subscribers()).toBe(1);
+		t.cgm.set(withTasks([[PROTEST, 19]]));
+		await p;
+		expect(resolved).toBe(true);
+		expect(t.subscribers()).toBe(0);
+	});
+
+	it('rejects after the timeout and unsubscribes', async () => {
+		vi.useFakeTimers();
+		const t = setup();
+		t.cgm.set(withTasks([[EMPTY, 11]]));
+		const p = waitForTaskNotification(t.cgm, PROTEST, 19, 500);
+		const assertion = expect(p).rejects.toThrow(
+			`task (type ${PROTEST}, planet 19) did not appear within 500ms (tasks [${EMPTY}:11])`
+		);
+		expect(t.subscribers()).toBe(1);
+		vi.advanceTimersByTime(500);
 		await assertion;
 		expect(t.subscribers()).toBe(0);
 	});
