@@ -273,12 +273,15 @@ async function runScenarioF(
 	);
 	expect(selectedHome, 'the game should auto-select the home planet').toBe(A);
 	await page.evaluate(() => window.__astriarchTest!.requestStateSync());
-	await page.waitForFunction(
-		(b) =>
-			window.__astriarchTest!.ownedPlanetIds().includes(b) &&
-			window.__astriarchTest!.mobileShipIds(b).length === 1,
-		B,
-		{ timeout: 15_000 }
+	// Resolved from the hook's clientGameModel subscription (no per-frame polling).
+	await page.evaluate(
+		([b, ms]) => {
+			const a = window.__astriarchTest!;
+			return Promise.all([a.waitForOwnedPlanet(b, ms), a.waitForMobileShipCount(b, 1, ms)]).then(
+				() => {}
+			);
+		},
+		[B, 15_000] as const
 	);
 
 	// --- Send B's Scout to A ---------------------------------------------------------
@@ -315,13 +318,8 @@ async function runScenarioF(
 	}
 	const sendClickMs = Date.now();
 	await page.locator('[data-testid="send-ships-btn"]').click();
-	await page.waitForFunction(
-		() => window.__astriarchTest!.fleetsInTransit().length === 1,
-		undefined,
-		{
-			timeout: 15_000
-		}
-	);
+	// Resolved from the hook's clientGameModel subscription (no per-frame polling).
+	await page.evaluate((ms) => window.__astriarchTest!.waitForFleetsInTransitCount(1, ms), 15_000);
 	await expectFleetHeadedTo(page, A, `[variant ${v.name}] `);
 
 	// --- Watch A while the Scout lands ------------------------------------------------
