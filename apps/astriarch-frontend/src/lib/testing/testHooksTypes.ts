@@ -8,6 +8,11 @@
 export interface FleetInTransitSample {
 	id: number;
 	parsecsToDestination: number | null;
+	/**
+	 * The client planet whose boundingHexMidPoint matches the fleet's
+	 * destinationHexMidPoint, or null if the fleet has no destination or no planet matches.
+	 */
+	destinationPlanetId: number | null;
 }
 
 /** One clientGameModel publish, paired with the Fleet Command DOM after it rendered. */
@@ -31,11 +36,23 @@ export interface FleetViewSample {
 	viewWallMs: number;
 }
 
+/** One task notification, as the Task Notifications panel lists it. */
+export interface TaskNotificationSample {
+	type: number;
+	planetId: number;
+}
+
 export interface AstriarchTestApi {
 	ownedPlanetIds(): number[];
 	selectedPlanetId(): number | null;
 	mobileShipIds(planetId: number): string[];
 	fleetsInTransit(): FleetInTransitSample[];
+	/** fleetCommandStore.destinationPlanetId: the destination chosen in Fleet Command, or null. */
+	fleetCommandDestinationPlanetId(): number | null;
+	/** The task notifications in the order the Task Notifications panel renders them. */
+	taskNotifications(): TaskNotificationSample[];
+	/** Every starship id on the main player's planets (all types) and in its fleets in transit. */
+	allStarshipIds(): string[];
 	requestStateSync(): void;
 	/** Subscribes to clientGameModel and records a FleetViewSample per emission. */
 	startRecording(): void;
@@ -46,6 +63,21 @@ export interface AstriarchTestApi {
 	 * (resolved from a store subscription, no polling); rejects after `timeoutMs`.
 	 */
 	waitForMobileShipCount(planetId: number, count: number, timeoutMs: number): Promise<void>;
+	/**
+	 * Resolves once the main player owns the planet in clientGameModel. Event-driven
+	 * (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForOwnedPlanet(planetId: number, timeoutMs: number): Promise<void>;
+	/**
+	 * Resolves once the main player has `count` fleets in transit in clientGameModel.
+	 * Event-driven (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForFleetsInTransitCount(count: number, timeoutMs: number): Promise<void>;
+	/**
+	 * Resolves once clientGameModel has a task notification of `type` for the planet.
+	 * Event-driven (resolved from a store subscription, no polling); rejects after `timeoutMs`.
+	 */
+	waitForTaskNotification(type: number, planetId: number, timeoutMs: number): Promise<void>;
 }
 
 declare global {
